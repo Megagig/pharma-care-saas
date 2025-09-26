@@ -1,5 +1,3 @@
-import { dashboardService } from '../services/dashboardService';
-
 export const testDashboardService = async () => {
     console.log('=== TESTING DASHBOARD SERVICE ===');
 

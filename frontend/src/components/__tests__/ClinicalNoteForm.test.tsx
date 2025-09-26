@@ -1,12 +1,9 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import ClinicalNoteForm from '../ClinicalNoteForm';
 
+import userEvent from '@testing-library/user-event';
+
+import ClinicalNoteForm from '../ClinicalNoteForm';
 // Mock the services and queries
-vi.mock('../queries/usePatients', () => ({
+vi.mock('../queries/usePatients', () => ({ 
   useSearchPatients: vi.fn(() => ({
     data: {
       data: {
@@ -15,31 +12,28 @@ vi.mock('../queries/usePatients', () => ({
             _id: '1',
             firstName: 'John',
             lastName: 'Doe',
-            mrn: 'MRN001',
+            mrn: 'MRN001'}
           },
         ],
       },
     },
-    isLoading: false,
-  })),
-}));
+    isLoading: false}
 
-vi.mock('../queries/clinicalNoteQueries', () => ({
+vi.mock('../queries/clinicalNoteQueries', () => ({ 
   useClinicalNote: vi.fn(() => ({
     data: null,
-    isLoading: false,
+    isLoading: false}
   })),
-  useCreateClinicalNote: vi.fn(() => ({
+  useCreateClinicalNote: vi.fn(() => ({ 
     mutateAsync: vi.fn(),
-    isPending: false,
+    isPending: false}
   })),
-  useUpdateClinicalNote: vi.fn(() => ({
+  useUpdateClinicalNote: vi.fn(() => ({ 
     mutateAsync: vi.fn(),
-    isPending: false,
-  })),
-}));
+    isPending: false}
+  }))}
 
-vi.mock('../services/clinicalNoteService', () => ({
+vi.mock('../services/clinicalNoteService', () => ({ 
   clinicalNoteUtils: {
     createEmptyNoteData: vi.fn(() => ({
       patient: '',
@@ -49,7 +43,7 @@ vi.mock('../services/clinicalNoteService', () => ({
         subjective: '',
         objective: '',
         assessment: '',
-        plan: '',
+        plan: ''}
       },
       medications: [],
       laborResults: [],
@@ -57,22 +51,19 @@ vi.mock('../services/clinicalNoteService', () => ({
       followUpRequired: false,
       priority: 'medium',
       isConfidential: false,
-      tags: [],
-    })),
-  },
-}));
+      tags: [], },
+  }
 
 const createTestQueryClient = () =>
-  new QueryClient({
+  new QueryClient({ 
     defaultOptions: {
       queries: {
-        retry: false,
+        retry: false}
       },
       mutations: {
         retry: false,
       },
-    },
-  });
+    }
 
 const renderWithQueryClient = (component: React.ReactElement) => {
   const queryClient = createTestQueryClient();
@@ -164,8 +155,7 @@ describe('ClinicalNoteForm', () => {
     );
 
     const followUpToggle = screen.getByRole('checkbox', {
-      name: /follow-up required/i,
-    });
+      name: /follow-up required/i}
     await user.click(followUpToggle);
 
     expect(screen.getByLabelText(/follow-up date/i)).toBeInTheDocument();
@@ -285,8 +275,7 @@ describe('ClinicalNoteForm', () => {
 
     // Enable follow-up but don't set date
     const followUpToggle = screen.getByRole('checkbox', {
-      name: /follow-up required/i,
-    });
+      name: /follow-up required/i}
     await user.click(followUpToggle);
 
     const saveButton = screen.getByRole('button', { name: /save/i });

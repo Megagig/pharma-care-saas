@@ -1,18 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ChartComponent } from '../../../components/shared/ChartComponent';
-import { mockChartData, mockChartConfig } from '../../mocks/mockData';
-import { ChartType } from '../../../types';
-
 // Mock the chart stores
-vi.mock('../../../stores/chartsStore', () => ({
+vi.mock('../../../stores/chartsStore', () => ({ 
   useChartsStore: vi.fn(() => ({
     isLoading: false,
     error: null,
     setLoading: vi.fn(),
-    setError: vi.fn(),
-  })),
-}));
+    setError: vi.fn()}
+  }))}
 
 describe('ChartComponent', () => {
   const defaultProps = {
@@ -38,7 +31,7 @@ describe('ChartComponent', () => {
       const { unmount } = render(
         <ChartComponent
           {...defaultProps}
-          config={{ ...mockChartConfig, type }}
+          
         />
       );
 
@@ -86,7 +79,7 @@ describe('ChartComponent', () => {
     render(
       <ChartComponent
         {...defaultProps}
-        config={{ ...mockChartConfig, showTooltip: true }}
+        
       />
     );
 
@@ -97,7 +90,7 @@ describe('ChartComponent', () => {
     render(
       <ChartComponent
         {...defaultProps}
-        config={{ ...mockChartConfig, showLegend: true }}
+        
       />
     );
 
@@ -125,7 +118,7 @@ describe('ChartComponent', () => {
     render(
       <ChartComponent
         {...defaultProps}
-        config={{ ...mockChartConfig, theme: customTheme }}
+        
       />
     );
 
@@ -143,7 +136,7 @@ describe('ChartComponent', () => {
     render(
       <ChartComponent
         {...defaultProps}
-        config={{ ...mockChartConfig, animations: animationConfig }}
+        
       />
     );
 

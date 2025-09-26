@@ -1,74 +1,12 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Tabs,
-  Tab,
-  CircularProgress,
-  Alert,
-  Paper,
-  IconButton,
-  Tooltip,
-} from '@mui/material';
-import { FixedGrid } from './common/FixedGrid';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import PeopleIcon from '@mui/icons-material/People';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import DownloadIcon from '@mui/icons-material/Download';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import FilterIcon from '@mui/icons-material/FilterList';
-import {
-  useMTRSummaryReport,
-  useInterventionEffectivenessReport,
-  usePharmacistPerformanceReport,
-  useQualityAssuranceReport,
-  useOutcomeMetricsReport,
-} from '../queries/useMTRQueries';
-import type {
-  MTRSummaryReport,
-  InterventionEffectivenessReport,
-  PharmacistPerformanceReport,
-  QualityAssuranceReport,
-  OutcomeMetricsReport,
-  ReportFilters,
-} from '../types/mtr';
-import { format, subDays, subMonths } from 'date-fns';
+import { Button, Label, Card, CardContent, Select, Tooltip, Spinner, Alert, Tabs } from '@/components/ui/button';
 
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
-
   return (
     <div
       role="tabpanel"
@@ -77,43 +15,37 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`reports-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <div className="">{children}</div>}
     </div>
   );
 }
-
 const MTRReportsDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
-  const [filters, setFilters] = useState<ReportFilters>({
+  const [filters, setFilters] = useState<ReportFilters>({ 
     startDate: format(subMonths(new Date(), 3), 'yyyy-MM-dd'),
-    endDate: format(new Date(), 'yyyy-MM-dd'),
+    endDate: format(new Date(), 'yyyy-MM-dd')}
   });
   const [showFilters, setShowFilters] = useState(false);
-
   // Query hooks
   const summaryQuery = useMTRSummaryReport(filters);
   const interventionQuery = useInterventionEffectivenessReport(filters);
   const pharmacistQuery = usePharmacistPerformanceReport(filters);
   const qualityQuery = useQualityAssuranceReport(filters);
   const outcomeQuery = useOutcomeMetricsReport(filters);
-
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   const handleFilterChange = (field: keyof ReportFilters, value: unknown) => {
-    setFilters((prev) => ({
+    setFilters((prev) => ({ 
       ...prev,
-      [field]: value,
+      [field]: value}
     }));
   };
-
   const handleDateRangePreset = (
     preset: 'week' | 'month' | 'quarter' | 'year'
   ) => {
     const endDate = new Date();
     let startDate: Date;
-
     switch (preset) {
       case 'week':
         startDate = subDays(endDate, 7);
@@ -130,14 +62,12 @@ const MTRReportsDashboard: React.FC = () => {
       default:
         startDate = subMonths(endDate, 3);
     }
-
-    setFilters((prev) => ({
+    setFilters((prev) => ({ 
       ...prev,
       startDate: format(startDate, 'yyyy-MM-dd'),
-      endDate: format(endDate, 'yyyy-MM-dd'),
+      endDate: format(endDate, 'yyyy-MM-dd')}
     }));
   };
-
   const refreshAllReports = () => {
     summaryQuery.refetch();
     interventionQuery.refetch();
@@ -145,48 +75,44 @@ const MTRReportsDashboard: React.FC = () => {
     qualityQuery.refetch();
     outcomeQuery.refetch();
   };
-
   const exportReport = (reportType: string) => {
     // TODO: Implement export functionality
     console.log(`Exporting ${reportType} report`);
   };
-
   const renderFilters = () => (
-    <Card sx={{ mb: 3 }}>
+    <Card className="">
       <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <FilterIcon sx={{ mr: 1 }} />
-          <Typography variant="h6">Report Filters</Typography>
-          <Box sx={{ ml: 'auto' }}>
+        <div className="">
+          <FilterIcon className="" />
+          <div >Report Filters</div>
+          <div className="">
             <Button
-              variant="outlined"
+              
               size="small"
               onClick={() => setShowFilters(!showFilters)}
             >
               {showFilters ? 'Hide' : 'Show'} Filters
             </Button>
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {showFilters && (
           <>
-            <FixedGrid container spacing={2} sx={{ mb: 2 }}>
+            <FixedGrid container spacing={2} className="">
               <FixedGrid item xs={12} sm={6} md={3}>
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                   <DatePicker
                     label="Start Date"
                     value={
-                      filters.startDate ? new Date(filters.startDate) : null
+                      filters.startDate ? new Date(filters.startDate) : null}
                     }
                     onChange={(date) =>
                       handleFilterChange(
                         'startDate',
                         date ? format(date, 'yyyy-MM-dd') : ''
-                      )
+                      )}
                     }
-                    slotProps={{
+                    slotProps={{}
                       textField: { size: 'small', fullWidth: true },
-                    }}
                   />
                 </LocalizationProvider>
               </FixedGrid>
@@ -199,22 +125,21 @@ const MTRReportsDashboard: React.FC = () => {
                       handleFilterChange(
                         'endDate',
                         date ? format(date, 'yyyy-MM-dd') : ''
-                      )
+                      )}
                     }
-                    slotProps={{
+                    slotProps={{}
                       textField: { size: 'small', fullWidth: true },
-                    }}
                   />
                 </LocalizationProvider>
               </FixedGrid>
               <FixedGrid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Review Type</InputLabel>
+                <div fullWidth size="small">
+                  <Label>Review Type</Label>
                   <Select
                     value={filters.reviewType || ''}
                     label="Review Type"
                     onChange={(e) =>
-                      handleFilterChange('reviewType', e.target.value)
+                      handleFilterChange('reviewType', e.target.value)}
                     }
                   >
                     <MenuItem value="">All Types</MenuItem>
@@ -223,16 +148,16 @@ const MTRReportsDashboard: React.FC = () => {
                     <MenuItem value="annual">Annual</MenuItem>
                     <MenuItem value="targeted">Targeted</MenuItem>
                   </Select>
-                </FormControl>
+                </div>
               </FixedGrid>
               <FixedGrid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Priority</InputLabel>
+                <div fullWidth size="small">
+                  <Label>Priority</Label>
                   <Select
                     value={filters.priority || ''}
                     label="Priority"
                     onChange={(e) =>
-                      handleFilterChange('priority', e.target.value)
+                      handleFilterChange('priority', e.target.value)}
                     }
                   >
                     <MenuItem value="">All Priorities</MenuItem>
@@ -240,66 +165,61 @@ const MTRReportsDashboard: React.FC = () => {
                     <MenuItem value="urgent">Urgent</MenuItem>
                     <MenuItem value="high_risk">High Risk</MenuItem>
                   </Select>
-                </FormControl>
+                </div>
               </FixedGrid>
             </FixedGrid>
-
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <div className="">
               <Button
                 size="small"
-                variant="outlined"
+                
                 onClick={() => handleDateRangePreset('week')}
               >
                 Last Week
               </Button>
               <Button
                 size="small"
-                variant="outlined"
+                
                 onClick={() => handleDateRangePreset('month')}
               >
                 Last Month
               </Button>
               <Button
                 size="small"
-                variant="outlined"
+                
                 onClick={() => handleDateRangePreset('quarter')}
               >
                 Last Quarter
               </Button>
               <Button
                 size="small"
-                variant="outlined"
+                
                 onClick={() => handleDateRangePreset('year')}
               >
                 Last Year
               </Button>
-            </Box>
+            </div>
           </>
         )}
       </CardContent>
     </Card>
   );
-
   const renderSummaryReport = () => {
     if (summaryQuery.isLoading) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div className="">
+          <Spinner />
+        </div>
       );
     }
-
     if (summaryQuery.error) {
       return (
-        <Alert severity="error" sx={{ m: 2 }}>
+        <Alert severity="error" className="">
           Failed to load summary report: {summaryQuery.error.message}
         </Alert>
       );
     }
-
     const data = summaryQuery.data?.data as MTRSummaryReport;
     if (!data) return null;
-
     const statusData = [
       {
         name: 'Completed',
@@ -318,7 +238,6 @@ const MTRReportsDashboard: React.FC = () => {
         color: '#F44336',
       },
     ];
-
     return (
       <FixedGrid container spacing={3}>
         {/* Key Metrics */}
@@ -327,61 +246,60 @@ const MTRReportsDashboard: React.FC = () => {
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Total Reviews
-                  </Typography>
-                  <Typography variant="h4">
+                  </div>
+                  <div >
                     {data.summary.totalReviews}
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Completion Rate
-                  </Typography>
-                  <Typography variant="h4" color="primary">
+                  </div>
+                  <div  color="primary">
                     {data.summary.completionRate.toFixed(1)}%
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Avg Completion Time
-                  </Typography>
-                  <Typography variant="h4">
+                  </div>
+                  <div >
                     {data.summary.avgCompletionTime.toFixed(1)} days
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Problems Resolved
-                  </Typography>
-                  <Typography variant="h4" color="success.main">
+                  </div>
+                  <div  color="success.main">
                     {data.summary.totalProblemsResolved}
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
           </FixedGrid>
         </FixedGrid>
-
         {/* Status Distribution */}
         <FixedGrid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Review Status Distribution
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -406,14 +324,13 @@ const MTRReportsDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </FixedGrid>
-
         {/* Monthly Trends */}
         <FixedGrid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Monthly Review Trends
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={data.trends.monthly}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -441,14 +358,13 @@ const MTRReportsDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </FixedGrid>
-
         {/* Review Type Distribution */}
         <FixedGrid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Review Type Distribution
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.distributions.reviewType}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -461,14 +377,13 @@ const MTRReportsDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </FixedGrid>
-
         {/* Priority Distribution */}
         <FixedGrid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Priority Distribution
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.distributions.priority}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -484,28 +399,24 @@ const MTRReportsDashboard: React.FC = () => {
       </FixedGrid>
     );
   };
-
   const renderInterventionReport = () => {
     if (interventionQuery.isLoading) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div className="">
+          <Spinner />
+        </div>
       );
     }
-
     if (interventionQuery.error) {
       return (
-        <Alert severity="error" sx={{ m: 2 }}>
+        <Alert severity="error" className="">
           Failed to load intervention report: {interventionQuery.error.message}
         </Alert>
       );
     }
-
     const data = interventionQuery.data
       ?.data as InterventionEffectivenessReport;
     if (!data) return null;
-
     return (
       <FixedGrid container spacing={3}>
         {/* Key Metrics */}
@@ -514,61 +425,60 @@ const MTRReportsDashboard: React.FC = () => {
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Total Interventions
-                  </Typography>
-                  <Typography variant="h4">
+                  </div>
+                  <div >
                     {data.summary.totalInterventions}
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Acceptance Rate
-                  </Typography>
-                  <Typography variant="h4" color="primary">
+                  </div>
+                  <div  color="primary">
                     {data.summary.overallAcceptanceRate.toFixed(1)}%
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Accepted
-                  </Typography>
-                  <Typography variant="h4" color="success.main">
+                  </div>
+                  <div  color="success.main">
                     {data.summary.acceptedInterventions}
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Pending
-                  </Typography>
-                  <Typography variant="h4" color="warning.main">
+                  </div>
+                  <div  color="warning.main">
                     {data.summary.pendingInterventions}
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
           </FixedGrid>
         </FixedGrid>
-
         {/* Effectiveness by Type */}
         <FixedGrid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Effectiveness by Intervention Type
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.effectiveness.byType}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -585,14 +495,13 @@ const MTRReportsDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </FixedGrid>
-
         {/* Effectiveness by Category */}
         <FixedGrid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Effectiveness by Category
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.effectiveness.byCategory}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -609,14 +518,13 @@ const MTRReportsDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </FixedGrid>
-
         {/* Pharmacist Performance */}
         <FixedGrid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Pharmacist Intervention Performance
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={data.pharmacistPerformance}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -642,68 +550,63 @@ const MTRReportsDashboard: React.FC = () => {
       </FixedGrid>
     );
   };
-
   const renderPharmacistReport = () => {
     if (pharmacistQuery.isLoading) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div className="">
+          <Spinner />
+        </div>
       );
     }
-
     if (pharmacistQuery.error) {
       return (
-        <Alert severity="error" sx={{ m: 2 }}>
+        <Alert severity="error" className="">
           Failed to load pharmacist report: {pharmacistQuery.error.message}
         </Alert>
       );
     }
-
     const data = pharmacistQuery.data?.data as PharmacistPerformanceReport;
     if (!data) return null;
-
     return (
       <FixedGrid container spacing={3}>
         {/* Summary */}
         <FixedGrid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Performance Summary
-              </Typography>
+              </div>
               <FixedGrid container spacing={2}>
                 <FixedGrid item xs={12} sm={4}>
-                  <Typography color="textSecondary">
+                  <div color="textSecondary">
                     Total Pharmacists: {data.summary.totalPharmacists}
-                  </Typography>
+                  </div>
                 </FixedGrid>
                 <FixedGrid item xs={12} sm={4}>
-                  <Typography color="textSecondary">
+                  <div color="textSecondary">
                     Average Quality Score:{' '}
                     {data.summary.avgQualityScore.toFixed(1)}
-                  </Typography>
+                  </div>
                 </FixedGrid>
                 <FixedGrid item xs={12} sm={4}>
-                  <Typography color="textSecondary">
+                  <div color="textSecondary">
                     Top Performer:{' '}
                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {(data.summary as Record<string, any>)?.topPerformer
                       ?.pharmacistName || 'N/A'}
-                  </Typography>
+                  </div>
                 </FixedGrid>
               </FixedGrid>
             </CardContent>
           </Card>
         </FixedGrid>
-
         {/* Quality Scores */}
         <FixedGrid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Pharmacist Quality Scores
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={data.pharmacistPerformance}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -720,14 +623,13 @@ const MTRReportsDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </FixedGrid>
-
         {/* Performance Metrics */}
         <FixedGrid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Detailed Performance Metrics
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={data.pharmacistPerformance}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -758,27 +660,23 @@ const MTRReportsDashboard: React.FC = () => {
       </FixedGrid>
     );
   };
-
   const renderQualityReport = () => {
     if (qualityQuery.isLoading) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div className="">
+          <Spinner />
+        </div>
       );
     }
-
     if (qualityQuery.error) {
       return (
-        <Alert severity="error" sx={{ m: 2 }}>
+        <Alert severity="error" className="">
           Failed to load quality report: {qualityQuery.error.message}
         </Alert>
       );
     }
-
     const data = qualityQuery.data?.data as QualityAssuranceReport;
     if (!data) return null;
-
     return (
       <FixedGrid container spacing={3}>
         {/* Quality Metrics */}
@@ -787,49 +685,48 @@ const MTRReportsDashboard: React.FC = () => {
             <FixedGrid item xs={12} sm={4}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Plan Completion Rate
-                  </Typography>
-                  <Typography variant="h4" color="primary">
+                  </div>
+                  <div  color="primary">
                     {data.qualityMetrics.avgPlanCompletionRate.toFixed(1)}%
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
             <FixedGrid item xs={12} sm={4}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Follow-up Compliance
-                  </Typography>
-                  <Typography variant="h4" color="success.main">
+                  </div>
+                  <div  color="success.main">
                     {data.qualityMetrics.avgFollowUpCompliance.toFixed(1)}%
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
             <FixedGrid item xs={12} sm={4}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Problem Resolution Rate
-                  </Typography>
-                  <Typography variant="h4" color="warning.main">
+                  </div>
+                  <div  color="warning.main">
                     {data.qualityMetrics.avgProblemResolutionRate.toFixed(1)}%
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
           </FixedGrid>
         </FixedGrid>
-
         {/* Completion Time Analysis */}
         <FixedGrid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Completion Time by Priority
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.completionTimeAnalysis}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -846,20 +743,19 @@ const MTRReportsDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </FixedGrid>
-
         {/* Problem Patterns */}
         <FixedGrid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Problem Resolution Patterns
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.problemPatterns}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="_id"
-                    tickFormatter={(value) =>
+                    tickFormatter={(value) =>}
                       `${value.category}-${value.severity}`
                     }
                   />
@@ -875,43 +771,42 @@ const MTRReportsDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </FixedGrid>
-
         {/* Documentation Quality */}
         <FixedGrid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Documentation Quality Metrics
-              </Typography>
+              </div>
               <FixedGrid container spacing={2}>
                 <FixedGrid item xs={12} sm={3}>
-                  <Typography color="textSecondary">
+                  <div color="textSecondary">
                     Total Reviews: {data.documentationQuality.totalReviews}
-                  </Typography>
+                  </div>
                 </FixedGrid>
                 <FixedGrid item xs={12} sm={3}>
-                  <Typography color="textSecondary">
+                  <div color="textSecondary">
                     Complete Plans:{' '}
                     {data.documentationQuality.planCompletionRate.toFixed(1)}%
-                  </Typography>
+                  </div>
                 </FixedGrid>
                 <FixedGrid item xs={12} sm={3}>
-                  <Typography color="textSecondary">
+                  <div color="textSecondary">
                     Medication Documentation:{' '}
                     {data.documentationQuality.medicationDocumentationRate.toFixed(
                       1
                     )}
                     %
-                  </Typography>
+                  </div>
                 </FixedGrid>
                 <FixedGrid item xs={12} sm={3}>
-                  <Typography color="textSecondary">
+                  <div color="textSecondary">
                     Problem Identification:{' '}
                     {data.documentationQuality.problemIdentificationRate.toFixed(
                       1
                     )}
                     %
-                  </Typography>
+                  </div>
                 </FixedGrid>
               </FixedGrid>
             </CardContent>
@@ -920,27 +815,23 @@ const MTRReportsDashboard: React.FC = () => {
       </FixedGrid>
     );
   };
-
   const renderOutcomeReport = () => {
     if (outcomeQuery.isLoading) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div className="">
+          <Spinner />
+        </div>
       );
     }
-
     if (outcomeQuery.error) {
       return (
-        <Alert severity="error" sx={{ m: 2 }}>
+        <Alert severity="error" className="">
           Failed to load outcome report: {outcomeQuery.error.message}
         </Alert>
       );
     }
-
     const data = outcomeQuery.data?.data as OutcomeMetricsReport;
     if (!data) return null;
-
     return (
       <FixedGrid container spacing={3}>
         {/* Key Outcomes */}
@@ -949,61 +840,60 @@ const MTRReportsDashboard: React.FC = () => {
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Problems Resolved
-                  </Typography>
-                  <Typography variant="h4" color="success.main">
+                  </div>
+                  <div  color="success.main">
                     {data.summary.totalProblemsResolved}
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Medications Optimized
-                  </Typography>
-                  <Typography variant="h4" color="primary">
+                  </div>
+                  <div  color="primary">
                     {data.summary.totalMedicationsOptimized}
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Adherence Improved
-                  </Typography>
-                  <Typography variant="h4" color="info.main">
+                  </div>
+                  <div  color="info.main">
                     {data.summary.adherenceImprovementRate.toFixed(1)}%
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
             <FixedGrid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Cost Savings
-                  </Typography>
-                  <Typography variant="h4" color="warning.main">
+                  </div>
+                  <div  color="warning.main">
                     ${data.summary.totalCostSavings?.toLocaleString() || 0}
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </FixedGrid>
           </FixedGrid>
         </FixedGrid>
-
         {/* Outcomes by Review Type */}
         <FixedGrid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Outcomes by Review Type
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.outcomesByType}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -1026,14 +916,13 @@ const MTRReportsDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </FixedGrid>
-
         {/* Monthly Outcome Trends */}
         <FixedGrid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Monthly Outcome Trends
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={data.trends.monthly}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -1064,47 +953,39 @@ const MTRReportsDashboard: React.FC = () => {
       </FixedGrid>
     );
   };
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
+      <div
+        className=""
       >
-        <Typography variant="h4" component="h1">
+        <div  component="h1">
           MTR Reports & Analytics
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        </div>
+        <div className="">
           <Tooltip title="Refresh All Reports">
             <IconButton onClick={refreshAllReports}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
           <Button
-            variant="outlined"
+            
             startIcon={<DownloadIcon />}
             onClick={() => exportReport('all')}
           >
             Export
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Filters */}
       {renderFilters()}
-
       {/* Tabs */}
-      <Paper sx={{ width: '100%' }}>
+      <div className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
           aria-label="MTR reports tabs"
-          variant="scrollable"
+          
           scrollButtons="auto"
         >
           <Tab label="Summary" icon={<AssessmentIcon />} iconPosition="start" />
@@ -1117,29 +998,23 @@ const MTRReportsDashboard: React.FC = () => {
           <Tab label="Quality" icon={<AssignmentIcon />} iconPosition="start" />
           <Tab label="Outcomes" icon={<TimelineIcon />} iconPosition="start" />
         </Tabs>
-
         <TabPanel value={activeTab} index={0}>
           {renderSummaryReport()}
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
           {renderInterventionReport()}
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
           {renderPharmacistReport()}
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
           {renderQualityReport()}
         </TabPanel>
-
         <TabPanel value={activeTab} index={4}>
           {renderOutcomeReport()}
         </TabPanel>
-      </Paper>
-    </Box>
+      </div>
+    </div>
   );
 };
-
 export default MTRReportsDashboard;

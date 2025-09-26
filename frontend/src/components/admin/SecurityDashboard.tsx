@@ -1,31 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  Chip,
-  CircularProgress,
-  Divider,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  Typography,
-  Alert,
-  Button,
-  Paper,
-} from '@mui/material';
-import {
-  Security as SecurityIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Info as InfoIcon,
-  Refresh as RefreshIcon,
-} from '@mui/icons-material';
-import { adminService } from '../../services/adminService';
-import { useUIStore } from '../../stores';
+
+import { Button } from '@/components/ui/button';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { CardHeader } from '@/components/ui/card';
+
+import { Spinner } from '@/components/ui/spinner';
+
+import { Alert } from '@/components/ui/alert';
+
+import { Separator } from '@/components/ui/separator';
 
 interface SecurityEvent {
   id: string;
@@ -42,7 +29,6 @@ interface SecurityEvent {
   location: string;
   description: string;
 }
-
 interface SecurityMetrics {
   totalEvents: number;
   criticalEvents: number;
@@ -50,21 +36,17 @@ interface SecurityMetrics {
   resolvedEvents: number;
   activeThreats: number;
 }
-
 const SecurityDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [securityMetrics, setSecurityMetrics] =
     useState<SecurityMetrics | null>(null);
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
-
   const addNotification = useUIStore((state) => state.addNotification);
-
   const loadSecurityData = async () => {
     try {
       setLoading(true);
       setError(null);
-
       // In a real implementation, these would be separate API calls
       // For now, we'll mock the data structure
       const mockMetrics: SecurityMetrics = {
@@ -74,7 +56,6 @@ const SecurityDashboard: React.FC = () => {
         resolvedEvents: 89,
         activeThreats: 1,
       };
-
       const mockEvents: SecurityEvent[] = [
         {
           id: '1',
@@ -107,25 +88,22 @@ const SecurityDashboard: React.FC = () => {
           description: 'Security settings updated',
         },
       ];
-
       setSecurityMetrics(mockMetrics);
       setSecurityEvents(mockEvents);
     } catch (err) {
       setError('Failed to load security data');
-      addNotification({
+      addNotification({ 
         type: 'error',
         title: 'Error',
-        message: 'Failed to load security dashboard data',
+        message: 'Failed to load security dashboard data'}
       });
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     loadSecurityData();
   }, []);
-
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
@@ -140,7 +118,6 @@ const SecurityDashboard: React.FC = () => {
         return 'default';
     }
   };
-
   const getEventTypeIcon = (type: string) => {
     switch (type) {
       case 'failed_login':
@@ -153,224 +130,203 @@ const SecurityDashboard: React.FC = () => {
         return <SecurityIcon />;
     }
   };
-
   if (loading) {
     return (
-      <Box
+      <div
         display="flex"
         justifyContent="center"
         alignItems="center"
         minHeight="200px"
       >
-        <CircularProgress />
-      </Box>
+        <Spinner />
+      </div>
     );
   }
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
+      <Alert severity="error" className="">
         {error}
       </Alert>
     );
   }
-
   return (
-    <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
+    <div>
+      <div
+        className=""
       >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <SecurityIcon sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h5" component="h1">
+        <div className="">
+          <SecurityIcon className="" />
+          <div  component="h1">
             Security Dashboard
-          </Typography>
-        </Box>
+          </div>
+        </div>
         <Button
-          variant="outlined"
+          
           startIcon={<RefreshIcon />}
           onClick={loadSecurityData}
         >
           Refresh
         </Button>
-      </Box>
-
+      </div>
       {/* Security Metrics */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={2.4}>
+      <div container spacing={3} className="">
+        <div item xs={12} sm={6} md={2.4}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary.main" gutterBottom>
+            <CardContent className="">
+              <div  color="primary.main" gutterBottom>
                 {securityMetrics?.totalEvents || 0}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Total Events
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
+        </div>
+        <div item xs={12} sm={6} md={2.4}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="error.main" gutterBottom>
+            <CardContent className="">
+              <div  color="error.main" gutterBottom>
                 {securityMetrics?.criticalEvents || 0}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Critical Alerts
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
+        </div>
+        <div item xs={12} sm={6} md={2.4}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main" gutterBottom>
+            <CardContent className="">
+              <div  color="warning.main" gutterBottom>
                 {securityMetrics?.warningEvents || 0}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Warnings
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
+        </div>
+        <div item xs={12} sm={6} md={2.4}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main" gutterBottom>
+            <CardContent className="">
+              <div  color="success.main" gutterBottom>
                 {securityMetrics?.resolvedEvents || 0}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Resolved
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
+        </div>
+        <div item xs={12} sm={6} md={2.4}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="info.main" gutterBottom>
+            <CardContent className="">
+              <div  color="info.main" gutterBottom>
                 {securityMetrics?.activeThreats || 0}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Active Threats
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Security Events */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
+      <div container spacing={3}>
+        <div item xs={12} md={8}>
           <Card>
             <CardHeader
               title="Recent Security Events"
               subheader="Latest security activities and alerts"
             />
-            <Divider />
+            <Separator />
             <CardContent>
               <List>
                 {securityEvents.map((event) => (
-                  <ListItem key={event.id} sx={{ alignItems: 'flex-start' }}>
-                    <Box sx={{ mr: 2, mt: 0.5 }}>
+                  <div key={event.id} className="">
+                    <div className="">
                       {getEventTypeIcon(event.type)}
-                    </Box>
-                    <ListItemText
+                    </div>
+                    <div
                       primary={
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            mb: 0.5,
-                          }}
+                        <div
+                          className=""
                         >
-                          <Typography variant="subtitle2" sx={{ mr: 1 }}>
+                          <div  className="">}
                             {event.description}
-                          </Typography>
+                          </div>
                           <Chip
                             label={event.severity}
                             size="small"
                             color={getSeverityColor(event.severity) as any}
                           />
-                        </Box>
+                        </div>
                       }
                       secondary={
-                        <Box>
-                          <Typography variant="body2" color="textSecondary">
+                        <div>
+                          <div  color="textSecondary">}
                             User: {event.user} • IP: {event.ip} •{' '}
                             {event.location}
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary">
+                          </div>
+                          <div  color="textSecondary">
                             {new Date(event.timestamp).toLocaleString()}
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       }
                     />
-                  </ListItem>
+                  </div>
                 ))}
               </List>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card sx={{ mb: 3 }}>
+        </div>
+        <div item xs={12} md={4}>
+          <Card className="">
             <CardHeader
               title="Security Status"
               subheader="Current system security posture"
             />
-            <Divider />
+            <Separator />
             <CardContent>
-              <Box sx={{ textAlign: 'center', py: 2 }}>
+              <div className="">
                 <CheckCircleIcon
-                  sx={{ fontSize: 60, color: 'success.main', mb: 1 }}
+                  className=""
                 />
-                <Typography variant="h6" gutterBottom>
+                <div  gutterBottom>
                   System Secure
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
+                </div>
+                <div  color="textSecondary">
                   No critical vulnerabilities detected
-                </Typography>
-              </Box>
+                </div>
+              </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader
               title="Quick Actions"
               subheader="Security management tools"
             />
-            <Divider />
+            <Separator />
             <CardContent>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Button variant="outlined" fullWidth>
+              <div className="">
+                <Button  fullWidth>
                   View All Alerts
                 </Button>
-                <Button variant="outlined" fullWidth>
+                <Button  fullWidth>
                   Security Settings
                 </Button>
-                <Button variant="outlined" fullWidth>
+                <Button  fullWidth>
                   Audit Logs
                 </Button>
-                <Button variant="outlined" fullWidth color="error">
+                <Button  fullWidth color="error">
                   Emergency Lockdown
                 </Button>
-              </Box>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 };
-
 export default SecurityDashboard;

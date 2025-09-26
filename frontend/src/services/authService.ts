@@ -168,7 +168,7 @@ class AuthService {
         }
         const authError: AuthError = new Error(
           (axiosError.response.data as { message?: string })?.message ||
-            'Authentication failed'
+          'Authentication failed'
         );
         authError.status = axiosError.response.status;
         throw authError;
@@ -176,7 +176,7 @@ class AuthService {
         // Payment/subscription required - don't logout, just throw error
         const authError: AuthError = new Error(
           (axiosError.response.data as { message?: string })?.message ||
-            'Subscription required'
+          'Subscription required'
         );
         authError.status = axiosError.response.status;
         throw authError;
@@ -184,8 +184,8 @@ class AuthService {
 
       const authError: AuthError = new Error(
         (axiosError.response?.data as { message?: string })?.message ||
-          axiosError.message ||
-          'An error occurred'
+        axiosError.message ||
+        'An error occurred'
       );
       authError.status = axiosError.response?.status;
       throw authError;

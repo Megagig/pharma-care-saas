@@ -1,5 +1,3 @@
-import { FeatureFlag } from '../services/featureFlagService';
-
 /**
  * Cached feature flag values
  * This cache is refreshed when fetchFeatureFlags() is called

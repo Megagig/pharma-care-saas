@@ -1,30 +1,8 @@
-import React from 'react';
-import {
-  Box,
-  Chip,
-  Tooltip,
-  IconButton,
-  Typography,
-  Stack,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
-import {
-  Assignment as MTRIcon,
-  Schedule as ScheduledIcon,
-  Warning as OverdueIcon,
-  PlayArrow as ActiveIcon,
-  Add as AddIcon,
-  Sync as SyncIcon,
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { usePatientMTRSummary } from '../queries/usePatientMTRIntegration';
-import type { PatientMTRSummary } from '../services/patientMTRIntegrationService';
 
+import { Tooltip, Spinner, Alert } from '@/components/ui/button';
 // ===============================
 // MTR STATUS INDICATOR COMPONENT
 // ===============================
-
 interface MTRStatusIndicatorProps {
   patientId: string;
   variant?: 'chip' | 'detailed' | 'compact';
@@ -32,23 +10,20 @@ interface MTRStatusIndicatorProps {
   onStartMTR?: () => void;
   onViewMTR?: (mtrId: string) => void;
 }
-
-export const MTRStatusIndicator: React.FC<MTRStatusIndicatorProps> = ({
+export const MTRStatusIndicator: React.FC<MTRStatusIndicatorProps> = ({ 
   patientId,
   variant = 'chip',
   showActions = false,
   onStartMTR,
-  onViewMTR,
+  onViewMTR
 }) => {
   const navigate = useNavigate();
-
   const {
     data: mtrSummary,
     isLoading,
     isError,
     error,
   } = usePatientMTRSummary(patientId, !!patientId && patientId.length === 24);
-
   const handleStartMTR = () => {
     if (onStartMTR) {
       onStartMTR();
@@ -56,7 +31,6 @@ export const MTRStatusIndicator: React.FC<MTRStatusIndicatorProps> = ({
       navigate(`/mtr/new?patientId=${patientId}`);
     }
   };
-
   const handleViewMTR = (mtrId: string) => {
     if (onViewMTR) {
       onViewMTR(mtrId);
@@ -64,7 +38,6 @@ export const MTRStatusIndicator: React.FC<MTRStatusIndicatorProps> = ({
       navigate(`/mtr/${mtrId}`);
     }
   };
-
   const getStatusConfig = (status: PatientMTRSummary['mtrStatus']) => {
     switch (status) {
       case 'active':
@@ -98,43 +71,38 @@ export const MTRStatusIndicator: React.FC<MTRStatusIndicatorProps> = ({
         };
     }
   };
-
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <CircularProgress size={16} />
+      <div className="">
+        <Spinner size={16} />
         {variant !== 'compact' && (
-          <Typography variant="caption" color="text.secondary">
+          <div  color="text.secondary">
             Loading MTR status...
-          </Typography>
+          </div>
         )}
-      </Box>
+      </div>
     );
   }
-
   if (isError) {
     return (
       <Tooltip
         title={`Failed to load MTR status: ${
-          error?.message || 'Unknown error'
+          error?.message || 'Unknown error'}
         }`}
       >
         <Chip
           size="small"
           label="MTR Status Error"
           color="error"
-          variant="outlined"
+          
         />
       </Tooltip>
     );
   }
-
   if (!mtrSummary) {
     return null;
   }
-
   const statusConfig = getStatusConfig(mtrSummary.mtrStatus);
-
   // Chip variant - simple status indicator
   if (variant === 'chip') {
     return (
@@ -148,30 +116,22 @@ export const MTRStatusIndicator: React.FC<MTRStatusIndicatorProps> = ({
           onClick={
             mtrSummary.hasActiveMTR && mtrSummary.recentMTRs[0]
               ? () => handleViewMTR(mtrSummary.recentMTRs[0]._id)
-              : undefined
+              : undefined}
           }
-          sx={{
-            cursor: mtrSummary.hasActiveMTR ? 'pointer' : 'default',
-          }}
+          className=""
         />
       </Tooltip>
     );
   }
-
   // Compact variant - minimal display
   if (variant === 'compact') {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <div className="">
         <Tooltip title={statusConfig.description}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              color: `${statusConfig.color}.main`,
-            }}
-          >
+          <div
+            className="">
             {React.cloneElement(statusConfig.icon, { fontSize: 'small' })}
-          </Box>
+          </div>
         </Tooltip>
         {showActions && (
           <Tooltip title={mtrSummary.hasActiveMTR ? 'View MTR' : 'Start MTR'}>
@@ -180,100 +140,88 @@ export const MTRStatusIndicator: React.FC<MTRStatusIndicatorProps> = ({
               onClick={
                 mtrSummary.hasActiveMTR && mtrSummary.recentMTRs[0]
                   ? () => handleViewMTR(mtrSummary.recentMTRs[0]._id)
-                  : handleStartMTR
+                  : handleStartMTR}
               }
             >
               {mtrSummary.hasActiveMTR ? <MTRIcon /> : <AddIcon />}
             </IconButton>
           </Tooltip>
         )}
-      </Box>
+      </div>
     );
   }
-
   // Detailed variant - comprehensive display
   return (
-    <Box sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-      <Stack spacing={2}>
+    <div className="">
+      <div spacing={2}>
         {/* Header */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
+        <div
+          className=""
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <div className="">
             {statusConfig.icon}
-            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+            <div  className="">
               MTR Status
-            </Typography>
-          </Box>
+            </div>
+          </div>
           <Chip
             size="small"
             label={statusConfig.label}
             color={statusConfig.color}
             variant={mtrSummary.hasActiveMTR ? 'filled' : 'outlined'}
           />
-        </Box>
-
+        </div>
         {/* Statistics */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 1,
-          }}
+        <div
+          className=""
         >
-          <Box>
-            <Typography variant="caption" color="text.secondary">
+          <div>
+            <div  color="text.secondary">
               Total Sessions
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            </div>
+            <div  className="">
               {mtrSummary.totalMTRSessions}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
+            </div>
+          </div>
+          <div>
+            <div  color="text.secondary">
               Completed
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            </div>
+            <div  className="">
               {mtrSummary.completedMTRSessions}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
+            </div>
+          </div>
+          <div>
+            <div  color="text.secondary">
               Active
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            </div>
+            <div  className="">
               {mtrSummary.activeMTRSessions}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
+            </div>
+          </div>
+          <div>
+            <div  color="text.secondary">
               Last MTR
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            </div>
+            <div  className="">
               {mtrSummary.lastMTRDate
                 ? new Date(mtrSummary.lastMTRDate).toLocaleDateString()
                 : 'Never'}
-            </Typography>
-          </Box>
-        </Box>
-
+            </div>
+          </div>
+        </div>
         {/* Next scheduled MTR */}
         {mtrSummary.nextScheduledMTR && (
-          <Alert severity="info" sx={{ py: 0.5 }}>
-            <Typography variant="caption">
+          <Alert severity="info" className="">
+            <div >
               Next MTR scheduled for{' '}
               {new Date(mtrSummary.nextScheduledMTR).toLocaleDateString()}
-            </Typography>
+            </div>
           </Alert>
         )}
-
         {/* Actions */}
         {showActions && (
-          <Stack direction="row" spacing={1}>
+          <div direction="row" spacing={1}>
             {mtrSummary.hasActiveMTR && mtrSummary.recentMTRs[0] ? (
               <Chip
                 size="small"
@@ -293,28 +241,25 @@ export const MTRStatusIndicator: React.FC<MTRStatusIndicatorProps> = ({
                 clickable
               />
             )}
-
             {mtrSummary.totalMTRSessions > 0 && (
               <Chip
                 size="small"
                 label="View History"
-                variant="outlined"
+                
                 icon={<MTRIcon />}
                 onClick={() => navigate(`/patients/${patientId}/mtr-history`)}
                 clickable
               />
             )}
-          </Stack>
+          </div>
         )}
-      </Stack>
-    </Box>
+      </div>
+    </div>
   );
 };
-
 // ===============================
 // MTR QUICK ACTIONS COMPONENT
 // ===============================
-
 interface MTRQuickActionsProps {
   patientId: string;
   mtrSummary?: PatientMTRSummary;
@@ -322,16 +267,14 @@ interface MTRQuickActionsProps {
   onViewMTR?: (mtrId: string) => void;
   onSyncData?: () => void;
 }
-
-export const MTRQuickActions: React.FC<MTRQuickActionsProps> = ({
+export const MTRQuickActions: React.FC<MTRQuickActionsProps> = ({ 
   patientId,
   mtrSummary,
   onStartMTR,
   onViewMTR,
-  onSyncData,
+  onSyncData
 }) => {
   const navigate = useNavigate();
-
   const handleStartMTR = () => {
     if (onStartMTR) {
       onStartMTR();
@@ -339,7 +282,6 @@ export const MTRQuickActions: React.FC<MTRQuickActionsProps> = ({
       navigate(`/mtr/new?patientId=${patientId}`);
     }
   };
-
   const handleViewMTR = (mtrId: string) => {
     if (onViewMTR) {
       onViewMTR(mtrId);
@@ -347,15 +289,13 @@ export const MTRQuickActions: React.FC<MTRQuickActionsProps> = ({
       navigate(`/mtr/${mtrId}`);
     }
   };
-
   const handleSyncData = () => {
     if (onSyncData) {
       onSyncData();
     }
   };
-
   return (
-    <Stack direction="row" spacing={1} flexWrap="wrap">
+    <div direction="row" spacing={1} flexWrap="wrap">
       {mtrSummary?.hasActiveMTR && mtrSummary.recentMTRs[0] ? (
         <>
           <Tooltip title="Continue active MTR session">
@@ -381,7 +321,6 @@ export const MTRQuickActions: React.FC<MTRQuickActionsProps> = ({
           </IconButton>
         </Tooltip>
       )}
-
       {mtrSummary && mtrSummary.totalMTRSessions > 0 && (
         <Tooltip title="View MTR history">
           <IconButton
@@ -392,8 +331,7 @@ export const MTRQuickActions: React.FC<MTRQuickActionsProps> = ({
           </IconButton>
         </Tooltip>
       )}
-    </Stack>
+    </div>
   );
 };
-
 export default MTRStatusIndicator;

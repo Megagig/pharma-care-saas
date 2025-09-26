@@ -1,103 +1,21 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-    Box,
-    Paper,
-    Typography,
-    Button,
-    IconButton,
-    Grid,
-    Card,
-    CardContent,
-    CardActions,
-    CardMedia,
-    Chip,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    List,
-    ListItem,
-    ListItemText,
-    ListItemIcon,
-    ListItemSecondaryAction,
-    Divider,
-    Menu,
-    MenuList,
-    MenuItem as MenuItemComponent,
-    Avatar,
-    Badge,
-    Tooltip,
-    Alert,
-    Snackbar,
-    Tabs,
-    Tab,
-    InputAdornment,
-    Fab,
-    SpeedDial,
-    SpeedDialAction,
-    SpeedDialIcon,
-    Breadcrumbs,
-    Link,
-    Stack,
-} from '@mui/material';
-import {
-    Add,
-    Edit,
-    Delete,
-    Share,
-    Download,
-    Upload,
-    ContentCopy,
-    Visibility,
-    MoreVert,
-    Search,
-    FilterList,
-    Sort,
-    ViewModule,
-    ViewList,
-    Star,
-    StarBorder,
-    Public,
-    Lock,
-    Person,
-    Group,
-    Schedule,
-    Assessment,
-    BarChart,
-    TableChart,
-    TextFields,
-    Image,
-    Folder,
-    FolderOpen,
-    NavigateNext,
-    Close,
-    CloudUpload,
-    GetApp,
-    FileCopy,
-} from '@mui/icons-material';
-import { useTemplatesStore } from '../../stores/templatesStore';
-import { ReportTemplate, TemplateCategory, TemplateShare } from '../../types/templates';
-import { formatDistanceToNow } from 'date-fns';
 import ReportTemplateBuilder from './ReportTemplateBuilder';
+
 import TemplatePreview from './TemplatePreview';
+
 import TemplateMarketplace from './TemplateMarketplace';
+
 import TemplateSharing from './TemplateSharing';
+
+import { Button, Input, Label, Card, CardContent, Select, Avatar, Tabs } from '@/components/ui/button';
 
 interface TemplateManagementProps {
     onTemplateSelect?: (template: ReportTemplate) => void;
 }
-
 type ViewMode = 'grid' | 'list';
 type SortBy = 'name' | 'created' | 'updated' | 'category' | 'usage';
 type FilterBy = 'all' | 'my-templates' | 'shared' | 'public' | 'favorites';
-
-export const TemplateManagement: React.FC<TemplateManagementProps> = ({
-    onTemplateSelect,
+export const TemplateManagement: React.FC<TemplateManagementProps> = ({ 
+    onTemplateSelect
 }) => {
     const {
         templates,
@@ -112,7 +30,6 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
         getFeaturedTemplates,
         getTemplatesByCategory,
     } = useTemplatesStore();
-
     // UI State
     const [activeTab, setActiveTab] = useState(0);
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -120,7 +37,6 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
     const [filterBy, setFilterBy] = useState<FilterBy>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
-
     // Dialog states
     const [builderOpen, setBuilderOpen] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
@@ -128,23 +44,20 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
     const [sharingOpen, setSharingOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [importDialogOpen, setImportDialogOpen] = useState(false);
-
     // Menu states
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [menuTemplate, setMenuTemplate] = useState<ReportTemplate | null>(null);
-
     // Other states
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
         message: string;
         severity: 'success' | 'error' | 'warning' | 'info';
-    }>({
+    }>({ 
         open: false,
         message: '',
-        severity: 'info',
+        severity: 'info'}
     });
-
     // Load favorites from localStorage
     useEffect(() => {
         const savedFavorites = localStorage.getItem('template-favorites');
@@ -152,17 +65,14 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
             setFavorites(new Set(JSON.parse(savedFavorites)));
         }
     }, []);
-
     // Save favorites to localStorage
     const saveFavorites = useCallback((newFavorites: Set<string>) => {
         setFavorites(newFavorites);
         localStorage.setItem('template-favorites', JSON.stringify(Array.from(newFavorites)));
     }, []);
-
     // Filter and sort templates
     const filteredTemplates = React.useMemo(() => {
         let result = Object.values(templates);
-
         // Apply filter
         switch (filterBy) {
             case 'my-templates':
@@ -178,12 +88,10 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
                 result = result.filter(t => favorites.has(t.id));
                 break;
         }
-
         // Apply category filter
         if (selectedCategory !== 'all') {
             result = result.filter(t => t.metadata.category === selectedCategory);
         }
-
         // Apply search
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
@@ -193,7 +101,6 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
                 t.metadata.tags.some(tag => tag.toLowerCase().includes(query))
             );
         }
-
         // Apply sort
         result.sort((a, b) => {
             switch (sortBy) {
@@ -212,33 +119,27 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
                     return 0;
             }
         });
-
         return result;
     }, [templates, filterBy, selectedCategory, searchQuery, sortBy, getUserTemplates, getPublicTemplates, favorites]);
-
     // Handle template actions
     const handleTemplateEdit = useCallback((template: ReportTemplate) => {
         setSelectedTemplate(template.id);
         setBuilderOpen(true);
     }, [setSelectedTemplate]);
-
     const handleTemplatePreview = useCallback((template: ReportTemplate) => {
         setSelectedTemplate(template.id);
         setPreviewOpen(true);
     }, [setSelectedTemplate]);
-
     const handleTemplateDelete = useCallback((template: ReportTemplate) => {
         setMenuTemplate(template);
         setDeleteDialogOpen(true);
         setAnchorEl(null);
     }, []);
-
     const handleTemplateShare = useCallback((template: ReportTemplate) => {
         setSelectedTemplate(template.id);
         setSharingOpen(true);
         setAnchorEl(null);
     }, [setSelectedTemplate]);
-
     const handleTemplateDuplicate = useCallback((template: ReportTemplate) => {
         const duplicatedTemplate: ReportTemplate = {
             ...template,
@@ -249,17 +150,14 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
             createdBy: 'current-user', // TODO: Get from auth context
             isPublic: false,
         };
-
         addTemplate(duplicatedTemplate);
         setAnchorEl(null);
-
-        setSnackbar({
+        setSnackbar({ 
             open: true,
             message: 'Template duplicated successfully',
-            severity: 'success',
+            severity: 'success'}
         });
     }, [addTemplate]);
-
     const handleFavoriteToggle = useCallback((templateId: string) => {
         const newFavorites = new Set(favorites);
         if (newFavorites.has(templateId)) {
@@ -269,124 +167,80 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
         }
         saveFavorites(newFavorites);
     }, [favorites, saveFavorites]);
-
     const confirmDelete = useCallback(() => {
         if (menuTemplate) {
             removeTemplate(menuTemplate.id);
             setDeleteDialogOpen(false);
             setMenuTemplate(null);
-
-            setSnackbar({
+            setSnackbar({ 
                 open: true,
                 message: 'Template deleted successfully',
-                severity: 'success',
+                severity: 'success'}
             });
         }
     }, [menuTemplate, removeTemplate]);
-
     const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>, template: ReportTemplate) => {
         event.stopPropagation();
         setAnchorEl(event.currentTarget);
         setMenuTemplate(template);
     }, []);
-
     const handleMenuClose = useCallback(() => {
         setAnchorEl(null);
         setMenuTemplate(null);
     }, []);
-
     const renderTemplateCard = useCallback((template: ReportTemplate) => (
         <Card
             key={template.id}
-            sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                cursor: 'pointer',
-                '&:hover': {
-                    boxShadow: 4,
-                    transform: 'translateY(-2px)',
-                },
+            className=""
                 transition: 'all 0.2s ease',
-            }}
             onClick={() => onTemplateSelect?.(template)}
         >
             <CardMedia
-                sx={{
-                    height: 120,
-                    backgroundColor: 'primary.light',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                }}
+                className=""
             >
-                <Assessment sx={{ fontSize: 48, color: 'white' }} />
+                <Assessment className="" />
                 <IconButton
-                    sx={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                        '&:hover': {
-                            backgroundColor: 'white',
-                        },
-                    }}
-                    size="small"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleFavoriteToggle(template.id);
-                    }}
-                >
+                    className="" size="small"
+                    >
                     {favorites.has(template.id) ? (
-                        <Star sx={{ color: 'warning.main' }} />
+                        <Star className="" />
                     ) : (
                         <StarBorder />
                     )}
                 </IconButton>
             </CardMedia>
-
-            <CardContent sx={{ flexGrow: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
-                    <Typography variant="h6" sx={{ flexGrow: 1, lineHeight: 1.2 }}>
+            <CardContent className="">
+                <div className="">
+                    <div  className="">
                         {template.name}
-                    </Typography>
+                    </div>
                     <IconButton
                         size="small"
                         onClick={(e) => handleMenuOpen(e, template)}
                     >
                         <MoreVert />
                     </IconButton>
-                </Box>
-
-                <Typography
-                    variant="body2"
+                </div>
+                <div
+                    
                     color="text.secondary"
-                    sx={{
-                        mb: 2,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                    }}
+                    className=""
                 >
                     {template.description || 'No description available'}
-                </Typography>
-
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
+                </div>
+                <div className="">
                     <Chip
                         label={template.metadata.category}
                         size="small"
                         color="primary"
-                        variant="outlined"
+                        
                     />
                     {template.isPublic && (
                         <Chip
                             label="Public"
                             size="small"
                             color="success"
-                            variant="outlined"
+                            
                             icon={<Public />}
                         />
                     )}
@@ -395,110 +249,86 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
                             key={tag}
                             label={tag}
                             size="small"
-                            variant="outlined"
+                            
                         />
                     ))}
-                </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Avatar sx={{ width: 24, height: 24, mr: 1 }}>
-                            <Person sx={{ fontSize: 16 }} />
+                </div>
+                <div className="">
+                    <div className="">
+                        <Avatar className="">
+                            <Person className="" />
                         </Avatar>
-                        <Typography variant="caption" color="text.secondary">
+                        <div  color="text.secondary">
                             {template.createdBy}
-                        </Typography>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
+                        </div>
+                    </div>
+                    <div  color="text.secondary">
                         {formatDistanceToNow(new Date(template.updatedAt), { addSuffix: true })}
-                    </Typography>
-                </Box>
+                    </div>
+                </div>
             </CardContent>
-
             <CardActions>
                 <Button
                     size="small"
                     startIcon={<Visibility />}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleTemplatePreview(template);
-                    }}
-                >
+                    >
                     Preview
                 </Button>
                 <Button
                     size="small"
                     startIcon={<Edit />}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleTemplateEdit(template);
-                    }}
-                >
+                    >
                     Edit
                 </Button>
             </CardActions>
         </Card>
     ), [onTemplateSelect, favorites, handleFavoriteToggle, handleMenuOpen, handleTemplatePreview, handleTemplateEdit]);
-
     const renderTemplateList = useCallback((template: ReportTemplate) => (
-        <ListItem
+        <div
             key={template.id}
             button
             onClick={() => onTemplateSelect?.(template)}
-            sx={{
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: 1,
-                mb: 1,
-                '&:hover': {
-                    backgroundColor: 'action.hover',
-                },
-            }}
-        >
-            <ListItemIcon>
+            className="">
+            <div>
                 <Assessment />
-            </ListItemIcon>
-            <ListItemText
+            </div>
+            <div
                 primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle1">{template.name}</Typography>
+                    <div className="">}
+                        <div >{template.name}</div>
                         <Chip
                             label={template.metadata.category}
                             size="small"
                             color="primary"
-                            variant="outlined"
+                            
                         />
                         {template.isPublic && (
                             <Chip
                                 label="Public"
                                 size="small"
                                 color="success"
-                                variant="outlined"
+                                
                                 icon={<Public />}
                             />
                         )}
-                    </Box>
+                    </div>
                 }
                 secondary={
-                    <Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    <div>
+                        <div  color="text.secondary" className="">}
                             {template.description || 'No description available'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                             Created by {template.createdBy} • {formatDistanceToNow(new Date(template.updatedAt), { addSuffix: true })}
-                        </Typography>
-                    </Box>
+                        </div>
+                    </div>
                 }
             />
-            <ListItemSecondaryAction>
+            <divSecondaryAction>
                 <IconButton
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleFavoriteToggle(template.id);
-                    }}
-                >
+                    >
                     {favorites.has(template.id) ? (
-                        <Star sx={{ color: 'warning.main' }} />
+                        <Star className="" />
                     ) : (
                         <StarBorder />
                     )}
@@ -507,52 +337,43 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
                     <MoreVert />
                 </IconButton>
             </ListItemSecondaryAction>
-        </ListItem>
+        </div>
     ), [onTemplateSelect, favorites, handleFavoriteToggle, handleMenuOpen]);
-
     return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div className="">
             {/* Header */}
-            <Paper sx={{ p: 2, mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                    <Typography variant="h5">Template Management</Typography>
+            <div className="">
+                <div className="">
+                    <div >Template Management</div>
                     <Button
-                        variant="contained"
+                        
                         startIcon={<Add />}
                         onClick={() => setBuilderOpen(true)}
                     >
                         Create Template
                     </Button>
-                </Box>
-
+                </div>
                 <Tabs value={activeTab} onChange={(_, value) => setActiveTab(value)}>
                     <Tab label="My Templates" />
                     <Tab label="Shared Templates" />
                     <Tab label="Marketplace" />
                 </Tabs>
-            </Paper>
-
+            </div>
             {/* Filters and Search */}
-            <Paper sx={{ p: 2, mb: 2 }}>
-                <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} md={4}>
-                        <TextField
+            <div className="">
+                <div container spacing={2} alignItems="center">
+                    <div item xs={12} md={4}>
+                        <Input
                             fullWidth
                             placeholder="Search templates..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <Search />
-                                    </InputAdornment>
-                                ),
-                            }}
+                            
                         />
-                    </Grid>
-                    <Grid item xs={6} md={2}>
-                        <FormControl fullWidth>
-                            <InputLabel>Filter</InputLabel>
+                    </div>
+                    <div item xs={6} md={2}>
+                        <div fullWidth>
+                            <Label>Filter</Label>
                             <Select
                                 value={filterBy}
                                 onChange={(e) => setFilterBy(e.target.value as FilterBy)}
@@ -563,11 +384,11 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
                                 <MenuItem value="public">Public</MenuItem>
                                 <MenuItem value="favorites">Favorites</MenuItem>
                             </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={6} md={2}>
-                        <FormControl fullWidth>
-                            <InputLabel>Category</InputLabel>
+                        </div>
+                    </div>
+                    <div item xs={6} md={2}>
+                        <div fullWidth>
+                            <Label>Category</Label>
                             <Select
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
@@ -582,11 +403,11 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
                                 <MenuItem value="operational-efficiency">Operational Efficiency</MenuItem>
                                 <MenuItem value="custom">Custom</MenuItem>
                             </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={6} md={2}>
-                        <FormControl fullWidth>
-                            <InputLabel>Sort by</InputLabel>
+                        </div>
+                    </div>
+                    <div item xs={6} md={2}>
+                        <div fullWidth>
+                            <Label>Sort by</Label>
                             <Select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value as SortBy)}
@@ -597,10 +418,10 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
                                 <MenuItem value="category">Category</MenuItem>
                                 <MenuItem value="usage">Usage</MenuItem>
                             </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid item xs={6} md={2}>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
+                        </div>
+                    </div>
+                    <div item xs={6} md={2}>
+                        <div className="">
                             <IconButton
                                 onClick={() => setViewMode('grid')}
                                 color={viewMode === 'grid' ? 'primary' : 'default'}
@@ -613,43 +434,42 @@ export const TemplateManagement: React.FC<TemplateManagementProps> = ({
                             >
                                 <ViewList />
                             </IconButton>
-                        </Box>
-                    </Grid>
-                </Grid>
-            </Paper>
-
+                        </div>
+                    </div>
+                </div>
+            </div>
             {/* Content */}
-            <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+            <div className="">
                 {activeTab === 0 && (
-                    <Box>
+                    <div>
                         {filteredTemplates.length === 0 ? (
-                            <Paper sx={{ p: 4, textAlign: 'center' }}>
-                                <Assessment sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                                <Typography variant="h6" gutterBottom>
+                            <div className="">
+                                <Assessment className="" />
+                                <div  gutterBottom>
                                     No templates found
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                </div>
+                                <div  color="text.secondary" className="">
                                     {searchQuery || filterBy !== 'all' || selectedCategory !== 'all'
                                         ? 'Try adjusting your search or filters'
                                         : 'Create your first template to get started'
                                     }
-                                </Typography>
+                                </div>
                                 <Button
-                                    variant="contained"
+                                    
                                     startIcon={<Add />}
                                     onClick={() => setBuilderOpen(true)}
                                 >
                                     Create Template
                                 </Button>
-                            </Paper>
+                            </div>
                         ) : viewMode === 'grid' ? (
-                            <Grid container spacing={2}>
+                            <div container spacing={2}>
                                 {filteredTemplates.map(template => (
-                                    <Grid item xs={12} sm={6} md={4} lg={3} key={template.id}>
+                                    <div item xs={12} sm={6} md={4} lg={3} key={template.id}>
                                         {renderTemplateCard(template)}
-                                    </Grid>
+                                    </div>
                                 ))}
-                            </Grid>
+                            </div>
                         ) : (
                             <List>
                                 {filteredTemplates.map(renderTemplateList)}

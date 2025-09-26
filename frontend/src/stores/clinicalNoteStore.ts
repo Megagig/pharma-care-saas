@@ -12,4 +12,4 @@ export {
 } from './enhancedClinicalNoteStore';
 
 // For backward compatibility, also export as default
-export { default } from './enhancedClinicalNoteStore';
+export { useEnhancedClinicalNoteStore as default } from './enhancedClinicalNoteStore';

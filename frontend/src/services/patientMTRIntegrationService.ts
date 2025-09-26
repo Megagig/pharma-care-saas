@@ -1,16 +1,11 @@
-import { apiHelpers } from './api';
-import { mtrService } from './mtrService';
-import type {
     Patient,
     MedicationRecord,
     DrugTherapyProblem as PatientDTP,
     ApiResponse,
-} from '../types/patientManagement';
-import type {
+
     MedicationTherapyReview,
     MTRMedicationEntry,
     DrugTherapyProblem as MTRDTP,
-} from '../types/mtr';
 
 // ===============================
 // PATIENT-MTR INTEGRATION SERVICE
@@ -180,8 +175,7 @@ export const patientMTRIntegrationService = {
             const response = await apiHelpers.post<{
                 medications: MTRMedicationEntry[];
             }>(`/patients/${patientId}/mtr/${mtrId}/import-medications`, {
-                medicationIds,
-            });
+                medicationIds}
 
             return response.data.data.medications;
         } catch (error) {
@@ -202,8 +196,7 @@ export const patientMTRIntegrationService = {
             const response = await apiHelpers.post<{
                 medications: MedicationRecord[];
             }>(`/patients/${patientId}/mtr/${mtrId}/export-medications`, {
-                medications,
-            });
+                medications}
 
             return response.data.data.medications;
         } catch (error) {
@@ -379,8 +372,7 @@ export const patientMTRIntegrationService = {
             const response = await apiHelpers.post<{
                 patientMTRStatus: Record<string, PatientMTRSummary>;
             }>('/patients/bulk/mtr-status', {
-                patientIds,
-            });
+                patientIds}
 
             return response.data.data.patientMTRStatus;
         } catch (error) {
@@ -402,8 +394,7 @@ export const patientMTRIntegrationService = {
     ): Promise<ApiResponse> {
         try {
             const response = await apiHelpers.put('/patients/bulk/mtr-status', {
-                updates,
-            });
+                updates}
 
             return response.data;
         } catch (error) {

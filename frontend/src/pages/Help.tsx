@@ -1,68 +1,265 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  Box,
-  Container,
-  Typography,
-  Paper,
-  Card,
-  CardContent,
-  CardHeader,
-  Divider,
-  Alert,
-  Breadcrumbs,
-  Link,
-  Tabs,
-  Tab,
-  Button,
-  TextField,
-  InputAdornment,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Chip,
-  IconButton,
-  useTheme,
-  useMediaQuery,
-  Fab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Rating,
-  Badge,
-} from '@mui/material';
-import HelpIcon from '@mui/icons-material/Help';
-import SearchIcon from '@mui/icons-material/Search';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import PlayIcon from '@mui/icons-material/PlayArrow';
-import ArticleIcon from '@mui/icons-material/Article';
-import VideoIcon from '@mui/icons-material/VideoLibrary';
-import ChatIcon from '@mui/icons-material/Chat';
-import EmailIcon from '@mui/icons-material/Email';
-import PhoneIcon from '@mui/icons-material/Phone';
-import BugReportIcon from '@mui/icons-material/BugReport';
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
-import SchoolIcon from '@mui/icons-material/School';
-import SupportIcon from '@mui/icons-material/Support';
-import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';
-import GetAppIcon from '@mui/icons-material/GetApp';
+  MessageCircle as QuestionAnswerIcon,
+  Book as BookIcon,
+  Video as VideoIcon,
+  Headphones as SupportIcon,
+  HelpCircle as HelpIcon,
+  GraduationCap as SchoolIcon,
+  Users as GroupIcon,
+  BarChart3 as AssessmentIcon,
+  CreditCard as PaymentIcon,
+  Shield as SecurityIcon,
+  Settings as SettingsIcon,
+  Code as ApiIcon,
+  ChevronDown as ExpandMoreIcon,
+  ThumbsUp as ThumbUpIcon,
+  ThumbsDown as ThumbDownIcon,
+  Search as SearchIcon,
+  FileText as ArticleIcon,
+  Play as PlayIcon,
+  MessageSquare as ChatIcon,
+  Mail as EmailIcon,
+  Phone as PhoneIcon,
+  Bug as BugReportIcon,
+  Lightbulb as LightbulbIcon,
+  Download as GetAppIcon,
+  MessageSquare as FeedbackIcon,
+} from 'lucide-react';
 
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import FeedbackIcon from '@mui/icons-material/Feedback';
-import BookIcon from '@mui/icons-material/Book';
-import SettingsIcon from '@mui/icons-material/Settings';
-import SecurityIcon from '@mui/icons-material/Security';
-import PaymentIcon from '@mui/icons-material/Payment';
-import GroupIcon from '@mui/icons-material/Group';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import ApiIcon from '@mui/icons-material/Api';
-import { Link as RouterLink } from 'react-router-dom';
-// import { useAuth } from '../hooks/useAuth';
+// Mock components for now
+const MockButton = ({ children, ...props }: any) => (
+  <button {...props} className={`px-3 py-1 rounded-md ${props.className || ''}`}>
+    {children}
+  </button>
+);
+
+const MockInput = ({ ...props }: any) => (
+  <input {...props} className={`w-full px-3 py-2 border border-gray-300 rounded-md ${props.className || ''}`} />
+);
+
+const MockCard = ({ children, ...props }: any) => (
+  <div {...props} className={`bg-white dark:bg-gray-800 rounded-lg shadow ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockCardContent = ({ children, ...props }: any) => (
+  <div {...props} className={`p-6 ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockCardHeader = ({ children, ...props }: any) => (
+  <div {...props} className={`border-b px-6 py-4 ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockCardTitle = ({ children, ...props }: any) => (
+  <h3 {...props} className={`text-lg font-semibold ${props.className || ''}`}>
+    {children}
+  </h3>
+);
+
+const MockBadge = ({ children, ...props }: any) => (
+  <span {...props} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${props.className || ''}`}>
+    {children}
+  </span>
+);
+
+const MockDialog = ({ children, open, ...props }: any) => (
+  open ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+        {children}
+      </div>
+    </div>
+  ) : null
+);
+
+const MockDialogContent = ({ children, ...props }: any) => (
+  <div {...props} className="p-6">
+    {children}
+  </div>
+);
+
+const MockDialogTitle = ({ children, ...props }: any) => (
+  <h3 {...props} className="text-lg font-semibold border-b pb-4">
+    {children}
+  </h3>
+);
+
+const MockAlert = ({ children, ...props }: any) => (
+  <div {...props} className={`p-4 rounded-md ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockAccordion = ({ children, ...props }: any) => (
+  <div {...props} className="border rounded-md">
+    {children}
+  </div>
+);
+
+const MockAccordionSummary = ({ children, expandIcon, ...props }: any) => (
+  <div {...props} className="flex justify-between items-center p-4 cursor-pointer">
+    {children}
+    {expandIcon}
+  </div>
+);
+
+const MockAccordionDetails = ({ children, ...props }: any) => (
+  <div {...props} className="p-4 border-t">
+    {children}
+  </div>
+);
+
+const MockTabs = ({ children, value, onChange, ...props }: any) => (
+  <div {...props}>
+    {children}
+  </div>
+);
+
+const MockTab = ({ children, ...props }: any) => (
+  <button {...props} className="px-4 py-2">
+    {children}
+  </button>
+);
+
+const MockSeparator = ({ ...props }: any) => (
+  <hr {...props} className="border-gray-200 dark:border-gray-700" />
+);
+
+const MockFab = ({ children, ...props }: any) => (
+  <button {...props} className={`fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-600 text-white shadow-lg ${props.className || ''}`}>
+    {children}
+  </button>
+);
+
+const MockRating = ({ value, onChange, ...props }: any) => (
+  <div {...props}>
+    {[1, 2, 3, 4, 5].map((star) => (
+      <button
+        key={star}
+        type="button"
+        onClick={() => onChange && onChange(null, star)}
+        className={`text-2xl ${star <= value ? 'text-yellow-400' : 'text-gray-300'}`}
+      >
+        ★
+      </button>
+    ))}
+  </div>
+);
+
+const MockList = ({ children, ...props }: any) => (
+  <div {...props} className="divide-y divide-gray-200 dark:divide-gray-700">
+    {children}
+  </div>
+);
+
+const MockListItem = ({ children, ...props }: any) => (
+  <div {...props} className="p-4">
+    {children}
+  </div>
+);
+
+const MockListItemText = ({ primary, secondary, ...props }: any) => (
+  <div {...props}>
+    <div className="font-medium">{primary}</div>
+    <div className="text-sm text-gray-500 dark:text-gray-400">{secondary}</div>
+  </div>
+);
+
+const MockListItemIcon = ({ children, ...props }: any) => (
+  <div {...props} className="mr-4">
+    {children}
+  </div>
+);
+
+const MockListItemSecondaryAction = ({ children, ...props }: any) => (
+  <div {...props} className="ml-auto">
+    {children}
+  </div>
+);
+
+const MockBreadcrumbs = ({ children, ...props }: any) => (
+  <div {...props} className="flex items-center space-x-2 text-sm">
+    {children}
+  </div>
+);
+
+const MockChip = ({ label, ...props }: any) => (
+  <span {...props} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 ${props.className || ''}`}>
+    {label}
+  </span>
+);
+
+const MockDialogActions = ({ children, ...props }: any) => (
+  <div {...props} className="flex justify-end space-x-2 mt-4">
+    {children}
+  </div>
+);
+
+const MockTypography = ({ children, ...props }: any) => {
+  const variant = props.variant || 'body1';
+  const component = props.component || 'p';
+
+  const getClasses = () => {
+    switch (variant) {
+      case 'h1': return 'text-2xl font-bold';
+      case 'h2': return 'text-xl font-bold';
+      case 'h3': return 'text-lg font-bold';
+      case 'h4': return 'text-md font-bold';
+      case 'h5': return 'text-sm font-bold';
+      case 'h6': return 'text-xs font-bold';
+      case 'subtitle1': return 'text-lg';
+      case 'subtitle2': return 'text-md';
+      case 'body1': return 'text-base';
+      case 'body2': return 'text-sm';
+      case 'caption': return 'text-xs';
+      default: return 'text-base';
+    }
+  };
+
+  const Component = component;
+  return (
+    <Component {...props} className={`${getClasses()} ${props.color === 'textSecondary' ? 'text-gray-500 dark:text-gray-400' : ''} ${props.className || ''}`}>
+      {children}
+    </Component>
+  );
+};
+
+// Replace imports with mock components
+const Button = MockButton;
+const Input = MockInput;
+const Card = MockCard;
+const CardContent = MockCardContent;
+const CardHeader = MockCardHeader;
+const CardTitle = MockCardTitle;
+const Badge = MockBadge;
+const Dialog = MockDialog;
+const DialogContent = MockDialogContent;
+const DialogTitle = MockDialogTitle;
+const Alert = MockAlert;
+const Accordion = MockAccordion;
+const AccordionSummary = MockAccordionSummary;
+const AccordionDetails = MockAccordionDetails;
+const Tabs = MockTabs;
+const Tab = MockTab;
+const Separator = MockSeparator;
+const Fab = MockFab;
+const Rating = MockRating;
+const List = MockList;
+const ListItem = MockListItem;
+const ListItemText = MockListItemText;
+const ListItemIcon = MockListItemIcon;
+const ListItemSecondaryAction = MockListItemSecondaryAction;
+const Breadcrumbs = MockBreadcrumbs;
+const Chip = MockChip;
+const DialogActions = MockDialogActions;
+const Typography = MockTypography;
 
 interface FAQ {
   id: string;
@@ -95,9 +292,6 @@ interface VideoTutorial {
 }
 
 const Help: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  // const { user } = useAuth(); // Commented out as user is not used
   const [activeTab, setActiveTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -291,36 +485,23 @@ const Help: React.FC = () => {
   };
 
   const renderFAQTab = () => (
-    <Box>
+    <div>
       {/* Search and Filter */}
-      <Card sx={{ mb: 4 }}>
+      <Card className="mb-6">
         <CardContent>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            <Box sx={{ flex: '2 1 400px', minWidth: '300px' }}>
-              <TextField
-                fullWidth
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Input
                 placeholder="Search FAQs..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
               />
-            </Box>
-            <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-              <TextField
-                fullWidth
-                select
-                label="Category"
+            </div>
+            <div>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                SelectProps={{
-                  native: true,
-                }}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedCategory(e.target.value)}
               >
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
@@ -328,295 +509,218 @@ const Help: React.FC = () => {
                     {category.count > 0 && `(${category.count})`}
                   </option>
                 ))}
-              </TextField>
-            </Box>
-          </Box>
+              </select>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       {/* Popular FAQs */}
-      <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
+      <Typography variant="h6" className="mb-4">
         Popular Questions
       </Typography>
 
       {filteredFAQs.map((faq) => (
-        <Accordion key={faq.id} sx={{ mb: 2 }}>
+        <Accordion key={faq.id} className="mb-2">
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls={`faq-${faq.id}-content`}
             id={`faq-${faq.id}-header`}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-              <Typography variant="subtitle1" sx={{ flex: 1 }}>
+            <div className="w-full">
+              <Typography variant="subtitle1" className="font-medium">
                 {faq.question}
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
+              <div className="flex flex-wrap gap-1 mt-1">
                 {faq.tags.slice(0, 2).map((tag) => (
-                  <Chip key={tag} label={tag} size="sm" variant="outlined" />
+                  <Chip key={tag} label={tag} size="sm" />
                 ))}
-              </Box>
-            </Box>
+              </div>
+            </div>
           </AccordionSummary>
           <AccordionDetails>
             <Typography variant="body1" paragraph>
               {faq.answer}
             </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography variant="caption" color="text.secondary">
+            <Separator className="my-2" />
+            <div className="flex justify-between items-center">
+              <Typography variant="body2" color="textSecondary">
                 Was this helpful?
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <div className="flex gap-2">
                 <Button
+                  variant="ghost"
                   size="sm"
                   startIcon={<ThumbUpIcon />}
-                  variant="outlined"
-                  sx={{ minWidth: 'auto' }}
+                  className="flex items-center gap-1"
                 >
                   {faq.helpful}
                 </Button>
                 <Button
+                  variant="ghost"
                   size="sm"
                   startIcon={<ThumbDownIcon />}
-                  variant="outlined"
-                  sx={{ minWidth: 'auto' }}
+                  className="flex items-center gap-1"
                 >
                   {faq.notHelpful}
                 </Button>
-              </Box>
-            </Box>
+              </div>
+            </div>
           </AccordionDetails>
         </Accordion>
       ))}
 
       {filteredFAQs.length === 0 && (
         <Card>
-          <CardContent sx={{ textAlign: 'center', py: 8 }}>
-            <SearchIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
+          <CardContent className="text-center py-8">
+            <SearchIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <Typography variant="h6" color="textSecondary" gutterBottom>
               No FAQs found
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="textSecondary">
               Try adjusting your search terms or category filter
             </Typography>
           </CardContent>
         </Card>
       )}
-    </Box>
+    </div>
   );
 
   const renderGuidesTab = () => (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {helpArticles.map((article) => (
-        <Box sx={{ flex: '1 1 300px', minWidth: '300px' }} key={article.id}>
-          <Card
-            sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-          >
-            <CardHeader
-              title={
-                <Typography variant="h6" component="div" noWrap>
-                  {article.title}
-                </Typography>
-              }
-              subheader={
-                <Box
-                  sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}
-                >
-                  <Chip
-                    label={article.difficulty}
-                    size="sm"
-                    color={
-                      article.difficulty === 'beginner'
-                        ? 'success'
-                        : article.difficulty === 'intermediate'
-                        ? 'warning'
-                        : 'error'
-                    }
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {article.readTime} min read
-                  </Typography>
-                </Box>
-              }
-              avatar={<ArticleIcon />}
-            />
-            <CardContent sx={{ flex: 1 }}>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                {article.description}
+        <Card key={article.id} className="h-full">
+          <CardHeader
+            title={
+              <Typography variant="h6" component="div" noWrap>
+                {article.title}
               </Typography>
-            </CardContent>
-            <Box sx={{ p: 2, pt: 0 }}>
-              <Button variant="contained" fullWidth startIcon={<PlayIcon />}>
-                Read Guide
-              </Button>
-            </Box>
-          </Card>
-        </Box>
+            }
+            subheader={
+              <div className="flex items-center gap-2">
+                <Chip
+                  label={article.difficulty}
+                  size="sm"
+                  className={
+                    article.difficulty === 'beginner'
+                      ? 'bg-green-100 text-green-800'
+                      : article.difficulty === 'intermediate'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                  }
+                />
+                <Typography variant="body2" color="textSecondary">
+                  {article.readTime} min read
+                </Typography>
+              </div>
+            }
+            avatar={<ArticleIcon />}
+          />
+          <CardContent>
+            <Typography variant="body2" color="textSecondary" paragraph>
+              {article.description}
+            </Typography>
+          </CardContent>
+          <div className="p-4 pt-0">
+            <Button fullWidth startIcon={<PlayIcon />}>
+              Read Guide
+            </Button>
+          </div>
+        </Card>
       ))}
-    </Box>
+    </div>
   );
 
   const renderVideosTab = () => (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {videoTutorials.map((video) => (
-        <Box sx={{ flex: '1 1 300px', minWidth: '300px' }} key={video.id}>
-          <Card
-            sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-          >
-            <Box
-              sx={{
-                height: 200,
-                bgcolor: 'grey.200',
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+        <Card key={video.id} className="h-full">
+          <div className="relative h-40 bg-gray-200 rounded-t-lg">
+            <Button
+              className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-white bg-opacity-80 flex items-center justify-center"
             >
-              <IconButton
-                sx={{
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'primary.dark' },
-                  width: 64,
-                  height: 64,
-                }}
-              >
-                <PlayIcon sx={{ fontSize: 32 }} />
-              </IconButton>
-              <Chip
-                label={video.duration}
-                size="sm"
-                sx={{
-                  position: 'absolute',
-                  bottom: 8,
-                  right: 8,
-                  bgcolor: 'rgba(0, 0, 0, 0.7)',
-                  color: 'white',
-                }}
-              />
-            </Box>
-            <CardContent sx={{ flex: 1 }}>
-              <Typography variant="h6" gutterBottom noWrap>
-                {video.title}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                {video.description}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {video.views.toLocaleString()} views
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
+              <PlayIcon className="h-6 w-6 text-blue-600" />
+            </Button>
+            <Chip
+              label={video.duration}
+              size="sm"
+              className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white"
+            />
+          </div>
+          <CardContent>
+            <Typography variant="h6" gutterBottom noWrap>
+              {video.title}
+            </Typography>
+            <Typography variant="body2" color="textSecondary" paragraph>
+              {video.description}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              {video.views.toLocaleString()} views
+            </Typography>
+          </CardContent>
+        </Card>
       ))}
-    </Box>
+    </div>
   );
 
   const renderContactTab = () => (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-      <Box sx={{ flex: '1 1 300px', minWidth: '300px' }}>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
         <Card>
           <CardHeader title="Contact Options" avatar={<SupportIcon />} />
-          <Divider />
+          <Separator />
           <CardContent>
             <List>
               <ListItem
-                sx={{
-                  border: 1,
-                  borderColor: 'divider',
-                  borderRadius: 2,
-                  mb: 2,
-                  cursor: 'pointer',
-                  '&:hover': { bgcolor: 'action.hover' },
-                }}
+                button
                 onClick={() => setShowContactDialog(true)}
+                className="cursor-pointer"
               >
                 <ListItemIcon>
-                  <ChatIcon color="primary" />
+                  <ChatIcon className="text-blue-600" />
                 </ListItemIcon>
                 <ListItemText
                   primary="Live Chat"
                   secondary="Chat with our support team (Mon-Fri, 9AM-6PM WAT)"
                 />
-                <Badge badgeContent="Online" color="success" />
+                <ListItemSecondaryAction>
+                  <Badge className="bg-green-100 text-green-800">Online</Badge>
+                </ListItemSecondaryAction>
               </ListItem>
-
-              <ListItem
-                sx={{
-                  border: 1,
-                  borderColor: 'divider',
-                  borderRadius: 2,
-                  mb: 2,
-                  cursor: 'pointer',
-                  '&:hover': { bgcolor: 'action.hover' },
-                }}
-              >
+              <ListItem button>
                 <ListItemIcon>
-                  <EmailIcon color="primary" />
+                  <EmailIcon className="text-blue-600" />
                 </ListItemIcon>
                 <ListItemText
                   primary="Email Support"
                   secondary="support@pharmacare.ng - We typically respond within 24 hours"
                 />
               </ListItem>
-
-              <ListItem
-                sx={{
-                  border: 1,
-                  borderColor: 'divider',
-                  borderRadius: 2,
-                  mb: 2,
-                  cursor: 'pointer',
-                  '&:hover': { bgcolor: 'action.hover' },
-                }}
-              >
+              <ListItem button>
                 <ListItemIcon>
-                  <PhoneIcon color="primary" />
+                  <PhoneIcon className="text-blue-600" />
                 </ListItemIcon>
                 <ListItemText
                   primary="Phone Support"
                   secondary="+234 1 234 5678 (Business hours only)"
                 />
               </ListItem>
-
-              <ListItem
-                sx={{
-                  border: 1,
-                  borderColor: 'divider',
-                  borderRadius: 2,
-                  mb: 2,
-                  cursor: 'pointer',
-                  '&:hover': { bgcolor: 'action.hover' },
-                }}
-              >
+              <ListItem button>
                 <ListItemIcon>
-                  <BugReportIcon color="error" />
+                  <BugReportIcon className="text-red-600" />
                 </ListItemIcon>
                 <ListItemText
                   primary="Report a Bug"
                   secondary="Help us improve by reporting issues you encounter"
                 />
               </ListItem>
-
               <ListItem
-                sx={{
-                  border: 1,
-                  borderColor: 'divider',
-                  borderRadius: 2,
-                  cursor: 'pointer',
-                  '&:hover': { bgcolor: 'action.hover' },
-                }}
+                button
                 onClick={() => setShowFeedbackDialog(true)}
+                className="cursor-pointer"
               >
                 <ListItemIcon>
-                  <LightbulbIcon color="warning" />
+                  <LightbulbIcon className="text-yellow-600" />
                 </ListItemIcon>
                 <ListItemText
                   primary="Feature Request"
@@ -626,12 +730,11 @@ const Help: React.FC = () => {
             </List>
           </CardContent>
         </Card>
-      </Box>
-
-      <Box sx={{ flex: '1 1 300px', minWidth: '300px' }}>
+      </div>
+      <div className="space-y-6">
         <Card>
           <CardHeader title="Quick Resources" avatar={<GetAppIcon />} />
-          <Divider />
+          <Separator />
           <CardContent>
             <List>
               <ListItem>
@@ -642,11 +745,10 @@ const Help: React.FC = () => {
                   primary="User Manual"
                   secondary="Complete documentation for all features"
                 />
-                <Button variant="outlined" size="sm">
-                  Download
-                </Button>
+                <ListItemSecondaryAction>
+                  <Button size="sm">Download</Button>
+                </ListItemSecondaryAction>
               </ListItem>
-
               <ListItem>
                 <ListItemIcon>
                   <ApiIcon />
@@ -655,11 +757,10 @@ const Help: React.FC = () => {
                   primary="API Documentation"
                   secondary="Developer resources for integrations"
                 />
-                <Button variant="outlined" size="sm">
-                  View
-                </Button>
+                <ListItemSecondaryAction>
+                  <Button size="sm">View</Button>
+                </ListItemSecondaryAction>
               </ListItem>
-
               <ListItem>
                 <ListItemIcon>
                   <SchoolIcon />
@@ -668,161 +769,122 @@ const Help: React.FC = () => {
                   primary="Training Materials"
                   secondary="Training guides and best practices"
                 />
-                <Button variant="outlined" size="sm">
-                  Access
-                </Button>
+                <ListItemSecondaryAction>
+                  <Button size="sm">Access</Button>
+                </ListItemSecondaryAction>
               </ListItem>
             </List>
           </CardContent>
         </Card>
-
-        <Card sx={{ mt: 3 }}>
+        <Card>
           <CardHeader
             title="System Status"
             avatar={
-              <Badge badgeContent="All Systems Operational" color="success">
-                <SettingsIcon />
+              <Badge className="bg-green-100 text-green-800 mr-2">
+                All Systems Operational
               </Badge>
             }
           />
-          <Divider />
+          <Separator />
           <CardContent>
-            <Typography variant="body2" color="text.secondary" paragraph>
+            <Typography variant="body2" color="textSecondary" paragraph>
               All PharmaCare services are running normally. Check our status
               page for real-time updates.
             </Typography>
-            <Button variant="outlined" fullWidth>
-              View Status Page
-            </Button>
+            <Button fullWidth>View Status Page</Button>
           </CardContent>
         </Card>
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 2, mb: 4 }}>
+    <div className="container mx-auto p-4 max-w-6xl">
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
-          <Link component={RouterLink} to="/dashboard" color="inherit">
+      <div className="mb-6">
+        <Breadcrumbs aria-label="breadcrumb" className="mb-4">
+          <Link to="/dashboard" className="text-blue-600 hover:underline">
             Dashboard
           </Link>
-          <Typography color="textPrimary">Help & Support</Typography>
+          <span className="text-gray-500">Help & Support</span>
         </Breadcrumbs>
-
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="h3" component="h1" gutterBottom>
-              <HelpIcon sx={{ mr: 1, fontSize: 'inherit' }} />
+        <div className="flex items-center gap-3">
+          <HelpIcon className="h-8 w-8 text-blue-600" />
+          <div>
+            <Typography variant="h4" component="h1" gutterBottom>
               Help & Support
             </Typography>
             <Typography variant="body1" color="textSecondary">
               Find answers, learn about features, and get the support you need
             </Typography>
-          </Box>
-        </Box>
-      </Box>
+          </div>
+        </div>
+      </div>
 
       {/* Quick Help Search */}
-      <Card sx={{ mb: 4 }}>
+      <Card className="mb-8">
         <CardContent>
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <Typography variant="h5" gutterBottom>
+          <div className="mb-4">
+            <Typography variant="h6" gutterBottom>
               How can we help you today?
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="textSecondary">
               Search our knowledge base or browse categories below
             </Typography>
-          </Box>
-          <TextField
-            fullWidth
+          </div>
+          <Input
             placeholder="Search for help articles, FAQs, or tutorials..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ mb: 3 }}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+            className="mb-6"
           />
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {categories.slice(1, 5).map((category) => (
-              <Box
-                sx={{ flex: '1 1 200px', minWidth: '150px' }}
+              <Button
                 key={category.id}
+                variant="outlined"
+                fullWidth
+                startIcon={category.icon}
+                className="flex-col items-start p-4 h-auto"
               >
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={category.icon}
-                  onClick={() => {
-                    setSelectedCategory(category.id);
-                    setActiveTab(0);
-                  }}
-                  sx={{ justifyContent: 'flex-start' }}
-                >
-                  <Box sx={{ textAlign: 'left', ml: 1 }}>
-                    <Typography variant="body2">{category.label}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {category.count} articles
-                    </Typography>
-                  </Box>
-                </Button>
-              </Box>
+                <div className="text-left">
+                  <Typography variant="subtitle1">{category.label}</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {category.count} articles
+                  </Typography>
+                </div>
+              </Button>
             ))}
-          </Box>
+          </div>
         </CardContent>
       </Card>
 
       {/* Navigation Tabs */}
-      <Paper sx={{ mb: 3 }}>
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          variant={isMobile ? 'scrollable' : 'fullWidth'}
-          scrollButtons="auto"
-        >
+      <div className="mb-6">
+        <Tabs value={activeTab} onChange={handleTabChange}>
           {helpTabs.map((tab) => (
             <Tab
               key={tab.id}
               icon={tab.icon}
               label={tab.label}
               iconPosition="start"
-              sx={{ minHeight: 64 }}
             />
           ))}
         </Tabs>
-      </Paper>
+      </div>
 
       {/* Tab Content */}
-      <Box sx={{ mt: 3 }}>
+      <div className="mb-8">
         {activeTab === 0 && renderFAQTab()}
         {activeTab === 1 && renderGuidesTab()}
         {activeTab === 2 && renderVideosTab()}
         {activeTab === 3 && renderContactTab()}
-      </Box>
+      </div>
 
       {/* Floating Feedback Button */}
       <Fab
         color="primary"
-        sx={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          zIndex: 1000,
-        }}
+        className="fixed bottom-6 right-6"
         onClick={() => setShowFeedbackDialog(true)}
       >
         <FeedbackIcon />
@@ -832,20 +894,18 @@ const Help: React.FC = () => {
       <Dialog
         open={showContactDialog}
         onClose={() => setShowContactDialog(false)}
-        maxWidth="sm"
-        fullWidth
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <div className="flex items-center gap-2">
             <ChatIcon />
             Start Live Chat
-          </Box>
+          </div>
         </DialogTitle>
         <DialogContent>
-          <Alert severity="info" sx={{ mb: 2 }}>
+          <Alert severity="info" className="mb-4">
             Our support team is currently online and ready to help!
           </Alert>
-          <Typography variant="body2" paragraph>
+          <Typography variant="body1" paragraph>
             Before starting the chat, please have the following information
             ready:
           </Typography>
@@ -858,7 +918,7 @@ const Help: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowContactDialog(false)}>Cancel</Button>
-          <Button variant="contained">Start Chat</Button>
+          <Button>Start Chat</Button>
         </DialogActions>
       </Dialog>
 
@@ -866,40 +926,36 @@ const Help: React.FC = () => {
       <Dialog
         open={showFeedbackDialog}
         onClose={() => setShowFeedbackDialog(false)}
-        maxWidth="sm"
-        fullWidth
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <div className="flex items-center gap-2">
             <FeedbackIcon />
             Send Feedback
-          </Box>
+          </div>
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" gutterBottom>
+          <div className="mb-4">
+            <Typography variant="h6" gutterBottom>
               How would you rate your experience?
             </Typography>
             <Rating
               value={feedbackRating}
-              onChange={(_, newValue) => setFeedbackRating(newValue || 0)}
+              onChange={(_: any, newValue: number | null) => setFeedbackRating(newValue || 0)}
               size="large"
             />
-          </Box>
-          <TextField
-            fullWidth
+          </div>
+          <Input
             multiline
             rows={4}
-            label="Your feedback"
             placeholder="Tell us what you think or suggest improvements..."
             value={feedbackComment}
-            onChange={(e) => setFeedbackComment(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFeedbackComment(e.target.value)}
+            className="w-full"
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowFeedbackDialog(false)}>Cancel</Button>
           <Button
-            variant="contained"
             onClick={handleFeedbackSubmit}
             disabled={!feedbackRating || !feedbackComment.trim()}
           >
@@ -907,7 +963,7 @@ const Help: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </div>
   );
 };
 

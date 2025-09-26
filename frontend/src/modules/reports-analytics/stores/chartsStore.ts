@@ -1,9 +1,4 @@
 // Charts Store - State management for chart configurations and themes
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
-import { ChartTheme, ChartConfig, ChartData } from '../types/charts';
-import { DEFAULT_THEMES } from '../utils/colorPalettes';
-
 interface ChartsState {
     // Theme management
     currentTheme: ChartTheme;
@@ -48,10 +43,10 @@ interface ChartsState {
 export const useChartsStore = create<ChartsState>()(
     devtools(
         persist(
-            (set, get) => ({
+            (set, get) => ({ 
                 // Initial state
                 currentTheme: DEFAULT_THEMES.light,
-                availableThemes: DEFAULT_THEMES,
+                availableThemes: DEFAULT_THEMES}
                 chartConfigs: {},
                 chartDataCache: {},
                 chartInteractions: {},
@@ -73,12 +68,11 @@ export const useChartsStore = create<ChartsState>()(
 
                 addCustomTheme: (name: string, theme: ChartTheme) => {
                     set(
-                        (state) => ({
+                        (state) => ({ 
                             availableThemes: {
                                 ...state.availableThemes,
-                                [name]: theme,
-                            },
-                        }),
+                                [name]: theme}
+                            }, },
                         false,
                         'addCustomTheme'
                     );
@@ -86,12 +80,11 @@ export const useChartsStore = create<ChartsState>()(
 
                 setChartConfig: (chartId: string, config: ChartConfig) => {
                     set(
-                        (state) => ({
+                        (state) => ({ 
                             chartConfigs: {
                                 ...state.chartConfigs,
-                                [chartId]: config,
-                            },
-                        }),
+                                [chartId]: config}
+                            }, },
                         false,
                         'setChartConfig'
                     );
@@ -120,12 +113,11 @@ export const useChartsStore = create<ChartsState>()(
 
                 cacheChartData: (chartId: string, data: ChartData) => {
                     set(
-                        (state) => ({
+                        (state) => ({ 
                             chartDataCache: {
                                 ...state.chartDataCache,
-                                [chartId]: data,
-                            },
-                        }),
+                                [chartId]: data}
+                            }, },
                         false,
                         'cacheChartData'
                     );
@@ -149,7 +141,7 @@ export const useChartsStore = create<ChartsState>()(
 
                 setChartInteraction: (chartId: string, interaction: Partial<ChartsState['chartInteractions'][string]>) => {
                     set(
-                        (state) => ({
+                        (state) => ({ 
                             chartInteractions: {
                                 ...state.chartInteractions,
                                 [chartId]: {
@@ -158,10 +150,9 @@ export const useChartsStore = create<ChartsState>()(
                                     zoomed: false,
                                     lastInteraction: new Date(),
                                     ...state.chartInteractions[chartId],
-                                    ...interaction,
+                                    ...interaction}
                                 },
-                            },
-                        }),
+                            }, },
                         false,
                         'setChartInteraction'
                     );
@@ -172,10 +163,10 @@ export const useChartsStore = create<ChartsState>()(
                 },
 
                 setHighPerformanceMode: (enabled: boolean) => {
-                    set({
+                    set({ 
                         highPerformanceMode: enabled,
                         // Disable animations in high performance mode
-                        animationsEnabled: enabled ? false : get().animationsEnabled,
+                        animationsEnabled: enabled ? false : get().animationsEnabled}
                     }, false, 'setHighPerformanceMode');
                 },
 
@@ -193,16 +184,15 @@ export const useChartsStore = create<ChartsState>()(
                 getChartInteraction: (chartId: string) => {
                     const state = get();
                     return state.chartInteractions[chartId] || null;
-                },
-            }),
+                }, },
             {
                 name: 'charts-store',
-                partialize: (state) => ({
+                partialize: (state) => ({ 
                     // Persist theme and performance settings
                     currentTheme: state.currentTheme,
                     availableThemes: state.availableThemes,
                     animationsEnabled: state.animationsEnabled,
-                    highPerformanceMode: state.highPerformanceMode,
+                    highPerformanceMode: state.highPerformanceMode}
                 }),
             }
         ),

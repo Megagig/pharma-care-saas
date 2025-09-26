@@ -1,59 +1,32 @@
 // Patient Outcome Analytics Report Component
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  LinearProgress,
-} from '@mui/material';
-import {
-  TrendingUp,
-  TrendingDown,
-  Assessment,
-  LocalHospital,
-  Psychology,
-  Medication,
-} from '@mui/icons-material';
 import ChartComponent from '../shared/ChartComponent';
-import { ChartData, KPICardData, ProgressRingData } from '../../types/charts';
-import { PatientOutcomeFilters } from '../../types/filters';
-import { useCurrentFilters } from '../../stores/filtersStore';
-import { ReportType } from '../../types/reports';
+
+import { Card, CardContent, Progress, Alert, Tabs } from '@/components/ui/button';
 
 interface PatientOutcomeReportProps {
   filters: PatientOutcomeFilters;
   onFilterChange?: (filters: PatientOutcomeFilters) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
-
-const PatientOutcomeReport: React.FC<PatientOutcomeReportProps> = ({
+const PatientOutcomeReport: React.FC<PatientOutcomeReportProps> = ({ 
   filters,
-  onFilterChange,
+  onFilterChange
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   // Mock data - in real implementation, this would come from API
   const mockData = useMemo(
-    () => ({
+    () => ({ 
       // KPI Cards Data
       kpiData: [
         {
@@ -63,7 +36,7 @@ const PatientOutcomeReport: React.FC<PatientOutcomeReportProps> = ({
           trend: {
             direction: 'up' as const,
             value: 12.3,
-            period: 'vs last month',
+            period: 'vs last month'}
           },
           status: 'success' as const,
           sparkline: [
@@ -107,7 +80,6 @@ const PatientOutcomeReport: React.FC<PatientOutcomeReportProps> = ({
           status: 'success' as const,
         },
       ],
-
       // Therapy Effectiveness Over Time
       therapyEffectivenessData: {
         id: 'therapy-effectiveness',
@@ -294,7 +266,6 @@ const PatientOutcomeReport: React.FC<PatientOutcomeReportProps> = ({
           },
         },
       },
-
       // Clinical Parameters Improvement
       clinicalParametersData: {
         id: 'clinical-parameters',
@@ -469,7 +440,6 @@ const PatientOutcomeReport: React.FC<PatientOutcomeReportProps> = ({
           },
         },
       },
-
       // Adverse Events Reduction
       adverseEventsData: {
         id: 'adverse-events',
@@ -600,7 +570,6 @@ const PatientOutcomeReport: React.FC<PatientOutcomeReportProps> = ({
           },
         },
       },
-
       // Quality of Life Progress
       qualityOfLifeData: {
         title: 'Quality of Life Progress',
@@ -618,7 +587,6 @@ const PatientOutcomeReport: React.FC<PatientOutcomeReportProps> = ({
           secondary: 'Overall Score',
         },
       },
-
       // Therapy Comparison Data
       therapyComparisonData: {
         id: 'therapy-comparison',
@@ -792,82 +760,73 @@ const PatientOutcomeReport: React.FC<PatientOutcomeReportProps> = ({
             rules: [],
           },
         },
-      },
-    }),
+      }, },
     []
   );
-
   // Simulate data loading
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [filters]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Alert severity="error" className="">
+        <div  gutterBottom>
           Error Loading Patient Outcome Data
-        </Typography>
-        <Typography variant="body2">{error}</Typography>
+        </div>
+        <div >{error}</div>
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center' }}
+          className=""
         >
-          <Assessment sx={{ mr: 2, color: 'primary.main' }} />
+          <Assessment className="" />
           Patient Outcome Analytics
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Comprehensive analysis of patient therapy outcomes, clinical
           improvements, and quality of life metrics.
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div container spacing={3} className="">
         {mockData.kpiData.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <ChartComponent
-              data={{
+              data={{}
                 id: `kpi-${index}`,
                 title: '',
                 type: 'kpi-card',
                 data: [kpi],
                 config: {} as any,
-              }}
               height={180}
               loading={loading}
             />
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          
           scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          className=""
         >
           <Tab
             icon={<TrendingUp />}
@@ -890,44 +849,42 @@ const PatientOutcomeReport: React.FC<PatientOutcomeReportProps> = ({
             iconPosition="start"
           />
         </Tabs>
-
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.therapyEffectivenessData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.therapyComparisonData}
                 height={350}
                 loading={loading}
               />
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.clinicalParametersData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Clinical Parameter Insights
-                  </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Chip
                       label="Blood Pressure: Above Target"
@@ -949,193 +906,154 @@ const PatientOutcomeReport: React.FC<PatientOutcomeReportProps> = ({
                       color="error"
                       size="small"
                     />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Most clinical parameters are showing positive improvement
                     trends. Pain management interventions are particularly
                     effective, while weight management may require additional
                     support strategies.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+          <div container spacing={3}>
+            <div item xs={12} md={6}>
               <ChartComponent
                 data={{
                   id: 'quality-of-life',
                   title: '',
                   type: 'progress-ring',
-                  data: [mockData.qualityOfLifeData],
+                  data: [mockData.qualityOfLifeData],}
                   config: {} as any,
-                }}
                 height={350}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: 350 }}>
+            </div>
+            <div item xs={12} md={6}>
+              <Card className="">
                 <CardContent
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
+                  className=""
                 >
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Quality of Life Breakdown
-                  </Typography>
-
+                  </div>
                   {mockData.qualityOfLifeData.segments?.map(
                     (segment, index) => (
-                      <Box key={index} sx={{ mb: 2 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            mb: 1,
-                          }}
+                      <div key={index} className="">
+                        <div
+                          className=""
                         >
-                          <Typography variant="body2">
+                          <div >
                             {segment.label}
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
+                          </div>
+                          <div  fontWeight="bold">
                             {segment.value}%
-                          </Typography>
-                        </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={segment.value}
-                          sx={{
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: `${segment.color}20`,
+                          </div>
+                        </div>
+                        <Progress
+                          
+                          className=""20`,
                             '& .MuiLinearProgress-bar': {
                               backgroundColor: segment.color,
                               borderRadius: 4,
                             },
-                          }}
                         />
-                      </Box>
+                      </div>
                     )
                   )}
-
-                  <Box
-                    sx={{
-                      mt: 'auto',
-                      pt: 2,
-                      borderTop: 1,
-                      borderColor: 'divider',
-                    }}
+                  <div
+                    className=""
                   >
-                    <Typography variant="caption" color="text.secondary">
+                    <div  color="text.secondary">
                       Quality of life scores are based on validated
                       patient-reported outcome measures (PROMs) and show
                       significant improvement across all domains.
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
+          <div container spacing={3}>
+            <div item xs={12} md={8}>
               <ChartComponent
                 data={mockData.adverseEventsData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card sx={{ height: 400 }}>
+            </div>
+            <div item xs={12} md={4}>
+              <Card className="">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Safety Improvements
-                  </Typography>
-
-                  <Box sx={{ mb: 3 }}>
-                    <Typography
-                      variant="body2"
+                  </div>
+                  <div className="">
+                    <div
+                      
                       color="text.secondary"
                       gutterBottom
                     >
                       Overall Reduction in Adverse Events
-                    </Typography>
-                    <Typography variant="h4" color="success.main" gutterBottom>
+                    </div>
+                    <div  color="success.main" gutterBottom>
                       34.2%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Compared to baseline period
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>
+                    </div>
+                  </div>
+                  <div className="">
+                    <div  gutterBottom>
                       Key Safety Metrics:
-                    </Typography>
-                    <Box
-                      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
+                    </div>
+                    <div
+                      className=""
                     >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                        }}
+                      <div
+                        className=""
                       >
-                        <Typography variant="body2">Critical Events</Typography>
+                        <div >Critical Events</div>
                         <Chip label="-60%" color="success" size="small" />
-                      </Box>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                        }}
+                      </div>
+                      <div
+                        className=""
                       >
-                        <Typography variant="body2">Severe Events</Typography>
+                        <div >Severe Events</div>
                         <Chip label="-45%" color="success" size="small" />
-                      </Box>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                        }}
+                      </div>
+                      <div
+                        className=""
                       >
-                        <Typography variant="body2">Moderate Events</Typography>
+                        <div >Moderate Events</div>
                         <Chip label="-35%" color="success" size="small" />
-                      </Box>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                        }}
+                      </div>
+                      <div
+                        className=""
                       >
-                        <Typography variant="body2">Mild Events</Typography>
+                        <div >Mild Events</div>
                         <Chip label="-25%" color="success" size="small" />
-                      </Box>
-                    </Box>
-                  </Box>
-
+                      </div>
+                    </div>
+                  </div>
                   <Alert severity="info" size="small">
-                    <Typography variant="caption">
+                    <div >
                       Proactive intervention strategies have significantly
                       reduced the incidence of severe adverse events.
-                    </Typography>
+                    </div>
                   </Alert>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default PatientOutcomeReport;

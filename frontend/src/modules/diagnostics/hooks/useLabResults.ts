@@ -1,12 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { labApi } from '../api/labApi';
-import { useUIStore } from '../../../stores';
-import type {
     LabResult,
     LabResultForm,
     LabResultParams,
     ApiResponse
-} from '../types';
 
 // Error type for API calls
 type ApiError = {
@@ -34,11 +29,11 @@ export const labResultQueryKeys = {
  * Hook to fetch lab results with optional filters
  */
 export const useLabResults = (params: LabResultParams = {}) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: labResultQueryKeys.list(params),
         queryFn: () => labApi.getResults(params),
         staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -46,12 +41,12 @@ export const useLabResults = (params: LabResultParams = {}) => {
  * Hook to fetch a single lab result by ID
  */
 export const useLabResult = (resultId: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: labResultQueryKeys.detail(resultId),
         queryFn: () => labApi.getResult(resultId),
         enabled: !!resultId,
         staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -59,38 +54,36 @@ export const useLabResult = (resultId: string) => {
  * Hook to fetch lab results for a specific patient
  */
 export const useLabResultsByPatient = (patientId: string, params: Omit<LabResultParams, 'patientId'> = {}) => {
-    return useQuery({
-        queryKey: labResultQueryKeys.byPatient(patientId),
+    return useQuery({ 
+        queryKey: labResultQueryKeys.byPatient(patientId)}
         queryFn: () => labApi.getResults({ ...params, patientId }),
         enabled: !!patientId,
         staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchOnWindowFocus: false,
-    });
+        refetchOnWindowFocus: false}
 };
 
 /**
  * Hook to fetch lab results for a specific order
  */
 export const useLabResultsByOrder = (orderId: string) => {
-    return useQuery({
-        queryKey: labResultQueryKeys.byOrder(orderId),
+    return useQuery({ 
+        queryKey: labResultQueryKeys.byOrder(orderId)}
         queryFn: () => labApi.getResults({ orderId }),
         enabled: !!orderId,
         staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchOnWindowFocus: false,
-    });
+        refetchOnWindowFocus: false}
 };
 
 /**
  * Hook to fetch critical lab results
  */
 export const useCriticalLabResults = (workplaceId?: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: labResultQueryKeys.critical(workplaceId),
         queryFn: () => labApi.getCriticalResults(workplaceId),
         staleTime: 30 * 1000, // 30 seconds for critical results
         refetchOnWindowFocus: true, // Refetch critical results on focus
-        refetchInterval: 2 * 60 * 1000, // Auto-refetch every 2 minutes
+        refetchInterval: 2 * 60 * 1000, // Auto-refetch every 2 minutes })
     });
 };
 
@@ -98,12 +91,12 @@ export const useCriticalLabResults = (workplaceId?: string) => {
  * Hook to fetch abnormal lab results for a patient
  */
 export const useAbnormalLabResults = (patientId: string, days: number = 30) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: labResultQueryKeys.abnormal(patientId, days),
         queryFn: () => labApi.getAbnormalResults(patientId, days),
         enabled: !!patientId,
         staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -118,10 +111,10 @@ export const useAddLabResult = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (data: LabResultForm) => labApi.addResult(data),
         onMutate: async (variables) => {
-            // Cancel outgoing refetches
+            // Cancel outgoing refetches })
             await queryClient.cancelQueries({ queryKey: labResultQueryKeys.byPatient(variables.patientId) });
 
             // Snapshot previous value
@@ -187,12 +180,11 @@ export const useAddLabResult = () => {
                     queryClient.invalidateQueries({ queryKey: labResultQueryKeys.abnormal(variables.patientId) });
                 }
 
-                addNotification({
+                addNotification({ 
                     type: 'success',
-                    title: 'Lab Result Added',
+                    title: 'Lab Result Added'}
                     message: `Lab result for ${result.testName} has been successfully recorded.`,
-                    duration: 5000,
-                });
+                    duration: 5000}
             }
         },
         onError: (error: ApiError, variables, context) => {
@@ -204,14 +196,13 @@ export const useAddLabResult = () => {
                 );
             }
 
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Result Entry Failed',
                 message: error.message || 'Failed to add lab result. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -221,7 +212,7 @@ export const useUpdateLabResult = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({  })
         mutationFn: ({ resultId, data }: { resultId: string; data: Partial<LabResultForm> }) =>
             labApi.updateResult(resultId, data),
         onMutate: async ({ resultId, data }) => {
@@ -265,11 +256,11 @@ export const useUpdateLabResult = () => {
                 queryClient.invalidateQueries({ queryKey: labResultQueryKeys.critical() });
                 queryClient.invalidateQueries({ queryKey: labResultQueryKeys.abnormal(result.patientId) });
 
-                addNotification({
+                addNotification({ 
                     type: 'success',
                     title: 'Result Updated',
                     message: 'Lab result has been successfully updated.',
-                    duration: 4000,
+                    duration: 4000}
                 });
             }
         },
@@ -279,14 +270,13 @@ export const useUpdateLabResult = () => {
                 queryClient.setQueryData(labResultQueryKeys.detail(resultId), context.previousResult);
             }
 
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Update Failed',
                 message: error.message || 'Failed to update lab result. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -296,11 +286,11 @@ export const useDeleteLabResult = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (resultId: string) => labApi.deleteResult(resultId),
         onMutate: async (resultId) => {
             // Get the result data before deletion for rollback
-            const resultData = queryClient.getQueryData(labResultQueryKeys.detail(resultId));
+            const resultData = queryClient.getQueryData(labResultQueryKeys.detail(resultId)); })
             return { resultData };
         },
         onSuccess: (_, resultId, context) => {
@@ -311,41 +301,40 @@ export const useDeleteLabResult = () => {
             queryClient.invalidateQueries({ queryKey: labResultQueryKeys.lists() });
 
             if (context?.resultData?.data?.patientId) {
-                queryClient.invalidateQueries({
-                    queryKey: labResultQueryKeys.byPatient(context.resultData.data.patientId)
+                queryClient.invalidateQueries({ 
+                    queryKey: labResultQueryKeys.byPatient(context.resultData.data.patientId) })
                 });
             }
 
             if (context?.resultData?.data?.orderId) {
-                queryClient.invalidateQueries({
-                    queryKey: labResultQueryKeys.byOrder(context.resultData.data.orderId)
+                queryClient.invalidateQueries({ 
+                    queryKey: labResultQueryKeys.byOrder(context.resultData.data.orderId) })
                 });
             }
 
             // Invalidate critical and abnormal results
             queryClient.invalidateQueries({ queryKey: labResultQueryKeys.critical() });
             if (context?.resultData?.data?.patientId) {
-                queryClient.invalidateQueries({
-                    queryKey: labResultQueryKeys.abnormal(context.resultData.data.patientId)
+                queryClient.invalidateQueries({ 
+                    queryKey: labResultQueryKeys.abnormal(context.resultData.data.patientId) })
                 });
             }
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'Result Deleted',
                 message: 'Lab result has been successfully deleted.',
-                duration: 4000,
+                duration: 4000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Deletion Failed',
                 message: error.message || 'Failed to delete lab result. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 // ===============================
@@ -423,10 +412,10 @@ export const usePrefetchLabResult = () => {
     const queryClient = useQueryClient();
 
     return (resultId: string) => {
-        queryClient.prefetchQuery({
+        queryClient.prefetchQuery({ 
             queryKey: labResultQueryKeys.detail(resultId),
             queryFn: () => labApi.getResult(resultId),
-            staleTime: 2 * 60 * 1000, // 2 minutes
+            staleTime: 2 * 60 * 1000, // 2 minutes })
         });
     };
 };

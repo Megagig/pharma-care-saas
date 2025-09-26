@@ -1,59 +1,25 @@
 // Trend Identification & Forecasting Report Component
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-} from '@mui/material';
-import {
-  TrendingUp,
-  TrendingDown,
-  Analytics,
-  Timeline,
-  Warning,
-  PredictiveText,
-  ShowChart,
-  CalendarMonth,
-} from '@mui/icons-material';
 import ChartComponent from '../shared/ChartComponent';
-import { ChartData, KPICardData } from '../../types/charts';
-import { TrendForecastingFilters } from '../../types/filters';
-import { TrendForecastingData } from '../../types/reports';
-import { useCurrentFilters } from '../../stores/filtersStore';
+
+import { Button, Label, Card, CardContent, Select, Alert, Switch, Tabs } from '@/components/ui/button';
 
 interface TrendForecastingReportProps {
   filters: TrendForecastingFilters;
   onFilterChange?: (filters: TrendForecastingFilters) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
-
-const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
+const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({ 
   filters,
-  onFilterChange,
+  onFilterChange
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -61,10 +27,9 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
   const [forecastPeriod, setForecastPeriod] = useState('6months');
   const [showConfidenceIntervals, setShowConfidenceIntervals] = useState(true);
   const [selectedMetric, setSelectedMetric] = useState('patient-outcomes');
-
   // Mock data - in real implementation, this would come from API
   const mockData = useMemo(
-    () => ({
+    () => ({ 
       // KPI Cards Data
       kpiData: [
         {
@@ -74,7 +39,7 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
           trend: {
             direction: 'up' as const,
             value: 4.2,
-            period: 'vs last quarter',
+            period: 'vs last quarter'}
           },
           status: 'success' as const,
           sparkline: [
@@ -118,7 +83,6 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
           status: 'info' as const,
         },
       ],
-
       // Historical Trends with Forecasting
       historicalTrendsData: {
         id: 'historical-trends',
@@ -448,7 +412,6 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
           },
         },
       },
-
       // Seasonal Patterns
       seasonalPatternsData: {
         id: 'seasonal-patterns',
@@ -695,7 +658,6 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
           },
         },
       },
-
       // Anomaly Detection
       anomalyDetectionData: {
         id: 'anomaly-detection',
@@ -914,7 +876,6 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
           },
         },
       },
-
       // Growth Trajectory Analysis
       growthTrajectoryData: {
         id: 'growth-trajectory',
@@ -1106,62 +1067,55 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
             rules: [],
           },
         },
-      },
-    }),
+      }, },
     [forecastPeriod, selectedMetric]
   );
-
   // Simulate data loading
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [filters, forecastPeriod, selectedMetric]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Alert severity="error" className="">
+        <div  gutterBottom>
           Error Loading Trend Forecasting Data
-        </Typography>
-        <Typography variant="body2">{error}</Typography>
+        </div>
+        <div >{error}</div>
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center' }}
+          className=""
         >
-          <Analytics sx={{ mr: 2, color: 'primary.main' }} />
+          <Analytics className="" />
           Trend Identification & Forecasting
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Advanced analytics for trend identification, predictive modeling, and
           anomaly detection with confidence intervals and scenario analysis.
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* Controls */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <CardContent>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Forecast Period</InputLabel>
+          <div container spacing={3} alignItems="center">
+            <div item xs={12} sm={6} md={3}>
+              <div fullWidth size="small">
+                <Label>Forecast Period</Label>
                 <Select
                   value={forecastPeriod}
                   label="Forecast Period"
@@ -1172,11 +1126,11 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
                   <MenuItem value="12months">12 Months</MenuItem>
                   <MenuItem value="24months">24 Months</MenuItem>
                 </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Metric</InputLabel>
+              </div>
+            </div>
+            <div item xs={12} sm={6} md={3}>
+              <div fullWidth size="small">
+                <Label>Metric</Label>
                 <Select
                   value={selectedMetric}
                   label="Metric"
@@ -1189,66 +1143,58 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
                   <MenuItem value="cost-savings">Cost Savings</MenuItem>
                   <MenuItem value="quality-metrics">Quality Metrics</MenuItem>
                 </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+              </div>
+            </div>
+            <div item xs={12} sm={6} md={3}>
               <FormControlLabel
                 control={
-                  <Switch
+                  <Switch}
                     checked={showConfidenceIntervals}
                     onChange={(e) =>
-                      setShowConfidenceIntervals(e.target.checked)
+                      setShowConfidenceIntervals(e.target.checked)}
                     }
                   />
                 }
                 label="Show Confidence Intervals"
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            </div>
+            <div item xs={12} sm={6} md={3}>
               <Button
-                variant="outlined"
+                
                 startIcon={<PredictiveText />}
                 fullWidth
-                onClick={() => {
-                  // Trigger forecast recalculation
-                  setLoading(true);
-                  setTimeout(() => setLoading(false), 1500);
-                }}
-              >
+                >
                 Recalculate Forecast
               </Button>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div container spacing={3} className="">
         {mockData.kpiData.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <ChartComponent
-              data={{
+              data={{}
                 id: `kpi-${index}`,
                 title: '',
                 type: 'kpi-card',
                 data: [kpi],
                 config: {} as any,
-              }}
               height={180}
               loading={loading}
             />
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          
           scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          className=""
         >
           <Tab
             icon={<Timeline />}
@@ -1271,25 +1217,24 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
             iconPosition="start"
           />
         </Tabs>
-
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.historicalTrendsData}
                 height={450}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Trend Analysis Insights
-                  </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Chip
                       label="Strong Upward Trend"
@@ -1306,136 +1251,114 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
                       color="warning"
                       size="small"
                     />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     The historical data shows a consistent upward trend with
                     strong predictive confidence. Seasonal variations are
                     minimal, suggesting stable growth patterns. The forecast
                     indicates continued improvement with narrow confidence
                     intervals.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.seasonalPatternsData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Seasonal Pattern Analysis
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          bgcolor: 'success.light',
-                          borderRadius: 1,
-                        }}
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="success.contrastText">
+                        <div  color="success.contrastText">
                           Peak Season
-                        </Typography>
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="success.contrastText"
                         >
                           Sep - Oct
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          bgcolor: 'warning.light',
-                          borderRadius: 1,
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="warning.contrastText">
+                        <div  color="warning.contrastText">
                           Low Season
-                        </Typography>
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="warning.contrastText"
                         >
                           Feb - Mar
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          bgcolor: 'info.light',
-                          borderRadius: 1,
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="info.contrastText">
+                        <div  color="info.contrastText">
                           Variance
-                        </Typography>
-                        <Typography variant="body2" color="info.contrastText">
+                        </div>
+                        <div  color="info.contrastText">
                           ±12.5%
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          bgcolor: 'primary.light',
-                          borderRadius: 1,
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="primary.contrastText">
+                        <div  color="primary.contrastText">
                           Predictability
-                        </Typography>
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="primary.contrastText"
                         >
                           High (89%)
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.anomalyDetectionData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Anomaly Detection Summary
-                  </Typography>
-                  <Grid container spacing={2}>
+                  </div>
+                  <div container spacing={2}>
                     {[
                       { label: 'High Significance', count: 4, color: 'error' },
                       {
@@ -1445,130 +1368,113 @@ const TrendForecastingReport: React.FC<TrendForecastingReportProps> = ({
                       },
                       { label: 'Low Significance', count: 5, color: 'info' },
                     ].map((item, index) => (
-                      <Grid item xs={12} sm={4} key={index}>
-                        <Box sx={{ textAlign: 'center', p: 2 }}>
-                          <Typography variant="h4" color={`${item.color}.main`}>
+                      <div item xs={12} sm={4} key={index}>
+                        <div className="">
+                          <div  color={`${item.color}.main`}>
                             {item.count}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          </div>
+                          <div  color="text.secondary">
                             {item.label}
-                          </Typography>
-                        </Box>
-                      </Grid>
+                          </div>
+                        </div>
+                      </div>
                     ))}
-                  </Grid>
-                  <Typography
-                    variant="body2"
+                  </div>
+                  <div
+                    
                     color="text.secondary"
-                    sx={{ mt: 2 }}
+                    className=""
                   >
                     Statistical analysis identified 10 data points requiring
                     attention. High-significance anomalies should be
                     investigated for root causes.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.growthTrajectoryData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Scenario Analysis Summary
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={4}>
-                      <Box
-                        sx={{
-                          p: 2,
-                          border: 1,
-                          borderColor: 'error.main',
-                          borderRadius: 1,
-                        }}
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} md={4}>
+                      <div
+                        className=""
                       >
-                        <Typography
-                          variant="subtitle1"
+                        <div
+                          
                           color="error.main"
                           gutterBottom
                         >
                           Conservative Scenario
-                        </Typography>
-                        <Typography variant="h5" color="error.main">
+                        </div>
+                        <div  color="error.main">
                           +5.3%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Growth by Q2 2025
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <Box
-                        sx={{
-                          p: 2,
-                          border: 1,
-                          borderColor: 'success.main',
-                          borderRadius: 1,
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={4}>
+                      <div
+                        className=""
                       >
-                        <Typography
-                          variant="subtitle1"
+                        <div
+                          
                           color="success.main"
                           gutterBottom
                         >
                           Realistic Scenario
-                        </Typography>
-                        <Typography variant="h5" color="success.main">
+                        </div>
+                        <div  color="success.main">
                           +20.4%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Growth by Q2 2025
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <Box
-                        sx={{
-                          p: 2,
-                          border: 1,
-                          borderColor: 'primary.main',
-                          borderRadius: 1,
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={4}>
+                      <div
+                        className=""
                       >
-                        <Typography
-                          variant="subtitle1"
+                        <div
+                          
                           color="primary.main"
                           gutterBottom
                         >
                           Optimistic Scenario
-                        </Typography>
-                        <Typography variant="h5" color="primary.main">
+                        </div>
+                        <div  color="primary.main">
                           +40.8%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Growth by Q2 2025
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default TrendForecastingReport;

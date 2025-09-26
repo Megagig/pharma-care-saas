@@ -1,38 +1,4 @@
-import React, { useState, useCallback } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Stack,
-  Chip,
-  Alert,
-  Autocomplete,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
-  IconButton,
-  Tooltip,
-  Divider,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import WarningIcon from '@mui/icons-material/Warning';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import CloseIcon from '@mui/icons-material/Close';
-import SearchIcon from '@mui/icons-material/Search';
-import type { AllergyInputProps } from '../types';
-
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Tooltip, Alert, Separator } from '@/components/ui/button';
 // Common allergens categorized
 const COMMON_ALLERGENS = {
   medications: [
@@ -70,13 +36,11 @@ const COMMON_ALLERGENS = {
     'Wasp stings',
   ],
 };
-
 const ALL_ALLERGENS = [
   ...COMMON_ALLERGENS.medications,
   ...COMMON_ALLERGENS.foods,
   ...COMMON_ALLERGENS.environmental,
 ];
-
 const SEVERITY_LEVELS = [
   {
     value: 'mild',
@@ -97,7 +61,6 @@ const SEVERITY_LEVELS = [
     description: 'Life-threatening, requires immediate attention',
   },
 ];
-
 const REACTION_TYPES = [
   'Skin rash',
   'Hives',
@@ -113,18 +76,15 @@ const REACTION_TYPES = [
   'Fainting',
   'Other',
 ];
-
 interface AllergyData {
   substance: string;
   severity: 'mild' | 'moderate' | 'severe';
   reaction?: string;
   notes?: string;
 }
-
 interface AllergyFormData {
   allergies: AllergyData[];
 }
-
 interface AllergyDialogData {
   substance: string;
   severity: 'mild' | 'moderate' | 'severe';
@@ -132,12 +92,11 @@ interface AllergyDialogData {
   customReaction: string;
   notes: string;
 }
-
-const AllergyInput: React.FC<AllergyInputProps> = ({
+const AllergyInput: React.FC<AllergyInputProps> = ({ 
   value = [],
   onChange,
   error,
-  disabled = false,
+  disabled = false
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -145,7 +104,6 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<
     'all' | 'medications' | 'foods' | 'environmental'
   >('all');
-
   // Convert string array to allergy objects for internal use
   const allergyObjects: AllergyData[] = React.useMemo(() => {
     return value.map((allergen) => {
@@ -155,22 +113,16 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
       return allergen as AllergyData;
     });
   }, [value]);
-
-  const { control, watch } = useForm<AllergyFormData>({
+  const { control, watch } = useForm<AllergyFormData>({ 
     defaultValues: {
-      allergies: allergyObjects,
-    },
-  });
-
+      allergies: allergyObjects}
+    }
   const watchedAllergies = watch('allergies');
-
   // Update parent component when allergies change
-  React.useEffect(() => {
     // Convert back to string array for backward compatibility
     const allergyStrings = watchedAllergies.map((allergy) => allergy.substance);
     onChange(allergyStrings);
   }, [watchedAllergies, onChange]);
-
   // Dialog form
   const {
     control: dialogControl,
@@ -178,22 +130,19 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
     reset: resetDialog,
     watch: watchDialog,
     formState: { errors: dialogErrors },
-  } = useForm<AllergyDialogData>({
+  } = useForm<AllergyDialogData>({ 
     defaultValues: {
       substance: '',
       severity: 'mild',
       reaction: '',
       customReaction: '',
-      notes: '',
-    },
-  });
-
+      notes: ''}
+    }
   const watchedDialogValues = watchDialog();
-
   const handleOpenDialog = useCallback(
     (allergy?: AllergyData, index?: number) => {
       if (allergy) {
-        resetDialog({
+        resetDialog({ 
           substance: allergy.substance,
           severity: allergy.severity,
           reaction:
@@ -204,16 +153,16 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
             allergy.reaction && !REACTION_TYPES.includes(allergy.reaction)
               ? allergy.reaction
               : '',
-          notes: allergy.notes || '',
+          notes: allergy.notes || ''}
         });
         setEditingIndex(index ?? null);
       } else {
-        resetDialog({
+        resetDialog({ 
           substance: '',
           severity: 'mild',
           reaction: '',
           customReaction: '',
-          notes: '',
+          notes: ''}
         });
         setEditingIndex(null);
       }
@@ -221,33 +170,27 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
     },
     [resetDialog]
   );
-
   const handleCloseDialog = useCallback(() => {
     setIsDialogOpen(false);
     setEditingIndex(null);
     resetDialog();
   }, [resetDialog]);
-
   const handleSaveAllergy = useCallback(
     (data: AllergyDialogData) => {
       const reaction =
         data.reaction === 'Other' ? data.customReaction : data.reaction;
-
       const allergy: AllergyData = {
         substance: data.substance.trim(),
         severity: data.severity,
         reaction: reaction.trim() || undefined,
         notes: data.notes.trim() || undefined,
       };
-
       const updatedAllergies = [...watchedAllergies];
-
       if (editingIndex !== null) {
         updatedAllergies[editingIndex] = allergy;
       } else {
         updatedAllergies.push(allergy);
       }
-
       // Update form state (this will trigger the useEffect to update parent)
       const event = { target: { value: updatedAllergies } };
       const field = {
@@ -258,12 +201,10 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
         },
       };
       field.onChange(updatedAllergies);
-
       handleCloseDialog();
     },
     [watchedAllergies, editingIndex, onChange, handleCloseDialog]
   );
-
   const handleRemoveAllergy = useCallback(
     (index: number) => {
       const updatedAllergies = watchedAllergies.filter((_, i) => i !== index);
@@ -272,7 +213,6 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
     },
     [watchedAllergies, onChange]
   );
-
   const handleQuickAddAllergy = useCallback(
     (substance: string) => {
       if (!value.includes(substance)) {
@@ -281,11 +221,9 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
     },
     [value, onChange]
   );
-
   // Filter allergens based on search and category
   const getFilteredAllergens = () => {
     let allergens: string[] = [];
-
     switch (selectedCategory) {
       case 'medications':
         allergens = COMMON_ALLERGENS.medications;
@@ -299,26 +237,22 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
       default:
         allergens = ALL_ALLERGENS;
     }
-
     return allergens.filter(
       (allergen) =>
         allergen.toLowerCase().includes(searchTerm.toLowerCase()) &&
         !value.includes(allergen)
     );
   };
-
   const getSeverityColor = (severity: string) => {
     const level = SEVERITY_LEVELS.find((l) => l.value === severity);
     return level?.color || 'default';
   };
-
   const getSeverityIcon = (severity: string) => {
     if (severity === 'severe') {
-      return <WarningIcon sx={{ fontSize: 16, color: 'error.main' }} />;
+      return <WarningIcon className="" />;
     }
     return null;
   };
-
   // Validation
   const validateSubstance = (substance: string): string | true => {
     if (!substance.trim()) {
@@ -329,7 +263,6 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
     }
     return true;
   };
-
   const validateReaction = (
     reaction: string,
     customReaction: string
@@ -339,84 +272,77 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
     }
     return true;
   };
-
   return (
     <Card>
       <CardContent>
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+        <div className="">
+          <div  className="">
             Allergies & Adverse Reactions
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Document known allergies and adverse drug reactions for safety
             screening
-          </Typography>
-        </Box>
-
+          </div>
+        </div>
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" className="">
             {error}
           </Alert>
         )}
-
         {/* Current Allergies */}
         {allergyObjects.length > 0 ? (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+          <div className="">
+            <div  className="">
               Recorded Allergies ({allergyObjects.length})
-            </Typography>
-            <Stack spacing={2}>
+            </div>
+            <div spacing={2}>
               {allergyObjects.map((allergy, index) => (
-                <Card key={index} variant="outlined" sx={{ p: 2 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      justifyContent: 'space-between',
-                    }}
+                <Card key={index}  className="">
+                  <div
+                    className=""
                   >
-                    <Box sx={{ flex: 1 }}>
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', mb: 1 }}
+                    <div className="">
+                      <div
+                        className=""
                       >
                         <LocalHospitalIcon
-                          sx={{ mr: 1, color: 'primary.main', fontSize: 20 }}
+                          className=""
                         />
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ fontWeight: 600 }}
+                        <div
+                          
+                          className=""
                         >
                           {allergy.substance}
-                        </Typography>
+                        </div>
                         {getSeverityIcon(allergy.severity)}
                         <Chip
                           label={
                             SEVERITY_LEVELS.find(
                               (l) => l.value === allergy.severity
-                            )?.label
+                            )?.label}
                           }
                           size="small"
                           color={getSeverityColor(allergy.severity)}
-                          variant="outlined"
-                          sx={{ ml: 1 }}
+                          
+                          className=""
                         />
-                      </Box>
+                      </div>
                       {allergy.reaction && (
-                        <Typography
-                          variant="body2"
+                        <div
+                          
                           color="text.secondary"
-                          sx={{ mb: 0.5 }}
+                          className=""
                         >
                           <strong>Reaction:</strong> {allergy.reaction}
-                        </Typography>
+                        </div>
                       )}
                       {allergy.notes && (
-                        <Typography variant="body2" color="text.secondary">
+                        <div  color="text.secondary">
                           <strong>Notes:</strong> {allergy.notes}
-                        </Typography>
+                        </div>
                       )}
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    </div>
+                    <div className="">
                       <Tooltip title="Edit allergy">
                         <IconButton
                           size="small"
@@ -436,51 +362,41 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    </Box>
-                  </Box>
+                    </div>
+                  </div>
                 </Card>
               ))}
-            </Stack>
-          </Box>
+            </div>
+          </div>
         ) : (
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="body2">
+          <Alert severity="info" className="">
+            <div >
               No allergies recorded. If the patient has no known allergies, this
               is noted. Add any known allergies to prevent adverse reactions.
-            </Typography>
+            </div>
           </Alert>
         )}
-
         {/* Add Allergy Button */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <div className="">
           <Button
-            variant="contained"
+            
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
             disabled={disabled}
           >
             Add Allergy
           </Button>
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
+        </div>
+        <Separator className="" />
         {/* Quick Add Common Allergens */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+        <div>
+          <div  className="">
             Quick Add Common Allergens
-          </Typography>
-
+          </div>
           {/* Category Filter */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-              gap: 2,
-              mb: 2,
-            }}
-          >
-            <TextField
+          <div
+            className="">
+            <Input
               size="small"
               placeholder="Search allergens..."
               value={searchTerm}
@@ -488,15 +404,13 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
               slotProps={{
                 input: {
                   startAdornment: (
-                    <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  ),
+                    <SearchIcon className="" />),}
                 },
-              }}
               disabled={disabled}
               fullWidth
             />
-            <FormControl size="small" fullWidth>
-              <InputLabel>Category</InputLabel>
+            <div size="small" fullWidth>
+              <Label>Category</Label>
               <Select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value as any)}
@@ -508,11 +422,10 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
                 <MenuItem value="foods">Foods</MenuItem>
                 <MenuItem value="environmental">Environmental</MenuItem>
               </Select>
-            </FormControl>
-          </Box>
-
+            </div>
+          </div>
           {/* Allergen Chips */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <div className="">
             {getFilteredAllergens()
               .slice(0, 20)
               .map((allergen) => (
@@ -521,52 +434,48 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
                   label={allergen}
                   onClick={() => handleQuickAddAllergy(allergen)}
                   disabled={disabled}
-                  sx={{ cursor: 'pointer' }}
-                  variant="outlined"
+                  className=""
+                  
                   size="small"
                 />
               ))}
-          </Box>
-
+          </div>
           {getFilteredAllergens().length === 0 && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            <div  color="text.secondary" className="">
               {searchTerm
                 ? `No allergens found matching "${searchTerm}"`
                 : 'All common allergens have been added'}
-            </Typography>
+            </div>
           )}
-        </Box>
-
+        </div>
         {/* Allergy Dialog */}
         <Dialog
           open={isDialogOpen}
           onClose={handleCloseDialog}
           maxWidth="sm"
           fullWidth
-          slotProps={{ paper: { sx: { borderRadius: 2 } } }}
-        >
+          slotProps={{ paper: { sx: { borderRadius: 2 } } >
           <DialogTitle>
-            <Box sx={{ display: 'flex', alignItems: 'center', pr: 6 }}>
-              <LocalHospitalIcon sx={{ mr: 1 }} />
+            <div className="">
+              <LocalHospitalIcon className="" />
               {editingIndex !== null ? 'Edit Allergy' : 'Add Allergy'}
-            </Box>
+            </div>
             <IconButton
               onClick={handleCloseDialog}
-              sx={{ position: 'absolute', right: 8, top: 8 }}
+              className=""
             >
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-
           <DialogContent dividers>
             <form onSubmit={handleDialogSubmit(handleSaveAllergy)}>
-              <Stack spacing={3}>
+              <div spacing={3}>
                 {/* Substance */}
                 <Controller
                   name="substance"
                   control={dialogControl}
-                  rules={{ validate: validateSubstance }}
-                  render={({ field }) => (
+                  
+                  render={({  field  }) => (
                     <Autocomplete
                       {...field}
                       options={ALL_ALLERGENS}
@@ -575,7 +484,7 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
                       onChange={(_, value) => field.onChange(value || '')}
                       onInputChange={(_, value) => field.onChange(value)}
                       renderInput={(params) => (
-                        <TextField
+                        <Input}
                           {...params}
                           label="Allergy Substance"
                           placeholder="Enter or search allergen"
@@ -587,54 +496,46 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
                     />
                   )}
                 />
-
                 {/* Severity */}
                 <Controller
                   name="severity"
                   control={dialogControl}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Severity</InputLabel>
+                  render={({  field  }) => (
+                    <div fullWidth>
+                      <Label>Severity</Label>
                       <Select {...field} label="Severity">
                         {SEVERITY_LEVELS.map((level) => (
                           <MenuItem key={level.value} value={level.value}>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <div className="">
                               <Chip
                                 label={level.label}
                                 size="small"
                                 color={level.color}
-                                variant="outlined"
-                                sx={{ mr: 1 }}
+                                
+                                className=""
                               />
-                              <Typography
-                                variant="body2"
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 {level.description}
-                              </Typography>
-                            </Box>
+                              </div>
+                            </div>
                           </MenuItem>
                         ))}
                       </Select>
-                    </FormControl>
+                    </div>
                   )}
                 />
-
                 {/* Reaction */}
-                <Box>
+                <div>
                   <Controller
                     name="reaction"
                     control={dialogControl}
-                    rules={{
-                      validate: (value) =>
-                        validateReaction(
-                          value,
-                          watchedDialogValues.customReaction
-                        ),
-                    }}
-                    render={({ field }) => (
-                      <FormControl fullWidth error={!!dialogErrors.reaction}>
-                        <InputLabel>Reaction Type (Optional)</InputLabel>
+                    
+                    render={({  field  }) => (
+                      <div fullWidth error={!!dialogErrors.reaction}>
+                        <Label>Reaction Type (Optional)</Label>
                         <Select {...field} label="Reaction Type (Optional)">
                           <MenuItem value="">
                             <em>Not specified</em>
@@ -646,39 +547,37 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
                           ))}
                         </Select>
                         {dialogErrors.reaction && (
-                          <FormHelperText>
+                          <p>
                             {dialogErrors.reaction.message}
-                          </FormHelperText>
+                          </p>
                         )}
-                      </FormControl>
+                      </div>
                     )}
                   />
-
                   {watchedDialogValues.reaction === 'Other' && (
                     <Controller
                       name="customReaction"
                       control={dialogControl}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           label="Specify Reaction"
                           placeholder="Describe the allergic reaction"
                           fullWidth
-                          sx={{ mt: 2 }}
+                          className=""
                           error={!!dialogErrors.customReaction}
                           helperText={dialogErrors.customReaction?.message}
                         />
                       )}
                     />
                   )}
-                </Box>
-
+                </div>
                 {/* Notes */}
                 <Controller
                   name="notes"
                   control={dialogControl}
-                  render={({ field }) => (
-                    <TextField
+                  render={({  field  }) => (
+                    <Input
                       {...field}
                       label="Additional Notes (Optional)"
                       placeholder="Any additional information about this allergy"
@@ -688,59 +587,54 @@ const AllergyInput: React.FC<AllergyInputProps> = ({
                     />
                   )}
                 />
-
                 {/* Severity Warning */}
                 {watchedDialogValues.severity === 'severe' && (
                   <Alert severity="error">
-                    <Typography variant="body2">
+                    <div >
                       <strong>Severe Allergy Warning:</strong> This allergy will
                       be prominently flagged during medication prescribing and
                       clinical assessments to prevent life-threatening
                       reactions.
-                    </Typography>
+                    </div>
                   </Alert>
                 )}
-              </Stack>
+              </div>
             </form>
           </DialogContent>
-
-          <DialogActions sx={{ p: 3 }}>
+          <DialogActions className="">
             <Button onClick={handleCloseDialog}>Cancel</Button>
             <Button
               onClick={handleDialogSubmit(handleSaveAllergy)}
-              variant="contained"
+              
             >
               {editingIndex !== null ? 'Update' : 'Add'} Allergy
             </Button>
           </DialogActions>
         </Dialog>
-
         {/* Summary and Warnings */}
         {allergyObjects.length > 0 && (
-          <Box sx={{ mt: 3 }}>
+          <div className="">
             {allergyObjects.some((a) => a.severity === 'severe') && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                <Typography variant="body2">
+              <Alert severity="error" className="">
+                <div >
                   <strong>Critical Allergies Detected:</strong> This patient has
                   severe allergies that require immediate attention during
                   medication prescribing and treatment planning.
-                </Typography>
+                </div>
               </Alert>
             )}
-
             <Alert severity="success">
-              <Typography variant="body2">
+              <div >
                 <strong>Allergy Summary:</strong> {allergyObjects.length} allerg
                 {allergyObjects.length > 1 ? 'ies' : 'y'} recorded. This
                 information will be used for drug interaction and
                 contraindication checking.
-              </Typography>
+              </div>
             </Alert>
-          </Box>
+          </div>
         )}
       </CardContent>
     </Card>
   );
 };
-
 export default AllergyInput;

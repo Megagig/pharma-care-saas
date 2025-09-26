@@ -1,43 +1,20 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  IconButton,
-  Collapse,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Chip,
-  Divider,
-  Alert,
-  CircularProgress,
-  Stack,
-  Tooltip,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Visibility as ViewIcon,
-  Edit as EditIcon,
-  Security as SecurityIcon,
-  Schedule as ScheduleIcon,
-  AttachFile as AttachFileIcon,
-  Description as DescriptionIcon,
-} from '@mui/icons-material';
-import { format, parseISO } from 'date-fns';
-import { usePatientNotes } from '../queries/clinicalNoteQueries';
-import { useEnhancedClinicalNoteStore } from '../stores/enhancedClinicalNoteStore';
-import {
-  ClinicalNote,
-  NOTE_TYPES,
-  NOTE_PRIORITIES,
-} from '../types/clinicalNote';
+import React, { useState, useEffect } from 'react';
+
+import { Button } from '@/components/ui/button';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { CardHeader } from '@/components/ui/card';
+
+import { Tooltip } from '@/components/ui/tooltip';
+
+import { Spinner } from '@/components/ui/spinner';
+
+import { Alert } from '@/components/ui/alert';
+
+import { Separator } from '@/components/ui/separator';
 
 interface PatientClinicalNotesProps {
   patientId: string;
@@ -47,31 +24,25 @@ interface PatientClinicalNotesProps {
   onViewNote?: (noteId: string) => void;
   onEditNote?: (noteId: string) => void;
 }
-
-const PatientClinicalNotes: React.FC<PatientClinicalNotesProps> = ({
+const PatientClinicalNotes: React.FC<PatientClinicalNotesProps> = ({ 
   patientId,
   maxNotes = 5,
   showCreateButton = true,
   onCreateNote,
   onViewNote,
-  onEditNote,
+  onEditNote
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
-
   // Store actions
   const { setCreateModalOpen } = useEnhancedClinicalNoteStore();
-
   // Fetch patient notes
   const { data, isLoading, error, refetch } = usePatientNotes(patientId, {
     limit: expanded ? 50 : maxNotes,
     sortBy: 'createdAt',
-    sortOrder: 'desc',
-  });
-
+    sortOrder: 'desc'}
   const notes = data?.notes || [];
   const totalNotes = data?.total || 0;
-
   // Handle note expansion
   const toggleNoteExpansion = (noteId: string) => {
     const newExpanded = new Set(expandedNotes);
@@ -82,7 +53,6 @@ const PatientClinicalNotes: React.FC<PatientClinicalNotesProps> = ({
     }
     setExpandedNotes(newExpanded);
   };
-
   // Format functions
   const formatDate = (dateString: string) => {
     try {
@@ -91,19 +61,15 @@ const PatientClinicalNotes: React.FC<PatientClinicalNotesProps> = ({
       return dateString;
     }
   };
-
   const formatPharmacistName = (pharmacist: ClinicalNote['pharmacist']) => {
     return `${pharmacist.firstName} ${pharmacist.lastName}`;
   };
-
   const getTypeInfo = (type: ClinicalNote['type']) => {
     return NOTE_TYPES.find((t) => t.value === type);
   };
-
   const getPriorityInfo = (priority: ClinicalNote['priority']) => {
     return NOTE_PRIORITIES.find((p) => p.value === priority);
   };
-
   // Handle actions
   const handleCreateNote = () => {
     if (onCreateNote) {
@@ -114,7 +80,6 @@ const PatientClinicalNotes: React.FC<PatientClinicalNotesProps> = ({
       window.location.href = createUrl;
     }
   };
-
   const handleViewNote = (noteId: string) => {
     if (onViewNote) {
       onViewNote(noteId);
@@ -123,7 +88,6 @@ const PatientClinicalNotes: React.FC<PatientClinicalNotesProps> = ({
       window.location.href = `/notes/${noteId}`;
     }
   };
-
   const handleEditNote = (noteId: string) => {
     if (onEditNote) {
       onEditNote(noteId);
@@ -132,61 +96,41 @@ const PatientClinicalNotes: React.FC<PatientClinicalNotesProps> = ({
       window.location.href = `/notes/${noteId}/edit`;
     }
   };
-
   // Render note summary
   const renderNoteSummary = (note: ClinicalNote) => {
     const isExpanded = expandedNotes.has(note._id);
     const typeInfo = getTypeInfo(note.type);
     const priorityInfo = getPriorityInfo(note.priority);
-
     return (
-      <ListItem
+      <div
         key={note._id}
-        sx={{
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          border: '1px solid #e0e0e0',
-          borderRadius: 2,
-          mb: 1,
-          '&:hover': {
-            backgroundColor: '#f5f5f5',
-          },
-        }}
+        className=""
       >
         {/* Note Header */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            width: '100%',
-            cursor: 'pointer',
-          }}
+        <div
+          className=""
           onClick={() => toggleNoteExpansion(note._id)}
         >
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle2" fontWeight={600} noWrap>
+          <div className="">
+            <div  fontWeight={600} noWrap>
               {note.title}
-            </Typography>
-            <Stack
+            </div>
+            <div
               direction="row"
               spacing={1}
               alignItems="center"
-              sx={{ mt: 0.5 }}
+              className=""
             >
               <Chip
                 label={typeInfo?.label || note.type}
                 size="small"
-                variant="outlined"
+                
                 color="primary"
               />
               <Chip
                 label={priorityInfo?.label || note.priority}
                 size="small"
-                sx={{
-                  backgroundColor: priorityInfo?.color || '#757575',
-                  color: 'white',
-                  fontWeight: 500,
-                }}
+                className=""
               />
               {note.isConfidential && (
                 <Chip
@@ -201,7 +145,7 @@ const PatientClinicalNotes: React.FC<PatientClinicalNotesProps> = ({
                   title={`Follow-up: ${
                     note.followUpDate
                       ? formatDate(note.followUpDate)
-                      : 'Not scheduled'
+                      : 'Not scheduled'}
                   }`}
                 >
                   <ScheduleIcon color="warning" fontSize="small" />
@@ -212,161 +156,150 @@ const PatientClinicalNotes: React.FC<PatientClinicalNotesProps> = ({
                   <AttachFileIcon color="action" fontSize="small" />
                 </Tooltip>
               )}
-            </Stack>
-            <Typography variant="caption" color="text.secondary">
+            </div>
+            <div  color="text.secondary">
               {formatDate(note.createdAt)} •{' '}
               {formatPharmacistName(note.pharmacist)}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            </div>
+          </div>
+          <div className="">
             <IconButton
               size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewNote(note._id);
-              }}
-            >
+              >
               <ViewIcon />
             </IconButton>
             <IconButton
               size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEditNote(note._id);
-              }}
-            >
+              >
               <EditIcon />
             </IconButton>
             <IconButton size="small">
               {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {/* Note Content (Expandable) */}
         <Collapse in={isExpanded}>
-          <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
+          <div className="">
             {note.content.subjective && (
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="caption" fontWeight={600} color="primary">
+              <div className="">
+                <div  fontWeight={600} color="primary">
                   Subjective:
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                </div>
+                <div  className="">
                   {note.content.subjective}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
             {note.content.objective && (
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="caption" fontWeight={600} color="primary">
+              <div className="">
+                <div  fontWeight={600} color="primary">
                   Objective:
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                </div>
+                <div  className="">
                   {note.content.objective}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
             {note.content.assessment && (
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="caption" fontWeight={600} color="primary">
+              <div className="">
+                <div  fontWeight={600} color="primary">
                   Assessment:
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                </div>
+                <div  className="">
                   {note.content.assessment}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
             {note.content.plan && (
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="caption" fontWeight={600} color="primary">
+              <div className="">
+                <div  fontWeight={600} color="primary">
                   Plan:
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                </div>
+                <div  className="">
                   {note.content.plan}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
             {note.recommendations?.length > 0 && (
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="caption" fontWeight={600} color="primary">
+              <div className="">
+                <div  fontWeight={600} color="primary">
                   Recommendations:
-                </Typography>
-                <List dense sx={{ mt: 0.5 }}>
+                </div>
+                <List dense className="">
                   {note.recommendations.map((rec, index) => (
-                    <ListItem key={index} sx={{ py: 0, px: 1 }}>
-                      <ListItemText
+                    <div key={index} className="">
+                      <div
                         primary={rec}
-                        primaryTypographyProps={{ variant: 'body2' }}
+                        
                       />
-                    </ListItem>
+                    </div>
                   ))}
                 </List>
-              </Box>
+              </div>
             )}
             {note.tags?.length > 0 && (
-              <Box sx={{ mt: 1 }}>
-                <Stack direction="row" spacing={0.5} flexWrap="wrap">
+              <div className="">
+                <div direction="row" spacing={0.5} flexWrap="wrap">
                   {note.tags.map((tag, index) => (
                     <Chip
                       key={index}
                       label={tag}
                       size="small"
-                      variant="outlined"
+                      
                       color="secondary"
                     />
                   ))}
-                </Stack>
-              </Box>
+                </div>
+              </div>
             )}
-          </Box>
+          </div>
         </Collapse>
-      </ListItem>
+      </div>
     );
   };
-
   return (
     <Card>
       <CardHeader
         title={
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <DescriptionIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6">Clinical Notes</Typography>
+          <div className="">
+            <DescriptionIcon className="" />
+            <div >Clinical Notes</div>
             {totalNotes > 0 && (
-              <Chip
+              <Chip}
                 label={totalNotes}
                 size="small"
                 color="primary"
-                sx={{ ml: 1 }}
+                className=""
               />
             )}
-          </Box>
+          </div>
         }
         action={
-          <Box>
+          <div>
             {showCreateButton && (
-              <Button
+              <Button}
                 startIcon={<AddIcon />}
                 onClick={handleCreateNote}
-                variant="contained"
+                
                 size="small"
               >
                 New Note
               </Button>
             )}
-          </Box>
+          </div>
         }
       />
-      <CardContent sx={{ pt: 0 }}>
+      <CardContent className="">
         {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-            <CircularProgress />
-          </Box>
+          <div className="">
+            <Spinner />
+          </div>
         ) : error ? (
           <Alert
             severity="error"
-            sx={{ mb: 2 }}
-            action={
+            className=""
+            action={}
               <Button color="inherit" size="small" onClick={() => refetch()}>
                 Retry
               </Button>
@@ -379,62 +312,59 @@ const PatientClinicalNotes: React.FC<PatientClinicalNotesProps> = ({
               : `Failed to load clinical notes: ${error.message}`}
           </Alert>
         ) : notes.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
+          <div className="">
             <DescriptionIcon
-              sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+              className=""
             />
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+            <div  color="text.secondary" className="">
               No clinical notes found for this patient
-            </Typography>
+            </div>
             {showCreateButton && (
               <Button
                 startIcon={<AddIcon />}
                 onClick={handleCreateNote}
-                variant="outlined"
+                
               >
                 Create First Note
               </Button>
             )}
-          </Box>
+          </div>
         ) : (
           <>
-            <List sx={{ p: 0 }}>{notes.map(renderNoteSummary)}</List>
-
+            <List className="">{notes.map(renderNoteSummary)}</List>
             {/* Show More/Less Button */}
             {totalNotes > maxNotes && (
               <>
-                <Divider sx={{ my: 2 }} />
-                <Box sx={{ textAlign: 'center' }}>
+                <Separator className="" />
+                <div className="">
                   <Button
                     onClick={() => setExpanded(!expanded)}
                     startIcon={
-                      expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                      expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                     }
-                    variant="text"
+                    
                   >
                     {expanded ? 'Show Less' : `Show All ${totalNotes} Notes`}
                   </Button>
-                </Box>
+                </div>
               </>
             )}
-
             {/* View All Notes Link */}
-            <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <div className="">
               <Button
-                variant="outlined"
-                onClick={() =>
+                
+                onClick={() =>}
                   window.open(`/notes?patientId=${patientId}`, '_blank')
                 }
                 fullWidth
               >
                 View All Notes in Dashboard
               </Button>
-            </Box>
+            </div>
           </>
         )}
       </CardContent>
     </Card>
   );
 };
-
 export default PatientClinicalNotes;

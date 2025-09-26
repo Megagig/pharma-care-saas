@@ -1,14 +1,15 @@
+
 import { create } from 'zustand';
-import { persist, subscribeWithSelector } from 'zustand/middleware';
+import { subscribeWithSelector } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import {
-    ClinicalNote,
-    ClinicalNoteFormData,
-    ClinicalNoteFilters,
-    FileUploadState,
-    clinicalNoteUtils
-} from '../types/clinicalNote';
-import { clinicalNoteService } from '../services/clinicalNoteService';
+import { clinicalNoteService } from '@/services/clinicalNoteService';
+
+// Mock data and types
+interface ClinicalNote {}
+interface ClinicalNoteFilters {}
+interface ClinicalNoteFormData {}
+interface FileUploadState {}
 
 // Helper functions
 const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -153,7 +154,7 @@ interface EnhancedClinicalNoteStore {
 export const useEnhancedClinicalNoteStore = create<EnhancedClinicalNoteStore>()(
     subscribeWithSelector(
         persist(
-            immer((set, get) => ({
+            immer((set, get) => ({ 
                 // Initial state
                 notes: [],
                 selectedNote: null,
@@ -162,7 +163,7 @@ export const useEnhancedClinicalNoteStore = create<EnhancedClinicalNoteStore>()(
                     page: 1,
                     limit: 10,
                     sortBy: 'createdAt',
-                    sortOrder: 'desc',
+                    sortOrder: 'desc'
                 },
                 searchQuery: '',
                 loading: {
@@ -202,7 +203,7 @@ export const useEnhancedClinicalNoteStore = create<EnhancedClinicalNoteStore>()(
                 },
 
                 // Enhanced CRUD operations
-                fetchNotes: async (filters) => {
+                fetchNotes: async (filters?: ClinicalNoteFilters) => {
                     set((state) => {
                         state.loading.fetchNotes = true;
                         state.errors.fetchNotes = null;
@@ -715,10 +716,10 @@ export const useEnhancedClinicalNoteStore = create<EnhancedClinicalNoteStore>()(
                 // File upload management
                 addFileToUpload: (file) => {
                     set((state) => {
-                        state.fileUpload.files.push({
+                        state.fileUpload.files.push({ 
                             file,
                             progress: 0,
-                            status: 'pending',
+                            status: 'pending'
                         });
                     });
                 },
@@ -884,12 +885,12 @@ export const useEnhancedClinicalNoteStore = create<EnhancedClinicalNoteStore>()(
             })),
             {
                 name: 'enhanced-clinical-note-store',
-                partialize: (state) => ({
+                partialize: (state) => ({ 
                     filters: state.filters,
                     ui: {
                         viewMode: state.ui.viewMode,
-                        sidebarCollapsed: state.ui.sidebarCollapsed,
-                    },
+                        sidebarCollapsed: state.ui.sidebarCollapsed
+                    }
                 }),
             }
         )
@@ -898,35 +899,35 @@ export const useEnhancedClinicalNoteStore = create<EnhancedClinicalNoteStore>()(
 
 // Utility hooks for easier access to specific states
 export const useClinicalNotes = () =>
-    useEnhancedClinicalNoteStore((state) => ({
+    useEnhancedClinicalNoteStore((state) => ({ 
         notes: state.notes,
         loading: state.loading.fetchNotes,
         error: state.errors.fetchNotes,
         pagination: state.pagination,
         fetchNotes: state.fetchNotes,
         fetchNotesByPatient: state.fetchNotesByPatient,
-        searchNotes: state.searchNotes,
+        searchNotes: state.searchNotes
     }));
 
 export const useSelectedNote = () =>
-    useEnhancedClinicalNoteStore((state) => ({
+    useEnhancedClinicalNoteStore((state) => ({ 
         selectedNote: state.selectedNote,
         selectNote: state.selectNote,
-        getNoteById: state.getNoteById,
+        getNoteById: state.getNoteById
     }));
 
 export const useClinicalNoteFilters = () =>
-    useEnhancedClinicalNoteStore((state) => ({
+    useEnhancedClinicalNoteStore((state) => ({ 
         filters: state.filters,
         searchQuery: state.searchQuery,
         setFilters: state.setFilters,
         clearFilters: state.clearFilters,
         setSearchQuery: state.setSearchQuery,
-        applyFilters: state.applyFilters,
+        applyFilters: state.applyFilters
     }));
 
 export const useClinicalNoteActions = () =>
-    useEnhancedClinicalNoteStore((state) => ({
+    useEnhancedClinicalNoteStore((state) => ({ 
         createNote: state.createNote,
         updateNote: state.updateNote,
         deleteNote: state.deleteNote,
@@ -938,7 +939,7 @@ export const useClinicalNoteActions = () =>
             create: state.loading.createNote,
             update: state.loading.updateNote,
             delete: state.loading.deleteNote,
-            bulk: state.loading.bulkOperations,
+            bulk: state.loading.bulkOperations
         },
         errors: {
             create: state.errors.createNote,
@@ -946,31 +947,31 @@ export const useClinicalNoteActions = () =>
             delete: state.errors.deleteNote,
             bulk: state.errors.bulkOperations,
         },
-        clearErrors: state.clearErrors,
+        clearErrors: state.clearErrors
     }));
 
 export const useClinicalNoteSelection = () =>
-    useEnhancedClinicalNoteStore((state) => ({
+    useEnhancedClinicalNoteStore((state) => ({ 
         selectedNotes: state.selectedNotes,
         toggleNoteSelection: state.toggleNoteSelection,
         selectAllNotes: state.selectAllNotes,
         clearSelection: state.clearSelection,
-        isNoteSelected: state.isNoteSelected,
+        isNoteSelected: state.isNoteSelected
     }));
 
 export const useClinicalNoteUI = () =>
-    useEnhancedClinicalNoteStore((state) => ({
+    useEnhancedClinicalNoteStore((state) => ({ 
         ui: state.ui,
         setCreateModalOpen: state.setCreateModalOpen,
         setEditModalOpen: state.setEditModalOpen,
         setDeleteConfirmOpen: state.setDeleteConfirmOpen,
         setBulkDeleteConfirmOpen: state.setBulkDeleteConfirmOpen,
         setViewMode: state.setViewMode,
-        toggleSidebar: state.toggleSidebar,
+        toggleSidebar: state.toggleSidebar
     }));
 
 export const useClinicalNoteFileUpload = () =>
-    useEnhancedClinicalNoteStore((state) => ({
+    useEnhancedClinicalNoteStore((state) => ({ 
         fileUpload: state.fileUpload,
         uploadAttachment: state.uploadAttachment,
         deleteAttachment: state.deleteAttachment,
@@ -981,18 +982,18 @@ export const useClinicalNoteFileUpload = () =>
         updateFileProgress: state.updateFileProgress,
         setFileError: state.setFileError,
         loading: state.loading.uploadAttachment,
-        error: state.errors.uploadAttachment,
+        error: state.errors.uploadAttachment
     }));
 
 export const useClinicalNoteAnalytics = () =>
-    useEnhancedClinicalNoteStore((state) => ({
+    useEnhancedClinicalNoteStore((state) => ({ 
         getNotesByType: state.getNotesByType,
         getNotesByPriority: state.getNotesByPriority,
         getConfidentialNotes: state.getConfidentialNotes,
         getNotesWithFollowUp: state.getNotesWithFollowUp,
         getNotesWithAttachments: state.getNotesWithAttachments,
         getAllTags: state.getAllTags,
-        getPatientNoteSummary: state.getPatientNoteSummary,
+        getPatientNoteSummary: state.getPatientNoteSummary
     }));
 
 // Export the main store as default

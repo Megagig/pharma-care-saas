@@ -1,5 +1,3 @@
-import { apiClient } from './apiClient';
-
 export interface NotificationPreferences {
     email: boolean;
     sms: boolean;

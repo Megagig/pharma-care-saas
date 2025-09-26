@@ -1,71 +1,32 @@
 // Quality Improvement Dashboard Report Component
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  LinearProgress,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-} from '@mui/material';
-import {
-  Timeline,
-  TrendingUp,
-  TrendingDown,
-  TrendingFlat,
-  Assessment,
-  CheckCircle,
-  Warning,
-  Error,
-  Schedule,
-  Assignment,
-  CalendarToday,
-  BarChart,
-} from '@mui/icons-material';
 import ChartComponent from '../shared/ChartComponent';
-import { ChartData } from '../../types/charts';
-import { QualityImprovementFilters } from '../../types/filters';
-import { useCurrentFilters } from '../../stores/filtersStore';
-import { ReportType } from '../../types/reports';
+
+import { Card, CardContent, Progress, Alert, Tabs, Separator } from '@/components/ui/button';
 
 interface QualityImprovementReportProps {
   filters: QualityImprovementFilters;
   onFilterChange?: (filters: QualityImprovementFilters) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
-
-const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
+const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({ 
   filters,
-  onFilterChange,
+  onFilterChange
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   // Mock data - in real implementation, this would come from API
   const mockData = useMemo(
-    () => ({
+    () => ({ 
       // KPI Cards Data
       kpiData: [
         {
@@ -75,7 +36,7 @@ const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
           trend: {
             direction: 'down' as const,
             value: 18.5,
-            period: 'vs target',
+            period: 'vs target'}
           },
           status: 'success' as const,
           target: { value: 6, label: 'hours' },
@@ -114,7 +75,6 @@ const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
           status: 'info' as const,
         },
       ],
-
       // Completion Time Analysis
       completionTimeData: {
         id: 'completion-time-analysis',
@@ -377,7 +337,6 @@ const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
           },
         },
       },
-
       // Problem Identification Patterns Heatmap
       problemPatternsData: {
         id: 'problem-patterns-heatmap',
@@ -601,7 +560,6 @@ const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
           },
         },
       },
-
       // Follow-up Compliance Calendar Heatmap
       followUpComplianceData: {
         title: 'Follow-up Compliance Tracking',
@@ -619,7 +577,6 @@ const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
           secondary: 'Compliance Rate',
         },
       },
-
       // Documentation Quality Metrics
       documentationQualityData: {
         id: 'documentation-quality',
@@ -813,7 +770,6 @@ const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
           },
         },
       },
-
       // Quality Trend Analysis
       qualityTrendData: {
         id: 'quality-trend-analysis',
@@ -1035,7 +991,6 @@ const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
           },
         },
       },
-
       // Problem patterns list
       problemPatterns: [
         {
@@ -1066,25 +1021,20 @@ const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
           trend: 'decreasing' as const,
           impact: 'Efficiency reduction',
         },
-      ],
-    }),
+      ], },
     []
   );
-
   // Simulate data loading
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [filters]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   const getSeverityColor = (
     severity: 'low' | 'medium' | 'high' | 'critical'
   ) => {
@@ -1101,76 +1051,70 @@ const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
         return '#6b7280';
     }
   };
-
   const getTrendIcon = (trend: 'increasing' | 'stable' | 'decreasing') => {
     switch (trend) {
       case 'increasing':
-        return <TrendingUp sx={{ color: 'error.main', fontSize: 16 }} />;
+        return <TrendingUp className="" />;
       case 'decreasing':
-        return <TrendingDown sx={{ color: 'success.main', fontSize: 16 }} />;
+        return <TrendingDown className="" />;
       default:
-        return <TrendingFlat sx={{ color: 'text.secondary', fontSize: 16 }} />;
+        return <TrendingFlat className="" />;
     }
   };
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Alert severity="error" className="">
+        <div  gutterBottom>
           Error Loading Quality Improvement Data
-        </Typography>
-        <Typography variant="body2">{error}</Typography>
+        </div>
+        <div >{error}</div>
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center' }}
+          className=""
         >
-          <Timeline sx={{ mr: 2, color: 'primary.main' }} />
+          <Timeline className="" />
           Quality Improvement Dashboard
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Comprehensive analysis of completion times, problem patterns,
           follow-up compliance, documentation quality, and quality trends with
           statistical process control.
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div container spacing={3} className="">
         {mockData.kpiData.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <ChartComponent
-              data={{
+              data={{}
                 id: `kpi-${index}`,
                 title: '',
                 type: 'kpi-card',
                 data: [kpi],
                 config: {} as any,
-              }}
               height={180}
               loading={loading}
             />
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          
           scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          className=""
         >
           <Tab
             icon={<Schedule />}
@@ -1198,25 +1142,24 @@ const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
             iconPosition="start"
           />
         </Tabs>
-
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.completionTimeData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Completion Time Insights
-                  </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Chip
                       label="Medication Review: Within Control"
@@ -1233,320 +1176,269 @@ const QualityImprovementReport: React.FC<QualityImprovementReportProps> = ({
                       color="success"
                       size="small"
                     />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     All processes are operating within statistical control
                     limits. Medication review times show consistent improvement,
                     while documentation processes are trending toward target
                     completion times.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
+          <div container spacing={3}>
+            <div item xs={12} md={8}>
               <ChartComponent
                 data={mockData.problemPatternsData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card sx={{ height: 400 }}>
+            </div>
+            <div item xs={12} md={4}>
+              <Card className="">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Problem Pattern Analysis
-                  </Typography>
+                  </div>
                   <List dense>
                     {mockData.problemPatterns.map((pattern, index) => (
                       <React.Fragment key={index}>
-                        <ListItem>
-                          <ListItemIcon>
-                            <Box
-                              sx={{
-                                width: 12,
-                                height: 12,
-                                borderRadius: '50%',
-                                backgroundColor: getSeverityColor(
-                                  pattern.severity
-                                ),
-                              }}
+                        <div>
+                          <div>
+                            <div
+                              className=""
                             />
-                          </ListItemIcon>
-                          <ListItemText
+                          </div>
+                          <div
                             primary={
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                }}
+                              <div
+                                className=""
                               >
-                                <Typography
-                                  variant="body2"
-                                  sx={{ fontWeight: 500 }}
-                                >
+                                <div
+                                  
+                                  className=""
+                                >}
                                   {pattern.pattern}
-                                </Typography>
+                                </div>
                                 {getTrendIcon(pattern.trend)}
-                              </Box>
+                              </div>
                             }
                             secondary={
-                              <Box>
-                                <Typography
-                                  variant="caption"
+                              <div>
+                                <div
+                                  
                                   color="text.secondary"
-                                >
+                                >}
                                   Frequency: {pattern.frequency} | Impact:{' '}
                                   {pattern.impact}
-                                </Typography>
-                              </Box>
+                                </div>
+                              </div>
                             }
                           />
-                        </ListItem>
+                        </div>
                         {index < mockData.problemPatterns.length - 1 && (
-                          <Divider />
+                          <Separator />
                         )}
                       </React.Fragment>
                     ))}
                   </List>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+          <div container spacing={3}>
+            <div item xs={12} md={6}>
               <ChartComponent
                 data={{
                   id: 'follow-up-compliance',
                   title: '',
                   type: 'progress-ring',
-                  data: [mockData.followUpComplianceData],
+                  data: [mockData.followUpComplianceData],}
                   config: {} as any,
-                }}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: 400 }}>
+            </div>
+            <div item xs={12} md={6}>
+              <Card className="">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Follow-up Compliance Breakdown
-                  </Typography>
-
+                  </div>
                   {mockData.followUpComplianceData.segments?.map(
                     (segment, index) => (
-                      <Box key={index} sx={{ mb: 2 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            mb: 1,
-                          }}
+                      <div key={index} className="">
+                        <div
+                          className=""
                         >
-                          <Typography variant="body2">
+                          <div >
                             {segment.label}
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          </div>
+                          <div  className="">
                             {segment.value}%
-                          </Typography>
-                        </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={segment.value}
-                          sx={{
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: 'grey.200',
-                            '& .MuiLinearProgress-bar': {
-                              backgroundColor: segment.color,
-                              borderRadius: 4,
-                            },
-                          }}
-                        />
-                      </Box>
+                          </div>
+                        </div>
+                        <Progress
+                          
+                          className="" />
+                      </div>
                     )
                   )}
-
-                  <Box
-                    sx={{
-                      mt: 3,
-                      p: 2,
-                      backgroundColor: 'grey.50',
-                      borderRadius: 1,
-                    }}
+                  <div
+                    className=""
                   >
-                    <Typography variant="body2" color="text.secondary">
+                    <div  color="text.secondary">
                       <strong>Key Insights:</strong> Follow-up compliance has
                       improved by 12.1% this month. Focus areas include reducing
                       overdue appointments and implementing automated reminder
                       systems.
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.documentationQualityData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Documentation Quality Analysis
-                  </Typography>
-                  <Grid container spacing={2}>
+                  </div>
+                  <div container spacing={2}>
                     {mockData.documentationQualityData.data.map(
                       (item: unknown, index: number) => (
-                        <Grid item xs={12} sm={6} md={4} key={index}>
-                          <Paper sx={{ p: 2, textAlign: 'center' }}>
-                            <Typography variant="subtitle2" gutterBottom>
+                        <div item xs={12} sm={6} md={4} key={index}>
+                          <div className="">
+                            <div  gutterBottom>
                               {item.type}
-                            </Typography>
-                            <Typography
-                              variant="h4"
+                            </div>
+                            <div
+                              
                               color="primary.main"
                               gutterBottom
                             >
                               {item.current}%
-                            </Typography>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                mb: 1,
-                              }}
+                            </div>
+                            <div
+                              className=""
                             >
                               {item.current >= item.target ? (
                                 <CheckCircle
-                                  sx={{
-                                    color: 'success.main',
-                                    fontSize: 16,
-                                    mr: 0.5,
-                                  }}
+                                  className=""
                                 />
                               ) : (
                                 <Error
-                                  sx={{
-                                    color: 'warning.main',
-                                    fontSize: 16,
-                                    mr: 0.5,
-                                  }}
+                                  className=""
                                 />
                               )}
-                              <Typography
-                                variant="caption"
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 Target: {item.target}%
-                              </Typography>
-                            </Box>
+                              </div>
+                            </div>
                             <Chip
                               label={`+${item.improvement}% improvement`}
                               color="success"
                               size="small"
-                              variant="outlined"
+                              
                             />
-                          </Paper>
-                        </Grid>
+                          </div>
+                        </div>
                       )
                     )}
-                  </Grid>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={4}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.qualityTrendData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Quality Trend Insights
-                  </Typography>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography
-                          variant="h3"
+                  </div>
+                  <div container spacing={3}>
+                    <div item xs={12} md={4}>
+                      <div className="">
+                        <div
+                          
                           color="success.main"
                           gutterBottom
                         >
                           +10.0%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Overall Quality Improvement
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography variant="h3" color="info.main" gutterBottom>
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={4}>
+                      <div className="">
+                        <div  color="info.main" gutterBottom>
                           93.1%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Process Capability Score
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography
-                          variant="h3"
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={4}>
+                      <div className="">
+                        <div
+                          
                           color="primary.main"
                           gutterBottom
                         >
                           89.8%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Customer Satisfaction
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="body2" color="text.secondary">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <Separator className="" />
+                  <div  color="text.secondary">
                     Quality metrics show consistent upward trends with all
                     measures approaching or exceeding target values. The
                     statistical process control chart indicates stable,
                     improving processes with no special cause variations
                     detected.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default QualityImprovementReport;

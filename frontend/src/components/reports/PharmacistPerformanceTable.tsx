@@ -1,28 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
-  Paper,
-  Chip,
-  Box,
-  Avatar,
-  LinearProgress,
-  Tooltip,
-} from '@mui/material';
-import {
-  Star as StarIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-} from '@mui/icons-material';
-import type { PharmacistPerformanceReport } from '../../types/mtr';
+import { Card, CardContent, Tooltip, Progress, Avatar } from '@/components/ui/button';
 
 interface PharmacistPerformanceTableProps {
   data: PharmacistPerformanceReport;
@@ -36,9 +12,9 @@ type SortField =
   | 'interventionAcceptanceRate';
 type SortDirection = 'asc' | 'desc';
 
-const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
+const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({ 
   data,
-  loading = false,
+  loading = false
 }) => {
   const [sortField, setSortField] = useState<SortField>('qualityScore');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -47,10 +23,10 @@ const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
     return (
       <Card>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <div  gutterBottom>
             Pharmacist Performance
-          </Typography>
-          <LinearProgress />
+          </div>
+          <Progress />
         </CardContent>
       </Card>
     );
@@ -93,71 +69,57 @@ const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
   };
 
   const renderQualityScoreBar = (score: number) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 120 }}>
-      <Box sx={{ width: '100%', mr: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={score}
+    <div className="">
+      <div className="">
+        <Progress
+          
           color={getPerformanceColor(score)}
-          sx={{ height: 8, borderRadius: 4 }}
+          className=""
         />
-      </Box>
-      <Typography variant="body2" color="textSecondary">
+      </div>
+      <div  color="textSecondary">
         {score.toFixed(0)}
-      </Typography>
-    </Box>
+      </div>
+    </div>
   );
 
   return (
     <Card>
       <CardContent>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            mb: 2,
-          }}
+        <div
+          className=""
         >
-          <Typography variant="h6">Pharmacist Performance Rankings</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" color="textSecondary">
+          <div >Pharmacist Performance Rankings</div>
+          <div className="">
+            <div  color="textSecondary">
               Total Pharmacists: {data.summary.totalPharmacists}
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
+            </div>
+            <div  color="textSecondary">
               Avg Quality Score: {data.summary.avgQualityScore.toFixed(1)}
-            </Typography>
-          </Box>
-        </Box>
+            </div>
+          </div>
+        </div>
 
         {/* Top Performer Highlight */}
         {data.summary.topPerformer && (
-          <Box
-            sx={{
-              p: 2,
-              mb: 2,
-              bgcolor: 'success.light',
-              borderRadius: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-            }}
+          <div
+            className=""
           >
             <StarIcon color="warning" />
-            <Typography variant="subtitle1" color="success.contrastText">
+            <div  color="success.contrastText">
               Top Performer: {data.summary.topPerformer.pharmacistName}
-            </Typography>
+            </div>
             <Chip
               label={`Quality Score: ${
-                data.summary.topPerformer.qualityScore?.toFixed(1) || 'N/A'
+                data.summary.topPerformer.qualityScore?.toFixed(1) || 'N/A'}
               }`}
               color="warning"
               size="small"
             />
-          </Box>
+          </div>
         )}
 
-        <TableContainer component={Paper} variant="outlined">
+        <TableContainer  >
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -167,7 +129,7 @@ const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
                   <TableSortLabel
                     active={sortField === 'qualityScore'}
                     direction={
-                      sortField === 'qualityScore' ? sortDirection : 'desc'
+                      sortField === 'qualityScore' ? sortDirection : 'desc'}
                     }
                     onClick={() => handleSort('qualityScore')}
                   >
@@ -178,7 +140,7 @@ const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
                   <TableSortLabel
                     active={sortField === 'totalReviews'}
                     direction={
-                      sortField === 'totalReviews' ? sortDirection : 'desc'
+                      sortField === 'totalReviews' ? sortDirection : 'desc'}
                     }
                     onClick={() => handleSort('totalReviews')}
                   >
@@ -189,7 +151,7 @@ const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
                   <TableSortLabel
                     active={sortField === 'completionRate'}
                     direction={
-                      sortField === 'completionRate' ? sortDirection : 'desc'
+                      sortField === 'completionRate' ? sortDirection : 'desc'}
                     }
                     onClick={() => handleSort('completionRate')}
                   >
@@ -202,7 +164,7 @@ const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
                     direction={
                       sortField === 'interventionAcceptanceRate'
                         ? sortDirection
-                        : 'desc'
+                        : 'desc'}
                     }
                     onClick={() => handleSort('interventionAcceptanceRate')}
                   >
@@ -218,35 +180,31 @@ const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
               {sortedData.map((pharmacist, index) => (
                 <TableRow
                   key={pharmacist._id}
-                  sx={{
-                    '&:nth-of-type(odd)': { bgcolor: 'action.hover' },
-                    ...(index === 0 && { bgcolor: 'success.light' }),
-                  }}
-                >
+                  className="">
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <div className="">
                       {index + 1}
                       {index === 0 && (
-                        <StarIcon color="warning" sx={{ ml: 1 }} />
+                        <StarIcon color="warning" className="" />
                       )}
-                    </Box>
+                    </div>
                   </TableCell>
 
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <div className="">
                       <Avatar
-                        sx={{ width: 32, height: 32, fontSize: '0.875rem' }}
+                        className=""
                       >
                         {pharmacist.pharmacistName.charAt(0)}
                       </Avatar>
-                      <Typography variant="body2">
+                      <div >
                         {pharmacist.pharmacistName}
-                      </Typography>
+                      </div>
                       {getPerformanceIcon(
                         pharmacist.qualityScore,
                         data.summary.avgQualityScore
                       )}
-                    </Box>
+                    </div>
                   </TableCell>
 
                   <TableCell>
@@ -254,14 +212,14 @@ const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
                   </TableCell>
 
                   <TableCell>
-                    <Box>
-                      <Typography variant="body2">
+                    <div>
+                      <div >
                         {pharmacist.totalReviews}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
+                      </div>
+                      <div  color="textSecondary">
                         ({pharmacist.completedReviews} completed)
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   </TableCell>
 
                   <TableCell>
@@ -269,32 +227,32 @@ const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
                       label={`${pharmacist.completionRate.toFixed(1)}%`}
                       color={getPerformanceColor(pharmacist.completionRate)}
                       size="small"
-                      variant="outlined"
+                      
                     />
                   </TableCell>
 
                   <TableCell>
-                    <Box>
-                      <Typography variant="body2">
+                    <div>
+                      <div >
                         {pharmacist.interventionAcceptanceRate.toFixed(1)}%
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
+                      </div>
+                      <div  color="textSecondary">
                         ({pharmacist.acceptedInterventions}/
                         {pharmacist.totalInterventions})
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   </TableCell>
 
                   <TableCell>
                     <Tooltip
                       title={`Avg completion time: ${
-                        pharmacist.avgCompletionTime?.toFixed(1) || 0
+                        pharmacist.avgCompletionTime?.toFixed(1) || 0}
                       } days`}
                     >
                       <Chip
                         label={`${pharmacist.efficiencyScore?.toFixed(0) || 0}`}
                         color={getPerformanceColor(
-                          pharmacist.efficiencyScore || 0
+                          pharmacist.efficiencyScore || 0}
                         )}
                         size="small"
                       />
@@ -302,20 +260,20 @@ const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
                   </TableCell>
 
                   <TableCell>
-                    <Box>
-                      <Typography variant="body2" color="success.main">
+                    <div>
+                      <div  color="success.main">
                         {pharmacist.totalProblemsResolved}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
+                      </div>
+                      <div  color="textSecondary">
                         Rate: {pharmacist.problemResolutionRate.toFixed(1)}%
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   </TableCell>
 
                   <TableCell>
-                    <Typography variant="body2" color="primary.main">
+                    <div  color="primary.main">
                       ${pharmacist.totalCostSavings?.toLocaleString() || 0}
-                    </Typography>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -324,15 +282,15 @@ const PharmacistPerformanceTable: React.FC<PharmacistPerformanceTableProps> = ({
         </TableContainer>
 
         {/* Performance Legend */}
-        <Box sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <Typography variant="caption" color="textSecondary">
+        <div className="">
+          <div  color="textSecondary">
             Quality Score Legend:
-          </Typography>
+          </div>
           <Chip label="Excellent (90+)" color="success" size="small" />
           <Chip label="Good (75-89)" color="warning" size="small" />
           <Chip label="Fair (60-74)" color="info" size="small" />
           <Chip label="Needs Improvement (<60)" color="error" size="small" />
-        </Box>
+        </div>
       </CardContent>
     </Card>
   );

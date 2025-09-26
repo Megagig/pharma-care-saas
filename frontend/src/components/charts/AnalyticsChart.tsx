@@ -1,21 +1,5 @@
-import React from 'react';
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from 'recharts';
-import { Box, Typography, Paper, CircularProgress } from '@mui/material';
 
+import { Tooltip, Spinner } from '@/components/ui/button';
 // Type definitions
 export type ChartType = 'line' | 'bar' | 'pie' | 'area';
 
@@ -54,7 +38,7 @@ const DEFAULT_COLORS = [
   '#82ca9d',
 ];
 
-const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
+const AnalyticsChart: React.FC<AnalyticsChartProps> = ({ 
   type,
   data,
   series,
@@ -65,70 +49,45 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   emptyMessage = 'No data available',
   title,
   colors = DEFAULT_COLORS,
-  currencySymbol = '₦',
+  currencySymbol = '₦'
 }) => {
   // Handle loading state
   if (loading) {
     return (
-      <Box
-        sx={{
-          height,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'background.paper',
-          borderRadius: 1,
-        }}
+      <div
+        className=""
       >
-        <CircularProgress size={40} />
-        <Typography sx={{ ml: 2 }} variant="body2" color="text.secondary">
+        <Spinner size={40} />
+        <div className=""  color="text.secondary">
           Loading chart data...
-        </Typography>
-      </Box>
+        </div>
+      </div>
     );
   }
 
   // Handle error state
   if (error) {
     return (
-      <Box
-        sx={{
-          height,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'background.paper',
-          borderRadius: 1,
-          p: 3,
-        }}
+      <div
+        className=""
       >
-        <Typography variant="body1" color="error" sx={{ mb: 1 }}>
+        <div  color="error" className="">
           Error loading chart data
-        </Typography>
-      </Box>
+        </div>
+      </div>
     );
   }
 
   // Handle empty data
   if (!data || data.length === 0) {
     return (
-      <Box
-        sx={{
-          height,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'background.paper',
-          borderRadius: 1,
-          p: 3,
-        }}
+      <div
+        className=""
       >
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+        <div  color="text.secondary" className="">
           {emptyMessage}
-        </Typography>
-      </Box>
+        </div>
+      </div>
     );
   }
 
@@ -148,32 +107,21 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
-        <Paper
-          sx={{
-            p: 2,
-            boxShadow: 3,
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            border: '1px solid #f0f0f0',
-          }}
+        <div
+          className=""
         >
-          <Typography variant="subtitle2" color="text.secondary">
+          <div  color="text.secondary">
             {label}
-          </Typography>
+          </div>
           {payload.map((entry) => (
-            <Box
+            <div
               key={`item-${entry.dataKey}`}
-              sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}
+              className=""
             >
-              <Box
-                sx={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  backgroundColor: entry.color,
-                  mr: 1,
-                }}
+              <div
+                className=""
               />
-              <Typography variant="body2">
+              <div >
                 {entry.name}:{' '}
                 {entry.dataKey.includes('cost') ||
                 entry.name.toLowerCase().includes('cost')
@@ -181,10 +129,10 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                   : entry.value}
                 {((entry.payload as Record<string, unknown>)?.unit as string) ||
                   ''}
-              </Typography>
-            </Box>
+              </div>
+            </div>
           ))}
-        </Paper>
+        </div>
       );
     }
     return null;
@@ -208,7 +156,7 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 dataKey={s.dataKey}
                 name={s.name}
                 stroke={s.color || colors[index % colors.length]}
-                activeDot={{ r: 8 }}
+                
                 unit={s.unit || ''}
               />
             ))}
@@ -247,11 +195,9 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
-                label={(props) => {
+                label={(props) => {}
                   const { name } = props;
-                  return name;
-                }}
-              >
+                  return name;>
                 {data.map((_, idx) => (
                   <Cell
                     key={`cell-${idx}`}
@@ -263,21 +209,21 @@ const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
           </PieChart>
         );
       default:
-        return <Typography>Unsupported chart type</Typography>;
+        return <div>Unsupported chart type</div>;
     }
   };
 
   return (
-    <Box sx={{ width: '100%', height }}>
+    <div className="">
       {title && (
-        <Typography variant="h6" component="h3" gutterBottom sx={{ mb: 2 }}>
+        <div  component="h3" gutterBottom className="">
           {title}
-        </Typography>
+        </div>
       )}
       <ResponsiveContainer width="100%" height={title ? height - 40 : height}>
         {renderChart()}
       </ResponsiveContainer>
-    </Box>
+    </div>
   );
 };
 

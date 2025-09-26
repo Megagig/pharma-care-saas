@@ -1,39 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Collapse,
-  Alert,
-  CircularProgress,
-  Pagination,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Button,
-  Tooltip,
-} from '@mui/material';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import Download from '@mui/icons-material/Download';
-import Warning from '@mui/icons-material/Warning';
-import Error from '@mui/icons-material/Error';
-import Info from '@mui/icons-material/Info';
-import CheckCircle from '@mui/icons-material/CheckCircle';
-import { format, parseISO } from 'date-fns';
-import { clinicalInterventionService } from '../services/clinicalInterventionService';
+import { Button, Input, Label, Card, CardContent, Select, Tooltip, Spinner, Alert } from '@/components/ui/button';
 
 interface AuditLog {
   _id: string;
@@ -53,15 +18,13 @@ interface AuditLog {
   oldValues?: Record<string, unknown>;
   newValues?: Record<string, unknown>;
 }
-
 interface AuditTrailProps {
   interventionId?: string;
   interventionNumber?: string;
 }
-
-const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
+const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({ 
   interventionId,
-  interventionNumber,
+  interventionNumber
 }) => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,19 +38,15 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
     lastActivity: string | null;
     riskActivities: number;
   } | null>(null);
-
   // Filters
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [riskLevelFilter, setRiskLevelFilter] = useState('');
-
   const limit = 20;
-
   const fetchAuditTrail = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-
       const options: {
         page: number;
         limit: number;
@@ -98,13 +57,10 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
         page,
         limit,
       };
-
       if (startDate) options.startDate = startDate;
       if (endDate) options.endDate = endDate;
       if (riskLevelFilter) options.riskLevel = riskLevelFilter;
-
       let response;
-
       if (interventionId) {
         // Fetch audit trail for specific intervention
         response = await clinicalInterventionService.getInterventionAuditTrail(
@@ -115,7 +71,6 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
         // Fetch general audit trail for all interventions
         response = await clinicalInterventionService.getAllAuditTrail(options);
       }
-
       if (response.success && response.data) {
         setAuditLogs(response.data.logs as AuditLog[]);
         setTotalPages(Math.ceil((response.data.total || 0) / limit));
@@ -131,39 +86,35 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
         // Set empty state when no data is available
         setAuditLogs([]);
         setTotalPages(1);
-        setSummary({
+        setSummary({ 
           totalActions: 0,
           uniqueUsers: 0,
           lastActivity: null,
-          riskActivities: 0,
+          riskActivities: 0}
         });
         setError(response.message || 'No audit data available');
       }
     } catch (error: unknown) {
       console.error('Error fetching audit trail:', error);
-
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to fetch audit trail';
       setError(errorMessage);
-
       // Set empty state on error
       setAuditLogs([]);
       setTotalPages(1);
-      setSummary({
+      setSummary({ 
         totalActions: 0,
         uniqueUsers: 0,
         lastActivity: null,
-        riskActivities: 0,
+        riskActivities: 0}
       });
     } finally {
       setLoading(false);
     }
   }, [interventionId, page, startDate, endDate, riskLevelFilter, limit]);
-
   useEffect(() => {
     fetchAuditTrail();
   }, [fetchAuditTrail]);
-
   const handleExportAudit = async () => {
     try {
       const options = {
@@ -175,9 +126,7 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
         interventionIds: interventionId ? [interventionId] : [],
         includeDetails: true,
       };
-
       const blob = await clinicalInterventionService.exportAuditData(options);
-
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -198,7 +147,6 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
       );
     }
   };
-
   const toggleRowExpansion = (logId: string) => {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(logId)) {
@@ -208,7 +156,6 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
     }
     setExpandedRows(newExpanded);
   };
-
   const getRiskLevelColor = (riskLevel: string) => {
     switch (riskLevel) {
       case 'critical':
@@ -222,7 +169,6 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
         return 'success';
     }
   };
-
   const getRiskLevelIcon = (riskLevel: string) => {
     switch (riskLevel) {
       case 'critical':
@@ -236,7 +182,6 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
         return <CheckCircle />;
     }
   };
-
   const formatActionName = (action: string) => {
     return action
       .replace('INTERVENTION_', '')
@@ -244,139 +189,115 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
       .toLowerCase()
       .replace(/\b\w/g, (l) => l.toUpperCase());
   };
-
   if (loading) {
     return (
-      <Box
+      <div
         display="flex"
         justifyContent="center"
         alignItems="center"
         minHeight={200}
       >
-        <CircularProgress />
-      </Box>
+        <Spinner />
+      </div>
     );
   }
-
   return (
-    <Box>
+    <div>
       <Card>
         <CardContent>
-          <Box
+          <div
             display="flex"
             justifyContent="space-between"
             alignItems="center"
             mb={2}
           >
-            <Typography variant="h6">
+            <div >
               {interventionId
                 ? `Audit Trail - ${interventionNumber || interventionId}`
                 : 'Clinical Interventions Audit Trail'}
-            </Typography>
+            </div>
             <Button
-              variant="outlined"
+              
               startIcon={<Download />}
               onClick={handleExportAudit}
               size="small"
             >
               Export
             </Button>
-          </Box>
-
+          </div>
           {/* Summary Cards */}
           {summary && (
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: '1fr 1fr',
-                  md: 'repeat(4, 1fr)',
-                },
-                gap: 2,
-                mb: 3,
-              }}
-            >
-              <Card variant="outlined">
+            <div
+              className="">
+              <Card >
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Total Actions
-                  </Typography>
-                  <Typography variant="h4">{summary.totalActions}</Typography>
+                  </div>
+                  <div >{summary.totalActions}</div>
                 </CardContent>
               </Card>
-              <Card variant="outlined">
+              <Card >
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Unique Users
-                  </Typography>
-                  <Typography variant="h4">{summary.uniqueUsers}</Typography>
+                  </div>
+                  <div >{summary.uniqueUsers}</div>
                 </CardContent>
               </Card>
-              <Card variant="outlined">
+              <Card >
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Risk Activities
-                  </Typography>
-                  <Typography
-                    variant="h4"
+                  </div>
+                  <div
+                    
                     color={summary.riskActivities > 0 ? 'error' : 'success'}
                   >
                     {summary.riskActivities}
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-              <Card variant="outlined">
+              <Card >
                 <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
+                  <div color="textSecondary" gutterBottom>
                     Last Activity
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     {summary.lastActivity
                       ? format(
                           parseISO(summary.lastActivity),
                           'MMM dd, yyyy HH:mm'
                         )
                       : 'No activity'}
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Box>
+            </div>
           )}
-
           {/* Filters */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: '1fr 1fr',
-                md: 'repeat(4, 1fr)',
-              },
-              gap: 2,
-              mb: 3,
-            }}
-          >
-            <TextField
+          <div
+            className="">
+            <Input
               label="Start Date"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
+              slotProps={{ inputLabel: { shrink: true }
               fullWidth
               size="small"
             />
-            <TextField
+            <Input
               label="End Date"
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
+              slotProps={{ inputLabel: { shrink: true }
               fullWidth
               size="small"
             />
-            <FormControl fullWidth size="small">
-              <InputLabel>Risk Level</InputLabel>
+            <div fullWidth size="small">
+              <Label>Risk Level</Label>
               <Select
                 value={riskLevelFilter}
                 onChange={(e) => setRiskLevelFilter(e.target.value)}
@@ -388,29 +309,22 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
                 <MenuItem value="high">High</MenuItem>
                 <MenuItem value="critical">Critical</MenuItem>
               </Select>
-            </FormControl>
+            </div>
             <Button
-              variant="outlined"
-              onClick={() => {
-                setStartDate('');
-                setEndDate('');
-                setRiskLevelFilter('');
-                setPage(1);
-              }}
+              
+              
               fullWidth
             >
               Clear Filters
             </Button>
-          </Box>
-
+          </div>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" className="">
               {error}
             </Alert>
           )}
-
           {/* Audit Log Table */}
-          <TableContainer component={Paper} variant="outlined">
+          <TableContainer  >
             <Table>
               <TableHead>
                 <TableRow>
@@ -427,30 +341,30 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
                   <React.Fragment key={log._id}>
                     <TableRow hover>
                       <TableCell>
-                        <Typography variant="body2">
+                        <div >
                           {format(parseISO(log.timestamp), 'MMM dd, yyyy')}
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary">
+                        </div>
+                        <div  color="textSecondary">
                           {format(parseISO(log.timestamp), 'HH:mm:ss')}
-                        </Typography>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" fontWeight="medium">
+                        <div  fontWeight="medium">
                           {formatActionName(log.action)}
-                        </Typography>
+                        </div>
                         {log.changedFields && log.changedFields.length > 0 && (
-                          <Typography variant="caption" color="textSecondary">
+                          <div  color="textSecondary">
                             Changed: {log.changedFields.join(', ')}
-                          </Typography>
+                          </div>
                         )}
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">
+                        <div >
                           {log.userId.firstName} {log.userId.lastName}
-                        </Typography>
-                        <Typography variant="caption" color="textSecondary">
+                        </div>
+                        <div  color="textSecondary">
                           {log.userId.email}
-                        </Typography>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -464,15 +378,15 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
                               | 'error'
                               | 'info'
                               | 'success'
-                              | 'warning'
+                              | 'warning'}
                           }
                           size="small"
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" textTransform="capitalize">
+                        <div  textTransform="capitalize">
                           {log.complianceCategory.replace(/_/g, ' ')}
-                        </Typography>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Tooltip title="View Details">
@@ -491,7 +405,7 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
                     </TableRow>
                     <TableRow>
                       <TableCell
-                        style={{ paddingBottom: 0, paddingTop: 0 }}
+                        
                         colSpan={6}
                       >
                         <Collapse
@@ -499,78 +413,50 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
                           timeout="auto"
                           unmountOnExit
                         >
-                          <Box margin={1}>
-                            <Typography variant="subtitle2" gutterBottom>
+                          <div margin={1}>
+                            <div  gutterBottom>
                               Details
-                            </Typography>
+                            </div>
                             <pre
-                              style={{
-                                fontSize: '0.75rem',
-                                backgroundColor: '#f5f5f5',
-                                padding: '8px',
-                                borderRadius: '4px',
-                                overflow: 'auto',
-                                maxHeight: '200px',
-                              }}
-                            >
+                              >
                               {JSON.stringify(log.details, null, 2)}
                             </pre>
                             {log.oldValues && log.newValues && (
-                              <Box mt={2}>
-                                <Typography variant="subtitle2" gutterBottom>
+                              <div mt={2}>
+                                <div  gutterBottom>
                                   Changes
-                                </Typography>
-                                <Box
-                                  sx={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
-                                    gap: 2,
-                                  }}
+                                </div>
+                                <div
+                                  className=""
                                 >
-                                  <Box>
-                                    <Typography
-                                      variant="caption"
+                                  <div>
+                                    <div
+                                      
                                       color="textSecondary"
                                     >
                                       Before:
-                                    </Typography>
+                                    </div>
                                     <pre
-                                      style={{
-                                        fontSize: '0.75rem',
-                                        backgroundColor: '#ffebee',
-                                        padding: '8px',
-                                        borderRadius: '4px',
-                                        overflow: 'auto',
-                                        maxHeight: '150px',
-                                      }}
-                                    >
+                                      >
                                       {JSON.stringify(log.oldValues, null, 2)}
                                     </pre>
-                                  </Box>
-                                  <Box>
-                                    <Typography
-                                      variant="caption"
+                                  </div>
+                                  <div>
+                                    <div
+                                      
                                       color="textSecondary"
                                     >
                                       After:
-                                    </Typography>
+                                    </div>
                                     <pre
-                                      style={{
-                                        fontSize: '0.75rem',
-                                        backgroundColor: '#e8f5e8',
-                                        padding: '8px',
-                                        borderRadius: '4px',
-                                        overflow: 'auto',
-                                        maxHeight: '150px',
-                                      }}
-                                    >
+                                      >
                                       {JSON.stringify(log.newValues, null, 2)}
                                     </pre>
-                                  </Box>
-                                </Box>
-                              </Box>
+                                  </div>
+                                </div>
+                              </div>
                             )}
-                          </Box>
+                          </div>
                         </Collapse>
                       </TableCell>
                     </TableRow>
@@ -579,37 +465,34 @@ const ClinicalInterventionAuditTrail: React.FC<AuditTrailProps> = ({
               </TableBody>
             </Table>
           </TableContainer>
-
           {/* Pagination */}
           {totalPages > 1 && (
-            <Box display="flex" justifyContent="center" mt={3}>
+            <div display="flex" justifyContent="center" mt={3}>
               <Pagination
                 count={totalPages}
                 page={page}
                 onChange={(_, newPage) => setPage(newPage)}
                 color="primary"
               />
-            </Box>
+            </div>
           )}
-
           {auditLogs.length === 0 && !loading && (
-            <Box textAlign="center" py={4}>
+            <div textAlign="center" py={4}>
               <Alert severity="info">
-                <Typography variant="h6" gutterBottom>
+                <div  gutterBottom>
                   No Audit Data Available
-                </Typography>
-                <Typography variant="body2">
+                </div>
+                <div >
                   {interventionId
                     ? 'No audit logs found for this specific intervention.'
                     : 'No audit logs match the selected criteria. Try adjusting your filters or check back later as audit data is generated through system usage.'}
-                </Typography>
+                </div>
               </Alert>
-            </Box>
+            </div>
           )}
         </CardContent>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default ClinicalInterventionAuditTrail;

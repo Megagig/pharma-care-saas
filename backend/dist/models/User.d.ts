@@ -29,6 +29,12 @@ export interface IUser extends Document {
     licenseVerifiedAt?: Date;
     licenseVerifiedBy?: mongoose.Types.ObjectId;
     licenseRejectionReason?: string;
+    licenseExpirationDate?: Date;
+    suspensionReason?: string;
+    suspendedAt?: Date;
+    suspendedBy?: mongoose.Types.ObjectId;
+    reactivatedAt?: Date;
+    reactivatedBy?: mongoose.Types.ObjectId;
     parentUserId?: mongoose.Types.ObjectId;
     teamMembers?: mongoose.Types.ObjectId[];
     permissions: string[];

@@ -1,14 +1,12 @@
-import { authService } from '../services/authService';
-
 // Test login with debug user
 async function testAuth() {
   try {
     console.log('Testing authentication...');
 
     // Try to login with debug user
-    const loginResult = await authService.login({
+    const loginResult = await authService.login({ 
       email: 'debug@test.com',
-      password: 'debug123',
+      password: 'debug123'}
     });
 
     console.log('Login result:', loginResult);

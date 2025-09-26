@@ -1,0 +1,449 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "MUI to shadcn/ui Migration Dashboard",
+    "tags": ["migration", "performance", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Page Load Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "page_load_time_p50",
+            "legendFormat": "50th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "page_load_time_p95",
+            "legendFormat": "95th percentile",
+            "refId": "B"
+          },
+          {
+            "expr": "page_load_time_p99",
+            "legendFormat": "99th percentile",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Time (ms)",
+            "min": 0
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 3000,
+            "colorMode": "critical",
+            "op": "gt"
+          },
+          {
+            "value": 5000,
+            "colorMode": "critical",
+            "op": "gt"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Theme Toggle Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "theme_toggle_time_avg",
+            "legendFormat": "Average",
+            "refId": "A"
+          },
+          {
+            "expr": "theme_toggle_time_max",
+            "legendFormat": "Maximum",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Time (ms)",
+            "min": 0,
+            "max": 200
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 50,
+            "colorMode": "warning",
+            "op": "gt"
+          },
+          {
+            "value": 100,
+            "colorMode": "critical",
+            "op": "gt"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Bundle Size Tracking",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "bundle_size_bytes",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "bytes",
+        "thresholds": "1500000,2000000",
+        "colorBackground": true,
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "Error Rate",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "error_rate_percent",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "percent",
+        "thresholds": "1,5",
+        "colorBackground": true,
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 8
+        }
+      },
+      {
+        "id": 5,
+        "title": "Memory Usage",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "memory_usage_percent",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "percent",
+        "thresholds": "70,85",
+        "colorBackground": true,
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 8
+        }
+      },
+      {
+        "id": 6,
+        "title": "Active Users",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "active_users_count",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "short",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 8
+        }
+      },
+      {
+        "id": 7,
+        "title": "Core Web Vitals",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "largest_contentful_paint_p75",
+            "legendFormat": "LCP (75th percentile)",
+            "refId": "A"
+          },
+          {
+            "expr": "first_input_delay_p75",
+            "legendFormat": "FID (75th percentile)",
+            "refId": "B"
+          },
+          {
+            "expr": "cumulative_layout_shift_p75 * 1000",
+            "legendFormat": "CLS (75th percentile) x1000",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Time (ms) / CLS x1000",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 12
+        }
+      },
+      {
+        "id": 8,
+        "title": "Component Error Rates",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "component_error_rate",
+            "legendFormat": "{{ component }}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Errors per minute",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 12
+        }
+      },
+      {
+        "id": 9,
+        "title": "User Experience Metrics",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "bounce_rate_percent",
+            "format": "table",
+            "refId": "A"
+          },
+          {
+            "expr": "avg_session_duration_seconds",
+            "format": "table",
+            "refId": "B"
+          },
+          {
+            "expr": "conversion_rate_percent",
+            "format": "table",
+            "refId": "C"
+          }
+        ],
+        "columns": [
+          {
+            "text": "Metric",
+            "value": "metric"
+          },
+          {
+            "text": "Current Value",
+            "value": "Value"
+          },
+          {
+            "text": "Timestamp",
+            "value": "Time"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 0,
+          "y": 20
+        }
+      },
+      {
+        "id": 10,
+        "title": "Accessibility Score",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "accessibility_score",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 80
+                },
+                {
+                  "color": "green",
+                  "value": 90
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 12,
+          "y": 20
+        }
+      },
+      {
+        "id": 11,
+        "title": "Migration Progress",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "migration_components_completed",
+            "legendFormat": "Completed",
+            "refId": "A"
+          },
+          {
+            "expr": "migration_components_remaining",
+            "legendFormat": "Remaining",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 0,
+          "y": 26
+        }
+      },
+      {
+        "id": 12,
+        "title": "Performance Comparison",
+        "type": "bargauge",
+        "targets": [
+          {
+            "expr": "performance_improvement_percent{metric=\"page_load\"}",
+            "legendFormat": "Page Load",
+            "refId": "A"
+          },
+          {
+            "expr": "performance_improvement_percent{metric=\"theme_toggle\"}",
+            "legendFormat": "Theme Toggle",
+            "refId": "B"
+          },
+          {
+            "expr": "performance_improvement_percent{metric=\"bundle_size\"}",
+            "legendFormat": "Bundle Size",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": -50,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": -10
+                },
+                {
+                  "color": "yellow",
+                  "value": 0
+                },
+                {
+                  "color": "green",
+                  "value": 10
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 8,
+          "y": 26
+        }
+      },
+      {
+        "id": 13,
+        "title": "Alert Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "ALERTS{alertstate=\"firing\"}",
+            "legendFormat": "{{ alertname }}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 16,
+          "y": 26
+        }
+      }
+    ],
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1,
+    "links": [
+      {
+        "title": "Migration Documentation",
+        "url": "https://github.com/your-org/pharma-care-saas/blob/main/docs/MUI_TO_SHADCN_MIGRATION_GUIDE.md",
+        "type": "link"
+      },
+      {
+        "title": "Rollback Procedures",
+        "url": "https://github.com/your-org/pharma-care-saas/blob/main/docs/ROLLBACK_PROCEDURES.md",
+        "type": "link"
+      }
+    ]
+  }
+}

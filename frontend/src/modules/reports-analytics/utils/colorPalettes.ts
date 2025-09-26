@@ -1,6 +1,4 @@
 // Color Palettes and Theming System
-import { ChartTheme, GradientConfig } from '../types/charts';
-
 /**
  * Beautiful color palettes for charts
  */

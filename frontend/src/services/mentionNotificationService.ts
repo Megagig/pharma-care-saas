@@ -1,6 +1,3 @@
-import { socketService } from './socketService';
-import { notificationService } from './notificationService';
-
 export interface MentionNotificationData {
     messageId: string;
     conversationId: string;
@@ -30,9 +27,9 @@ class MentionNotificationService {
             } = data;
 
             // Create notifications for each mentioned user
-            const notifications = mentionedUserIds.map((userId) => ({
+            const notifications = mentionedUserIds.map((userId) => ({ 
                 userId,
-                type: 'mention' as const,
+                type: 'mention' as const}
                 title: `${senderName} mentioned you`,
                 content: this.truncateMessage(messageContent, 100),
                 data: {
@@ -46,8 +43,7 @@ class MentionNotificationService {
                     inApp: true,
                     email: priority === 'urgent',
                     sms: false,
-                },
-            }));
+                }
 
             // Send notifications via API
             await Promise.all(
@@ -67,8 +63,7 @@ class MentionNotificationService {
                         messageId,
                         senderId,
                     },
-                    priority,
-                });
+                    priority}
             });
 
             console.log(`Mention notifications sent to ${mentionedUserIds.length} users`);
@@ -89,8 +84,7 @@ class MentionNotificationService {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify(notificationData),
-            });
+                body: JSON.stringify(notificationData)}
 
             if (!response.ok) {
                 throw new Error(`Failed to create notification: ${response.statusText}`);
@@ -124,14 +118,14 @@ class MentionNotificationService {
             return;
         }
 
-        await this.sendMentionNotifications({
+        await this.sendMentionNotifications({ 
             messageId,
             conversationId,
             senderId,
             senderName,
             mentionedUserIds: filteredMentions,
             messageContent,
-            priority,
+            priority}
         });
     }
 
@@ -182,10 +176,9 @@ class MentionNotificationService {
         limit: number = 50
     ): Promise<any[]> {
         try {
-            const params = new URLSearchParams({
-                limit: limit.toString(),
-                ...(userId && { userId }),
-            });
+            const params = new URLSearchParams({ 
+                limit: limit.toString()}
+                ...(userId && { userId })}
 
             const response = await fetch(
                 `/api/conversations/${conversationId}/messages/mentions?${params}`,
@@ -243,8 +236,7 @@ class MentionNotificationService {
                 method: 'PATCH',
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
+                }
 
             if (!response.ok) {
                 throw new Error(`Failed to mark mention as read: ${response.statusText}`);

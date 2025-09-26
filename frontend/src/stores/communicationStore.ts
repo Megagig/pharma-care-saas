@@ -1,21 +1,3 @@
-import { create } from 'zustand';
-import { persist, subscribeWithSelector } from 'zustand/middleware';
-import {
-    Conversation,
-    Message,
-    CommunicationNotification,
-    ConversationFilters,
-    MessageFilters,
-    SendMessageData,
-    CreateConversationData,
-    LoadingState,
-    ErrorState,
-} from './types';
-import { communicationCache } from '../services/cacheService';
-import { offlineStorage } from '../services/offlineStorageService';
-import { performanceMonitor } from '../utils/performanceMonitor';
-import { useConnectionPool } from '../hooks/useConnectionPool';
-
 // Helper function to safely parse JSON responses
 const safeJsonParse = async (response: Response, allowEmpty: boolean = false): Promise<any> => {
     const contentType = response.headers.get('content-type');
@@ -204,7 +186,7 @@ interface CommunicationState {
 export const useCommunicationStore = create<CommunicationState>()(
     subscribeWithSelector(
         persist(
-            (set, get) => ({
+            (set, get) => ({ 
                 // Initial state
                 conversations: [],
                 activeConversation: null,
@@ -272,13 +254,13 @@ export const useCommunicationStore = create<CommunicationState>()(
                         const newConversation = result.data;
 
                         // Add to conversations list
-                        set((state) => ({
+                        set((state) => ({ 
                             conversations: [newConversation, ...state.conversations],
                             conversationPagination: {
                                 ...state.conversationPagination,
                                 total: state.conversationPagination.total + 1,
                             },
-                        }));
+                        });
 
                         return newConversation;
                     } catch (error) {
@@ -304,8 +286,8 @@ export const useCommunicationStore = create<CommunicationState>()(
                             // Check cache first
                             const cachedConversations = communicationCache.getCachedConversationList(cacheKey);
                             if (cachedConversations) {
-                                set({
-                                    conversations: cachedConversations,
+                                set({ 
+                                    conversations: cachedConversations}
                                 });
                                 return;
                             }
@@ -333,8 +315,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 const response = await fetch(`/api/communication/conversations?${queryParams}`, {
                                     headers: {
                                         'Authorization': `Bearer ${token}`,
-                                    },
-                                });
+                                    }
 
                                 console.log('Communication API Response:', {
                                     status: response.status,
@@ -347,9 +328,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                                     // If it's a 404, the endpoint might not exist yet - return empty data
                                     if (response.status === 404) {
                                         console.warn('Communication API endpoints not found - using empty data');
-                                        set({
+                                        set({ 
                                             conversations: [],
-                                            conversationPagination: pagination,
+                                            conversationPagination: pagination}
                                         });
                                         return;
                                     }
@@ -366,9 +347,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                                             console.warn('Could not parse auth error response');
                                         }
 
-                                        set({
+                                        set({ 
                                             conversations: [],
-                                            conversationPagination: pagination,
+                                            conversationPagination: pagination}
                                         });
                                         return;
                                     }
@@ -418,9 +399,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                                     // If no offline data and it's a network error, show empty state instead of error
                                     if (networkError instanceof Error && networkError.message.includes('404')) {
                                         console.warn('Communication endpoints not available - showing empty state');
-                                        set({
+                                        set({ 
                                             conversations: [],
-                                            conversationPagination: pagination,
+                                            conversationPagination: pagination}
                                         });
                                         return;
                                     }
@@ -428,9 +409,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 }
                             }
 
-                            set({
+                            set({ 
                                 conversations,
-                                conversationPagination: pagination,
+                                conversationPagination: pagination}
                             });
                         } catch (error) {
                             const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
@@ -442,15 +423,14 @@ export const useCommunicationStore = create<CommunicationState>()(
                 },
 
                 updateConversation: (id, updates) => {
-                    set((state) => ({
-                        conversations: state.conversations.map((conv) =>
+                    set((state) => ({ 
+                        conversations: state.conversations.map((conv) => })
                             conv._id === id ? { ...conv, ...updates } : conv
                         ),
                         activeConversation:
                             state.activeConversation && state.activeConversation._id === id
                                 ? { ...state.activeConversation, ...updates }
-                                : state.activeConversation,
-                    }));
+                                : state.activeConversation}
                 },
 
                 deleteConversation: async (id) => {
@@ -463,8 +443,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                             method: 'DELETE',
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -472,7 +451,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                         }
 
                         // Remove from state
-                        set((state) => ({
+                        set((state) => ({ 
                             conversations: state.conversations.filter((conv) => conv._id !== id),
                             activeConversation:
                                 state.activeConversation && state.activeConversation._id === id
@@ -480,13 +459,12 @@ export const useCommunicationStore = create<CommunicationState>()(
                                     : state.activeConversation,
                             messages: {
                                 ...state.messages,
-                                [id]: undefined,
+                                [id]: undefined}
                             },
                             messagePagination: {
                                 ...state.messagePagination,
                                 [id]: undefined,
-                            },
-                        }));
+                            }
 
                         return true;
                     } catch (error) {
@@ -510,8 +488,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
-                            body: JSON.stringify({ userId, role }),
-                        });
+                            body: JSON.stringify({ userId, role })}
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -543,8 +520,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                             method: 'DELETE',
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -578,8 +554,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
-                            body: JSON.stringify({ status: 'archived' }),
-                        });
+                            body: JSON.stringify({ status: 'archived' })}
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -609,8 +584,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
-                            body: JSON.stringify({ status: 'resolved' }),
-                        });
+                            body: JSON.stringify({ status: 'resolved' })}
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -637,9 +611,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                     try {
                         const formData = new FormData();
                         formData.append('conversationId', data.conversationId);
-                        formData.append('content', JSON.stringify({
+                        formData.append('content', JSON.stringify({ 
                             text: data.content.text,
-                            type: data.content.type,
+                            type: data.content.type}
                         }));
 
                         if (data.threadId) formData.append('threadId', data.threadId);
@@ -659,8 +633,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
-                            body: formData,
-                        });
+                            body: formData}
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -679,8 +652,7 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                         // Update conversation's lastMessageAt
                         get().updateConversation(data.conversationId, {
-                            lastMessageAt: newMessage.createdAt,
-                        });
+                            lastMessageAt: newMessage.createdAt}
 
                         return newMessage;
                     } catch (error) {
@@ -712,12 +684,11 @@ export const useCommunicationStore = create<CommunicationState>()(
                             // Check cache first
                             const cachedMessages = communicationCache.getCachedMessageList(conversationId, page);
                             if (cachedMessages) {
-                                set((state) => ({
+                                set((state) => ({ 
                                     messages: {
                                         ...state.messages,
-                                        [conversationId]: cachedMessages,
-                                    },
-                                }));
+                                        [conversationId]: cachedMessages}
+                                    }
                                 return;
                             }
 
@@ -741,8 +712,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 const response = await fetch(`/api/communication/conversations/${conversationId}/messages?${queryParams}`, {
                                     headers: {
                                         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                    },
-                                });
+                                    }
 
                                 if (!response.ok) {
                                     const errorData = await response.json();
@@ -778,16 +748,15 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 }
                             }
 
-                            set((state) => ({
+                            set((state) => ({ 
                                 messages: {
                                     ...state.messages,
-                                    [conversationId]: messages,
+                                    [conversationId]: messages}
                                 },
                                 messagePagination: {
                                     ...state.messagePagination,
                                     [conversationId]: pagination,
-                                },
-                            }));
+                                }
                         } catch (error) {
                             const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
                             setError('fetchMessages', errorMessage);
@@ -858,8 +827,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
-                            body: JSON.stringify({ reason }),
-                        });
+                            body: JSON.stringify({ reason })}
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -870,8 +838,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                         get().updateMessage(messageId, {
                             isDeleted: true,
                             deletedAt: new Date().toISOString(),
-                            deletedBy: localStorage.getItem('userId') || '',
-                        });
+                            deletedBy: localStorage.getItem('userId') || ''}
 
                         return true;
                     } catch (error) {
@@ -889,8 +856,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                             method: 'PUT',
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             throw new Error('Failed to mark message as read');
@@ -907,9 +873,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 // Check if user hasn't already read this message
                                 const alreadyRead = message.readBy.some(r => r.userId === userId);
                                 if (!alreadyRead) {
-                                    message.readBy.push({
+                                    message.readBy.push({ 
                                         userId,
-                                        readAt: new Date().toISOString(),
+                                        readAt: new Date().toISOString()}
                                     });
                                 }
 
@@ -931,8 +897,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                             method: 'PATCH',
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         // Mark all messages in conversation as read
                         const messages = get().messages[conversationId] || [];
@@ -958,11 +923,10 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
-                            body: JSON.stringify({
+                            body: JSON.stringify({ 
                                 content: newContent,
-                                reason
-                            }),
-                        });
+                                reason })
+                            })}
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -990,8 +954,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
-                            body: JSON.stringify({ emoji }),
-                        });
+                            body: JSON.stringify({ emoji })}
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -1009,10 +972,10 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 );
 
                                 if (existingReactionIndex === -1) {
-                                    message.reactions.push({
+                                    message.reactions.push({ 
                                         userId: localStorage.getItem('userId') || '',
                                         emoji,
-                                        createdAt: new Date().toISOString(),
+                                        createdAt: new Date().toISOString()}
                                     });
                                     get().updateMessage(messageId, { reactions: message.reactions });
                                 }
@@ -1032,8 +995,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                             method: 'DELETE',
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -1086,8 +1048,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                             method: 'POST',
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             throw new Error('Failed to create thread');
@@ -1118,8 +1079,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                         const response = await fetch(`/api/communication/threads/${threadId}/messages`, {
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             throw new Error('Failed to fetch thread messages');
@@ -1145,8 +1105,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                         const response = await fetch(`/api/communication/threads/${threadId}/summary`, {
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             throw new Error('Failed to fetch thread summary');
@@ -1170,9 +1129,9 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                     try {
                         const formData = new FormData();
-                        formData.append('content', JSON.stringify({
+                        formData.append('content', JSON.stringify({ 
                             text: content,
-                            type: 'text',
+                            type: 'text'}
                         }));
 
                         if (mentions) {
@@ -1191,8 +1150,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
-                            body: formData,
-                        });
+                            body: formData}
 
                         if (!response.ok) {
                             throw new Error('Failed to reply to thread');
@@ -1223,8 +1181,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                         const response = await fetch(`/api/communication/conversations/${conversationId}/threads`, {
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             throw new Error('Failed to fetch conversation threads');
@@ -1243,12 +1200,11 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 // Real-time Update Actions
                 setTypingUsers: (conversationId, userIds) => {
-                    set((state) => ({
+                    set((state) => ({ 
                         typingUsers: {
                             ...state.typingUsers,
-                            [conversationId]: userIds,
-                        },
-                    }));
+                            [conversationId]: userIds}
+                        }
                 },
 
                 addTypingUser: (conversationId, userId) => {
@@ -1285,8 +1241,7 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                     // Update conversation's lastMessageAt
                     get().updateConversation(message.conversationId, {
-                        lastMessageAt: message.createdAt,
-                    });
+                        lastMessageAt: message.createdAt}
                 },
 
                 handleSocketConversationUpdate: (conversation) => {
@@ -1303,11 +1258,11 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 // Notification Management Actions
                 addNotification: (notification) => {
-                    set((state) => ({
+                    set((state) => ({ 
                         notifications: [notification, ...state.notifications],
                         unreadCount: notification.status === 'unread'
                             ? state.unreadCount + 1
-                            : state.unreadCount,
+                            : state.unreadCount}
                     }));
                 },
 
@@ -1328,10 +1283,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                 },
 
                 markAllNotificationsAsRead: () => {
-                    set((state) => ({
+                    set((state) => ({  })
                         notifications: state.notifications.map((n) => ({ ...n, status: 'read' as const })),
-                        unreadCount: 0,
-                    }));
+                        unreadCount: 0}
                 },
 
                 removeNotification: (notificationId) => {
@@ -1357,15 +1311,14 @@ export const useCommunicationStore = create<CommunicationState>()(
                         const response = await fetch('/api/communication/notifications', {
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             // If notifications endpoint doesn't exist, return empty data
                             if (response.status === 404) {
-                                set({
+                                set({ 
                                     notifications: [],
-                                    unreadCount: 0,
+                                    unreadCount: 0}
                                 });
                                 return;
                             }
@@ -1386,9 +1339,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                         const notifications = result.data || [];
                         const unreadCount = notifications.filter((n: CommunicationNotification) => n.status === 'unread').length;
 
-                        set({
+                        set({ 
                             notifications,
-                            unreadCount,
+                            unreadCount}
                         });
                     } catch (error) {
                         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
@@ -1400,47 +1353,43 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 // Search and Filter Actions
                 setConversationFilters: (filters) => {
-                    set((state) => ({
-                        conversationFilters: { ...state.conversationFilters, ...filters },
-                    }));
+                    set((state) => ({  })
+                        conversationFilters: { ...state.conversationFilters, ...filters }
                 },
 
                 setMessageFilters: (conversationId, filters) => {
-                    set((state) => ({
+                    set((state) => ({ 
                         messageFilters: {
                             ...state.messageFilters,
                             [conversationId]: {
                                 ...state.messageFilters[conversationId],
-                                ...filters,
+                                ...filters}
                             },
-                        },
-                    }));
+                        }
                 },
 
                 clearConversationFilters: () => {
-                    set({
+                    set({ 
                         conversationFilters: {
                             search: '',
                             sortBy: 'lastMessageAt',
                             sortOrder: 'desc',
                             page: 1,
-                            limit: 20,
-                        },
-                    });
+                            limit: 20}
+                        }
                 },
 
                 clearMessageFilters: (conversationId) => {
-                    set((state) => ({
+                    set((state) => ({ 
                         messageFilters: {
                             ...state.messageFilters,
                             [conversationId]: {
                                 sortBy: 'createdAt',
                                 sortOrder: 'desc',
                                 page: 1,
-                                limit: 50,
+                                limit: 50}
                             },
-                        },
-                    }));
+                        }
                 },
 
                 searchConversations: (searchTerm) => {
@@ -1462,20 +1411,18 @@ export const useCommunicationStore = create<CommunicationState>()(
                 clearErrors: () => set({ errors: {} }),
 
                 setLoading: (key, loading) =>
-                    set((state) => ({
-                        loading: { ...state.loading, [key]: loading },
-                    })),
+                    set((state) => ({  })
+                        loading: { ...state.loading, [key]: loading }, },
 
                 setError: (key, error) =>
-                    set((state) => ({
-                        errors: { ...state.errors, [key]: error },
-                    })),
+                    set((state) => ({  })
+                        errors: { ...state.errors, [key]: error }, },
 
                 resetStore: () => {
-                    set({
+                    set({ 
                         conversations: [],
                         activeConversation: null,
-                        conversationLoading: false,
+                        conversationLoading: false}
                         messages: {},
                         messageLoading: false,
                         typingUsers: {},
@@ -1500,8 +1447,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                         },
                         messagePagination: {},
                         loading: {},
-                        errors: {},
-                    });
+                        errors: {}
                 },
 
                 // Optimistic Update Actions
@@ -1568,8 +1514,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
                             },
-                            body: formData,
-                        });
+                            body: formData}
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -1600,8 +1545,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                         const response = await fetch(`/api/communication/files/${fileId}`, {
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -1639,8 +1583,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                             method: 'DELETE',
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -1666,8 +1609,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                         const response = await fetch(`/api/communication/files/${fileId}/metadata`, {
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -1701,8 +1643,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                         const response = await fetch(`/api/communication/conversations/${conversationId}/files?${queryParams}`, {
                             headers: {
                                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                            }
 
                         if (!response.ok) {
                             const errorData = await response.json();
@@ -1722,15 +1663,14 @@ export const useCommunicationStore = create<CommunicationState>()(
                     } finally {
                         setLoading('listConversationFiles', false);
                     }
-                },
-            }),
+                }, },
             {
                 name: 'communication-store',
-                partialize: (state) => ({
+                partialize: (state) => ({ 
                     // Only persist UI state and filters, not data
                     sidebarOpen: state.sidebarOpen,
                     conversationFilters: state.conversationFilters,
-                    searchQuery: state.searchQuery,
+                    searchQuery: state.searchQuery}
                 }),
             }
         )
@@ -1741,7 +1681,7 @@ export const useCommunicationStore = create<CommunicationState>()(
 
 // Conversation hooks
 export const useConversations = () =>
-    useCommunicationStore((state) => ({
+    useCommunicationStore((state) => ({ 
         conversations: state.conversations,
         loading: state.loading.fetchConversations || false,
         error: state.errors.fetchConversations || null,
@@ -1750,21 +1690,21 @@ export const useConversations = () =>
         fetchConversations: state.fetchConversations,
         setFilters: state.setConversationFilters,
         clearFilters: state.clearConversationFilters,
-        searchConversations: state.searchConversations,
+        searchConversations: state.searchConversations}
     }));
 
 export const useActiveConversation = () =>
-    useCommunicationStore((state) => ({
+    useCommunicationStore((state) => ({ 
         activeConversation: state.activeConversation,
         setActiveConversation: state.setActiveConversation,
         loading: state.conversationLoading,
         updateConversation: state.updateConversation,
         archiveConversation: state.archiveConversation,
-        resolveConversation: state.resolveConversation,
+        resolveConversation: state.resolveConversation}
     }));
 
 export const useConversationActions = () =>
-    useCommunicationStore((state) => ({
+    useCommunicationStore((state) => ({ 
         createConversation: state.createConversation,
         deleteConversation: state.deleteConversation,
         addParticipant: state.addParticipant,
@@ -1773,19 +1713,18 @@ export const useConversationActions = () =>
             create: state.loading.createConversation || false,
             delete: state.loading.deleteConversation || false,
             addParticipant: state.loading.addParticipant || false,
-            removeParticipant: state.loading.removeParticipant || false,
+            removeParticipant: state.loading.removeParticipant || false}
         },
         errors: {
             create: state.errors.createConversation || null,
             delete: state.errors.deleteConversation || null,
             addParticipant: state.errors.addParticipant || null,
             removeParticipant: state.errors.removeParticipant || null,
-        },
-    }));
+        }
 
 // Message hooks
 export const useMessages = (conversationId?: string) =>
-    useCommunicationStore((state) => ({
+    useCommunicationStore((state) => ({ 
         messages: conversationId ? state.messages[conversationId] || [] : [],
         loading: state.loading.fetchMessages || false,
         error: state.errors.fetchMessages || null,
@@ -1798,11 +1737,11 @@ export const useMessages = (conversationId?: string) =>
         clearFilters: () =>
             conversationId ? state.clearMessageFilters(conversationId) : undefined,
         searchMessages: (searchTerm: string) =>
-            conversationId ? state.searchMessages(conversationId, searchTerm) : undefined,
+            conversationId ? state.searchMessages(conversationId, searchTerm) : undefined}
     }));
 
 export const useMessageActions = () =>
-    useCommunicationStore((state) => ({
+    useCommunicationStore((state) => ({ 
         sendMessage: state.sendMessage,
         deleteMessage: state.deleteMessage,
         editMessage: state.editMessage,
@@ -1816,18 +1755,17 @@ export const useMessageActions = () =>
         loading: {
             send: state.loading.sendMessage || false,
             delete: state.loading.deleteMessage || false,
-            edit: state.loading.editMessage || false,
+            edit: state.loading.editMessage || false}
         },
         errors: {
             send: state.errors.sendMessage || null,
             delete: state.errors.deleteMessage || null,
             edit: state.errors.editMessage || null,
-        },
-    }));
+        }
 
 // Real-time hooks
 export const useRealTimeUpdates = () =>
-    useCommunicationStore((state) => ({
+    useCommunicationStore((state) => ({ 
         typingUsers: state.typingUsers,
         setTypingUsers: state.setTypingUsers,
         addTypingUser: state.addTypingUser,
@@ -1835,12 +1773,12 @@ export const useRealTimeUpdates = () =>
         handleSocketMessage: state.handleSocketMessage,
         handleSocketConversationUpdate: state.handleSocketConversationUpdate,
         handleSocketUserTyping: state.handleSocketUserTyping,
-        handleSocketUserStoppedTyping: state.handleSocketUserStoppedTyping,
+        handleSocketUserStoppedTyping: state.handleSocketUserStoppedTyping}
     }));
 
 // Notification hooks
 export const useNotifications = () =>
-    useCommunicationStore((state) => ({
+    useCommunicationStore((state) => ({ 
         notifications: state.notifications,
         unreadCount: state.unreadCount,
         loading: state.loading.fetchNotifications || false,
@@ -1849,29 +1787,29 @@ export const useNotifications = () =>
         addNotification: state.addNotification,
         markNotificationAsRead: state.markNotificationAsRead,
         markAllNotificationsAsRead: state.markAllNotificationsAsRead,
-        removeNotification: state.removeNotification,
+        removeNotification: state.removeNotification}
     }));
 
 // UI state hooks
 export const useCommunicationUI = () =>
-    useCommunicationStore((state) => ({
+    useCommunicationStore((state) => ({ 
         sidebarOpen: state.sidebarOpen,
         selectedThread: state.selectedThread,
         searchQuery: state.searchQuery,
         setSidebarOpen: state.setSidebarOpen,
         setSelectedThread: state.setSelectedThread,
-        setSearchQuery: state.setSearchQuery,
+        setSearchQuery: state.setSearchQuery}
     }));
 
 // Utility hooks
 export const useCommunicationUtils = () =>
-    useCommunicationStore((state) => ({
+    useCommunicationStore((state) => ({ 
         clearErrors: state.clearErrors,
         resetStore: state.resetStore,
         setLoading: state.setLoading,
         setError: state.setError,
         loading: state.loading,
-        errors: state.errors,
+        errors: state.errors}
     }));
 
 // Selector hooks for performance optimization
@@ -1906,14 +1844,14 @@ export const useTypingUsersForConversation = (conversationId: string) =>
 
 // File management hooks
 export const useFileUpload = () =>
-    useCommunicationStore((state) => ({
+    useCommunicationStore((state) => ({ 
         uploadFiles: state.uploadFiles,
         loading: state.loading.uploadFiles || false,
-        error: state.errors.uploadFiles || null,
+        error: state.errors.uploadFiles || null}
     }));
 
 export const useFileActions = () =>
-    useCommunicationStore((state) => ({
+    useCommunicationStore((state) => ({ 
         downloadFile: state.downloadFile,
         deleteFile: state.deleteFile,
         getFileMetadata: state.getFileMetadata,
@@ -1922,12 +1860,11 @@ export const useFileActions = () =>
             download: state.loading.downloadFile || false,
             delete: state.loading.deleteFile || false,
             metadata: state.loading.getFileMetadata || false,
-            list: state.loading.listConversationFiles || false,
+            list: state.loading.listConversationFiles || false}
         },
         errors: {
             download: state.errors.downloadFile || null,
             delete: state.errors.deleteFile || null,
             metadata: state.errors.getFileMetadata || null,
             list: state.errors.listConversationFiles || null,
-        },
-    }));
+        }

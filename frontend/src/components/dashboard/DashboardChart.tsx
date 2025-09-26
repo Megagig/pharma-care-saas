@@ -1,41 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  IconButton,
-  Menu,
-  MenuItem,
-  Skeleton,
-  useTheme,
-  alpha,
-  Tooltip,
-} from '@mui/material';
-import {
-  MoreVert as MoreVertIcon,
-  Fullscreen as FullscreenIcon,
-  Download as DownloadIcon,
-  Refresh as RefreshIcon,
-} from '@mui/icons-material';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  Legend,
-  Area,
-  AreaChart,
-} from 'recharts';
-import { motion } from 'framer-motion';
+import { Card, CardContent, Tooltip, Skeleton } from '@/components/ui/button';
 
 interface ChartData {
   name: string;
@@ -43,7 +6,6 @@ interface ChartData {
   color?: string;
   [key: string]: any;
 }
-
 interface DashboardChartProps {
   title: string;
   data: ChartData[];
@@ -58,8 +20,7 @@ interface DashboardChartProps {
   onExport?: () => void;
   onFullscreen?: () => void;
 }
-
-const DashboardChart: React.FC<DashboardChartProps> = ({
+const DashboardChart: React.FC<DashboardChartProps> = ({ 
   title,
   data,
   type,
@@ -71,12 +32,11 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
   interactive = true,
   onRefresh,
   onExport,
-  onFullscreen,
+  onFullscreen
 }) => {
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [hoveredData, setHoveredData] = useState<any>(null);
-
   // Default colors based on theme
   const defaultColors = colors || [
     theme.palette.primary.main,
@@ -86,76 +46,62 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
     theme.palette.error.main,
     theme.palette.info.main,
   ];
-
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
-
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
-
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <Box
-          sx={{
-            bgcolor: 'background.paper',
-            p: 2,
-            border: 1,
-            borderColor: 'divider',
-            borderRadius: 2,
-            boxShadow: 3,
-          }}
+        <div
+          className=""
         >
-          <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+          <div  className="">
             {label}
-          </Typography>
+          </div>
           {payload.map((entry: unknown, index: number) => (
-            <Typography key={index} variant="body2" sx={{ color: entry.color }}>
+            <div key={index}  className="">
               {entry.name}: {entry.value}
-            </Typography>
+            </div>
           ))}
-        </Box>
+        </div>
       );
     }
     return null;
   };
-
   const renderChart = () => {
     if (loading) {
       return (
-        <Skeleton variant="rectangular" width="100%" height={height - 100} />
+        <Skeleton  width="100%" height={height - 100} />
       );
     }
-
     if (!data || data.length === 0) {
       return (
-        <Box
+        <div
           display="flex"
           alignItems="center"
           justifyContent="center"
           height={height - 100}
           flexDirection="column"
         >
-          <Typography variant="body2" color="text.secondary" align="center">
+          <div  color="text.secondary" align="center">
             No data available
-          </Typography>
+          </div>
           {onRefresh && (
-            <IconButton onClick={onRefresh} sx={{ mt: 1 }}>
+            <IconButton onClick={onRefresh} className="">
               <RefreshIcon />
             </IconButton>
           )}
-        </Box>
+        </div>
       );
     }
-
     const commonProps = {
       data,
       margin: { top: 20, right: 30, left: 20, bottom: 5 },
     };
-
     switch (type) {
       case 'bar':
         return (
@@ -167,14 +113,14 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
               />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
-                axisLine={{ stroke: alpha(theme.palette.text.secondary, 0.3) }}
-                tickLine={{ stroke: alpha(theme.palette.text.secondary, 0.3) }}
+                
+                
+                
               />
               <YAxis
-                tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
-                axisLine={{ stroke: alpha(theme.palette.text.secondary, 0.3) }}
-                tickLine={{ stroke: alpha(theme.palette.text.secondary, 0.3) }}
+                
+                
+                
               />
               <RechartsTooltip content={<CustomTooltip />} />
               {showLegend && <Legend />}
@@ -188,7 +134,6 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
             </BarChart>
           </ResponsiveContainer>
         );
-
       case 'line':
         return (
           <ResponsiveContainer width="100%" height={height - 100}>
@@ -199,12 +144,12 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
               />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
-                axisLine={{ stroke: alpha(theme.palette.text.secondary, 0.3) }}
+                
+                
               />
               <YAxis
-                tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
-                axisLine={{ stroke: alpha(theme.palette.text.secondary, 0.3) }}
+                
+                
               />
               <RechartsTooltip content={<CustomTooltip />} />
               {showLegend && <Legend />}
@@ -213,22 +158,12 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
                 dataKey="value"
                 stroke={defaultColors[0]}
                 strokeWidth={3}
-                dot={{
-                  fill: defaultColors[0],
-                  strokeWidth: 2,
-                  r: 4,
-                }}
-                activeDot={{
-                  r: 6,
-                  stroke: defaultColors[0],
-                  strokeWidth: 2,
-                  fill: theme.palette.background.paper,
-                }}
+                
+                
               />
             </LineChart>
           </ResponsiveContainer>
         );
-
       case 'area':
         return (
           <ResponsiveContainer width="100%" height={height - 100}>
@@ -239,10 +174,10 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
               />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                
               />
               <YAxis
-                tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                
               />
               <RechartsTooltip content={<CustomTooltip />} />
               {showLegend && <Legend />}
@@ -256,7 +191,6 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
             </AreaChart>
           </ResponsiveContainer>
         );
-
       case 'pie':
         return (
           <ResponsiveContainer width="100%" height={height - 100}>
@@ -280,7 +214,7 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
                   <Cell
                     key={`cell-${index}`}
                     fill={
-                      entry.color || defaultColors[index % defaultColors.length]
+                      entry.color || defaultColors[index % defaultColors.length]}
                     }
                   />
                 ))}
@@ -290,104 +224,66 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
             </PieChart>
           </ResponsiveContainer>
         );
-
       default:
         return null;
     }
   };
-
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card
-        sx={{
-          height: height,
-          width: '100%',
-          position: 'relative',
-          '&:hover .chart-actions': {
-            opacity: 1,
-          },
-        }}
+      
       >
+      <Card
+        className="">
         <CardContent
-          sx={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            p: 3,
-          }}
+          className=""
         >
           {/* Header */}
-          <Box
+          <div
             display="flex"
             alignItems="center"
             justifyContent="space-between"
             mb={2}
           >
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+            <div>
+              <div  className="">
                 {title}
-              </Typography>
+              </div>
               {subtitle && (
-                <Typography variant="body2" color="text.secondary">
+                <div  color="text.secondary">
                   {subtitle}
-                </Typography>
+                </div>
               )}
-            </Box>
-
+            </div>
             {/* Actions */}
             {interactive && (
-              <Box
-                className="chart-actions"
-                sx={{ opacity: 0, transition: 'opacity 0.2s' }}
+              <div
+                className=""
               >
                 <Tooltip title="More options">
                   <IconButton size="small" onClick={handleMenuClick}>
                     <MoreVertIcon />
                   </IconButton>
                 </Tooltip>
-              </Box>
+              </div>
             )}
-          </Box>
-
+          </div>
           {/* Chart Container */}
-          <Box
-            sx={{
-              flexGrow: 1,
-              width: '100%',
-              minHeight: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+          <div
+            className=""
           >
             {renderChart()}
-          </Box>
-
+          </div>
           {/* Hovered Data Display */}
           {hoveredData && (
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 16,
-                left: 16,
-                bgcolor: alpha(theme.palette.background.paper, 0.9),
-                p: 1,
-                borderRadius: 1,
-                border: 1,
-                borderColor: 'divider',
-              }}
+            <div
+              className=""
             >
-              <Typography variant="caption">
+              <div >
                 {hoveredData.name}: {hoveredData.value}
-              </Typography>
-            </Box>
+              </div>
+            </div>
           )}
         </CardContent>
-
         {/* Context Menu */}
         <Menu
           anchorEl={anchorEl}
@@ -396,34 +292,22 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
         >
           {onRefresh && (
             <MenuItem
-              onClick={() => {
-                onRefresh();
-                handleMenuClose();
-              }}
-            >
-              <RefreshIcon sx={{ mr: 1 }} fontSize="small" />
+              >
+              <RefreshIcon className="" fontSize="small" />
               Refresh
             </MenuItem>
           )}
           {onExport && (
             <MenuItem
-              onClick={() => {
-                onExport();
-                handleMenuClose();
-              }}
-            >
-              <DownloadIcon sx={{ mr: 1 }} fontSize="small" />
+              >
+              <DownloadIcon className="" fontSize="small" />
               Export
             </MenuItem>
           )}
           {onFullscreen && (
             <MenuItem
-              onClick={() => {
-                onFullscreen();
-                handleMenuClose();
-              }}
-            >
-              <FullscreenIcon sx={{ mr: 1 }} fontSize="small" />
+              >
+              <FullscreenIcon className="" fontSize="small" />
               Fullscreen
             </MenuItem>
           )}
@@ -432,5 +316,4 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
     </motion.div>
   );
 };
-
 export default DashboardChart;

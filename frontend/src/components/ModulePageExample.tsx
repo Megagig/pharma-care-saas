@@ -1,8 +1,5 @@
-import React from 'react';
-import ModulePage from './ModulePage';
-import { Reviews as ReviewsIcon } from '@mui/icons-material';
-import type { ModuleInfo } from '../types/moduleTypes';
 
+import ModulePage from './ModulePage';
 // Example usage of the ModulePage component
 const ModulePageExample: React.FC = () => {
   const exampleModuleInfo: ModuleInfo = {
@@ -33,7 +30,6 @@ const ModulePageExample: React.FC = () => {
     status: 'placeholder',
     estimatedRelease: 'Q2 2025',
   };
-
   return (
     <ModulePage
       moduleInfo={exampleModuleInfo}
@@ -42,5 +38,4 @@ const ModulePageExample: React.FC = () => {
     />
   );
 };
-
 export default ModulePageExample;

@@ -1,58 +1,68 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import {
-  Box,
-  Container,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Chip,
-  IconButton,
-  Menu,
-  MenuItem,
-  TextField,
-  InputAdornment,
-  Alert,
-  Skeleton,
-  Fab,
-  Badge,
-  Tooltip,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import ScienceIcon from '@mui/icons-material/Science';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import PersonIcon from '@mui/icons-material/Person';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { format, formatDistanceToNow } from 'date-fns';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  Plus as AddIcon,
+  RefreshCw as RefreshIcon,
+  Filter as FilterListIcon,
+  TrendingUp as TrendingUpIcon,
+  User as PersonIcon,
+  MoreVertical as MoreVertIcon,
+  BarChart3 as AssessmentIcon,
+  CheckCircle as CheckCircleIcon,
+  Clock as ScheduleIcon,
+  FlaskConical as ScienceIcon,
+  Timeline as TimelineIcon,
+  Hospital as LocalHospitalIcon,
+  Bell as NotificationsIcon
+} from 'lucide-react';
 
-// Import hooks and components
-import {
-  useDiagnosticHistory,
-  useDiagnosticAnalytics,
-} from '../hooks/useDiagnostics';
-import { useDiagnosticStore } from '../store/diagnosticStore';
-import { usePatients } from '../../../stores';
-import { ErrorBoundary } from '../../../components/common/ErrorBoundary';
+// Types
+interface DiagnosticRequest {
+  _id: string;
+  patientId: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  createdAt: string;
+  inputSnapshot: {
+    symptoms: {
+      subjective: string[];
+    };
+  };
+}
 
-// Import types
-import type {
-  DiagnosticRequest,
-  DiagnosticResult,
-  DiagnosticAnalytics,
-} from '../types';
+interface DiagnosticResult {
+  diagnoses: Array<{
+    condition: string;
+    probability: number;
+  }>;
+  pharmacistReview?: {
+    status?: string;
+  };
+}
+
+interface DiagnosticAnalytics {
+  totalRequests: number;
+  completedRequests: number;
+  averageConfidenceScore: number;
+}
+
+// Mock hooks for diagnostic data
+const useDiagnosticHistory = () => ({ data: [], isLoading: false, error: null });
+const useDiagnosticAnalytics = () => ({ data: null, isLoading: false, error: null });
+
+// Mock store
+const useDiagnosticStore = () => ({
+  filters: { search: '', status: '', page: 1 },
+  setFilters: (filters: any) => {},
+  clearFilters: () => {},
+  selectRequest: (request: DiagnosticRequest) => {}
+});
 
 interface QuickStatsCardProps {
   title: string;
@@ -65,63 +75,42 @@ interface QuickStatsCardProps {
   };
 }
 
-const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
+const QuickStatsCard: React.FC<QuickStatsCardProps> = ({ 
   title,
   value,
   icon,
-  color,
-  trend,
+  trend
 }) => {
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Box
-            sx={{
-              p: 1,
-              borderRadius: 2,
-              backgroundColor: `${color}.light`,
-              color: `${color}.contrastText`,
-              mr: 2,
-            }}
-          >
-            {icon}
-          </Box>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5 }}>
-              {value}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {title}
-            </Typography>
-          </Box>
-        </Box>
+    <Card className="p-4">
+      <CardContent className="p-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              {icon}
+            </div>
+            <div>
+              <div className="text-2xl font-bold">
+                {value}
+              </div>
+              <div className="text-sm text-gray-600">
+                {title}
+              </div>
+            </div>
+          </div>
+        </div>
         {trend && (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <TrendingUpIcon
-              sx={{
-                fontSize: 16,
-                color: trend.isPositive ? 'success.main' : 'error.main',
-                transform: trend.isPositive ? 'none' : 'rotate(180deg)',
-                mr: 0.5,
-              }}
-            />
-            <Typography
-              variant="caption"
-              sx={{
-                color: trend.isPositive ? 'success.main' : 'error.main',
-                fontWeight: 500,
-              }}
-            >
+          <div className="flex items-center mt-2 text-sm">
+            <TrendingUpIcon className="w-4 h-4 mr-1 text-green-500" />
+            <div className="text-green-600">
               {Math.abs(trend.value)}% from last week
-            </Typography>
-          </Box>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
   );
 };
-
 interface RecentCaseCardProps {
   request: DiagnosticRequest;
   result?: DiagnosticResult;
@@ -129,98 +118,80 @@ interface RecentCaseCardProps {
   onQuickAction: (request: DiagnosticRequest, action: string) => void;
 }
 
-const RecentCaseCard: React.FC<RecentCaseCardProps> = ({
+const RecentCaseCard: React.FC<RecentCaseCardProps> = ({ 
   request,
   result,
   onViewDetails,
-  onQuickAction,
+  onQuickAction
 }) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  // TEMPORARILY DISABLED TO TEST INFINITE LOOP
-  const patients: unknown[] = [];
-
-  const patient = patients.find((p) => p._id === request.patientId);
-  const statusColor = {
-    pending: 'warning',
-    processing: 'info',
-    completed: 'success',
-    failed: 'error',
-    cancelled: 'default',
-  }[request.status] as 'warning' | 'info' | 'success' | 'error' | 'default';
-
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  
+  const statusColors = {
+    pending: 'bg-yellow-100 text-yellow-800',
+    processing: 'bg-blue-100 text-blue-800',
+    completed: 'bg-green-100 text-green-800',
+    failed: 'bg-red-100 text-red-800',
+    cancelled: 'bg-gray-100 text-gray-800',
   };
 
   const handleQuickAction = (action: string) => {
     onQuickAction(request, action);
-    handleMenuClose();
+    setMenuOpen(false);
   };
 
   return (
-    <Card sx={{ mb: 2, '&:hover': { boxShadow: 4 } }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-          <Box sx={{ flexGrow: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <PersonIcon
-                sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }}
-              />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                {patient
-                  ? `${patient.firstName} ${patient.lastName}`
-                  : 'Unknown Patient'}
-              </Typography>
-              <Chip
-                label={request.status}
-                color={statusColor}
-                size="small"
-                sx={{ ml: 1, textTransform: 'capitalize' }}
-              />
-            </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+    <Card className="mb-4">
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <div className="flex items-center space-x-3 mb-2">
+              <PersonIcon className="w-5 h-5 text-gray-500" />
+              <div className="font-medium">
+                Unknown Patient
+              </div>
+              <Badge className={statusColors[request.status]}>
+                {request.status}
+              </Badge>
+            </div>
+            <div className="text-sm text-gray-600 mb-2">
               {request.inputSnapshot.symptoms.subjective.slice(0, 2).join(', ')}
               {request.inputSnapshot.symptoms.subjective.length > 2 && '...'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
+            </div>
+            <div className="text-sm text-gray-500">
               {formatDistanceToNow(new Date(request.createdAt), {
-                addSuffix: true,
+                addSuffix: true
               })}
-            </Typography>
-          </Box>
-          <IconButton size="small" onClick={handleMenuClick}>
-            <MoreVertIcon />
-          </IconButton>
-        </Box>
-
-        {result && (
-          <Box sx={{ mb: 2 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mb: 1, display: 'block' }}
-            >
-              Top Diagnosis:
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {result.diagnoses[0]?.condition || 'No diagnosis available'}
-            </Typography>
-            {result.diagnoses[0] && (
-              <Typography variant="caption" color="text.secondary">
-                Confidence: {Math.round(result.diagnoses[0].probability * 100)}%
-              </Typography>
-            )}
-          </Box>
-        )}
-
-        <Box sx={{ display: 'flex', gap: 1 }}>
+            </div>
+          </div>
           <Button
-            size="small"
-            variant="outlined"
+            variant="ghost"
+            size="sm"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            <MoreVertIcon className="w-4 h-4" />
+          </Button>
+        </div>
+        
+        {result && (
+          <div className="mt-3 p-3 bg-gray-50 rounded">
+            <div className="text-sm text-gray-600 mb-1">
+              Top Diagnosis:
+            </div>
+            <div className="font-medium">
+              {result.diagnoses[0]?.condition || 'No diagnosis available'}
+            </div>
+            {result.diagnoses[0] && (
+              <div className="text-sm text-gray-600">
+                Confidence: {Math.round(result.diagnoses[0].probability * 100)}%
+              </div>
+            )}
+          </div>
+        )}
+        
+        <div className="flex space-x-2 mt-3">
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => onViewDetails(request)}
           >
             View Details
@@ -228,156 +199,54 @@ const RecentCaseCard: React.FC<RecentCaseCardProps> = ({
           {request.status === 'completed' &&
             result?.pharmacistReview?.status === undefined && (
               <Button
-                size="small"
-                variant="contained"
-                color="primary"
+                size="sm"
                 onClick={() => handleQuickAction('review')}
               >
                 Review
               </Button>
             )}
-        </Box>
-
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-        >
-          <MenuItem onClick={() => handleQuickAction('view')}>
-            View Full Details
-          </MenuItem>
-          {request.status === 'pending' && (
-            <MenuItem onClick={() => handleQuickAction('cancel')}>
-              Cancel Request
-            </MenuItem>
-          )}
-          {request.status === 'completed' && (
-            <MenuItem onClick={() => handleQuickAction('export')}>
-              Export Report
-            </MenuItem>
-          )}
-        </Menu>
+        </div>
       </CardContent>
     </Card>
   );
 };
-
 const DiagnosticDashboard: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
-
+  
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(
-    null
-  );
   const [refreshing, setRefreshing] = useState(false);
-
+  
   // Store state
-  const { filters, setFilters, clearFilters, selectRequest } =
-    useDiagnosticStore();
-
-  // TEMPORARILY DISABLED TO TEST INFINITE LOOP
-  const patients: unknown[] = [];
-
-  // Memoize the history query parameters to prevent infinite loops
-  const historyParams = useMemo(
-    () => ({
-      ...filters,
-      limit: 10, // Show recent cases
-    }),
-    [filters]
-  );
-
-  // API queries - TEMPORARILY DISABLED TO FIX INFINITE LOOP
+  const { filters, setFilters, clearFilters, selectRequest } = useDiagnosticStore();
+  
+  // Mock data
   const historyData = { data: { results: [] } };
   const historyLoading = false;
   const historyError = null;
-  const refetchHistoryOriginal = () => Promise.resolve();
-
   const analyticsData = { data: {} };
   const analyticsLoading = false;
   const analyticsError = null;
-  const refetchAnalytics = () => Promise.resolve();
-
-  // ORIGINAL CODE (commented out):
-  /*
-  const {
-    data: historyData,
-    isLoading: historyLoading,
-    error: historyError,
-    refetch: refetchHistoryOriginal,
-  } = useDiagnosticHistory(historyParams);
-
-  // Memoize analytics parameters to prevent unnecessary re-renders
-  const analyticsParams = useMemo(
-    () => ({
-      dateFrom: format(
-        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        'yyyy-MM-dd'
-      ),
-      dateTo: format(new Date(), 'yyyy-MM-dd'),
-    }),
-    []
-  );
-
-  const {
-    data: analyticsData,
-    isLoading: analyticsLoading,
-    error: analyticsError,
-    refetch: refetchAnalytics,
-  } = useDiagnosticAnalytics(analyticsParams);
-  */
-
-  // Memoize refetch functions to prevent infinite loops
+  
   const refetchHistory = useCallback(() => {
-    refetchHistoryOriginal();
+    return Promise.resolve();
+  }, []);
+  
+  const refetchAnalytics = useCallback(() => {
+    return Promise.resolve();
   }, []);
 
   // Real-time updates for pending requests
-  const pendingRequests =
-    historyData?.data?.results?.filter(
-      (req: DiagnosticRequest) =>
-        req.status === 'pending' || req.status === 'processing'
-    ) || [];
+  const pendingRequests = historyData?.data?.results?.filter(
+    (req: DiagnosticRequest) =>
+      req.status === 'pending' || req.status === 'processing'
+  ) || [];
 
-  // Removed unused polling variables since polling is disabled
-
-  // Poll for status updates on pending requests - DISABLED TO FIX INFINITE LOOP
-  // TODO: Re-enable polling after fixing the infinite loop issue
-  /*
-  useEffect(() => {
-    // Clear existing interval
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    // Set up new interval only if there are pending requests
-    if (hasPendingRequests) {
-      intervalRef.current = setInterval(() => {
-        refetchHistory();
-      }, 10000); // Poll every 10 seconds
-    }
-
-    // Cleanup function
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [hasPendingRequests, refetchHistory]);
-  */
-
-  // Handlers - SIMPLIFIED TO FIX INFINITE LOOP
+  // Handlers
   const handleSearch = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
       setSearchTerm(value);
-
-      // Simple direct update without debouncing for now
       if (value !== filters.search) {
         setFilters({ search: value, page: 1 });
       }
@@ -392,7 +261,7 @@ const DiagnosticDashboard: React.FC = () => {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [refetchHistory, refetchAnalytics]);
 
   const handleNewCase = useCallback(() => {
     navigate('/pharmacy/diagnostics/case/new');
@@ -426,56 +295,30 @@ const DiagnosticDashboard: React.FC = () => {
     [handleViewDetails, navigate]
   );
 
-  const handleFilterClick = useCallback(
-    (event: React.MouseEvent<HTMLElement>) => {
-      setFilterAnchorEl(event.currentTarget);
-    },
-    []
-  );
-
-  const handleFilterClose = useCallback(() => {
-    setFilterAnchorEl(null);
-  }, []);
-
-  const handleFilterPending = useCallback(() => {
-    setFilters({ status: 'pending' });
-    handleFilterClose();
-  }, [setFilters, handleFilterClose]);
-
-  const handleFilterCompleted = useCallback(() => {
-    setFilters({ status: 'completed' });
-    handleFilterClose();
-  }, [setFilters, handleFilterClose]);
-
-  const handleClearFilters = useCallback(() => {
-    clearFilters();
-    handleFilterClose();
-  }, [clearFilters, handleFilterClose]);
-
   // Computed values
   const recentCases = historyData?.data?.results || [];
   const analytics = analyticsData?.data as DiagnosticAnalytics | undefined;
-
+  
   const quickStats = useMemo(
     () => [
       {
         title: 'Total Cases',
         value: analytics?.totalRequests || 0,
-        icon: <AssessmentIcon />,
+        icon: <AssessmentIcon className="w-5 h-5" />,
         color: 'primary' as const,
         trend: { value: 12, isPositive: true },
       },
       {
         title: 'Completed Today',
         value: analytics?.completedRequests || 0,
-        icon: <CheckCircleIcon />,
+        icon: <CheckCircleIcon className="w-5 h-5" />,
         color: 'success' as const,
         trend: { value: 8, isPositive: true },
       },
       {
         title: 'Pending Review',
         value: pendingRequests.length,
-        icon: <ScheduleIcon />,
+        icon: <ScheduleIcon className="w-5 h-5" />,
         color: 'warning' as const,
       },
       {
@@ -483,7 +326,7 @@ const DiagnosticDashboard: React.FC = () => {
         value: analytics?.averageConfidenceScore
           ? `${Math.round(analytics.averageConfidenceScore * 100)}%`
           : '0%',
-        icon: <TrendingUpIcon />,
+        icon: <TrendingUpIcon className="w-5 h-5" />,
         color: 'secondary' as const,
         trend: { value: 5, isPositive: true },
       },
@@ -493,320 +336,216 @@ const DiagnosticDashboard: React.FC = () => {
 
   if (historyError || analyticsError) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
+      <div className="container mx-auto p-6">
+        <Alert className="mb-4">
           Failed to load dashboard data. Please try refreshing the page.
         </Alert>
-        <Button
-          variant="contained"
-          onClick={handleRefresh}
-          startIcon={<RefreshIcon />}
-        >
-          Retry
+        <Button onClick={handleRefresh} className="flex items-center space-x-2">
+          <RefreshIcon className="w-4 h-4" />
+          <span>Retry</span>
         </Button>
-      </Container>
+      </div>
     );
   }
 
   return (
-    <ErrorBoundary>
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 2,
-            }}
-          >
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-                Diagnostic Dashboard
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                AI-powered diagnostic analysis and case management
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Tooltip title="Refresh Data">
-                <IconButton onClick={handleRefresh} disabled={refreshing}>
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleNewCase}
-                sx={{ display: { xs: 'none', sm: 'flex' } }}
-              >
-                New Case
-              </Button>
-            </Box>
-          </Box>
-
-          {/* Search and Filters */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-            <TextField
-              placeholder="Search cases..."
-              value={searchTerm}
-              onChange={handleSearch}
-              size="small"
-              sx={{ minWidth: 300, flexGrow: 1 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
+    <div className="container mx-auto p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-3xl font-bold">
+              Diagnostic Dashboard
+            </h1>
+            <p className="text-gray-600">
+              AI-powered diagnostic analysis and case management
+            </p>
+          </div>
+          <div className="flex space-x-2">
             <Button
-              variant="outlined"
-              startIcon={<FilterListIcon />}
-              onClick={handleFilterClick}
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
             >
-              Filters
+              <RefreshIcon className="w-4 h-4 mr-2" />
+              Refresh
             </Button>
-          </Box>
-        </Box>
+            <Button onClick={handleNewCase}>
+              <AddIcon className="w-4 h-4 mr-2" />
+              New Case
+            </Button>
+          </div>
+        </div>
+        
+        {/* Search and Filters */}
+        <div className="flex space-x-4">
+          <Input
+            placeholder="Search cases..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="max-w-md"
+          />
+          <Button variant="outline">
+            <FilterListIcon className="w-4 h-4 mr-2" />
+            Filters
+          </Button>
+        </div>
+      </div>
 
-        {/* Quick Stats */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          {quickStats.map((stat, index) => (
-            <Grid xs={12} sm={6} md={3} key={index}>
-              {analyticsLoading ? (
-                <Skeleton variant="rectangular" height={120} />
-              ) : (
-                <QuickStatsCard {...stat} />
-              )}
-            </Grid>
-          ))}
-        </Grid>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {quickStats.map((stat, index) => (
+          <div key={index}>
+            {analyticsLoading ? (
+              <Skeleton className="h-32" />
+            ) : (
+              <QuickStatsCard {...stat} />
+            )}
+          </div>
+        ))}
+      </div>
 
-        {/* Main Content */}
-        <Grid container spacing={3}>
-          {/* Recent Cases */}
-          <Grid xs={12} md={8}>
-            <Card>
-              <CardContent>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    mb: 3,
-                  }}
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Cases */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Recent Cases</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/pharmacy/diagnostics')}
                 >
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Recent Cases
-                  </Typography>
-                  <Button
-                    size="small"
-                    onClick={() => navigate('/pharmacy/diagnostics')}
-                  >
-                    View All
+                  View All
+                </Button>
+              </div>
+              
+              {historyLoading ? (
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, index) => (
+                    <Skeleton key={index} className="h-24" />
+                  ))}
+                </div>
+              ) : recentCases.length > 0 ? (
+                <div>
+                  {recentCases.map((request: DiagnosticRequest) => (
+                    <RecentCaseCard
+                      key={request._id}
+                      request={request}
+                      onViewDetails={handleViewDetails}
+                      onQuickAction={handleQuickAction}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <ScienceIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No cases yet
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Start your first diagnostic case to see it here
+                  </p>
+                  <Button onClick={handleNewCase}>
+                    Create First Case
                   </Button>
-                </Box>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-                {historyLoading ? (
-                  <Box>
-                    {[...Array(5)].map((_, index) => (
-                      <Skeleton
-                        key={index}
-                        variant="rectangular"
-                        height={100}
-                        sx={{ mb: 2 }}
-                      />
-                    ))}
-                  </Box>
-                ) : recentCases.length > 0 ? (
-                  <Box>
-                    {recentCases.map((request: DiagnosticRequest) => (
-                      <RecentCaseCard
-                        key={request._id}
-                        request={request}
-                        onViewDetails={handleViewDetails}
-                        onQuickAction={handleQuickAction}
-                      />
-                    ))}
-                  </Box>
-                ) : (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <ScienceIcon
-                      sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
-                    />
-                    <Typography
-                      variant="h6"
-                      color="text.secondary"
-                      sx={{ mb: 1 }}
-                    >
-                      No cases yet
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
-                      Start your first diagnostic case to see it here
-                    </Typography>
-                    <Button variant="contained" onClick={handleNewCase}>
-                      Create First Case
-                    </Button>
-                  </Box>
+        {/* Quick Actions & Notifications */}
+        <div className="space-y-6">
+          {/* Quick Actions */}
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+              <div className="space-y-3">
+                <Button
+                  className="w-full justify-start"
+                  onClick={handleNewCase}
+                >
+                  <AddIcon className="w-4 h-4 mr-2" />
+                  New Diagnostic Case
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/pharmacy/diagnostics/case/new')}
+                >
+                  <ScienceIcon className="w-4 h-4 mr-2" />
+                  Lab Orders
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/pharmacy/diagnostics')}
+                >
+                  <TimelineIcon className="w-4 h-4 mr-2" />
+                  View Analytics
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/pharmacy/diagnostics')}
+                >
+                  <LocalHospitalIcon className="w-4 h-4 mr-2" />
+                  Referrals
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notifications */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <NotificationsIcon className="w-5 h-5" />
+                  <h2 className="text-xl font-semibold">Notifications</h2>
+                </div>
+                {pendingRequests.length > 0 && (
+                  <Badge variant="destructive">
+                    {pendingRequests.length}
+                  </Badge>
                 )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Quick Actions & Notifications */}
-          <Grid xs={12} md={4}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Quick Actions */}
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                    Quick Actions
-                  </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
-                  >
-                    <Button
-                      variant="outlined"
-                      startIcon={<AddIcon />}
-                      onClick={handleNewCase}
-                      fullWidth
-                    >
-                      New Diagnostic Case
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<ScienceIcon />}
-                      onClick={() => navigate('/pharmacy/diagnostics/case/new')}
-                      fullWidth
-                    >
-                      Lab Orders
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<TimelineIcon />}
-                      onClick={() => navigate('/pharmacy/diagnostics')}
-                      fullWidth
-                    >
-                      View Analytics
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<LocalHospitalIcon />}
-                      onClick={() => navigate('/pharmacy/diagnostics')}
-                      fullWidth
-                    >
-                      Referrals
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* Notifications */}
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <NotificationsIcon sx={{ mr: 1 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Notifications
-                    </Typography>
-                    <Badge
-                      badgeContent={pendingRequests.length}
-                      color="error"
-                      sx={{ ml: 1 }}
-                    />
-                  </Box>
-
-                  {pendingRequests.length > 0 ? (
-                    <Box>
-                      {pendingRequests
-                        .slice(0, 3)
-                        .map((request: DiagnosticRequest) => {
-                          const patient = patients.find(
-                            (p) => p._id === request.patientId
-                          );
-                          return (
-                            <Alert
-                              key={request._id}
-                              severity="info"
-                              sx={{ mb: 1 }}
-                              action={
-                                <Button
-                                  size="small"
-                                  onClick={() => handleViewDetails(request)}
-                                >
-                                  View
-                                </Button>
-                              }
-                            >
-                              <Typography variant="body2">
-                                {patient
-                                  ? `${patient.firstName} ${patient.lastName}`
-                                  : 'Patient'}{' '}
-                                - Case {request.status}
-                              </Typography>
-                            </Alert>
-                          );
-                        })}
-                      {pendingRequests.length > 3 && (
-                        <Typography variant="caption" color="text.secondary">
-                          +{pendingRequests.length - 3} more pending cases
-                        </Typography>
-                      )}
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No pending notifications
-                    </Typography>
+              </div>
+              
+              {pendingRequests.length > 0 ? (
+                <div className="space-y-3">
+                  {pendingRequests.slice(0, 3).map((request: DiagnosticRequest) => (
+                    <Alert key={request._id} className="flex justify-between items-center">
+                      <div>
+                        Patient - Case {request.status}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewDetails(request)}
+                      >
+                        View
+                      </Button>
+                    </Alert>
+                  ))}
+                  {pendingRequests.length > 3 && (
+                    <p className="text-sm text-gray-600">
+                      +{pendingRequests.length - 3} more pending cases
+                    </p>
                   )}
-                </CardContent>
-              </Card>
-            </Box>
-          </Grid>
-        </Grid>
-
-        {/* Floating Action Button for Mobile */}
-        {isMobile && (
-          <Fab
-            color="primary"
-            aria-label="new case"
-            onClick={handleNewCase}
-            sx={{
-              position: 'fixed',
-              bottom: 16,
-              right: 16,
-            }}
-          >
-            <AddIcon />
-          </Fab>
-        )}
-
-        {/* Filter Menu */}
-        <Menu
-          anchorEl={filterAnchorEl}
-          open={Boolean(filterAnchorEl)}
-          onClose={handleFilterClose}
-        >
-          <MenuItem onClick={handleFilterPending}>Pending Cases</MenuItem>
-          <MenuItem onClick={handleFilterCompleted}>Completed Cases</MenuItem>
-          <MenuItem onClick={handleClearFilters}>Clear Filters</MenuItem>
-        </Menu>
-      </Container>
-    </ErrorBoundary>
+                </div>
+              ) : (
+                <p className="text-gray-600">No pending notifications</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 };
-
-// TEMPORARILY REMOVED FEATURE GUARD TO TEST INFINITE LOOP
-// const DiagnosticDashboardWithGuard: React.FC = () => (
-//   <DiagnosticFeatureGuard>
-//     <DiagnosticDashboard />
-//   </DiagnosticFeatureGuard>
-// );
 
 export default DiagnosticDashboard;

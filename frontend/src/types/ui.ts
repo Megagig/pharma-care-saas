@@ -1,6 +1,4 @@
 import { type VariantProps } from "class-variance-authority"
-import { buttonVariants } from "@/components/ui/button"
-import { badgeVariants } from "@/components/ui/badge"
 
 // Component variant types
 export type ButtonVariant = VariantProps<typeof buttonVariants>
@@ -49,4 +47,4 @@ export interface ComponentVariants {
     card: {
         variant: 'default' | 'outline'
     }
-}
+};

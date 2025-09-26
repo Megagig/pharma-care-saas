@@ -1,9 +1,5 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useClinicalInterventionStore } from '../clinicalInterventionStore';
-
 // Mock the service
-vi.mock('../../services/clinicalInterventionService', () => ({
+vi.mock('../../services/clinicalInterventionService', () => ({ 
     default: {
         getInterventions: vi.fn(),
         getInterventionById: vi.fn(),
@@ -11,7 +7,7 @@ vi.mock('../../services/clinicalInterventionService', () => ({
         updateIntervention: vi.fn(),
         deleteIntervention: vi.fn(),
         getDashboardMetrics: vi.fn(),
-        getPatientInterventions: vi.fn()
+        getPatientInterventions: vi.fn() })
     }
 }));
 
@@ -32,11 +28,11 @@ describe('ClinicalInterventionStore', () => {
             expect(result.current.interventions).toEqual([]);
             expect(result.current.currentIntervention).toBeNull();
             expect(result.current.metrics).toBeNull();
-            expect(result.current.filters).toEqual({
+            expect(result.current.filters).toEqual({ 
                 page: 1,
                 limit: 20,
                 sortBy: 'identifiedDate',
-                sortOrder: 'desc'
+                sortOrder: 'desc' })
             });
             expect(result.current.pagination).toBeNull();
             expect(result.current.loading).toBe(false);
@@ -262,9 +258,9 @@ describe('ClinicalInterventionStore', () => {
                 result.current.updateFilters(newFilters);
             });
 
-            expect(result.current.filters).toEqual({
+            expect(result.current.filters).toEqual({ 
                 ...result.current.filters,
-                ...newFilters
+                ...newFilters })
             });
         });
 
@@ -273,10 +269,10 @@ describe('ClinicalInterventionStore', () => {
 
             // First set some filters
             act(() => {
-                result.current.updateFilters({
+                result.current.updateFilters({ 
                     category: 'drug_therapy_problem',
                     priority: 'high',
-                    page: 3
+                    page: 3 })
                 });
             });
 
@@ -285,11 +281,11 @@ describe('ClinicalInterventionStore', () => {
                 result.current.resetFilters();
             });
 
-            expect(result.current.filters).toEqual({
+            expect(result.current.filters).toEqual({ 
                 page: 1,
                 limit: 20,
                 sortBy: 'identifiedDate',
-                sortOrder: 'desc'
+                sortOrder: 'desc' })
             });
         });
 
@@ -595,11 +591,11 @@ describe('ClinicalInterventionStore', () => {
             expect(result.current.metrics).toBeNull();
             expect(result.current.error).toBeNull();
             expect(result.current.loading).toBe(false);
-            expect(result.current.filters).toEqual({
+            expect(result.current.filters).toEqual({ 
                 page: 1,
                 limit: 20,
                 sortBy: 'identifiedDate',
-                sortOrder: 'desc'
+                sortOrder: 'desc' })
             });
             expect(result.current.pagination).toBeNull();
         });
@@ -651,13 +647,13 @@ describe('ClinicalInterventionStore', () => {
 
             // Set pagination
             act(() => {
-                result.current.setPagination({
+                result.current.setPagination({ 
                     page: 2,
                     limit: 20,
                     total: 40,
                     pages: 2,
                     hasNext: false,
-                    hasPrev: true
+                    hasPrev: true })
                 });
                 result.current.updateFilters({ page: 2 });
             });
@@ -707,13 +703,13 @@ describe('ClinicalInterventionStore', () => {
                 result.current.setInterventions(mockInterventions);
                 result.current.updateFilters({ category: 'drug_therapy_problem', page: 2 });
                 result.current.setCurrentIntervention(mockInterventions[0]);
-                result.current.setPagination({
+                result.current.setPagination({ 
                     page: 2,
                     limit: 20,
                     total: 50,
                     pages: 3,
                     hasNext: true,
-                    hasPrev: true
+                    hasPrev: true })
                 });
             });
 

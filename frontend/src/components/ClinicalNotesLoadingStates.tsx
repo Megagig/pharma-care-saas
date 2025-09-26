@@ -1,29 +1,5 @@
-import React from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  CircularProgress,
-  LinearProgress,
-  Skeleton,
-  Stack,
-  Chip,
-  Alert,
-  Button,
-  Grid,
-  Paper,
-  useTheme,
-  alpha,
-} from '@mui/material';
-import {
-  CloudSync as SyncIcon,
-  Refresh as RefreshIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material';
 
+import { Button, Card, CardContent, Spinner, Progress, Alert, Skeleton } from '@/components/ui/button';
 // Loading state types
 export type LoadingStateType =
   | 'initial'
@@ -35,10 +11,8 @@ export type LoadingStateType =
   | 'syncing'
   | 'searching'
   | 'filtering';
-
 export type LoadingSize = 'small' | 'medium' | 'large';
 export type LoadingVariant = 'circular' | 'linear' | 'skeleton' | 'overlay';
-
 interface BaseLoadingProps {
   message?: string;
   size?: LoadingSize;
@@ -46,7 +20,6 @@ interface BaseLoadingProps {
   fullScreen?: boolean;
   overlay?: boolean;
 }
-
 interface LoadingStateProps extends BaseLoadingProps {
   type: LoadingStateType;
   progress?: number;
@@ -54,13 +27,11 @@ interface LoadingStateProps extends BaseLoadingProps {
   onCancel?: () => void;
   showProgress?: boolean;
 }
-
 interface SkeletonLoadingProps {
   variant: 'table' | 'card' | 'form' | 'list' | 'dashboard';
   count?: number;
   animation?: 'pulse' | 'wave' | false;
 }
-
 interface ProgressIndicatorProps {
   value: number;
   label?: string;
@@ -68,16 +39,14 @@ interface ProgressIndicatorProps {
   size?: LoadingSize;
   showPercentage?: boolean;
 }
-
 interface SyncStatusProps {
   status: 'idle' | 'syncing' | 'success' | 'error' | 'offline';
   lastSyncTime?: Date;
   pendingCount?: number;
   onRetry?: () => void;
 }
-
 // Main loading state component
-export const ClinicalNotesLoadingState: React.FC<LoadingStateProps> = ({
+export const ClinicalNotesLoadingState: React.FC<LoadingStateProps> = ({ 
   type,
   message,
   size = 'medium',
@@ -87,13 +56,11 @@ export const ClinicalNotesLoadingState: React.FC<LoadingStateProps> = ({
   onCancel,
   showProgress = false,
   fullScreen = false,
-  overlay = false,
+  overlay = false
 }) => {
   const theme = useTheme();
-
   const getLoadingMessage = () => {
     if (message) return message;
-
     switch (type) {
       case 'initial':
         return 'Loading clinical notes...';
@@ -117,22 +84,19 @@ export const ClinicalNotesLoadingState: React.FC<LoadingStateProps> = ({
         return 'Processing...';
     }
   };
-
   const getLoadingIcon = () => {
     const iconSize = size === 'small' ? 20 : size === 'medium' ? 32 : 48;
-
     switch (type) {
       case 'syncing':
         return (
           <SyncIcon
-            sx={{ fontSize: iconSize, animation: 'spin 1s linear infinite' }}
+            className=""
           />
         );
       default:
-        return <CircularProgress size={iconSize} />;
+        return <Spinner size={iconSize} />;
     }
   };
-
   const containerStyle = {
     display: 'flex',
     flexDirection: 'column' as const,
@@ -147,8 +111,7 @@ export const ClinicalNotesLoadingState: React.FC<LoadingStateProps> = ({
       right: 0,
       bottom: 0,
       backgroundColor: alpha(theme.palette.background.default, 0.9),
-      zIndex: 9999,
-    }),
+      zIndex: 9999, },
     ...(overlay && {
       position: 'absolute' as const,
       top: 0,
@@ -156,324 +119,305 @@ export const ClinicalNotesLoadingState: React.FC<LoadingStateProps> = ({
       right: 0,
       bottom: 0,
       backgroundColor: alpha(theme.palette.background.paper, 0.8),
-      zIndex: 1000,
-    }),
+      zIndex: 1000, },
   };
-
   if (variant === 'linear') {
     return (
-      <Box sx={containerStyle}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+      <div className="">
+        <div  color="text.secondary" className="">
           {getLoadingMessage()}
-        </Typography>
-        <LinearProgress
-          sx={{ width: '100%', maxWidth: 300 }}
+        </div>
+        <Progress
+          className=""
           variant={
             showProgress && progress !== undefined
               ? 'determinate'
-              : 'indeterminate'
+              : 'indeterminate'}
           }
           value={progress}
         />
         {showProgress && progress !== undefined && (
-          <Typography variant="caption" color="text.secondary">
+          <div  color="text.secondary">
             {Math.round(progress)}%
-          </Typography>
+          </div>
         )}
         {details && (
-          <Typography variant="caption" color="text.secondary">
+          <div  color="text.secondary">
             {details}
-          </Typography>
+          </div>
         )}
         {onCancel && (
-          <Button size="small" onClick={onCancel} sx={{ mt: 1 }}>
+          <Button size="small" onClick={onCancel} className="">
             Cancel
           </Button>
         )}
-      </Box>
+      </div>
     );
   }
-
   return (
-    <Box sx={containerStyle}>
+    <div className="">
       {getLoadingIcon()}
-      <Typography
+      <div
         variant={size === 'small' ? 'body2' : 'body1'}
         color="text.secondary"
         textAlign="center"
       >
         {getLoadingMessage()}
-      </Typography>
+      </div>
       {details && (
-        <Typography variant="caption" color="text.secondary" textAlign="center">
+        <div  color="text.secondary" textAlign="center">
           {details}
-        </Typography>
+        </div>
       )}
       {showProgress && progress !== undefined && (
-        <Typography variant="caption" color="text.secondary">
+        <div  color="text.secondary">
           {Math.round(progress)}% complete
-        </Typography>
+        </div>
       )}
       {onCancel && (
-        <Button size="small" onClick={onCancel} sx={{ mt: 1 }}>
+        <Button size="small" onClick={onCancel} className="">
           Cancel
         </Button>
       )}
-    </Box>
+    </div>
   );
 };
-
 // Skeleton loading component
-export const ClinicalNotesSkeletonLoader: React.FC<SkeletonLoadingProps> = ({
+export const ClinicalNotesSkeletonLoader: React.FC<SkeletonLoadingProps> = ({ 
   variant,
   count = 3,
-  animation = 'wave',
+  animation = 'wave'
 }) => {
   const renderTableSkeleton = () => (
-    <Box>
+    <div>
       {/* Header */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+      <div className="">
         <Skeleton
-          variant="rectangular"
+          
           width={200}
           height={40}
           animation={animation}
         />
         <Skeleton
-          variant="rectangular"
+          
           width={120}
           height={40}
           animation={animation}
         />
         <Skeleton
-          variant="rectangular"
+          
           width={100}
           height={40}
           animation={animation}
         />
-      </Box>
-
+      </div>
       {/* Rows */}
       {Array.from({ length: count }).map((_, index) => (
-        <Box key={index} sx={{ display: 'flex', gap: 2, mb: 1 }}>
+        <div key={index} className="">
           <Skeleton
-            variant="rectangular"
+            
             width="30%"
             height={48}
             animation={animation}
           />
           <Skeleton
-            variant="rectangular"
+            
             width="25%"
             height={48}
             animation={animation}
           />
           <Skeleton
-            variant="rectangular"
+            
             width="20%"
             height={48}
             animation={animation}
           />
           <Skeleton
-            variant="rectangular"
+            
             width="15%"
             height={48}
             animation={animation}
           />
           <Skeleton
-            variant="rectangular"
+            
             width="10%"
             height={48}
             animation={animation}
           />
-        </Box>
+        </div>
       ))}
-    </Box>
+    </div>
   );
-
   const renderCardSkeleton = () => (
-    <Grid container spacing={2}>
+    <div container spacing={2}>
       {Array.from({ length: count }).map((_, index) => (
-        <Grid item xs={12} sm={6} md={4} key={index}>
+        <div item xs={12} sm={6} md={4} key={index}>
           <Card>
             <CardContent>
               <Skeleton
-                variant="text"
+                
                 width="60%"
                 height={24}
                 animation={animation}
               />
               <Skeleton
-                variant="text"
+                
                 width="40%"
                 height={20}
                 animation={animation}
               />
               <Skeleton
-                variant="rectangular"
+                
                 width="100%"
                 height={60}
                 animation={animation}
-                sx={{ my: 1 }}
+                className=""
               />
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <div className="">
                 <Skeleton
-                  variant="rectangular"
+                  
                   width={60}
                   height={24}
                   animation={animation}
                 />
                 <Skeleton
-                  variant="rectangular"
+                  
                   width={80}
                   height={24}
                   animation={animation}
                 />
-              </Box>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
+        </div>
       ))}
-    </Grid>
+    </div>
   );
-
   const renderFormSkeleton = () => (
-    <Box sx={{ maxWidth: 600 }}>
+    <div className="">
       <Skeleton
-        variant="text"
+        
         width="40%"
         height={32}
         animation={animation}
-        sx={{ mb: 2 }}
+        className=""
       />
-
       {Array.from({ length: count }).map((_, index) => (
-        <Box key={index} sx={{ mb: 3 }}>
+        <div key={index} className="">
           <Skeleton
-            variant="text"
+            
             width="30%"
             height={20}
             animation={animation}
-            sx={{ mb: 1 }}
+            className=""
           />
           <Skeleton
-            variant="rectangular"
+            
             width="100%"
             height={56}
             animation={animation}
           />
-        </Box>
+        </div>
       ))}
-
-      <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+      <div className="">
         <Skeleton
-          variant="rectangular"
+          
           width={100}
           height={36}
           animation={animation}
         />
         <Skeleton
-          variant="rectangular"
+          
           width={80}
           height={36}
           animation={animation}
         />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
-
   const renderListSkeleton = () => (
-    <Box>
+    <div>
       {Array.from({ length: count }).map((_, index) => (
-        <Box
+        <div
           key={index}
-          sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}
+          className=""
         >
           <Skeleton
-            variant="circular"
+            
             width={40}
             height={40}
             animation={animation}
           />
-          <Box sx={{ flex: 1 }}>
+          <div className="">
             <Skeleton
-              variant="text"
+              
               width="70%"
               height={20}
               animation={animation}
             />
             <Skeleton
-              variant="text"
+              
               width="50%"
               height={16}
               animation={animation}
             />
-          </Box>
+          </div>
           <Skeleton
-            variant="rectangular"
+            
             width={60}
             height={24}
             animation={animation}
           />
-        </Box>
+        </div>
       ))}
-    </Box>
+    </div>
   );
-
   const renderDashboardSkeleton = () => (
-    <Box>
+    <div>
       {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
+      <div
+        className=""
       >
         <Skeleton
-          variant="text"
+          
           width={200}
           height={32}
           animation={animation}
         />
         <Skeleton
-          variant="rectangular"
+          
           width={120}
           height={36}
           animation={animation}
         />
-      </Box>
-
+      </div>
       {/* Stats Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <div container spacing={2} className="">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <Card>
               <CardContent>
                 <Skeleton
-                  variant="text"
+                  
                   width="60%"
                   height={20}
                   animation={animation}
                 />
                 <Skeleton
-                  variant="text"
+                  
                   width="40%"
                   height={32}
                   animation={animation}
                 />
               </CardContent>
             </Card>
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Main Content */}
       {renderTableSkeleton()}
-    </Box>
+    </div>
   );
-
   switch (variant) {
     case 'table':
       return renderTableSkeleton();
@@ -489,86 +433,66 @@ export const ClinicalNotesSkeletonLoader: React.FC<SkeletonLoadingProps> = ({
       return renderTableSkeleton();
   }
 };
-
 // Progress indicator component
-export const ClinicalNotesProgressIndicator: React.FC<
-  ProgressIndicatorProps
-> = ({
+export const ClinicalNotesProgressIndicator: React.FC = ({ 
   value,
   label,
   color = 'primary',
   size = 'medium',
-  showPercentage = true,
+  showPercentage = true
 }) => {
   const circularSize = size === 'small' ? 32 : size === 'medium' ? 48 : 64;
-
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 1,
-      }}
+    <div
+      className=""
     >
-      <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-        <CircularProgress
-          variant="determinate"
-          value={value}
+      <div className="">
+        <Spinner
+          
           size={circularSize}
           color={color}
           thickness={4}
         />
         {showPercentage && (
-          <Box
-            sx={{
-              top: 0,
-              left: 0,
-              bottom: 0,
-              right: 0,
-              position: 'absolute',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+          <div
+            className=""
           >
-            <Typography
+            <div
               variant={size === 'small' ? 'caption' : 'body2'}
               component="div"
               color="text.secondary"
               fontWeight="medium"
             >
               {Math.round(value)}%
-            </Typography>
-          </Box>
+            </div>
+          </div>
         )}
-      </Box>
+      </div>
       {label && (
-        <Typography
+        <div
           variant={size === 'small' ? 'caption' : 'body2'}
           color="text.secondary"
           textAlign="center"
         >
           {label}
-        </Typography>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
-
 // Sync status component
-export const ClinicalNotesSyncStatus: React.FC<SyncStatusProps> = ({
+export const ClinicalNotesSyncStatus: React.FC<SyncStatusProps> = ({ 
   status,
   lastSyncTime,
   pendingCount = 0,
-  onRetry,
+  onRetry
 }) => {
   const getStatusConfig = () => {
     switch (status) {
       case 'syncing':
         return {
           color: 'info' as const,
-          icon: <SyncIcon sx={{ animation: 'spin 1s linear infinite' }} />,
+          icon: <SyncIcon className="" />,
           message: 'Syncing...',
           severity: 'info' as const,
         };
@@ -602,51 +526,46 @@ export const ClinicalNotesSyncStatus: React.FC<SyncStatusProps> = ({
         };
     }
   };
-
   const config = getStatusConfig();
-
   return (
     <Alert
       severity={config.severity}
       icon={config.icon}
-      sx={{ mb: 2 }}
+      className=""
       action={
-        status === 'error' && onRetry ? (
+        status === 'error' && onRetry ? (}
           <Button size="small" startIcon={<RefreshIcon />} onClick={onRetry}>
             Retry
           </Button>
         ) : undefined
       }
     >
-      <Box>
-        <Typography variant="body2" fontWeight="medium">
+      <div>
+        <div  fontWeight="medium">
           {config.message}
           {pendingCount > 0 && (
             <Chip
               label={`${pendingCount} pending`}
               size="small"
               color={config.color}
-              sx={{ ml: 1 }}
+              className=""
             />
           )}
-        </Typography>
-
+        </div>
         {lastSyncTime && status !== 'syncing' && (
-          <Typography variant="caption" color="text.secondary">
+          <div  color="text.secondary">
             Last sync: {lastSyncTime.toLocaleString()}
-          </Typography>
+          </div>
         )}
-
         {status === 'offline' && (
-          <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+          <div  display="block" className="">
             Changes will sync when connection is restored
-          </Typography>
+          </div>
         )}
-      </Box>
+      </div>
     </Alert>
   );
 };
-
 // Utility component for wrapping content with loading overlay
 export const LoadingOverlay: React.FC<{
   loading: boolean;
@@ -655,7 +574,7 @@ export const LoadingOverlay: React.FC<{
   type?: LoadingStateType;
 }> = ({ loading, children, message, type = 'loading' }) => {
   return (
-    <Box sx={{ position: 'relative' }}>
+    <div className="">
       {children}
       {loading && (
         <ClinicalNotesLoadingState
@@ -665,10 +584,9 @@ export const LoadingOverlay: React.FC<{
           size="medium"
         />
       )}
-    </Box>
+    </div>
   );
 };
-
 // CSS for animations
 const globalStyles = `
   @keyframes spin {
@@ -676,18 +594,11 @@ const globalStyles = `
     100% { transform: rotate(360deg); }
   }
 `;
-
 // Inject global styles
 if (typeof document !== 'undefined') {
   const styleSheet = document.createElement('style');
   styleSheet.textContent = globalStyles;
   document.head.appendChild(styleSheet);
 }
-
 export default {
-  ClinicalNotesLoadingState,
-  ClinicalNotesSkeletonLoader,
-  ClinicalNotesProgressIndicator,
-  ClinicalNotesSyncStatus,
-  LoadingOverlay,
 };

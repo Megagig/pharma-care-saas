@@ -1,71 +1,29 @@
 // Operational Efficiency Report Module Component
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  LinearProgress,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-  Avatar,
-} from '@mui/material';
-import {
-  Speed,
-  TrendingUp,
-  TrendingDown,
-  Assessment,
-  Timeline,
-  BarChart,
-  PieChart,
-  ShowChart,
-  Warning,
-  CheckCircle,
-  Schedule,
-  Build,
-} from '@mui/icons-material';
 import ChartComponent from '../shared/ChartComponent';
-import { ChartData } from '../../types/charts';
-import { OperationalEfficiencyFilters } from '../../types/filters';
-import { useCurrentFilters } from '../../stores/filtersStore';
-import { ReportType } from '../../types/reports';
+
+import { Card, CardContent, Progress, Alert, Tabs, Separator } from '@/components/ui/button';
 
 interface OperationalEfficiencyReportProps {
   filters: OperationalEfficiencyFilters;
   onFilterChange?: (filters: OperationalEfficiencyFilters) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
-
-const OperationalEfficiencyReport: React.FC<
-  OperationalEfficiencyReportProps
-> = ({ filters, onFilterChange }) => {
+const OperationalEfficiencyReport: React.FC = ({ filters, onFilterChange }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   // Mock data - in real implementation, this would come from API
   const mockData = useMemo(
-    () => ({
+    () => ({ 
       // KPI Cards Data
       kpiData: [
         {
@@ -75,7 +33,7 @@ const OperationalEfficiencyReport: React.FC<
           trend: {
             direction: 'up' as const,
             value: 5.2,
-            period: 'vs last month',
+            period: 'vs last month'}
           },
           status: 'success' as const,
           target: { value: 85, label: '%' },
@@ -114,7 +72,6 @@ const OperationalEfficiencyReport: React.FC<
           status: 'warning' as const,
         },
       ],
-
       // Workflow Metrics Data
       workflowMetricsData: {
         id: 'workflow-metrics',
@@ -296,7 +253,6 @@ const OperationalEfficiencyReport: React.FC<
           },
         },
       },
-
       // Resource Utilization Data
       resourceUtilizationData: {
         id: 'resource-utilization',
@@ -320,7 +276,6 @@ const OperationalEfficiencyReport: React.FC<
         ],
         config: {} as any,
       },
-
       // Performance Benchmarks
       performanceBenchmarksData: {
         id: 'performance-benchmarks',
@@ -507,7 +462,6 @@ const OperationalEfficiencyReport: React.FC<
           },
         },
       },
-
       // Real-time Efficiency Monitoring
       realTimeEfficiencyData: {
         id: 'real-time-efficiency',
@@ -688,7 +642,6 @@ const OperationalEfficiencyReport: React.FC<
           },
         },
       },
-
       // Process Improvement Recommendations
       processImprovements: [
         {
@@ -721,7 +674,6 @@ const OperationalEfficiencyReport: React.FC<
           estimatedSavings: '8.7%',
         },
       ],
-
       // Resource Utilization Details
       resourceDetails: [
         {
@@ -752,25 +704,20 @@ const OperationalEfficiencyReport: React.FC<
           efficiency: 92.1,
           status: 'under-utilized' as const,
         },
-      ],
-    }),
+      ], },
     []
   );
-
   // Simulate data loading
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [filters]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   const getImpactColor = (impact: 'low' | 'medium' | 'high') => {
     switch (impact) {
       case 'high':
@@ -783,7 +730,6 @@ const OperationalEfficiencyReport: React.FC<
         return 'default';
     }
   };
-
   const getStatusColor = (
     status: 'optimal' | 'under-utilized' | 'over-utilized'
   ) => {
@@ -798,65 +744,60 @@ const OperationalEfficiencyReport: React.FC<
         return 'default';
     }
   };
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Alert severity="error" className="">
+        <div  gutterBottom>
           Error Loading Operational Efficiency Data
-        </Typography>
-        <Typography variant="body2">{error}</Typography>
+        </div>
+        <div >{error}</div>
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center' }}
+          className=""
         >
-          <Speed sx={{ mr: 2, color: 'primary.main' }} />
+          <Speed className="" />
           Operational Efficiency Dashboard
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Comprehensive analysis of workflow metrics, resource utilization,
           performance benchmarks, and real-time efficiency monitoring with
           actionable improvement recommendations.
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div container spacing={3} className="">
         {mockData.kpiData.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <ChartComponent
-              data={{
+              data={{}
                 id: `kpi-${index}`,
                 title: '',
                 type: 'kpi-card',
                 data: [kpi],
                 config: {} as any,
-              }}
               height={180}
               loading={loading}
             />
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          
           scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          className=""
         >
           <Tab
             icon={<BarChart />}
@@ -884,25 +825,24 @@ const OperationalEfficiencyReport: React.FC<
             iconPosition="start"
           />
         </Tabs>
-
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.workflowMetricsData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Workflow Analysis Insights
-                  </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Chip
                       label="Prescription Processing: Above Target"
@@ -919,340 +859,291 @@ const OperationalEfficiencyReport: React.FC<
                       color="success"
                       size="small"
                     />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Medication review process shows the highest bottleneck score
                     and exceeds target time. Consider implementing automated
                     pre-screening to improve efficiency. Prescription processing
                     is performing well above targets.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+          <div container spacing={3}>
+            <div item xs={12} md={6}>
               <ChartComponent
                 data={mockData.resourceUtilizationData}
                 height={350}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: 350 }}>
+            </div>
+            <div item xs={12} md={6}>
+              <Card className="">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Resource Utilization Details
-                  </Typography>
+                  </div>
                   <List dense>
                     {mockData.resourceDetails.map((resource, index) => (
                       <React.Fragment key={index}>
-                        <ListItem>
-                          <ListItemIcon>
+                        <div>
+                          <div>
                             <Chip
                               label={resource.status}
                               color={getStatusColor(resource.status) as any}
                               size="small"
                             />
-                          </ListItemIcon>
-                          <ListItemText
+                          </div>
+                          <div
                             primary={
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                }}
+                              <div
+                                className=""
                               >
-                                <Typography
-                                  variant="body1"
-                                  sx={{ fontWeight: 500 }}
-                                >
+                                <div
+                                  
+                                  className=""
+                                >}
                                   {resource.resource}
-                                </Typography>
-                                <Typography
-                                  variant="body2"
+                                </div>
+                                <div
+                                  
                                   color="primary.main"
                                 >
                                   {resource.utilization}%
-                                </Typography>
-                              </Box>
+                                </div>
+                              </div>
                             }
                             secondary={
-                              <Box sx={{ mt: 1 }}>
-                                <LinearProgress
-                                  variant="determinate"
-                                  value={resource.utilization}
-                                  sx={{
-                                    height: 6,
-                                    borderRadius: 3,
-                                    mb: 1,
-                                    backgroundColor: 'grey.200',
-                                    '& .MuiLinearProgress-bar': {
-                                      backgroundColor:
-                                        resource.status === 'optimal'
-                                          ? '#22c55e'
-                                          : resource.status === 'over-utilized'
-                                          ? '#f59e0b'
-                                          : '#3b82f6',
-                                      borderRadius: 3,
-                                    },
-                                  }}
-                                />
-                                <Typography
-                                  variant="caption"
+                              <div className="">
+                                <Progress
+                                  
+                                  className="" />
+                                <div
+                                  
                                   color="text.secondary"
-                                >
+                                >}
                                   Efficiency: {resource.efficiency}% | Capacity:{' '}
                                   {resource.capacity}%
-                                </Typography>
-                              </Box>
+                                </div>
+                              </div>
                             }
                           />
-                        </ListItem>
+                        </div>
                         {index < mockData.resourceDetails.length - 1 && (
-                          <Divider />
+                          <Separator />
                         )}
                       </React.Fragment>
                     ))}
                   </List>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.performanceBenchmarksData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Performance Analysis Summary
-                  </Typography>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography
-                          variant="h3"
+                  </div>
+                  <div container spacing={3}>
+                    <div item xs={12} md={4}>
+                      <div className="">
+                        <div
+                          
                           color="success.main"
                           gutterBottom
                         >
                           5/6
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Metrics Above Target
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography variant="h3" color="info.main" gutterBottom>
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={4}>
+                      <div className="">
+                        <div  color="info.main" gutterBottom>
                           87.2%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Average Performance
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography
-                          variant="h3"
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={4}>
+                      <div className="">
+                        <div
+                          
                           color="primary.main"
                           gutterBottom
                         >
                           +7.1%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           vs Industry Benchmark
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="body2" color="text.secondary">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <Separator className="" />
+                  <div  color="text.secondary">
                     Performance is strong across most metrics, with quality
                     score and customer satisfaction exceeding both targets and
                     industry benchmarks. Cost efficiency shows room for
                     improvement but remains competitive with industry standards.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.realTimeEfficiencyData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Real-time Performance Indicators
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          backgroundColor: 'success.light',
-                          color: 'success.contrastText',
-                        }}
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h4" gutterBottom>
+                        <div  gutterBottom>
                           91.4%
-                        </Typography>
-                        <Typography variant="body2">
+                        </div>
+                        <div >
                           Current Efficiency
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          backgroundColor: 'info.light',
-                          color: 'info.contrastText',
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h4" gutterBottom>
+                        <div  gutterBottom>
                           67
-                        </Typography>
-                        <Typography variant="body2">Throughput/Hour</Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          backgroundColor: 'warning.light',
-                          color: 'warning.contrastText',
-                        }}
+                        </div>
+                        <div >Throughput/Hour</div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h4" gutterBottom>
+                        <div  gutterBottom>
                           3
-                        </Typography>
-                        <Typography variant="body2">Queue Length</Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          backgroundColor: 'primary.light',
-                          color: 'primary.contrastText',
-                        }}
+                        </div>
+                        <div >Queue Length</div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h4" gutterBottom>
+                        <div  gutterBottom>
                           5.2m
-                        </Typography>
-                        <Typography variant="body2">
+                        </div>
+                        <div >
                           Avg Response Time
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                  </Grid>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={4}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Process Improvement Recommendations
-                  </Typography>
+                  </div>
                   <List>
                     {mockData.processImprovements.map((improvement, index) => (
                       <React.Fragment key={index}>
-                        <ListItem>
-                          <ListItemIcon>
+                        <div>
+                          <div>
                             <Chip
                               label={`${improvement.impact} impact`}
                               color={getImpactColor(improvement.impact) as any}
                               size="small"
                             />
-                          </ListItemIcon>
-                          <ListItemText
+                          </div>
+                          <div
                             primary={
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                }}
+                              <div
+                                className=""
                               >
-                                <Typography
-                                  variant="body1"
-                                  sx={{ fontWeight: 500 }}
-                                >
+                                <div
+                                  
+                                  className=""
+                                >}
                                   {improvement.process}
-                                </Typography>
+                                </div>
                                 <Chip
                                   label={`${improvement.estimatedSavings} savings`}
                                   color="success"
                                   size="small"
-                                  variant="outlined"
+                                  
                                 />
-                              </Box>
+                              </div>
                             }
                             secondary={
-                              <Box sx={{ mt: 1 }}>
-                                <Typography variant="body2" gutterBottom>
+                              <div className="">
+                                <div  gutterBottom>}
                                   {improvement.recommendation}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
+                                </div>
+                                <div
+                                  
                                   color="text.secondary"
                                 >
                                   Current: {improvement.currentTime}min |
                                   Target: {improvement.targetTime}min | Effort:{' '}
                                   {improvement.effort}
-                                </Typography>
-                              </Box>
+                                </div>
+                              </div>
                             }
                           />
-                        </ListItem>
+                        </div>
                         {index < mockData.processImprovements.length - 1 && (
-                          <Divider />
+                          <Separator />
                         )}
                       </React.Fragment>
                     ))}
                   </List>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default OperationalEfficiencyReport;

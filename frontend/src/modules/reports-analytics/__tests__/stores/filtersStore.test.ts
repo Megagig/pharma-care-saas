@@ -1,9 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useFiltersStore } from '../../stores/filtersStore';
-import { mockFilters, mockDateRange } from '../mocks/mockData';
-import { ReportType } from '../../types';
-
 // Mock localStorage
 const mockLocalStorage = {
     getItem: vi.fn(),
@@ -13,8 +7,7 @@ const mockLocalStorage = {
 };
 
 Object.defineProperty(window, 'localStorage', {
-    value: mockLocalStorage,
-});
+    value: mockLocalStorage}
 
 describe('filtersStore', () => {
     beforeEach(() => {
@@ -156,14 +149,13 @@ describe('filtersStore', () => {
     });
 
     it('loads filters from localStorage', () => {
-        const storedFilters = JSON.stringify({
+        const storedFilters = JSON.stringify({ 
             ...mockFilters,
             dateRange: {
                 ...mockFilters.dateRange,
                 startDate: mockFilters.dateRange.startDate.toISOString(),
-                endDate: mockFilters.dateRange.endDate.toISOString(),
-            },
-        });
+                endDate: mockFilters.dateRange.endDate.toISOString()}
+            }
 
         mockLocalStorage.getItem.mockReturnValue(storedFilters);
 

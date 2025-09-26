@@ -1,6 +1,4 @@
 // Filter Helper Functions
-import { ReportFilters, FilterDefinition, DateRange, DatePreset } from '../types/filters';
-
 /**
  * Create date range from preset
  */
@@ -293,10 +291,10 @@ export const getFilterOptionsFromData = <T extends Record<string, any>>(
     });
 
     return Array.from(counts.entries())
-        .map(([value, count]) => ({
+        .map(([value, count]) => ({ 
             value,
             label: value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            count,
+            count}
         }))
         .sort((a, b) => b.count - a.count);
 };

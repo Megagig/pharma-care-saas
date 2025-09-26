@@ -1,43 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Alert,
-  AlertTitle,
-  Stack,
-  Chip,
-  Button,
-  Collapse,
-  IconButton,
-  Tooltip,
-  Paper,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-  CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-} from '@mui/material';
-import {
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Medication as MedicationIcon,
-  LocalPharmacy as LocalPharmacyIcon,
-  HealthAndSafety as HealthAndSafetyIcon,
-  Refresh as RefreshIcon,
-} from '@mui/icons-material';
-import type {
-  DiagnosticResult,
-  DrugInteraction,
-  AllergyAlert,
-  Contraindication,
-} from '../types';
+import { Button, Tooltip, Spinner, Alert, AlertTitle, Accordion } from '@/components/ui/button';
 
 interface InteractionAlertsProps {
   medications: DiagnosticResult['medicationSuggestions'];
@@ -50,7 +11,6 @@ interface InteractionAlertsProps {
   }>;
   loading?: boolean;
 }
-
 const SEVERITY_CONFIG = {
   major: {
     color: 'error' as const,
@@ -71,7 +31,6 @@ const SEVERITY_CONFIG = {
     description: 'Monitor for effects but generally safe',
   },
 };
-
 const ALLERGY_SEVERITY_CONFIG = {
   severe: {
     color: 'error' as const,
@@ -92,7 +51,6 @@ const ALLERGY_SEVERITY_CONFIG = {
     description: 'Monitor for allergic reactions',
   },
 };
-
 const CONTRAINDICATION_CONFIG = {
   contraindicated: {
     color: 'error' as const,
@@ -107,13 +65,12 @@ const CONTRAINDICATION_CONFIG = {
     description: 'Monitor closely in this condition',
   },
 };
-
-const InteractionAlerts: React.FC<InteractionAlertsProps> = ({
+const InteractionAlerts: React.FC<InteractionAlertsProps> = ({ 
   medications,
   patientAllergies = [],
   patientConditions = [],
   onCheckInteractions,
-  loading = false,
+  loading = false
 }) => {
   const [interactions, setInteractions] = useState<DrugInteraction[]>([]);
   const [allergies, setAllergies] = useState<AllergyAlert[]>([]);
@@ -125,7 +82,6 @@ const InteractionAlerts: React.FC<InteractionAlertsProps> = ({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['interactions'])
   );
-
   const handleToggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(section)) {
@@ -135,17 +91,13 @@ const InteractionAlerts: React.FC<InteractionAlertsProps> = ({
     }
     setExpandedSections(newExpanded);
   };
-
   const checkInteractions = async () => {
     if (!onCheckInteractions || medications.length === 0) return;
-
     setIsLoading(true);
     setError(null);
-
     try {
       const drugNames = medications.map((med) => med.drugName);
       const result = await onCheckInteractions(drugNames);
-
       setInteractions(result.interactions || []);
       setAllergies(result.allergies || []);
       setContraindications(result.contraindications || []);
@@ -157,13 +109,11 @@ const InteractionAlerts: React.FC<InteractionAlertsProps> = ({
       setIsLoading(false);
     }
   };
-
   useEffect(() => {
     if (medications.length > 0) {
       checkInteractions();
     }
   }, [medications]);
-
   const getSeverityConfig = (
     severity: string,
     type: 'interaction' | 'allergy' | 'contraindication'
@@ -188,7 +138,6 @@ const InteractionAlerts: React.FC<InteractionAlertsProps> = ({
         );
     }
   };
-
   const totalAlerts =
     interactions.length + allergies.length + contraindications.length;
   const criticalAlerts = [
@@ -196,33 +145,25 @@ const InteractionAlerts: React.FC<InteractionAlertsProps> = ({
     ...allergies.filter((a) => a.severity === 'severe'),
     ...contraindications.filter((c) => c.severity === 'contraindicated'),
   ].length;
-
   if (medications.length === 0) {
     return null;
   }
-
   return (
-    <Box>
+    <div>
       {/* Header */}
-      <Box sx={{ mb: 2 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            mb: 1,
-          }}
+      <div className="">
+        <div
+          className=""
         >
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}
+          <div
+            
+            className=""
           >
-            <HealthAndSafetyIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <HealthAndSafetyIcon className="" />
             Drug Safety Analysis
-          </Typography>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {(isLoading || loading) && <CircularProgress size={20} />}
+          </div>
+          <div className="">
+            {(isLoading || loading) && <Spinner size={20} />}
             <Tooltip title="Refresh interaction check">
               <IconButton
                 size="small"
@@ -232,13 +173,12 @@ const InteractionAlerts: React.FC<InteractionAlertsProps> = ({
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
-          </Box>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          </div>
+        </div>
+        <div className="">
           <Chip
             label={`${medications.length} Medications`}
-            variant="outlined"
+            
             size="small"
             icon={<MedicationIcon />}
           />
@@ -246,7 +186,7 @@ const InteractionAlerts: React.FC<InteractionAlertsProps> = ({
             <Chip
               label={`${totalAlerts} Alert(s)`}
               color={criticalAlerts > 0 ? 'error' : 'warning'}
-              variant="filled"
+              
               size="small"
             />
           )}
@@ -254,33 +194,30 @@ const InteractionAlerts: React.FC<InteractionAlertsProps> = ({
             <Chip
               label={`${criticalAlerts} Critical`}
               color="error"
-              variant="filled"
+              
               size="small"
             />
           )}
-        </Box>
-
+        </div>
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" className="">
             <AlertTitle>Interaction Check Failed</AlertTitle>
-            <Typography variant="body2">{error}</Typography>
-            <Button size="small" onClick={checkInteractions} sx={{ mt: 1 }}>
+            <div >{error}</div>
+            <Button size="small" onClick={checkInteractions} className="">
               Retry
             </Button>
           </Alert>
         )}
-
         {criticalAlerts > 0 && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" className="">
             <AlertTitle>Critical Drug Safety Alerts</AlertTitle>
-            <Typography variant="body2">
+            <div >
               {criticalAlerts} critical safety issue(s) detected. Review all
               alerts before prescribing.
-            </Typography>
+            </div>
           </Alert>
         )}
-      </Box>
-
+      </div>
       {/* Drug-Drug Interactions */}
       {interactions.length > 0 && (
         <Accordion
@@ -288,201 +225,179 @@ const InteractionAlerts: React.FC<InteractionAlertsProps> = ({
           onChange={() => handleToggleSection('interactions')}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <div className="">
               <MedicationIcon color="warning" />
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              <div  className="">
                 Drug-Drug Interactions ({interactions.length})
-              </Typography>
+              </div>
               {interactions.some((i) => i.severity === 'major') && (
                 <Chip
                   label="Major Interactions"
                   color="error"
                   size="small"
-                  variant="filled"
+                  
                 />
               )}
-            </Box>
+            </div>
           </AccordionSummary>
           <AccordionDetails>
-            <Stack spacing={2}>
+            <div spacing={2}>
               {interactions.map((interaction, index) => {
                 const config = getSeverityConfig(
                   interaction.severity,
                   'interaction'
                 );
                 const Icon = config.icon;
-
                 return (
-                  <Paper key={index} variant="outlined" sx={{ p: 2 }}>
-                    <Box
-                      sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}
+                  <div key={index}  className="">
+                    <div
+                      className=""
                     >
                       <Icon color={config.color} />
-                      <Box sx={{ flex: 1 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            mb: 1,
-                          }}
+                      <div className="">
+                        <div
+                          className=""
                         >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: 600 }}
+                          <div
+                            
+                            className=""
                           >
                             {interaction.drug1} + {interaction.drug2}
-                          </Typography>
+                          </div>
                           <Chip
                             label={config.label}
                             color={config.color}
                             size="small"
-                            variant="outlined"
+                            
                           />
-                        </Box>
-
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="text.secondary"
-                          sx={{ mb: 1 }}
+                          className=""
                         >
                           {config.description}
-                        </Typography>
-
-                        <Typography variant="body2" sx={{ mb: 1 }}>
+                        </div>
+                        <div  className="">
                           <strong>Clinical Effect:</strong>{' '}
                           {interaction.clinicalEffect}
-                        </Typography>
-
-                        <Typography variant="body2" sx={{ mb: 1 }}>
+                        </div>
+                        <div  className="">
                           <strong>Description:</strong>{' '}
                           {interaction.description}
-                        </Typography>
-
+                        </div>
                         {interaction.mechanism && (
-                          <Typography variant="body2" sx={{ mb: 1 }}>
+                          <div  className="">
                             <strong>Mechanism:</strong> {interaction.mechanism}
-                          </Typography>
+                          </div>
                         )}
-
                         {interaction.management && (
                           <Alert
                             severity={config.color}
-                            variant="outlined"
-                            sx={{ mt: 1 }}
+                            
+                            className=""
                           >
-                            <Typography variant="body2">
+                            <div >
                               <strong>Management:</strong>{' '}
                               {interaction.management}
-                            </Typography>
+                            </div>
                           </Alert>
                         )}
-                      </Box>
-                    </Box>
-                  </Paper>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </Stack>
+            </div>
           </AccordionDetails>
         </Accordion>
       )}
-
       {/* Allergy Alerts */}
       {allergies.length > 0 && (
         <Accordion
           expanded={expandedSections.has('allergies')}
           onChange={() => handleToggleSection('allergies')}
-          sx={{ mt: 1 }}
+          className=""
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <div className="">
               <WarningIcon color="error" />
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              <div  className="">
                 Allergy Alerts ({allergies.length})
-              </Typography>
+              </div>
               {allergies.some((a) => a.severity === 'severe') && (
                 <Chip
                   label="Severe Allergies"
                   color="error"
                   size="small"
-                  variant="filled"
+                  
                 />
               )}
-            </Box>
+            </div>
           </AccordionSummary>
           <AccordionDetails>
-            <Stack spacing={2}>
+            <div spacing={2}>
               {allergies.map((allergy, index) => {
                 const config = getSeverityConfig(allergy.severity, 'allergy');
                 const Icon = config.icon;
-
                 return (
-                  <Paper key={index} variant="outlined" sx={{ p: 2 }}>
-                    <Box
-                      sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}
+                  <div key={index}  className="">
+                    <div
+                      className=""
                     >
                       <Icon color={config.color} />
-                      <Box sx={{ flex: 1 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            mb: 1,
-                          }}
+                      <div className="">
+                        <div
+                          className=""
                         >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: 600 }}
+                          <div
+                            
+                            className=""
                           >
                             {allergy.drug}
-                          </Typography>
+                          </div>
                           <Chip
                             label={config.label}
                             color={config.color}
                             size="small"
-                            variant="filled"
+                            
                           />
-                        </Box>
-
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="text.secondary"
-                          sx={{ mb: 1 }}
+                          className=""
                         >
                           {config.description}
-                        </Typography>
-
-                        <Typography variant="body2" sx={{ mb: 1 }}>
+                        </div>
+                        <div  className="">
                           <strong>Known Allergy:</strong> {allergy.allergy}
-                        </Typography>
-
-                        <Typography variant="body2">
+                        </div>
+                        <div >
                           <strong>Reaction:</strong> {allergy.reaction}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Paper>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </Stack>
+            </div>
           </AccordionDetails>
         </Accordion>
       )}
-
       {/* Contraindications */}
       {contraindications.length > 0 && (
         <Accordion
           expanded={expandedSections.has('contraindications')}
           onChange={() => handleToggleSection('contraindications')}
-          sx={{ mt: 1 }}
+          className=""
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <div className="">
               <ErrorIcon color="error" />
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              <div  className="">
                 Contraindications ({contraindications.length})
-              </Typography>
+              </div>
               {contraindications.some(
                 (c) => c.severity === 'contraindicated'
               ) && (
@@ -490,96 +405,84 @@ const InteractionAlerts: React.FC<InteractionAlertsProps> = ({
                   label="Absolute Contraindications"
                   color="error"
                   size="small"
-                  variant="filled"
+                  
                 />
               )}
-            </Box>
+            </div>
           </AccordionSummary>
           <AccordionDetails>
-            <Stack spacing={2}>
+            <div spacing={2}>
               {contraindications.map((contraindication, index) => {
                 const config = getSeverityConfig(
                   contraindication.severity,
                   'contraindication'
                 );
                 const Icon = config.icon;
-
                 return (
-                  <Paper key={index} variant="outlined" sx={{ p: 2 }}>
-                    <Box
-                      sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}
+                  <div key={index}  className="">
+                    <div
+                      className=""
                     >
                       <Icon color={config.color} />
-                      <Box sx={{ flex: 1 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            mb: 1,
-                          }}
+                      <div className="">
+                        <div
+                          className=""
                         >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: 600 }}
+                          <div
+                            
+                            className=""
                           >
                             {contraindication.drug}
-                          </Typography>
+                          </div>
                           <Chip
                             label={config.label}
                             color={config.color}
                             size="small"
-                            variant="filled"
+                            
                           />
-                        </Box>
-
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="text.secondary"
-                          sx={{ mb: 1 }}
+                          className=""
                         >
                           {config.description}
-                        </Typography>
-
-                        <Typography variant="body2" sx={{ mb: 1 }}>
+                        </div>
+                        <div  className="">
                           <strong>Condition:</strong>{' '}
                           {contraindication.condition}
-                        </Typography>
-
-                        <Typography variant="body2">
+                        </div>
+                        <div >
                           <strong>Reason:</strong> {contraindication.reason}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Paper>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </Stack>
+            </div>
           </AccordionDetails>
         </Accordion>
       )}
-
       {/* No Alerts */}
       {!isLoading && !loading && totalAlerts === 0 && (
-        <Alert severity="success" sx={{ mt: 2 }}>
+        <Alert severity="success" className="">
           <AlertTitle>No Safety Alerts</AlertTitle>
-          <Typography variant="body2">
+          <div >
             No drug interactions, allergies, or contraindications detected for
             the suggested medications.
-          </Typography>
+          </div>
         </Alert>
       )}
-
       {/* Safety Disclaimer */}
-      <Alert severity="info" sx={{ mt: 2 }}>
-        <Typography variant="body2">
+      <Alert severity="info" className="">
+        <div >
           <strong>Safety Note:</strong> This analysis is based on available drug
           interaction databases. Always consult current prescribing information
           and consider individual patient factors.
-        </Typography>
+        </div>
       </Alert>
-    </Box>
+    </div>
   );
 };
-
 export default InteractionAlerts;

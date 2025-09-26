@@ -1,6 +1,3 @@
-import { useState, useEffect } from 'react';
-import { dashboardService, ChartDataPoint } from '../services/dashboardService';
-
 interface DashboardChartsData {
     clinicalNotesByType: ChartDataPoint[];
     mtrsByStatus: ChartDataPoint[];
@@ -13,7 +10,7 @@ interface DashboardChartsData {
 }
 
 export const useDashboardCharts = () => {
-    const [data, setData] = useState<DashboardChartsData>({
+    const [data, setData] = useState<DashboardChartsData>({ 
         clinicalNotesByType: [],
         mtrsByStatus: [],
         patientsByMonth: [],
@@ -21,7 +18,7 @@ export const useDashboardCharts = () => {
         patientAgeDistribution: [],
         monthlyActivity: [],
         loading: true,
-        error: null,
+        error: null}
     });
 
     const [refreshKey, setRefreshKey] = useState(0);
@@ -40,10 +37,9 @@ export const useDashboardCharts = () => {
                 patientsByMonth: analytics.patientsByMonth.length,
                 medicationsByStatus: analytics.medicationsByStatus.length,
                 patientAgeDistribution: analytics.patientAgeDistribution.length,
-                monthlyActivity: analytics.monthlyActivity.length,
-            });
+                monthlyActivity: analytics.monthlyActivity.length}
 
-            setData({
+            setData({ 
                 clinicalNotesByType: analytics.clinicalNotesByType,
                 mtrsByStatus: analytics.mtrsByStatus,
                 patientsByMonth: analytics.patientsByMonth,
@@ -51,15 +47,15 @@ export const useDashboardCharts = () => {
                 patientAgeDistribution: analytics.patientAgeDistribution,
                 monthlyActivity: analytics.monthlyActivity,
                 loading: false,
-                error: null,
+                error: null}
             });
 
         } catch (error) {
             console.error('Error fetching chart data:', error);
-            setData(prev => ({
+            setData(prev => ({ 
                 ...prev,
                 loading: false,
-                error: error instanceof Error ? error.message : 'Failed to load chart data',
+                error: error instanceof Error ? error.message : 'Failed to load chart data'}
             }));
         }
     };

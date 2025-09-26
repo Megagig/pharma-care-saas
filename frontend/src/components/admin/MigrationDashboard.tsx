@@ -1,41 +1,24 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  Chip,
-  CircularProgress,
-  Divider,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  Typography,
-  Alert,
-  Button,
-  Paper,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-} from '@mui/material';
-import {
-  SwapVert as MigrationIcon,
-  CheckCircle as SuccessIcon,
-  Error as ErrorIcon,
-  HourglassEmpty as PendingIcon,
-  PlayArrow as RunIcon,
-  Undo as RollbackIcon,
-  Refresh as RefreshIcon,
-  Info as InfoIcon,
-} from '@mui/icons-material';
-import { useUIStore } from '../../stores';
+import React, { useState, useEffect } from 'react';
+
+import { Button } from '@/components/ui/button';
+
+import { Input } from '@/components/ui/input';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { CardHeader } from '@/components/ui/card';
+
+import { Dialog } from '@/components/ui/dialog';
+
+import { DialogContent } from '@/components/ui/dialog';
+
+import { DialogTitle } from '@/components/ui/dialog';
+
+import { Spinner } from '@/components/ui/spinner';
+
+import { Separator } from '@/components/ui/separator';
 
 interface Migration {
   id: string;
@@ -48,7 +31,6 @@ interface Migration {
   description: string;
   version: string;
 }
-
 const MigrationDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [migrations, setMigrations] = useState<Migration[]>([
@@ -92,29 +74,23 @@ const MigrationDashboard: React.FC = () => {
     null
   );
   const [showRunMigrationDialog, setShowRunMigrationDialog] = useState(false);
-  const [newMigration, setNewMigration] = useState({
+  const [newMigration, setNewMigration] = useState({ 
     name: '',
     description: '',
-    version: '',
+    version: ''}
   });
-
   const addNotification = useUIStore((state) => state.addNotification);
-
   const handleRunMigration = async () => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
-      addNotification({
+      addNotification({ 
         type: 'info',
-        title: 'Migration Started',
-        message: `Running migration: ${newMigration.name}`,
-      });
-
+        title: 'Migration Started'}
+        message: `Running migration: ${newMigration.name}`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
       // Add the new migration to the list
       const migration: Migration = {
         id: (migrations.length + 1).toString(),
@@ -127,65 +103,52 @@ const MigrationDashboard: React.FC = () => {
         description: newMigration.description,
         version: newMigration.version,
       };
-
       setMigrations([migration, ...migrations]);
       setShowRunMigrationDialog(false);
       setNewMigration({ name: '', description: '', version: '' });
-
-      addNotification({
+      addNotification({ 
         type: 'success',
-        title: 'Migration Completed',
-        message: `Successfully completed migration: ${newMigration.name}`,
-      });
+        title: 'Migration Completed'}
+        message: `Successfully completed migration: ${newMigration.name}`}
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
-        title: 'Migration Failed',
-        message: `Failed to run migration: ${newMigration.name}`,
-      });
+        title: 'Migration Failed'}
+        message: `Failed to run migration: ${newMigration.name}`}
     } finally {
       setLoading(false);
     }
   };
-
   const handleRollbackMigration = async (migrationId: string) => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
-      addNotification({
+      addNotification({ 
         type: 'info',
-        title: 'Rollback Started',
-        message: `Rolling back migration: ${migrationId}`,
-      });
-
+        title: 'Rollback Started'}
+        message: `Rolling back migration: ${migrationId}`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
       // Update the migration status
       setMigrations(
         migrations.map((m) =>
           m.id === migrationId ? { ...m, status: 'completed' } : m
         )
       );
-
-      addNotification({
+      addNotification({ 
         type: 'success',
-        title: 'Rollback Completed',
-        message: `Successfully rolled back migration: ${migrationId}`,
-      });
+        title: 'Rollback Completed'}
+        message: `Successfully rolled back migration: ${migrationId}`}
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
-        title: 'Rollback Failed',
-        message: `Failed to rollback migration: ${migrationId}`,
-      });
+        title: 'Rollback Failed'}
+        message: `Failed to rollback migration: ${migrationId}`}
     } finally {
       setLoading(false);
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -200,7 +163,6 @@ const MigrationDashboard: React.FC = () => {
         return 'default';
     }
   };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -215,145 +177,124 @@ const MigrationDashboard: React.FC = () => {
         return <InfoIcon />;
     }
   };
-
   return (
-    <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
+    <div>
+      <div
+        className=""
       >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <MigrationIcon sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h5" component="h1">
+        <div className="">
+          <MigrationIcon className="" />
+          <div  component="h1">
             Migration Dashboard
-          </Typography>
-        </Box>
-        <Box>
+          </div>
+        </div>
+        <div>
           <Button
-            variant="contained"
+            
             startIcon={<RunIcon />}
             onClick={() => setShowRunMigrationDialog(true)}
-            sx={{ mr: 1 }}
+            className=""
           >
             Run Migration
           </Button>
           <Button
-            variant="outlined"
+            
             startIcon={<RefreshIcon />}
             onClick={() => setLoading(true)}
           >
             Refresh
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Migration Stats */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <div container spacing={3} className="">
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary.main" gutterBottom>
+            <CardContent className="">
+              <div  color="primary.main" gutterBottom>
                 {migrations.length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Total Migrations
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main" gutterBottom>
+            <CardContent className="">
+              <div  color="success.main" gutterBottom>
                 {migrations.filter((m) => m.status === 'completed').length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Successful
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="error.main" gutterBottom>
+            <CardContent className="">
+              <div  color="error.main" gutterBottom>
                 {migrations.filter((m) => m.status === 'failed').length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Failed
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="info.main" gutterBottom>
+            <CardContent className="">
+              <div  color="info.main" gutterBottom>
                 {
                   migrations.filter(
                     (m) => m.status === 'pending' || m.status === 'running'
                   ).length
                 }
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 In Progress
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Migration List */}
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
+      <div container spacing={3}>
+        <div item xs={12}>
           <Card>
             <CardHeader
               title="Migration History"
               subheader="List of all database migrations"
             />
-            <Divider />
+            <Separator />
             <CardContent>
               {migrations.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="body1" color="textSecondary">
+                <div className="">
+                  <div  color="textSecondary">
                     No migrations found
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               ) : (
                 <List>
                   {migrations.map((migration) => (
-                    <ListItem
+                    <div
                       key={migration.id}
-                      sx={{
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        mb: 1,
-                        '&:last-child': { mb: 0 },
-                      }}
+                      className=""
                     >
-                      <Box sx={{ mr: 2, mt: 0.5 }}>
+                      <div className="">
                         {getStatusIcon(migration.status)}
-                      </Box>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              mb: 0.5,
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography variant="subtitle1" sx={{ mr: 1 }}>
+                            <div  className="">}
                               {migration.name}
-                            </Typography>
+                            </div>
                             <Chip
                               label={migration.status}
                               size="small"
@@ -362,62 +303,58 @@ const MigrationDashboard: React.FC = () => {
                             <Chip
                               label={`v${migration.version}`}
                               size="small"
-                              variant="outlined"
-                              sx={{ ml: 1 }}
+                              
+                              className=""
                             />
-                          </Box>
+                          </div>
                         }
                         secondary={
-                          <Box>
-                            <Typography variant="body2" color="textSecondary">
+                          <div>
+                            <div  color="textSecondary">}
                               {migration.description}
-                            </Typography>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                mt: 1,
-                              }}
+                            </div>
+                            <div
+                              className=""
                             >
-                              <Typography
-                                variant="caption"
+                              <div
+                                
                                 color="textSecondary"
-                                sx={{ mr: 2 }}
+                                className=""
                               >
                                 Created:{' '}
                                 {new Date(migration.createdAt).toLocaleString()}
-                              </Typography>
+                              </div>
                               {migration.completedAt && (
-                                <Typography
-                                  variant="caption"
+                                <div
+                                  
                                   color="textSecondary"
-                                  sx={{ mr: 2 }}
+                                  className=""
                                 >
                                   Completed:{' '}
                                   {new Date(
                                     migration.completedAt
                                   ).toLocaleString()}
-                                </Typography>
+                                </div>
                               )}
                               {migration.duration && (
-                                <Typography
-                                  variant="caption"
+                                <div
+                                  
                                   color="textSecondary"
                                 >
                                   Duration: {migration.duration}s
-                                </Typography>
+                                </div>
                               )}
-                            </Box>
-                          </Box>
+                            </div>
+                          </div>
                         }
                       />
-                      <Box>
+                      <div>
                         {migration.status === 'failed' && (
                           <Button
-                            variant="outlined"
+                            
                             startIcon={<RollbackIcon />}
                             onClick={() =>
-                              handleRollbackMigration(migration.id)
+                              handleRollbackMigration(migration.id)}
                             }
                             size="small"
                           >
@@ -425,23 +362,22 @@ const MigrationDashboard: React.FC = () => {
                           </Button>
                         )}
                         <Button
-                          variant="outlined"
+                          
                           onClick={() => setSelectedMigration(migration)}
                           size="small"
-                          sx={{ ml: 1 }}
+                          className=""
                         >
                           Details
                         </Button>
-                      </Box>
-                    </ListItem>
+                      </div>
+                    </div>
                   ))}
                 </List>
               )}
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Run Migration Dialog */}
       <Dialog
         open={showRunMigrationDialog}
@@ -450,31 +386,31 @@ const MigrationDashboard: React.FC = () => {
         fullWidth
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <RunIcon sx={{ mr: 1 }} />
+          <div className="">
+            <RunIcon className="" />
             Run New Migration
-          </Box>
+          </div>
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <TextField
+          <div className="">
+            <Input
               fullWidth
               label="Migration Name"
               value={newMigration.name}
-              onChange={(e) =>
+              onChange={(e) =>}
                 setNewMigration({ ...newMigration, name: e.target.value })
               }
               margin="normal"
               required
             />
-            <TextField
+            <Input
               fullWidth
               label="Description"
               value={newMigration.description}
               onChange={(e) =>
-                setNewMigration({
-                  ...newMigration,
-                  description: e.target.value,
+                setNewMigration({ 
+                  ...newMigration}
+                  description: e.target.value,}
                 })
               }
               margin="normal"
@@ -482,38 +418,37 @@ const MigrationDashboard: React.FC = () => {
               rows={3}
               required
             />
-            <TextField
+            <Input
               fullWidth
               label="Version"
               value={newMigration.version}
-              onChange={(e) =>
+              onChange={(e) =>}
                 setNewMigration({ ...newMigration, version: e.target.value })
               }
               margin="normal"
               required
             />
-          </Box>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowRunMigrationDialog(false)}>
             Cancel
           </Button>
           <Button
-            variant="contained"
+            
             onClick={handleRunMigration}
             disabled={
               loading ||
               !newMigration.name ||
               !newMigration.description ||
-              !newMigration.version
+              !newMigration.version}
             }
-            startIcon={loading ? <CircularProgress size={20} /> : <RunIcon />}
+            startIcon={loading ? <Spinner size={20} /> : <RunIcon />}
           >
             Run Migration
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Migration Details Dialog */}
       <Dialog
         open={!!selectedMigration}
@@ -522,74 +457,74 @@ const MigrationDashboard: React.FC = () => {
         fullWidth
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <div className="">
             {selectedMigration && getStatusIcon(selectedMigration.status)}
-            <Box sx={{ ml: 1 }}>
+            <div className="">
               {selectedMigration?.name}
               <Chip
                 label={selectedMigration?.status}
                 size="small"
                 color={
-                  getStatusColor(selectedMigration?.status || 'default') as any
+                  getStatusColor(selectedMigration?.status || 'default') as any}
                 }
-                sx={{ ml: 1 }}
+                className=""
               />
-            </Box>
-          </Box>
+            </div>
+          </div>
         </DialogTitle>
         <DialogContent>
           {selectedMigration && (
-            <Box sx={{ pt: 1 }}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>
+            <div className="">
+              <div container spacing={3}>
+                <div item xs={12} md={6}>
+                  <div  gutterBottom>
                     Migration Details
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
+                  </div>
+                  <div  className="">
                     <strong>ID:</strong> {selectedMigration.id}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
+                  </div>
+                  <div  className="">
                     <strong>Name:</strong> {selectedMigration.name}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
+                  </div>
+                  <div  className="">
                     <strong>Description:</strong>{' '}
                     {selectedMigration.description}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
+                  </div>
+                  <div  className="">
                     <strong>Version:</strong> {selectedMigration.version}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
+                  </div>
+                  <div  className="">
                     <strong>Created By:</strong> {selectedMigration.createdBy}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>
+                  </div>
+                </div>
+                <div item xs={12} md={6}>
+                  <div  gutterBottom>
                     Timeline
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
+                  </div>
+                  <div  className="">
                     <strong>Created:</strong>{' '}
                     {new Date(selectedMigration.createdAt).toLocaleString()}
-                  </Typography>
+                  </div>
                   {selectedMigration.completedAt && (
-                    <Typography variant="body2" sx={{ mb: 1 }}>
+                    <div  className="">
                       <strong>Completed:</strong>{' '}
                       {new Date(selectedMigration.completedAt).toLocaleString()}
-                    </Typography>
+                    </div>
                   )}
                   {selectedMigration.duration && (
-                    <Typography variant="body2" sx={{ mb: 1 }}>
+                    <div  className="">
                       <strong>Duration:</strong> {selectedMigration.duration}{' '}
                       seconds
-                    </Typography>
+                    </div>
                   )}
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
+                </div>
+                <div item xs={12}>
+                  <div  gutterBottom>
                     Actions
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
+                  </div>
+                  <div className="">
                     <Button
-                      variant="outlined"
+                      
                       startIcon={<RunIcon />}
                       disabled={selectedMigration.status === 'running'}
                     >
@@ -597,28 +532,27 @@ const MigrationDashboard: React.FC = () => {
                     </Button>
                     {selectedMigration.status === 'failed' && (
                       <Button
-                        variant="outlined"
+                        
                         startIcon={<RollbackIcon />}
                         onClick={() =>
-                          handleRollbackMigration(selectedMigration.id)
+                          handleRollbackMigration(selectedMigration.id)}
                         }
                       >
                         Rollback
                       </Button>
                     )}
-                    <Button variant="outlined">View Logs</Button>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Box>
+                    <Button >View Logs</Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSelectedMigration(null)}>Close</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
-
 export default MigrationDashboard;

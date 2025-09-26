@@ -477,14 +477,14 @@ export const offlineUtils = {
   async cacheEssentialData(): Promise<void> {
     try {
       // Cache intervention categories and strategies
-      const categories = Object.keys({
+      const categories = Object.keys({ 
         drug_therapy_problem: 'Drug Therapy Problem',
         adverse_drug_reaction: 'Adverse Drug Reaction',
         medication_nonadherence: 'Medication Non-adherence',
         drug_interaction: 'Drug Interaction',
         dosing_issue: 'Dosing Issue',
         contraindication: 'Contraindication',
-        other: 'Other',
+        other: 'Other'}
       });
 
       await offlineStorage.cacheData('intervention_categories', categories);

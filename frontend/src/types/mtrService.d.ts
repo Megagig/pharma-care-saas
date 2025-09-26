@@ -1,10 +1,3 @@
-import {
-  MedicationTherapyReview,
-  DrugTherapyProblem,
-  MTRIntervention,
-  MTRFollowUp,
-} from './mtr';
-
 declare global {
   interface ImportMeta {
     env: {

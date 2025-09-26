@@ -1,61 +1,24 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import PlanDevelopment from '../PlanDevelopment';
-import type { DrugTherapyProblem, TherapyPlan } from '../../types/mtr';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { it } from 'date-fns/locale';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
 
+import PlanDevelopment from '../PlanDevelopment';
 // Mock the MTR store
-vi.mock('../../stores/mtrStore', () => ({
+vi.mock('../../stores/mtrStore', () => ({ 
   useMTRStore: () => ({
     therapyPlan: null,
     createPlan: vi.fn(),
     updatePlan: vi.fn(),
     setLoading: vi.fn(),
-    setError: vi.fn(),
+    setError: vi.fn()}
     loading: {},
-    errors: {},
-  }),
-}));
+    errors: {}}
 
-// Mock date picker components
-vi.mock('@mui/x-date-pickers/DatePicker', () => ({
-  DatePicker: ({
+// Mock shadcn date picker components
+vi.mock('@/components/ui/date-picker', () => ({ 
     label,
-    ...props
+    ...props })
   }: {
     label: string;
     [key: string]: unknown;
-  }) => <input data-testid={`date-picker-${label}`} {...props} />,
-}));
-
-vi.mock('@mui/x-date-pickers/LocalizationProvider', () => ({
-  LocalizationProvider: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}));
-
-vi.mock('@mui/x-date-pickers/AdapterDateFns', () => ({
-  AdapterDateFns: vi.fn(),
-}));
+  }) => <input data-testid={`date-picker-${label}`} {...props} />}
 
 const mockProblems: DrugTherapyProblem[] = [
   {
@@ -105,12 +68,11 @@ const mockProblems: DrugTherapyProblem[] = [
 ];
 
 const renderWithProviders = (component: React.ReactElement) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return render(
     <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>

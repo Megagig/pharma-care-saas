@@ -1,9 +1,7 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import SimpleClinicalNoteForm from '../SimpleClinicalNoteForm';
 
+import userEvent from '@testing-library/user-event';
+
+import SimpleClinicalNoteForm from '../SimpleClinicalNoteForm';
 describe('SimpleClinicalNoteForm', () => {
   let mockOnSave: ReturnType<typeof vi.fn>;
   let mockOnCancel: ReturnType<typeof vi.fn>;
@@ -94,13 +92,12 @@ describe('SimpleClinicalNoteForm', () => {
     // Wait for form submission
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalledWith(
-        expect.objectContaining({
+        expect.objectContaining({ 
           patient: 'PAT001',
           title: 'Test Clinical Note',
           content: expect.objectContaining({
-            subjective: 'Patient reports headache',
-          }),
-        })
+            subjective: 'Patient reports headache'}
+          })}
       );
     });
   });
@@ -113,8 +110,7 @@ describe('SimpleClinicalNoteForm', () => {
     );
 
     const followUpToggle = screen.getByRole('checkbox', {
-      name: /follow-up required/i,
-    });
+      name: /follow-up required/i}
     await user.click(followUpToggle);
 
     expect(

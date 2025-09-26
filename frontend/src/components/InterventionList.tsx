@@ -1,74 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  Stack,
-  Chip,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  TextField,
-  InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  Grid,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
-  Checkbox,
-  Toolbar,
-  Tooltip,
-  Collapse,
-  Alert,
-  Pagination,
-  Skeleton,
-  Avatar,
-  Divider,
-  ToggleButton,
-  ToggleButtonGroup,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  FilterList as FilterIcon,
-  MoreVert as MoreVertIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Visibility as ViewIcon,
-  Assignment as AssignmentIcon,
-  TrendingUp as TrendingUpIcon,
-  Schedule as ScheduleIcon,
-  Person as PersonIcon,
-  ViewList as ViewListIcon,
-  ViewModule as ViewModuleIcon,
-  Clear as ClearIcon,
-  Download as DownloadIcon,
-  Refresh as RefreshIcon,
-} from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-
-import {
-  useClinicalInterventions,
+import { Button, Input, Label, Card, CardContent, Badge, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tooltip, Alert, Skeleton, Avatar, Separator } from '@/components/ui/button';
+useClinicalInterventions,
   useDeleteIntervention,
-} from '../queries/useClinicalInterventions';
-import { useClinicalInterventionStore } from '../stores/clinicalInterventionStore';
-import type {
-  ClinicalIntervention,
-  InterventionFilters,
-} from '../stores/clinicalInterventionStore';
+
 
 // ===============================
 // TYPES AND INTERFACES
@@ -120,17 +53,65 @@ const STATUS_LABELS = {
   cancelled: { label: 'Cancelled', color: '#757575' },
 } as const;
 
+// Badge variant mapping functions
+const getCategoryBadgeVariant = (category: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  switch (category) {
+    case 'drug_therapy_problem':
+    case 'contraindication':
+      return 'destructive';
+    case 'adverse_drug_reaction':
+    case 'dosing_issue':
+      return 'secondary';
+    case 'medication_nonadherence':
+    case 'drug_interaction':
+      return 'outline';
+    default:
+      return 'secondary';
+  }
+};
+
+const getPriorityBadgeVariant = (priority: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  switch (priority) {
+    case 'critical':
+    case 'high':
+      return 'destructive';
+    case 'medium':
+      return 'secondary';
+    case 'low':
+      return 'outline';
+    default:
+      return 'secondary';
+  }
+};
+
+const getStatusBadgeVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  switch (status) {
+    case 'completed':
+    case 'implemented':
+      return 'default';
+    case 'cancelled':
+      return 'destructive';
+    case 'in_progress':
+    case 'planning':
+      return 'secondary';
+    case 'identified':
+      return 'outline';
+    default:
+      return 'secondary';
+  }
+};
+
 // ===============================
 // MAIN COMPONENT
 // ===============================
 
-const InterventionList: React.FC<InterventionListProps> = ({
+const InterventionList: React.FC<InterventionListProps> = ({ 
   onEdit,
   onView,
-  onDelete,
+  onDelete}
   filters: propFilters = {},
   showPatientColumn = true,
-  compact = false,
+  compact = false
 }) => {
   // State
   const [viewMode, setViewMode] = useState<ViewMode>('table');
@@ -148,7 +129,7 @@ const InterventionList: React.FC<InterventionListProps> = ({
   const [pageSize, setPageSize] = useState(20);
 
   // Local filters state
-  const [localFilters, setLocalFilters] = useState<InterventionFilters>({
+  const [localFilters, setLocalFilters] = useState<InterventionFilters>({ 
     search: '',
     category: undefined,
     priority: undefined,
@@ -159,7 +140,7 @@ const InterventionList: React.FC<InterventionListProps> = ({
     sortOrder: 'desc',
     page: 1,
     limit: 20,
-    ...propFilters,
+    ...propFilters}
   });
 
   // Store
@@ -169,10 +150,10 @@ const InterventionList: React.FC<InterventionListProps> = ({
   // Debounced search effect
   useEffect(() => {
     const timer = setTimeout(() => {
-      setLocalFilters((prev) => ({
+      setLocalFilters((prev) => ({ 
         ...prev,
         search: searchQuery,
-        page: 1,
+        page: 1}
       }));
     }, 300);
 
@@ -181,12 +162,12 @@ const InterventionList: React.FC<InterventionListProps> = ({
 
   // Combine filters
   const combinedFilters = useMemo(
-    () => ({
+    () => ({ 
       ...localFilters,
       sortBy: sortField,
       sortOrder,
       page,
-      limit: pageSize,
+      limit: pageSize}
     }),
     [localFilters, sortField, sortOrder, page, pageSize]
   );
@@ -229,20 +210,20 @@ const InterventionList: React.FC<InterventionListProps> = ({
     filterKey: keyof InterventionFilters,
     value: any
   ) => {
-    setLocalFilters((prev) => ({
+    setLocalFilters((prev) => ({ 
       ...prev,
       [filterKey]: value,
-      page: 1, // Reset to first page when filtering
+      page: 1, // Reset to first page when filtering })
     }));
   };
 
   const handleClearFilters = () => {
-    setLocalFilters({
+    setLocalFilters({ 
       search: '',
       sortBy: 'identifiedDate',
       sortOrder: 'desc',
       page: 1,
-      limit: 20,
+      limit: 20}
     });
     setSearchQuery('');
     clearFilters();
@@ -330,130 +311,146 @@ const InterventionList: React.FC<InterventionListProps> = ({
 
   const renderFilters = () => (
     <Collapse in={showFilters}>
-      <Paper sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Category</InputLabel>
+      <div className="">
+        <div container spacing={2}>
+          <div item xs={12} sm={6} md={3}>
+            <div className="w-full">
+              <Label htmlFor="category-filter" className="text-sm font-medium">
+                Category
+              </Label>
               <Select
                 value={localFilters.category || ''}
-                label="Category"
-                onChange={(e) =>
-                  handleFilterChange('category', e.target.value || undefined)
+                onValueChange={(value) =>
+                  handleFilterChange('category', value || undefined)}
                 }
               >
-                <MenuItem value="">All Categories</MenuItem>
-                {Object.entries(INTERVENTION_CATEGORIES).map(
-                  ([value, config]) => (
-                    <MenuItem key={value} value={value}>
-                      {config.label}
-                    </MenuItem>
-                  )
-                )}
+                <SelectTrigger className="h-8 text-sm mt-1">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Categories</SelectItem>
+                  {Object.entries(INTERVENTION_CATEGORIES).map(
+                    ([value, config]) => (
+                      <SelectItem key={value} value={value}>
+                        {config.label}
+                      </SelectItem>
+                    )
+                  )}
+                </SelectContent>
               </Select>
-            </FormControl>
-          </Grid>
+            </div>
+          </div>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Priority</InputLabel>
+          <div item xs={12} sm={6} md={3}>
+            <div className="w-full">
+              <Label htmlFor="priority-filter" className="text-sm font-medium">
+                Priority
+              </Label>
               <Select
                 value={localFilters.priority || ''}
-                label="Priority"
-                onChange={(e) =>
-                  handleFilterChange('priority', e.target.value || undefined)
+                onValueChange={(value) =>
+                  handleFilterChange('priority', value || undefined)}
                 }
               >
-                <MenuItem value="">All Priorities</MenuItem>
-                {Object.entries(PRIORITY_LEVELS).map(([value, config]) => (
-                  <MenuItem key={value} value={value}>
-                    {config.label}
-                  </MenuItem>
-                ))}
+                <SelectTrigger className="h-8 text-sm mt-1">
+                  <SelectValue placeholder="All Priorities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Priorities</SelectItem>
+                  {Object.entries(PRIORITY_LEVELS).map(([value, config]) => (
+                    <SelectItem key={value} value={value}>
+                      {config.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
-            </FormControl>
-          </Grid>
+            </div>
+          </div>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Status</InputLabel>
+          <div item xs={12} sm={6} md={3}>
+            <div className="w-full">
+              <Label htmlFor="status-filter" className="text-sm font-medium">
+                Status
+              </Label>
               <Select
                 value={localFilters.status || ''}
-                label="Status"
-                onChange={(e) =>
-                  handleFilterChange('status', e.target.value || undefined)
+                onValueChange={(value) =>
+                  handleFilterChange('status', value || undefined)}
                 }
               >
-                <MenuItem value="">All Statuses</MenuItem>
-                {Object.entries(STATUS_LABELS).map(([value, config]) => (
-                  <MenuItem key={value} value={value}>
-                    {config.label}
-                  </MenuItem>
-                ))}
+                <SelectTrigger className="h-8 text-sm mt-1">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Statuses</SelectItem>
+                  {Object.entries(STATUS_LABELS).map(([value, config]) => (
+                    <SelectItem key={value} value={value}>
+                      {config.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
-            </FormControl>
-          </Grid>
+            </div>
+          </div>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <div item xs={12} sm={6} md={3}>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Date From"
                 value={
-                  localFilters.dateFrom ? new Date(localFilters.dateFrom) : null
+                  localFilters.dateFrom ? new Date(localFilters.dateFrom) : null}
                 }
                 onChange={(date) =>
-                  handleFilterChange('dateFrom', date?.toISOString())
+                  handleFilterChange('dateFrom', date?.toISOString())}
                 }
                 slotProps={{
                   textField: {
                     size: 'small',
-                    fullWidth: true,
+                    fullWidth: true,}
                   },
-                }}
               />
             </LocalizationProvider>
-          </Grid>
+          </div>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <div item xs={12} sm={6} md={3}>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Date To"
                 value={
-                  localFilters.dateTo ? new Date(localFilters.dateTo) : null
+                  localFilters.dateTo ? new Date(localFilters.dateTo) : null}
                 }
                 onChange={(date) =>
-                  handleFilterChange('dateTo', date?.toISOString())
+                  handleFilterChange('dateTo', date?.toISOString())}
                 }
                 slotProps={{
                   textField: {
                     size: 'small',
-                    fullWidth: true,
+                    fullWidth: true,}
                   },
-                }}
               />
             </LocalizationProvider>
-          </Grid>
+          </div>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <div item xs={12} sm={6} md={3}>
             <Button
               fullWidth
-              variant="outlined"
+              
               onClick={handleClearFilters}
               startIcon={<ClearIcon />}
             >
               Clear Filters
             </Button>
-          </Grid>
-        </Grid>
-      </Paper>
+          </div>
+        </div>
+      </div>
     </Collapse>
   );
 
   const renderToolbar = () => (
-    <Toolbar sx={{ px: 0, minHeight: '64px !important' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+    <div className="">
+      <div className="">
         {/* Search */}
-        <TextField
+        <Input
           size="small"
           placeholder="Search interventions..."
           value={searchQuery}
@@ -465,14 +462,13 @@ const InterventionList: React.FC<InterventionListProps> = ({
               </InputAdornment>
             ),
             endAdornment: searchQuery && (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setSearchQuery('')}>
+              <InputAdornment position="end">}
+                <IconButton size="small" onClick={() =>setSearchQuery('')}>
                   <ClearIcon />
                 </IconButton>
               </InputAdornment>
             ),
-          }}
-          sx={{ minWidth: 300 }}
+          className=""
         />
 
         {/* Filter Toggle */}
@@ -487,10 +483,10 @@ const InterventionList: React.FC<InterventionListProps> = ({
 
         {/* Bulk Actions */}
         {selectedInterventions.length > 0 && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2" color="text.secondary">
+          <div className="">
+            <div  color="text.secondary">
               {selectedInterventions.length} selected
-            </Typography>
+            </div>
             <Button
               size="small"
               color="error"
@@ -499,9 +495,9 @@ const InterventionList: React.FC<InterventionListProps> = ({
             >
               Delete
             </Button>
-          </Box>
+          </div>
         )}
-      </Box>
+      </div>
 
       {/* View Mode Toggle */}
       <ToggleButtonGroup
@@ -519,7 +515,7 @@ const InterventionList: React.FC<InterventionListProps> = ({
       </ToggleButtonGroup>
 
       {/* Actions */}
-      <Box sx={{ display: 'flex', gap: 1, ml: 2 }}>
+      <div className="">
         <Tooltip title="Refresh">
           <IconButton onClick={() => refetch()}>
             <RefreshIcon />
@@ -530,12 +526,12 @@ const InterventionList: React.FC<InterventionListProps> = ({
             <DownloadIcon />
           </IconButton>
         </Tooltip>
-      </Box>
-    </Toolbar>
+      </div>
+    </div>
   );
 
   const renderTableView = () => (
-    <TableContainer component={Paper}>
+    <TableContainer >
       <Table>
         <TableHead>
           <TableRow>
@@ -543,11 +539,11 @@ const InterventionList: React.FC<InterventionListProps> = ({
               <Checkbox
                 indeterminate={
                   selectedInterventions.length > 0 &&
-                  selectedInterventions.length < interventions.length
+                  selectedInterventions.length < interventions.length}
                 }
                 checked={
                   interventions.length > 0 &&
-                  selectedInterventions.length === interventions.length
+                  selectedInterventions.length === interventions.length}
                 }
                 onChange={handleSelectAll}
               />
@@ -556,7 +552,7 @@ const InterventionList: React.FC<InterventionListProps> = ({
               <TableSortLabel
                 active={sortField === 'interventionNumber'}
                 direction={
-                  sortField === 'interventionNumber' ? sortOrder : 'asc'
+                  sortField === 'interventionNumber' ? sortOrder : 'asc'}
                 }
                 onClick={() => handleSort('interventionNumber')}
               >
@@ -654,16 +650,16 @@ const InterventionList: React.FC<InterventionListProps> = ({
               <TableCell
                 colSpan={showPatientColumn ? 9 : 8}
                 align="center"
-                sx={{ py: 4 }}
+                className=""
               >
-                <Typography variant="body1" color="text.secondary">
+                <div  color="text.secondary">
                   No interventions found
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   {searchQuery || Object.values(localFilters).some((v) => v)
                     ? 'Try adjusting your search or filters'
                     : 'Create your first intervention to get started'}
-                </Typography>
+                </div>
               </TableCell>
             </TableRow>
           ) : (
@@ -671,7 +667,7 @@ const InterventionList: React.FC<InterventionListProps> = ({
               <TableRow
                 key={intervention._id}
                 hover
-                selected={selectedInterventions.includes(intervention._id)}
+                
               >
                 <TableCell padding="checkbox">
                   <Checkbox
@@ -680,90 +676,61 @@ const InterventionList: React.FC<InterventionListProps> = ({
                   />
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
+                  <div  fontWeight="medium">
                     {intervention.interventionNumber}
-                  </Typography>
+                  </div>
                 </TableCell>
                 {showPatientColumn && (
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <div className="">
                       <Avatar
-                        sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}
+                        className=""
                       >
                         <PersonIcon fontSize="small" />
                       </Avatar>
-                      <Box>
-                        <Typography variant="body2" fontWeight="medium">
+                      <div>
+                        <div  fontWeight="medium">
                           {intervention.patient?.firstName}{' '}
                           {intervention.patient?.lastName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           {intervention.patient?.phoneNumber}
-                        </Typography>
-                      </Box>
-                    </Box>
+                        </div>
+                      </div>
+                    </div>
                   </TableCell>
                 )}
                 <TableCell>
-                  <Chip
-                    label={
-                      INTERVENTION_CATEGORIES[intervention.category]?.label
-                    }
-                    size="small"
-                    sx={{
-                      bgcolor:
-                        INTERVENTION_CATEGORIES[intervention.category]?.color +
-                        '20',
-                      color:
-                        INTERVENTION_CATEGORIES[intervention.category]?.color,
-                      fontWeight: 'medium',
-                    }}
-                  />
+                  <Badge variant={getCategoryBadgeVariant(intervention.category)} className="text-xs">
+                    {INTERVENTION_CATEGORIES[intervention.category]?.label}
+                  </Badge>
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    label={PRIORITY_LEVELS[intervention.priority]?.label}
-                    size="small"
-                    sx={{
-                      bgcolor:
-                        PRIORITY_LEVELS[intervention.priority]?.color + '20',
-                      color: PRIORITY_LEVELS[intervention.priority]?.color,
-                      fontWeight: 'medium',
-                    }}
-                  />
+                  <Badge variant={getPriorityBadgeVariant(intervention.priority)} className="text-xs">
+                    {PRIORITY_LEVELS[intervention.priority]?.label}
+                  </Badge>
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    label={STATUS_LABELS[intervention.status]?.label}
-                    size="small"
-                    sx={{
-                      bgcolor: STATUS_LABELS[intervention.status]?.color + '20',
-                      color: STATUS_LABELS[intervention.status]?.color,
-                      fontWeight: 'medium',
-                    }}
-                  />
+                  <Badge variant={getStatusBadgeVariant(intervention.status)} className="text-xs">
+                    {STATUS_LABELS[intervention.status]?.label}
+                  </Badge>
                 </TableCell>
                 <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      maxWidth: 200,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
+                  <div
+                    
+                    className=""
                   >
                     {intervention.issueDescription}
-                  </Typography>
+                  </div>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2">
+                  <div >
                     {new Date(intervention.identifiedDate).toLocaleDateString()}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     {intervention.identifiedByUser?.firstName}{' '}
                     {intervention.identifiedByUser?.lastName}
-                  </Typography>
+                  </div>
                 </TableCell>
                 <TableCell align="right">
                   <IconButton
@@ -782,224 +749,158 @@ const InterventionList: React.FC<InterventionListProps> = ({
   );
 
   const renderCardView = () => (
-    <Grid container spacing={2}>
+    <div container spacing={2}>
       {isLoading ? (
         Array.from({ length: 6 }).map((_, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
+          <div item xs={12} sm={6} md={4} key={index}>
             <Card>
               <CardContent>
-                <Skeleton variant="text" width="60%" height={24} />
-                <Skeleton variant="text" width="40%" height={20} />
+                <Skeleton  width="60%" height={24} />
+                <Skeleton  width="40%" height={20} />
                 <Skeleton
-                  variant="rectangular"
+                  
                   width="100%"
                   height={60}
-                  sx={{ mt: 1 }}
+                  className=""
                 />
-                <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                  <Skeleton variant="rounded" width={80} height={24} />
-                  <Skeleton variant="rounded" width={60} height={24} />
-                </Box>
+                <div className="">
+                  <Skeleton  width={80} height={24} />
+                  <Skeleton  width={60} height={24} />
+                </div>
               </CardContent>
             </Card>
-          </Grid>
+          </div>
         ))
       ) : interventions.length === 0 ? (
-        <Grid item xs={12}>
-          <Paper sx={{ p: 4, textAlign: 'center' }}>
-            <Typography variant="h6" color="text.secondary" gutterBottom>
+        <div item xs={12}>
+          <div className="">
+            <div  color="text.secondary" gutterBottom>
               No interventions found
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            </div>
+            <div  color="text.secondary">
               {searchQuery || Object.values(localFilters).some((v) => v)
                 ? 'Try adjusting your search or filters'
                 : 'Create your first intervention to get started'}
-            </Typography>
-          </Paper>
-        </Grid>
+            </div>
+          </div>
+        </div>
       ) : (
         interventions.map((intervention) => (
-          <Grid item xs={12} sm={6} md={4} key={intervention._id}>
+          <div item xs={12} sm={6} md={4} key={intervention._id}>
             <Card
-              sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                cursor: 'pointer',
-                '&:hover': { boxShadow: 4 },
-              }}
-              onClick={() => handleView(intervention)}
+              className="" onClick={() => handleView(intervention)}
             >
-              <CardContent sx={{ flex: 1 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    mb: 1,
-                  }}
+              <CardContent className="">
+                <div
+                  className=""
                 >
-                  <Typography variant="h6" component="div" noWrap>
+                  <div  component="div" noWrap>
                     {intervention.interventionNumber}
-                  </Typography>
+                  </div>
                   <Checkbox
                     size="small"
                     checked={selectedInterventions.includes(intervention._id)}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      handleSelectIntervention(intervention._id);
-                    }}
+                    
                     onClick={(e) => e.stopPropagation()}
                   />
-                </Box>
+                </div>
 
                 {showPatientColumn && (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      mb: 2,
-                    }}
+                  <div
+                    className=""
                   >
                     <Avatar
-                      sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}
+                      className=""
                     >
                       <PersonIcon fontSize="small" />
                     </Avatar>
-                    <Typography variant="body2" fontWeight="medium">
+                    <div  fontWeight="medium">
                       {intervention.patient?.firstName}{' '}
                       {intervention.patient?.lastName}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 )}
 
-                <Typography
-                  variant="body2"
+                <div
+                  
                   color="text.secondary"
-                  sx={{
-                    mb: 2,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}
+                  className=""
                 >
                   {intervention.issueDescription}
-                </Typography>
+                </div>
 
-                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-                  <Chip
-                    label={
-                      INTERVENTION_CATEGORIES[intervention.category]?.label
-                    }
-                    size="small"
-                    sx={{
-                      bgcolor:
-                        INTERVENTION_CATEGORIES[intervention.category]?.color +
-                        '20',
-                      color:
-                        INTERVENTION_CATEGORIES[intervention.category]?.color,
-                      fontWeight: 'medium',
-                    }}
-                  />
-                  <Chip
-                    label={PRIORITY_LEVELS[intervention.priority]?.label}
-                    size="small"
-                    sx={{
-                      bgcolor:
-                        PRIORITY_LEVELS[intervention.priority]?.color + '20',
-                      color: PRIORITY_LEVELS[intervention.priority]?.color,
-                      fontWeight: 'medium',
-                    }}
-                  />
-                </Stack>
+                <div direction="row" spacing={1} className="">
+                  <Badge variant={getCategoryBadgeVariant(intervention.category)} className="text-xs">
+                    {INTERVENTION_CATEGORIES[intervention.category]?.label}
+                  </Badge>
+                  <Badge variant={getPriorityBadgeVariant(intervention.priority)} className="text-xs">
+                    {PRIORITY_LEVELS[intervention.priority]?.label}
+                  </Badge>
+                </div>
 
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
+                <div
+                  className=""
                 >
-                  <Chip
-                    label={STATUS_LABELS[intervention.status]?.label}
-                    size="small"
-                    sx={{
-                      bgcolor: STATUS_LABELS[intervention.status]?.color + '20',
-                      color: STATUS_LABELS[intervention.status]?.color,
-                      fontWeight: 'medium',
-                    }}
-                  />
-                  <Typography variant="caption" color="text.secondary">
+                  <Badge variant={getStatusBadgeVariant(intervention.status)} className="text-xs">
+                    {STATUS_LABELS[intervention.status]?.label}
+                  </Badge>
+                  <div  color="text.secondary">
                     {new Date(intervention.identifiedDate).toLocaleDateString()}
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               </CardContent>
 
               <CardActions
-                sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}
+                className=""
               >
                 <Button
                   size="small"
                   startIcon={<ViewIcon />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleView(intervention);
-                  }}
-                >
+                  >
                   View
                 </Button>
                 <IconButton
                   size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleMenuOpen(e, intervention);
-                  }}
-                >
+                  >
                   <MoreVertIcon />
                 </IconButton>
               </CardActions>
             </Card>
-          </Grid>
+          </div>
         ))
       )}
-    </Grid>
+    </div>
   );
 
   const renderPagination = () => (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        mt: 3,
-      }}
+    <div
+      className=""
     >
-      <Typography variant="body2" color="text.secondary">
+      <div  color="text.secondary">
         Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
         {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
         {pagination.total} interventions
-      </Typography>
+      </div>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <FormControl size="small">
-          <InputLabel>Per page</InputLabel>
+      <div className="">
+        <div className="min-w-[100px]">
+          <Label htmlFor="per-page-select" className="text-sm font-medium">
+            Per page
+          </Label>
           <Select
-            value={pageSize}
-            label="Per page"
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setPage(1);
-            }}
-            sx={{ minWidth: 100 }}
-          >
-            <MenuItem value={10}>10</MenuItem>
-            <MenuItem value={20}>20</MenuItem>
-            <MenuItem value={50}>50</MenuItem>
-            <MenuItem value={100}>100</MenuItem>
+            value={pageSize.toString()}
+            >
+            <SelectTrigger className="h-8 text-sm mt-1">
+              <SelectValue placeholder="Per page" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
           </Select>
-        </FormControl>
+        </div>
 
         <Pagination
           count={pagination.pages}
@@ -1009,8 +910,8 @@ const InterventionList: React.FC<InterventionListProps> = ({
           showFirstButton
           showLastButton
         />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 
   // ===============================
@@ -1018,10 +919,10 @@ const InterventionList: React.FC<InterventionListProps> = ({
   // ===============================
 
   return (
-    <Box>
+    <div>
       {/* Error Alert */}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" className="">
           Failed to load interventions. Please try again.
         </Alert>
       )}
@@ -1046,38 +947,38 @@ const InterventionList: React.FC<InterventionListProps> = ({
       >
         <MenuItem
           onClick={() =>
-            selectedIntervention && handleView(selectedIntervention)
+            selectedIntervention && handleView(selectedIntervention)}
           }
         >
-          <ListItemIcon>
+          <div>
             <ViewIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>View Details</ListItemText>
+          </div>
+          <div>View Details</ListItemText>
         </MenuItem>
         <MenuItem
           onClick={() =>
-            selectedIntervention && handleEdit(selectedIntervention)
+            selectedIntervention && handleEdit(selectedIntervention)}
           }
         >
-          <ListItemIcon>
+          <div>
             <EditIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Edit</ListItemText>
+          </div>
+          <div>Edit</ListItemText>
         </MenuItem>
-        <Divider />
+        <Separator />
         <MenuItem
           onClick={() =>
-            selectedIntervention && handleDelete(selectedIntervention)
+            selectedIntervention && handleDelete(selectedIntervention)}
           }
-          sx={{ color: 'error.main' }}
+          className=""
         >
-          <ListItemIcon>
+          <div>
             <DeleteIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText>Delete</ListItemText>
+          </div>
+          <div>Delete</ListItemText>
         </MenuItem>
       </Menu>
-    </Box>
+    </div>
   );
 };
 

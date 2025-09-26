@@ -1,63 +1,9 @@
 // Reusable Chart Component with Beautiful Styling
-import React, { useMemo, useCallback } from 'react';
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ReferenceLine,
-  RadialBarChart,
-  RadialBar,
-  ScatterChart,
-  Scatter,
-  Treemap,
-} from 'recharts';
-import {
-  Box,
-  Paper,
-  Typography,
-  CircularProgress,
-  Alert,
-  Skeleton,
-  Card,
-  CardContent,
-  LinearProgress,
-  Chip,
-} from '@mui/material';
-import {
-  TrendingUp,
-  TrendingDown,
-  TrendingFlat,
-  Target,
-} from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
-import {
-  ChartType,
-  ChartData,
-  ChartConfig,
-  DataPoint,
-  KPICardData,
-  ProgressRingData,
-  GaugeData,
-} from '../../types/charts';
-import {
-  useCurrentTheme,
-  useAnimationsEnabled,
-} from '../../stores/chartsStore';
-import { formatTooltipValue } from '../../utils/dataFormatters';
-import { generateAccessibilityAttributes } from '../../utils/chartHelpers';
+
+// Removed MUI styles import - using Tailwind CSS
 import ChartErrorBoundary from './ChartErrorBoundary';
+
+import { Card, CardContent, Tooltip, Spinner, Alert, Skeleton } from '@/components/ui/button';
 
 interface ChartComponentProps {
   data: ChartData;
@@ -68,145 +14,93 @@ interface ChartComponentProps {
   onHover?: (data: DataPoint | null) => void;
   className?: string;
 }
-
-const ChartComponent: React.FC<ChartComponentProps> = ({
+const ChartComponent: React.FC<ChartComponentProps> = ({ 
   data,
   height = 400,
   loading = false,
   error,
   onDataPointClick,
   onHover,
-  className,
+  className
 }) => {
   const muiTheme = useTheme();
   const chartTheme = useCurrentTheme();
   const animationsEnabled = useAnimationsEnabled();
-
   // Memoize chart configuration
   const chartConfig = useMemo(() => data.config, [data.config]);
-
   // Enhanced custom tooltip component with rich formatting
   const CustomTooltip = useCallback(
     ({ active, payload, label }: any) => {
       if (!active || !payload || !payload.length) return null;
-
       return (
-        <Paper
-          sx={{
-            p: 2,
-            boxShadow: chartTheme.shadows.large,
-            backgroundColor: muiTheme.palette.background.paper,
-            border: `1px solid ${muiTheme.palette.divider}`,
-            borderRadius: chartTheme.borderRadius / 2,
-            backdropFilter: 'blur(8px)',
-            background: `linear-gradient(135deg, ${muiTheme.palette.background.paper}95, ${muiTheme.palette.background.paper}85)`,
-            minWidth: 200,
-            animation: animationsEnabled ? 'fadeIn 0.2s ease-in-out' : 'none',
-            '@keyframes fadeIn': {
-              from: { opacity: 0, transform: 'translateY(-4px)' },
-              to: { opacity: 1, transform: 'translateY(0)' },
-            },
-          }}
-        >
+        <div
+          className="">
           {label && (
-            <Typography
-              variant="subtitle2"
+            <div
+              
               color="text.primary"
               gutterBottom
-              sx={{
-                fontWeight: 600,
-                borderBottom: `1px solid ${muiTheme.palette.divider}`,
-                pb: 1,
-                mb: 1,
-              }}
-            >
+              className="">
               {label}
-            </Typography>
+            </div>
           )}
-
           {payload.map((entry: any, index: number) => {
             const [formattedValue, name] = formatTooltipValue(
               entry.value,
               entry.dataKey,
               entry.payload
             );
-
             return (
-              <Box
+              <div
                 key={`tooltip-${index}`}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  mt: index > 0 ? 1 : 0,
-                  py: 0.5,
-                }}
+                className=""
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                  <Box
-                    sx={{
-                      width: 14,
-                      height: 14,
-                      borderRadius: '50%',
-                      backgroundColor: entry.color,
-                      mr: 1.5,
-                      flexShrink: 0,
-                      boxShadow: `0 0 0 2px ${entry.color}20`,
-                    }}
+                <div className="">
+                  <div
+                    className=""20`,
                   />
-                  <Typography variant="body2" color="text.secondary">
+                  <div  color="text.secondary">
                     {name}
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 600,
-                    color: entry.color,
-                    ml: 2,
-                  }}
+                  </div>
+                </div>
+                <div
+                  
+                  className=""
                 >
                   {formattedValue}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             );
           })}
-
           {/* Add trend indicator if available */}
           {payload[0]?.payload?.trend && (
-            <Box
-              sx={{
-                mt: 1.5,
-                pt: 1,
-                borderTop: `1px solid ${muiTheme.palette.divider}`,
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              className="">
+              <div className="">
                 {payload[0].payload.trend > 0 ? (
                   <TrendingUp
-                    sx={{ color: 'success.main', fontSize: 16, mr: 0.5 }}
+                    className=""
                   />
                 ) : payload[0].payload.trend < 0 ? (
                   <TrendingDown
-                    sx={{ color: 'error.main', fontSize: 16, mr: 0.5 }}
+                    className=""
                   />
                 ) : (
                   <TrendingFlat
-                    sx={{ color: 'text.secondary', fontSize: 16, mr: 0.5 }}
+                    className=""
                   />
                 )}
-                <Typography variant="caption" color="text.secondary">
+                <div  color="text.secondary">
                   {Math.abs(payload[0].payload.trend)}% vs previous
-                </Typography>
-              </Box>
-            </Box>
+                </div>
+              </div>
+            </div>
           )}
-        </Paper>
+        </div>
       );
     },
     [chartTheme, muiTheme, animationsEnabled]
   );
-
   // Handle data point clicks
   const handleDataPointClick = useCallback(
     (data: any) => {
@@ -216,14 +110,12 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     },
     [onDataPointClick]
   );
-
   // Handle hover events with enhanced interactions
   const handleMouseEnter = useCallback(
     (data: any, event?: React.MouseEvent) => {
       if (onHover) {
         onHover(data);
       }
-
       // Add hover effects for interactive charts
       if (event?.currentTarget) {
         const element = event.currentTarget as SVGElement;
@@ -234,13 +126,11 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     },
     [onHover]
   );
-
   const handleMouseLeave = useCallback(
     (event?: React.MouseEvent) => {
       if (onHover) {
         onHover(null);
       }
-
       // Remove hover effects
       if (event?.currentTarget) {
         const element = event.currentTarget as SVGElement;
@@ -250,12 +140,10 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     },
     [onHover]
   );
-
   // Enhanced click handler with drill-down support
   const handleEnhancedClick = useCallback(
     (data: any, event?: React.MouseEvent) => {
       handleDataPointClick(data);
-
       // Add click animation
       if (event?.currentTarget) {
         const element = event.currentTarget as SVGElement;
@@ -267,25 +155,22 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     },
     [handleDataPointClick]
   );
-
   // Render KPI Card
   const renderKPICard = () => {
     const kpiData = data.data[0] as any as KPICardData;
     if (!kpiData) return null;
-
     const getTrendIcon = (direction: 'up' | 'down' | 'stable') => {
       switch (direction) {
         case 'up':
-          return <TrendingUp sx={{ color: 'success.main', fontSize: 20 }} />;
+          return <TrendingUp className="" />;
         case 'down':
-          return <TrendingDown sx={{ color: 'error.main', fontSize: 20 }} />;
+          return <TrendingDown className="" />;
         default:
           return (
-            <TrendingFlat sx={{ color: 'text.secondary', fontSize: 20 }} />
+            <TrendingFlat className="" />
           );
       }
     };
-
     const getStatusColor = (status: string) => {
       switch (status) {
         case 'success':
@@ -298,111 +183,72 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
           return 'info';
       }
     };
-
     return (
       <Card
-        sx={{
-          height: '100%',
-          background: `linear-gradient(135deg, ${chartTheme.colorPalette[0]}15, ${chartTheme.colorPalette[1]}15)`,
-          border: `1px solid ${muiTheme.palette.divider}`,
-        }}
-      >
+        className="">
         <CardContent
-          sx={{
-            p: 3,
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
+          className=""
         >
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              mb: 2,
-            }}
+          <div
+            className=""
           >
-            <Typography
-              variant="h6"
+            <div
+              
               color="text.secondary"
-              sx={{ fontSize: 14, fontWeight: 500 }}
+              className=""
             >
               {kpiData.title}
-            </Typography>
+            </div>
             <Chip
               label={kpiData.status}
               color={getStatusColor(kpiData.status) as any}
               size="small"
-              variant="outlined"
+              
             />
-          </Box>
-
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-            }}
+          </div>
+          <div
+            className=""
           >
-            <Typography
-              variant="h3"
-              sx={{
-                fontSize: 32,
-                fontWeight: 700,
-                color: chartTheme.colorPalette[0],
-                mb: 1,
-              }}
+            <div
+              
+              className=""
             >
               {typeof kpiData.value === 'number'
                 ? kpiData.value.toLocaleString()
                 : kpiData.value}
               {kpiData.unit && (
-                <Typography
+                <div
                   component="span"
-                  variant="h5"
+                  
                   color="text.secondary"
-                  sx={{ ml: 1 }}
+                  className=""
                 >
                   {kpiData.unit}
-                </Typography>
+                </div>
               )}
-            </Typography>
-
+            </div>
             {kpiData.trend && (
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <div className="">
                 {getTrendIcon(kpiData.trend.direction)}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    ml: 1,
-                    color:
-                      kpiData.trend.direction === 'up'
-                        ? 'success.main'
-                        : kpiData.trend.direction === 'down'
-                        ? 'error.main'
-                        : 'text.secondary',
-                    fontWeight: 500,
-                  }}
+                <div
+                  
+                  className=""
                 >
                   {kpiData.trend.value}% {kpiData.trend.period}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
-
             {kpiData.target && (
-              <Box sx={{ display: 'flex', alignItems: 'center', mt: 'auto' }}>
-                <Target sx={{ color: 'text.secondary', fontSize: 16, mr: 1 }} />
-                <Typography variant="body2" color="text.secondary">
+              <div className="">
+                <Target className="" />
+                <div  color="text.secondary">
                   Target: {kpiData.target.value} {kpiData.target.label}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
-          </Box>
-
+          </div>
           {kpiData.sparkline && kpiData.sparkline.length > 0 && (
-            <Box sx={{ mt: 2, height: 40 }}>
+            <div className="">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={kpiData.sparkline}>
                   <Line
@@ -415,50 +261,38 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                   />
                 </LineChart>
               </ResponsiveContainer>
-            </Box>
+            </div>
           )}
         </CardContent>
       </Card>
     );
   };
-
   // Render Progress Ring
   const renderProgressRing = () => {
     const progressData = data.data[0] as any as ProgressRingData;
     if (!progressData) return null;
-
     const percentage = (progressData.value / progressData.max) * 100;
     const circumference = 2 * Math.PI * 45; // radius = 45
     const strokeDasharray = `${
       (percentage / 100) * circumference
     } ${circumference}`;
-
     return (
-      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Card className="">
         <CardContent
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            p: 3,
-          }}
+          className=""
         >
-          <Typography
-            variant="h6"
+          <div
+            
             color="text.secondary"
-            sx={{ mb: 3, textAlign: 'center' }}
+            className=""
           >
             {progressData.title}
-          </Typography>
-
-          <Box sx={{ position: 'relative', display: 'inline-flex', mb: 3 }}>
+          </div>
+          <div className="">
             <svg
               width="120"
               height="120"
-              style={{ transform: 'rotate(-90deg)' }}
-            >
+              >
               {/* Background circle */}
               <circle
                 cx="60"
@@ -478,109 +312,76 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 fill="transparent"
                 strokeDasharray={strokeDasharray}
                 strokeLinecap="round"
-                style={{
-                  transition: animationsEnabled
-                    ? 'stroke-dasharray 0.5s ease-in-out'
-                    : 'none',
-                }}
+                
               />
             </svg>
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                bottom: 0,
-                right: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+            <div
+              className=""
             >
-              <Typography
-                variant="h4"
-                sx={{ fontWeight: 700, color: chartTheme.colorPalette[0] }}
+              <div
+                
+                className=""
               >
                 {progressData.centerText?.primary ||
                   `${Math.round(percentage)}%`}
-              </Typography>
+              </div>
               {progressData.centerText?.secondary && (
-                <Typography variant="body2" color="text.secondary">
+                <div  color="text.secondary">
                   {progressData.centerText.secondary}
-                </Typography>
+                </div>
               )}
-            </Box>
-          </Box>
-
-          <Typography variant="body1" sx={{ textAlign: 'center' }}>
+            </div>
+          </div>
+          <div  className="">
             {progressData.value.toLocaleString()} /{' '}
             {progressData.max.toLocaleString()}
             {progressData.unit && ` ${progressData.unit}`}
-          </Typography>
-
+          </div>
           {progressData.segments && (
-            <Box sx={{ mt: 2, width: '100%' }}>
+            <div className="">
               {progressData.segments.map((segment, index) => (
-                <Box
+                <div
                   key={index}
-                  sx={{ display: 'flex', alignItems: 'center', mb: 1 }}
+                  className=""
                 >
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: '50%',
-                      backgroundColor: segment.color,
-                      mr: 1,
-                    }}
+                  <div
+                    className=""
                   />
-                  <Typography variant="body2" sx={{ flex: 1 }}>
+                  <div  className="">
                     {segment.label}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     {segment.value}
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               ))}
-            </Box>
+            </div>
           )}
         </CardContent>
       </Card>
     );
   };
-
   // Render Gauge Chart
   const renderGaugeChart = () => {
     const gaugeData = data.data[0] as unknown as GaugeData;
     if (!gaugeData) return null;
-
     const percentage =
       ((gaugeData.value - gaugeData.min) / (gaugeData.max - gaugeData.min)) *
       100;
     const angle = (percentage / 100) * 180; // Half circle
-
     return (
-      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Card className="">
         <CardContent
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            p: 3,
-          }}
+          className=""
         >
-          <Typography
-            variant="h6"
+          <div
+            
             color="text.secondary"
-            sx={{ mb: 3, textAlign: 'center' }}
+            className=""
           >
             {gaugeData.title}
-          </Typography>
-
-          <Box sx={{ position: 'relative', mb: 3 }}>
+          </div>
+          <div className="">
             <svg width="200" height="120" viewBox="0 0 200 120">
               {/* Background arc */}
               <path
@@ -590,7 +391,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 fill="transparent"
                 strokeLinecap="round"
               />
-
               {/* Range segments */}
               {gaugeData.ranges.map((range, index) => {
                 const startAngle =
@@ -609,7 +409,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                   100 + 80 * Math.cos((Math.PI * (180 - endAngle)) / 180);
                 const endY =
                   100 - 80 * Math.sin((Math.PI * (180 - endAngle)) / 180);
-
                 return (
                   <path
                     key={index}
@@ -621,7 +420,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                   />
                 );
               })}
-
               {/* Needle */}
               <g transform={`rotate(${angle - 90} 100 100)`}>
                 <line
@@ -641,65 +439,49 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 />
               </g>
             </svg>
-
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 0,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                textAlign: 'center',
-              }}
+            <div
+              className=""
             >
-              <Typography
-                variant="h4"
-                sx={{ fontWeight: 700, color: chartTheme.colorPalette[0] }}
+              <div
+                
+                className=""
               >
                 {gaugeData.value.toLocaleString()}
-              </Typography>
+              </div>
               {gaugeData.unit && (
-                <Typography variant="body2" color="text.secondary">
+                <div  color="text.secondary">
                   {gaugeData.unit}
-                </Typography>
+                </div>
               )}
-            </Box>
-          </Box>
-
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              width: '100%',
-              mt: 2,
-            }}
+            </div>
+          </div>
+          <div
+            className=""
           >
-            <Typography variant="body2" color="text.secondary">
+            <div  color="text.secondary">
               {gaugeData.min}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            </div>
+            <div  color="text.secondary">
               {gaugeData.max}
-            </Typography>
-          </Box>
-
+            </div>
+          </div>
           {gaugeData.target && (
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
+            <div className="">
+              <div  color="text.secondary">
                 Target: {gaugeData.target}
-              </Typography>
-            </Box>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
     );
   };
-
   // Render chart based on type
   const renderChart = () => {
     const commonProps = {
       data: data.data,
       margin: { top: 20, right: 30, left: 20, bottom: 20 },
     };
-
     const animationProps = animationsEnabled
       ? {
           animationBegin: 0,
@@ -707,7 +489,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
           animationEasing: chartConfig.animations?.easing || 'ease-in-out',
         }
       : { isAnimationActive: false };
-
     switch (data.type) {
       case 'line':
         return (
@@ -728,7 +509,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             />
             <Tooltip content={<CustomTooltip />} />
             {chartConfig.legend?.enabled && <Legend />}
-
             {chartConfig.series.map((series, index) => (
               <Line
                 key={series.dataKey}
@@ -739,29 +519,11 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                   series.style.color ||
                   chartTheme.colorPalette[
                     index % chartTheme.colorPalette.length
-                  ]
+                  ]}
                 }
                 strokeWidth={series.style.strokeWidth || 2}
-                dot={{
-                  fill:
-                    series.style.color ||
-                    chartTheme.colorPalette[
-                      index % chartTheme.colorPalette.length
-                    ],
-                  strokeWidth: 2,
-                  r: 4,
-                }}
-                activeDot={{
-                  r: 8,
-                  stroke:
-                    series.style.color ||
-                    chartTheme.colorPalette[
-                      index % chartTheme.colorPalette.length
-                    ],
-                  strokeWidth: 3,
-                  fill: muiTheme.palette.background.paper,
-                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
-                }}
+                
+                
                 onClick={handleEnhancedClick}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
@@ -770,7 +532,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             ))}
           </LineChart>
         );
-
       case 'area':
         return (
           <AreaChart {...commonProps}>
@@ -790,7 +551,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             />
             <Tooltip content={<CustomTooltip />} />
             {chartConfig.legend?.enabled && <Legend />}
-
             {chartConfig.series.map((series, index) => (
               <Area
                 key={series.dataKey}
@@ -801,35 +561,18 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                   series.style.color ||
                   chartTheme.colorPalette[
                     index % chartTheme.colorPalette.length
-                  ]
+                  ]}
                 }
                 fill={
                   series.style.color ||
                   chartTheme.colorPalette[
                     index % chartTheme.colorPalette.length
-                  ]
+                  ]}
                 }
                 fillOpacity={series.style.fillOpacity || 0.3}
                 strokeWidth={series.style.strokeWidth || 2}
-                dot={{
-                  fill:
-                    series.style.color ||
-                    chartTheme.colorPalette[
-                      index % chartTheme.colorPalette.length
-                    ],
-                  strokeWidth: 2,
-                  r: 3,
-                }}
-                activeDot={{
-                  r: 6,
-                  stroke:
-                    series.style.color ||
-                    chartTheme.colorPalette[
-                      index % chartTheme.colorPalette.length
-                    ],
-                  strokeWidth: 2,
-                  fill: muiTheme.palette.background.paper,
-                }}
+                
+                
                 onClick={handleEnhancedClick}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
@@ -838,7 +581,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             ))}
           </AreaChart>
         );
-
       case 'bar':
         return (
           <BarChart {...commonProps}>
@@ -858,7 +600,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             />
             <Tooltip content={<CustomTooltip />} />
             {chartConfig.legend?.enabled && <Legend />}
-
             {chartConfig.series.map((series, index) => (
               <Bar
                 key={series.dataKey}
@@ -868,7 +609,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                   series.style.color ||
                   chartTheme.colorPalette[
                     index % chartTheme.colorPalette.length
-                  ]
+                  ]}
                 }
                 radius={[4, 4, 0, 0]}
                 onClick={handleEnhancedClick}
@@ -879,14 +620,12 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             ))}
           </BarChart>
         );
-
       case 'pie':
       case 'donut':
         return (
           <PieChart {...commonProps}>
             <Tooltip content={<CustomTooltip />} />
             {chartConfig.legend?.enabled && <Legend />}
-
             <Pie
               data={data.data}
               dataKey={chartConfig.series[0]?.dataKey || 'value'}
@@ -895,7 +634,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
               cy="50%"
               outerRadius={Math.min(height * 0.3, 120)}
               innerRadius={
-                data.type === 'donut' ? Math.min(height * 0.15, 60) : 0
+                data.type === 'donut' ? Math.min(height * 0.15, 60) : 0}
               }
               paddingAngle={2}
               onClick={handleEnhancedClick}
@@ -909,14 +648,13 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                   fill={
                     chartTheme.colorPalette[
                       index % chartTheme.colorPalette.length
-                    ]
+                    ]}
                   }
                 />
               ))}
             </Pie>
           </PieChart>
         );
-
       case 'scatter':
       case 'bubble':
         return (
@@ -940,7 +678,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             />
             <Tooltip content={<CustomTooltip />} />
             {chartConfig.legend?.enabled && <Legend />}
-
             {chartConfig.series.map((series, index) => (
               <Scatter
                 key={series.dataKey}
@@ -950,7 +687,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                   series.style.color ||
                   chartTheme.colorPalette[
                     index % chartTheme.colorPalette.length
-                  ]
+                  ]}
                 }
                 onClick={handleEnhancedClick}
                 onMouseEnter={handleMouseEnter}
@@ -960,16 +697,12 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             ))}
           </ScatterChart>
         );
-
       case 'gauge':
         return renderGaugeChart();
-
       case 'progress-ring':
         return renderProgressRing();
-
       case 'kpi-card':
         return renderKPICard();
-
       case 'treemap':
         return (
           <Treemap
@@ -989,476 +722,326 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 fill={
                   chartTheme.colorPalette[
                     index % chartTheme.colorPalette.length
-                  ]
+                  ]}
                 }
               />
             ))}
           </Treemap>
         );
-
       default:
         return (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-            }}
+          <div
+            className=""
           >
-            <Typography color="text.secondary">
+            <div color="text.secondary">
               Chart type "{data.type}" not yet implemented
-            </Typography>
-          </Box>
+            </div>
+          </div>
         );
     }
   };
-
   // Enhanced loading state with beautiful skeleton screens
   if (loading) {
     return (
-      <Paper
-        sx={{
-          height,
-          display: 'flex',
-          flexDirection: 'column',
-          p: 2,
-        }}
+      <div
+        className=""
         className={className}
       >
         {/* Title skeleton */}
-        <Box sx={{ mb: 2 }}>
+        <div className="">
           <Skeleton
-            variant="text"
+            
             width="60%"
             height={28}
             animation="wave"
-            sx={{ borderRadius: 1 }}
+            className=""
           />
           <Skeleton
-            variant="text"
+            
             width="40%"
             height={20}
             animation="wave"
-            sx={{ borderRadius: 1, mt: 0.5 }}
+            className=""
           />
-        </Box>
-
+        </div>
         {/* Chart skeleton based on type */}
-        <Box sx={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <div className="">
           {data.type === 'pie' || data.type === 'donut' ? (
             // Circular chart skeleton
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-              }}
+            <div
+              className=""
             >
               <Skeleton
-                variant="circular"
+                
                 width={Math.min(height * 0.6, 200)}
                 height={Math.min(height * 0.6, 200)}
                 animation="wave"
               />
-            </Box>
+            </div>
           ) : data.type === 'kpi-card' ? (
             // KPI card skeleton
-            <Box sx={{ p: 2 }}>
+            <div className="">
               <Skeleton
-                variant="rectangular"
+                
                 width="100%"
                 height={60}
                 animation="wave"
-                sx={{ borderRadius: 2, mb: 2 }}
+                className=""
               />
               <Skeleton
-                variant="text"
+                
                 width="80%"
                 height={40}
                 animation="wave"
-                sx={{ borderRadius: 1, mb: 1 }}
+                className=""
               />
               <Skeleton
-                variant="text"
+                
                 width="60%"
                 height={24}
                 animation="wave"
-                sx={{ borderRadius: 1 }}
+                className=""
               />
-            </Box>
+            </div>
           ) : data.type === 'progress-ring' || data.type === 'gauge' ? (
             // Gauge/progress skeleton
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-              }}
+            <div
+              className=""
             >
               <Skeleton
-                variant="circular"
+                
                 width={120}
                 height={120}
                 animation="wave"
-                sx={{ mb: 2 }}
+                className=""
               />
               <Skeleton
-                variant="text"
+                
                 width="40%"
                 height={24}
                 animation="wave"
-                sx={{ borderRadius: 1 }}
+                className=""
               />
-            </Box>
+            </div>
           ) : (
             // Bar/line chart skeleton
-            <Box
-              sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            <div
+              className=""
             >
               {/* Chart area skeleton */}
-              <Box
-                sx={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'end',
-                  gap: 1,
-                  mb: 2,
-                }}
+              <div
+                className=""
               >
                 {[...Array(8)].map((_, index) => (
                   <Skeleton
                     key={index}
-                    variant="rectangular"
+                    
                     width="100%"
                     height={`${Math.random() * 60 + 20}%`}
                     animation="wave"
-                    sx={{
-                      borderRadius: '4px 4px 0 0',
-                      animationDelay: `${index * 0.1}s`,
-                    }}
+                    className=""s`,
                   />
                 ))}
-              </Box>
-
+              </div>
               {/* X-axis labels skeleton */}
-              <Box
-                sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}
+              <div
+                className=""
               >
                 {[...Array(4)].map((_, index) => (
                   <Skeleton
                     key={index}
-                    variant="text"
+                    
                     width={40}
                     height={16}
                     animation="wave"
-                    sx={{ borderRadius: 1 }}
+                    className=""
                   />
                 ))}
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
-
           {/* Loading overlay with progress */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              backgroundColor: `${muiTheme.palette.background.paper}90`,
-              backdropFilter: 'blur(4px)',
-              borderRadius: 2,
-              p: 2,
-              minWidth: 120,
-            }}
-          >
-            <CircularProgress
+          <div
+            className="">
+            <Spinner
               size={32}
-              sx={{
-                mb: 1,
-                color: chartTheme.colorPalette[0],
-              }}
+              className=""
             />
-            <Typography
-              variant="caption"
+            <div
+              
               color="text.secondary"
-              sx={{ textAlign: 'center', fontWeight: 500 }}
+              className=""
             >
               Loading chart...
-            </Typography>
-          </Box>
-        </Box>
-      </Paper>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
-
   // Enhanced error state with graceful fallbacks and retry mechanisms
   if (error) {
     const handleRetry = () => {
       // Trigger a retry by calling the parent component's refresh function
       window.location.reload(); // Fallback - in real implementation, this would be a prop
     };
-
     return (
-      <Paper
-        sx={{
-          height,
-          p: 3,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: `linear-gradient(135deg, ${muiTheme.palette.error.light}08, ${muiTheme.palette.error.main}05)`,
+      <div
+        className=""08, ${muiTheme.palette.error.main}05)`,
           border: `1px solid ${muiTheme.palette.error.light}30`,
-        }}
         className={className}
       >
         <Alert
           severity="error"
-          sx={{
-            width: '100%',
-            maxWidth: 400,
-            backgroundColor: 'transparent',
-            border: 'none',
-            '& .MuiAlert-icon': {
-              fontSize: 32,
-            },
-          }}
-          action={
-            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-              <Typography
+          className="" action={
+            <div className="">
+              <div
                 component="button"
-                variant="body2"
+                }
                 onClick={handleRetry}
-                sx={{
-                  background: 'none',
-                  border: `1px solid ${muiTheme.palette.error.main}`,
-                  borderRadius: 1,
-                  px: 2,
-                  py: 0.5,
-                  color: muiTheme.palette.error.main,
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  fontWeight: 500,
-                  transition: 'all 0.2s ease-in-out',
-                  '&:hover': {
-                    backgroundColor: muiTheme.palette.error.main,
-                    color: muiTheme.palette.error.contrastText,
-                  },
-                }}
-              >
+                className="">
                 Retry
-              </Typography>
-            </Box>
+              </div>
+            </div>
           }
         >
-          <Typography
-            variant="h6"
+          <div
+            
             gutterBottom
-            sx={{ color: muiTheme.palette.error.main }}
+            className=""
           >
             Unable to Load Chart
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          </div>
+          <div  color="text.secondary" className="">
             {error}
-          </Typography>
-
+          </div>
           {/* Error details for debugging */}
-          <Box
-            sx={{
-              mt: 2,
-              p: 2,
-              backgroundColor: `${muiTheme.palette.error.main}10`,
-              borderRadius: 1,
-            }}
-          >
-            <Typography variant="caption" color="text.secondary">
+          <div
+            className="">
+            <div  color="text.secondary">
               <strong>Chart Type:</strong> {data.type}
               <br />
               <strong>Data Points:</strong> {data.data?.length || 0}
               <br />
               <strong>Timestamp:</strong> {new Date().toLocaleTimeString()}
-            </Typography>
-          </Box>
-
+            </div>
+          </div>
           {/* Accessibility message */}
-          <Typography
-            variant="caption"
+          <div
+            
             color="text.secondary"
-            sx={{
-              mt: 2,
-              fontStyle: 'italic',
-              textAlign: 'center',
-              display: 'block',
-            }}
+            className=""
             role="status"
             aria-live="polite"
           >
             Chart data could not be displayed. Please try refreshing or contact
             support if the issue persists.
-          </Typography>
+          </div>
         </Alert>
-      </Paper>
+      </div>
     );
   }
-
   // Enhanced empty data state
   if (!data.data || data.data.length === 0) {
     return (
-      <Paper
-        sx={{
-          height,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          p: 3,
-          background: `linear-gradient(135deg, ${chartTheme.colorPalette[0]}08, ${chartTheme.colorPalette[1]}05)`,
+      <div
+        className=""08, ${chartTheme.colorPalette[1]}05)`,
           border: `1px dashed ${muiTheme.palette.divider}`,
-        }}
         className={className}
       >
         {/* Empty state illustration */}
-        <Box
-          sx={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            backgroundColor: `${chartTheme.colorPalette[0]}15`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            mb: 2,
-          }}
-        >
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              backgroundColor: `${chartTheme.colorPalette[0]}25`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: 24,
-                color: chartTheme.colorPalette[0],
-                opacity: 0.7,
-              }}
+        <div
+          className="">
+          <div
+            className="">
+            <div
+              className=""
             >
               📊
-            </Typography>
-          </Box>
-        </Box>
-
-        <Typography
-          variant="h6"
+            </div>
+          </div>
+        </div>
+        <div
+          
           color="text.primary"
           gutterBottom
-          sx={{ fontWeight: 500 }}
+          className=""
         >
           No Data Available
-        </Typography>
-
-        <Typography
-          variant="body2"
+        </div>
+        <div
+          
           color="text.secondary"
-          sx={{ textAlign: 'center', maxWidth: 300, lineHeight: 1.5 }}
+          className=""
         >
           There is no data to display for this chart. Try adjusting your filters
           or check back later when data becomes available.
-        </Typography>
-
+        </div>
         {/* Helpful suggestions */}
-        <Box sx={{ mt: 3, textAlign: 'center' }}>
-          <Typography variant="caption" color="text.secondary">
+        <div className="">
+          <div  color="text.secondary">
             <strong>Suggestions:</strong>
-          </Typography>
-          <Box sx={{ mt: 1 }}>
-            <Typography
-              variant="caption"
+          </div>
+          <div className="">
+            <div
+              
               color="text.secondary"
               display="block"
             >
               • Check your date range and filters
-            </Typography>
-            <Typography
-              variant="caption"
+            </div>
+            <div
+              
               color="text.secondary"
               display="block"
             >
               • Ensure data sources are connected
-            </Typography>
-            <Typography
-              variant="caption"
+            </div>
+            <div
+              
               color="text.secondary"
               display="block"
             >
               • Contact support if this persists
-            </Typography>
-          </Box>
-        </Box>
-      </Paper>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
-
   // Main chart render with error boundary
   return (
     <ChartErrorBoundary
-      onError={(error, errorInfo) => {
-        // Log to monitoring service in production
-        console.error('Chart rendering error:', error, errorInfo);
-      }}
-    >
-      <Paper
-        sx={{
-          height,
-          p: 2,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
+      >
+      <div
+        className=""
         className={className}
         {...generateAccessibilityAttributes(data.title, data.type, data.data)}
       >
         {/* Chart Title */}
         {data.title && (
-          <Box sx={{ mb: 2 }}>
-            <Typography
-              variant="h6"
+          <div className="">
+            <div
+              
               component="h3"
-              sx={{
-                fontSize: chartTheme.typography.fontSize.large,
-                fontWeight: chartTheme.typography.fontWeight.medium,
-                color: muiTheme.palette.text.primary,
-              }}
+              className=""
             >
               {data.title}
-            </Typography>
+            </div>
             {data.subtitle && (
-              <Typography
-                variant="body2"
+              <div
+                
                 color="text.secondary"
-                sx={{ mt: 0.5 }}
+                className=""
               >
                 {data.subtitle}
-              </Typography>
+              </div>
             )}
-          </Box>
+          </div>
         )}
-
         {/* Chart Container */}
-        <Box
-          sx={{ flex: 1, minHeight: 0 }}
+        <div
+          className=""
           role="img"
           aria-label={`${data.title} - ${data.type} chart with ${data.data.length} data points`}
           tabIndex={0}
@@ -1467,23 +1050,14 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               // Focus on first interactive element or provide data summary
-              console.log('Chart data summary:', data.data);
-            }
-          }}
-        >
+              console.log('Chart data summary:', data.data);}
+            }>
           <ResponsiveContainer width="100%" height="100%">
             {renderChart()}
           </ResponsiveContainer>
-
           {/* Screen reader data summary */}
-          <Box
-            sx={{
-              position: 'absolute',
-              left: '-10000px',
-              width: '1px',
-              height: '1px',
-              overflow: 'hidden',
-            }}
+          <div
+            className=""
             aria-live="polite"
             role="status"
           >
@@ -1501,11 +1075,10 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 .
               </>
             )}
-          </Box>
-        </Box>
-      </Paper>
+          </div>
+        </div>
+      </div>
     </ChartErrorBoundary>
   );
 };
-
 export default ChartComponent;

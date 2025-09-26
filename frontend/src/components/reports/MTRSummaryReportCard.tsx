@@ -1,37 +1,23 @@
-import React from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  Box,
-  Chip,
-  LinearProgress,
-} from '@mui/material';
-import {
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  Assessment as AssessmentIcon,
-} from '@mui/icons-material';
-import type { MTRSummaryReport } from '../../types/mtr';
+
+import { Card, CardContent, Progress } from '@/components/ui/button';
 
 interface MTRSummaryReportCardProps {
   data: MTRSummaryReport;
   loading?: boolean;
 }
 
-const MTRSummaryReportCard: React.FC<MTRSummaryReportCardProps> = ({
+const MTRSummaryReportCard: React.FC<MTRSummaryReportCardProps> = ({ 
   data,
-  loading = false,
+  loading = false
 }) => {
   if (loading) {
     return (
       <Card>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <div  gutterBottom>
             MTR Summary
-          </Typography>
-          <LinearProgress />
+          </div>
+          <Progress />
         </CardContent>
       </Card>
     );
@@ -52,186 +38,161 @@ const MTRSummaryReportCard: React.FC<MTRSummaryReportCardProps> = ({
   return (
     <Card>
       <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <AssessmentIcon sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h6">MTR Summary Report</Typography>
-        </Box>
+        <div className="">
+          <AssessmentIcon className="" />
+          <div >MTR Summary Report</div>
+        </div>
 
-        <Grid container spacing={2}>
+        <div container spacing={2}>
           {/* Total Reviews */}
-          <Grid item xs={12} sm={6} md={3}>
-            <Box
-              sx={{
-                textAlign: 'center',
-                p: 2,
-                bgcolor: 'grey.50',
-                borderRadius: 1,
-              }}
+          <div item xs={12} sm={6} md={3}>
+            <div
+              className=""
             >
-              <Typography variant="h4" color="primary.main">
+              <div  color="primary.main">
                 {data.summary.totalReviews}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Total Reviews
-              </Typography>
-            </Box>
-          </Grid>
+              </div>
+            </div>
+          </div>
 
           {/* Completion Rate */}
-          <Grid item xs={12} sm={6} md={3}>
-            <Box
-              sx={{
-                textAlign: 'center',
-                p: 2,
-                bgcolor: 'grey.50',
-                borderRadius: 1,
-              }}
+          <div item xs={12} sm={6} md={3}>
+            <div
+              className=""
             >
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mb: 1,
-                }}
+              <div
+                className=""
               >
-                <Typography
-                  variant="h4"
+                <div
+                  
                   color={`${getCompletionRateColor(
-                    data.summary.completionRate
+                    data.summary.completionRate}
                   )}.main`}
                 >
                   {data.summary.completionRate.toFixed(1)}%
-                </Typography>
+                </div>
                 {data.summary.completionRate >= 80 ? (
-                  <TrendingUpIcon color="success" sx={{ ml: 1 }} />
+                  <TrendingUpIcon color="success" className="" />
                 ) : (
-                  <TrendingDownIcon color="error" sx={{ ml: 1 }} />
+                  <TrendingDownIcon color="error" className="" />
                 )}
-              </Box>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Completion Rate
-              </Typography>
-            </Box>
-          </Grid>
+              </div>
+            </div>
+          </div>
 
           {/* Average Completion Time */}
-          <Grid item xs={12} sm={6} md={3}>
-            <Box
-              sx={{
-                textAlign: 'center',
-                p: 2,
-                bgcolor: 'grey.50',
-                borderRadius: 1,
-              }}
+          <div item xs={12} sm={6} md={3}>
+            <div
+              className=""
             >
-              <Typography
-                variant="h4"
+              <div
+                
                 color={`${getCompletionTimeColor(
-                  data.summary.avgCompletionTime
+                  data.summary.avgCompletionTime}
                 )}.main`}
               >
                 {data.summary.avgCompletionTime.toFixed(1)}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Avg Days to Complete
-              </Typography>
-            </Box>
-          </Grid>
+              </div>
+            </div>
+          </div>
 
           {/* Problems Resolved */}
-          <Grid item xs={12} sm={6} md={3}>
-            <Box
-              sx={{
-                textAlign: 'center',
-                p: 2,
-                bgcolor: 'grey.50',
-                borderRadius: 1,
-              }}
+          <div item xs={12} sm={6} md={3}>
+            <div
+              className=""
             >
-              <Typography variant="h4" color="success.main">
+              <div  color="success.main">
                 {data.summary.totalProblemsResolved}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Problems Resolved
-              </Typography>
-            </Box>
-          </Grid>
+              </div>
+            </div>
+          </div>
 
           {/* Status Breakdown */}
-          <Grid item xs={12}>
-            <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+          <div item xs={12}>
+            <div  gutterBottom className="">
               Review Status Breakdown
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            </div>
+            <div className="">
               <Chip
                 label={`Completed: ${data.summary.completedReviews}`}
                 color="success"
-                variant="outlined"
+                
                 size="small"
               />
               <Chip
                 label={`In Progress: ${data.summary.inProgressReviews}`}
                 color="primary"
-                variant="outlined"
+                
                 size="small"
               />
               <Chip
                 label={`On Hold: ${data.summary.onHoldReviews}`}
                 color="warning"
-                variant="outlined"
+                
                 size="small"
               />
               <Chip
                 label={`Cancelled: ${data.summary.cancelledReviews}`}
                 color="error"
-                variant="outlined"
+                
                 size="small"
               />
-            </Box>
-          </Grid>
+            </div>
+          </div>
 
           {/* Clinical Outcomes */}
-          <Grid item xs={12}>
-            <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+          <div item xs={12}>
+            <div  gutterBottom className="">
               Clinical Impact
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Typography variant="body2" color="textSecondary">
+            </div>
+            <div container spacing={2}>
+              <div item xs={12} sm={6} md={3}>
+                <div  color="textSecondary">
                   Medications Optimized
-                </Typography>
-                <Typography variant="h6" color="primary.main">
+                </div>
+                <div  color="primary.main">
                   {data.summary.totalMedicationsOptimized}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Typography variant="body2" color="textSecondary">
+                </div>
+              </div>
+              <div item xs={12} sm={6} md={3}>
+                <div  color="textSecondary">
                   Adherence Improved
-                </Typography>
-                <Typography variant="h6" color="info.main">
+                </div>
+                <div  color="info.main">
                   {data.summary.adherenceImprovedCount}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Typography variant="body2" color="textSecondary">
+                </div>
+              </div>
+              <div item xs={12} sm={6} md={3}>
+                <div  color="textSecondary">
                   Adverse Events Reduced
-                </Typography>
-                <Typography variant="h6" color="warning.main">
+                </div>
+                <div  color="warning.main">
                   {data.summary.adverseEventsReducedCount}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Typography variant="body2" color="textSecondary">
+                </div>
+              </div>
+              <div item xs={12} sm={6} md={3}>
+                <div  color="textSecondary">
                   Cost Savings
-                </Typography>
-                <Typography variant="h6" color="success.main">
+                </div>
+                <div  color="success.main">
                   ${data.summary.totalCostSavings?.toLocaleString() || 0}
-                </Typography>
-              </Grid>
-            </Grid>
-          </Grid>
-        </Grid>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

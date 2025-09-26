@@ -1,9 +1,5 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { FilePreview } from '../FilePreview';
 
+import userEvent from '@testing-library/user-event';
 // Mock fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -15,18 +11,15 @@ const mockLocalStorage = {
   removeItem: vi.fn(),
 };
 Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage,
-});
+  value: mockLocalStorage}
 
 // Mock URL.createObjectURL and revokeObjectURL
 const mockCreateObjectURL = vi.fn(() => 'blob:mock-url');
 const mockRevokeObjectURL = vi.fn();
 Object.defineProperty(window.URL, 'createObjectURL', {
-  value: mockCreateObjectURL,
-});
+  value: mockCreateObjectURL}
 Object.defineProperty(window.URL, 'revokeObjectURL', {
-  value: mockRevokeObjectURL,
-});
+  value: mockRevokeObjectURL}
 
 // Mock file attachment
 const mockFileAttachment = {
@@ -54,13 +47,12 @@ describe('FilePreview Component', () => {
     vi.clearAllMocks();
 
     // Mock successful fetch response for downloads
-    mockFetch.mockResolvedValue({
+    mockFetch.mockResolvedValue({ 
       ok: true,
       blob: () =>
-        Promise.resolve(
+        Promise.resolve( })
           new Blob(['file content'], { type: 'application/pdf' })
-        ),
-    });
+        )}
   });
 
   afterEach(() => {
@@ -143,8 +135,7 @@ describe('FilePreview Component', () => {
         expect(mockFetch).toHaveBeenCalledWith(mockFileAttachment.secureUrl, {
           headers: {
             Authorization: 'Bearer mock-token',
-          },
-        });
+          }
       });
 
       expect(mockCreateObjectURL).toHaveBeenCalled();
@@ -296,8 +287,7 @@ describe('FilePreview Component', () => {
         expect(mockFetch).toHaveBeenCalledWith(mockFileAttachment.secureUrl, {
           headers: {
             Authorization: 'Bearer mock-token',
-          },
-        });
+          }
       });
 
       expect(onDownload).toHaveBeenCalledWith(mockFileAttachment);

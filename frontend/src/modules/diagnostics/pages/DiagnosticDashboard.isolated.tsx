@@ -1,20 +1,9 @@
-import React, { useState, useCallback } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Button,
-  TextField,
-  Card,
-  CardContent,
-} from '@mui/material';
-
+import { Button, Input, Card, CardContent } from '@/components/ui/button';
 // Completely isolated component without any external hooks
 const DiagnosticDashboardIsolated: React.FC = () => {
   // Only local state
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState<string>('all');
-
   // Simple handlers
   const handleSearch = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,57 +12,49 @@ const DiagnosticDashboardIsolated: React.FC = () => {
     },
     []
   );
-
   const handleSetPending = useCallback(() => {
     setStatus('pending');
   }, []);
-
   const handleSetCompleted = useCallback(() => {
     setStatus('completed');
   }, []);
-
   const handleSetAll = useCallback(() => {
     setStatus('all');
   }, []);
-
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Typography variant="h4" sx={{ mb: 4 }}>
+    <div maxWidth="xl" className="">
+      <div  className="">
         Isolated Dashboard Test
-      </Typography>
-
-      <Card sx={{ mb: 4 }}>
+      </div>
+      <Card className="">
         <CardContent>
-          <Box sx={{ mb: 2 }}>
-            <TextField
+          <div className="">
+            <Input
               placeholder="Search..."
               value={searchTerm}
               onChange={handleSearch}
               size="small"
-              sx={{ mr: 2 }}
+              className=""
             />
-            <Button onClick={handleSetPending} sx={{ mr: 1 }}>
+            <Button onClick={handleSetPending} className="">
               Pending
             </Button>
-            <Button onClick={handleSetCompleted} sx={{ mr: 1 }}>
+            <Button onClick={handleSetCompleted} className="">
               Completed
             </Button>
             <Button onClick={handleSetAll}>All</Button>
-          </Box>
-
-          <Box>
-            <Typography>Search Term: "{searchTerm}"</Typography>
-            <Typography>Status: {status}</Typography>
-          </Box>
+          </div>
+          <div>
+            <div>Search Term: "{searchTerm}"</div>
+            <div>Status: {status}</div>
+          </div>
         </CardContent>
       </Card>
-
-      <Typography variant="h6">
+      <div >
         If you can see this without infinite loop errors, the issue is with the
         hooks or store.
-      </Typography>
-    </Container>
+      </div>
+    </div>
   );
 };
-
 export default DiagnosticDashboardIsolated;

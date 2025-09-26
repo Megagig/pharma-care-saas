@@ -1,41 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Alert,
-  AlertTitle,
-  Box,
-  Button,
-  Chip,
-  Collapse,
-  IconButton,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Paper,
-  Snackbar,
-  Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControlLabel,
-  Switch,
-} from '@mui/material';
-import {
-  Close as CloseIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-  Notifications as NotificationsIcon,
-  NotificationsOff as NotificationsOffIcon,
-  Schedule as ScheduleIcon,
-  Assignment as AssignmentIcon,
-  LocalHospital as HospitalIcon,
-} from '@mui/icons-material';
-import { format } from 'date-fns';
-
+import { Button, Dialog, DialogContent, DialogTitle, Alert, AlertTitle, Switch } from '@/components/ui/button';
 // Types for critical alerts
 interface CriticalAlert {
   id: string;
@@ -58,7 +21,6 @@ interface CriticalAlert {
   acknowledgedAt?: string;
   aiInterpretation?: any;
 }
-
 interface NotificationPreferences {
   criticalAlerts: boolean;
   resultNotifications: boolean;
@@ -67,7 +29,6 @@ interface NotificationPreferences {
   sms: boolean;
   push: boolean;
 }
-
 interface CriticalAlertBannerProps {
   alerts: CriticalAlert[];
   onAlertAcknowledge: (alertId: string) => void;
@@ -79,8 +40,7 @@ interface CriticalAlertBannerProps {
   currentPreferences?: NotificationPreferences;
   className?: string;
 }
-
-const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
+const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({ 
   alerts,
   onAlertAcknowledge,
   onAlertDismiss,
@@ -89,7 +49,7 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
   onCreateCarePlan,
   onUpdatePreferences,
   currentPreferences,
-  className,
+  className
 }) => {
   // State management
   const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set());
@@ -102,7 +62,6 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
     message: string;
     severity: 'success' | 'error' | 'warning' | 'info';
   }>({ open: false, message: '', severity: 'info' });
-
   // Filter out dismissed alerts and sort by severity and timestamp
   const visibleAlerts = alerts
     .filter((alert) => !dismissedAlerts.has(alert.id) && !alert.acknowledged)
@@ -112,22 +71,18 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
       const severityDiff =
         severityOrder[b.severity] - severityOrder[a.severity];
       if (severityDiff !== 0) return severityDiff;
-
       // Then by timestamp (newest first)
       return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
-
   // Auto-expand critical alerts
   useEffect(() => {
     const criticalAlerts = visibleAlerts
       .filter((alert) => alert.severity === 'critical')
       .map((alert) => alert.id);
-
     if (criticalAlerts.length > 0) {
       setExpandedAlerts((prev) => new Set([...prev, ...criticalAlerts]));
     }
   }, [visibleAlerts]);
-
   // Helper functions
   const getSeverityColor = (severity: string): 'error' | 'warning' | 'info' => {
     switch (severity) {
@@ -141,7 +96,6 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
         return 'info';
     }
   };
-
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case 'critical':
@@ -154,7 +108,6 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
         return <WarningIcon />;
     }
   };
-
   const getAlertTypeLabel = (type: string): string => {
     switch (type) {
       case 'critical_result':
@@ -169,7 +122,6 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
         return type.replace('_', ' ').toUpperCase();
     }
   };
-
   const handleToggleExpand = (alertId: string) => {
     setExpandedAlerts((prev) => {
       const newSet = new Set(prev);
@@ -181,89 +133,72 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
       return newSet;
     });
   };
-
   const handleAcknowledge = useCallback(
     (alert: CriticalAlert) => {
       onAlertAcknowledge(alert.id);
-      setSnackbar({
-        open: true,
+      setSnackbar({ 
+        open: true}
         message: `Alert acknowledged for ${alert.patientName}`,
-        severity: 'success',
-      });
+        severity: 'success'}
     },
     [onAlertAcknowledge]
   );
-
   const handleDismiss = useCallback(
     (alert: CriticalAlert) => {
       setDismissedAlerts((prev) => new Set([...prev, alert.id]));
       onAlertDismiss(alert.id);
-      setSnackbar({
-        open: true,
+      setSnackbar({ 
+        open: true}
         message: `Alert dismissed for ${alert.patientName}`,
-        severity: 'info',
-      });
+        severity: 'info'}
     },
     [onAlertDismiss]
   );
-
   const handleViewOrder = useCallback(
     (orderId: string) => {
       onViewOrder(orderId);
     },
     [onViewOrder]
   );
-
   const handleScheduleReferral = useCallback(
     (alert: CriticalAlert) => {
       onScheduleReferral?.(alert);
-      setSnackbar({
+      setSnackbar({ 
         open: true,
         message: 'Referral scheduling initiated',
-        severity: 'info',
+        severity: 'info'}
       });
     },
     [onScheduleReferral]
   );
-
   const handleCreateCarePlan = useCallback(
     (alert: CriticalAlert) => {
       onCreateCarePlan?.(alert);
-      setSnackbar({
+      setSnackbar({ 
         open: true,
         message: 'Care plan creation initiated',
-        severity: 'info',
+        severity: 'info'}
       });
     },
     [onCreateCarePlan]
   );
-
   // Don't render if no visible alerts
   if (visibleAlerts.length === 0) {
     return null;
   }
-
   return (
-    <Box className={className} sx={{ mb: 2 }}>
+    <div className={className} className="">
       {visibleAlerts.map((alert) => (
-        <Paper
+        <div
           key={alert.id}
-          elevation={3}
-          sx={{
-            mb: 1,
-            border:
-              alert.severity === 'critical'
-                ? '2px solid #dc2626'
-                : '1px solid #e5e7eb',
-            borderRadius: 2,
-            overflow: 'hidden',
-          }}
+          
+          className=""
         >
           <Alert
             severity={getSeverityColor(alert.severity)}
             icon={getSeverityIcon(alert.severity)}
-            action={
-              <Box display="flex" alignItems="center" gap={1}>
+            action={}
+              <div display="flex" alignItems="center" gap={1}>
                 <IconButton
                   size="small"
                   onClick={() => handleToggleExpand(alert.id)}
@@ -282,20 +217,15 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
                 >
                   <CloseIcon />
                 </IconButton>
-              </Box>
+              </div>
             }
-            sx={{
-              '& .MuiAlert-message': { width: '100%' },
-              backgroundColor:
-                alert.severity === 'critical' ? '#fef2f2' : undefined,
-            }}
-          >
+            className="">
             <AlertTitle>
-              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                <Typography variant="h6" component="span">
+              <div display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                <div  component="span">
                   {alert.severity === 'critical' ? '🚨' : '⚠️'}{' '}
                   {getAlertTypeLabel(alert.type)}
-                </Typography>
+                </div>
                 <Chip
                   label={alert.severity.toUpperCase()}
                   color={getSeverityColor(alert.severity)}
@@ -306,115 +236,109 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
                     label="IMMEDIATE ACTION REQUIRED"
                     color="error"
                     size="small"
-                    variant="filled"
+                    
                   />
                 )}
-              </Box>
+              </div>
             </AlertTitle>
-
-            <Box>
-              <Typography variant="body1" gutterBottom>
+            <div>
+              <div  gutterBottom>
                 <strong>Patient:</strong> {alert.patientName}
                 {alert.patientMRN && ` (MRN: ${alert.patientMRN})`}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
+              </div>
+              <div  gutterBottom>
                 <strong>Order:</strong> {alert.orderId}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              </div>
+              <div  color="text.secondary" gutterBottom>
                 {alert.message}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 {format(new Date(alert.timestamp), 'MMM dd, yyyy HH:mm')}
-              </Typography>
-            </Box>
-
+              </div>
+            </div>
             <Collapse in={expandedAlerts.has(alert.id)}>
-              <Box
-                sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(0,0,0,0.12)' }}
+              <div
+                className=""
               >
                 {/* Alert Details */}
                 {alert.details && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>
+                  <div className="">
+                    <div  gutterBottom>
                       Details:
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       {typeof alert.details === 'string'
                         ? alert.details
                         : JSON.stringify(alert.details, null, 2)}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 )}
-
                 {/* AI Interpretation Summary */}
                 {alert.aiInterpretation && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>
+                  <div className="">
+                    <div  gutterBottom>
                       AI Interpretation Summary:
-                    </Typography>
+                    </div>
                     <List dense>
                       {alert.aiInterpretation.aiAnalysis?.confidenceScore && (
-                        <ListItem>
-                          <ListItemText
+                        <div>
+                          <div
                             primary={`Confidence Score: ${alert.aiInterpretation.aiAnalysis.confidenceScore}%`}
                           />
-                        </ListItem>
+                        </div>
                       )}
                       {alert.aiInterpretation.aiAnalysis?.redFlags?.length >
                         0 && (
-                        <ListItem>
-                          <ListItemIcon>
+                        <div>
+                          <div>
                             <WarningIcon color="error" />
-                          </ListItemIcon>
-                          <ListItemText
+                          </div>
+                          <div
                             primary={`${alert.aiInterpretation.aiAnalysis.redFlags.length} Red Flags Detected`}
                             secondary={alert.aiInterpretation.aiAnalysis.redFlags
                               .slice(0, 2)
-                              .map((flag: any) => flag.flag)
+                              .map((flag: any) => flag.flag)}
                               .join(', ')}
                           />
-                        </ListItem>
+                        </div>
                       )}
                       {alert.aiInterpretation.aiAnalysis?.referralRecommendation
                         ?.recommended && (
-                        <ListItem>
-                          <ListItemIcon>
+                        <div>
+                          <div>
                             <HospitalIcon color="info" />
-                          </ListItemIcon>
-                          <ListItemText
+                          </div>
+                          <div
                             primary={`Referral to ${alert.aiInterpretation.aiAnalysis.referralRecommendation.specialty}`}
                             secondary={`Urgency: ${alert.aiInterpretation.aiAnalysis.referralRecommendation.urgency}`}
                           />
-                        </ListItem>
+                        </div>
                       )}
                     </List>
-                  </Box>
+                  </div>
                 )}
-
                 {/* Action Buttons */}
-                <Box display="flex" gap={1} flexWrap="wrap" sx={{ mt: 2 }}>
+                <div display="flex" gap={1} flexWrap="wrap" className="">
                   <Button
-                    variant="contained"
+                    
                     size="small"
                     onClick={() => handleViewOrder(alert.orderId)}
                     startIcon={<AssignmentIcon />}
                   >
                     View Order
                   </Button>
-
                   <Button
-                    variant="outlined"
+                    
                     size="small"
                     onClick={() => handleAcknowledge(alert)}
                     color="success"
                   >
                     Acknowledge
                   </Button>
-
                   {alert.type === 'urgent_referral_needed' &&
                     onScheduleReferral && (
                       <Button
-                        variant="outlined"
+                        
                         size="small"
                         onClick={() => handleScheduleReferral(alert)}
                         startIcon={<ScheduleIcon />}
@@ -423,10 +347,9 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
                         Schedule Referral
                       </Button>
                     )}
-
                   {onCreateCarePlan && (
                     <Button
-                      variant="outlined"
+                      
                       size="small"
                       onClick={() => handleCreateCarePlan(alert)}
                       startIcon={<AssignmentIcon />}
@@ -434,27 +357,25 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
                       Create Care Plan
                     </Button>
                   )}
-                </Box>
-              </Box>
+                </div>
+              </div>
             </Collapse>
           </Alert>
-        </Paper>
+        </div>
       ))}
-
       {/* Notification Preferences Button */}
       {onUpdatePreferences && (
-        <Box display="flex" justifyContent="flex-end" sx={{ mt: 1 }}>
+        <div display="flex" justifyContent="flex-end" className="">
           <Button
             size="small"
             startIcon={<NotificationsIcon />}
             onClick={() => setPreferencesDialog(true)}
-            variant="text"
+            
           >
             Notification Settings
           </Button>
-        </Box>
+        </div>
       )}
-
       {/* Notification Preferences Dialog */}
       <NotificationPreferencesDialog
         open={preferencesDialog}
@@ -463,14 +384,12 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
         onSave={(preferences) => {
           onUpdatePreferences?.(preferences);
           setPreferencesDialog(false);
-          setSnackbar({
+          setSnackbar({ 
             open: true,
-            message: 'Notification preferences updated',
-            severity: 'success',
+            message: 'Notification preferences updated'}
+            severity: 'success',}
           });
-        }}
       />
-
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
@@ -484,10 +403,9 @@ const CriticalAlertBanner: React.FC<CriticalAlertBannerProps> = ({
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </div>
   );
 };
-
 // Notification Preferences Dialog Component
 interface NotificationPreferencesDialogProps {
   open: boolean;
@@ -495,54 +413,47 @@ interface NotificationPreferencesDialogProps {
   preferences?: NotificationPreferences;
   onSave: (preferences: NotificationPreferences) => void;
 }
-
-const NotificationPreferencesDialog: React.FC<
-  NotificationPreferencesDialogProps
-> = ({ open, onClose, preferences, onSave }) => {
+const NotificationPreferencesDialog: React.FC = ({ open, onClose, preferences, onSave }) => {
   const [localPreferences, setLocalPreferences] =
-    useState<NotificationPreferences>({
+    useState<NotificationPreferences>({ 
       criticalAlerts: true,
       resultNotifications: true,
       orderReminders: true,
       email: true,
       sms: false,
       push: false,
-      ...preferences,
+      ...preferences}
     });
-
   useEffect(() => {
     if (preferences) {
       setLocalPreferences({ ...localPreferences, ...preferences });
     }
   }, [preferences]);
-
   const handleSave = () => {
     onSave(localPreferences);
   };
-
   const handleToggle = (key: keyof NotificationPreferences) => {
-    setLocalPreferences((prev) => ({
+    setLocalPreferences((prev) => ({ 
       ...prev,
-      [key]: !prev[key],
+      [key]: !prev[key]}
     }));
   };
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        <Box display="flex" alignItems="center" gap={1}>
+        <div display="flex" alignItems="center" gap={1}>
           <NotificationsIcon />
           Notification Preferences
-        </Box>
+        </div>
       </DialogTitle>
       <DialogContent>
-        <Box sx={{ py: 2 }}>
-          <Typography variant="h6" gutterBottom>
+        <div className="">
+          <div  gutterBottom>
             Alert Types
-          </Typography>
+          </div>
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={localPreferences.criticalAlerts}
                 onChange={() => handleToggle('criticalAlerts')}
               />
@@ -551,7 +462,7 @@ const NotificationPreferencesDialog: React.FC<
           />
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={localPreferences.resultNotifications}
                 onChange={() => handleToggle('resultNotifications')}
               />
@@ -560,20 +471,19 @@ const NotificationPreferencesDialog: React.FC<
           />
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={localPreferences.orderReminders}
                 onChange={() => handleToggle('orderReminders')}
               />
             }
             label="Order Reminders"
           />
-
-          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+          <div  gutterBottom className="">
             Delivery Channels
-          </Typography>
+          </div>
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={localPreferences.email}
                 onChange={() => handleToggle('email')}
               />
@@ -582,7 +492,7 @@ const NotificationPreferencesDialog: React.FC<
           />
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={localPreferences.sms}
                 onChange={() => handleToggle('sms')}
               />
@@ -591,7 +501,7 @@ const NotificationPreferencesDialog: React.FC<
           />
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={localPreferences.push}
                 onChange={() => handleToggle('push')}
                 disabled
@@ -599,22 +509,20 @@ const NotificationPreferencesDialog: React.FC<
             }
             label="Push Notifications (Coming Soon)"
           />
-
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          <div  color="text.secondary" className="">
             Note: Critical alerts will always be delivered via email regardless
             of preferences. SMS notifications require a valid phone number in
             your profile.
-          </Typography>
-        </Box>
+          </div>
+        </div>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained">
+        <Button onClick={handleSave} >
           Save Preferences
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
-
 export default CriticalAlertBanner;

@@ -1,37 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Chip,
-  Alert,
-  Card,
-  CardContent,
-  Grid,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-  CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  PlayArrow as PlayArrowIcon,
-  Assignment as AssignmentIcon,
-  Schedule as ScheduleIcon,
-  Assessment as AssessmentIcon,
-} from '@mui/icons-material';
+import { Card, CardContent, Alert, Accordion } from '@/components/ui/button';
 
 interface MTRDocumentationProps {
   section?:
@@ -42,8 +9,8 @@ interface MTRDocumentationProps {
     | 'reference';
 }
 
-export const MTRDocumentation: React.FC<MTRDocumentationProps> = ({
-  section = 'overview',
+export const MTRDocumentation: React.FC<MTRDocumentationProps> = ({ 
+  section = 'overview'
 }) => {
   const [expandedSection, setExpandedSection] = useState<string>(section);
 
@@ -268,16 +235,16 @@ export const MTRDocumentation: React.FC<MTRDocumentationProps> = ({
   ];
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
-      <Typography variant="h4" gutterBottom color="primary">
+    <div className="">
+      <div  gutterBottom color="primary">
         MTR Documentation & Help
-      </Typography>
+      </div>
 
-      <Typography variant="body1" paragraph>
+      <div  paragraph>
         Comprehensive guide to using the Medication Therapy Review (MTR) module
         effectively. This documentation covers the complete workflow, best
         practices, and troubleshooting guidance.
-      </Typography>
+      </div>
 
       {/* Overview Section */}
       <Accordion
@@ -285,66 +252,66 @@ export const MTRDocumentation: React.FC<MTRDocumentationProps> = ({
         onChange={handleSectionChange('overview')}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="h6">MTR Overview & Benefits</Typography>
+          <div >MTR Overview & Benefits</div>
         </AccordionSummary>
         <AccordionDetails>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+          <div container spacing={3}>
+            <div item xs={12} md={6}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom color="primary">
+                  <div  gutterBottom color="primary">
                     What is MTR?
-                  </Typography>
-                  <Typography variant="body2" paragraph>
+                  </div>
+                  <div  paragraph>
                     Medication Therapy Review is a systematic process where
                     pharmacists evaluate a patient's complete medication regimen
                     to identify drug-related problems and optimize therapy
                     outcomes.
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     The MTR process follows a structured 6-step workflow to
                     ensure comprehensive assessment and documentation for
                     regulatory compliance.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-            <Grid item xs={12} md={6}>
+            </div>
+            <div item xs={12} md={6}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom color="primary">
+                  <div  gutterBottom color="primary">
                     Key Benefits
-                  </Typography>
+                  </div>
                   <List dense>
-                    <ListItem>
-                      <ListItemIcon>
+                    <div>
+                      <div>
                         <CheckCircleIcon color="success" />
-                      </ListItemIcon>
-                      <ListItemText primary="Improved patient safety and outcomes" />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon>
+                      </div>
+                      <div primary="Improved patient safety and outcomes" />
+                    </div>
+                    <div>
+                      <div>
                         <CheckCircleIcon color="success" />
-                      </ListItemIcon>
-                      <ListItemText primary="Systematic problem identification" />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon>
+                      </div>
+                      <div primary="Systematic problem identification" />
+                    </div>
+                    <div>
+                      <div>
                         <CheckCircleIcon color="success" />
-                      </ListItemIcon>
-                      <ListItemText primary="Evidence-based recommendations" />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon>
+                      </div>
+                      <div primary="Evidence-based recommendations" />
+                    </div>
+                    <div>
+                      <div>
                         <CheckCircleIcon color="success" />
-                      </ListItemIcon>
-                      <ListItemText primary="Complete audit trail and compliance" />
-                    </ListItem>
+                      </div>
+                      <div primary="Complete audit trail and compliance" />
+                    </div>
                   </List>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </AccordionDetails>
       </Accordion>
 
@@ -354,52 +321,42 @@ export const MTRDocumentation: React.FC<MTRDocumentationProps> = ({
         onChange={handleSectionChange('workflow')}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="h6">6-Step MTR Workflow</Typography>
+          <div >6-Step MTR Workflow</div>
         </AccordionSummary>
         <AccordionDetails>
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="body2">
+          <Alert severity="info" className="">
+            <div >
               <strong>Total Time Estimate:</strong> 60-90 minutes for a complete
               MTR session
-            </Typography>
+            </div>
           </Alert>
 
           {workflowSteps.map((step) => (
-            <Card key={step.number} sx={{ mb: 2 }}>
+            <Card key={step.number} className="">
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 40,
-                      height: 40,
-                      borderRadius: '50%',
-                      bgcolor: 'primary.main',
-                      color: 'white',
-                      mr: 2,
-                    }}
+                <div className="">
+                  <div
+                    className=""
                   >
                     {step.number}
-                  </Box>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6">{step.title}</Typography>
-                    <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div className="">
+                    <div >{step.title}</div>
+                    <div  color="text.secondary">
                       {step.description}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                   <Chip label={step.timeEstimate} size="small" />
-                </Box>
+                </div>
 
                 <List dense>
                   {step.keyPoints.map((point, pointIndex) => (
-                    <ListItem key={pointIndex}>
-                      <ListItemIcon>
+                    <div key={pointIndex}>
+                      <div>
                         <CheckCircleIcon color="primary" fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText primary={point} />
-                    </ListItem>
+                      </div>
+                      <div primary={point} />
+                    </div>
                   ))}
                 </List>
               </CardContent>
@@ -414,10 +371,10 @@ export const MTRDocumentation: React.FC<MTRDocumentationProps> = ({
         onChange={handleSectionChange('reference')}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="h6">Problem Severity Reference</Typography>
+          <div >Problem Severity Reference</div>
         </AccordionSummary>
         <AccordionDetails>
-          <TableContainer component={Paper}>
+          <TableContainer >
             <Table>
               <TableHead>
                 <TableRow>
@@ -445,9 +402,9 @@ export const MTRDocumentation: React.FC<MTRDocumentationProps> = ({
                     <TableCell>
                       <List dense>
                         {level.examples.map((example, index) => (
-                          <ListItem key={index} sx={{ py: 0 }}>
-                            <Typography variant="body2">• {example}</Typography>
-                          </ListItem>
+                          <div key={index} className="">
+                            <div >• {example}</div>
+                          </div>
                         ))}
                       </List>
                     </TableCell>
@@ -466,35 +423,35 @@ export const MTRDocumentation: React.FC<MTRDocumentationProps> = ({
         onChange={handleSectionChange('best-practices')}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="h6">Best Practices & Guidelines</Typography>
+          <div >Best Practices & Guidelines</div>
         </AccordionSummary>
         <AccordionDetails>
-          <Grid container spacing={3}>
+          <div container spacing={3}>
             {bestPractices.map((category, index) => (
-              <Grid item xs={12} md={6} key={index}>
+              <div item xs={12} md={6} key={index}>
                 <Card>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom color="primary">
+                    <div  gutterBottom color="primary">
                       {category.category}
-                    </Typography>
+                    </div>
                     <List dense>
                       {category.practices.map((practice, practiceIndex) => (
-                        <ListItem key={practiceIndex}>
-                          <ListItemIcon>
+                        <div key={practiceIndex}>
+                          <div>
                             <CheckCircleIcon color="success" fontSize="small" />
-                          </ListItemIcon>
-                          <ListItemText
+                          </div>
+                          <div
                             primary={practice}
-                            primaryTypographyProps={{ variant: 'body2' }}
+                            
                           />
-                        </ListItem>
+                        </div>
                       ))}
                     </List>
                   </CardContent>
                 </Card>
-              </Grid>
+              </div>
             ))}
-          </Grid>
+          </div>
         </AccordionDetails>
       </Accordion>
 
@@ -504,38 +461,38 @@ export const MTRDocumentation: React.FC<MTRDocumentationProps> = ({
         onChange={handleSectionChange('troubleshooting')}
       >
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="h6">Troubleshooting Guide</Typography>
+          <div >Troubleshooting Guide</div>
         </AccordionSummary>
         <AccordionDetails>
           {troubleshootingGuide.map((item, index) => (
-            <Card key={index} sx={{ mb: 2 }}>
+            <Card key={index} className="">
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <WarningIcon color="warning" sx={{ mr: 1 }} />
-                  <Typography variant="h6">{item.issue}</Typography>
-                </Box>
-                <Typography variant="subtitle2" gutterBottom>
+                <div className="">
+                  <WarningIcon color="warning" className="" />
+                  <div >{item.issue}</div>
+                </div>
+                <div  gutterBottom>
                   Solutions:
-                </Typography>
+                </div>
                 <List dense>
                   {item.solutions.map((solution, solutionIndex) => (
-                    <ListItem key={solutionIndex}>
-                      <ListItemIcon>
+                    <div key={solutionIndex}>
+                      <div>
                         <CheckCircleIcon color="primary" fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={solution}
-                        primaryTypographyProps={{ variant: 'body2' }}
+                        
                       />
-                    </ListItem>
+                    </div>
                   ))}
                 </List>
               </CardContent>
             </Card>
           ))}
 
-          <Alert severity="info" sx={{ mt: 3 }}>
-            <Typography variant="body2">
+          <Alert severity="info" className="">
+            <div >
               <strong>Need Additional Help?</strong>
               <br />
               • Contact your system administrator for technical issues
@@ -543,42 +500,42 @@ export const MTRDocumentation: React.FC<MTRDocumentationProps> = ({
               • Consult with senior pharmacists for clinical questions
               <br />• Access additional training materials or request refresher
               sessions
-            </Typography>
+            </div>
           </Alert>
         </AccordionDetails>
       </Accordion>
 
       {/* Quick Reference Card */}
-      <Card sx={{ mt: 3, bgcolor: 'primary.light' }}>
+      <Card className="">
         <CardContent>
-          <Typography variant="h6" gutterBottom color="primary.contrastText">
+          <div  gutterBottom color="primary.contrastText">
             Quick Reference - Keyboard Shortcuts
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={6} md={3}>
-              <Typography variant="body2" color="primary.contrastText">
+          </div>
+          <div container spacing={2}>
+            <div item xs={6} md={3}>
+              <div  color="primary.contrastText">
                 <strong>Ctrl + S:</strong> Save progress
-              </Typography>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Typography variant="body2" color="primary.contrastText">
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div  color="primary.contrastText">
                 <strong>Ctrl + N:</strong> New MTR session
-              </Typography>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Typography variant="body2" color="primary.contrastText">
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div  color="primary.contrastText">
                 <strong>Ctrl + F:</strong> Search function
-              </Typography>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Typography variant="body2" color="primary.contrastText">
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div  color="primary.contrastText">
                 <strong>Ctrl + ?:</strong> Show help
-              </Typography>
-            </Grid>
-          </Grid>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
-    </Box>
+    </div>
   );
 };
 

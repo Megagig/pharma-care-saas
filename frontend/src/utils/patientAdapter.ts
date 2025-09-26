@@ -1,12 +1,3 @@
-import {
-  Patient as StorePatient,
-  PatientFormData as StorePatientFormData,
-} from '../stores/types';
-import {
-  Patient as ApiPatient,
-  CreatePatientData as ApiCreatePatientData,
-} from '../types/patientManagement';
-
 /**
  * Converts the API Patient model to the Store Patient model
  */

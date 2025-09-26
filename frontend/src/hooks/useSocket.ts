@@ -1,8 +1,3 @@
-import { useEffect, useCallback, useRef, useState } from 'react';
-import { socketService, ConnectionStatus, SocketEventHandlers } from '../services/socketService';
-import { useCommunicationStore } from '../stores/communicationStore';
-import { authService } from '../services/authService';
-
 export interface UseSocketOptions {
     autoConnect?: boolean;
     onConnectionChange?: (status: ConnectionStatus) => void;

@@ -1,104 +1,120 @@
-import React, { useMemo } from 'react';
-import { ThemeProvider, CssBaseline, Box, Toolbar } from '@mui/material';
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { createAppTheme } from './theme/index';
-import { AuthProvider } from './context/AuthContext';
-import { FeatureFlagProvider } from './context/FeatureFlagContext';
-import { SubscriptionProvider } from './context/SubscriptionContext';
-import { useTheme as useThemeStore } from './stores/themeStore';
-import ErrorBoundary from './components/ErrorBoundary';
-import ProtectedRoute from './components/ProtectedRoute';
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
-import { NotificationProvider } from './components/common/NotificationSystem';
 
+import ErrorBoundary from './components/ErrorBoundary';
+
+import ProtectedRoute from './components/ProtectedRoute';
+
+import Navbar from './components/Navbar';
+
+import Sidebar from './components/Sidebar';
 // Import theme styles
 import './styles/theme.css';
+
 import './styles/dark-mode-overrides.css';
 
 import Landing from './pages/Landing';
+
 import About from './pages/About';
+
 import Contact from './pages/Contact';
+
 import Pricing from './pages/Pricing';
+
 import Login from './pages/Login';
+
 import MultiStepRegister from './pages/MultiStepRegister';
+
 import VerifyEmail from './pages/VerifyEmail';
+
 import ForgotPassword from './pages/ForgotPassword';
+
 import ResetPassword from './pages/ResetPassword';
 // Modern Dashboard is now the default dashboard
 import ModernDashboardPage from './pages/ModernDashboardPage';
+
 import Patients from './pages/Patients';
 // Lazy load Clinical Notes components for better performance
 // Lazy loading components is handled directly in routes
-// import {
-//   LazyClinicalNotesDashboard,
+// // Removed malformed import //   LazyClinicalNotesDashboard,
 //   LazyClinicalNoteDetail,
 //   LazyClinicalNoteForm,
 //   preloadClinicalNotesComponents,
-// } from './components/ClinicalNotesLazy';
-
+// 
 // Keep original imports as fallback
 import ClinicalNotes from './pages/ClinicalNotes';
-import ClinicalNoteDetailPage from './pages/ClinicalNoteDetailPage';
-import ClinicalNoteFormPage from './pages/ClinicalNoteFormPage';
-import Medications from './pages/Medications';
-import MedicationsManagementDashboard from './components/medications/MedicationsManagementDashboard';
-import PatientMedicationsPage from './components/medications/PatientMedicationsPage';
-import Subscriptions from './pages/Subscriptions';
-import SaasSettings from './pages/SaasSettings';
-import FeatureFlagsPage from './pages/FeatureFlags';
-import Settings from './pages/Settings';
-import SettingsTheme from './pages/SettingsTheme';
-import Help from './pages/Help';
-import MTRHelp from './pages/MTRHelp';
 
+import ClinicalNoteDetailPage from './pages/ClinicalNoteDetailPage';
+
+import ClinicalNoteFormPage from './pages/ClinicalNoteFormPage';
+
+import Medications from './pages/Medications';
+
+import MedicationsManagementDashboard from './components/medications/MedicationsManagementDashboard';
+
+import PatientMedicationsPage from './components/medications/PatientMedicationsPage';
+
+import Subscriptions from './pages/Subscriptions';
+
+import SaasSettings from './pages/SaasSettings';
+
+import FeatureFlagsPage from './pages/FeatureFlags';
+
+import Settings from './pages/Settings';
+
+import SettingsTheme from './pages/SettingsTheme';
+
+import Help from './pages/Help';
+
+import MTRHelp from './pages/MTRHelp';
 // Pharmacy Module Components
 import MedicationTherapyReview from './pages/MedicationTherapyReview';
-import ClinicalInterventionsLayout from './components/ClinicalInterventionsLayout';
-import CommunicationHub from './pages/CommunicationHub';
-import DrugInformationCenter from './pages/DrugInformationCenter';
-import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
-import PharmacyReports from './pages/PharmacyReports';
-import PharmacyUserManagement from './pages/PharmacyUserManagement';
-import PharmacySettings from './pages/PharmacySettings';
 
+import ClinicalInterventionsLayout from './components/ClinicalInterventionsLayout';
+
+import CommunicationHub from './pages/CommunicationHub';
+
+import DrugInformationCenter from './pages/DrugInformationCenter';
+
+import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
+
+import PharmacyReports from './pages/PharmacyReports';
+
+import PharmacyUserManagement from './pages/PharmacyUserManagement';
+
+import PharmacySettings from './pages/PharmacySettings';
 // Diagnostic Module Components
 import DiagnosticDashboard from './modules/diagnostics/pages/DiagnosticDashboard';
-import CaseIntakePage from './modules/diagnostics/pages/CaseIntakePage';
-import CaseResultsPage from './modules/diagnostics/pages/CaseResultsPage';
-import ResultsReviewPage from './modules/diagnostics/pages/ResultsReviewPage';
-import ComponentDemo from './modules/diagnostics/pages/ComponentDemo';
 
+import CaseIntakePage from './modules/diagnostics/pages/CaseIntakePage';
+
+import CaseResultsPage from './modules/diagnostics/pages/CaseResultsPage';
+
+import ResultsReviewPage from './modules/diagnostics/pages/ResultsReviewPage';
+
+import ComponentDemo from './modules/diagnostics/pages/ComponentDemo';
 // Test Components
 import SidebarTest from './components/SidebarTest';
-
 // Patient Management Components
 import PatientForm from './components/PatientForm';
-import PatientManagement from './components/PatientManagement';
 
+import PatientManagement from './components/PatientManagement';
 // RBAC and Enhanced Components
 import AdminDashboard from './components/admin/AdminDashboard';
-import LicenseUpload from './components/license/LicenseUpload';
-import SubscriptionManagementNew from './pages/SubscriptionManagement';
-import SubscriptionSuccessNew from './pages/SubscriptionSuccess';
-import TrialExpiryHandler from './components/TrialExpiryHandler';
 
+import LicenseUpload from './components/license/LicenseUpload';
+
+import SubscriptionManagementNew from './pages/SubscriptionManagement';
+
+import SubscriptionSuccessNew from './pages/SubscriptionSuccess';
+
+import TrialExpiryHandler from './components/TrialExpiryHandler';
 function ThemedApp(): JSX.Element {
   // Get current theme from store
   const { resolvedTheme } = useThemeStore();
-
   // Create dynamic theme based on current theme mode
   const dynamicTheme = useMemo(
     () => createAppTheme(resolvedTheme === 'dark' ? 'dark' : 'light'),
     [resolvedTheme]
   );
-
   return (
     <ThemeProvider theme={dynamicTheme}>
       <CssBaseline />
@@ -107,11 +123,8 @@ function ThemedApp(): JSX.Element {
           <FeatureFlagProvider>
             <NotificationProvider>
               <Router>
-                <Box
-                  sx={{
-                    minHeight: '100vh',
-                    bgcolor: 'background.default',
-                  }}
+                <div
+                  className=""
                 >
                   <Toaster
                     position="top-right"
@@ -119,7 +132,7 @@ function ThemedApp(): JSX.Element {
                       duration: 4000,
                       style: {
                         background: '#363636',
-                        color: '#fff',
+                        color: '#fff',}
                       },
                       success: {
                         duration: 3000,
@@ -135,7 +148,6 @@ function ThemedApp(): JSX.Element {
                           secondary: '#fff',
                         },
                       },
-                    }}
                   />
                   <Routes>
                     {/* Public Routes */}
@@ -159,7 +171,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <ModernDashboardPage />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     {/* Removed old dashboard route */}
@@ -173,7 +185,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <Patients />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -186,7 +198,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <PatientForm />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -197,7 +209,7 @@ function ThemedApp(): JSX.Element {
                           requiresActiveSubscription
                         >
                           <PatientManagement />
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -210,7 +222,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <PatientMedicationsPage />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -223,7 +235,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <PatientForm />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -237,7 +249,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <ClinicalNotes />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -251,7 +263,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <ClinicalNoteFormPage />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -265,7 +277,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <ClinicalNoteDetailPage />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -279,7 +291,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <ClinicalNoteFormPage />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -292,7 +304,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <Medications />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -305,7 +317,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <MedicationsManagementDashboard />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -315,10 +327,9 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <Subscriptions />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
-
                     {/* Pharmacy Module Routes */}
                     <Route
                       path="/pharmacy/medication-therapy"
@@ -327,7 +338,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <MedicationTherapyReview />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -337,7 +348,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <MedicationTherapyReview />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -347,7 +358,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <MedicationTherapyReview />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -357,7 +368,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <MedicationTherapyReview />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -367,7 +378,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <MedicationTherapyReview />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -377,7 +388,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <MedicationTherapyReview />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -387,7 +398,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <ClinicalInterventionsLayout />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -397,7 +408,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <DiagnosticDashboard />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -407,7 +418,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <CaseIntakePage />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -417,7 +428,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <ResultsReviewPage />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -427,7 +438,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <CaseResultsPage />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -437,7 +448,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <ComponentDemo />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -447,7 +458,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <CommunicationHub />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -457,7 +468,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <DrugInformationCenter />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -467,7 +478,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <ClinicalDecisionSupport />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -477,7 +488,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <PharmacyReports />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -487,7 +498,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <PharmacyUserManagement />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -497,10 +508,9 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <PharmacySettings />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
-
                     {/* Admin Routes */}
                     <Route
                       path="/admin"
@@ -509,7 +519,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <AdminDashboard />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     {/* Feature Flags Route */}
@@ -520,7 +530,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <FeatureFlagsPage />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     {/* License Management */}
@@ -531,7 +541,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <LicenseUpload />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     {/* Enhanced Subscription Management */}
@@ -542,7 +552,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <SubscriptionManagementNew />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     {/* Subscription Success Page - No auth required for payment redirection */}
@@ -551,7 +561,7 @@ function ThemedApp(): JSX.Element {
                       element={
                         <AppLayout>
                           <SubscriptionSuccessNew />
-                        </AppLayout>
+                        </AppLayout>}
                       }
                     />
                     {/* Subscription Plans - This should not require active subscription */}
@@ -562,7 +572,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <SubscriptionManagementNew />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     <Route
@@ -572,7 +582,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <SubscriptionManagementNew />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     {/* SaaS Settings - accessible to everyone */}
@@ -581,7 +591,7 @@ function ThemedApp(): JSX.Element {
                       element={
                         <AppLayout>
                           <SaasSettings />
-                        </AppLayout>
+                        </AppLayout>}
                       }
                     />
                     {/* Settings Page */}
@@ -592,7 +602,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <Settings />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     {/* Theme Settings Page */}
@@ -603,7 +613,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <SettingsTheme />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     {/* Help & Support Page */}
@@ -614,7 +624,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <Help />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     {/* MTR Help & Documentation */}
@@ -625,7 +635,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <MTRHelp />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     {/* Sidebar Test Page - Development Only */}
@@ -636,7 +646,7 @@ function ThemedApp(): JSX.Element {
                           <AppLayout>
                             <SidebarTest />
                           </AppLayout>
-                        </ProtectedRoute>
+                        </ProtectedRoute>}
                       }
                     />
                     {/* Redirect any unknown routes to dashboard */}
@@ -645,7 +655,7 @@ function ThemedApp(): JSX.Element {
                       element={<Navigate to="/dashboard" replace />}
                     />
                   </Routes>
-                </Box>
+                </div>
               </Router>
             </NotificationProvider>
           </FeatureFlagProvider>
@@ -654,55 +664,33 @@ function ThemedApp(): JSX.Element {
     </ThemeProvider>
   );
 }
-
 // Layout wrapper for protected routes
 interface AppLayoutProps {
   children: React.ReactNode;
 }
-
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <TrialExpiryHandler>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: '100vh',
-          backgroundColor: 'background.default',
-          color: 'text.primary',
-          transition: 'background-color 0.3s ease, color 0.3s ease',
-        }}
+      <div
+        className=""
       >
         <Navbar />
-        <Toolbar /> {/* This creates space for the fixed AppBar */}
-        <Box
-          sx={{
-            display: 'flex',
-            flex: 1,
-            backgroundColor: 'background.default',
-            transition: 'background-color 0.3s ease',
-          }}
+        <div /> {/* This creates space for the fixed AppBar */}
+        <div
+          className=""
         >
           <ErrorBoundary>
             <Sidebar />
           </ErrorBoundary>
-          <Box
+          <div
             component="main"
-            sx={{
-              flex: 1,
-              overflow: 'auto',
-              backgroundColor: 'background.default',
-              color: 'text.primary',
-              minHeight: 'calc(100vh - 64px)', // Account for navbar height
-              transition: 'background-color 0.3s ease, color 0.3s ease',
-            }}
+            className=""
           >
             {children}
-          </Box>
-        </Box>
-      </Box>
+          </div>
+        </div>
+      </div>
     </TrialExpiryHandler>
   );
 };
-
 export default ThemedApp;

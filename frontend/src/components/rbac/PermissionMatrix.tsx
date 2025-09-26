@@ -1,80 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-  TextField,
-  InputAdornment,
-  Chip,
-  IconButton,
-  Menu,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  Snackbar,
-  CircularProgress,
-  Tooltip,
-  FormControl,
-  InputLabel,
-  Select,
-  Checkbox,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Collapse,
-  Card,
-  CardContent,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Switch,
-  FormControlLabel,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  FilterList as FilterListIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
-  Security as SecurityIcon,
-  Group as GroupIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Info as InfoIcon,
-  ExpandMore as ExpandMoreIcon,
-  KeyboardArrowDown as KeyboardArrowDownIcon,
-  KeyboardArrowRight as KeyboardArrowRightIcon,
-  Analytics as AnalyticsIcon,
-  Download as DownloadIcon,
-  Refresh as RefreshIcon,
-} from '@mui/icons-material';
-import { useRBAC } from '../../hooks/useRBAC';
-import { rbacService } from '../../services/rbacService';
-import type { Role, Permission, PermissionCategory } from '../../types/rbac';
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Tooltip, Spinner, Alert, Switch } from '@/components/ui/button';
 
 interface PermissionMatrixProps {
   selectedRole?: Role | null;
   onRoleSelect?: (role: Role) => void;
 }
-
 interface MatrixData {
   roles: Role[];
   permissions: Permission[];
   matrix: Record<string, Record<string, boolean>>;
 }
-
 interface PermissionUsage {
   permission: string;
   roleCount: number;
@@ -82,26 +16,22 @@ interface PermissionUsage {
   displayName: string;
   category: string;
 }
-
-const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
+const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ 
   selectedRole,
-  onRoleSelect,
+  onRoleSelect
 }) => {
   const { canAccess } = useRBAC();
-
   // State management
-  const [matrixData, setMatrixData] = useState<MatrixData>({
+  const [matrixData, setMatrixData] = useState<MatrixData>({ 
     roles: [],
-    permissions: [],
-    matrix: {},
-  });
+    permissions: []}
+    matrix: {}
   const [permissionCategories, setPermissionCategories] = useState<
     PermissionCategory[]
   >([]);
   const [permissionUsage, setPermissionUsage] = useState<PermissionUsage[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
@@ -110,7 +40,6 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
   );
-
   // Dialog states
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [conflictDetails, setConflictDetails] = useState<
@@ -120,26 +49,22 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
       severity: 'warning' | 'error';
     }>
   >([]);
-
   // Analytics dialog
   const [analyticsDialogOpen, setAnalyticsDialogOpen] = useState(false);
-
   // Notification state
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
     severity: 'success' | 'error' | 'warning' | 'info';
-  }>({
+  }>({ 
     open: false,
     message: '',
-    severity: 'info',
+    severity: 'info'}
   });
-
   // Load initial data
   useEffect(() => {
     loadData();
   }, []);
-
   const loadData = async () => {
     try {
       setLoading(true);
@@ -149,11 +74,9 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
           rbacService.getPermissionCategories(),
           rbacService.getPermissionUsageAnalytics(),
         ]);
-
       if (matrixResponse.success) {
         setMatrixData(matrixResponse.data);
       }
-
       if (categoriesResponse.success) {
         setPermissionCategories(categoriesResponse.data);
         // Expand all categories by default
@@ -161,7 +84,6 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
           new Set(categoriesResponse.data.map((cat) => cat.name))
         );
       }
-
       if (usageResponse.success) {
         setPermissionUsage(usageResponse.data.permissionUsage);
       }
@@ -172,47 +94,38 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
       setLoading(false);
     }
   };
-
   const showSnackbar = (
     message: string,
     severity: 'success' | 'error' | 'warning' | 'info'
   ) => {
     setSnackbar({ open: true, message, severity });
   };
-
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
-
   // Permission matrix operations
   const handlePermissionToggle = async (roleId: string, permission: string) => {
     if (!canAccess('canUpdate')) {
       showSnackbar('You do not have permission to modify roles', 'error');
       return;
     }
-
     try {
       setSaving(true);
       const currentValue = matrixData.matrix[roleId]?.[permission] || false;
       const newValue = !currentValue;
-
       // Update local state immediately for better UX
-      setMatrixData((prev) => ({
+      setMatrixData((prev) => ({ 
         ...prev,
         matrix: {
           ...prev.matrix,
           [roleId]: {
             ...prev.matrix[roleId],
-            [permission]: newValue,
+            [permission]: newValue}
           },
-        },
-      }));
-
+        }
       // Update on server
       const response = await rbacService.updatePermissionMatrix(roleId, {
-        [permission]: newValue,
-      });
-
+        [permission]: newValue}
       if (response.success) {
         showSnackbar(
           `Permission ${newValue ? 'granted' : 'revoked'} successfully`,
@@ -220,16 +133,15 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
         );
       } else {
         // Revert local state if server update failed
-        setMatrixData((prev) => ({
+        setMatrixData((prev) => ({ 
           ...prev,
           matrix: {
             ...prev.matrix,
             [roleId]: {
               ...prev.matrix[roleId],
-              [permission]: currentValue,
+              [permission]: currentValue}
             },
-          },
-        }));
+          }
         showSnackbar('Failed to update permission', 'error');
       }
     } catch (error) {
@@ -241,7 +153,6 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
       setSaving(false);
     }
   };
-
   const handleBulkPermissionUpdate = async (
     roleId: string,
     permissions: Record<string, boolean>
@@ -250,14 +161,12 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
       showSnackbar('You do not have permission to modify roles', 'error');
       return;
     }
-
     try {
       setSaving(true);
       const response = await rbacService.updatePermissionMatrix(
         roleId,
         permissions
       );
-
       if (response.success) {
         showSnackbar('Permissions updated successfully', 'success');
         await loadData(); // Reload to get fresh data
@@ -269,7 +178,6 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
       setSaving(false);
     }
   };
-
   // Category expansion handling
   const handleCategoryToggle = (categoryName: string) => {
     setExpandedCategories((prev) => {
@@ -282,11 +190,9 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
       return newSet;
     });
   };
-
   // Filter permissions and roles
   const filteredCategories = permissionCategories.filter((category) => {
     if (categoryFilter && category.name !== categoryFilter) return false;
-
     const hasMatchingPermissions = category.permissions.some((permission) => {
       const matchesSearch =
         !searchTerm ||
@@ -294,53 +200,43 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
         permission.action.toLowerCase().includes(searchTerm.toLowerCase());
-
       if (showOnlyAssigned) {
         const hasAssignments = matrixData.roles.some(
           (role) => matrixData.matrix[role._id]?.[permission.action]
         );
         return matchesSearch && hasAssignments;
       }
-
       return matchesSearch;
     });
-
     return hasMatchingPermissions;
   });
-
   const filteredRoles = matrixData.roles.filter((role) => {
     if (roleFilter && role._id !== roleFilter) return false;
     return true;
   });
-
   // Get permission conflicts
   const getPermissionConflicts = (
     permission: string
   ): Array<{ type: string; message: string }> => {
     const conflicts: Array<{ type: string; message: string }> = [];
-
     // Find permission object
     const permissionObj = matrixData.permissions.find(
       (p) => p.action === permission
     );
     if (!permissionObj) return conflicts;
-
     // Check for dependency conflicts
     permissionObj.dependsOn.forEach((dependency) => {
       const rolesWithPermission = filteredRoles.filter(
         (role) => matrixData.matrix[role._id]?.[permission]
       );
-
       rolesWithPermission.forEach((role) => {
         if (!matrixData.matrix[role._id]?.[dependency]) {
-          conflicts.push({
-            type: 'dependency',
-            message: `Role "${role.displayName}" has "${permission}" but missing dependency "${dependency}"`,
-          });
+          conflicts.push({ 
+            type: 'dependency'}
+            message: `Role "${role.displayName}" has "${permission}" but missing dependency "${dependency}"`}
         }
       });
     });
-
     // Check for direct conflicts
     permissionObj.conflicts.forEach((conflictPermission) => {
       const rolesWithBoth = filteredRoles.filter(
@@ -348,67 +244,50 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
           matrixData.matrix[role._id]?.[permission] &&
           matrixData.matrix[role._id]?.[conflictPermission]
       );
-
       rolesWithBoth.forEach((role) => {
-        conflicts.push({
-          type: 'conflict',
-          message: `Role "${role.displayName}" has conflicting permissions: "${permission}" and "${conflictPermission}"`,
-        });
+        conflicts.push({ 
+          type: 'conflict'}
+          message: `Role "${role.displayName}" has conflicting permissions: "${permission}" and "${conflictPermission}"`}
       });
     });
-
     return conflicts;
   };
-
   // Get usage statistics for a permission
   const getPermissionUsageStats = (permission: string) => {
     return permissionUsage.find((usage) => usage.permission === permission);
   };
-
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: 400,
-        }}
+      <div
+        className=""
       >
-        <CircularProgress />
-      </Box>
+        <Spinner />
+      </div>
     );
   }
-
   return (
-    <Box>
+    <div>
       {/* Header */}
-      <Box
-        sx={{
-          mb: 3,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
+      <div
+        className=""
       >
-        <Typography
-          variant="h5"
-          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+        <div
+          
+          className=""
         >
           <SecurityIcon color="primary" />
           Permission Matrix
-        </Typography>
-
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        </div>
+        <div className="">
           <Button
-            variant="outlined"
+            
             startIcon={<AnalyticsIcon />}
             onClick={() => setAnalyticsDialogOpen(true)}
           >
             Analytics
           </Button>
           <Button
-            variant="outlined"
+            
             startIcon={<DownloadIcon />}
             onClick={async () => {
               try {
@@ -418,46 +297,36 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                 a.href = url;
                 a.download = 'permission-matrix.csv';
                 a.click();
-                window.URL.revokeObjectURL(url);
+                window.URL.revokeObjectURL(url);}
               } catch (error) {
                 showSnackbar('Failed to export matrix', 'error');
-              }
-            }}
-          >
+              }>
             Export
           </Button>
           <Button
-            variant="outlined"
+            
             startIcon={<RefreshIcon />}
             onClick={loadData}
           >
             Refresh
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={3}>
-            <TextField
+      <div className="">
+        <div container spacing={2} alignItems="center">
+          <div item xs={12} sm={6} md={3}>
+            <Input
               fullWidth
               placeholder="Search permissions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
+              
             />
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={2}>
-            <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
+          </div>
+          <div item xs={12} sm={6} md={2}>
+            <div fullWidth>
+              <Label>Category</Label>
               <Select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
@@ -470,12 +339,11 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                   </MenuItem>
                 ))}
               </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={2}>
-            <FormControl fullWidth>
-              <InputLabel>Role</InputLabel>
+            </div>
+          </div>
+          <div item xs={12} sm={6} md={2}>
+            <div fullWidth>
+              <Label>Role</Label>
               <Select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
@@ -488,29 +356,27 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                   </MenuItem>
                 ))}
               </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
+            </div>
+          </div>
+          <div item xs={12} sm={6} md={3}>
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={showOnlyAssigned}
                   onChange={(e) => setShowOnlyAssigned(e.target.checked)}
                 />
               }
               label="Show only assigned"
             />
-          </Grid>
-
-          <Grid item xs={12} md={2}>
-            <Box sx={{ display: 'flex', gap: 1 }}>
+          </div>
+          <div item xs={12} md={2}>
+            <div className="">
               <Button
                 size="small"
                 onClick={() =>
                   setExpandedCategories(
                     new Set(permissionCategories.map((cat) => cat.name))
-                  )
+                  )}
                 }
               >
                 Expand All
@@ -521,47 +387,40 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
               >
                 Collapse All
               </Button>
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
-
+            </div>
+          </div>
+        </div>
+      </div>
       {/* Permission Matrix */}
-      <Paper sx={{ overflow: 'hidden' }}>
-        <TableContainer sx={{ maxHeight: 800 }}>
+      <div className="">
+        <TableContainer className="">
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ minWidth: 250, fontWeight: 'bold' }}>
+                <TableCell className="">
                   Permission
                 </TableCell>
                 {filteredRoles.map((role) => (
                   <TableCell
                     key={role._id}
                     align="center"
-                    sx={{
-                      minWidth: 120,
-                      fontWeight: 'bold',
-                      cursor: onRoleSelect ? 'pointer' : 'default',
-                      '&:hover': onRoleSelect
-                        ? { backgroundColor: 'action.hover' }
+                    className=""
                         : {},
-                    }}
                     onClick={() => onRoleSelect?.(role)}
                   >
-                    <Box>
-                      <Typography variant="subtitle2" noWrap>
+                    <div>
+                      <div  noWrap>
                         {role.displayName}
-                      </Typography>
+                      </div>
                       <Chip
                         label={role.category}
                         size="small"
-                        variant="outlined"
+                        
                         color={
-                          role.category === 'system' ? 'primary' : 'default'
+                          role.category === 'system' ? 'primary' : 'default'}
                         }
                       />
-                    </Box>
+                    </div>
                   </TableCell>
                 ))}
               </TableRow>
@@ -573,33 +432,27 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                   <TableRow>
                     <TableCell
                       colSpan={filteredRoles.length + 1}
-                      sx={{
-                        backgroundColor: 'action.hover',
-                        cursor: 'pointer',
-                        '&:hover': { backgroundColor: 'action.selected' },
-                      }}
-                      onClick={() => handleCategoryToggle(category.name)}
+                      className="" onClick={() => handleCategoryToggle(category.name)}
                     >
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      <div
+                        className=""
                       >
                         {expandedCategories.has(category.name) ? (
                           <KeyboardArrowDownIcon />
                         ) : (
                           <KeyboardArrowRightIcon />
                         )}
-                        <Typography variant="subtitle1" fontWeight="bold">
+                        <div  fontWeight="bold">
                           {category.displayName}
-                        </Typography>
+                        </div>
                         <Chip
                           label={`${category.permissions.length} permissions`}
                           size="small"
-                          variant="outlined"
+                          
                         />
-                      </Box>
+                      </div>
                     </TableCell>
                   </TableRow>
-
                   {/* Category Permissions */}
                   <Collapse
                     in={expandedCategories.has(category.name)}
@@ -616,7 +469,6 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                           permission.action
                             .toLowerCase()
                             .includes(searchTerm.toLowerCase());
-
                         if (showOnlyAssigned) {
                           const hasAssignments = filteredRoles.some(
                             (role) =>
@@ -624,7 +476,6 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                           );
                           return matchesSearch && hasAssignments;
                         }
-
                         return matchesSearch;
                       })
                       .map((permission) => {
@@ -634,47 +485,37 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                         const usage = getPermissionUsageStats(
                           permission.action
                         );
-
                         return (
                           <TableRow key={permission.action} hover>
                             <TableCell>
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 1,
-                                }}
+                              <div
+                                className=""
                               >
-                                <Box sx={{ flexGrow: 1 }}>
-                                  <Typography
-                                    variant="body2"
+                                <div className="">
+                                  <div
+                                    
                                     fontWeight="medium"
                                   >
                                     {permission.displayName}
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
+                                  </div>
+                                  <div
+                                    
                                     color="textSecondary"
                                   >
                                     {permission.action}
-                                  </Typography>
+                                  </div>
                                   {permission.description && (
-                                    <Typography
-                                      variant="caption"
+                                    <div
+                                      
                                       display="block"
                                       color="textSecondary"
                                     >
                                       {permission.description}
-                                    </Typography>
+                                    </div>
                                   )}
-                                </Box>
-
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                  }}
+                                </div>
+                                <div
+                                  className=""
                                 >
                                   {conflicts.length > 0 && (
                                     <Tooltip
@@ -686,13 +527,11 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                                       />
                                     </Tooltip>
                                   )}
-
                                   {permission.requiresSubscription && (
                                     <Tooltip title="Requires subscription">
                                       <InfoIcon color="info" fontSize="small" />
                                     </Tooltip>
                                   )}
-
                                   {usage && (
                                     <Tooltip
                                       title={`Used by ${usage.roleCount} roles, ${usage.userCount} users`}
@@ -700,15 +539,14 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                                       <Chip
                                         label={usage.userCount}
                                         size="small"
-                                        variant="outlined"
+                                        
                                         color="primary"
                                       />
                                     </Tooltip>
                                   )}
-                                </Box>
-                              </Box>
+                                </div>
+                              </div>
                             </TableCell>
-
                             {filteredRoles.map((role) => {
                               const hasPermission =
                                 matrixData.matrix[role._id]?.[
@@ -717,7 +555,6 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                               const isSystemRole = role.isSystemRole;
                               const canModify =
                                 canAccess('canUpdate') && !isSystemRole;
-
                               return (
                                 <TableCell key={role._id} align="center">
                                   <Checkbox
@@ -726,7 +563,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                                       handlePermissionToggle(
                                         role._id,
                                         permission.action
-                                      )
+                                      )}
                                     }
                                     disabled={!canModify || saving}
                                     color="primary"
@@ -744,8 +581,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
             </TableBody>
           </Table>
         </TableContainer>
-      </Paper>
-
+      </div>
       {/* Analytics Dialog */}
       <Dialog
         open={analyticsDialogOpen}
@@ -755,75 +591,71 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
       >
         <DialogTitle>Permission Usage Analytics</DialogTitle>
         <DialogContent>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+          <div container spacing={3}>
+            <div item xs={12} md={6}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Most Used Permissions
-                  </Typography>
+                  </div>
                   <List dense>
                     {permissionUsage
                       .sort((a, b) => b.userCount - a.userCount)
                       .slice(0, 10)
                       .map((usage) => (
-                        <ListItem key={usage.permission}>
-                          <ListItemText
+                        <div key={usage.permission}>
+                          <div
                             primary={usage.displayName}
                             secondary={`${usage.userCount} users, ${usage.roleCount} roles`}
                           />
-                        </ListItem>
+                        </div>
                       ))}
                   </List>
                 </CardContent>
               </Card>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
+            </div>
+            <div item xs={12} md={6}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Unused Permissions
-                  </Typography>
+                  </div>
                   <List dense>
                     {permissionUsage
                       .filter((usage) => usage.userCount === 0)
                       .slice(0, 10)
                       .map((usage) => (
-                        <ListItem key={usage.permission}>
-                          <ListItemIcon>
+                        <div key={usage.permission}>
+                          <div>
                             <WarningIcon color="warning" />
-                          </ListItemIcon>
-                          <ListItemText
+                          </div>
+                          <div
                             primary={usage.displayName}
                             secondary={usage.category}
                           />
-                        </ListItem>
+                        </div>
                       ))}
                   </List>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAnalyticsDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
+        >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </div>
   );
 };
-
 export default PermissionMatrix;

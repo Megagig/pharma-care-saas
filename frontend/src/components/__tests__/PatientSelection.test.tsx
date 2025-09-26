@@ -1,34 +1,24 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+// Date picker components are now handled by shadcn/ui
 import PatientSelection from '../PatientSelection';
-import type { Patient } from '../../types/patientManagement';
-
 // Mock the MTR store
-vi.mock('../../stores/mtrStore', () => ({
-  useMTRStore: () => ({
+vi.mock('../../stores/mtrStore', () => ({ 
+  useMTRStore: () => ({ })
     loading: {},
     errors: {},
     setLoading: vi.fn(),
     setError: vi.fn(),
     currentReview: null,
-    createReview: vi.fn(),
-  }),
-}));
+    createReview: vi.fn()}
 
 // Mock the patient queries
-vi.mock('../../queries/usePatients', () => ({
-  useSearchPatients: vi.fn(() => ({
+vi.mock('../../queries/usePatients', () => ({ 
+  useSearchPatients: vi.fn(() => ({ })
     data: { data: { results: [] } },
     isLoading: false,
-    error: null,
-  })),
-  useCreatePatient: vi.fn(() => ({
-    mutateAsync: vi.fn(),
-  })),
-}));
+    error: null, },
+  useCreatePatient: vi.fn(() => ({ 
+    mutateAsync: vi.fn()}
+  }))}
 
 const mockPatient: Patient = {
   _id: '1',
@@ -45,18 +35,15 @@ const mockPatient: Patient = {
 };
 
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return (
     <QueryClientProvider client={queryClient}>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        {children}
-      </LocalizationProvider>
+      {children}
     </QueryClientProvider>
   );
 };

@@ -1,15 +1,4 @@
 // Template Validation Service - Comprehensive validation for templates
-import {
-    ReportTemplate,
-    TemplateSection,
-    SectionContent,
-    LayoutConfig,
-    ValidationError,
-    VisibilityCondition
-} from '../types/templates';
-import { ChartConfig } from '../types/charts';
-import { FilterDefinition } from '../types/filters';
-
 export interface ValidationContext {
     template: ReportTemplate;
     availableCharts: string[];
@@ -159,19 +148,17 @@ export class TemplateValidationService {
 
         // Basic section validation
         if (!section.id) {
-            errors.push({
-                type: 'error',
+            errors.push({ 
+                type: 'error'}
                 field: `section.${section.id || 'unknown'}.id`,
-                message: 'Section ID is required',
-            });
+                message: 'Section ID is required'}
         }
 
         if (!section.type) {
-            errors.push({
-                type: 'error',
+            errors.push({ 
+                type: 'error'}
                 field: `section.${section.id}.type`,
-                message: 'Section type is required',
-            });
+                message: 'Section type is required'}
         }
 
         // Validate section content
@@ -221,32 +208,29 @@ export class TemplateValidationService {
         switch (section.type) {
             case 'header':
                 if (!content.title && !content.logo) {
-                    warnings.push({
-                        type: 'warning',
+                    warnings.push({ 
+                        type: 'warning'}
                         field: `section.${sectionId}.content`,
-                        message: 'Header section should have either a title or logo',
-                    });
+                        message: 'Header section should have either a title or logo'}
                 }
                 break;
 
             case 'summary':
                 if (!content.kpis && !content.metrics) {
-                    warnings.push({
-                        type: 'warning',
+                    warnings.push({ 
+                        type: 'warning'}
                         field: `section.${sectionId}.content`,
-                        message: 'Summary section should have KPIs or metrics',
-                    });
+                        message: 'Summary section should have KPIs or metrics'}
                 }
 
                 // Validate KPI references
                 if (content.kpis) {
                     for (const kpiId of content.kpis) {
                         if (!context.availableCharts.includes(kpiId)) {
-                            errors.push({
-                                type: 'error',
+                            errors.push({ 
+                                type: 'error'}
                                 field: `section.${sectionId}.content.kpis`,
-                                message: `KPI '${kpiId}' is not available`,
-                            });
+                                message: `KPI '${kpiId}' is not available`}
                         }
                     }
                 }
@@ -254,86 +238,78 @@ export class TemplateValidationService {
 
             case 'charts':
                 if (!content.charts || content.charts.length === 0) {
-                    warnings.push({
-                        type: 'warning',
+                    warnings.push({ 
+                        type: 'warning'}
                         field: `section.${sectionId}.content.charts`,
-                        message: 'Charts section has no charts defined',
-                    });
+                        message: 'Charts section has no charts defined'}
                 } else {
                     // Validate chart references
                     for (const chartId of content.charts) {
                         if (!context.availableCharts.includes(chartId)) {
-                            errors.push({
-                                type: 'error',
+                            errors.push({ 
+                                type: 'error'}
                                 field: `section.${sectionId}.content.charts`,
-                                message: `Chart '${chartId}' is not available`,
-                            });
+                                message: `Chart '${chartId}' is not available`}
                         }
                     }
 
                     // Performance suggestion for too many charts
                     if (content.charts.length > 6) {
-                        suggestions.push({
-                            type: 'performance',
+                        suggestions.push({ 
+                            type: 'performance'}
                             field: `section.${sectionId}.content.charts`,
                             message: 'Consider using tabs or carousel for better performance with many charts',
                             action: 'Set arrangement to "tabs" or "carousel"',
-                            priority: 'medium',
-                        });
+                            priority: 'medium'}
                     }
                 }
                 break;
 
             case 'tables':
                 if (!content.tables || content.tables.length === 0) {
-                    warnings.push({
-                        type: 'warning',
+                    warnings.push({ 
+                        type: 'warning'}
                         field: `section.${sectionId}.content.tables`,
-                        message: 'Tables section has no tables defined',
-                    });
+                        message: 'Tables section has no tables defined'}
                 } else {
                     // Validate table references
                     for (const tableId of content.tables) {
                         if (!context.availableTables.includes(tableId)) {
-                            errors.push({
-                                type: 'error',
+                            errors.push({ 
+                                type: 'error'}
                                 field: `section.${sectionId}.content.tables`,
-                                message: `Table '${tableId}' is not available`,
-                            });
+                                message: `Table '${tableId}' is not available`}
                         }
                     }
 
                     // Accessibility suggestion
                     if (!content.pagination && content.tables.length > 1) {
-                        suggestions.push({
-                            type: 'accessibility',
+                        suggestions.push({ 
+                            type: 'accessibility'}
                             field: `section.${sectionId}.content.pagination`,
                             message: 'Consider enabling pagination for better accessibility with multiple tables',
                             action: 'Enable pagination',
-                            priority: 'low',
-                        });
+                            priority: 'low'}
                     }
                 }
                 break;
 
             case 'text':
                 if (!content.text || content.text.trim().length === 0) {
-                    warnings.push({
-                        type: 'warning',
+                    warnings.push({ 
+                        type: 'warning'}
                         field: `section.${sectionId}.content.text`,
-                        message: 'Text section has no content',
-                    });
+                        message: 'Text section has no content'}
                 }
 
                 // Check for unresolved variables
                 if (content.text) {
                     const unresolvedVars = content.text.match(/\{\{(\w+)\}\}/g);
                     if (unresolvedVars) {
-                        warnings.push({
-                            type: 'warning',
+                        warnings.push({ 
+                            type: 'warning'}
                             field: `section.${sectionId}.content.text`,
-                            message: `Text contains unresolved variables: ${unresolvedVars.join(', ')}`,
-                        });
+                            message: `Text contains unresolved variables: ${unresolvedVars.join(', ')}`}
                     }
                 }
                 break;
@@ -347,11 +323,10 @@ export class TemplateValidationService {
                 break;
 
             default:
-                warnings.push({
-                    type: 'warning',
+                warnings.push({ 
+                    type: 'warning'}
                     field: `section.${sectionId}.type`,
-                    message: `Unknown section type: ${section.type}`,
-                });
+                    message: `Unknown section type: ${section.type}`}
         }
 
         return { errors, warnings, suggestions };
@@ -375,29 +350,26 @@ export class TemplateValidationService {
         // Validate span
         if (layout.span) {
             if (layout.span.columns <= 0 || layout.span.columns > 24) {
-                errors.push({
-                    type: 'error',
+                errors.push({ 
+                    type: 'error'}
                     field: `section.${sectionId}.layout.span.columns`,
-                    message: 'Column span must be between 1 and 24',
-                });
+                    message: 'Column span must be between 1 and 24'}
             }
 
             if (layout.span.rows <= 0) {
-                errors.push({
-                    type: 'error',
+                errors.push({ 
+                    type: 'error'}
                     field: `section.${sectionId}.layout.span.rows`,
-                    message: 'Row span must be greater than 0',
-                });
+                    message: 'Row span must be greater than 0'}
             }
 
             // Performance suggestion
             if (layout.span.rows > 20) {
-                suggestions.push({
-                    type: 'performance',
+                suggestions.push({ 
+                    type: 'performance'}
                     field: `section.${sectionId}.layout.span.rows`,
                     message: 'Very tall sections may impact scrolling performance',
-                    priority: 'low',
-                });
+                    priority: 'low'}
             }
         }
 
@@ -407,22 +379,20 @@ export class TemplateValidationService {
                 const values = [spacing.top, spacing.right, spacing.bottom, spacing.left];
                 for (const value of values) {
                     if (typeof value === 'number' && value < 0) {
-                        errors.push({
-                            type: 'error',
+                        errors.push({ 
+                            type: 'error'}
                             field: `section.${sectionId}.layout.${type}`,
-                            message: `${type} values cannot be negative`,
-                        });
+                            message: `${type} values cannot be negative`}
                     }
                 }
 
                 // Accessibility suggestion
                 if (type === 'padding' && Math.max(...values) < 8) {
-                    suggestions.push({
-                        type: 'accessibility',
+                    suggestions.push({ 
+                        type: 'accessibility'}
                         field: `section.${sectionId}.layout.${type}`,
                         message: 'Consider increasing padding for better touch targets',
-                        priority: 'low',
-                    });
+                        priority: 'low'}
                 }
             }
         };
@@ -433,19 +403,17 @@ export class TemplateValidationService {
         // Validate border
         if (layout.border) {
             if (layout.border.width < 0) {
-                errors.push({
-                    type: 'error',
+                errors.push({ 
+                    type: 'error'}
                     field: `section.${sectionId}.layout.border.width`,
-                    message: 'Border width cannot be negative',
-                });
+                    message: 'Border width cannot be negative'}
             }
 
             if (layout.border.radius < 0) {
-                errors.push({
-                    type: 'error',
+                errors.push({ 
+                    type: 'error'}
                     field: `section.${sectionId}.layout.border.radius`,
-                    message: 'Border radius cannot be negative',
-                });
+                    message: 'Border radius cannot be negative'}
             }
         }
 
@@ -471,29 +439,26 @@ export class TemplateValidationService {
                 const condition = visibility.conditions[i];
 
                 if (!condition.type) {
-                    errors.push({
-                        type: 'error',
+                    errors.push({ 
+                        type: 'error'}
                         field: `section.${sectionId}.visibility.conditions[${i}].type`,
-                        message: 'Condition type is required',
-                    });
+                        message: 'Condition type is required'}
                 }
 
                 if (!condition.operator) {
-                    errors.push({
-                        type: 'error',
+                    errors.push({ 
+                        type: 'error'}
                         field: `section.${sectionId}.visibility.conditions[${i}].operator`,
-                        message: 'Condition operator is required',
-                    });
+                        message: 'Condition operator is required'}
                 }
 
                 // Validate operator
                 const validOperators = ['equals', 'not-equals', 'greater', 'less', 'contains', 'exists'];
                 if (condition.operator && !validOperators.includes(condition.operator)) {
-                    errors.push({
-                        type: 'error',
+                    errors.push({ 
+                        type: 'error'}
                         field: `section.${sectionId}.visibility.conditions[${i}].operator`,
-                        message: `Invalid operator: ${condition.operator}`,
-                    });
+                        message: `Invalid operator: ${condition.operator}`}
                 }
 
                 // Validate custom functions
@@ -501,11 +466,10 @@ export class TemplateValidationService {
                     try {
                         new Function('context', 'condition', condition.function);
                     } catch (error) {
-                        errors.push({
-                            type: 'error',
+                        errors.push({ 
+                            type: 'error'}
                             field: `section.${sectionId}.visibility.conditions[${i}].function`,
-                            message: `Invalid custom function: ${error.message}`,
-                        });
+                            message: `Invalid custom function: ${error.message}`}
                     }
                 }
             }
@@ -516,11 +480,10 @@ export class TemplateValidationService {
             const breakpoints = ['xs', 'sm', 'md', 'lg', 'xl'];
             for (const [breakpoint, visible] of Object.entries(visibility.responsive)) {
                 if (!breakpoints.includes(breakpoint)) {
-                    warnings.push({
-                        type: 'warning',
+                    warnings.push({ 
+                        type: 'warning'}
                         field: `section.${sectionId}.visibility.responsive.${breakpoint}`,
-                        message: `Unknown breakpoint: ${breakpoint}`,
-                    });
+                        message: `Unknown breakpoint: ${breakpoint}`}
                 }
             }
         }
@@ -543,42 +506,42 @@ export class TemplateValidationService {
 
         // Performance suggestions
         if (template.sections.length > 10) {
-            suggestions.push({
+            suggestions.push({ 
                 type: 'performance',
                 field: 'template.sections',
                 message: 'Consider breaking large templates into multiple smaller templates',
-                priority: 'medium',
+                priority: 'medium'}
             });
         }
 
         // Accessibility suggestions
         const hasHeaderSection = template.sections.some(s => s.type === 'header');
         if (!hasHeaderSection) {
-            suggestions.push({
+            suggestions.push({ 
                 type: 'accessibility',
                 field: 'template.sections',
                 message: 'Consider adding a header section for better document structure',
-                priority: 'low',
+                priority: 'low'}
             });
         }
 
         // Best practice suggestions
         if (!template.description || template.description.trim().length === 0) {
-            suggestions.push({
+            suggestions.push({ 
                 type: 'best-practice',
                 field: 'template.description',
                 message: 'Add a description to help users understand the template purpose',
-                priority: 'low',
+                priority: 'low'}
             });
         }
 
         // Layout suggestions
         if (template.layout.grid.columns > 12) {
-            suggestions.push({
+            suggestions.push({ 
                 type: 'best-practice',
                 field: 'template.layout.grid.columns',
                 message: 'Consider using 12 columns or fewer for better responsive behavior',
-                priority: 'low',
+                priority: 'low'}
             });
         }
 
@@ -590,11 +553,11 @@ export class TemplateValidationService {
         );
 
         if (hasCustomFunctions) {
-            suggestions.push({
+            suggestions.push({ 
                 type: 'optimization',
                 field: 'template.sections',
                 message: 'Custom functions in visibility conditions may impact performance',
-                priority: 'medium',
+                priority: 'medium'}
             });
         }
 
@@ -615,15 +578,14 @@ export class TemplateValidationService {
             validator: (context) => {
                 const errors: ValidationError[] = [];
                 if (!context.template.id || context.template.id.trim().length === 0) {
-                    errors.push({
+                    errors.push({ 
                         type: 'error',
                         field: 'template.id',
-                        message: 'Template ID is required',
+                        message: 'Template ID is required'}
                     });
                 }
                 return errors;
-            },
-        });
+            }
 
         this.rules.set('template-name-required', {
             id: 'template-name-required',
@@ -634,15 +596,14 @@ export class TemplateValidationService {
             validator: (context) => {
                 const errors: ValidationError[] = [];
                 if (!context.template.name || context.template.name.trim().length === 0) {
-                    errors.push({
+                    errors.push({ 
                         type: 'error',
                         field: 'template.name',
-                        message: 'Template name is required',
+                        message: 'Template name is required'}
                     });
                 }
                 return errors;
-            },
-        });
+            }
 
         this.rules.set('template-version-format', {
             id: 'template-version-format',
@@ -655,16 +616,15 @@ export class TemplateValidationService {
                 if (context.template.version) {
                     const semverRegex = /^\d+\.\d+\.\d+$/;
                     if (!semverRegex.test(context.template.version)) {
-                        errors.push({
+                        errors.push({ 
                             type: 'warning',
                             field: 'template.version',
-                            message: 'Template version should follow semantic versioning (e.g., 1.0.0)',
+                            message: 'Template version should follow semantic versioning (e.g., 1.0.0)'}
                         });
                     }
                 }
                 return errors;
-            },
-        });
+            }
 
         // Layout rules
         this.rules.set('layout-grid-valid', {
@@ -678,24 +638,23 @@ export class TemplateValidationService {
                 const grid = context.template.layout.grid;
 
                 if (grid.columns <= 0 || grid.columns > 24) {
-                    errors.push({
+                    errors.push({ 
                         type: 'error',
                         field: 'template.layout.grid.columns',
-                        message: 'Grid columns must be between 1 and 24',
+                        message: 'Grid columns must be between 1 and 24'}
                     });
                 }
 
                 if (grid.rows <= 0) {
-                    errors.push({
+                    errors.push({ 
                         type: 'error',
                         field: 'template.layout.grid.rows',
-                        message: 'Grid rows must be greater than 0',
+                        message: 'Grid rows must be greater than 0'}
                     });
                 }
 
                 return errors;
-            },
-        });
+            }
 
         // Performance rules
         this.rules.set('section-count-performance', {
@@ -707,16 +666,15 @@ export class TemplateValidationService {
             validator: (context) => {
                 const errors: ValidationError[] = [];
                 if (context.template.sections.length > 15) {
-                    errors.push({
+                    errors.push({ 
                         type: 'warning',
                         field: 'template.sections',
                         message: 'Large number of sections may impact rendering performance',
-                        suggestion: 'Consider breaking into multiple templates or using lazy loading',
+                        suggestion: 'Consider breaking into multiple templates or using lazy loading'}
                     });
                 }
                 return errors;
-            },
-        });
+            }
 
         // Accessibility rules
         this.rules.set('accessibility-structure', {
@@ -730,17 +688,16 @@ export class TemplateValidationService {
                 const hasHeader = context.template.sections.some(s => s.type === 'header');
 
                 if (!hasHeader) {
-                    errors.push({
+                    errors.push({ 
                         type: 'warning',
                         field: 'template.sections',
                         message: 'Consider adding a header section for better accessibility',
-                        suggestion: 'Add a header section with template title',
+                        suggestion: 'Add a header section with template title'}
                     });
                 }
 
                 return errors;
-            },
-        });
+            }
 
         // Security rules
         this.rules.set('security-custom-functions', {
@@ -769,12 +726,11 @@ export class TemplateValidationService {
 
                                 for (const pattern of dangerousPatterns) {
                                     if (pattern.test(condition.function)) {
-                                        errors.push({
-                                            type: 'warning',
+                                        errors.push({ 
+                                            type: 'warning'}
                                             field: `section.${section.id}.visibility.conditions`,
                                             message: 'Custom function contains potentially unsafe code',
-                                            suggestion: 'Review custom function for security issues',
-                                        });
+                                            suggestion: 'Review custom function for security issues'}
                                         break;
                                     }
                                 }
@@ -784,8 +740,7 @@ export class TemplateValidationService {
                 }
 
                 return errors;
-            },
-        });
+            }
     }
 
     /**

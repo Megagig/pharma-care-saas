@@ -1,38 +1,23 @@
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-
-import {
-    useCheckInteractions,
-    useDrugInfo,
-    useSearchDrugs,
-    useAllergyCheck,
-} from '../useInteractions';
-import { interactionApi } from '../../api/interactionApi';
-
 // Mock the API
 vi.mock('../../api/interactionApi');
-vi.mock('../../../../stores', () => ({
+vi.mock('../../../../stores', () => ({ 
     useUIStore: () => ({
-        addNotification: vi.fn(),
-    }),
-}));
+        addNotification: vi.fn()}
+    })}
 
 const mockedInteractionApi = vi.mocked(interactionApi);
 
 // Test wrapper with QueryClient
 const createWrapper = () => {
-    const queryClient = new QueryClient({
+    const queryClient = new QueryClient({ 
         defaultOptions: {
             queries: {
-                retry: false,
+                retry: false}
             },
             mutations: {
                 retry: false,
             },
-        },
-    });
+        }
 
     return ({ children }: { children: ReactNode }) => (
         <QueryClientProvider client= { queryClient } > { children } </QueryClientProvider>
@@ -62,9 +47,9 @@ describe('useInteractions hooks', () => {
                 contraindications: [],
             };
 
-            mockedInteractionApi.checkInteractions.mockResolvedValue({
+            mockedInteractionApi.checkInteractions.mockResolvedValue({ 
                 success: true,
-                data: mockInteractionResult,
+                data: mockInteractionResult}
             });
 
             const wrapper = createWrapper();
@@ -80,9 +65,9 @@ describe('useInteractions hooks', () => {
             });
 
             expect(result.current.data?.data).toEqual(mockInteractionResult);
-            expect(mockedInteractionApi.checkInteractions).toHaveBeenCalledWith({
+            expect(mockedInteractionApi.checkInteractions).toHaveBeenCalledWith({ 
                 medications: ['Warfarin', 'Aspirin'],
-                patientAllergies: [],
+                patientAllergies: []}
             });
         });
 
@@ -112,16 +97,15 @@ describe('useInteractions hooks', () => {
                 contraindications: [],
             };
 
-            mockedInteractionApi.checkInteractions.mockResolvedValue({
+            mockedInteractionApi.checkInteractions.mockResolvedValue({ 
                 success: true,
-                data: mockResult,
+                data: mockResult}
             });
 
             const wrapper = createWrapper();
             const { result } = renderHook(
                 () => useCheckInteractions(['Penicillin', 'Amoxicillin'], ['Penicillin'], {
-                    debounceMs: 0,
-                }),
+                    debounceMs: 0, },
                 { wrapper }
             );
 
@@ -130,9 +114,9 @@ describe('useInteractions hooks', () => {
             });
 
             expect(result.current.data?.data).toEqual(mockResult);
-            expect(mockedInteractionApi.checkInteractions).toHaveBeenCalledWith({
+            expect(mockedInteractionApi.checkInteractions).toHaveBeenCalledWith({ 
                 medications: ['Penicillin', 'Amoxicillin'],
-                patientAllergies: ['Penicillin'],
+                patientAllergies: ['Penicillin']}
             });
         });
     });
@@ -153,9 +137,9 @@ describe('useInteractions hooks', () => {
                 route: 'Oral',
             };
 
-            mockedInteractionApi.getDrugInfo.mockResolvedValue({
+            mockedInteractionApi.getDrugInfo.mockResolvedValue({ 
                 success: true,
-                data: mockDrugInfo,
+                data: mockDrugInfo}
             });
 
             const wrapper = createWrapper();
@@ -196,9 +180,9 @@ describe('useInteractions hooks', () => {
                 },
             ];
 
-            mockedInteractionApi.searchDrugs.mockResolvedValue({
+            mockedInteractionApi.searchDrugs.mockResolvedValue({ 
                 success: true,
-                data: mockSearchResults,
+                data: mockSearchResults}
             });
 
             const wrapper = createWrapper();
@@ -236,9 +220,9 @@ describe('useInteractions hooks', () => {
                 },
             ];
 
-            mockedInteractionApi.checkAllergies.mockResolvedValue({
+            mockedInteractionApi.checkAllergies.mockResolvedValue({ 
                 success: true,
-                data: mockAllergyResults,
+                data: mockAllergyResults}
             });
 
             const wrapper = createWrapper();
@@ -252,9 +236,9 @@ describe('useInteractions hooks', () => {
             });
 
             expect(result.current.data?.data).toEqual(mockAllergyResults);
-            expect(mockedInteractionApi.checkAllergies).toHaveBeenCalledWith({
+            expect(mockedInteractionApi.checkAllergies).toHaveBeenCalledWith({ 
                 medications: ['Penicillin', 'Amoxicillin'],
-                allergies: ['Penicillin'],
+                allergies: ['Penicillin']}
             });
         });
 

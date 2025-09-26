@@ -1,12 +1,7 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { PatientMTRWidget } from '../PatientMTRWidget';
-import * as patientMTRIntegrationHooks from '../../queries/usePatientMTRIntegration';
-import * as mtrHooks from '../../queries/useMTRQueries';
 
+import * as patientMTRIntegrationHooks from '../../queries/usePatientMTRIntegration';
+
+import * as mtrHooks from '../../queries/useMTRQueries';
 // Mock the hooks
 vi.mock('../../queries/usePatientMTRIntegration');
 vi.mock('../../queries/useMTRQueries');
@@ -24,12 +19,11 @@ const mockUseCreateMTRSession = vi.mocked(mtrHooks.useCreateMTRSession);
 
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -45,29 +39,29 @@ describe('PatientMTRWidget', () => {
     vi.clearAllMocks();
 
     // Default mock implementations
-    mockUseSyncMedicationsWithMTR.mockReturnValue({
+    mockUseSyncMedicationsWithMTR.mockReturnValue({ 
       mutateAsync: vi.fn(),
-      isPending: false,
+      isPending: false}
     });
 
-    mockUseSyncDTPsWithMTR.mockReturnValue({
+    mockUseSyncDTPsWithMTR.mockReturnValue({ 
       mutateAsync: vi.fn(),
-      isPending: false,
+      isPending: false}
     });
 
-    mockUseCreateMTRSession.mockReturnValue({
+    mockUseCreateMTRSession.mockReturnValue({ 
       mutateAsync: vi.fn(),
-      isPending: false,
+      isPending: false}
     });
   });
 
   describe('Loading State', () => {
     it('should show loading skeletons when data is loading', () => {
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: undefined,
         isLoading: true,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
@@ -84,12 +78,11 @@ describe('PatientMTRWidget', () => {
 
   describe('Error State', () => {
     it('should show error alert when there is an error', () => {
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: undefined,
         isLoading: false,
-        isError: true,
-        error: { message: 'Failed to load MTR data' },
-      });
+        isError: true}
+        error: { message: 'Failed to load MTR data' }
 
       render(
         <TestWrapper>
@@ -118,11 +111,11 @@ describe('PatientMTRWidget', () => {
         pendingActions: [],
       };
 
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: mockDashboardData,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
@@ -159,11 +152,11 @@ describe('PatientMTRWidget', () => {
         pendingActions: [],
       };
 
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: mockDashboardData,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
@@ -208,11 +201,11 @@ describe('PatientMTRWidget', () => {
         pendingActions: [],
       };
 
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: mockDashboardData,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
@@ -253,11 +246,11 @@ describe('PatientMTRWidget', () => {
         pendingActions: [],
       };
 
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: mockDashboardData,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
@@ -301,11 +294,11 @@ describe('PatientMTRWidget', () => {
         pendingActions: mockPendingActions,
       };
 
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: mockDashboardData,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
@@ -355,11 +348,11 @@ describe('PatientMTRWidget', () => {
         pendingActions: [],
       };
 
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: mockDashboardData,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
@@ -376,13 +369,12 @@ describe('PatientMTRWidget', () => {
 
   describe('Actions', () => {
     it('should handle start MTR action', async () => {
-      const mockMutateAsync = vi.fn().mockResolvedValue({
-        review: { _id: 'new-mtr-123' },
-      });
+      const mockMutateAsync = vi.fn().mockResolvedValue({  })
+        review: { _id: 'new-mtr-123' }
 
-      mockUseCreateMTRSession.mockReturnValue({
+      mockUseCreateMTRSession.mockReturnValue({ 
         mutateAsync: mockMutateAsync,
-        isPending: false,
+        isPending: false}
       });
 
       const mockDashboardData = {
@@ -400,11 +392,11 @@ describe('PatientMTRWidget', () => {
         pendingActions: [],
       };
 
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: mockDashboardData,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
@@ -417,10 +409,10 @@ describe('PatientMTRWidget', () => {
       fireEvent.click(startButton);
 
       await waitFor(() => {
-        expect(mockMutateAsync).toHaveBeenCalledWith({
+        expect(mockMutateAsync).toHaveBeenCalledWith({ 
           patientId: mockPatientId,
           reviewType: 'initial',
-          priority: 'routine',
+          priority: 'routine'}
         });
       });
     });
@@ -429,14 +421,14 @@ describe('PatientMTRWidget', () => {
       const mockSyncMedicationsMutate = vi.fn().mockResolvedValue({});
       const mockSyncDTPsMutate = vi.fn().mockResolvedValue({});
 
-      mockUseSyncMedicationsWithMTR.mockReturnValue({
+      mockUseSyncMedicationsWithMTR.mockReturnValue({ 
         mutateAsync: mockSyncMedicationsMutate,
-        isPending: false,
+        isPending: false}
       });
 
-      mockUseSyncDTPsWithMTR.mockReturnValue({
+      mockUseSyncDTPsWithMTR.mockReturnValue({ 
         mutateAsync: mockSyncDTPsMutate,
-        isPending: false,
+        isPending: false}
       });
 
       const mockActiveMTR = {
@@ -464,11 +456,11 @@ describe('PatientMTRWidget', () => {
         pendingActions: [],
       };
 
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: mockDashboardData,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
@@ -486,13 +478,13 @@ describe('PatientMTRWidget', () => {
       fireEvent.click(confirmButton);
 
       await waitFor(() => {
-        expect(mockSyncMedicationsMutate).toHaveBeenCalledWith({
+        expect(mockSyncMedicationsMutate).toHaveBeenCalledWith({ 
           patientId: mockPatientId,
-          mtrId: 'mtr-123',
+          mtrId: 'mtr-123'}
         });
-        expect(mockSyncDTPsMutate).toHaveBeenCalledWith({
+        expect(mockSyncDTPsMutate).toHaveBeenCalledWith({ 
           patientId: mockPatientId,
-          mtrId: 'mtr-123',
+          mtrId: 'mtr-123'}
         });
       });
     });
@@ -501,13 +493,12 @@ describe('PatientMTRWidget', () => {
   describe('Custom Callbacks', () => {
     it('should call custom onStartMTR callback', async () => {
       const mockOnStartMTR = vi.fn();
-      const mockMutateAsync = vi.fn().mockResolvedValue({
-        review: { _id: 'new-mtr-123' },
-      });
+      const mockMutateAsync = vi.fn().mockResolvedValue({  })
+        review: { _id: 'new-mtr-123' }
 
-      mockUseCreateMTRSession.mockReturnValue({
+      mockUseCreateMTRSession.mockReturnValue({ 
         mutateAsync: mockMutateAsync,
-        isPending: false,
+        isPending: false}
       });
 
       const mockDashboardData = {
@@ -525,11 +516,11 @@ describe('PatientMTRWidget', () => {
         pendingActions: [],
       };
 
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: mockDashboardData,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
@@ -577,11 +568,11 @@ describe('PatientMTRWidget', () => {
         pendingActions: [],
       };
 
-      mockUsePatientDashboardMTRData.mockReturnValue({
+      mockUsePatientDashboardMTRData.mockReturnValue({ 
         data: mockDashboardData,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(

@@ -191,8 +191,7 @@ const medicationManagementService = {
     reason?: string
   ): Promise<MedicationData> => {
     const response = await api.patch(`/medication-management/${id}/archive`, {
-      reason,
-    });
+      reason}
     return response.data.data;
   },
 
@@ -532,8 +531,7 @@ const medicationManagementService = {
           return {
             month: date.toLocaleDateString('en-US', {
               month: 'short',
-              year: 'numeric',
-            }),
+              year: 'numeric', },
             totalCost: 0,
             formattedCost: '₦0.00',
           };

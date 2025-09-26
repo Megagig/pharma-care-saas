@@ -3,8 +3,6 @@
  * Provides swipe, pinch, and other touch gesture support
  */
 
-import { useRef, useEffect, useState, useCallback } from 'react';
-
 interface TouchPoint {
     x: number;
     y: number;
@@ -96,11 +94,11 @@ export const useSwipeGesture = (
                 direction = deltaY > 0 ? 'down' : 'up';
             }
 
-            onSwipe({
+            onSwipe({ 
                 direction,
                 distance,
                 velocity,
-                duration,
+                duration}
             });
         }
 

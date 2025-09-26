@@ -1,70 +1,4 @@
-import React, { useState, useMemo } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  Typography,
-  Chip,
-  IconButton,
-  Button,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Stack,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemSecondaryAction,
-  Avatar,
-  Skeleton,
-  Alert,
-  Tooltip,
-  Badge,
-  useTheme,
-  useMediaQuery,
-  Collapse,
-  Divider,
-} from '@mui/material';
-import { Input } from '@/components/ui/input';
-import {
-  Timeline,
-  TimelineItem,
-  TimelineOppositeContent,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-} from '@mui/lab';
-import {
-  ChevronDown,
-  ChevronUp,
-  Download,
-  Eye,
-  Flask,
-  FileText,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Filter,
-  ArrowUpDown,
-  Refresh,
-  Plus,
-} from 'lucide-react';
-
-import {
-  usePatientLabOrders,
-  useOrderPdfUrl,
-  useLabResults,
-} from '../hooks/useManualLabOrders';
-import {
-  ManualLabOrder,
-  LAB_ORDER_STATUSES,
-  LAB_ORDER_PRIORITIES,
-} from '../types/manualLabOrder';
-import { formatDate, formatDateTime } from '../utils/formatters';
+import { Button, Input, Label, Card, CardContent, CardHeader, Badge, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tooltip, Alert, Skeleton, Avatar, Separator } from '@/components/ui/button';
 
 interface OrderHistoryProps {
   patientId: string;
@@ -85,14 +19,14 @@ type FilterOption =
   | 'completed'
   | 'referred';
 
-const OrderHistory: React.FC<OrderHistoryProps> = ({
+const OrderHistory: React.FC<OrderHistoryProps> = ({ 
   patientId,
   maxOrders,
   showCreateButton = false,
   onCreateOrder,
   onViewOrder,
   onViewResults,
-  compact = false,
+  compact = false
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -253,11 +187,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       <Card>
         <CardHeader title="Lab Order History" />
         <CardContent>
-          <Stack spacing={2}>
+          <div spacing={2}>
             {[...Array(3)].map((_, index) => (
-              <Skeleton key={index} variant="rectangular" height={80} />
+              <Skeleton key={index}  height={80} />
             ))}
-          </Stack>
+          </div>
         </CardContent>
       </Card>
     );
@@ -269,15 +203,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         <CardHeader title="Lab Order History" />
         <CardContent>
           <Alert severity="error">
-            <Typography variant="body2">
+            <div >
               Failed to load lab order history:{' '}
               {error instanceof Error ? error.message : 'Unknown error'}
-            </Typography>
+            </div>
             <Button
               size="small"
               startIcon={<Refresh size={16} />}
               onClick={() => refetch()}
-              sx={{ mt: 1 }}
+              className=""
             >
               Retry
             </Button>
@@ -294,13 +228,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         <CardHeader
           title="Recent Lab Orders"
           action={
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <div className="">
               {showCreateButton && (
                 <Button
-                  size="small"
+                  size="small"}
                   startIcon={<Plus size={16} />}
                   onClick={onCreateOrder}
-                  variant="outlined"
+                  
                 >
                   New Order
                 </Button>
@@ -308,30 +242,30 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
               <IconButton size="small" onClick={() => refetch()}>
                 <Refresh size={16} />
               </IconButton>
-            </Box>
+            </div>
           }
         />
         <CardContent>
           {filteredAndSortedOrders.length === 0 ? (
-            <Typography
-              variant="body2"
+            <div
+              
               color="text.secondary"
               textAlign="center"
               py={2}
             >
               No lab orders found
-            </Typography>
+            </div>
           ) : (
             <List dense>
               {filteredAndSortedOrders.map((order, index) => (
                 <React.Fragment key={order.orderId}>
-                  <ListItem
-                    sx={{ px: 0 }}
+                  <div
+                    className=""
                     secondaryAction={
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <div className="">
                         <Tooltip title="Download PDF">
                           <IconButton
-                            size="small"
+                            size="small"}
                             onClick={() => handleDownloadPdf(order.orderId)}
                           >
                             <Download size={16} />
@@ -347,69 +281,56 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                             </IconButton>
                           </Tooltip>
                         )}
-                      </Box>
+                      </div>
                     }
                   >
-                    <ListItemIcon>
+                    <div>
                       <Avatar
-                        sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}
+                        className=""
                       >
                         {getStatusIcon(order.status)}
                       </Avatar>
-                    </ListItemIcon>
-                    <ListItemText
+                    </div>
+                    <div
                       primary={
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            flexWrap: 'wrap',
-                          }}
-                        >
-                          <Typography variant="body2" fontWeight={600}>
+                        <div
+                          className=""
+                        >}
+                          <div  fontWeight={600}>
                             {order.orderId}
-                          </Typography>
-                          <Chip
-                            label={
-                              LAB_ORDER_STATUSES[order.status] || order.status
-                            }
-                            size="small"
-                            color={getStatusColor(order.status)}
-                          />
+                          </div>
+                          <Badge variant={getStatusBadgeVariant(order.status)}>
+                            {LAB_ORDER_STATUSES[order.status] || order.status}
+                          </Badge>
                           {order.priority && order.priority !== 'routine' && (
-                            <Chip
-                              label={
-                                LAB_ORDER_PRIORITIES[order.priority] ||
-                                order.priority
-                              }
-                              size="small"
-                              color={getPriorityColor(order.priority)}
-                            />
+                            <Badge variant={getPriorityBadgeVariant(order.priority)}>
+                              {LAB_ORDER_PRIORITIES[order.priority] ||
+                                order.priority}
+                            </Badge>
                           )}
-                        </Box>
+                        </div>
                       }
                       secondary={
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">
+                        <div>
+                          <div  color="text.secondary">}
                             {order.tests.length} test
                             {order.tests.length !== 1 ? 's' : ''} •{' '}
                             {formatDate(order.createdAt)}
-                          </Typography>
-                          <Typography
-                            variant="caption"
+                          </div>
+                          <div
+                            
                             display="block"
                             color="text.secondary"
                           >
                             {order.indication.length > 50
                               ? `${order.indication.substring(0, 50)}...`
                               : order.indication}
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       }
                     />
-                  </ListItem>
-                  {index < filteredAndSortedOrders.length - 1 && <Divider />}
+                  </div>
+                  {index < filteredAndSortedOrders.length - 1 && <Separator />}
                 </React.Fragment>
               ))}
             </List>
@@ -424,22 +345,22 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
     <Card>
       <CardHeader
         title={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h6" fontWeight={600}>
+          <div className="">}
+            <div  fontWeight={600}>
               Lab Order History
-            </Typography>
+            </div>
             <Badge badgeContent={orders.length} color="primary">
               <FileText size={24} />
             </Badge>
-          </Box>
+          </div>
         }
         action={
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <div className="">
             {showCreateButton && (
-              <Button
+              <Button}
                 startIcon={<Plus size={16} />}
                 onClick={onCreateOrder}
-                variant="contained"
+                
                 size={isMobile ? 'small' : 'medium'}
               >
                 New Order
@@ -448,13 +369,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
             <IconButton onClick={() => refetch()}>
               <Refresh size={16} />
             </IconButton>
-          </Box>
+          </div>
         }
       />
       <CardContent>
         {/* Filters and Search */}
-        <Box sx={{ mb: 3 }}>
-          <Stack
+        <div className="">
+          <div
             direction={isMobile ? 'column' : 'row'}
             spacing={2}
             alignItems={isMobile ? 'stretch' : 'center'}
@@ -466,64 +387,76 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
               className="flex-1 min-w-[200px] h-8"
             />
 
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Status</InputLabel>
+            <div className="min-w-[120px]">
+              <Label htmlFor="status-filter" className="text-sm font-medium">
+                Status
+              </Label>
               <Select
                 value={filterBy}
-                label="Status"
-                onChange={(e) => setFilterBy(e.target.value as FilterOption)}
+                onValueChange={(value) => setFilterBy(value as FilterOption)}
               >
-                <MenuItem value="all">All</MenuItem>
-                {Object.entries(LAB_ORDER_STATUSES).map(([key, label]) => (
-                  <MenuItem key={key} value={key}>
-                    {label}
-                  </MenuItem>
-                ))}
+                <SelectTrigger className="h-8 text-sm mt-1">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {Object.entries(LAB_ORDER_STATUSES).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
-            </FormControl>
+            </div>
 
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Sort By</InputLabel>
+            <div className="min-w-[120px]">
+              <Label htmlFor="sort-filter" className="text-sm font-medium">
+                Sort By
+              </Label>
               <Select
                 value={sortBy}
-                label="Sort By"
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                onValueChange={(value) => setSortBy(value as SortOption)}
               >
-                <MenuItem value="newest">Newest First</MenuItem>
-                <MenuItem value="oldest">Oldest First</MenuItem>
-                <MenuItem value="status">Status</MenuItem>
-                <MenuItem value="priority">Priority</MenuItem>
+                <SelectTrigger className="h-8 text-sm mt-1">
+                  <SelectValue placeholder="Sort By" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                  <SelectItem value="status">Status</SelectItem>
+                  <SelectItem value="priority">Priority</SelectItem>
+                </SelectContent>
               </Select>
-            </FormControl>
-          </Stack>
-        </Box>
+            </div>
+          </div>
+        </div>
 
         {/* Orders List */}
         {filteredAndSortedOrders.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
+          <div className="">
             <Flask
               size={48}
               className="text-gray-500 mb-2"
             />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
+            <div  color="text.secondary" gutterBottom>
               No lab orders found
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            </div>
+            <div  color="text.secondary">
               {orders.length === 0
                 ? "This patient doesn't have any lab orders yet."
                 : 'No orders match your current filters.'}
-            </Typography>
+            </div>
             {showCreateButton && orders.length === 0 && (
               <Button
                 startIcon={<Plus size={16} />}
                 onClick={onCreateOrder}
-                variant="contained"
-                sx={{ mt: 2 }}
+                
+                className=""
               >
                 Create First Lab Order
               </Button>
             )}
-          </Box>
+          </div>
         ) : (
           <Timeline>
             {filteredAndSortedOrders.map((order, index) => (
@@ -556,14 +489,14 @@ interface OrderHistoryItemProps {
   onViewResults?: (orderId: string) => void;
 }
 
-const OrderHistoryItem: React.FC<OrderHistoryItemProps> = ({
+const OrderHistoryItem: React.FC<OrderHistoryItemProps> = ({ 
   order,
   isLast,
   isExpanded,
   onToggleExpansion,
   onDownloadPdf,
   onViewOrder,
-  onViewResults,
+  onViewResults
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -585,77 +518,93 @@ const OrderHistoryItem: React.FC<OrderHistoryItemProps> = ({
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusDotVariant = (status: string): 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' => {
     switch (status) {
       case 'requested':
-        return theme.palette.info.main;
+        return 'primary';
       case 'sample_collected':
-        return theme.palette.primary.main;
+        return 'primary';
       case 'result_awaited':
-        return theme.palette.warning.main;
+        return 'warning';
       case 'completed':
-        return theme.palette.success.main;
+        return 'success';
       case 'referred':
-        return theme.palette.error.main;
+        return 'error';
       default:
-        return theme.palette.grey[500];
+        return 'default';
+    }
+  };
+
+  const getStatusBadgeVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    switch (status) {
+      case 'completed':
+        return 'default'; // Success/green
+      case 'referred':
+        return 'destructive'; // Error/red
+      case 'result_awaited':
+        return 'secondary'; // Warning/yellow
+      case 'requested':
+      case 'sample_collected':
+        return 'outline'; // Info/blue
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getPriorityBadgeVariant = (priority?: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    switch (priority) {
+      case 'stat':
+        return 'destructive'; // Error/red
+      case 'urgent':
+        return 'secondary'; // Warning/yellow
+      case 'routine':
+        return 'outline'; // Info/blue
+      default:
+        return 'outline';
     }
   };
 
   return (
     <TimelineItem>
-      <TimelineOppositeContent sx={{ flex: 0.2, py: 2 }}>
-        <Typography variant="caption" color="text.secondary">
+      <TimelineOppositeContent className="flex-[0.2] py-2">
+        <div  color="text.secondary">
           {formatDateTime(order.createdAt)}
-        </Typography>
+        </div>
         {order.priority && order.priority !== 'routine' && (
-          <Chip
-            label={LAB_ORDER_PRIORITIES[order.priority] || order.priority}
-            size="small"
+          <Badge variant={getPriorityBadgeVariant(order.priority)} className="text-xs">
+            {LAB_ORDER_PRIORITIES[order.priority] || order.priority}
             color={order.priority === 'stat' ? 'error' : 'warning'}
-            sx={{ mt: 0.5, display: 'block', width: 'fit-content' }}
+            className=""
           />
         )}
       </TimelineOppositeContent>
 
       <TimelineSeparator>
-        <TimelineDot sx={{ bgcolor: getStatusColor(order.status) }}>
+        <TimelineDot variant={getStatusDotVariant(order.status)}>
           {getStatusIcon(order.status)}
         </TimelineDot>
         {!isLast && <TimelineConnector />}
       </TimelineSeparator>
 
-      <TimelineContent sx={{ py: 2 }}>
-        <Card variant="outlined">
-          <CardContent sx={{ pb: 1 }}>
+      <TimelineContent className="py-2">
+        <Card >
+          <CardContent className="">
             {/* Order Header */}
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                mb: 1,
-              }}
+            <div
+              className=""
             >
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  flexWrap: 'wrap',
-                }}
+              <div
+                className=""
               >
-                <Typography variant="h6" fontWeight={600}>
+                <div  fontWeight={600}>
                   {order.orderId}
-                </Typography>
-                <Chip
-                  label={LAB_ORDER_STATUSES[order.status] || order.status}
-                  size="small"
-                  sx={{ bgcolor: getStatusColor(order.status), color: 'white' }}
-                />
-              </Box>
+                </div>
+                <Badge variant={getStatusBadgeVariant(order.status)} className="text-xs">
+                  {LAB_ORDER_STATUSES[order.status] || order.status}
+                </Badge>
+              </div>
 
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <div className="">
                 <Tooltip title="Download PDF">
                   <IconButton size="small" onClick={onDownloadPdf}>
                     <Download size={16} />
@@ -674,66 +623,66 @@ const OrderHistoryItem: React.FC<OrderHistoryItemProps> = ({
                 <IconButton size="small" onClick={onToggleExpansion}>
                   {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </IconButton>
-              </Box>
-            </Box>
+              </div>
+            </div>
 
             {/* Order Summary */}
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+            <div  color="text.secondary" gutterBottom>
               {order.tests.length} test{order.tests.length !== 1 ? 's' : ''}{' '}
               ordered
-            </Typography>
+            </div>
 
-            <Typography variant="body2" gutterBottom>
+            <div  gutterBottom>
               <strong>Indication:</strong> {order.indication}
-            </Typography>
+            </div>
 
             {/* Expanded Details */}
             <Collapse in={isExpanded}>
-              <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-                <Typography variant="subtitle2" gutterBottom>
+              <div className="">
+                <div  gutterBottom>
                   Ordered Tests:
-                </Typography>
+                </div>
                 <List dense>
                   {order.tests.map((test, index) => (
-                    <ListItem key={index} sx={{ px: 0 }}>
-                      <ListItemText
+                    <div key={index} className="">
+                      <div
                         primary={test.name}
                         secondary={
-                          <Box>
-                            <Typography variant="caption" component="span">
+                          <div>
+                            <div  component="span">}
                               Code: {test.code}
-                            </Typography>
+                            </div>
                             {test.specimenType && (
-                              <Typography
-                                variant="caption"
+                              <div
+                                
                                 component="span"
-                                sx={{ ml: 2 }}
+                                className=""
                               >
                                 Specimen: {test.specimenType}
-                              </Typography>
+                              </div>
                             )}
                             {test.category && (
-                              <Typography
-                                variant="caption"
+                              <div
+                                
                                 component="span"
-                                sx={{ ml: 2 }}
+                                className=""
                               >
                                 Category: {test.category}
-                              </Typography>
+                              </div>
                             )}
-                          </Box>
+                          </div>
                         }
                       />
-                    </ListItem>
+                    </div>
                   ))}
                 </List>
 
                 {/* Action Buttons */}
-                <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+                <div className="">
                   {order.status === 'completed' && onViewResults && (
                     <Button
                       size="small"
-                      variant="outlined"
+                      
                       startIcon={<AssignmentIcon />}
                       onClick={() => onViewResults(order.orderId)}
                     >
@@ -744,17 +693,17 @@ const OrderHistoryItem: React.FC<OrderHistoryItemProps> = ({
                     order.status === 'result_awaited') && (
                     <Button
                       size="small"
-                      variant="outlined"
+                      
                       startIcon={<ScienceIcon />}
                       onClick={() =>
-                        onViewResults && onViewResults(order.orderId)
+                        onViewResults && onViewResults(order.orderId)}
                       }
                     >
                       Enter Results
                     </Button>
                   )}
-                </Box>
-              </Box>
+                </div>
+              </div>
             </Collapse>
           </CardContent>
         </Card>

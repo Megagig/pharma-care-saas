@@ -1,44 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardActions,
-  Box,
-  Typography,
-  Chip,
-  Avatar,
-  AvatarGroup,
-  IconButton,
-  Button,
-  Menu,
-  MenuItem,
-  Tooltip,
-  Checkbox,
-  LinearProgress,
-  Divider,
-} from '@mui/material';
-import {
-  MoreVert,
-  Schedule,
-  Person,
-  Assignment,
-  CheckCircle,
-  Archive,
-  PriorityHigh,
-  Warning,
-  Info,
-  Flag,
-  Reply,
-  Forward,
-  Edit,
-  Delete,
-  Visibility,
-  AccessTime,
-  Message,
-  AttachFile,
-} from '@mui/icons-material';
-import { formatDistanceToNow, format } from 'date-fns';
-import { Conversation } from '../../stores/types';
+import { Button, Card, CardContent, Tooltip, Progress, Avatar, Separator } from '@/components/ui/button';
 
 interface QueryCardProps {
   query: Conversation;
@@ -49,18 +9,16 @@ interface QueryCardProps {
   compact?: boolean;
   showPatientInfo?: boolean;
 }
-
-const QueryCard: React.FC<QueryCardProps> = ({
+const QueryCard: React.FC<QueryCardProps> = ({ 
   query,
   selected = false,
   onSelect,
   onClick,
   onAction,
   compact = false,
-  showPatientInfo = true,
+  showPatientInfo = true
 }) => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-
   // Get priority color and icon
   const getPriorityConfig = () => {
     switch (query.priority) {
@@ -94,7 +52,6 @@ const QueryCard: React.FC<QueryCardProps> = ({
         };
     }
   };
-
   // Get status color and icon
   const getStatusConfig = () => {
     switch (query.status) {
@@ -121,7 +78,6 @@ const QueryCard: React.FC<QueryCardProps> = ({
         };
     }
   };
-
   // Format time
   const formatTime = (dateString: string) => {
     try {
@@ -131,76 +87,62 @@ const QueryCard: React.FC<QueryCardProps> = ({
       return 'Unknown time';
     }
   };
-
   // Get query title
   const getQueryTitle = () => {
     if (query.title) {
       return query.title;
     }
-
     // Generate title based on clinical context or participants
     if (query.metadata?.clinicalContext?.diagnosis) {
       return `Query about ${query.metadata.clinicalContext.diagnosis}`;
     }
-
     return 'Patient Query';
   };
-
   // Get query description
   const getQueryDescription = () => {
     const participants = query.participants
       .filter((p) => p.role !== 'patient')
       .map((p) => p.role)
       .join(', ');
-
     return `Involving: ${participants}`;
   };
-
   // Get assigned healthcare providers
   const getAssignedProviders = () => {
     return query.participants.filter((p) => p.role !== 'patient');
   };
-
   // Calculate query progress (mock calculation based on status and time)
   const getQueryProgress = () => {
     if (query.status === 'resolved') return 100;
     if (query.status === 'archived') return 0;
-
     // Mock progress based on time elapsed
     const createdAt = new Date(query.createdAt);
     const now = new Date();
     const hoursElapsed =
       (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-
     // Assume 24 hours is 100% for active queries
     return Math.min(Math.round((hoursElapsed / 24) * 100), 90);
   };
-
   // Handle menu actions
   const handleMenuAction = (action: string) => {
     setMenuAnchor(null);
     onAction?.(action, query._id);
   };
-
   // Handle menu click
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
     setMenuAnchor(event.currentTarget);
   };
-
   // Handle card click
   const handleCardClick = () => {
     if (onClick) {
       onClick();
     }
   };
-
   // Handle checkbox change
   const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
     onSelect?.(event.target.checked);
   };
-
   // Get available actions
   const getAvailableActions = () => {
     const actions = [
@@ -208,7 +150,6 @@ const QueryCard: React.FC<QueryCardProps> = ({
       { key: 'reply', label: 'Reply', icon: <Reply /> },
       { key: 'edit', label: 'Edit Query', icon: <Edit /> },
     ];
-
     if (query.status === 'active') {
       actions.push(
         { key: 'assign', label: 'Assign', icon: <Assignment /> },
@@ -217,36 +158,25 @@ const QueryCard: React.FC<QueryCardProps> = ({
         { key: 'archive', label: 'Archive', icon: <Archive /> }
       );
     }
-
     if (query.status === 'archived') {
       actions.push({ key: 'unarchive', label: 'Unarchive', icon: <Archive /> });
     }
-
     actions.push(
       { key: 'forward', label: 'Forward', icon: <Forward /> },
       { key: 'delete', label: 'Delete', icon: <Delete />, danger: true }
     );
-
     return actions;
   };
-
   const priorityConfig = getPriorityConfig();
   const statusConfig = getStatusConfig();
   const assignedProviders = getAssignedProviders();
   const queryProgress = getQueryProgress();
   const availableActions = getAvailableActions();
-
   return (
     <>
       <Card
-        component={onClick ? 'button' : 'div'}
-        sx={{
-          cursor: onClick ? 'pointer' : 'default',
-          transition: 'all 0.2s ease-in-out',
-          '&:hover': {
-            boxShadow: onClick ? 4 : 1,
-            transform: onClick ? 'translateY(-2px)' : 'none',
-          },
+        
+        className=""
           border: selected ? 2 : 1,
           borderColor: selected ? 'primary.main' : 'divider',
           position: 'relative',
@@ -257,30 +187,20 @@ const QueryCard: React.FC<QueryCardProps> = ({
               outline: '2px solid',
               outlineColor: 'primary.main',
               outlineOffset: '2px',
-            },
-          }),
-        }}
+            }, },
         onClick={handleCardClick}
         role={onClick ? 'button' : undefined}
         tabIndex={onClick ? 0 : undefined}
         aria-label={onClick ? getQueryTitle() : undefined}
       >
         {/* Priority indicator */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: 4,
-            height: '100%',
-            bgcolor: priorityConfig.color,
-          }}
+        <div
+          className=""
         />
-
-        <CardContent sx={{ pb: compact ? 2 : 1 }}>
+        <CardContent className="">
           {/* Header */}
-          <Box
-            sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}
+          <div
+            className=""
           >
             {/* Selection checkbox */}
             {onSelect && (
@@ -288,274 +208,217 @@ const QueryCard: React.FC<QueryCardProps> = ({
                 checked={selected}
                 onChange={handleCheckboxChange}
                 size="small"
-                sx={{ mt: -0.5 }}
+                className=""
               />
             )}
-
             {/* Content */}
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+            <div className="">
               {/* Title and status */}
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+              <div
+                className=""
               >
-                <Typography
+                <div
                   variant={compact ? 'body1' : 'h6'}
                   component="h3"
                   noWrap
-                  sx={{ flex: 1, fontWeight: 600 }}
+                  className=""
                 >
                   {getQueryTitle()}
-                </Typography>
-
+                </div>
                 <Chip
                   icon={statusConfig.icon}
                   label={statusConfig.label}
                   size="small"
-                  sx={{
-                    bgcolor: statusConfig.bgcolor,
-                    color: statusConfig.color,
-                    '& .MuiChip-icon': { color: statusConfig.color },
-                  }}
-                />
-
+                  className="" />
                 <Chip
                   icon={priorityConfig.icon}
                   label={priorityConfig.label}
                   size="small"
-                  sx={{
-                    bgcolor: priorityConfig.bgcolor,
-                    color: priorityConfig.color,
-                    '& .MuiChip-icon': { color: priorityConfig.color },
-                  }}
-                />
-              </Box>
-
+                  className="" />
+              </div>
               {/* Description */}
               {!compact && (
-                <Typography
-                  variant="body2"
+                <div
+                  
                   color="text.secondary"
-                  sx={{ mb: 2 }}
+                  className=""
                 >
                   {getQueryDescription()}
-                </Typography>
+                </div>
               )}
-
               {/* Metadata */}
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}
+              <div
+                className=""
               >
                 {/* Patient info */}
                 {showPatientInfo && query.patientId && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Person sx={{ fontSize: 16, color: 'text.secondary' }} />
-                    <Typography variant="caption" color="text.secondary">
+                  <div className="">
+                    <Person className="" />
+                    <div  color="text.secondary">
                       Patient ID: {query.patientId.slice(-6)}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 )}
-
                 {/* Case ID */}
                 {query.caseId && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <div className="">
                     <Assignment
-                      sx={{ fontSize: 16, color: 'text.secondary' }}
+                      className=""
                     />
-                    <Typography variant="caption" color="text.secondary">
+                    <div  color="text.secondary">
                       Case: {query.caseId}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 )}
-
                 {/* Created time */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <AccessTime sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="caption" color="text.secondary">
+                <div className="">
+                  <AccessTime className="" />
+                  <div  color="text.secondary">
                     {formatTime(query.createdAt)}
-                  </Typography>
-                </Box>
-
+                  </div>
+                </div>
                 {/* Last message time */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Message sx={{ fontSize: 16, color: 'text.secondary' }} />
-                  <Typography variant="caption" color="text.secondary">
+                <div className="">
+                  <Message className="" />
+                  <div  color="text.secondary">
                     Last: {formatTime(query.lastMessageAt)}
-                  </Typography>
-                </Box>
-              </Box>
-
+                  </div>
+                </div>
+              </div>
               {/* Tags */}
               {query.tags && query.tags.length > 0 && (
-                <Box
-                  sx={{ display: 'flex', gap: 0.5, mb: 2, flexWrap: 'wrap' }}
+                <div
+                  className=""
                 >
                   {query.tags.slice(0, compact ? 2 : 4).map((tag) => (
                     <Chip
                       key={tag}
                       label={tag}
                       size="small"
-                      variant="outlined"
-                      sx={{ height: 20, fontSize: '0.625rem' }}
+                      
+                      className=""
                     />
                   ))}
                   {query.tags.length > (compact ? 2 : 4) && (
-                    <Typography variant="caption" color="text.secondary">
+                    <div  color="text.secondary">
                       +{query.tags.length - (compact ? 2 : 4)} more
-                    </Typography>
+                    </div>
                   )}
-                </Box>
+                </div>
               )}
-
               {/* Clinical context */}
               {query.metadata?.clinicalContext && !compact && (
-                <Box sx={{ mb: 2 }}>
+                <div className="">
                   {query.metadata.clinicalContext.diagnosis && (
-                    <Typography
-                      variant="caption"
+                    <div
+                      
                       color="text.secondary"
                       display="block"
                     >
                       Diagnosis: {query.metadata.clinicalContext.diagnosis}
-                    </Typography>
+                    </div>
                   )}
                   {query.metadata.clinicalContext.medications &&
                     query.metadata.clinicalContext.medications.length > 0 && (
-                      <Typography
-                        variant="caption"
+                      <div
+                        
                         color="text.secondary"
                         display="block"
                       >
                         Medications:{' '}
                         {query.metadata.clinicalContext.medications.length}{' '}
                         items
-                      </Typography>
+                      </div>
                     )}
-                </Box>
+                </div>
               )}
-
               {/* Progress bar for active queries */}
               {query.status === 'active' && !compact && (
-                <Box sx={{ mb: 2 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      mb: 0.5,
-                    }}
+                <div className="">
+                  <div
+                    className=""
                   >
-                    <Typography variant="caption" color="text.secondary">
+                    <div  color="text.secondary">
                       Query Progress
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       {queryProgress}%
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={queryProgress}
-                    sx={{ height: 4, borderRadius: 2 }}
+                    </div>
+                  </div>
+                  <Progress
+                    
+                    className=""
                   />
-                </Box>
+                </div>
               )}
-
               {/* Assigned providers */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
+              <div
+                className=""
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="caption" color="text.secondary">
+                <div className="">
+                  <div  color="text.secondary">
                     Assigned to:
-                  </Typography>
+                  </div>
                   <AvatarGroup
                     max={3}
-                    sx={{
-                      '& .MuiAvatar-root': {
-                        width: 24,
-                        height: 24,
-                        fontSize: '0.75rem',
-                      },
-                    }}
-                  >
+                    className="">
                     {assignedProviders.map((provider, index) => (
                       <Tooltip key={provider.userId} title={provider.role}>
-                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                        <Avatar className="">
                           {provider.role.charAt(0).toUpperCase()}
                         </Avatar>
                       </Tooltip>
                     ))}
                   </AvatarGroup>
-                </Box>
-
+                </div>
                 {/* Menu button */}
                 <IconButton
                   size="small"
                   onClick={handleMenuClick}
-                  sx={{ ml: 1 }}
+                  className=""
                   aria-label="More options"
                 >
                   <MoreVert />
                 </IconButton>
-              </Box>
-            </Box>
-          </Box>
+              </div>
+            </div>
+          </div>
         </CardContent>
-
         {/* Quick actions */}
         {!compact && (
           <>
-            <Divider />
-            <CardActions sx={{ px: 2, py: 1 }}>
+            <Separator />
+            <CardActions className="">
               <Button
                 size="small"
                 startIcon={<Reply />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMenuAction('reply');
-                }}
-              >
+                >
                 Reply
               </Button>
-
               {query.status === 'active' && (
                 <>
                   <Button
                     size="small"
                     startIcon={<Assignment />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMenuAction('assign');
-                    }}
-                  >
+                    >
                     Assign
                   </Button>
-
                   <Button
                     size="small"
                     startIcon={<CheckCircle />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMenuAction('resolve');
-                    }}
-                  >
+                    >
                     Resolve
                   </Button>
                 </>
               )}
-
-              <Box sx={{ flex: 1 }} />
-
-              <Typography variant="caption" color="text.secondary">
+              <div className="" />
+              <div  color="text.secondary">
                 ID: {query._id.slice(-6)}
-              </Typography>
+              </div>
             </CardActions>
           </>
         )}
       </Card>
-
       {/* Action Menu */}
       <Menu
         anchorEl={menuAnchor}
@@ -567,19 +430,16 @@ const QueryCard: React.FC<QueryCardProps> = ({
           <MenuItem
             key={action.key}
             onClick={() => handleMenuAction(action.key)}
-            sx={{
-              color: action.danger ? 'error.main' : 'inherit',
-            }}
+            className=""
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <div className="">
               {action.icon}
               {action.label}
-            </Box>
+            </div>
           </MenuItem>
         ))}
       </Menu>
     </>
   );
 };
-
 export default QueryCard;

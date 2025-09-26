@@ -1,272 +1,157 @@
-import React from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Container,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-} from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import type { ModulePageProps } from '../types/moduleTypes';
 
-const ModulePage: React.FC<ModulePageProps> = ({
+import { Card, CardContent } from '@/components/ui/card';
+const ModulePage: React.FC<ModulePageProps> = ({ 
   moduleInfo,
   icon: IconComponent,
   gradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   children,
-  hideModuleInfo = false,
+  hideModuleInfo = false
 }) => {
   // No need for navigation function since we're not using it
 
   return (
-    <Container maxWidth="lg" sx={{ my: 4 }}>
+    <div maxWidth="lg" className="">
       {/* Module Header */}
-      <Box
-        sx={{
-          p: 3,
-          borderRadius: '12px',
-          background: gradient,
-          color: 'white',
-          mb: 4,
-          position: 'relative',
-          overflow: 'hidden',
-        }}
+      <div
+        className=""
       >
-        <Box
-          sx={{
-            position: 'relative',
-            zIndex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-          }}
+        <div
+          className=""
         >
-          <Box
-            sx={{
-              width: 60,
-              height: 60,
-              borderRadius: '50%',
-              bgcolor: 'rgba(255,255,255,0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+          <div
+            className=""
           >
-            {IconComponent && <IconComponent sx={{ fontSize: 32 }} />}
-          </Box>
-          <Box>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+            {IconComponent && <IconComponent className="" />}
+          </div>
+          <div>
+            <div  component="h1" className="">
               {moduleInfo.title}
-            </Typography>
-            <Typography variant="body1" sx={{ opacity: 0.9, mt: 0.5 }}>
+            </div>
+            <div  className="">
               {moduleInfo.purpose}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Module Information Section */}
       {!hideModuleInfo && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-          <Box
-            sx={{
-              flex: '1 1 45%',
-              minWidth: '300px',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
+        <div className="">
+          <div
+            className=""
           >
             {/* Workflow Section */}
             <Card
-              sx={{
-                height: 'fit-content',
-                background: 'rgba(255,255,255,0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.3)',
-                borderRadius: 4,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-              }}
+              className=""
             >
-              <CardContent sx={{ p: 4 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    mb: 3,
-                  }}
+              <CardContent className="">
+                <div
+                  className=""
                 >
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 3,
-                      background:
-                        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                  <div
+                    className=""
                   >
-                    <ScheduleIcon sx={{ color: 'white', fontSize: 24 }} />
-                  </Box>
-                  <Typography
-                    variant="h5"
+                    <ScheduleIcon className="" />
+                  </div>
+                  <div
+                    
                     component="h2"
-                    sx={{ fontWeight: 600, color: 'text.primary' }}
+                    className=""
                   >
                     Workflow
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
 
-                <Typography
-                  variant="body1"
+                <div
+                  
                   color="text.secondary"
-                  sx={{ mb: 3, lineHeight: 1.6 }}
+                  className=""
                 >
                   {moduleInfo.workflow.description}
-                </Typography>
+                </div>
 
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 600,
-                    mb: 2,
-                    color: 'text.primary',
-                  }}
+                <div
+                  
+                  className=""
                 >
                   Process Steps:
-                </Typography>
+                </div>
 
-                <List sx={{ mb: 0, p: 0 }}>
+                <List className="">
                   {moduleInfo.workflow.steps.map((step, index) => (
-                    <ListItem
+                    <div
                       key={index}
-                      sx={{
-                        p: 0,
-                        '& + &': { mt: 2 },
-                      }}
-                    >
-                      <ListItemIcon
-                        sx={{
-                          minWidth: 36,
-                        }}
+                      className="">
+                      <div
+                        className=""
                       >
-                        <Box
-                          sx={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: '50%',
-                            bgcolor: 'primary.main',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                            fontWeight: 600,
-                            fontSize: '0.75rem',
-                          }}
+                        <div
+                          className=""
                         >
                           {index + 1}
-                        </Box>
-                      </ListItemIcon>
-                      <ListItemText primary={step} />
-                    </ListItem>
+                        </div>
+                      </div>
+                      <div primary={step} />
+                    </div>
                   ))}
                 </List>
               </CardContent>
             </Card>
-          </Box>
+          </div>
           
-          <Box
-            sx={{
-              flex: '1 1 45%',
-              minWidth: '300px',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
+          <div
+            className=""
           >
             {/* Key Features Section */}
             <Card
-              sx={{
-                height: 'fit-content',
-                background: 'rgba(255,255,255,0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.3)',
-                borderRadius: 4,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-              }}
+              className=""
             >
-              <CardContent sx={{ p: 4 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    mb: 3,
-                  }}
+              <CardContent className="">
+                <div
+                  className=""
                 >
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 3,
-                      background:
-                        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                  <div
+                    className=""
                   >
-                    <CheckCircleIcon sx={{ color: 'white', fontSize: 24 }} />
-                  </Box>
-                  <Typography
-                    variant="h5"
+                    <CheckCircleIcon className="" />
+                  </div>
+                  <div
+                    
                     component="h2"
-                    sx={{ fontWeight: 600, color: 'text.primary' }}
+                    className=""
                   >
                     Key Features
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
 
-                <List sx={{ p: 0 }}>
+                <List className="">
                   {moduleInfo.keyFeatures.map((feature, index) => (
-                    <ListItem
+                    <div
                       key={index}
-                      sx={{
-                        p: 0,
-                        mb: 2,
-                      }}
+                      className=""
                     >
-                      <ListItemIcon
-                        sx={{
-                          minWidth: 36,
-                          mt: 0,
-                        }}
+                      <div
+                        className=""
                       >
                         <CheckCircleIcon
                           color="success"
                           fontSize="small"
-                          sx={{ mt: 0.25 }}
+                          className=""
                         />
-                      </ListItemIcon>
-                      <ListItemText primary={feature} />
-                    </ListItem>
+                      </div>
+                      <div primary={feature} />
+                    </div>
                   ))}
                 </List>
               </CardContent>
             </Card>
-          </Box>
-        </Box>
+          </div>
+        </div>
       )}
 
       {/* Main Content Section */}
-      <Box mt={hideModuleInfo ? 0 : 4}>{children}</Box>
-    </Container>
+      <div mt={hideModuleInfo ? 0 : 4}>{children}</div>
+    </div>
   );
 };
 

@@ -1,5 +1,3 @@
-import api, { ApiResponse } from './api';
-
 export interface Medication {
   _id: string;
   patientId: string;

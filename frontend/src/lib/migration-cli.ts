@@ -1,5 +1,3 @@
-import { analyzeMuiUsage, migrationTracker, generateMigrationReport, MuiUsageAnalysis } from './migration-utils';
-
 // Simple migration CLI utility
 export class MigrationCLI {
     private srcPath: string;

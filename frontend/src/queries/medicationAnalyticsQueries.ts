@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
 import medicationManagementService from '../services/medicationManagementService';
 
 // Define query keys
@@ -31,14 +30,14 @@ export const useAdherenceAnalytics = (
   patientId: string,
   period: string = '6months'
 ) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: medicationAnalyticsKeys.adherenceAnalytics(patientId, period),
     queryFn: () =>
       medicationManagementService.getAdherenceAnalytics(patientId, period),
     enabled: !!patientId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)}
   });
 };
 
@@ -46,14 +45,14 @@ export const useAdherenceAnalytics = (
  * Hook for getting enhanced prescription pattern analytics with Naira currency
  */
 export const usePrescriptionPatternAnalytics = (patientId: string) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: medicationAnalyticsKeys.prescriptionPatternAnalytics(patientId),
     queryFn: () =>
       medicationManagementService.getPrescriptionPatternAnalytics(patientId),
     enabled: !!patientId,
     staleTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)}
   });
 };
 
@@ -61,14 +60,14 @@ export const usePrescriptionPatternAnalytics = (patientId: string) => {
  * Hook for getting enhanced interaction analytics with financial impact
  */
 export const useInteractionAnalytics = (patientId: string) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: medicationAnalyticsKeys.interactionAnalytics(patientId),
     queryFn: () =>
       medicationManagementService.getMedicationInteractionAnalytics(patientId),
     enabled: !!patientId,
     staleTime: 15 * 60 * 1000, // 15 minutes
     retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)}
   });
 };
 
@@ -76,14 +75,14 @@ export const useInteractionAnalytics = (patientId: string) => {
  * Hook for getting medication cost analytics with Naira currency
  */
 export const useMedicationCostAnalytics = (patientId: string) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: medicationAnalyticsKeys.costAnalytics(patientId),
     queryFn: () =>
       medicationManagementService.getMedicationCostAnalytics(patientId),
     enabled: !!patientId,
     staleTime: 20 * 60 * 1000, // 20 minutes
     retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)}
   });
 };
 
@@ -91,13 +90,13 @@ export const useMedicationCostAnalytics = (patientId: string) => {
  * Hook for getting enhanced patient medication summary with Naira currency
  */
 export const usePatientMedicationSummary = (patientId: string) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: medicationAnalyticsKeys.patientSummary(patientId),
     queryFn: () =>
       medicationManagementService.getPatientMedicationSummary(patientId),
     enabled: !!patientId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 15000),
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 15000)}
   });
 };

@@ -1,43 +1,10 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Stack,
-  Chip,
-  Divider,
-  Alert,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Grid,
-  Paper,
-  Tooltip,
-  IconButton,
-  Button,
-} from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-  Psychology as PsychologyIcon,
-  Science as ScienceIcon,
-  Medication as MedicationIcon,
-  Warning as WarningIcon,
-  LocalHospital as LocalHospitalIcon,
-  Info as InfoIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Schedule as ScheduleIcon,
-} from '@mui/icons-material';
-import type { DiagnosticResultsPanelProps, DiagnosticResult } from '../types';
 import ConfidenceIndicator from './ConfidenceIndicator';
+
 import RedFlagAlerts from './RedFlagAlerts';
+
 import InteractionAlerts from './InteractionAlerts';
 
+import { Button, Card, CardContent, Alert, Accordion, Separator } from '@/components/ui/button';
 const SEVERITY_CONFIG = {
   low: { color: 'success' as const, icon: CheckCircleIcon, label: 'Low Risk' },
   medium: {
@@ -47,13 +14,11 @@ const SEVERITY_CONFIG = {
   },
   high: { color: 'error' as const, icon: ErrorIcon, label: 'High Risk' },
 };
-
 const PRIORITY_CONFIG = {
   urgent: { color: 'error' as const, label: 'Urgent', icon: ErrorIcon },
   routine: { color: 'info' as const, label: 'Routine', icon: ScheduleIcon },
   optional: { color: 'default' as const, label: 'Optional', icon: InfoIcon },
 };
-
 const URGENCY_CONFIG = {
   immediate: {
     color: 'error' as const,
@@ -71,19 +36,17 @@ const URGENCY_CONFIG = {
     severity: 'info' as const,
   },
 };
-
-const DiagnosticResultsPanel: React.FC<DiagnosticResultsPanelProps> = ({
+const DiagnosticResultsPanel: React.FC<DiagnosticResultsPanelProps> = ({ 
   result,
   onApprove,
   onModify,
   onReject,
   loading = false,
-  error,
+  error
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['diagnoses', 'redFlags'])
   );
-
   const handleToggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(section)) {
@@ -93,238 +56,211 @@ const DiagnosticResultsPanel: React.FC<DiagnosticResultsPanelProps> = ({
     }
     setExpandedSections(newExpanded);
   };
-
   const getSeverityChip = (severity: string) => {
     const config = SEVERITY_CONFIG[severity as keyof typeof SEVERITY_CONFIG];
     if (!config) return null;
-
     const Icon = config.icon;
     return (
       <Chip
-        icon={<Icon sx={{ fontSize: 16 }} />}
+        icon={<Icon className="" />}
         label={config.label}
         size="small"
         color={config.color}
-        variant="outlined"
+        
       />
     );
   };
-
   const getPriorityChip = (priority: string) => {
     const config = PRIORITY_CONFIG[priority as keyof typeof PRIORITY_CONFIG];
     if (!config) return null;
-
     const Icon = config.icon;
     return (
       <Chip
-        icon={<Icon sx={{ fontSize: 16 }} />}
+        icon={<Icon className="" />}
         label={config.label}
         size="small"
         color={config.color}
-        variant="outlined"
+        
       />
     );
   };
-
   const getUrgencyAlert = (urgency: string) => {
     const config = URGENCY_CONFIG[urgency as keyof typeof URGENCY_CONFIG];
     if (!config) return null;
-
     return (
-      <Alert severity={config.severity} sx={{ mb: 2 }}>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+      <Alert severity={config.severity} className="">
+        <div  className="">
           Referral Urgency: {config.label}
-        </Typography>
+        </div>
       </Alert>
     );
   };
-
   return (
     <Card>
       <CardContent>
         {/* Header */}
-        <Box sx={{ mb: 3 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 2,
-            }}
+        <div className="">
+          <div
+            className=""
           >
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}
+            <div
+              
+              className=""
             >
-              <PsychologyIcon sx={{ mr: 1, color: 'primary.main' }} />
+              <PsychologyIcon className="" />
               AI Diagnostic Analysis
-            </Typography>
+            </div>
             <ConfidenceIndicator
               confidence={result.aiMetadata.confidenceScore}
               size="large"
             />
-          </Box>
-
+          </div>
           {/* AI Metadata Summary */}
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={6} md={3}>
-              <Paper sx={{ p: 1.5, textAlign: 'center' }}>
-                <Typography variant="caption" color="text.secondary">
+          <div container spacing={2} className="">
+            <div item xs={6} md={3}>
+              <div className="">
+                <div  color="text.secondary">
                   Model
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                </div>
+                <div  className="">
                   {result.aiMetadata.modelId}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Paper sx={{ p: 1.5, textAlign: 'center' }}>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div className="">
+                <div  color="text.secondary">
                   Processing Time
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                </div>
+                <div  className="">
                   {(result.aiMetadata.processingTime / 1000).toFixed(1)}s
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Paper sx={{ p: 1.5, textAlign: 'center' }}>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div className="">
+                <div  color="text.secondary">
                   Tokens Used
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                </div>
+                <div  className="">
                   {result.aiMetadata.tokenUsage.totalTokens.toLocaleString()}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Paper sx={{ p: 1.5, textAlign: 'center' }}>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div className="">
+                <div  color="text.secondary">
                   Confidence
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                </div>
+                <div  className="">
                   {(result.aiMetadata.confidenceScore * 100).toFixed(1)}%
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
-
+                </div>
+              </div>
+            </div>
+          </div>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" className="">
               {error}
             </Alert>
           )}
-        </Box>
-
+        </div>
         {/* Red Flag Alerts */}
         {result.redFlags.length > 0 && (
-          <Box sx={{ mb: 3 }}>
+          <div className="">
             <RedFlagAlerts redFlags={result.redFlags} />
-          </Box>
+          </div>
         )}
-
         {/* Referral Recommendation */}
         {result.referralRecommendation?.recommended && (
-          <Box sx={{ mb: 3 }}>
+          <div className="">
             {getUrgencyAlert(result.referralRecommendation.urgency)}
             <Alert severity="warning" icon={<LocalHospitalIcon />}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+              <div  className="">
                 Referral Recommended: {result.referralRecommendation.specialty}
-              </Typography>
-              <Typography variant="body2">
+              </div>
+              <div >
                 {result.referralRecommendation.reason}
-              </Typography>
+              </div>
             </Alert>
-          </Box>
+          </div>
         )}
-
-        <Stack spacing={2}>
+        <div spacing={2}>
           {/* Differential Diagnoses */}
           <Accordion
             expanded={expandedSections.has('diagnoses')}
             onChange={() => handleToggleSection('diagnoses')}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', width: '100%' }}
+              <div
+                className=""
               >
-                <PsychologyIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                <PsychologyIcon className="" />
+                <div  className="">
                   Differential Diagnoses ({result.diagnoses.length})
-                </Typography>
-                <Box sx={{ ml: 'auto', mr: 2 }}>
+                </div>
+                <div className="">
                   <Chip
                     label={`Avg Confidence: ${((result.diagnoses.reduce((sum, d) => sum + d.probability, 0) / result.diagnoses.length) * 100).toFixed(1)}%`}
                     size="small"
                     color="primary"
-                    variant="outlined"
+                    
                   />
-                </Box>
-              </Box>
+                </div>
+              </div>
             </AccordionSummary>
             <AccordionDetails>
               <List>
                 {result.diagnoses.map((diagnosis, index) => (
-                  <ListItem
+                  <div
                     key={index}
                     divider={index < result.diagnoses.length - 1}
                   >
-                    <ListItemIcon>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          minWidth: 80,
-                        }}
+                    <div>
+                      <div
+                        className=""
                       >
                         <ConfidenceIndicator
                           confidence={diagnosis.probability}
                           size="small"
                         />
-                      </Box>
-                    </ListItemIcon>
-                    <ListItemText
+                      </div>
+                    </div>
+                    <div
                       primary={
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            mb: 1,
-                          }}
+                        <div
+                          className=""
                         >
-                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                          <div  className="">}
                             {diagnosis.condition}
-                          </Typography>
+                          </div>
                           {getSeverityChip(diagnosis.severity)}
                           {diagnosis.icdCode && (
                             <Chip
                               label={`ICD: ${diagnosis.icdCode}`}
                               size="small"
-                              variant="outlined"
+                              
                             />
                           )}
                           {diagnosis.snomedCode && (
                             <Chip
                               label={`SNOMED: ${diagnosis.snomedCode}`}
                               size="small"
-                              variant="outlined"
+                              
                             />
                           )}
-                        </Box>
+                        </div>
                       }
                       secondary={
-                        <Typography variant="body2" color="text.secondary">
+                        <div  color="text.secondary">}
                           {diagnosis.reasoning}
-                        </Typography>
+                        </div>
                       }
                     />
-                  </ListItem>
+                  </div>
                 ))}
               </List>
             </AccordionDetails>
           </Accordion>
-
           {/* Suggested Tests */}
           {result.suggestedTests.length > 0 && (
             <Accordion
@@ -332,62 +268,56 @@ const DiagnosticResultsPanel: React.FC<DiagnosticResultsPanelProps> = ({
               onChange={() => handleToggleSection('tests')}
             >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <ScienceIcon sx={{ mr: 1, color: 'secondary.main' }} />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                <div className="">
+                  <ScienceIcon className="" />
+                  <div  className="">
                     Suggested Laboratory Tests ({result.suggestedTests.length})
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               </AccordionSummary>
               <AccordionDetails>
                 <List>
                   {result.suggestedTests.map((test, index) => (
-                    <ListItem
+                    <div
                       key={index}
                       divider={index < result.suggestedTests.length - 1}
                     >
-                      <ListItemIcon>
+                      <div>
                         <ScienceIcon color="secondary" />
-                      </ListItemIcon>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                              mb: 1,
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography
-                              variant="body1"
-                              sx={{ fontWeight: 600 }}
-                            >
+                            <div
+                              
+                              className=""
+                            >}
                               {test.testName}
-                            </Typography>
+                            </div>
                             {getPriorityChip(test.priority)}
                             {test.loincCode && (
                               <Chip
                                 label={`LOINC: ${test.loincCode}`}
                                 size="small"
-                                variant="outlined"
+                                
                               />
                             )}
-                          </Box>
+                          </div>
                         }
                         secondary={
-                          <Typography variant="body2" color="text.secondary">
+                          <div  color="text.secondary">}
                             {test.reasoning}
-                          </Typography>
+                          </div>
                         }
                       />
-                    </ListItem>
+                    </div>
                   ))}
                 </List>
               </AccordionDetails>
             </Accordion>
           )}
-
           {/* Medication Suggestions */}
           {result.medicationSuggestions.length > 0 && (
             <Accordion
@@ -395,127 +325,115 @@ const DiagnosticResultsPanel: React.FC<DiagnosticResultsPanelProps> = ({
               onChange={() => handleToggleSection('medications')}
             >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <MedicationIcon sx={{ mr: 1, color: 'success.main' }} />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                <div className="">
+                  <MedicationIcon className="" />
+                  <div  className="">
                     Medication Suggestions (
                     {result.medicationSuggestions.length})
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               </AccordionSummary>
               <AccordionDetails>
-                <Stack spacing={2}>
+                <div spacing={2}>
                   {result.medicationSuggestions.map((medication, index) => (
-                    <Paper key={index} sx={{ p: 2 }} variant="outlined">
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          mb: 2,
-                        }}
+                    <div key={index} className="" >
+                      <div
+                        className=""
                       >
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ fontWeight: 600 }}
+                        <div
+                          
+                          className=""
                         >
                           {medication.drugName}
-                        </Typography>
+                        </div>
                         {medication.rxcui && (
                           <Chip
                             label={`RxCUI: ${medication.rxcui}`}
                             size="small"
-                            variant="outlined"
+                            
                           />
                         )}
-                      </Box>
-
-                      <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={6} md={3}>
-                          <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div container spacing={2} className="">
+                        <div item xs={6} md={3}>
+                          <div  color="text.secondary">
                             Dosage
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          </div>
+                          <div  className="">
                             {medication.dosage}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6} md={3}>
-                          <Typography variant="caption" color="text.secondary">
+                          </div>
+                        </div>
+                        <div item xs={6} md={3}>
+                          <div  color="text.secondary">
                             Frequency
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          </div>
+                          <div  className="">
                             {medication.frequency}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6} md={3}>
-                          <Typography variant="caption" color="text.secondary">
+                          </div>
+                        </div>
+                        <div item xs={6} md={3}>
+                          <div  color="text.secondary">
                             Duration
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          </div>
+                          <div  className="">
                             {medication.duration}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-
-                      <Typography
-                        variant="body2"
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        
                         color="text.secondary"
-                        sx={{ mb: 2 }}
+                        className=""
                       >
                         <strong>Reasoning:</strong> {medication.reasoning}
-                      </Typography>
-
+                      </div>
                       {medication.safetyNotes.length > 0 && (
-                        <Box>
-                          <Typography
-                            variant="caption"
+                        <div>
+                          <div
+                            
                             color="text.secondary"
-                            sx={{ display: 'block', mb: 1 }}
+                            className=""
                           >
                             Safety Notes:
-                          </Typography>
-                          <Stack spacing={0.5}>
+                          </div>
+                          <div spacing={0.5}>
                             {medication.safetyNotes.map((note, noteIndex) => (
                               <Alert
                                 key={noteIndex}
                                 severity="warning"
-                                sx={{ py: 0.5 }}
+                                className=""
                               >
-                                <Typography variant="body2">{note}</Typography>
+                                <div >{note}</div>
                               </Alert>
                             ))}
-                          </Stack>
-                        </Box>
+                          </div>
+                        </div>
                       )}
-                    </Paper>
+                    </div>
                   ))}
-
                   {/* Drug Interaction Alerts */}
                   <InteractionAlerts
                     medications={result.medicationSuggestions}
                   />
-                </Stack>
+                </div>
               </AccordionDetails>
             </Accordion>
           )}
-        </Stack>
-
-        <Divider sx={{ my: 3 }} />
-
+        </div>
+        <Separator className="" />
         {/* AI Disclaimer */}
-        <Alert severity="info" sx={{ mb: 3 }}>
-          <Typography variant="body2">
+        <Alert severity="info" className="">
+          <div >
             <strong>AI Disclaimer:</strong> {result.disclaimer}
-          </Typography>
+          </div>
         </Alert>
-
         {/* Review Status */}
         {result.pharmacistReview && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          <div className="">
+            <div  className="">
               Pharmacist Review Status
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            </div>
+            <div className="">
               <Chip
                 label={result.pharmacistReview.status.toUpperCase()}
                 color={
@@ -523,44 +441,41 @@ const DiagnosticResultsPanel: React.FC<DiagnosticResultsPanelProps> = ({
                     ? 'success'
                     : result.pharmacistReview.status === 'modified'
                       ? 'warning'
-                      : 'error'
+                      : 'error'}
                 }
-                variant="filled"
+                
               />
-              <Typography variant="body2" color="text.secondary">
+              <div  color="text.secondary">
                 Reviewed on{' '}
                 {new Date(
                   result.pharmacistReview.reviewedAt
                 ).toLocaleDateString()}
-              </Typography>
-            </Box>
-
+              </div>
+            </div>
             {result.pharmacistReview.modifications && (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                <Typography variant="body2">
+              <Alert severity="info" className="">
+                <div >
                   <strong>Modifications:</strong>{' '}
                   {result.pharmacistReview.modifications}
-                </Typography>
+                </div>
               </Alert>
             )}
-
             {result.pharmacistReview.rejectionReason && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                <Typography variant="body2">
+              <Alert severity="error" className="">
+                <div >
                   <strong>Rejection Reason:</strong>{' '}
                   {result.pharmacistReview.rejectionReason}
-                </Typography>
+                </div>
               </Alert>
             )}
-          </Box>
+          </div>
         )}
-
         {/* Action Buttons */}
         {!result.pharmacistReview && (onApprove || onModify || onReject) && (
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+          <div className="">
             {onReject && (
               <Button
-                variant="outlined"
+                
                 color="error"
                 onClick={onReject}
                 disabled={loading}
@@ -570,7 +485,7 @@ const DiagnosticResultsPanel: React.FC<DiagnosticResultsPanelProps> = ({
             )}
             {onModify && (
               <Button
-                variant="outlined"
+                
                 color="warning"
                 onClick={onModify}
                 disabled={loading}
@@ -580,7 +495,7 @@ const DiagnosticResultsPanel: React.FC<DiagnosticResultsPanelProps> = ({
             )}
             {onApprove && (
               <Button
-                variant="contained"
+                
                 color="success"
                 onClick={onApprove}
                 disabled={loading}
@@ -588,11 +503,10 @@ const DiagnosticResultsPanel: React.FC<DiagnosticResultsPanelProps> = ({
                 {loading ? 'Processing...' : 'Approve'}
               </Button>
             )}
-          </Box>
+          </div>
         )}
       </CardContent>
     </Card>
   );
 };
-
 export default DiagnosticResultsPanel;

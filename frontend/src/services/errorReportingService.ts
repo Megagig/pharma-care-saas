@@ -1,6 +1,3 @@
-import { performanceMonitor } from '../utils/performanceMonitor';
-import { CommunicationError } from './communicationErrorService';
-
 // Error report interface
 export interface ErrorReport {
     id: string;
@@ -125,8 +122,7 @@ class ErrorReportingService {
         window.addEventListener('unhandledrejection', (event) => {
             this.reportError(event.reason, {
                 component: 'global',
-                action: 'unhandled_promise_rejection',
-            });
+                action: 'unhandled_promise_rejection'}
         });
 
         // Handle global JavaScript errors
@@ -134,8 +130,7 @@ class ErrorReportingService {
             this.reportError(event.error || new Error(event.message), {
                 component: 'global',
                 action: 'javascript_error',
-                url: event.filename,
-            });
+                url: event.filename}
         });
 
         // Handle resource loading errors
@@ -145,8 +140,7 @@ class ErrorReportingService {
                 this.reportError(new Error(`Resource loading failed: ${target.tagName}`), {
                     component: 'resource_loader',
                     action: 'resource_load_error',
-                    url: (target as any).src || (target as any).href,
-                });
+                    url: (target as any).src || (target as any).href}
             }
         }, true);
     }
@@ -157,10 +151,10 @@ class ErrorReportingService {
     private setupInteractionTracking(): void {
         // Track clicks
         document.addEventListener('click', (event) => {
-            this.trackInteraction({
+            this.trackInteraction({ 
                 type: 'click',
                 target: this.getElementSelector(event.target as Element),
-                timestamp: Date.now(),
+                timestamp: Date.now()}
             });
         });
 
@@ -168,15 +162,14 @@ class ErrorReportingService {
         document.addEventListener('input', (event) => {
             const target = event.target as HTMLInputElement;
             if (target.type !== 'password') { // Don't track password inputs
-                this.trackInteraction({
+                this.trackInteraction({ 
                     type: 'input',
                     target: this.getElementSelector(target),
                     timestamp: Date.now(),
                     data: {
                         inputType: target.type,
-                        value: this.sanitizeValue(target.value),
-                    },
-                });
+                        value: this.sanitizeValue(target.value)}
+                    }
             }
         });
 
@@ -185,14 +178,13 @@ class ErrorReportingService {
         const checkUrlChange = () => {
             const currentUrl = window.location.href;
             if (currentUrl !== lastUrl) {
-                this.trackInteraction({
+                this.trackInteraction({ 
                     type: 'navigation',
                     timestamp: Date.now(),
                     data: {
                         from: lastUrl,
-                        to: currentUrl,
-                    },
-                });
+                        to: currentUrl}
+                    }
                 lastUrl = currentUrl;
             }
         };
@@ -421,11 +413,10 @@ class ErrorReportingService {
                         'Content-Type': 'application/json',
                     },
                     credentials: 'include',
-                    body: JSON.stringify({
+                    body: JSON.stringify({ 
                         reports: reportsToSend,
-                        sessionId: this.sessionId,
-                    }),
-                });
+                        sessionId: this.sessionId}
+                    })}
             } else {
                 // Log to console if no endpoint configured
                 console.log('Error Reports (no endpoint configured):', reportsToSend);
@@ -446,9 +437,9 @@ class ErrorReportingService {
     private handleBeforeUnload = (): void => {
         // Use sendBeacon for reliable delivery during page unload
         if (this.reportQueue.length > 0 && this.config.endpoint) {
-            const data = JSON.stringify({
+            const data = JSON.stringify({ 
                 reports: this.reportQueue,
-                sessionId: this.sessionId,
+                sessionId: this.sessionId}
             });
 
             if (navigator.sendBeacon) {
@@ -507,11 +498,11 @@ class ErrorReportingService {
      * Export error reports for analysis
      */
     exportReports(): string {
-        return JSON.stringify({
+        return JSON.stringify({ 
             sessionId: this.sessionId,
             timestamp: Date.now(),
             reports: this.reportQueue,
-            config: this.config,
+            config: this.config}
         }, null, 2);
     }
 
@@ -541,9 +532,9 @@ class ErrorReportingService {
 }
 
 // Create singleton instance
-export const errorReportingService = new ErrorReportingService({
+export const errorReportingService = new ErrorReportingService({ 
     enabled: process.env.NODE_ENV === 'production',
-    endpoint: process.env.VITE_ERROR_REPORTING_ENDPOINT,
+    endpoint: process.env.VITE_ERROR_REPORTING_ENDPOINT}
 });
 
 // Export service and types

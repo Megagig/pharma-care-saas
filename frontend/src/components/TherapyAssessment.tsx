@@ -1,55 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Stack,
-  TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Tooltip,
-  CircularProgress,
-  LinearProgress,
-  Checkbox,
-  Rating,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
-} from '@mui/material';
-import { Button } from '@/components/ui/button';
-import {
-  AlertTriangle,
-  AlertCircle,
-  CheckCircle,
-  Plus,
-  Edit,
-  X,
-  BarChart3,
-  Stethoscope,
-  Play,
-} from 'lucide-react';
-import { useForm, Controller } from 'react-hook-form';
+
 import FixedGrid from './common/FixedGrid';
 
-import { useMTRStore } from '../stores/mtrStore';
-import type { DrugTherapyProblem, MTRMedicationEntry } from '../types/mtr';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Select } from '@/components/ui/select';
+import { Tooltip } from '@/components/ui/tooltip';
+import { Spinner } from '@/components/ui/spinner';
+import { Progress } from '@/components/ui/progress';
+import { Alert } from '@/components/ui/alert';
 
 interface TherapyAssessmentProps {
   medications: MTRMedicationEntry[];
@@ -211,10 +172,10 @@ const ADHERENCE_BARRIERS = [
   'Poor provider communication',
 ];
 
-const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
+const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({ 
   medications,
   patientInfo,
-  onProblemsIdentified,
+  onProblemsIdentified
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [assessmentSteps, setAssessmentSteps] = useState<AssessmentStep[]>([
@@ -272,27 +233,26 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
     reset,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<ProblemFormData>({
+  } = useForm<ProblemFormData>({ 
     defaultValues: {
       category: 'safety',
       severity: 'moderate',
       evidenceLevel: 'probable',
       affectedMedications: [],
       relatedConditions: [],
-      riskFactors: [],
-    },
-  });
+      riskFactors: []}
+    }
 
   const watchedCategory = watch('category');
 
   // Initialize adherence assessments when medications change
   useEffect(() => {
-    const newAdherenceAssessments = medications.map((med) => ({
+    const newAdherenceAssessments = medications.map((med) => ({ 
       medicationId: med.drugName, // Using drugName as ID for now
       medicationName: med.drugName,
       adherenceScore: med.adherenceScore || 8, // Default to good adherence
       barriers: [],
-      notes: '',
+      notes: ''}
     }));
     setAdherenceAssessments(newAdherenceAssessments);
   }, [medications]);
@@ -397,7 +357,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
 
         // Mock interaction detection logic
         if (shouldCheckInteraction(med1.drugName, med2.drugName)) {
-          interactions.push({
+          interactions.push({  })
             _id: `interaction_${i}_${j}`,
             workplaceId: '',
             patientId: patientInfo?.id || '',
@@ -418,8 +378,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
             createdBy: '',
             isDeleted: false,
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
+            updatedAt: new Date().toISOString()}
         }
       }
     }
@@ -446,7 +405,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
     // Check for duplicates within same class
     Object.entries(drugClasses).forEach(([drugClass, meds]) => {
       if (meds.length > 1 && drugClass !== 'other') {
-        duplicates.push({
+        duplicates.push({  })
           _id: `duplicate_${drugClass}`,
           workplaceId: '',
           patientId: patientInfo?.id || '',
@@ -467,8 +426,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
           createdBy: '',
           isDeleted: false,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+          updatedAt: new Date().toISOString()}
       }
     });
 
@@ -488,7 +446,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
           med.drugName.toLowerCase().includes(allergy.toLowerCase())
         )
       ) {
-        contraindications.push({
+        contraindications.push({  })
           _id: `contraindication_allergy_${med.drugName}`,
           workplaceId: '',
           patientId: patientInfo?.id || '',
@@ -509,8 +467,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
           createdBy: '',
           isDeleted: false,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+          updatedAt: new Date().toISOString()}
       }
 
       // Check against patient conditions
@@ -519,7 +476,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
           hasContraindication(med.drugName, condition)
         )
       ) {
-        contraindications.push({
+        contraindications.push({  })
           _id: `contraindication_condition_${med.drugName}`,
           workplaceId: '',
           patientId: patientInfo?.id || '',
@@ -540,8 +497,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
           createdBy: '',
           isDeleted: false,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+          updatedAt: new Date().toISOString()}
       }
     });
 
@@ -562,7 +518,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
 
       // Check for potentially high doses
       if (isPotentiallyHighDose(med.drugName, doseValue)) {
-        dosingProblems.push({
+        dosingProblems.push({  })
           _id: `dosing_high_${med.drugName}`,
           workplaceId: '',
           patientId: patientInfo?.id || '',
@@ -582,13 +538,12 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
           createdBy: '',
           isDeleted: false,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+          updatedAt: new Date().toISOString()}
       }
 
       // Check for potentially low doses
       if (isPotentiallyLowDose(med.drugName, doseValue)) {
-        dosingProblems.push({
+        dosingProblems.push({  })
           _id: `dosing_low_${med.drugName}`,
           workplaceId: '',
           patientId: patientInfo?.id || '',
@@ -608,8 +563,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
           createdBy: '',
           isDeleted: false,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+          updatedAt: new Date().toISOString()}
       }
     });
 
@@ -622,7 +576,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
     adherenceAssessments.forEach((assessment) => {
       if (assessment.adherenceScore < 7) {
         // Poor adherence threshold
-        adherenceProblems.push({
+        adherenceProblems.push({  })
           _id: `adherence_${assessment.medicationId}`,
           workplaceId: '',
           patientId: patientInfo?.id || '',
@@ -643,8 +597,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
           createdBy: '',
           isDeleted: false,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+          updatedAt: new Date().toISOString()}
       }
     });
 
@@ -655,7 +608,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
   const handleOpenProblemDialog = (problem?: DrugTherapyProblem) => {
     if (problem) {
       setSelectedProblem(problem);
-      reset({
+      reset({ 
         category: problem.category,
         subcategory: problem.subcategory || '',
         type: problem.type,
@@ -665,7 +618,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
         affectedMedications: problem.affectedMedications,
         relatedConditions: problem.relatedConditions,
         evidenceLevel: problem.evidenceLevel,
-        riskFactors: problem.riskFactors,
+        riskFactors: problem.riskFactors}
       });
     } else {
       setSelectedProblem(null);
@@ -678,6 +631,13 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
     setIsDialogOpen(false);
     setSelectedProblem(null);
     reset();
+  };
+
+  // Handle dialog open change for shadcn dialog
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      handleCloseProblemDialog();
+    }
   };
 
   const handleSaveProblem = async (formData: ProblemFormData) => {
@@ -833,134 +793,123 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
   if (medications.length === 0) {
     return (
       <Card>
-        <CardContent sx={{ textAlign: 'center', py: 6 }}>
+        <CardContent className="">
           <BarChart3
             size={48}
             className="text-gray-500 mb-2"
           />
-          <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+          <div  color="text.secondary" className="">
             No Medications to Assess
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Please add medications in the previous step before running therapy
             assessment
-          </Typography>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Box>
+    <div>
       {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
+      <div
+        className=""
       >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <div className="">
           <BarChart3 size={24} className="mr-2 text-blue-600" />
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <div  className="">
             Therapy Assessment
-          </Typography>
+          </div>
           <Chip
             label={`${medications.length} medications`}
             size="small"
             color="primary"
-            variant="outlined"
-            sx={{ ml: 2 }}
+            
+            className=""
           />
-        </Box>
-        <Stack direction="row" spacing={2}>
+        </div>
+        <div direction="row" spacing={2}>
           <Button
-            variant="outline"
+            
             onClick={() => handleOpenProblemDialog()}
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Problem
           </Button>
           <Button
-            variant="default"
+            
             onClick={runAutomatedAssessment}
             disabled={isRunningAssessment}
           >
             {isRunningAssessment ? (
-              <CircularProgress size={16} className="mr-2" />
+              <Spinner size="sm" className="mr-2" />
             ) : (
               <Play className="w-4 h-4 mr-2" />
             )}
             {isRunningAssessment ? 'Running Assessment...' : 'Run Assessment'}
           </Button>
-        </Stack>
-      </Box>
+        </div>
+      </div>
 
       {/* Assessment Progress */}
       {isRunningAssessment && (
-        <Card sx={{ mb: 3 }}>
+        <Card className="">
           <CardContent>
-            <Typography variant="subtitle2" sx={{ mb: 2 }}>
+            <div  className="">
               Assessment Progress
-            </Typography>
-            <LinearProgress
-              variant="determinate"
-              value={assessmentProgress}
-              sx={{ height: 8, borderRadius: 4 }}
+            </div>
+            <Progress
+              
+              className=""
             />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            <div  color="text.secondary" className="">
               {assessmentProgress}% complete
-            </Typography>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* Overall Progress and Statistics */}
-      <FixedGrid container spacing={3} sx={{ mb: 3 }}>
+      <FixedGrid container spacing={3} className="">
         <FixedGrid item xs={12} md={8}>
           <Card>
             <CardContent>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+              <div  className="">
                 Assessment Overview
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={overallProgress}
-                sx={{ height: 8, borderRadius: 4, mb: 2 }}
+              </div>
+              <Progress
+                
+                className=""
               />
-              <Typography variant="body2" color="text.secondary">
+              <div  color="text.secondary">
                 {assessmentSteps.filter((s) => s.completed).length} of{' '}
                 {assessmentSteps.length} assessments completed
-              </Typography>
+              </div>
             </CardContent>
           </Card>
         </FixedGrid>
         <FixedGrid item xs={12} md={4}>
           <Card>
             <CardContent>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+              <div  className="">
                 Problems Identified
-              </Typography>
-              <Stack spacing={1}>
+              </div>
+              <div spacing={1}>
                 {SEVERITY_LEVELS.map((level) => (
-                  <Box
+                  <div
                     key={level.value}
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
+                    className=""
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <div className="">
                       {getSeverityIcon(level.value)}
-                      <Typography variant="body2" sx={{ ml: 1 }}>
+                      <div  className="">
                         {level.label}
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                     <Chip
                       label={
-                        problemStats[level.value as keyof typeof problemStats]
+                        problemStats[level.value as keyof typeof problemStats]}
                       }
                       size="small"
                       color={
@@ -971,13 +920,13 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                           | 'error'
                           | 'info'
                           | 'success'
-                          | 'warning'
+                          | 'warning'}
                       }
-                      variant="outlined"
+                      
                     />
-                  </Box>
+                  </div>
                 ))}
-              </Stack>
+              </div>
             </CardContent>
           </Card>
         </FixedGrid>
@@ -990,43 +939,43 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
             <StepLabel
               optional={
                 step.problems.length > 0 && (
-                  <Typography variant="caption" color="error">
+                  <div  color="error">}
                     {step.problems.length} problem(s) found
-                  </Typography>
+                  </div>
                 )
               }
             >
               {step.title}
             </StepLabel>
             <StepContent>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              <div  color="text.secondary" className="">
                 {step.description}
-              </Typography>
+              </div>
 
               {/* Step-specific content */}
               {step.id === 'adherence' && (
-                <Card sx={{ mb: 2 }}>
+                <Card className="">
                   <CardContent>
-                    <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                    <div  className="">
                       Adherence Assessment
-                    </Typography>
-                    <Stack spacing={2}>
+                    </div>
+                    <div spacing={2}>
                       {adherenceAssessments.map((assessment) => (
-                        <Box key={assessment.medicationId}>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 600, mb: 1 }}
+                        <div key={assessment.medicationId}>
+                          <div
+                            
+                            className=""
                           >
                             {assessment.medicationName}
-                          </Typography>
+                          </div>
                           <FixedGrid container spacing={2}>
                             <FixedGrid item xs={12} sm={4}>
-                              <Typography
-                                variant="caption"
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 Adherence Score (0-10)
-                              </Typography>
+                              </div>
                               <Rating
                                 value={Number(assessment.adherenceScore) || 0}
                                 max={10}
@@ -1034,15 +983,15 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                                   updateAdherenceAssessment(
                                     assessment.medicationId,
                                     {
-                                      adherenceScore: value || 0,
+                                      adherenceScore: value || 0,}
                                     }
                                   )
                                 }
                               />
                             </FixedGrid>
                             <FixedGrid item xs={12} sm={8}>
-                              <FormControl fullWidth size="small">
-                                <InputLabel>Adherence Barriers</InputLabel>
+                              <div fullWidth size="small">
+                                <Label>Adherence Barriers</Label>
                                 <Select
                                   multiple
                                   value={assessment.barriers}
@@ -1050,43 +999,39 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                                     updateAdherenceAssessment(
                                       assessment.medicationId,
                                       {
-                                        barriers: e.target.value as string[],
+                                        barriers: e.target.value as string[],}
                                       }
                                     )
                                   }
                                   renderValue={(selected) => (
-                                    <Box
-                                      sx={{
-                                        display: 'flex',
-                                        flexWrap: 'wrap',
-                                        gap: 0.5,
-                                      }}
+                                    <div
+                                      className=""
                                     >
                                       {selected.map((value) => (
-                                        <Chip
+                                        <Chip}
                                           key={value}
                                           label={value}
                                           size="small"
                                         />
                                       ))}
-                                    </Box>
+                                    </div>
                                   )}
                                 >
                                   {ADHERENCE_BARRIERS.map((barrier) => (
                                     <MenuItem key={barrier} value={barrier}>
                                       <Checkbox
                                         checked={assessment.barriers.includes(
-                                          barrier
+                                          barrier}
                                         )}
                                       />
                                       {barrier}
                                     </MenuItem>
                                   ))}
                                 </Select>
-                              </FormControl>
+                              </div>
                             </FixedGrid>
                           </FixedGrid>
-                          <TextField
+                          <Input
                             fullWidth
                             size="small"
                             placeholder="Additional notes..."
@@ -1095,22 +1040,22 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                               updateAdherenceAssessment(
                                 assessment.medicationId,
                                 {
-                                  notes: e.target.value,
+                                  notes: e.target.value,}
                                 }
                               )
                             }
-                            sx={{ mt: 1 }}
+                            className=""
                           />
-                        </Box>
+                        </div>
                       ))}
-                    </Stack>
+                    </div>
                   </CardContent>
                 </Card>
               )}
 
               {/* Problems found in this step */}
               {step.problems.length > 0 && (
-                <TableContainer component={Paper} sx={{ mb: 2 }}>
+                <TableContainer  className="">
                   <Table size="small">
                     <TableHead>
                       <TableRow>
@@ -1124,18 +1069,18 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                       {step.problems.map((problem) => (
                         <TableRow key={problem._id}>
                           <TableCell>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 600 }}
+                            <div
+                              
+                              className=""
                             >
                               {problem.description}
-                            </Typography>
-                            <Typography
-                              variant="caption"
+                            </div>
+                            <div
+                              
                               color="text.secondary"
                             >
                               {problem.clinicalSignificance}
-                            </Typography>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Chip
@@ -1149,28 +1094,24 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                                   | 'error'
                                   | 'info'
                                   | 'success'
-                                  | 'warning'
+                                  | 'warning'}
                               }
                               icon={getSeverityIcon(problem.severity)}
                             />
                           </TableCell>
                           <TableCell>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                flexWrap: 'wrap',
-                                gap: 0.5,
-                              }}
+                            <div
+                              className=""
                             >
                               {problem.affectedMedications.map((med) => (
                                 <Chip
                                   key={med}
                                   label={med}
                                   size="small"
-                                  variant="outlined"
+                                  
                                 />
                               ))}
-                            </Box>
+                            </div>
                           </TableCell>
                           <TableCell align="right">
                             <Tooltip title="Edit Problem">
@@ -1189,19 +1130,18 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                 </TableContainer>
               )}
 
-              <Box sx={{ mb: 1 }}>
+              <div className="">
                 <Button
-                  variant="default"
+                  
                   onClick={() => {
                     if (step.id === 'adherence') {
-                      completeAdherenceAssessment();
+                      completeAdherenceAssessment();}
                     }
                     setActiveStep((prev) => prev + 1);
-                  }}
                   className="mt-1 mr-1"
                   disabled={
                     step.id === 'adherence' &&
-                    adherenceAssessments.some((a) => a.adherenceScore === 0)
+                    adherenceAssessments.some((a) => a.adherenceScore === 0)}
                   }
                 >
                   {index === assessmentSteps.length - 1
@@ -1212,11 +1152,11 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                   disabled={index === 0}
                   onClick={() => setActiveStep((prev) => prev - 1)}
                   className="mt-1 mr-1"
-                  variant="ghost"
+                  
                 >
                   Back
                 </Button>
-              </Box>
+              </div>
             </StepContent>
           </Step>
         ))}
@@ -1224,11 +1164,11 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
 
       {/* All Problems Summary */}
       {allProblems.length > 0 && (
-        <Card sx={{ mt: 3 }}>
+        <Card className="">
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+            <div  className="">
               All Identified Problems ({allProblems.length})
-            </Typography>
+            </div>
             <TableContainer>
               <Table>
                 <TableHead>
@@ -1248,16 +1188,16 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                         <Chip
                           label={problem.category}
                           size="small"
-                          variant="outlined"
+                          
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        <div  className="">
                           {problem.description}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           {problem.clinicalSignificance}
-                        </Typography>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -1271,29 +1211,29 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                               | 'error'
                               | 'info'
                               | 'success'
-                              | 'warning'
+                              | 'warning'}
                           }
                           icon={getSeverityIcon(problem.severity)}
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">
+                        <div >
                           {problem.evidenceLevel}
-                        </Typography>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <Box
-                          sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}
+                        <div
+                          className=""
                         >
                           {problem.affectedMedications.map((med) => (
                             <Chip
                               key={med}
                               label={med}
                               size="small"
-                              variant="outlined"
+                              
                             />
                           ))}
-                        </Box>
+                        </div>
                       </TableCell>
                       <TableCell align="right">
                         <Tooltip title="Edit Problem">
@@ -1315,26 +1255,16 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
       )}
 
       {/* Add/Edit Problem Dialog */}
-      <Dialog
-        open={isDialogOpen}
-        onClose={handleCloseProblemDialog}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', pr: 6 }}>
-            <Stethoscope size={24} className="mr-2" />
-            {selectedProblem ? 'Edit Drug Therapy Problem' : 'Add New Problem'}
-          </Box>
-          <IconButton
-            onClick={handleCloseProblemDialog}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
-          >
-            <X size={24} />
-          </IconButton>
-        </DialogTitle>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Stethoscope size={24} />
+              {selectedProblem ? 'Edit Drug Therapy Problem' : 'Add New Problem'}
+            </DialogTitle>
+          </DialogHeader>
 
-        <DialogContent dividers>
+          <div className="py-4">
           <form onSubmit={handleSubmit(handleSaveProblem)}>
             <FixedGrid container spacing={3}>
               {/* Category */}
@@ -1342,31 +1272,31 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                 <Controller
                   name="category"
                   control={control}
-                  rules={{ required: 'Category is required' }}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.category}>
-                      <InputLabel>Category</InputLabel>
+                  
+                  render={({  field  }) => (
+                    <div fullWidth error={!!errors.category}>
+                      <Label>Category</Label>
                       <Select {...field} label="Category">
                         {PROBLEM_CATEGORIES.map((category) => (
                           <MenuItem key={category.value} value={category.value}>
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                sx={{ fontWeight: 600 }}
+                            <div>
+                              <div
+                                
+                                className=""
                               >
                                 {category.label}
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 {category.description}
-                              </Typography>
-                            </Box>
+                              </div>
+                            </div>
                           </MenuItem>
                         ))}
                       </Select>
-                    </FormControl>
+                    </div>
                   )}
                 />
               </FixedGrid>
@@ -1376,10 +1306,10 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                 <Controller
                   name="type"
                   control={control}
-                  rules={{ required: 'Type is required' }}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.type}>
-                      <InputLabel>Problem Type</InputLabel>
+                  
+                  render={({  field  }) => (
+                    <div fullWidth error={!!errors.type}>
+                      <Label>Problem Type</Label>
                       <Select {...field} label="Problem Type">
                         {watchedCategory &&
                           PROBLEM_TYPES[watchedCategory]?.map((type) => (
@@ -1388,7 +1318,7 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                             </MenuItem>
                           ))}
                       </Select>
-                    </FormControl>
+                    </div>
                   )}
                 />
               </FixedGrid>
@@ -1398,34 +1328,34 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                 <Controller
                   name="severity"
                   control={control}
-                  rules={{ required: 'Severity is required' }}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.severity}>
-                      <InputLabel>Severity</InputLabel>
+                  
+                  render={({  field  }) => (
+                    <div fullWidth error={!!errors.severity}>
+                      <Label>Severity</Label>
                       <Select {...field} label="Severity">
                         {SEVERITY_LEVELS.map((level) => (
                           <MenuItem key={level.value} value={level.value}>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <div className="">
                               {getSeverityIcon(level.value)}
-                              <Box sx={{ ml: 1 }}>
-                                <Typography
-                                  variant="body2"
-                                  sx={{ fontWeight: 600 }}
+                              <div className="">
+                                <div
+                                  
+                                  className=""
                                 >
                                   {level.label}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
+                                </div>
+                                <div
+                                  
                                   color="text.secondary"
                                 >
                                   {level.description}
-                                </Typography>
-                              </Box>
-                            </Box>
+                                </div>
+                              </div>
+                            </div>
                           </MenuItem>
                         ))}
                       </Select>
-                    </FormControl>
+                    </div>
                   )}
                 />
               </FixedGrid>
@@ -1435,31 +1365,31 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                 <Controller
                   name="evidenceLevel"
                   control={control}
-                  rules={{ required: 'Evidence level is required' }}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.evidenceLevel}>
-                      <InputLabel>Evidence Level</InputLabel>
+                  
+                  render={({  field  }) => (
+                    <div fullWidth error={!!errors.evidenceLevel}>
+                      <Label>Evidence Level</Label>
                       <Select {...field} label="Evidence Level">
                         {EVIDENCE_LEVELS.map((level) => (
                           <MenuItem key={level.value} value={level.value}>
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                sx={{ fontWeight: 600 }}
+                            <div>
+                              <div
+                                
+                                className=""
                               >
                                 {level.label}
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 {level.description}
-                              </Typography>
-                            </Box>
+                              </div>
+                            </div>
                           </MenuItem>
                         ))}
                       </Select>
-                    </FormControl>
+                    </div>
                   )}
                 />
               </FixedGrid>
@@ -1473,11 +1403,10 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                     required: 'Description is required',
                     minLength: {
                       value: 10,
-                      message: 'Description must be at least 10 characters',
+                      message: 'Description must be at least 10 characters',}
                     },
-                  }}
-                  render={({ field }) => (
-                    <TextField
+                  render={({  field  }) => (
+                    <Input
                       {...field}
                       label="Problem Description"
                       multiline
@@ -1500,11 +1429,10 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                     minLength: {
                       value: 10,
                       message:
-                        'Clinical significance must be at least 10 characters',
+                        'Clinical significance must be at least 10 characters',}
                     },
-                  }}
-                  render={({ field }) => (
-                    <TextField
+                  render={({  field  }) => (
+                    <Input
                       {...field}
                       label="Clinical Significance"
                       multiline
@@ -1522,27 +1450,22 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                 <Controller
                   name="affectedMedications"
                   control={control}
-                  rules={{
-                    required: 'At least one affected medication is required',
-                    validate: (value) =>
-                      value.length > 0 ||
-                      'At least one medication must be selected',
-                  }}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.affectedMedications}>
-                      <InputLabel>Affected Medications</InputLabel>
+                  
+                  render={({  field  }) => (
+                    <div fullWidth error={!!errors.affectedMedications}>
+                      <Label>Affected Medications</Label>
                       <Select
                         {...field}
                         multiple
                         label="Affected Medications"
                         renderValue={(selected) => (
-                          <Box
-                            sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}
+                          <div
+                            className=""
                           >
-                            {selected.map((value) => (
+                            {selected.map((value) => (}
                               <Chip key={value} label={value} size="small" />
                             ))}
-                          </Box>
+                          </div>
                         )}
                       >
                         {medications.map((med) => (
@@ -1555,41 +1478,42 @@ const TherapyAssessment: React.FC<TherapyAssessmentProps> = ({
                         ))}
                       </Select>
                       {errors.affectedMedications && (
-                        <Typography
-                          variant="caption"
+                        <div
+                          
                           color="error"
-                          sx={{ mt: 0.5, ml: 1.5 }}
+                          className=""
                         >
                           {errors.affectedMedications.message}
-                        </Typography>
+                        </div>
                       )}
-                    </FormControl>
+                    </div>
                   )}
                 />
               </FixedGrid>
             </FixedGrid>
           </form>
-        </DialogContent>
+          </div>
 
-        <DialogActions sx={{ p: 3 }}>
-          <Button onClick={handleCloseProblemDialog} disabled={isSubmitting} variant="ghost">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit(handleSaveProblem)}
-            variant="default"
-            disabled={isSubmitting}
-            className="min-w-[120px]"
-          >
-            {isSubmitting
-              ? 'Saving...'
-              : selectedProblem
-              ? 'Update Problem'
-              : 'Add Problem'}
-          </Button>
-        </DialogActions>
+          <DialogFooter className="flex gap-2">
+            <Button onClick={handleCloseProblemDialog} disabled={isSubmitting} >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit(handleSaveProblem)}
+              
+              disabled={isSubmitting}
+              className="min-w-[120px]"
+            >
+              {isSubmitting
+                ? 'Saving...'
+                : selectedProblem
+                ? 'Update Problem'
+                : 'Add Problem'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
-    </Box>
+    </div>
   );
 };
 

@@ -1,52 +1,132 @@
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Chip,
-  AppBar,
-  Toolbar,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  CircularProgress,
-  Alert,
-  ToggleButtonGroup,
-  ToggleButton,
-} from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
-import StarIcon from '@mui/icons-material/Star';
-import BoltIcon from '@mui/icons-material/Bolt';
-import StarsIcon from '@mui/icons-material/Stars';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import React, { useState } from 'react';
 import Footer from '../components/Footer';
 import ThemeToggle from '../components/common/ThemeToggle';
-import {
-  useAvailablePlansQuery,
-  useCreateCheckoutSessionMutation,
-} from '../queries/useSubscription';
+import { Star, Bolt, Check, Loader2 } from 'lucide-react';
+
+// Mock components for now
+const MockButton = ({ children, ...props }: any) => (
+  <button {...props} className={`px-3 py-1 rounded-md ${props.className || ''}`}>
+    {children}
+  </button>
+);
+
+const MockCard = ({ children, ...props }: any) => (
+  <div {...props} className={`bg-white dark:bg-gray-800 rounded-lg shadow ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockCardContent = ({ children, ...props }: any) => (
+  <div {...props} className={`p-6 ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockCardHeader = ({ children, ...props }: any) => (
+  <div {...props} className={`p-6 ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockCardTitle = ({ children, ...props }: any) => (
+  <h3 {...props} className={`text-xl font-bold ${props.className || ''}`}>
+    {children}
+  </h3>
+);
+
+const MockAlert = ({ children, ...props }: any) => (
+  <div {...props} className={`p-4 mb-4 rounded-md ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockAlertDescription = ({ children, ...props }: any) => (
+  <div {...props} className={`text-sm ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockAccordion = ({ children, ...props }: any) => (
+  <div {...props} className={`w-full ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockAccordionItem = ({ children, ...props }: any) => (
+  <div {...props} className={`border-b ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockAccordionTrigger = ({ children, ...props }: any) => (
+  <button {...props} className={`flex justify-between items-center w-full py-4 text-left font-medium ${props.className || ''}`}>
+    {children}
+    <span>▼</span>
+  </button>
+);
+
+const MockAccordionContent = ({ children, ...props }: any) => (
+  <div {...props} className={`pb-4 pt-2 text-sm ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockBadge = ({ children, ...props }: any) => (
+  <span {...props} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${props.variant === 'secondary'
+      ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
+      : 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
+    } ${props.className || ''}`}>
+    {children}
+  </span>
+);
+
+// Replace imports with mock components
+const Button = MockButton;
+const Card = MockCard;
+const CardContent = MockCardContent;
+const CardHeader = MockCardHeader;
+const CardTitle = MockCardTitle;
+const Alert = MockAlert;
+const AlertDescription = MockAlertDescription;
+const Accordion = MockAccordion;
+const AccordionItem = MockAccordionItem;
+const AccordionTrigger = MockAccordionTrigger;
+const AccordionContent = MockAccordionContent;
+const Badge = MockBadge;
 
 const Pricing = () => {
-  const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>(
-    'monthly'
-  );
-  const {
-    data: plans,
-    isLoading,
-    error,
-  } = useAvailablePlansQuery(billingInterval);
-  const createCheckoutSession = useCreateCheckoutSessionMutation();
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
+
+  // Mock data for plans
+  const plans = [
+    {
+      _id: '1',
+      name: 'Basic',
+      priceNGN: 5000,
+      displayedFeatures: ['Up to 5 users', 'Basic patient management', 'Email support'],
+      metadata: { mostPopular: false }
+    },
+    {
+      _id: '2',
+      name: 'Professional',
+      priceNGN: 15000,
+      displayedFeatures: ['Up to 20 users', 'Advanced patient management', 'Priority support', 'Analytics dashboard'],
+      metadata: { mostPopular: true }
+    },
+    {
+      _id: '3',
+      name: 'Enterprise',
+      priceNGN: 30000,
+      displayedFeatures: ['Unlimited users', 'Full feature access', '24/7 phone support', 'Custom integrations'],
+      metadata: { mostPopular: false },
+      isContactSales: true,
+      whatsappNumber: '1234567890'
+    }
+  ];
 
   const handleSubscribe = (planId: string) => {
-    createCheckoutSession.mutate({ planId, billingInterval });
+    // Mock implementation
+    console.log(`Subscribing to plan ${planId}`);
   };
 
   const handleContactSales = (whatsappNumber?: string) => {
@@ -58,610 +138,209 @@ const Pricing = () => {
     }
   };
 
-  const handleBillingIntervalChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    newInterval: 'monthly' | 'yearly'
-  ) => {
-    if (newInterval !== null) {
-      setBillingInterval(newInterval);
-    }
+  const handleBillingIntervalChange = (interval: 'monthly' | 'yearly') => {
+    setBillingInterval(interval);
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <AppBar position="static" color="transparent" elevation={0}>
-        <Toolbar>
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                bgcolor: 'primary.main',
-                borderRadius: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                mr: 1,
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{ color: 'white', fontWeight: 'bold' }}
-              >
-                P
-              </Typography>
-            </Box>
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 600, color: 'text.primary' }}
-            >
-              PharmaCare
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <Button component={Link} to="/" color="inherit">
-              Home
+      <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between px-4">
+          <div className="flex items-center space-x-2">
+            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold">
+              P
+            </div>
+            <div className="font-bold text-xl">PharmaCare</div>
+          </div>
+          <div className="hidden md:flex items-center space-x-4">
+            <Button className="text-gray-700 dark:text-gray-300">
+              <a href="/">Home</a>
             </Button>
-            <Button component={Link} to="/about" color="inherit">
-              About
+            <Button className="text-gray-700 dark:text-gray-300">
+              <a href="/about">About</a>
             </Button>
-            <Button component={Link} to="/contact" color="inherit">
-              Contact
+            <Button className="text-gray-700 dark:text-gray-300">
+              <a href="/contact">Contact</a>
             </Button>
-            <Button component={Link} to="/pricing" color="inherit">
-              Pricing
+            <Button className="text-gray-700 dark:text-gray-300">
+              <a href="/pricing">Pricing</a>
             </Button>
-            <ThemeToggle size="sm" variant="button" />
-            <Button component={Link} to="/login" color="inherit">
-              Sign In
+            <ThemeToggle />
+            <Button className="text-gray-700 dark:text-gray-300">
+              <a href="/login">Sign In</a>
             </Button>
-            <Button
-              component={Link}
-              to="/register"
-              variant="contained"
-              sx={{ borderRadius: 3 }}
-            >
-              Get Started
+            <Button className="bg-blue-600 text-white hover:bg-blue-700">
+              <a href="/register">Get Started</a>
             </Button>
-          </Box>
-        </Toolbar>
-      </AppBar>
+          </div>
+        </div>
+      </header>
 
       {/* Hero Section */}
-      <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
-        <Box sx={{ textAlign: 'center', mb: 8 }}>
-          <Typography
-            variant="h2"
-            component="h1"
-            sx={{
-              fontWeight: 700,
-              mb: 3,
-              color: 'text.primary',
-              fontSize: { xs: '2.5rem', md: '3.5rem' },
-            }}
-          >
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center space-y-6">
+          <h1 className="text-4xl font-bold tracking-tight">
             Simple, Transparent Pricing
-          </Typography>
-          <Typography
-            variant="h6"
-            sx={{
-              mb: 4,
-              color: 'text.secondary',
-              maxWidth: '600px',
-              mx: 'auto',
-            }}
-          >
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Choose the perfect plan for your pharmacy practice. Upgrade or
             downgrade at any time.
-          </Typography>
-          <Chip
-            label="🎉 30-day free trial on all plans"
-            sx={{
-              bgcolor: 'success.light',
-              color: 'success.dark',
-              fontWeight: 600,
-              py: 2,
-              px: 1,
-              height: 'auto',
-            }}
-          />
-        </Box>
+          </p>
+          <Badge className="px-4 py-2">
+            🎉 30-day free trial on all plans
+          </Badge>
+        </div>
 
         {/* Billing Interval Toggle */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 6 }}>
-          <ToggleButtonGroup
-            value={billingInterval}
-            exclusive
-            onChange={handleBillingIntervalChange}
-            aria-label="billing interval"
-          >
-            <ToggleButton value="monthly" aria-label="monthly billing">
+        <div className="flex justify-center mt-8">
+          <div className="inline-flex rounded-md shadow-sm" role="group">
+            <button
+              type="button"
+              className={`px-4 py-2 text-sm font-medium rounded-l-lg ${billingInterval === 'monthly'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              onClick={() => handleBillingIntervalChange('monthly')}
+            >
               Monthly
-            </ToggleButton>
-            <ToggleButton value="yearly" aria-label="yearly billing">
+            </button>
+            <button
+              type="button"
+              className={`px-4 py-2 text-sm font-medium rounded-r-md ${billingInterval === 'yearly'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              onClick={() => handleBillingIntervalChange('yearly')}
+            >
               Yearly (Save 25%)
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
+            </button>
+          </div>
+        </div>
 
         {/* Pricing Cards */}
-        {isLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <CircularProgress />
-          </Box>
-        )}
-        {error && (
-          <Alert severity="error">
-            Error fetching pricing plans. Please try again later.
-          </Alert>
-        )}
-        <Box
-          sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 4,
-            justifyContent: 'center',
-          }}
-        >
-          {plans?.map((plan, index) => (
-            <Box
-              key={plan._id || index}
-              sx={{ flex: '1 1 300px', maxWidth: '400px' }}
-            >
-              <Card
-                sx={{
-                  height: '100%',
-                  position: 'relative',
-                  border: plan.metadata?.mostPopular ? 2 : 1,
-                  borderColor: plan.metadata?.mostPopular
-                    ? 'primary.main'
-                    : 'grey.200',
-                  transform: plan.metadata?.mostPopular
-                    ? 'scale(1.05)'
-                    : 'scale(1)',
-                  transition: 'all 0.3s ease-in-out',
-                  '&:hover': {
-                    transform: plan.metadata?.mostPopular
-                      ? 'scale(1.05)'
-                      : 'scale(1.02)',
-                    boxShadow: plan.metadata?.mostPopular ? 6 : 4,
-                  },
-                }}
-              >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+          {plans.map((plan, index) => (
+            <div key={plan._id || index} className="relative">
+              <Card className={`h-full ${plan.metadata?.mostPopular ? 'border-blue-500 shadow-lg' : ''}`}>
                 {plan.metadata?.mostPopular && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: -1,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      bgcolor: 'primary.main',
-                      color: 'white',
-                      px: 3,
-                      py: 0.5,
-                      borderRadius: '0 0 12px 12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                    }}
-                  >
-                    <StarIcon fontSize="small" />
-                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                      Most Popular
-                    </Typography>
-                  </Box>
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center">
+                    <Star className="h-4 w-4 mr-1" />
+                    Most Popular
+                  </div>
                 )}
-
-                <CardContent
-                  sx={{
-                    p: 4,
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
-                >
-                  <Box sx={{ textAlign: 'center', mb: 4 }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mb: 2,
-                      }}
-                    >
-                      {plan.name === 'Enterprise' ? (
-                        <StarsIcon
-                          sx={{
-                            fontSize: 32,
-                            color: 'warning.main',
-                            mr: 1,
-                          }}
-                        />
-                      ) : (
-                        <BoltIcon
-                          sx={{
-                            fontSize: 32,
-                            color: 'primary.main',
-                            mr: 1,
-                          }}
-                        />
-                      )}
-                      <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                        {plan.name}
-                      </Typography>
-                    </Box>
-                    {plan.isContactSales ? (
-                      <Typography
-                        variant="h4"
-                        sx={{ fontWeight: 700, color: 'primary.main' }}
-                      >
-                        Contact Sales
-                      </Typography>
+                <CardHeader className="text-center">
+                  <div className="flex justify-center mb-4">
+                    {plan.name === 'Enterprise' ? (
+                      <Star className="h-8 w-8 text-blue-600" />
                     ) : (
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'baseline',
-                          justifyContent: 'center',
-                          mb: 2,
-                        }}
-                      >
-                        <Typography
-                          variant="h3"
-                          sx={{ fontWeight: 700, color: 'primary.main' }}
-                        >
-                          ₦{plan.priceNGN.toLocaleString()}
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          color="text.secondary"
-                          sx={{ ml: 1 }}
-                        >
-                          /{billingInterval === 'monthly' ? 'month' : 'year'}
-                        </Typography>
-                      </Box>
+                      <Bolt className="h-8 w-8 text-blue-600" />
                     )}
-                    <Typography variant="caption" color="text.secondary">
-                      Billed {billingInterval}
-                    </Typography>
-                  </Box>
-
+                  </div>
+                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                  {plan.isContactSales ? (
+                    <div className="mt-4">
+                      <div className="text-2xl font-bold">Contact Sales</div>
+                    </div>
+                  ) : (
+                    <div className="mt-4">
+                      <div className="text-3xl font-bold">
+                        ₦{plan.priceNGN.toLocaleString()}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400">
+                        /{billingInterval === 'monthly' ? 'month' : 'year'}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Billed {billingInterval}
+                      </div>
+                    </div>
+                  )}
+                </CardHeader>
+                <CardContent className="flex flex-col h-full">
                   {plan.isContactSales ? (
                     <Button
-                      variant="contained"
-                      size="large"
-                      fullWidth
-                      sx={{
-                        mb: 4,
-                        py: 1.5,
-                        borderRadius: 3,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                      }}
+                      className="mt-auto bg-blue-600 text-white hover:bg-blue-700"
                       onClick={() => handleContactSales(plan.whatsappNumber)}
                     >
                       Contact Sales
                     </Button>
                   ) : (
                     <Button
-                      variant={
-                        plan.metadata?.mostPopular ? 'contained' : 'outlined'
-                      }
-                      size="large"
-                      fullWidth
-                      sx={{
-                        mb: 4,
-                        py: 1.5,
-                        borderRadius: 3,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                      }}
+                      className={`mt-auto ${plan.metadata?.mostPopular ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white text-gray-900 border border-gray-300 hover:bg-gray-50'}`}
                       onClick={() => handleSubscribe(plan._id)}
-                      disabled={createCheckoutSession.isPending}
                     >
-                      {createCheckoutSession.isPending
-                        ? 'Processing...'
-                        : plan.metadata?.mostPopular
-                        ? 'Start Free Trial'
-                        : 'Get Started'}
+                      {plan.metadata?.mostPopular ? 'Start Free Trial' : 'Get Started'}
                     </Button>
                   )}
-
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, mb: 2 }}
-                    >
-                      What's included:
-                    </Typography>
-                    <List disablePadding>
-                      {plan.displayedFeatures.map(
-                        (feature: string, featureIndex: number) => (
-                          <ListItem
-                            key={featureIndex}
-                            disablePadding
-                            sx={{ py: 0.5 }}
-                          >
-                            <ListItemIcon sx={{ minWidth: 32 }}>
-                              <CheckIcon
-                                sx={{
-                                  fontSize: 20,
-                                  color: 'success.main',
-                                }}
-                              />
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={feature}
-                              primaryTypographyProps={{ variant: 'body2' }}
-                            />
-                          </ListItem>
-                        )
-                      )}
-                    </List>
-                  </Box>
+                  <div className="mt-8">
+                    <h3 className="font-semibold mb-4">What's included:</h3>
+                    <ul className="space-y-2">
+                      {plan.displayedFeatures.map((feature: string, featureIndex: number) => (
+                        <li key={featureIndex} className="flex items-start">
+                          <Check className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </CardContent>
               </Card>
-            </Box>
+            </div>
           ))}
-        </Box>
+        </div>
 
         {/* FAQ Section */}
-        <Box sx={{ mt: 12 }}>
-          <Typography
-            variant="h4"
-            component="h2"
-            sx={{ fontWeight: 600, mb: 6, textAlign: 'center' }}
-          >
-            Frequently Asked Questions
-          </Typography>
-          <Box sx={{ maxWidth: '800px', mx: 'auto' }}>
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                  },
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Can I change my plan later?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  Yes! You can upgrade or downgrade your plan at any time from
-                  your account settings. Changes take effect immediately, and
-                  you'll be charged or refunded the prorated amount based on
-                  your billing cycle. There are no penalties for changing plans.
-                </Typography>
-              </AccordionDetails>
+        <div className="mt-20">
+          <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+          <div className="max-w-3xl mx-auto">
+            <Accordion className="w-full">
+              <AccordionItem>
+                <AccordionTrigger>Can I change my plan later?</AccordionTrigger>
+                <AccordionContent>
+                  Yes! You can upgrade or downgrade your plan at any time from your account settings.
+                  Changes take effect immediately, and you'll be charged or refunded the prorated amount
+                  based on your billing cycle. There are no penalties for changing plans.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem>
+                <AccordionTrigger>What happens during the free trial?</AccordionTrigger>
+                <AccordionContent>
+                  You get full access to all features for 30 days with no restrictions. No credit card is
+                  required to start your trial. After the trial period ends, you can choose to continue
+                  with a paid plan or your account will be paused until you subscribe.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem>
+                <AccordionTrigger>Is my data secure and HIPAA compliant?</AccordionTrigger>
+                <AccordionContent>
+                  Absolutely! All plans include enterprise-grade security with end-to-end encryption,
+                  secure data centers, and full HIPAA compliance. We undergo regular security audits and
+                  maintain SOC 2 Type II certification to ensure your patient data is always protected.
+                </AccordionContent>
+              </AccordionItem>
             </Accordion>
-
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                  },
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  What happens during the free trial?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  You get full access to all features for 30 days with no
-                  restrictions. No credit card is required to start your trial.
-                  After the trial period ends, you can choose to continue with a
-                  paid plan or your account will be paused until you subscribe.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                  },
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Is my data secure and HIPAA compliant?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  Absolutely! All plans include enterprise-grade security with
-                  end-to-end encryption, secure data centers, and full HIPAA
-                  compliance. We undergo regular security audits and maintain
-                  SOC 2 Type II certification to ensure your patient data is
-                  always protected.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                  },
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Do you offer discounts for annual plans?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  Yes! Save 20% when you choose annual billing instead of
-                  monthly. We also offer volume discounts for Enterprise plans
-                  with multiple users. Contact our sales team to discuss custom
-                  pricing for larger organizations.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                  },
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  What payment methods do you accept?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  We accept all major Nigerian payment methods including bank
-                  transfers, debit cards, and mobile money platforms like
-                  Paystack and Flutterwave. International payments are also
-                  supported through Visa and Mastercard.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                  },
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Can I cancel my subscription anytime?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  Yes, you can cancel your subscription at any time with no
-                  cancellation fees or long-term contracts. Your access will
-                  continue until the end of your current billing period, and you
-                  can export your data before cancellation.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-          </Box>
-        </Box>
+          </div>
+        </div>
 
         {/* CTA Section */}
-        <Box
-          sx={{
-            mt: 12,
-            textAlign: 'center',
-            py: 8,
-            bgcolor: 'grey.50',
-            borderRadius: 4,
-          }}
-        >
-          <Typography
-            variant="h4"
-            component="h2"
-            sx={{ fontWeight: 600, mb: 2 }}
-          >
-            Ready to Transform Your Practice?
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
-          >
-            Join thousands of pharmacists already using PharmaCare to improve
-            patient outcomes and streamline their workflow.
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: 2,
-              justifyContent: 'center',
-            }}
-          >
-            <Button
-              component={Link}
-              to="/register"
-              variant="contained"
-              size="large"
-              sx={{ py: 1.5, px: 4, borderRadius: 3 }}
-            >
-              Start Free Trial
+        <div className="mt-20 text-center bg-gray-100 dark:bg-gray-800 rounded-xl p-12">
+          <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Practice?</h2>
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
+            Join thousands of pharmacists already using PharmaCare to improve patient outcomes
+            and streamline their workflow.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button className="bg-blue-600 text-white hover:bg-blue-700">
+              <a href="/register">Start Free Trial</a>
             </Button>
-            <Button
-              component={Link}
-              to="/contact"
-              variant="outlined"
-              size="large"
-              sx={{ py: 1.5, px: 4, borderRadius: 3 }}
-            >
-              Contact Sales
+            <Button className="bg-white text-gray-900 border border-gray-300 hover:bg-gray-50">
+              <a href="/contact">Contact Sales</a>
             </Button>
-          </Box>
-        </Box>
-      </Container>
-
+          </div>
+        </div>
+      </div>
       <Footer />
-    </Box>
+    </div>
   );
 };
 

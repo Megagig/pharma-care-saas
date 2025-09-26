@@ -1,6 +1,3 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
 interface LoadingState {
   loading: boolean;
   setLoading: (loading: boolean) => void;
@@ -8,10 +5,9 @@ interface LoadingState {
 
 export const useLoadingStore = create<LoadingState>()(
   persist(
-    (set) => ({
-      loading: false,
-      setLoading: (loading: boolean) => set({ loading }),
-    }),
+    (set) => ({ 
+      loading: false}
+      setLoading: (loading: boolean) => set({ loading }), },
     {
       name: 'loading-storage',
     }

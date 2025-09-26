@@ -1,38 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Avatar,
-  Chip,
-  LinearProgress,
-  IconButton,
-  Tooltip,
-  useTheme,
-  alpha,
-  Grid,
-  Paper,
-} from '@mui/material';
-import {
-  Person as PersonIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  Star as StarIcon,
-  Assignment as AssignmentIcon,
-  CheckCircle as CheckCircleIcon,
-  Schedule as ScheduleIcon,
-  Visibility as VisibilityIcon,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
-import { useAuth } from '../../hooks/useAuth';
 import DashboardChart from './DashboardChart';
+
+import { Card, CardContent, Tooltip, Progress, Avatar } from '@/components/ui/button';
 
 interface PharmacistPerformance {
   id: string;
@@ -58,7 +26,6 @@ interface PharmacistPerformance {
     lastIntervention: string;
   };
 }
-
 const mockPharmacistData: PharmacistPerformance[] = [
   {
     id: '1',
@@ -153,7 +120,6 @@ const mockPharmacistData: PharmacistPerformance[] = [
     },
   },
 ];
-
 const PharmacistPerformanceTable: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
@@ -161,7 +127,6 @@ const PharmacistPerformanceTable: React.FC = () => {
     []
   );
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
@@ -169,7 +134,6 @@ const PharmacistPerformanceTable: React.FC = () => {
       setLoading(false);
     }, 1000);
   }, []);
-
   const getPerformanceColor = (
     value: number,
     type: 'completion' | 'satisfaction' | 'trend'
@@ -191,117 +155,77 @@ const PharmacistPerformanceTable: React.FC = () => {
         return theme.palette.primary.main;
     }
   };
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
       currency: 'NGN',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 0
     }).format(amount);
   };
-
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, index) => (
       <StarIcon
         key={index}
-        sx={{
-          fontSize: 16,
-          color:
-            index < Math.floor(rating)
-              ? theme.palette.warning.main
-              : theme.palette.grey[300],
-        }}
+        className=""
       />
     ));
   };
-
   // Prepare chart data
-  const performanceChartData = pharmacistData.map((pharmacist) => ({
+  const performanceChartData = pharmacistData.map((pharmacist) => ({ 
     name: pharmacist.name.split(' ')[1], // Last name
     completionRate: pharmacist.metrics.completionRate,
     satisfaction: pharmacist.metrics.patientSatisfaction * 20, // Scale to 100
-    interventions: pharmacist.metrics.clinicalInterventions,
+    interventions: pharmacist.metrics.clinicalInterventions}
   }));
-
-  const costSavingsData = pharmacistData.map((pharmacist) => ({
+  const costSavingsData = pharmacistData.map((pharmacist) => ({ 
     name: pharmacist.name.split(' ')[1],
-    value: pharmacist.metrics.costSavings,
+    value: pharmacist.metrics.costSavings}
   }));
-
   if (loading) {
     return (
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
+      <div className="">
+        <div  className="">
           Pharmacist Performance
-        </Typography>
+        </div>
         <Card>
           <CardContent>
-            <Box sx={{ animation: 'pulse 1.5s ease-in-out infinite' }}>
+            <div className="">
               {[...Array(4)].map((_, index) => (
-                <Box
+                <div
                   key={index}
-                  sx={{ display: 'flex', alignItems: 'center', mb: 2 }}
+                  className=""
                 >
-                  <Box
-                    sx={{
-                      bgcolor: 'grey.200',
-                      height: 40,
-                      width: 40,
-                      borderRadius: '50%',
-                      mr: 2,
-                    }}
+                  <div
+                    className=""
                   />
-                  <Box sx={{ flex: 1 }}>
-                    <Box
-                      sx={{
-                        bgcolor: 'grey.200',
-                        height: 16,
-                        width: '60%',
-                        borderRadius: 1,
-                        mb: 1,
-                      }}
+                  <div className="">
+                    <div
+                      className=""
                     />
-                    <Box
-                      sx={{
-                        bgcolor: 'grey.200',
-                        height: 12,
-                        width: '40%',
-                        borderRadius: 1,
-                      }}
+                    <div
+                      className=""
                     />
-                  </Box>
-                </Box>
+                  </div>
+                </div>
               ))}
-            </Box>
+            </div>
           </CardContent>
         </Card>
-      </Box>
+      </div>
     );
   }
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
+      
+      >
+      <div className="">
+        <div  className="">
           Pharmacist Performance
-        </Typography>
-
+        </div>
         {/* Performance Charts */}
-        <Box
-          className="performance-charts-grid"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' },
-            gap: 3,
-            mb: 4,
-            width: '100%',
-          }}
-        >
-          <Box sx={{ width: '100%' }}>
+        <div
+          className="">
+          <div className="">
             <DashboardChart
               title="Performance Metrics Comparison"
               data={performanceChartData}
@@ -310,14 +234,14 @@ const PharmacistPerformanceTable: React.FC = () => {
               colors={[
                 theme.palette.primary.main,
                 theme.palette.success.main,
-                theme.palette.warning.main,
+                theme.palette.warning.main,}
               ]}
               subtitle="Comparative performance analysis"
               showLegend={true}
               interactive={true}
             />
-          </Box>
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <DashboardChart
               title="Cost Savings by Pharmacist"
               data={costSavingsData}
@@ -327,49 +251,48 @@ const PharmacistPerformanceTable: React.FC = () => {
                 theme.palette.primary.main,
                 theme.palette.secondary.main,
                 theme.palette.success.main,
-                theme.palette.warning.main,
+                theme.palette.warning.main,}
               ]}
               subtitle="Individual cost savings contribution"
               showLegend={true}
               interactive={true}
             />
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {/* Performance Table */}
         <Card>
-          <CardContent sx={{ p: 0 }}>
-            <TableContainer component={Paper} elevation={0}>
+          <CardContent className="">
+            <TableContainer  >
               <Table>
                 <TableHead>
                   <TableRow
-                    sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}
+                    className=""
                   >
-                    <TableCell sx={{ fontWeight: 'bold' }}>
+                    <TableCell className="">
                       Pharmacist
                     </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                    <TableCell align="center" className="">
                       MTRs
                     </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                    <TableCell align="center" className="">
                       Completion Rate
                     </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                    <TableCell align="center" className="">
                       Avg. Time
                     </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                    <TableCell align="center" className="">
                       Satisfaction
                     </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                    <TableCell align="center" className="">
                       Interventions
                     </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                    <TableCell align="center" className="">
                       Cost Savings
                     </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                    <TableCell align="center" className="">
                       Trends
                     </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                    <TableCell align="center" className="">
                       Actions
                     </TableCell>
                   </TableRow>
@@ -378,25 +301,15 @@ const PharmacistPerformanceTable: React.FC = () => {
                   {pharmacistData.map((pharmacist, index) => (
                     <motion.tr
                       key={pharmacist.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      component={TableRow}
-                      sx={{
-                        '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.02),
-                        },
-                      }}
-                    >
+                      
+                      
+                      
+                      
+                      className="">
                       <TableCell>
-                        <Box display="flex" alignItems="center">
+                        <div display="flex" alignItems="center">
                           <Avatar
-                            sx={{
-                              bgcolor: theme.palette.primary.main,
-                              mr: 2,
-                              width: 40,
-                              height: 40,
-                            }}
+                            className=""
                           >
                             {pharmacist.avatar ? (
                               <img
@@ -407,184 +320,143 @@ const PharmacistPerformanceTable: React.FC = () => {
                               <PersonIcon />
                             )}
                           </Avatar>
-                          <Box>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 'bold' }}
+                          <div>
+                            <div
+                              
+                              className=""
                             >
                               {pharmacist.name}
-                            </Typography>
-                            <Typography
-                              variant="caption"
+                            </div>
+                            <div
+                              
                               color="text.secondary"
                             >
                               {pharmacist.email}
-                            </Typography>
-                          </Box>
-                        </Box>
+                            </div>
+                          </div>
+                        </div>
                       </TableCell>
-
                       <TableCell align="center">
-                        <Box>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 'bold' }}
+                        <div>
+                          <div
+                            
+                            className=""
                           >
                             {pharmacist.metrics.completedMTRs}/
                             {pharmacist.metrics.totalMTRs}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          </div>
+                          <div  color="text.secondary">
                             Total/Completed
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
-
                       <TableCell align="center">
-                        <Box>
+                        <div>
                           <Chip
                             label={`${pharmacist.metrics.completionRate.toFixed(
-                              1
+                              1}
                             )}%`}
                             color={
                               pharmacist.metrics.completionRate >= 95
                                 ? 'success'
                                 : pharmacist.metrics.completionRate >= 90
                                 ? 'warning'
-                                : 'error'
+                                : 'error'}
                             }
                             size="small"
-                            sx={{ fontWeight: 'bold' }}
+                            className=""
                           />
-                          <LinearProgress
-                            variant="determinate"
-                            value={pharmacist.metrics.completionRate}
-                            sx={{
-                              mt: 1,
-                              height: 4,
-                              borderRadius: 2,
-                              bgcolor: alpha(
-                                getPerformanceColor(
-                                  pharmacist.metrics.completionRate,
-                                  'completion'
-                                ),
-                                0.2
-                              ),
-                              '& .MuiLinearProgress-bar': {
-                                bgcolor: getPerformanceColor(
-                                  pharmacist.metrics.completionRate,
-                                  'completion'
-                                ),
-                              },
-                            }}
-                          />
-                        </Box>
+                          <Progress
+                            
+                            className="" />
+                        </div>
                       </TableCell>
-
                       <TableCell align="center">
-                        <Box
+                        <div
                           display="flex"
                           alignItems="center"
                           justifyContent="center"
                         >
                           <ScheduleIcon
-                            sx={{
-                              fontSize: 16,
-                              mr: 0.5,
-                              color: 'text.secondary',
-                            }}
+                            className=""
                           />
-                          <Typography variant="body2">
+                          <div >
                             {pharmacist.metrics.averageTime}h
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
-
                       <TableCell align="center">
-                        <Box
+                        <div
                           display="flex"
                           flexDirection="column"
                           alignItems="center"
                         >
-                          <Box display="flex" alignItems="center" mb={0.5}>
+                          <div display="flex" alignItems="center" mb={0.5}>
                             {renderStars(
                               pharmacist.metrics.patientSatisfaction
                             )}
-                          </Box>
-                          <Typography variant="caption" color="text.secondary">
+                          </div>
+                          <div  color="text.secondary">
                             {pharmacist.metrics.patientSatisfaction.toFixed(1)}
                             /5.0
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
-
                       <TableCell align="center">
-                        <Box
+                        <div
                           display="flex"
                           alignItems="center"
                           justifyContent="center"
                         >
                           <AssignmentIcon
-                            sx={{
-                              fontSize: 16,
-                              mr: 0.5,
-                              color: 'text.secondary',
-                            }}
+                            className=""
                           />
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 'bold' }}
+                          <div
+                            
+                            className=""
                           >
                             {pharmacist.metrics.clinicalInterventions}
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
-
                       <TableCell align="center">
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 'bold', color: 'success.main' }}
+                        <div
+                          
+                          className=""
                         >
                           {formatCurrency(pharmacist.metrics.costSavings)}
-                        </Typography>
+                        </div>
                       </TableCell>
-
                       <TableCell align="center">
-                        <Box
+                        <div
                           display="flex"
                           flexDirection="column"
                           alignItems="center"
                           gap={0.5}
                         >
-                          <Box display="flex" alignItems="center">
+                          <div display="flex" alignItems="center">
                             {pharmacist.trends.mtrTrend >= 0 ? (
                               <TrendingUpIcon
-                                sx={{ fontSize: 16, color: 'success.main' }}
+                                className=""
                               />
                             ) : (
                               <TrendingDownIcon
-                                sx={{ fontSize: 16, color: 'error.main' }}
+                                className=""
                               />
                             )}
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color:
-                                  pharmacist.trends.mtrTrend >= 0
-                                    ? 'success.main'
-                                    : 'error.main',
-                                fontWeight: 'bold',
-                              }}
+                            <div
+                              
+                              className=""
                             >
                               {pharmacist.trends.mtrTrend > 0 ? '+' : ''}
                               {pharmacist.trends.mtrTrend.toFixed(1)}%
-                            </Typography>
-                          </Box>
-                          <Typography variant="caption" color="text.secondary">
+                            </div>
+                          </div>
+                          <div  color="text.secondary">
                             MTRs
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
-
                       <TableCell align="center">
                         <Tooltip title="View Details">
                           <IconButton size="small" color="primary">
@@ -599,34 +471,21 @@ const PharmacistPerformanceTable: React.FC = () => {
             </TableContainer>
           </CardContent>
         </Card>
-
         {/* Summary Cards */}
-        <Box
-          className="performance-summary-grid"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: '1fr 1fr',
-              md: 'repeat(4, 1fr)',
-            },
-            gap: 3,
-            mt: 2,
-            width: '100%',
-          }}
-        >
-          <Box sx={{ width: '100%' }}>
+        <div
+          className="">
+          <div className="">
             <Card>
               <CardContent>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <CheckCircleIcon sx={{ color: 'success.main', mr: 1 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                <div display="flex" alignItems="center" mb={1}>
+                  <CheckCircleIcon className="" />
+                  <div  className="">
                     Avg. Completion
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="h4"
-                  sx={{ fontWeight: 'bold', color: 'success.main' }}
+                  </div>
+                </div>
+                <div
+                  
+                  className=""
                 >
                   {(
                     pharmacistData.reduce(
@@ -635,23 +494,22 @@ const PharmacistPerformanceTable: React.FC = () => {
                     ) / pharmacistData.length
                   ).toFixed(1)}
                   %
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <Card>
               <CardContent>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <StarIcon sx={{ color: 'warning.main', mr: 1 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                <div display="flex" alignItems="center" mb={1}>
+                  <StarIcon className="" />
+                  <div  className="">
                     Avg. Satisfaction
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="h4"
-                  sx={{ fontWeight: 'bold', color: 'warning.main' }}
+                  </div>
+                </div>
+                <div
+                  
+                  className=""
                 >
                   {(
                     pharmacistData.reduce(
@@ -659,45 +517,43 @@ const PharmacistPerformanceTable: React.FC = () => {
                       0
                     ) / pharmacistData.length
                   ).toFixed(1)}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <Card>
               <CardContent>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <AssignmentIcon sx={{ color: 'info.main', mr: 1 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                <div display="flex" alignItems="center" mb={1}>
+                  <AssignmentIcon className="" />
+                  <div  className="">
                     Total Interventions
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="h4"
-                  sx={{ fontWeight: 'bold', color: 'info.main' }}
+                  </div>
+                </div>
+                <div
+                  
+                  className=""
                 >
                   {pharmacistData.reduce(
                     (sum, p) => sum + p.metrics.clinicalInterventions,
                     0
                   )}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <Card>
               <CardContent>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <TrendingUpIcon sx={{ color: 'success.main', mr: 1 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                <div display="flex" alignItems="center" mb={1}>
+                  <TrendingUpIcon className="" />
+                  <div  className="">
                     Total Savings
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="h4"
-                  sx={{ fontWeight: 'bold', color: 'success.main' }}
+                  </div>
+                </div>
+                <div
+                  
+                  className=""
                 >
                   {formatCurrency(
                     pharmacistData.reduce(
@@ -705,14 +561,13 @@ const PharmacistPerformanceTable: React.FC = () => {
                       0
                     )
                   )}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Box>
-        </Box>
-      </Box>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };
-
 export default PharmacistPerformanceTable;

@@ -1,70 +1,39 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Pagination,
-  Tooltip,
-} from '@mui/material';
-import DownloadIcon from '@mui/icons-material/Download';
-import FilterIcon from '@mui/icons-material/FilterList';
-import ClearIcon from '@mui/icons-material/Clear';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import {
   paymentService,
   type Payment,
   type PaginatedPayments,
 } from '../../services/paymentService';
-import { useUIStore } from '../../stores';
+
 import LoadingSpinner from '../LoadingSpinner';
 
+import { Button, Label, Card, CardContent, Select, Tooltip } from '@/components/ui/button';
 const BillingHistory: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
-
   // Pagination state
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-
   // Filter state
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState({ 
     status: '',
     dateFrom: null as Date | null,
     dateTo: null as Date | null,
   });
-
   // Summary state
-  const [summary, setSummary] = useState({
+  const [summary, setSummary] = useState({ 
     totalAmount: 0,
     totalPayments: 0,
     successfulPayments: 0,
     failedPayments: 0,
   });
-
+  });
   const addNotification = useUIStore((state) => state.addNotification);
-
   const loadPayments = useCallback(async () => {
     setLoading(true);
     try {
       const dateFrom = filters.dateFrom?.toISOString().split('T')[0];
       const dateTo = filters.dateTo?.toISOString().split('T')[0];
-
       const data: PaginatedPayments = await paymentService.getPayments(
         page,
         10,
@@ -72,41 +41,36 @@ const BillingHistory: React.FC = () => {
         dateFrom,
         dateTo
       );
-
       setPayments(data.payments);
       setTotalPages(data.pagination.totalPages);
       setSummary(data.summary);
     } catch (error) {
       console.error('Error loading payments:', error);
-      addNotification({
+      addNotification({ 
         type: 'error',
         title: 'Error',
         message: 'Failed to load billing history',
-        duration: 5000,
+        duration: 5000}
       });
     } finally {
       setLoading(false);
     }
   }, [page, filters, addNotification]);
-
   useEffect(() => {
     loadPayments();
   }, [loadPayments]);
-
   const handleFilterChange = (field: string, value: string | Date | null) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
     setPage(1); // Reset to first page when filters change
   };
-
   const clearFilters = () => {
-    setFilters({
+    setFilters({ 
       status: '',
       dateFrom: null,
-      dateTo: null,
+      dateTo: null}
     });
     setPage(1);
   };
-
   const getStatusColor = (status: Payment['status']) => {
     switch (status) {
       case 'completed':
@@ -121,7 +85,6 @@ const BillingHistory: React.FC = () => {
         return 'default';
     }
   };
-
   const getStatusLabel = (status: Payment['status']) => {
     switch (status) {
       case 'completed':
@@ -136,19 +99,15 @@ const BillingHistory: React.FC = () => {
         return status;
     }
   };
-
   const formatCurrency = (amount: number, currency = 'NGN') => {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
-      currency: currency,
-    }).format(amount);
+      currency: currency, }.format(amount);
   };
-
   const handleDownloadInvoice = async (paymentId: string) => {
     setInvoiceLoading(true);
     try {
       const invoice = await paymentService.generateInvoice(paymentId);
-
       // For now, create a simple text representation
       // In production, this would generate a proper PDF
       const invoiceText = `
@@ -156,7 +115,6 @@ INVOICE: ${invoice.invoiceNumber}
 Date: ${new Date(invoice.date).toLocaleDateString()}
 Customer: ${invoice.customer.name}
 Email: ${invoice.customer.email}
-
 Items:
 ${invoice.items
   .map(
@@ -164,12 +122,10 @@ ${invoice.items
       `- ${item.description}: ${formatCurrency(item.amount)} x ${item.quantity}`
   )
   .join('\n')}
-
 Total: ${formatCurrency(invoice.amount, invoice.currency)}
 Status: ${invoice.status}
 Payment Method: ${invoice.paymentMethod}
       `;
-
       const blob = new Blob([invoiceText], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -177,98 +133,90 @@ Payment Method: ${invoice.paymentMethod}
       a.download = `invoice-${invoice.invoiceNumber}.txt`;
       a.click();
       URL.revokeObjectURL(url);
-
-      addNotification({
+      addNotification({ 
         type: 'success',
         title: 'Download Complete',
         message: 'Invoice downloaded successfully',
-        duration: 3000,
+        duration: 3000}
       });
     } catch (error) {
       console.error('Error downloading invoice:', error);
-      addNotification({
+      addNotification({ 
         type: 'error',
         title: 'Download Failed',
         message: 'Failed to download invoice',
-        duration: 5000,
+        duration: 5000}
       });
     } finally {
       setInvoiceLoading(false);
     }
   };
-
   if (loading && page === 1) {
     return <LoadingSpinner message="Loading billing history..." />;
   }
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
-        <Typography variant="h5" gutterBottom>
+      <div>
+        <div  gutterBottom>
           Billing History
-        </Typography>
-
+        </div>
         {/* Summary Cards */}
-        <Box display="flex" flexWrap="wrap" gap={3} sx={{ mb: 4 }}>
-          <Box flex="1 1 200px">
+        <div display="flex" flexWrap="wrap" gap={3} className="">
+          <div flex="1 1 200px">
             <Card>
               <CardContent>
-                <Typography color="text.secondary" gutterBottom variant="body2">
+                <div color="text.secondary" gutterBottom >
                   Total Spent
-                </Typography>
-                <Typography variant="h4" component="div">
+                </div>
+                <div  component="div">
                   {formatCurrency(summary.totalAmount)}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Box>
-
-          <Box flex="1 1 200px">
+          </div>
+          <div flex="1 1 200px">
             <Card>
               <CardContent>
-                <Typography color="text.secondary" gutterBottom variant="body2">
+                <div color="text.secondary" gutterBottom >
                   Total Payments
-                </Typography>
-                <Typography variant="h4" component="div">
+                </div>
+                <div  component="div">
                   {summary.totalPayments}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Box>
-
-          <Box flex="1 1 200px">
+          </div>
+          <div flex="1 1 200px">
             <Card>
               <CardContent>
-                <Typography color="text.secondary" gutterBottom variant="body2">
+                <div color="text.secondary" gutterBottom >
                   Successful
-                </Typography>
-                <Typography variant="h4" component="div" color="success.main">
+                </div>
+                <div  component="div" color="success.main">
                   {summary.successfulPayments}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Box>
-
-          <Box flex="1 1 200px">
+          </div>
+          <div flex="1 1 200px">
             <Card>
               <CardContent>
-                <Typography color="text.secondary" gutterBottom variant="body2">
+                <div color="text.secondary" gutterBottom >
                   Failed
-                </Typography>
-                <Typography variant="h4" component="div" color="error.main">
+                </div>
+                <div  component="div" color="error.main">
                   {summary.failedPayments}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {/* Filters Section */}
-        <Card sx={{ mb: 3 }}>
+        <Card className="">
           <CardContent>
-            <Box display="flex" flexWrap="wrap" gap={2} alignItems="center">
-              <FormControl size="small" sx={{ minWidth: 120 }}>
-                <InputLabel>Status</InputLabel>
+            <div display="flex" flexWrap="wrap" gap={2} alignItems="center">
+              <div size="small" className="">
+                <Label>Status</Label>
                 <Select
                   value={filters.status}
                   label="Status"
@@ -280,32 +228,26 @@ Payment Method: ${invoice.paymentMethod}
                   <MenuItem value="failed">Failed</MenuItem>
                   <MenuItem value="refunded">Refunded</MenuItem>
                 </Select>
-              </FormControl>
-
+              </div>
               {/* Replace DatePicker with standard date inputs for now */}
-              <Box display="flex" gap={2} alignItems="center">
+              <div display="flex" gap={2} alignItems="center">
                 <Button
-                  variant="outlined"
+                  
                   startIcon={<FilterIcon />}
-                  onClick={() => {
-                    /* Add filter logic */
-                  }}
-                >
+                  >
                   Filter
                 </Button>
-
                 <Button
-                  variant="text"
+                  
                   startIcon={<ClearIcon />}
                   onClick={clearFilters}
                 >
                   Clear
                 </Button>
-              </Box>
-            </Box>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
         {/* Payments Table */}
         <Card>
           <CardContent>
@@ -328,12 +270,12 @@ Payment Method: ${invoice.paymentMethod}
                         {new Date(payment.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Typography fontWeight="medium">
+                        <div fontWeight="medium">
                           {formatCurrency(
                             payment.amount,
                             payment.currency.toUpperCase()
                           )}
-                        </Typography>
+                        </div>
                       </TableCell>
                       <TableCell>
                         {payment.subscription?.planId?.name || 'N/A'}
@@ -346,12 +288,12 @@ Payment Method: ${invoice.paymentMethod}
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{ textTransform: 'capitalize' }}
+                        <div
+                          
+                          className=""
                         >
                           {payment.paymentMethod.replace('_', ' ')}
-                        </Typography>
+                        </div>
                       </TableCell>
                       <TableCell align="right">
                         <Tooltip title="Download Invoice">
@@ -369,21 +311,19 @@ Payment Method: ${invoice.paymentMethod}
                 </TableBody>
               </Table>
             </TableContainer>
-
             {/* Pagination */}
-            <Box display="flex" justifyContent="center" sx={{ mt: 3 }}>
+            <div display="flex" justifyContent="center" className="">
               <Pagination
                 count={totalPages}
                 page={page}
                 onChange={(_, newPage) => setPage(newPage)}
                 color="primary"
               />
-            </Box>
+            </div>
           </CardContent>
         </Card>
-      </Box>
+      </div>
     </LocalizationProvider>
   );
 };
-
 export default BillingHistory;

@@ -6,9 +6,6 @@
  */
 
 // Import types from our type definition file
-import { MedicationTherapyReview } from '../types/mtr';
-import { CreateMTRData, ApiResponse } from '../types/mtrService';
-
 // Define specific response types based on how the API actually responds
 interface MTRSessionResponse {
   review: MedicationTherapyReview & { _id: string };

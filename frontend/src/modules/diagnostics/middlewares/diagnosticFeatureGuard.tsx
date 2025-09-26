@@ -1,150 +1,125 @@
-import React from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Typography,
-} from '@mui/material';
-import { Science, Lock, Upgrade } from '@mui/icons-material';
-import { useRBAC } from '../../../hooks/useRBAC';
-import { useSubscriptionStatus } from '../../../hooks/useSubscription';
-import { Link } from 'react-router-dom';
+
+import { Button } from '@/components/ui/button';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { Alert } from '@/components/ui/alert';
 
 interface DiagnosticFeatureGuardProps {
   children: React.ReactNode;
   feature?: string;
   fallback?: React.ReactNode;
 }
-
-export const DiagnosticFeatureGuard: React.FC<DiagnosticFeatureGuardProps> = ({
+export const DiagnosticFeatureGuard: React.FC<DiagnosticFeatureGuardProps> = ({ 
   children,
   feature = 'ai_diagnostics',
-  fallback,
+  fallback
 }) => {
   const { hasFeature, hasRole } = useRBAC();
   const subscriptionStatus = useSubscriptionStatus();
-
   // Check if user has required role (pharmacist or above)
   const hasRequiredRole =
     hasRole('pharmacist') || hasRole('admin') || hasRole('super_admin');
-
   // Check if user has active subscription
   const hasActiveSubscription = subscriptionStatus?.isActive;
-
   // Check if feature is enabled
   const hasRequiredFeature = hasFeature(feature);
-
   // If all checks pass, render children
   if (hasRequiredRole && hasActiveSubscription && hasRequiredFeature) {
     return <>{children}</>;
   }
-
   // If fallback is provided, use it
   if (fallback) {
     return <>{fallback}</>;
   }
-
   // Default fallback UI
   return (
-    <Box
+    <div
       display="flex"
       justifyContent="center"
       alignItems="center"
       minHeight="60vh"
       p={3}
     >
-      <Card sx={{ maxWidth: 600, textAlign: 'center' }}>
-        <CardContent sx={{ p: 4 }}>
+      <Card className="">
+        <CardContent className="">
           <Science
-            sx={{
-              fontSize: 80,
-              color: 'primary.main',
-              mb: 2,
-            }}
+            className=""
           />
-
-          <Typography variant="h4" gutterBottom>
+          <div  gutterBottom>
             AI Diagnostics & Therapeutics
-          </Typography>
-
-          <Typography variant="body1" color="textSecondary" paragraph>
+          </div>
+          <div  color="textSecondary" paragraph>
             Advanced AI-powered diagnostic assistance for comprehensive patient
             care
-          </Typography>
-
+          </div>
           {!hasRequiredRole && (
-            <Alert severity="warning" sx={{ mb: 3, textAlign: 'left' }}>
-              <Typography variant="body2">
-                <Lock sx={{ verticalAlign: 'middle', mr: 1 }} />
+            <Alert severity="warning" className="">
+              <div >
+                <Lock className="" />
                 This feature requires pharmacist-level access or higher.
-              </Typography>
+              </div>
             </Alert>
           )}
-
           {!hasActiveSubscription && (
-            <Alert severity="error" sx={{ mb: 3, textAlign: 'left' }}>
-              <Typography variant="body2">
-                <Upgrade sx={{ verticalAlign: 'middle', mr: 1 }} />
+            <Alert severity="error" className="">
+              <div >
+                <Upgrade className="" />
                 An active subscription is required to access diagnostic
                 features.
-              </Typography>
+              </div>
             </Alert>
           )}
-
           {!hasRequiredFeature && hasActiveSubscription && (
-            <Alert severity="info" sx={{ mb: 3, textAlign: 'left' }}>
-              <Typography variant="body2">
+            <Alert severity="info" className="">
+              <div >
                 The AI Diagnostics feature is not enabled for your subscription
                 plan.
-              </Typography>
+              </div>
             </Alert>
           )}
-
-          <Box display="flex" gap={2} justifyContent="center" mt={3}>
+          <div display="flex" gap={2} justifyContent="center" mt={3}>
             {!hasActiveSubscription && (
               <Button
-                variant="contained"
-                component={Link}
+                
+                
                 to="/subscriptions"
                 startIcon={<Upgrade />}
               >
                 Upgrade Subscription
               </Button>
             )}
-
-            <Button variant="outlined" component={Link} to="/dashboard">
+            <Button   to="/dashboard">
               Back to Dashboard
             </Button>
-          </Box>
-
-          <Box mt={4} p={2} bgcolor="grey.50" borderRadius={2}>
-            <Typography variant="h6" gutterBottom>
+          </div>
+          <div mt={4} p={2} bgcolor="grey.50" borderRadius={2}>
+            <div  gutterBottom>
               Feature Highlights
-            </Typography>
-            <Box textAlign="left">
-              <Typography variant="body2" gutterBottom>
+            </div>
+            <div textAlign="left">
+              <div  gutterBottom>
                 • AI-powered differential diagnosis generation
-              </Typography>
-              <Typography variant="body2" gutterBottom>
+              </div>
+              <div  gutterBottom>
                 • Comprehensive drug interaction checking
-              </Typography>
-              <Typography variant="body2" gutterBottom>
+              </div>
+              <div  gutterBottom>
                 • Lab result integration and interpretation
-              </Typography>
-              <Typography variant="body2" gutterBottom>
+              </div>
+              <div  gutterBottom>
                 • Clinical decision support tools
-              </Typography>
-              <Typography variant="body2" gutterBottom>
+              </div>
+              <div  gutterBottom>
                 • Seamless integration with clinical notes and MTR
-              </Typography>
-            </Box>
-          </Box>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default DiagnosticFeatureGuard;

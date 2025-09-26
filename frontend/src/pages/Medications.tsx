@@ -1,230 +1,130 @@
 import React, { useState } from 'react';
-import {
-  Typography,
-  Box,
-  Card,
-  Button,
-  Tabs,
-  Tab,
-  CardContent,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Medication as MedicationIcon,
-} from '@mui/icons-material';
-import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-// PageHeader is not found in the project
 import LoadingSpinner from '../components/LoadingSpinner';
-import { useSubscriptionStatus } from '../hooks/useSubscription';
-// Import the MedicationAnalyticsPanel and MedicationSettingsPanel components
-import MedicationAnalyticsPanel from '../components/medications/MedicationAnalyticsPanel.js';
+import MedicationAnalyticsPanel from '../components/medications/MedicationAnalyticsPanel';
 import MedicationSettingsPanel from '../components/medications/MedicationSettingsPanel';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Pill as MedicationIcon, Plus as AddIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const TabPanel = (props: TabPanelProps) => {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`medications-tabpanel-${index}`}
-      aria-labelledby={`medications-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
+// Mock hook for subscription status
+const useSubscriptionStatus = () => {
+  return {
+    isActive: true,
+    loading: false
+  };
 };
 
-const Medications = () => {
-  // Theme not currently used
-  const [tabValue, setTabValue] = useState(0);
+const Medications: React.FC = () => {
+  const [tabValue, setTabValue] = useState('dashboard');
   const { isActive, loading } = useSubscriptionStatus();
-
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  // Implementation for premium users will go here
   if (!isActive) {
     return (
-      <Box sx={{ p: 3 }}>
+      <div className="p-6">
         <Helmet>
           <title>Medications | PharmaCare</title>
         </Helmet>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 4,
-          }}
-        >
-          <Box>
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{ fontWeight: 600, mb: 1 }}
-            >
-              Medications
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Manage patient medications, interactions, and adherence tracking
-            </Typography>
-          </Box>
-        </Box>
-
-        <Card sx={{ textAlign: 'center', py: 8 }}>
-          <CardContent>
-            <Box
-              sx={{
-                width: 80,
-                height: 80,
-                bgcolor: 'secondary.light',
-                borderRadius: 4,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                mx: 'auto',
-                mb: 3,
-              }}
-            >
-              <MedicationIcon sx={{ fontSize: 40, color: 'secondary.main' }} />
-            </Box>
-            <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-              Premium Feature
-            </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
-            >
+        <div className="mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">Medications</h1>
+            <p className="text-gray-600">Manage patient medications, interactions, and adherence tracking</p>
+          </div>
+        </div>
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="p-8 text-center">
+            <div className="mb-4">
+              <MedicationIcon className="h-16 w-16 mx-auto text-blue-500" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Premium Feature</h2>
+            <p className="text-gray-600 mb-6">
               Advanced medication tracking, drug interaction checking, adherence
               monitoring, and prescription management features require a premium
               subscription.
-            </Typography>
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 2,
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-              }}
-            >
-              <Button variant="contained" component={Link} to="/subscriptions">
-                Upgrade Now
+            </p>
+            <div className="flex justify-center space-x-4">
+              <Button asChild>
+                <Link to="/subscriptions">Upgrade Now</Link>
               </Button>
-              <Button variant="outlined" component={Link} to="/dashboard">
-                Back to Dashboard
+              <Button variant="outline" asChild>
+                <Link to="/dashboard">Back to Dashboard</Link>
               </Button>
-            </Box>
+            </div>
           </CardContent>
         </Card>
-      </Box>
+      </div>
     );
   }
 
-  // For subscribed users, show the full medication management interface
   return (
-    <Box sx={{ p: 3 }}>
+    <div className="p-6">
       <Helmet>
         <title>Medication Management | PharmaCare</title>
       </Helmet>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 4,
-        }}
-      >
-        <Box>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{ fontWeight: 600, mb: 1 }}
-          >
-            Medication Management
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Manage patient medications, interactions, and adherence tracking
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          component={Link}
-          to="/patients?for=medications"
-        >
-          Select Patient
-        </Button>
-      </Box>
-
-      <Card sx={{ mb: 4 }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            aria-label="medication management tabs"
-          >
-            <Tab label="Dashboard" id="medications-tab-0" />
-            <Tab label="Analytics" id="medications-tab-1" />
-            <Tab label="Settings" id="medications-tab-2" />
-          </Tabs>
-        </Box>
-
-        <TabPanel value={tabValue} index={0}>
-          <Typography variant="h6" gutterBottom>
-            Medication Dashboard
-          </Typography>
-          <Typography paragraph>
-            Please select a patient to view their medication dashboard.
-          </Typography>
-          <Button
-            variant="outlined"
-            component={Link}
-            to="/patients"
-            startIcon={<AddIcon />}
-            sx={{ mr: 2 }}
-          >
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Medication Management</h1>
+          <p className="text-gray-600">Manage patient medications, interactions, and adherence tracking</p>
+        </div>
+        <Button asChild>
+          <Link to="/patients?for=medications">
+            <AddIcon className="mr-2 h-4 w-4" />
             Select Patient
-          </Button>
-          <Button
-            variant="contained"
-            component={Link}
-            to="/medications/dashboard"
-          >
-            View Medications Dashboard
-          </Button>
-        </TabPanel>
+          </Link>
+        </Button>
+      </div>
+      <Card>
+        <div className="p-4">
+          <Tabs value={tabValue} onValueChange={setTabValue}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList>
 
-        <TabPanel value={tabValue} index={1}>
-          <Box>
-            {/* Use the MedicationAnalyticsPanel component */}
-            <MedicationAnalyticsPanel patientId="system" />
-          </Box>
-        </TabPanel>
+            <TabsContent value="dashboard" className="mt-6">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold">Medication Dashboard</h2>
+              </div>
+              <p className="text-gray-600 mb-4">
+                Please select a patient to view their medication dashboard.
+              </p>
+              <div className="flex space-x-4">
+                <Button asChild>
+                  <Link to="/patients">
+                    <AddIcon className="mr-2 h-4 w-4" />
+                    Select Patient
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/medications/dashboard">
+                    View Medications Dashboard
+                  </Link>
+                </Button>
+              </div>
+            </TabsContent>
 
-        <TabPanel value={tabValue} index={2}>
-          <Box>
-            {/* Use the MedicationSettingsPanel component */}
-            <MedicationSettingsPanel patientId="system" />
-          </Box>
-        </TabPanel>
+            <TabsContent value="analytics" className="mt-6">
+              <div>
+                <MedicationAnalyticsPanel patientId="system" />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="settings" className="mt-6">
+              <div>
+                <MedicationSettingsPanel patientId="system" />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </Card>
-    </Box>
+    </div>
   );
 };
 

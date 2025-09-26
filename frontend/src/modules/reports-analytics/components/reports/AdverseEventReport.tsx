@@ -1,61 +1,25 @@
 // Adverse Event & Incident Reporting Component
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  Paper,
-  LinearProgress,
-} from '@mui/material';
-import {
-  Warning,
-  ReportProblem,
-  Analytics,
-  TrendingDown,
-  Assessment,
-  Security,
-  BugReport,
-  Timeline,
-} from '@mui/icons-material';
 import ChartComponent from '../shared/ChartComponent';
-import { ChartData, KPICardData } from '../../types/charts';
-import { AdverseEventFilters } from '../../types/filters';
-import { AdverseEventData } from '../../types/reports';
-import { useCurrentFilters } from '../../stores/filtersStore';
+
+import { Button, Label, Card, CardContent, Select, Progress, Alert, Switch, Tabs } from '@/components/ui/button';
 
 interface AdverseEventReportProps {
   filters: AdverseEventFilters;
   onFilterChange?: (filters: AdverseEventFilters) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
-
-const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
+const AdverseEventReport: React.FC<AdverseEventReportProps> = ({ 
   filters,
-  onFilterChange,
+  onFilterChange
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -63,10 +27,9 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
   const [selectedSeverity, setSelectedSeverity] = useState('all');
   const [showTrendMonitoring, setShowTrendMonitoring] = useState(true);
   const [includePreventable, setIncludePreventable] = useState(true);
-
   // Mock data - in real implementation, this would come from API
   const mockData = useMemo(
-    () => ({
+    () => ({ 
       // KPI Cards Data
       kpiData: [
         {
@@ -76,7 +39,7 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
           trend: {
             direction: 'down' as const,
             value: 12.3,
-            period: 'vs last quarter',
+            period: 'vs last quarter'}
           },
           status: 'success' as const,
           sparkline: [
@@ -120,7 +83,6 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
           status: 'success' as const,
         },
       ],
-
       // Incident Frequency Analysis
       incidentFrequencyData: {
         id: 'incident-frequency',
@@ -283,7 +245,6 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
           },
         },
       },
-
       // Severity Distribution
       severityDistributionData: {
         id: 'severity-distribution',
@@ -424,7 +385,6 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
           },
         },
       },
-
       // Root Cause Analysis
       rootCauseAnalysisData: {
         id: 'root-cause-analysis',
@@ -601,7 +561,6 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
           },
         },
       },
-
       // Safety Pattern Identification
       safetyPatternsData: {
         id: 'safety-patterns',
@@ -855,63 +814,56 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
             rules: [],
           },
         },
-      },
-    }),
+      }, },
     [selectedSeverity, includePreventable]
   );
-
   // Simulate data loading
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [filters, selectedSeverity]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Alert severity="error" className="">
+        <div  gutterBottom>
           Error Loading Adverse Event Data
-        </Typography>
-        <Typography variant="body2">{error}</Typography>
+        </div>
+        <div >{error}</div>
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center' }}
+          className=""
         >
-          <Warning sx={{ mr: 2, color: 'error.main' }} />
+          <Warning className="" />
           Adverse Event & Incident Reporting
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Comprehensive analysis of adverse events, incident frequency, root
           cause analysis, and safety pattern identification with regulatory
           reporting capabilities.
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* Controls */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <CardContent>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Severity Filter</InputLabel>
+          <div container spacing={3} alignItems="center">
+            <div item xs={12} sm={6} md={3}>
+              <div fullWidth size="small">
+                <Label>Severity Filter</Label>
                 <Select
                   value={selectedSeverity}
                   label="Severity Filter"
@@ -923,74 +875,67 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
                   <MenuItem value="severe">Severe</MenuItem>
                   <MenuItem value="life-threatening">Life-threatening</MenuItem>
                 </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+              </div>
+            </div>
+            <div item xs={12} sm={6} md={3}>
               <FormControlLabel
                 control={
-                  <Switch
+                  <Switch}
                     checked={showTrendMonitoring}
                     onChange={(e) => setShowTrendMonitoring(e.target.checked)}
                   />
                 }
                 label="Trend Monitoring"
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            </div>
+            <div item xs={12} sm={6} md={3}>
               <FormControlLabel
                 control={
-                  <Switch
+                  <Switch}
                     checked={includePreventable}
                     onChange={(e) => setIncludePreventable(e.target.checked)}
                   />
                 }
                 label="Include Preventable"
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            </div>
+            <div item xs={12} sm={6} md={3}>
               <Button
-                variant="outlined"
+                
                 startIcon={<ReportProblem />}
                 fullWidth
-                onClick={() => {
-                  // Generate regulatory report
-                  console.log('Generating regulatory report...');
-                }}
-              >
+                >
                 Generate Report
               </Button>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div container spacing={3} className="">
         {mockData.kpiData.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <ChartComponent
-              data={{
+              data={{}
                 id: `kpi-${index}`,
                 title: '',
                 type: 'kpi-card',
                 data: [kpi],
                 config: {} as any,
-              }}
               height={180}
               loading={loading}
             />
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          
           scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          className=""
         >
           <Tab
             icon={<BugReport />}
@@ -1013,117 +958,98 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
             iconPosition="start"
           />
         </Tabs>
-
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.incidentFrequencyData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Incident Analysis Summary
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'error.light',
-                        }}
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="error.contrastText">
+                        <div  color="error.contrastText">
                           Medication Error
-                        </Typography>
-                        <Typography variant="body2" color="error.contrastText">
+                        </div>
+                        <div  color="error.contrastText">
                           Most Frequent (89 events)
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'warning.light',
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="warning.contrastText">
+                        <div  color="warning.contrastText">
                           Contraindication
-                        </Typography>
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="warning.contrastText"
                         >
                           Increasing Trend
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'success.light',
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="success.contrastText">
+                        <div  color="success.contrastText">
                           Drug Interaction
-                        </Typography>
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="success.contrastText"
                         >
                           Decreasing Trend
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'info.light',
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="info.contrastText">
+                        <div  color="info.contrastText">
                           Total Events
-                        </Typography>
-                        <Typography variant="body2" color="info.contrastText">
+                        </div>
+                        <div  color="info.contrastText">
                           247 This Quarter
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                  </Grid>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
+          <div container spacing={3}>
+            <div item xs={12} md={8}>
               <ChartComponent
                 data={mockData.severityDistributionData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card sx={{ height: 400 }}>
+            </div>
+            <div item xs={12} md={4}>
+              <Card className="">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Risk Assessment
-                  </Typography>
-
+                  </div>
                   {[
                     {
                       level: 'Mild',
@@ -1150,117 +1076,110 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
                       color: 'error',
                     },
                   ].map((item, index) => (
-                    <Box key={index} sx={{ mb: 2 }}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          mb: 1,
-                        }}
+                    <div key={index} className="">
+                      <div
+                        className=""
                       >
-                        <Typography variant="body2">{item.level}</Typography>
-                        <Typography variant="body2" fontWeight="bold">
+                        <div >{item.level}</div>
+                        <div  fontWeight="bold">
                           {item.count} events
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={(item.count / 247) * 100}
+                        </div>
+                      </div>
+                      <Progress
+                        
                         color={item.color as any}
-                        sx={{ height: 8, borderRadius: 4 }}
+                        className=""
                       />
-                      <Typography variant="caption" color="text.secondary">
+                      <div  color="text.secondary">
                         Risk Level: {item.risk}
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   ))}
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.rootCauseAnalysisData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Root Cause Insights & Prevention Opportunities
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
-                      <Box
-                        sx={{ p: 2, bgcolor: 'error.light', borderRadius: 1 }}
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} md={6}>
+                      <div
+                        className=""
                       >
-                        <Typography
-                          variant="subtitle1"
+                        <div
+                          
                           color="error.contrastText"
                           gutterBottom
                         >
                           High Impact Causes
-                        </Typography>
-                        <Typography variant="body2" color="error.contrastText">
+                        </div>
+                        <div  color="error.contrastText">
                           • System Error (92% impact score)
                           <br />
                           • Equipment Malfunction (88% impact score)
                           <br />• Communication Failure (85% impact score)
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                      <Box
-                        sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1 }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={6}>
+                      <div
+                        className=""
                       >
-                        <Typography
-                          variant="subtitle1"
+                        <div
+                          
                           color="success.contrastText"
                           gutterBottom
                         >
                           Prevention Opportunities
-                        </Typography>
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="success.contrastText"
                         >
                           • 78% of incidents from preventable causes
                           <br />
                           • Focus on communication protocols
                           <br />• Implement system redundancies
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.safetyPatternsData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Safety Pattern Analysis
-                  </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Chip
                       label="Downward Trend: -35.7%"
@@ -1282,113 +1201,96 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
                       color="success"
                       size="small"
                     />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Safety patterns show consistent improvement with incident
                     rates declining from 28 to 18 events per month. Preventable
                     events have decreased by 38.9%, and safety alerts are at
                     minimal levels, indicating effective safety measures.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
       </Card>
-
       {/* Regulatory Reporting Section */}
       <Card>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <div  gutterBottom>
             Regulatory Reporting & Automated Submissions
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
-              <Box
-                sx={{
-                  p: 2,
-                  border: 1,
-                  borderColor: 'primary.main',
-                  borderRadius: 1,
-                }}
+          </div>
+          <div container spacing={2}>
+            <div item xs={12} md={4}>
+              <div
+                className=""
               >
-                <Typography
-                  variant="subtitle1"
+                <div
+                  
                   color="primary.main"
                   gutterBottom
                 >
                   FDA MedWatch Reports
-                </Typography>
-                <Typography variant="h5" color="primary.main">
+                </div>
+                <div  color="primary.main">
                   18
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Submitted this quarter
-                </Typography>
-                <Button size="small" sx={{ mt: 1 }}>
+                </div>
+                <Button size="small" className="">
                   View Reports
                 </Button>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Box
-                sx={{
-                  p: 2,
-                  border: 1,
-                  borderColor: 'warning.main',
-                  borderRadius: 1,
-                }}
+              </div>
+            </div>
+            <div item xs={12} md={4}>
+              <div
+                className=""
               >
-                <Typography
-                  variant="subtitle1"
+                <div
+                  
                   color="warning.main"
                   gutterBottom
                 >
                   Pending Submissions
-                </Typography>
-                <Typography variant="h5" color="warning.main">
+                </div>
+                <div  color="warning.main">
                   3
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Awaiting review
-                </Typography>
-                <Button size="small" sx={{ mt: 1 }}>
+                </div>
+                <Button size="small" className="">
                   Review Queue
                 </Button>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Box
-                sx={{
-                  p: 2,
-                  border: 1,
-                  borderColor: 'success.main',
-                  borderRadius: 1,
-                }}
+              </div>
+            </div>
+            <div item xs={12} md={4}>
+              <div
+                className=""
               >
-                <Typography
-                  variant="subtitle1"
+                <div
+                  
                   color="success.main"
                   gutterBottom
                 >
                   Compliance Rate
-                </Typography>
-                <Typography variant="h5" color="success.main">
+                </div>
+                <div  color="success.main">
                   98.7%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Regulatory compliance
-                </Typography>
-                <Button size="small" sx={{ mt: 1 }}>
+                </div>
+                <Button size="small" className="">
                   View Details
                 </Button>
-              </Box>
-            </Grid>
-          </Grid>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default AdverseEventReport;

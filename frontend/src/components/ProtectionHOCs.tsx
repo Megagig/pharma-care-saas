@@ -1,9 +1,7 @@
-import React from 'react';
-import ProtectedRoute from './ProtectedRoute';
 
+import ProtectedRoute from './ProtectedRoute';
 // Higher-order component for protecting components with role-based access control
 export const withRoleProtection = <P extends object>(
-  Component: React.ComponentType<P>,
   requiredRole: string | string[]
 ) => {
   const WithRoleProtection: React.FC<P> = (props) => (
@@ -13,7 +11,6 @@ export const withRoleProtection = <P extends object>(
   );
 
   // Set display name for better debugging
-  WithRoleProtection.displayName = `withRoleProtection(${
     Component.displayName || Component.name || 'Component'
   })`;
 
@@ -22,7 +19,6 @@ export const withRoleProtection = <P extends object>(
 
 // Higher-order component for feature protection
 export const withFeatureProtection = <P extends object>(
-  Component: React.ComponentType<P>,
   requiredFeature: string
 ) => {
   const WithFeatureProtection: React.FC<P> = (props) => (
@@ -32,7 +28,6 @@ export const withFeatureProtection = <P extends object>(
   );
 
   // Set display name for better debugging
-  WithFeatureProtection.displayName = `withFeatureProtection(${
     Component.displayName || Component.name || 'Component'
   })`;
 

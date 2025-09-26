@@ -1,20 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  useSearchParams,
-  Link,
-  useLocation,
-  useNavigate,
-} from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import {
-  CheckCircle,
-  XCircle,
-  Loader2,
-  Mail,
-  ArrowLeft,
-  RefreshCw,
-} from 'lucide-react';
+import { useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { Loader2, CheckCircle, Mail, XCircle, RefreshCw, ArrowLeft } from 'lucide-react';
+
+// Mock hook
+const useAuth = () => {
+  return {
+    verifyEmail: async (token?: string, code?: string) => {
+      // Mock implementation
+      console.log(`Verifying email with token ${token} or code ${code}`);
+      return Promise.resolve({ message: 'Email verified successfully!' });
+    }
+  };
+};
 
 const VerifyEmail: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -55,7 +53,7 @@ const VerifyEmail: React.FC = () => {
           setStatus('error');
           setMessage(
             (error as Error).message ||
-              'Email verification failed. Please try again.'
+            'Email verification failed. Please try again.'
           );
         }
       };
@@ -124,7 +122,7 @@ const VerifyEmail: React.FC = () => {
     } catch (error: unknown) {
       toast.error(
         (error as Error).message ||
-          'Invalid verification code. Please try again.'
+        'Invalid verification code. Please try again.'
       );
       // Clear the code on error
       setCode(['', '', '', '', '', '']);

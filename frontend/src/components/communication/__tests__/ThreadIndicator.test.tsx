@@ -1,8 +1,5 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { vi, describe, it, expect } from 'vitest';
-import ThreadIndicator from '../ThreadIndicator';
 
+import ThreadIndicator from '../ThreadIndicator';
 describe('ThreadIndicator', () => {
   const defaultProps = {
     threadId: 'thread-123',
@@ -21,7 +18,7 @@ describe('ThreadIndicator', () => {
   });
 
   it('should render compact variant correctly', () => {
-    render(<ThreadIndicator {...defaultProps} variant="compact" />);
+    render(<ThreadIndicator {...defaultProps}  />);
 
     expect(screen.getByText('3 replies')).toBeInTheDocument();
     expect(screen.getByText(/minutes ago/)).toBeInTheDocument();
@@ -29,7 +26,7 @@ describe('ThreadIndicator', () => {
   });
 
   it('should render detailed variant correctly', () => {
-    render(<ThreadIndicator {...defaultProps} variant="detailed" />);
+    render(<ThreadIndicator {...defaultProps}  />);
 
     expect(screen.getByText('Thread Discussion')).toBeInTheDocument();
     expect(screen.getByText('3 replies')).toBeInTheDocument();
@@ -39,7 +36,7 @@ describe('ThreadIndicator', () => {
 
   it('should handle singular reply count', () => {
     render(
-      <ThreadIndicator {...defaultProps} replyCount={1} variant="compact" />
+      <ThreadIndicator {...defaultProps} replyCount={1}  />
     );
 
     expect(screen.getByText('1 reply')).toBeInTheDocument();
@@ -50,7 +47,7 @@ describe('ThreadIndicator', () => {
       <ThreadIndicator
         {...defaultProps}
         participants={['user-1']}
-        variant="detailed"
+        
       />
     );
 
@@ -64,7 +61,7 @@ describe('ThreadIndicator', () => {
       <ThreadIndicator
         {...defaultProps}
         onViewThread={mockOnViewThread}
-        variant="compact"
+        
       />
     );
 
@@ -82,7 +79,7 @@ describe('ThreadIndicator', () => {
         {...defaultProps}
         onToggle={mockOnToggle}
         expanded={false}
-        variant="compact"
+        
       />
     );
 
@@ -98,19 +95,18 @@ describe('ThreadIndicator', () => {
         {...defaultProps}
         onToggle={vi.fn()}
         expanded={true}
-        variant="compact"
+        
       />
     );
 
     const toggleButton = screen.getByRole('button', {
-      name: /collapse thread/i,
-    });
+      name: /collapse thread/i}
     expect(toggleButton).toBeInTheDocument();
   });
 
   it('should not show unread count when it is 0', () => {
     render(
-      <ThreadIndicator {...defaultProps} unreadCount={0} variant="compact" />
+      <ThreadIndicator {...defaultProps} unreadCount={0}  />
     );
 
     // Should not have any badge with number
@@ -122,7 +118,7 @@ describe('ThreadIndicator', () => {
       <ThreadIndicator
         {...defaultProps}
         lastReplyAt={undefined}
-        variant="compact"
+        
       />
     );
 
@@ -138,7 +134,7 @@ describe('ThreadIndicator', () => {
         {...defaultProps}
         onViewThread={mockOnViewThread}
         onToggle={mockOnToggle}
-        variant="compact"
+        
       />
     );
 
@@ -156,7 +152,7 @@ describe('ThreadIndicator', () => {
       <ThreadIndicator
         {...defaultProps}
         lastReplyAt={recentTime}
-        variant="compact"
+        
       />
     );
 
@@ -165,7 +161,7 @@ describe('ThreadIndicator', () => {
 
   it('should not be clickable when onViewThread is not provided', () => {
     const { container } = render(
-      <ThreadIndicator {...defaultProps} variant="detailed" />
+      <ThreadIndicator {...defaultProps}  />
     );
 
     const threadIndicator = container.firstChild as HTMLElement;
@@ -177,7 +173,7 @@ describe('ThreadIndicator', () => {
       <ThreadIndicator
         {...defaultProps}
         onViewThread={vi.fn()}
-        variant="compact"
+        
       />
     );
 

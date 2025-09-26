@@ -1,6 +1,3 @@
-import React from 'react';
-import { errorHandlingService } from '../services/errorHandlingService';
-
 // Retry configuration interface
 export interface RetryConfig {
     maxAttempts: number;

@@ -1,8 +1,3 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { labApi } from '../api/labApi';
-import { useUIStore } from '../../../stores';
-import type { ApiResponse } from '../types';
-
 // Error type for API calls
 type ApiError = {
     message?: string;
@@ -89,12 +84,12 @@ export const labTrendQueryKeys = {
  * Hook to fetch lab trends for a specific test and patient
  */
 export const useLabTrends = (patientId: string, testCode: string, days: number = 90) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: labTrendQueryKeys.trends(patientId, testCode, days),
         queryFn: () => labApi.getTrends(patientId, testCode, days),
         enabled: !!patientId && !!testCode,
         staleTime: 5 * 60 * 1000, // 5 minutes for trend data
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -102,11 +97,11 @@ export const useLabTrends = (patientId: string, testCode: string, days: number =
  * Hook to fetch lab test catalog with optional search
  */
 export const useLabTestCatalog = (search?: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: labTrendQueryKeys.catalog.search(search),
         queryFn: () => labApi.getTestCatalog(search),
         staleTime: 10 * 60 * 1000, // 10 minutes for catalog data
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -114,12 +109,12 @@ export const useLabTestCatalog = (search?: string) => {
  * Hook to fetch reference ranges for a specific test
  */
 export const useReferenceRanges = (testCode: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: labTrendQueryKeys.referenceRanges(testCode),
         queryFn: () => labApi.getReferenceRanges(testCode),
         enabled: !!testCode,
         staleTime: 30 * 60 * 1000, // 30 minutes for reference ranges
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -134,12 +129,12 @@ export const useFHIRImport = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (data: {
             fhirBundle: any;
             patientMapping: {
                 fhirPatientId: string;
-                internalPatientId: string;
+                internalPatientId: string; })
             };
         }) => labApi.importFHIR(data),
         onSuccess: (response, variables) => {
@@ -147,47 +142,45 @@ export const useFHIRImport = () => {
 
             if (results && Array.isArray(results)) {
                 // Invalidate related queries for the patient
-                queryClient.invalidateQueries({
-                    queryKey: ['lab', 'results', 'patient', variables.patientMapping.internalPatientId]
+                queryClient.invalidateQueries({ 
+                    queryKey: ['lab', 'results', 'patient', variables.patientMapping.internalPatientId] })
                 });
-                queryClient.invalidateQueries({
-                    queryKey: ['lab', 'results', 'list']
+                queryClient.invalidateQueries({ 
+                    queryKey: ['lab', 'results', 'list'] })
                 });
 
                 // Invalidate trends for imported tests
                 const uniqueTestCodes = [...new Set(results.map(result => result.testCode))];
                 uniqueTestCodes.forEach(testCode => {
-                    queryClient.invalidateQueries({
+                    queryClient.invalidateQueries({ 
                         queryKey: labTrendQueryKeys.trends(
                             variables.patientMapping.internalPatientId,
                             testCode
-                        )
+                        ) })
                     });
                 });
 
                 // Invalidate critical and abnormal results
                 queryClient.invalidateQueries({ queryKey: ['lab', 'results', 'critical'] });
-                queryClient.invalidateQueries({
-                    queryKey: ['lab', 'results', 'abnormal', variables.patientMapping.internalPatientId]
+                queryClient.invalidateQueries({ 
+                    queryKey: ['lab', 'results', 'abnormal', variables.patientMapping.internalPatientId] })
                 });
 
-                addNotification({
+                addNotification({ 
                     type: 'success',
-                    title: 'FHIR Import Successful',
+                    title: 'FHIR Import Successful'}
                     message: `Successfully imported ${results.length} lab result(s) from FHIR bundle.`,
-                    duration: 5000,
-                });
+                    duration: 5000}
             }
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'FHIR Import Failed',
                 message: error.message || 'Failed to import FHIR lab data. Please check the bundle format and try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -196,7 +189,7 @@ export const useFHIRImport = () => {
 export const useFHIRExport = () => {
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (orderId: string) => labApi.exportOrder(orderId),
         onSuccess: (response, orderId) => {
             const exportData = response?.data;
@@ -206,7 +199,7 @@ export const useFHIRExport = () => {
                     type: 'success',
                     title: 'FHIR Export Successful',
                     message: `Lab order has been successfully exported to FHIR format.`,
-                    duration: 4000,
+                    duration: 4000}
                 });
 
                 // Optionally download the FHIR resource
@@ -224,14 +217,13 @@ export const useFHIRExport = () => {
             }
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'FHIR Export Failed',
                 message: error.message || 'Failed to export lab order to FHIR format. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 // ===============================
@@ -246,14 +238,14 @@ export const useMultipleLabTrends = (
     testCodes: string[],
     days: number = 90
 ) => {
-    const queries = testCodes.map(testCode => ({
+    const queries = testCodes.map(testCode => ({ 
         queryKey: labTrendQueryKeys.trends(patientId, testCode, days),
         queryFn: () => labApi.getTrends(patientId, testCode, days),
         enabled: !!patientId && !!testCode,
-        staleTime: 5 * 60 * 1000,
+        staleTime: 5 * 60 * 1000}
     }));
 
-    return useQuery({
+    return useQuery({ 
         queryKey: ['lab', 'trends', 'multiple', patientId, testCodes, days],
         queryFn: async () => {
             const results = await Promise.allSettled(
@@ -264,13 +256,12 @@ export const useMultipleLabTrends = (
                 testCode: testCodes[index],
                 status: result.status,
                 data: result.status === 'fulfilled' ? result.value.data : null,
-                error: result.status === 'rejected' ? result.reason : null,
+                error: result.status === 'rejected' ? result.reason : null}
             }));
         },
         enabled: !!patientId && testCodes.length > 0,
         staleTime: 5 * 60 * 1000,
-        refetchOnWindowFocus: false,
-    });
+        refetchOnWindowFocus: false}
 };
 
 /**
@@ -287,12 +278,12 @@ export const useSearchLabTestCatalog = (searchTerm: string, debounceMs: number =
         return () => clearTimeout(timer);
     }, [searchTerm, debounceMs]);
 
-    return useQuery({
+    return useQuery({ 
         queryKey: labTrendQueryKeys.catalog.search(debouncedSearchTerm),
         queryFn: () => labApi.getTestCatalog(debouncedSearchTerm),
         enabled: debouncedSearchTerm.length >= 2, // Only search with 2+ characters
         staleTime: 10 * 60 * 1000, // 10 minutes
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -303,10 +294,10 @@ export const usePrefetchLabTrends = () => {
     const queryClient = useQueryClient();
 
     return (patientId: string, testCode: string, days: number = 90) => {
-        queryClient.prefetchQuery({
+        queryClient.prefetchQuery({ 
             queryKey: labTrendQueryKeys.trends(patientId, testCode, days),
             queryFn: () => labApi.getTrends(patientId, testCode, days),
-            staleTime: 5 * 60 * 1000,
+            staleTime: 5 * 60 * 1000}
         });
     };
 };
@@ -344,6 +335,5 @@ export const useLabTrendSummary = (patientId: string, testCodes: string[], days:
 };
 
 // Add React import for hooks that use React.useState and React.useEffect
-import React from 'react';
 
 export default useLabTrends;

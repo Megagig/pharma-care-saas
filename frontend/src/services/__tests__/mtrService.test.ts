@@ -1,16 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { mtrService, MTRValidationError, MTRNotFoundError, MTRConflictError } from '../mtrService';
-import { apiHelpers } from '../api';
-
 // Mock the API helpers
-vi.mock('../api', () => ({
+vi.mock('../api', () => ({ 
     apiHelpers: {
         get: vi.fn(),
         post: vi.fn(),
         put: vi.fn(),
-        delete: vi.fn(),
-    },
-}));
+        delete: vi.fn()}
+    }
 
 const mockApiHelpers = apiHelpers as unknown as {
     handleApiError: vi.MockedFunction<typeof apiHelpers.handleApiError>;
@@ -63,8 +58,7 @@ describe('mtrService', () => {
                 await mtrService.getMTRSessions(searchParams);
 
                 expect(mockApiHelpers.get).toHaveBeenCalledWith('/api/mtr', {
-                    params: searchParams,
-                });
+                    params: searchParams}
             });
 
             it('should handle API errors', async () => {
@@ -247,8 +241,7 @@ describe('mtrService', () => {
                 const result = await mtrService.getDrugTherapyProblems('review-1');
 
                 expect(mockApiHelpers.get).toHaveBeenCalledWith('/api/mtr/review-1/problems', {
-                    params: {},
-                });
+                    params: {}
                 expect(result).toEqual(mockResponse);
             });
         });
@@ -337,8 +330,7 @@ describe('mtrService', () => {
                 const result = await mtrService.getMTRInterventions('review-1');
 
                 expect(mockApiHelpers.get).toHaveBeenCalledWith('/api/mtr/review-1/interventions', {
-                    params: {},
-                });
+                    params: {}
                 expect(result).toEqual(mockResponse);
             });
         });
@@ -428,8 +420,7 @@ describe('mtrService', () => {
                 const result = await mtrService.getMTRFollowUps('review-1');
 
                 expect(mockApiHelpers.get).toHaveBeenCalledWith('/api/mtr/review-1/followups', {
-                    params: {},
-                });
+                    params: {}
                 expect(result).toEqual(mockResponse);
             });
         });
@@ -521,8 +512,7 @@ describe('mtrService', () => {
                 const result = await mtrService.checkDrugInteractions(medications);
 
                 expect(mockApiHelpers.post).toHaveBeenCalledWith('/api/mtr/check-interactions', {
-                    medications,
-                });
+                    medications}
                 expect(result).toEqual(mockResponse);
             });
         });
@@ -551,8 +541,7 @@ describe('mtrService', () => {
                 const result = await mtrService.checkDuplicateTherapy(medications);
 
                 expect(mockApiHelpers.post).toHaveBeenCalledWith('/api/mtr/check-duplicates', {
-                    medications,
-                });
+                    medications}
                 expect(result).toEqual(mockResponse);
             });
         });
@@ -576,8 +565,7 @@ describe('mtrService', () => {
                 const result = await mtrService.getMTRSummaryReport();
 
                 expect(mockApiHelpers.get).toHaveBeenCalledWith('/api/mtr/reports/summary', {
-                    params: {},
-                });
+                    params: {}
                 expect(result).toEqual(mockResponse);
             });
         });
@@ -599,8 +587,7 @@ describe('mtrService', () => {
                 const result = await mtrService.getInterventionEffectivenessReport();
 
                 expect(mockApiHelpers.get).toHaveBeenCalledWith('/api/mtr/reports/outcomes', {
-                    params: {},
-                });
+                    params: {}
                 expect(result).toEqual(mockResponse);
             });
         });
@@ -625,8 +612,7 @@ describe('mtrService', () => {
                 const result = await mtrService.getPharmacistPerformanceReport();
 
                 expect(mockApiHelpers.get).toHaveBeenCalledWith('/api/mtr/reports/audit', {
-                    params: {},
-                });
+                    params: {}
                 expect(result).toEqual(mockResponse);
             });
         });
@@ -647,10 +633,10 @@ describe('mtrService', () => {
             mockApiHelpers.post.mockRejectedValue(error);
 
             await expect(
-                mtrService.createMTRSession({
+                mtrService.createMTRSession({ 
                     patientId: '',
                     reviewType: 'initial',
-                    priority: 'routine',
+                    priority: 'routine'}
                 })
             ).rejects.toThrow(MTRValidationError);
         });
@@ -679,10 +665,10 @@ describe('mtrService', () => {
             mockApiHelpers.post.mockRejectedValue(error);
 
             await expect(
-                mtrService.createMTRSession({
+                mtrService.createMTRSession({ 
                     patientId: 'patient-1',
                     reviewType: 'initial',
-                    priority: 'routine',
+                    priority: 'routine'}
                 })
             ).rejects.toThrow(MTRConflictError);
         });

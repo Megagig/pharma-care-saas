@@ -1,6 +1,3 @@
-import { useState, useEffect } from 'react';
-import { activityService, SystemActivity, UserActivity } from '../services/activityService';
-
 interface UseRecentActivitiesReturn {
     systemActivities: SystemActivity[];
     userActivities: UserActivity[];

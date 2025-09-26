@@ -1,39 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  IconButton,
-  Badge,
-  Menu,
-  MenuItem,
-  Divider,
-  TextField,
-  InputAdornment,
-  Chip,
-  Button,
-  Tooltip,
-  Switch,
-  FormControlLabel,
-  Alert,
-  Skeleton,
-  List,
-  ListItem,
-} from '@mui/material';
-import {
-  Notifications as NotificationsIcon,
-  Search as SearchIcon,
-  FilterList as FilterIcon,
-  Settings as SettingsIcon,
-  MarkEmailRead as MarkAllReadIcon,
-  Clear as ClearIcon,
-  Refresh as RefreshIcon,
-  VolumeUp as SoundOnIcon,
-  VolumeOff as SoundOffIcon,
-} from '@mui/icons-material';
-import { useCommunicationStore } from '../../stores/communicationStore';
-import { CommunicationNotification } from '../../stores/types';
 import NotificationItem from './NotificationItem';
+
+import { Button, Input, Badge, Tooltip, Alert, Skeleton, Switch, Separator } from '@/components/ui/button';
 
 interface NotificationCenterProps {
   maxHeight?: string;
@@ -42,27 +9,24 @@ interface NotificationCenterProps {
   refreshInterval?: number;
   onNotificationClick?: (notification: CommunicationNotification) => void;
 }
-
 interface NotificationFilters {
   type?: string;
   priority?: string;
   status?: string;
   search?: string;
 }
-
 interface NotificationPreferences {
   soundEnabled: boolean;
   desktopNotifications: boolean;
   emailNotifications: boolean;
   groupSimilar: boolean;
 }
-
-const NotificationCenter: React.FC<NotificationCenterProps> = ({
+const NotificationCenter: React.FC<NotificationCenterProps> = ({ 
   maxHeight = '600px',
   showHeader = true,
   autoRefresh = true,
   refreshInterval = 30000, // 30 seconds
-  onNotificationClick,
+  onNotificationClick
 }) => {
   // Store state
   const {
@@ -75,7 +39,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     loading,
     errors,
   } = useCommunicationStore();
-
   // Local state
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(
@@ -86,22 +49,19 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   );
   const [filters, setFilters] = useState<NotificationFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
-  const [preferences, setPreferences] = useState<NotificationPreferences>({
+  const [preferences, setPreferences] = useState<NotificationPreferences>({ 
     soundEnabled: true,
     desktopNotifications: true,
     emailNotifications: false,
-    groupSimilar: true,
+    groupSimilar: true
   });
   const [lastPlayedSound, setLastPlayedSound] = useState<number>(0);
-
   // Notification sound
   const playNotificationSound = useCallback(() => {
     if (!preferences.soundEnabled) return;
-
     const now = Date.now();
     // Throttle sound to prevent spam
     if (now - lastPlayedSound < 1000) return;
-
     try {
       const audio = new Audio('/sounds/notification.mp3');
       audio.volume = 0.3;
@@ -111,23 +71,18 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
       console.warn('Could not play notification sound:', error);
     }
   }, [preferences.soundEnabled, lastPlayedSound]);
-
   // Auto-refresh notifications
   useEffect(() => {
     if (!autoRefresh) return;
-
     const interval = setInterval(() => {
       fetchNotifications();
     }, refreshInterval);
-
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, fetchNotifications]);
-
   // Initial fetch
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
-
   // Play sound for new notifications
   useEffect(() => {
     const unreadNotifications = notifications.filter(
@@ -137,20 +92,16 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
       playNotificationSound();
     }
   }, [notifications, playNotificationSound]);
-
   // Desktop notifications
   useEffect(() => {
     if (!preferences.desktopNotifications) return;
-
     const requestPermission = async () => {
       if ('Notification' in window && Notification.permission === 'default') {
         await Notification.requestPermission();
       }
     };
-
     requestPermission();
   }, [preferences.desktopNotifications]);
-
   // Show desktop notification for new urgent notifications
   useEffect(() => {
     if (
@@ -158,25 +109,21 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
       Notification.permission !== 'granted'
     )
       return;
-
     const urgentNotifications = notifications.filter(
       (n) => n.status === 'unread' && ['urgent', 'high'].includes(n.priority)
     );
-
     urgentNotifications.forEach((notification) => {
       new Notification(notification.title, {
         body: notification.content,
         icon: '/icons/notification-icon.png',
         tag: notification._id,
         requireInteraction: notification.priority === 'urgent',
-      });
+      };
     });
   }, [notifications, preferences.desktopNotifications]);
-
   // Filter and search notifications
   const filteredNotifications = useMemo(() => {
     let filtered = [...notifications];
-
     // Apply filters
     if (filters.type) {
       filtered = filtered.filter((n) => n.type === filters.type);
@@ -187,7 +134,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     if (filters.status) {
       filtered = filtered.filter((n) => n.status === filters.status);
     }
-
     // Apply search
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -197,11 +143,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
           n.content.toLowerCase().includes(query)
       );
     }
-
     // Group similar notifications if enabled
     if (preferences.groupSimilar) {
       const grouped = new Map<string, CommunicationNotification[]>();
-
       filtered.forEach((notification) => {
         const key = `${notification.type}_${
           notification.data.conversationId || 'general'
@@ -211,7 +155,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         }
         grouped.get(key)!.push(notification);
       });
-
       // Return the most recent notification from each group
       filtered = Array.from(grouped.values()).map(
         (group) =>
@@ -221,7 +164,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
           )[0]
       );
     }
-
     // Sort by priority and date
     return filtered.sort((a, b) => {
       const priorityOrder = { urgent: 4, high: 3, normal: 2, low: 1 };
@@ -229,130 +171,106 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
       const bPriority =
         priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
-
       if (aPriority !== bPriority) {
         return bPriority - aPriority;
       }
-
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [notifications, filters, searchQuery, preferences.groupSimilar]);
-
   // Event handlers
   const handleNotificationClick = useCallback(
     (notification: CommunicationNotification) => {
       if (notification.status === 'unread') {
         markNotificationAsRead(notification._id);
       }
-
       if (onNotificationClick) {
         onNotificationClick(notification);
       }
     },
     [markNotificationAsRead, onNotificationClick]
   );
-
   const handleMarkAllAsRead = useCallback(() => {
     markAllNotificationsAsRead();
     setAnchorEl(null);
   }, [markAllNotificationsAsRead]);
-
   const handleRefresh = useCallback(() => {
     fetchNotifications();
   }, [fetchNotifications]);
-
   const handleFilterChange = useCallback(
     (key: keyof NotificationFilters, value: string) => {
-      setFilters((prev) => ({
+      setFilters((prev) => ({ 
         ...prev,
-        [key]: value === 'all' ? undefined : value,
+        [key]: value === 'all' ? undefined : value}
       }));
       setFilterAnchorEl(null);
     },
     []
   );
-
   const handlePreferenceChange = useCallback(
     (key: keyof NotificationPreferences, value: boolean) => {
-      setPreferences((prev) => ({
+      setPreferences((prev) => ({ 
         ...prev,
-        [key]: value,
+        [key]: value}
       }));
     },
     []
   );
-
   const clearFilters = useCallback(() => {
     setFilters({});
     setSearchQuery('');
   }, []);
-
   // Render loading state
   if (loading.fetchNotifications) {
     return (
-      <Paper sx={{ p: 2, maxHeight, overflow: 'hidden' }}>
+      <div className="">
         {showHeader && (
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <NotificationsIcon sx={{ mr: 1 }} />
-            <Typography variant="h6">Notifications</Typography>
-          </Box>
+          <div className="">
+            <NotificationsIcon className="" />
+            <div >Notifications</div>
+          </div>
         )}
         <List>
           {[...Array(5)].map((_, index) => (
-            <ListItem key={index}>
-              <Skeleton variant="rectangular" width="100%" height={60} />
-            </ListItem>
+            <div key={index}>
+              <Skeleton  width="100%" height={60} />
+            </div>
           ))}
         </List>
-      </Paper>
+      </div>
     );
   }
-
   return (
-    <Paper
-      sx={{
-        maxHeight,
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
+    <div
+      className=""
     >
       {showHeader && (
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 2,
-            }}
+        <div className="">
+          <div
+            className=""
           >
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Badge badgeContent={unreadCount} color="error" sx={{ mr: 1 }}>
+            <div className="">
+              <Badge badgeContent={unreadCount} color="error" className="">
                 <NotificationsIcon />
               </Badge>
-              <Typography variant="h6">Notifications</Typography>
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <div >Notifications</div>
+            </div>
+            <div className="">
               <Tooltip title="Refresh">
                 <IconButton size="small" onClick={handleRefresh}>
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
-
               <Tooltip title="Filter">
                 <IconButton
                   size="small"
                   onClick={(e) => setFilterAnchorEl(e.currentTarget)}
                   color={
-                    Object.keys(filters).length > 0 ? 'primary' : 'default'
+                    Object.keys(filters).length > 0 ? 'primary' : 'default'}
                   }
                 >
                   <FilterIcon />
                 </IconButton>
               </Tooltip>
-
               <Tooltip title="Settings">
                 <IconButton
                   size="small"
@@ -361,7 +279,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   <SettingsIcon />
                 </IconButton>
               </Tooltip>
-
               {unreadCount > 0 && (
                 <Tooltip title="Mark all as read">
                   <IconButton size="small" onClick={handleMarkAllAsRead}>
@@ -369,11 +286,10 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   </IconButton>
                 </Tooltip>
               )}
-            </Box>
-          </Box>
-
+            </div>
+          </div>
           {/* Search */}
-          <TextField
+          <Input
             fullWidth
             size="small"
             placeholder="Search notifications..."
@@ -386,25 +302,17 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 </InputAdornment>
               ),
               endAdornment: searchQuery && (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchQuery('')}>
+                <InputAdornment position="end">}
+                  <IconButton size="small" onClick={() =>setSearchQuery('')}>
                     <ClearIcon />
                   </IconButton>
                 </InputAdornment>
               ),
-            }}
           />
-
           {/* Active filters */}
           {(Object.keys(filters).length > 0 || searchQuery) && (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                mt: 1,
-                flexWrap: 'wrap',
-              }}
+            <div
+              className=""
             >
               {Object.entries(filters).map(
                 ([key, value]) =>
@@ -417,7 +325,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                         handleFilterChange(
                           key as keyof NotificationFilters,
                           'all'
-                        )
+                        )}
                       }
                     />
                   )
@@ -432,33 +340,31 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
               <Button size="small" onClick={clearFilters}>
                 Clear all
               </Button>
-            </Box>
+            </div>
           )}
-        </Box>
+        </div>
       )}
-
       {/* Error state */}
       {errors.fetchNotifications && (
-        <Alert severity="error" sx={{ m: 2 }}>
+        <Alert severity="error" className="">
           {errors.fetchNotifications}
         </Alert>
       )}
-
       {/* Notifications list */}
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
+      <div className="">
         {filteredNotifications.length === 0 ? (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
+          <div className="">
             <NotificationsIcon
-              sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }}
+              className=""
             />
-            <Typography variant="body1" color="text.secondary">
+            <div  color="text.secondary">
               {notifications.length === 0
                 ? 'No notifications yet'
                 : 'No notifications match your filters'}
-            </Typography>
-          </Box>
+            </div>
+          </div>
         ) : (
-          <List sx={{ p: 0 }}>
+          <List className="">
             {filteredNotifications.map((notification, index) => (
               <React.Fragment key={notification._id}>
                 <NotificationItem
@@ -466,13 +372,12 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   onClick={() => handleNotificationClick(notification)}
                   onDismiss={() => removeNotification(notification._id)}
                 />
-                {index < filteredNotifications.length - 1 && <Divider />}
+                {index < filteredNotifications.length - 1 && <Separator />}
               </React.Fragment>
             ))}
           </List>
         )}
-      </Box>
-
+      </div>
       {/* Filter Menu */}
       <Menu
         anchorEl={filterAnchorEl}
@@ -485,14 +390,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         <MenuItem onClick={() => handleFilterChange('status', 'read')}>
           Read only
         </MenuItem>
-        <Divider />
+        <Separator />
         <MenuItem onClick={() => handleFilterChange('priority', 'urgent')}>
           Urgent priority
         </MenuItem>
         <MenuItem onClick={() => handleFilterChange('priority', 'high')}>
           High priority
         </MenuItem>
-        <Divider />
+        <Separator />
         <MenuItem onClick={() => handleFilterChange('type', 'new_message')}>
           Messages only
         </MenuItem>
@@ -503,82 +408,75 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
           Mentions only
         </MenuItem>
       </Menu>
-
       {/* Settings Menu */}
       <Menu
         anchorEl={settingsAnchorEl}
         open={Boolean(settingsAnchorEl)}
         onClose={() => setSettingsAnchorEl(null)}
-        PaperProps={{ sx: { minWidth: 250 } }}
-      >
-        <Box sx={{ p: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
+        PaperProps={{ sx: { minWidth: 250 }>
+        <div className="">
+          <div  gutterBottom>
             Notification Preferences
-          </Typography>
-
+          </div>
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={preferences.soundEnabled}
                 onChange={(e) =>
-                  handlePreferenceChange('soundEnabled', e.target.checked)
+                  handlePreferenceChange('soundEnabled', e.target.checked)}
                 }
               />
             }
             label={
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <div className="">
                 {preferences.soundEnabled ? (
-                  <SoundOnIcon sx={{ mr: 1 }} />
+                  <SoundOnIcon className="" />
                 ) : (
-                  <SoundOffIcon sx={{ mr: 1 }} />
+                  <SoundOffIcon className="" />}
                 )}
                 Sound notifications
-              </Box>
+              </div>
             }
           />
-
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={preferences.desktopNotifications}
                 onChange={(e) =>
                   handlePreferenceChange(
                     'desktopNotifications',
                     e.target.checked
-                  )
+                  )}
                 }
               />
             }
             label="Desktop notifications"
           />
-
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={preferences.emailNotifications}
                 onChange={(e) =>
-                  handlePreferenceChange('emailNotifications', e.target.checked)
+                  handlePreferenceChange('emailNotifications', e.target.checked)}
                 }
               />
             }
             label="Email notifications"
           />
-
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={preferences.groupSimilar}
                 onChange={(e) =>
-                  handlePreferenceChange('groupSimilar', e.target.checked)
+                  handlePreferenceChange('groupSimilar', e.target.checked)}
                 }
               />
             }
             label="Group similar notifications"
           />
-        </Box>
+        </div>
       </Menu>
-    </Paper>
+    </div>
   );
 };
-
 export default NotificationCenter;

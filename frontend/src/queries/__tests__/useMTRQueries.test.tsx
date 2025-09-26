@@ -1,27 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
-import {
-  useMTRSessions,
-  useMTRSession,
-  useCreateMTRSession,
-  useUpdateMTRSession,
-  useDrugTherapyProblems,
-  useCreateDrugTherapyProblem,
-  useMTRInterventions,
-  useCreateMTRIntervention,
-  useMTRFollowUps,
-  useCreateMTRFollowUp,
-  useMTRSummaryReport,
-  useInterventionEffectivenessReport,
-  usePharmacistPerformanceReport,
-  useQualityAssuranceReport,
-  useOutcomeMetricsReport,
-} from '../useMTRQueries';
-
 // Mock the MTR service
-vi.mock('../../services/mtrService', () => ({
+vi.mock('../../services/mtrService', () => ({ 
   mtrService: {
     getMTRSessions: vi.fn(),
     getMTRSession: vi.fn(),
@@ -41,19 +19,17 @@ vi.mock('../../services/mtrService', () => ({
     getInterventionEffectivenessReport: vi.fn(),
     getPharmacistPerformanceReport: vi.fn(),
     getQualityAssuranceReport: vi.fn(),
-    getOutcomeMetricsReport: vi.fn(),
-  },
-}));
+    getOutcomeMetricsReport: vi.fn()}
+  }
 
 // Mock the UI store
-vi.mock('../../stores', () => ({
+vi.mock('../../stores', () => ({ 
   useUIStore: () => ({
-    showNotification: vi.fn(),
-  }),
-}));
+    showNotification: vi.fn()}
+  })}
 
 // Mock query keys
-vi.mock('../../lib/queryClient', () => ({
+vi.mock('../../lib/queryClient', () => ({ 
   queryKeys: {
     mtr: {
       list: (params: Record<string, unknown>) => ['mtr', 'list', params],
@@ -106,19 +82,17 @@ vi.mock('../../lib/queryClient', () => ({
           'reports',
           'outcomes',
           params,
-        ],
+        ]}
       },
     },
-  },
-}));
+  }
 
 const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -153,8 +127,7 @@ describe('useMTRQueries', () => {
         vi.mocked(mtrService.getMTRSessions).mockResolvedValue(mockSessions);
 
         const { result } = renderHook(() => useMTRSessions(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         await waitFor(() => {
           expect(result.current.isSuccess).toBe(true);
@@ -171,8 +144,7 @@ describe('useMTRQueries', () => {
         );
 
         const { result } = renderHook(() => useMTRSessions(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         await waitFor(() => {
           expect(result.current.isError).toBe(true);
@@ -197,8 +169,7 @@ describe('useMTRQueries', () => {
         vi.mocked(mtrService.getMTRSession).mockResolvedValue(mockSession);
 
         const { result } = renderHook(() => useMTRSession('session-1'), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         await waitFor(() => {
           expect(result.current.isSuccess).toBe(true);
@@ -272,8 +243,7 @@ describe('useMTRQueries', () => {
         );
 
         const { result } = renderHook(() => useMTRInterventions('review-1'), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         await waitFor(() => {
           expect(result.current.isSuccess).toBe(true);
@@ -307,8 +277,7 @@ describe('useMTRQueries', () => {
         vi.mocked(mtrService.getMTRFollowUps).mockResolvedValue(mockFollowUps);
 
         const { result } = renderHook(() => useMTRFollowUps('review-1'), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         await waitFor(() => {
           expect(result.current.isSuccess).toBe(true);
@@ -335,8 +304,7 @@ describe('useMTRQueries', () => {
         vi.mocked(mtrService.createMTRSession).mockResolvedValue(mockResponse);
 
         const { result } = renderHook(() => useCreateMTRSession(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         const createData = {
           patientId: 'patient-1',
@@ -356,8 +324,7 @@ describe('useMTRQueries', () => {
         );
 
         const { result } = renderHook(() => useCreateMTRSession(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         const createData = {
           patientId: 'patient-1',
@@ -384,8 +351,7 @@ describe('useMTRQueries', () => {
         vi.mocked(mtrService.updateMTRSession).mockResolvedValue(mockResponse);
 
         const { result } = renderHook(() => useUpdateMTRSession(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         const updateData = {
           sessionId: 'session-1',
@@ -395,8 +361,7 @@ describe('useMTRQueries', () => {
         await result.current.mutateAsync(updateData);
 
         expect(mtrService.updateMTRSession).toHaveBeenCalledWith('session-1', {
-          status: 'completed',
-        });
+          status: 'completed'}
       });
     });
 
@@ -417,8 +382,7 @@ describe('useMTRQueries', () => {
         );
 
         const { result } = renderHook(() => useCreateDrugTherapyProblem(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         const createData = {
           reviewId: 'review-1',
@@ -455,8 +419,7 @@ describe('useMTRQueries', () => {
         );
 
         const { result } = renderHook(() => useCreateMTRIntervention(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         const createData = {
           reviewId: 'review-1',
@@ -492,8 +455,7 @@ describe('useMTRQueries', () => {
         vi.mocked(mtrService.createMTRFollowUp).mockResolvedValue(mockResponse);
 
         const { result } = renderHook(() => useCreateMTRFollowUp(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         const createData = {
           reviewId: 'review-1',
@@ -528,8 +490,7 @@ describe('useMTRQueries', () => {
         vi.mocked(mtrService.getMTRSummaryReport).mockResolvedValue(mockReport);
 
         const { result } = renderHook(() => useMTRSummaryReport(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         await waitFor(() => {
           expect(result.current.isSuccess).toBe(true);
@@ -596,8 +557,7 @@ describe('useMTRQueries', () => {
         );
 
         const { result } = renderHook(() => usePharmacistPerformanceReport(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         await waitFor(() => {
           expect(result.current.isSuccess).toBe(true);
@@ -628,8 +588,7 @@ describe('useMTRQueries', () => {
         );
 
         const { result } = renderHook(() => useQualityAssuranceReport(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         await waitFor(() => {
           expect(result.current.isSuccess).toBe(true);
@@ -658,8 +617,7 @@ describe('useMTRQueries', () => {
         );
 
         const { result } = renderHook(() => useOutcomeMetricsReport(), {
-          wrapper: createWrapper(),
-        });
+          wrapper: createWrapper()}
 
         await waitFor(() => {
           expect(result.current.isSuccess).toBe(true);
@@ -679,8 +637,7 @@ describe('useMTRQueries', () => {
       );
 
       const { result } = renderHook(() => useMTRSessions(), {
-        wrapper: createWrapper(),
-      });
+        wrapper: createWrapper()}
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -699,8 +656,7 @@ describe('useMTRQueries', () => {
       vi.mocked(mtrService.createMTRSession).mockRejectedValue(validationError);
 
       const { result } = renderHook(() => useCreateMTRSession(), {
-        wrapper: createWrapper(),
-      });
+        wrapper: createWrapper()}
 
       const createData = {
         patientId: '',
@@ -720,9 +676,8 @@ describe('useMTRQueries', () => {
       const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
       const { mtrService } = await import('../../services/mtrService');
-      vi.mocked(mtrService.createMTRSession).mockResolvedValue({
-        data: { _id: 'session-1' },
-      });
+      vi.mocked(mtrService.createMTRSession).mockResolvedValue({  })
+        data: { _id: 'session-1' }
 
       const wrapper = ({ children }: { children: ReactNode }) => (
         <QueryClientProvider client={queryClient}>

@@ -1,7 +1,3 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { Medication, MedicationFormData, MedicationFilters, LoadingState, ErrorState } from './types';
-
 interface MedicationStore {
   // State
   medications: Medication[];
@@ -116,7 +112,7 @@ const medicationService = {
 
 export const useMedicationStore = create<MedicationStore>()(
   persist(
-    (set, get) => ({
+    (set, get) => ({ 
       // Initial state
       medications: [],
       selectedMedication: null,
@@ -155,14 +151,14 @@ export const useMedicationStore = create<MedicationStore>()(
           const response = await medicationService.getMedications(currentFilters);
 
           if (response.success && response.data) {
-            set({
+            set({ 
               medications: response.data,
               pagination: response.pagination || {
                 page: currentFilters.page || 1,
                 limit: currentFilters.limit || 10,
                 total: response.data.length,
-                pages: Math.ceil(response.data.length / (currentFilters.limit || 10)),
-              },
+                pages: Math.ceil(response.data.length / (currentFilters.limit || 10))
+              }
             });
           } else {
             setError('fetchMedications', 'Failed to fetch medications');
@@ -335,11 +331,12 @@ export const useMedicationStore = create<MedicationStore>()(
       // Filter and search actions
       setFilters: (newFilters) =>
         set((state) => ({
+          ...state,
           filters: { ...state.filters, ...newFilters },
         })),
 
       clearFilters: () =>
-        set({
+        set({ 
           filters: {
             search: '',
             sortBy: 'prescribedDate',
@@ -392,12 +389,14 @@ export const useMedicationStore = create<MedicationStore>()(
 
       setLoading: (key, loading) =>
         set((state) => ({
-          loading: { ...state.loading, [key]: loading },
+          ...state,
+          loading: { ...state.loading, [key]: loading }
         })),
 
       setError: (key, error) =>
         set((state) => ({
-          errors: { ...state.errors, [key]: error },
+          ...state,
+          errors: { ...state.errors, [key]: error }
         })),
 
       // Bulk operations
@@ -414,11 +413,10 @@ export const useMedicationStore = create<MedicationStore>()(
 
           if (successful.length === ids.length) {
             // Update all successfully updated medications in state
-            set((state) => ({
-              medications: state.medications.map(m =>
+            set((state) => ({ 
+              medications: state.medications.map(m => })
                 ids.includes(m._id) ? { ...m, status: status as 'active' | 'inactive' | 'discontinued' } : m
-              ),
-            }));
+              )}
             return true;
           } else {
             setError('updateMultiple', `Only ${successful.length} of ${ids.length} medications were updated`);
@@ -445,11 +443,11 @@ export const useMedicationStore = create<MedicationStore>()(
 
           if (successful.length === ids.length) {
             // Remove all successfully deleted medications from state
-            set((state) => ({
+            set((state) => ({ 
               medications: state.medications.filter(m => !ids.includes(m._id)),
               selectedMedication: state.selectedMedication && ids.includes(state.selectedMedication._id)
                 ? null
-                : state.selectedMedication,
+                : state.selectedMedication}
             }));
             return true;
           } else {
@@ -466,29 +464,26 @@ export const useMedicationStore = create<MedicationStore>()(
 
       // Local state management
       addMedicationToState: (medication) =>
-        set((state) => ({
+        set((state) => ({ 
           medications: [medication, ...state.medications],
           pagination: {
             ...state.pagination,
-            total: state.pagination.total + 1,
-          },
-        })),
+            total: state.pagination.total + 1}
+          }, },
 
       updateMedicationInState: (id, updates) =>
-        set((state) => ({
-          medications: state.medications.map(m =>
+        set((state) => ({ 
+          medications: state.medications.map(m => })
             m._id === id ? { ...m, ...updates } : m
-          ),
-        })),
+          ), },
 
       removeMedicationFromState: (id) =>
-        set((state) => ({
+        set((state) => ({ 
           medications: state.medications.filter(m => m._id !== id),
           pagination: {
             ...state.pagination,
-            total: Math.max(0, state.pagination.total - 1),
-          },
-        })),
+            total: Math.max(0, state.pagination.total - 1)}
+          }, },
 
       // Analytics and insights
       getActiveMedicationsCount: () => {
@@ -511,47 +506,46 @@ export const useMedicationStore = create<MedicationStore>()(
           discontinued: patientMeds.filter(m => m.status === 'discontinued').length,
           total: patientMeds.length,
         };
-      },
-    }),
+      }, },
     {
       name: 'medication-store',
-      partialize: (state) => ({
+      partialize: (state) => ({ 
         filters: state.filters,
-        selectedMedication: state.selectedMedication,
+        selectedMedication: state.selectedMedication}
       }),
     }
   )
 );
 
 // Utility hooks for easier access to specific medication states
-export const useMedications = () => useMedicationStore((state) => ({
+export const useMedications = () => useMedicationStore((state) => ({ 
   medications: state.medications,
   loading: state.loading.fetchMedications || false,
   error: state.errors.fetchMedications || null,
   pagination: state.pagination,
   fetchMedications: state.fetchMedications,
-  fetchMedicationsByPatient: state.fetchMedicationsByPatient,
+  fetchMedicationsByPatient: state.fetchMedicationsByPatient}
 }));
 
-export const useSelectedMedication = () => useMedicationStore((state) => ({
+export const useSelectedMedication = () => useMedicationStore((state) => ({ 
   selectedMedication: state.selectedMedication,
   selectMedication: state.selectMedication,
   loading: state.loading.getMedicationById || false,
   error: state.errors.getMedicationById || null,
-  getMedicationById: state.getMedicationById,
+  getMedicationById: state.getMedicationById}
 }));
 
-export const useMedicationFilters = () => useMedicationStore((state) => ({
+export const useMedicationFilters = () => useMedicationStore((state) => ({ 
   filters: state.filters,
   setFilters: state.setFilters,
   clearFilters: state.clearFilters,
   searchMedications: state.searchMedications,
   filterByStatus: state.filterByStatus,
   filterByPatient: state.filterByPatient,
-  sortMedications: state.sortMedications,
+  sortMedications: state.sortMedications}
 }));
 
-export const useMedicationActions = () => useMedicationStore((state) => ({
+export const useMedicationActions = () => useMedicationStore((state) => ({ 
   createMedication: state.createMedication,
   updateMedication: state.updateMedication,
   deleteMedication: state.deleteMedication,
@@ -565,7 +559,7 @@ export const useMedicationActions = () => useMedicationStore((state) => ({
     delete: state.loading.deleteMedication || false,
     updateStatus: state.loading.updateStatus || false,
     updateMultiple: state.loading.updateMultiple || false,
-    deleteMultiple: state.loading.deleteMultiple || false,
+    deleteMultiple: state.loading.deleteMultiple || false}
   },
   errors: {
     create: state.errors.createMedication || null,
@@ -575,11 +569,10 @@ export const useMedicationActions = () => useMedicationStore((state) => ({
     updateMultiple: state.errors.updateMultiple || null,
     deleteMultiple: state.errors.deleteMultiple || null,
   },
-  clearErrors: state.clearErrors,
-}));
+  clearErrors: state.clearErrors}
 
-export const useMedicationAnalytics = () => useMedicationStore((state) => ({
+export const useMedicationAnalytics = () => useMedicationStore((state) => ({ 
   getActiveMedicationsCount: state.getActiveMedicationsCount,
   getMedicationsByStatus: state.getMedicationsByStatus,
-  getPatientMedicationSummary: state.getPatientMedicationSummary,
+  getPatientMedicationSummary: state.getPatientMedicationSummary}
 }));

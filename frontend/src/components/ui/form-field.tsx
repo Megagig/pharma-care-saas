@@ -1,8 +1,5 @@
-import * as React from 'react';
-import { cn } from '@/lib/utils';
-import { Input, InputProps } from './input';
-import { Label } from './label';
 
+import { Input, Label } from '@/components/ui/button';
 export interface FormFieldProps extends InputProps {
   label?: string;
   error?: boolean;
@@ -13,7 +10,7 @@ export interface FormFieldProps extends InputProps {
 }
 
 const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
-  ({ 
+  ({  
     className, 
     label, 
     error, 
@@ -22,7 +19,7 @@ const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
     size = 'medium',
     variant = 'outlined',
     id,
-    ...props 
+    ...props  })
   }, ref) => {
     const inputId = id || React.useId();
     
@@ -49,14 +46,14 @@ const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
             sizeClasses[size],
             error && 'border-destructive focus-visible:ring-destructive',
             fullWidth && 'w-full',
-            className
+            className}
           )}
           {...props}
         />
         {helperText && (
           <p className={cn(
             'text-xs',
-            error ? 'text-destructive' : 'text-muted-foreground'
+            error ? 'text-destructive' : 'text-muted-foreground'}
           )}>
             {helperText}
           </p>

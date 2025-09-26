@@ -1,5 +1,4 @@
 import axios from 'axios';
-import type {
     ClinicalIntervention,
     CreateInterventionData,
     UpdateInterventionData,
@@ -9,7 +8,6 @@ import type {
     InterventionOutcome,
     StrategyRecommendation,
     DashboardMetrics,
-} from '../stores/clinicalInterventionStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -141,8 +139,7 @@ class ClinicalInterventionService {
     async createIntervention(data: CreateInterventionData): Promise<ApiResponse<ClinicalIntervention>> {
         return this.makeRequest<ClinicalIntervention>('/clinical-interventions', {
             method: 'POST',
-            body: JSON.stringify(data),
-        });
+            body: JSON.stringify(data)}
     }
 
     /**
@@ -151,8 +148,7 @@ class ClinicalInterventionService {
     async updateIntervention(id: string, updates: UpdateInterventionData): Promise<ApiResponse<ClinicalIntervention>> {
         return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${id}`, {
             method: 'PATCH',
-            body: JSON.stringify(updates),
-        });
+            body: JSON.stringify(updates)}
     }
 
     /**
@@ -160,8 +156,7 @@ class ClinicalInterventionService {
      */
     async deleteIntervention(id: string): Promise<ApiResponse<boolean>> {
         return this.makeRequest<boolean>(`/clinical-interventions/${id}`, {
-            method: 'DELETE',
-        });
+            method: 'DELETE'}
     }
 
     // ===============================
@@ -174,8 +169,7 @@ class ClinicalInterventionService {
     async addStrategy(interventionId: string, strategy: Omit<InterventionStrategy, '_id'>): Promise<ApiResponse<ClinicalIntervention>> {
         return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/strategies`, {
             method: 'POST',
-            body: JSON.stringify(strategy),
-        });
+            body: JSON.stringify(strategy)}
     }
 
     /**
@@ -184,8 +178,7 @@ class ClinicalInterventionService {
     async updateStrategy(interventionId: string, strategyId: string, updates: Partial<InterventionStrategy>): Promise<ApiResponse<ClinicalIntervention>> {
         return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/strategies/${strategyId}`, {
             method: 'PATCH',
-            body: JSON.stringify(updates),
-        });
+            body: JSON.stringify(updates)}
     }
 
     /**
@@ -194,8 +187,7 @@ class ClinicalInterventionService {
     async assignTeamMember(interventionId: string, assignment: Omit<TeamAssignment, '_id' | 'assignedAt'>): Promise<ApiResponse<ClinicalIntervention>> {
         return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/assignments`, {
             method: 'POST',
-            body: JSON.stringify(assignment),
-        });
+            body: JSON.stringify(assignment)}
     }
 
     /**
@@ -204,8 +196,7 @@ class ClinicalInterventionService {
     async updateAssignment(interventionId: string, assignmentId: string, updates: Partial<TeamAssignment>): Promise<ApiResponse<ClinicalIntervention>> {
         return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/assignments/${assignmentId}`, {
             method: 'PATCH',
-            body: JSON.stringify(updates),
-        });
+            body: JSON.stringify(updates)}
     }
 
     /**
@@ -214,8 +205,7 @@ class ClinicalInterventionService {
     async recordOutcome(interventionId: string, outcome: InterventionOutcome): Promise<ApiResponse<ClinicalIntervention>> {
         return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/outcomes`, {
             method: 'POST',
-            body: JSON.stringify(outcome),
-        });
+            body: JSON.stringify(outcome)}
     }
 
     /**
@@ -224,8 +214,7 @@ class ClinicalInterventionService {
     async scheduleFollowUp(interventionId: string, followUpData: { scheduledDate: string; notes?: string; nextReviewDate?: string }): Promise<ApiResponse<ClinicalIntervention>> {
         return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/follow-up`, {
             method: 'POST',
-            body: JSON.stringify(followUpData),
-        });
+            body: JSON.stringify(followUpData)}
     }
 
     // ===============================
@@ -363,8 +352,7 @@ class ClinicalInterventionService {
                 credentials: 'include' as RequestCredentials, // Include httpOnly cookies
                 headers: {
                     // No manual Authorization header needed - cookies are sent automatically
-                },
-            });
+                }
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -397,8 +385,7 @@ class ClinicalInterventionService {
     async linkToMTR(interventionId: string, mtrId: string): Promise<ApiResponse<ClinicalIntervention>> {
         return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/link-mtr`, {
             method: 'POST',
-            body: JSON.stringify({ mtrId }),
-        });
+            body: JSON.stringify({ mtrId })}
     }
 
     /**
@@ -407,8 +394,7 @@ class ClinicalInterventionService {
     async sendNotifications(interventionId: string, event: string): Promise<ApiResponse<boolean>> {
         return this.makeRequest<boolean>(`/clinical-interventions/${interventionId}/notifications`, {
             method: 'POST',
-            body: JSON.stringify({ event }),
-        });
+            body: JSON.stringify({ event })}
     }
 
     // ===============================
@@ -454,8 +440,7 @@ class ClinicalInterventionService {
     }>> {
         return this.makeRequest('/clinical-interventions/from-mtr', {
             method: 'POST',
-            body: JSON.stringify(data),
-        });
+            body: JSON.stringify(data)}
     }
 
 
@@ -496,8 +481,7 @@ class ClinicalInterventionService {
      */
     async syncWithMTR(interventionId: string): Promise<ApiResponse<null>> {
         return this.makeRequest(`/clinical-interventions/${interventionId}/sync-mtr`, {
-            method: 'POST',
-        });
+            method: 'POST'}
     }
 
     // ===============================

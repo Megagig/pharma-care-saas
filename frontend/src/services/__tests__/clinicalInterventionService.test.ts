@@ -1,4 +1,3 @@
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 import clinicalInterventionService from '../clinicalInterventionService';
 
@@ -65,9 +64,9 @@ describe('ClinicalInterventionService', () => {
                 }
             });
 
-            expect(result).toEqual({
+            expect(result).toEqual({ 
                 data: mockInterventionsResponse.data.data.interventions,
-                pagination: mockInterventionsResponse.data.data.pagination
+                pagination: mockInterventionsResponse.data.data.pagination })
             });
         });
 
@@ -535,10 +534,10 @@ describe('ClinicalInterventionService', () => {
                 }
             });
 
-            expect(result).toEqual({
+            expect(result).toEqual({ 
                 data: mockPatientInterventionsResponse.data.data.interventions,
                 summary: mockPatientInterventionsResponse.data.data.summary,
-                pagination: mockPatientInterventionsResponse.data.data.pagination
+                pagination: mockPatientInterventionsResponse.data.data.pagination })
             });
         });
 
@@ -743,8 +742,7 @@ describe('ClinicalInterventionService', () => {
                     removeItem: vi.fn(),
                     clear: vi.fn(),
                 },
-                writable: true,
-            });
+                writable: true}
 
             mockedAxios.get.mockResolvedValue({ data: { success: true, data: { interventions: [], pagination: {} } } });
 
@@ -770,11 +768,11 @@ describe('ClinicalInterventionService', () => {
             // First call fails, second succeeds
             mockedAxios.get
                 .mockRejectedValueOnce(new Error('Network Error'))
-                .mockResolvedValueOnce({
+                .mockResolvedValueOnce({ 
                     data: {
                         success: true,
                         data: {
-                            interventions: [],
+                            interventions: []}
                             pagination: {}
                         }
                     }

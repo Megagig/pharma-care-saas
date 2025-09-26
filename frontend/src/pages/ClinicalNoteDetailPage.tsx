@@ -1,33 +1,15 @@
 import React from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Breadcrumbs,
-  Link,
-  Button,
-  Paper,
-  Container,
-  Fade,
-} from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  Home as HomeIcon,
-  Note as NoteIcon,
-  Edit as EditIcon,
-} from '@mui/icons-material';
-import { Link as RouterLink } from 'react-router-dom';
-import ClinicalNoteDetail from '../components/ClinicalNoteDetail';
-import { useClinicalNoteStore } from '../stores/clinicalNoteStore';
+import { useNavigate, useLocation, useParams, Link } from 'react-router-dom';
+import { Home as HomeIcon, FileText as NoteIcon, ArrowLeft, Edit } from 'lucide-react';
+
 import ErrorBoundary from '../components/ErrorBoundary';
+import { Button } from '@/components/ui/button';
 
 const ClinicalNoteDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
-
   const noteId = params.id!;
-  const { selectedNote } = useClinicalNoteStore();
 
   // Navigation handlers
   const handleBackNavigation = () => {
@@ -40,17 +22,8 @@ const ClinicalNoteDetailPage: React.FC = () => {
   };
 
   const handleNavigateToEdit = () => {
-    navigate(`/notes/${noteId}/edit`, {
-      state: { from: location.pathname },
-    });
-  };
-
-  const handleNoteDeleted = () => {
-    navigate('/notes', {
-      replace: true,
-      state: {
-        message: 'Note deleted successfully',
-      },
+    navigate(`/notes/${id}/edit`, {
+      state: { from: location.pathname }
     });
   };
 
@@ -60,149 +33,107 @@ const ClinicalNoteDetailPage: React.FC = () => {
       {
         label: 'Dashboard',
         path: '/dashboard',
-        icon: <HomeIcon fontSize="small" />,
+        icon: <HomeIcon className="h-4 w-4" />
       },
       {
         label: 'Clinical Notes',
         path: '/notes',
-        icon: <NoteIcon fontSize="small" />,
+        icon: <NoteIcon className="h-4 w-4" />
       },
       {
-        label: selectedNote?.title || 'Note Details',
+        label: 'Note Details',
         path: `/notes/${noteId}`,
-        icon: <NoteIcon fontSize="small" />,
-      },
+        icon: <NoteIcon className="h-4 w-4" />
+      }
     ];
   };
 
   // Render breadcrumbs
   const renderBreadcrumbs = () => {
     const breadcrumbs = getBreadcrumbs();
-
     return (
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        sx={{
-          mb: 2,
-          '& .MuiBreadcrumbs-separator': {
-            mx: 1,
-          },
-        }}
-      >
-        {breadcrumbs.map((crumb, index) => {
-          const isLast = index === breadcrumbs.length - 1;
-
-          if (isLast) {
+      <nav className="flex" aria-label="Breadcrumb">
+        <ol className="inline-flex items-center space-x-1 md:space-x-3">
+          {breadcrumbs.map((crumb, index) => {
+            const isLast = index === breadcrumbs.length - 1;
             return (
-              <Box
-                key={crumb.path}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  color: 'text.primary',
-                  fontWeight: 500,
-                }}
-              >
-                {crumb.icon}
-                <Typography variant="body2" color="textPrimary">
-                  {crumb.label}
-                </Typography>
-              </Box>
+              <li key={crumb.path} className="inline-flex items-center">
+                {index > 0 && (
+                  <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {isLast ? (
+                  <span className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {crumb.icon}
+                    <span className="ml-1">{crumb.label}</span>
+                  </span>
+                ) : (
+                  <Link
+                    to={crumb.path}
+                    className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    {crumb.icon}
+                    <span className="ml-1">{crumb.label}</span>
+                  </Link>
+                )}
+              </li>
             );
-          }
-
-          return (
-            <Link
-              key={crumb.path}
-              component={RouterLink}
-              to={crumb.path}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                color: 'text.secondary',
-                textDecoration: 'none',
-                '&:hover': {
-                  color: 'primary.main',
-                  textDecoration: 'underline',
-                },
-              }}
-            >
-              {crumb.icon}
-              <Typography variant="body2">{crumb.label}</Typography>
-            </Link>
-          );
-        })}
-      </Breadcrumbs>
+          })}
+        </ol>
+      </nav>
     );
   };
 
   return (
     <ErrorBoundary>
-      <Container
-        maxWidth="xl"
-        sx={{
-          py: 3,
-          px: { xs: 2, sm: 3 },
-          minHeight: 'calc(100vh - 120px)',
-        }}
-      >
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Page Header */}
-        <Box sx={{ mb: 3 }}>
+        <div className="mb-6">
           {renderBreadcrumbs()}
-
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 2,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <div className="flex justify-between items-center mt-4">
+            <div className="flex items-center gap-4">
               <Button
-                variant="outlined"
-                startIcon={<ArrowBackIcon />}
+                variant="outline"
                 onClick={handleBackNavigation}
                 size="sm"
+                className="flex items-center gap-2"
               >
+                <ArrowLeft className="h-4 w-4" />
                 Back
               </Button>
-
-              <Typography
-                variant="h4"
-                component="h1"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.primary',
-                }}
-              >
-                {selectedNote?.title || 'Clinical Note Details'}
-              </Typography>
-            </Box>
-
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Clinical Note Details
+              </h1>
+            </div>
             <Button
-              variant="outlined"
-              startIcon={<EditIcon />}
               onClick={handleNavigateToEdit}
+              className="flex items-center gap-2"
             >
+              <Edit className="h-4 w-4" />
               Edit Note
             </Button>
-          </Box>
-        </Box>
+          </div>
+        </div>
 
         {/* Detail Content */}
-        <Fade in timeout={300}>
-          <Paper elevation={1} sx={{ p: 3 }}>
-            <ClinicalNoteDetail
-              noteId={noteId}
-              onEdit={handleNavigateToEdit}
-              onDelete={handleNoteDeleted}
-            />
-          </Paper>
-        </Fade>
-      </Container>
+        <div className="mt-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="text-center py-12">
+              <NoteIcon className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Clinical Note Detail
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Note ID: {noteId}
+              </p>
+              <p className="text-gray-600 dark:text-gray-400">
+                This page is under construction. The clinical note detail component will be displayed here.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </ErrorBoundary>
   );
 };

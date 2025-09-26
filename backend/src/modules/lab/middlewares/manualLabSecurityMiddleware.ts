@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { AuthRequest } from '../../../types/auth';
 import logger from '../../../utils/logger';
 import crypto from 'crypto';
-import xss from 'xss'; // @ts-ignore: No type declarations for 'xss'
+import xss from 'xss';
 
 /**
  * Enhanced security middleware for manual lab operations

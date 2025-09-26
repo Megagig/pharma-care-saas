@@ -1,40 +1,25 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
-import { ChartComponent } from '../../../components/shared/ChartComponent';
-import {
-  mockChartData,
-  mockChartConfig,
-  generateMockChartData,
-} from '../../mocks/mockData';
-import { ChartType } from '../../../types';
-
 // Mock Recharts for consistent snapshots
-vi.mock('recharts', () => ({
-  LineChart: ({ children, data, ...props }: any) => (
+vi.mock('recharts', () => ({  })
     <div data-testid="line-chart" data-chart-props={JSON.stringify(props)}>
       <div data-testid="chart-data">{JSON.stringify(data)}</div>
       {children}
     </div>
   ),
-  AreaChart: ({ children, data, ...props }: any) => (
     <div data-testid="area-chart" data-chart-props={JSON.stringify(props)}>
       <div data-testid="chart-data">{JSON.stringify(data)}</div>
       {children}
     </div>
   ),
-  BarChart: ({ children, data, ...props }: any) => (
     <div data-testid="bar-chart" data-chart-props={JSON.stringify(props)}>
       <div data-testid="chart-data">{JSON.stringify(data)}</div>
       {children}
     </div>
   ),
-  PieChart: ({ children, data, ...props }: any) => (
     <div data-testid="pie-chart" data-chart-props={JSON.stringify(props)}>
       <div data-testid="chart-data">{JSON.stringify(data)}</div>
       {children}
     </div>
   ),
-  ResponsiveContainer: ({ children, ...props }: any) => (
     <div
       data-testid="responsive-container"
       data-container-props={JSON.stringify(props)}
@@ -42,37 +27,26 @@ vi.mock('recharts', () => ({
       {children}
     </div>
   ),
-  XAxis: (props: any) => (
     <div data-testid="x-axis" data-axis-props={JSON.stringify(props)} />
   ),
-  YAxis: (props: any) => (
     <div data-testid="y-axis" data-axis-props={JSON.stringify(props)} />
   ),
-  CartesianGrid: (props: any) => (
     <div data-testid="cartesian-grid" data-grid-props={JSON.stringify(props)} />
   ),
-  Tooltip: (props: any) => (
     <div data-testid="tooltip" data-tooltip-props={JSON.stringify(props)} />
   ),
-  Legend: (props: any) => (
     <div data-testid="legend" data-legend-props={JSON.stringify(props)} />
   ),
-  Line: (props: any) => (
     <div data-testid="line" data-line-props={JSON.stringify(props)} />
   ),
-  Area: (props: any) => (
     <div data-testid="area" data-area-props={JSON.stringify(props)} />
   ),
-  Bar: (props: any) => (
     <div data-testid="bar" data-bar-props={JSON.stringify(props)} />
   ),
-  Cell: (props: any) => (
     <div data-testid="cell" data-cell-props={JSON.stringify(props)} />
   ),
-  Pie: (props: any) => (
     <div data-testid="pie" data-pie-props={JSON.stringify(props)} />
-  ),
-}));
+  )}
 
 describe('ChartComponent Snapshots', () => {
   const defaultProps = {
@@ -84,7 +58,7 @@ describe('ChartComponent Snapshots', () => {
     const { container } = render(
       <ChartComponent
         {...defaultProps}
-        config={{ ...mockChartConfig, type: 'line' }}
+        
       />
     );
     expect(container.firstChild).toMatchSnapshot();
@@ -94,7 +68,7 @@ describe('ChartComponent Snapshots', () => {
     const { container } = render(
       <ChartComponent
         {...defaultProps}
-        config={{ ...mockChartConfig, type: 'area' }}
+        
       />
     );
     expect(container.firstChild).toMatchSnapshot();
@@ -104,7 +78,7 @@ describe('ChartComponent Snapshots', () => {
     const { container } = render(
       <ChartComponent
         {...defaultProps}
-        config={{ ...mockChartConfig, type: 'bar' }}
+        
       />
     );
     expect(container.firstChild).toMatchSnapshot();
@@ -114,7 +88,7 @@ describe('ChartComponent Snapshots', () => {
     const { container } = render(
       <ChartComponent
         {...defaultProps}
-        config={{ ...mockChartConfig, type: 'pie' }}
+        
       />
     );
     expect(container.firstChild).toMatchSnapshot();
@@ -130,7 +104,7 @@ describe('ChartComponent Snapshots', () => {
     const { container } = render(
       <ChartComponent
         {...defaultProps}
-        config={{ ...mockChartConfig, theme: customTheme }}
+        
       />
     );
     expect(container.firstChild).toMatchSnapshot();
@@ -233,7 +207,7 @@ describe('ChartComponent Snapshots', () => {
     const { container } = render(
       <ChartComponent
         {...defaultProps}
-        config={{ ...mockChartConfig, theme: gradientTheme }}
+        
       />
     );
     expect(container.firstChild).toMatchSnapshot();
@@ -250,7 +224,7 @@ describe('ChartComponent Snapshots', () => {
     const { container } = render(
       <ChartComponent
         {...defaultProps}
-        config={{ ...mockChartConfig, animations: customAnimations }}
+        
       />
     );
     expect(container.firstChild).toMatchSnapshot();

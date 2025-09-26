@@ -1,6 +1,15 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useAuth } from './useAuth';
-import type { UserRole, RBACPermissions } from '../types/patientManagement';
+
+type UserRole = 'owner' | 'admin' | 'pharmacist' | 'technician';
+
+interface RBACPermissions {
+  canCreate: boolean;
+  canRead: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+  canManage: boolean;
+}
 
 interface UseRBACReturn {
   permissions: RBACPermissions;
@@ -182,11 +191,11 @@ interface RBACGuardProps {
   fallback?: React.ReactNode;
 }
 
-export const RBACGuard: React.FC<RBACGuardProps> = ({
+export const RBACGuard: React.FC<RBACGuardProps> = ({ 
   children,
   action,
   role: requiredRole,
-  fallback = null,
+  fallback = null
 }) => {
   const { canAccess, role } = useRBAC();
 
@@ -194,8 +203,7 @@ export const RBACGuard: React.FC<RBACGuardProps> = ({
     action,
     requiredRole,
     currentRole: role,
-    canAccess: action ? canAccess(action) : 'no action check',
-  });
+    canAccess: action ? canAccess(action) : 'no action check'}
 
   // Check action permission
   if (action && !canAccess(action)) {

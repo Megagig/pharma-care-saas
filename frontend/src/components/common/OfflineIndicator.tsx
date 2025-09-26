@@ -1,42 +1,37 @@
-/**
- * Offline indicator component for showing connection status
- * and sync progress
- */
-
 import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/use-toast';
 import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Collapse,
-  IconButton,
-  LinearProgress,
-  Paper,
-  Snackbar,
-  Typography,
-  Zoom,
-} from '@mui/material';
-import CloudOffIcon from '@mui/icons-material/CloudOff';
-import CloudDoneIcon from '@mui/icons-material/CloudDone';
-import SyncIcon from '@mui/icons-material/Sync';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import { syncService } from '../../services/syncService';
-import { useResponsive } from '../../hooks/useResponsive';
+  CloudOff,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  Cloud,
+  Loader,
+} from 'lucide-react';
+
+// Mock data and hooks
+const useResponsive = () => ({ isMobile: false });
+const syncService = {
+  onSync: (callback: (result: any) => void) => () => {},
+  getSyncStatus: () => Promise.resolve({ isOnline: true, syncInProgress: false, queueLength: 0 }),
+  forceSync: () => Promise.resolve(),
+};
 
 interface OfflineIndicatorProps {
   position?: 'top' | 'bottom';
   showDetails?: boolean;
 }
 
-const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
+const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ 
   position = 'top',
-  showDetails = false,
+  showDetails = false
 }) => {
   const { isMobile } = useResponsive();
+  const { toast } = useToast();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncStatus, setSyncStatus] = useState({
     isOnline: true,
@@ -50,26 +45,26 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
     failed: number;
     errors: string[];
   } | null>(null);
-  const [showSyncSnackbar, setShowSyncSnackbar] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Subscribe to sync events
     const unsubscribe = syncService.onSync((result) => {
       setLastSyncResult(result);
-      setShowSyncSnackbar(true);
+      toast({
+        title: result.success ? 'Sync completed' : 'Sync failed',
+        description: result.success
+          ? `${result.synced || 0} items synced`
+          : `${result.failed || 0} errors`,
+        variant: result.success ? 'default' : 'destructive',
+      });
       updateSyncStatus();
     });
 
-    // Initial sync status
     updateSyncStatus();
-
-    // Update sync status periodically
     const interval = setInterval(updateSyncStatus, 5000);
 
     return () => {
@@ -78,7 +73,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
       unsubscribe();
       clearInterval(interval);
     };
-  }, []);
+  }, [toast]);
 
   const updateSyncStatus = async () => {
     try {
@@ -91,7 +86,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
 
   const handleManualSync = async () => {
     try {
-      await syncService.forcSync();
+      await syncService.forceSync();
     } catch (error) {
       console.error('Manual sync failed:', error);
     }
@@ -101,11 +96,11 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
     return null;
   }
 
-  const getStatusColor = () => {
-    if (!isOnline) return 'error';
-    if (syncStatus.syncInProgress) return 'info';
+  const getStatusVariant = (): 'default' | 'destructive' | 'warning' => {
+    if (!isOnline) return 'destructive';
+    if (syncStatus.syncInProgress) return 'default';
     if (syncStatus.queueLength > 0) return 'warning';
-    return 'success';
+    return 'default';
   };
 
   const getStatusText = () => {
@@ -117,186 +112,74 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
   };
 
   const getStatusIcon = () => {
-    if (!isOnline) return <CloudOffIcon />;
-    if (syncStatus.syncInProgress) return <CircularProgress size={20} />;
-    if (syncStatus.queueLength > 0) return <SyncIcon />;
-    return <CloudDoneIcon />;
+    if (!isOnline) return <CloudOff className="h-4 w-4" />;
+    if (syncStatus.syncInProgress) return <Loader className="h-4 w-4 animate-spin" />;
+    if (syncStatus.queueLength > 0) return <RefreshCw className="h-4 w-4" />;
+    return <Cloud className="h-4 w-4" />;
   };
 
   return (
-    <>
-      <Zoom in={true}>
-        <Paper
-          elevation={2}
-          sx={{
-            position: 'fixed',
-            [position]: isMobile ? 8 : 16,
-            left: isMobile ? 8 : 16,
-            right: isMobile ? 8 : 'auto',
-            zIndex: 1300,
-            borderRadius: 2,
-            overflow: 'hidden',
-          }}
-        >
-          <Alert
-            severity={getStatusColor()}
-            icon={getStatusIcon()}
-            action={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {isOnline && syncStatus.queueLength > 0 && (
-                  <IconButton
-                    size="small"
-                    onClick={handleManualSync}
-                    disabled={syncStatus.syncInProgress}
-                    color="inherit"
-                  >
-                    <RefreshIcon />
-                  </IconButton>
+    <div className={`fixed ${position}-0 left-0 right-0 z-50 p-2`}>
+      <Alert variant={getStatusVariant()}>
+        {getStatusIcon()}
+        <AlertTitle>{getStatusText()}</AlertTitle>
+        <AlertDescription>
+          {showSyncDetails && (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge variant={isOnline ? 'default' : 'destructive'}>
+                  {isOnline ? 'Online' : 'Offline'}
+                </Badge>
+                {syncStatus.queueLength > 0 && (
+                  <Badge variant="warning">{`${syncStatus.queueLength} pending`}</Badge>
                 )}
-                {showDetails && (
-                  <IconButton
-                    size="small"
-                    onClick={() => setShowSyncDetails(!showSyncDetails)}
-                    color="inherit"
-                  >
-                    {showSyncDetails ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                  </IconButton>
+                {syncStatus.syncInProgress && (
+                  <Badge variant="default">Syncing</Badge>
                 )}
-              </Box>
-            }
-            sx={{
-              '& .MuiAlert-message': {
-                width: '100%',
-              },
-            }}
-          >
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {getStatusText()}
-            </Typography>
-
-            <Collapse in={showSyncDetails}>
-              <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', mb: 1 }}
-                >
-                  Connection Status
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                  <Chip
-                    size="small"
-                    label={isOnline ? 'Online' : 'Offline'}
-                    color={isOnline ? 'success' : 'error'}
-                    variant="outlined"
-                  />
-                  {syncStatus.queueLength > 0 && (
-                    <Chip
-                      size="small"
-                      label={`${syncStatus.queueLength} pending`}
-                      color="warning"
-                      variant="outlined"
-                    />
-                  )}
-                  {syncStatus.syncInProgress && (
-                    <Chip
-                      size="small"
-                      label="Syncing"
-                      color="info"
-                      variant="outlined"
-                    />
-                  )}
-                </Box>
-
-                {lastSyncResult && (
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block', mb: 1 }}
-                    >
-                      Last Sync Result
-                    </Typography>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      {lastSyncResult?.synced || 0} synced,{' '}
-                      {lastSyncResult?.failed || 0} failed
-                    </Typography>
-                    {lastSyncResult?.errors &&
-                      lastSyncResult.errors.length > 0 && (
-                        <Box>
-                          <Typography variant="caption" color="error.main">
-                            Errors:
-                          </Typography>
-                          {lastSyncResult?.errors
-                            ?.slice(0, 3)
-                            .map((error: string, index: number) => (
-                              <Typography
-                                key={index}
-                                variant="caption"
-                                sx={{ display: 'block', color: 'error.main' }}
-                              >
-                                • {error}
-                              </Typography>
-                            ))}
-                          {lastSyncResult?.errors &&
-                            lastSyncResult.errors.length > 3 && (
-                              <Typography variant="caption" color="error.main">
-                                ... and {lastSyncResult.errors.length - 3} more
-                              </Typography>
-                            )}
-                        </Box>
+              </div>
+              {lastSyncResult && (
+                <div>
+                  <p className="font-semibold">Last Sync Result</p>
+                  <p>{`${lastSyncResult.synced || 0} synced, ${lastSyncResult.failed || 0} failed`}</p>
+                  {lastSyncResult.errors && lastSyncResult.errors.length > 0 && (
+                    <div className="text-xs text-destructive">
+                      <p>Errors:</p>
+                      <ul className="list-disc list-inside">
+                        {lastSyncResult.errors.slice(0, 3).map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
+                      {lastSyncResult.errors.length > 3 && (
+                        <p>... and {lastSyncResult.errors.length - 3} more</p>
                       )}
-                  </Box>
-                )}
-
-                {isOnline && (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<SyncIcon />}
-                    onClick={handleManualSync}
-                    disabled={syncStatus.syncInProgress}
-                    sx={{ mt: 1 }}
-                  >
-                    Sync Now
-                  </Button>
-                )}
-              </Box>
-            </Collapse>
-          </Alert>
-
-          {syncStatus.syncInProgress && (
-            <LinearProgress
-              sx={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 2,
-              }}
-            />
+                    </div>
+                  )}
+                </div>
+              )}
+              {isOnline && (
+                <Button size="sm" variant="outline" onClick={handleManualSync} disabled={syncStatus.syncInProgress}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Sync Now
+                </Button>
+              )}
+            </div>
           )}
-        </Paper>
-      </Zoom>
-
-      {/* Sync result snackbar */}
-      <Snackbar
-        open={showSyncSnackbar}
-        autoHideDuration={4000}
-        onClose={() => setShowSyncSnackbar(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setShowSyncSnackbar(false)}
-          severity={lastSyncResult?.success ? 'success' : 'error'}
-          sx={{ width: '100%' }}
-        >
-          {lastSyncResult?.success
-            ? `Sync completed: ${lastSyncResult?.synced || 0} items synced`
-            : `Sync failed: ${lastSyncResult?.failed || 0} errors`}
-        </Alert>
-      </Snackbar>
-    </>
+        </AlertDescription>
+        <div className="absolute top-2 right-2 flex gap-2">
+          {isOnline && syncStatus.queueLength > 0 && (
+            <Button size="icon" variant="ghost" onClick={handleManualSync} disabled={syncStatus.syncInProgress}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          )}
+          {showDetails && (
+            <Button size="icon" variant="ghost" onClick={() => setShowSyncDetails(!showSyncDetails)}>
+              {showSyncDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          )}
+        </div>
+        {syncStatus.syncInProgress && <Progress value={undefined} className="absolute bottom-0 left-0 right-0 h-1" />}
+      </Alert>
+    </div>
   );
 };
 

@@ -1,8 +1,3 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { clinicalInterventionService } from '../services/clinicalInterventionService';
-import { queryKeys } from '../lib/queryClient';
-import { useUIStore } from '../stores';
-import type {
     ClinicalIntervention,
     CreateInterventionData,
     UpdateInterventionData,
@@ -12,7 +7,6 @@ import type {
     InterventionOutcome,
     StrategyRecommendation,
     DashboardMetrics,
-} from '../stores/clinicalInterventionStore';
 
 // Error type for API calls
 type ApiError = {
@@ -27,11 +21,11 @@ type ApiError = {
  * Hook to fetch interventions with optional filters
  */
 export const useClinicalInterventions = (filters: InterventionFilters = {}) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: queryKeys.clinicalInterventions.list(filters),
         queryFn: () => clinicalInterventionService.getInterventions(filters),
         staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -39,11 +33,11 @@ export const useClinicalInterventions = (filters: InterventionFilters = {}) => {
  * Hook to fetch a single intervention by ID
  */
 export const useClinicalIntervention = (interventionId: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: queryKeys.clinicalInterventions.detail(interventionId),
         queryFn: () => clinicalInterventionService.getInterventionById(interventionId),
         enabled: !!interventionId,
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -51,11 +45,11 @@ export const useClinicalIntervention = (interventionId: string) => {
  * Hook to search interventions
  */
 export const useSearchClinicalInterventions = (searchQuery: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: queryKeys.clinicalInterventions.search(searchQuery),
         queryFn: () => clinicalInterventionService.searchInterventions(searchQuery),
         enabled: !!searchQuery && searchQuery.length >= 2,
-        staleTime: 30 * 1000, // 30 seconds for search results
+        staleTime: 30 * 1000, // 30 seconds for search results })
     });
 };
 
@@ -63,11 +57,11 @@ export const useSearchClinicalInterventions = (searchQuery: string) => {
  * Hook to fetch interventions for a specific patient
  */
 export const usePatientInterventions = (patientId: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: queryKeys.clinicalInterventions.byPatient(patientId),
         queryFn: () => clinicalInterventionService.getPatientInterventions(patientId),
         enabled: !!patientId,
-        staleTime: 2 * 60 * 1000, // 2 minutes
+        staleTime: 2 * 60 * 1000, // 2 minutes })
     });
 };
 
@@ -75,10 +69,10 @@ export const usePatientInterventions = (patientId: string) => {
  * Hook to fetch interventions assigned to current user
  */
 export const useMyAssignedInterventions = () => {
-    return useQuery({
+    return useQuery({ 
         queryKey: queryKeys.clinicalInterventions.assignedToMe(),
         queryFn: () => clinicalInterventionService.getMyAssignedInterventions(),
-        staleTime: 1 * 60 * 1000, // 1 minute for assigned interventions
+        staleTime: 1 * 60 * 1000, // 1 minute for assigned interventions })
     });
 };
 
@@ -86,10 +80,10 @@ export const useMyAssignedInterventions = () => {
  * Hook to fetch dashboard metrics
  */
 export const useInterventionDashboard = (dateRange?: { start: string; end: string }) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: queryKeys.clinicalInterventions.analytics.dashboard(dateRange),
         queryFn: () => clinicalInterventionService.getDashboardMetrics(dateRange),
-        staleTime: 5 * 60 * 1000, // 5 minutes for dashboard data
+        staleTime: 5 * 60 * 1000, // 5 minutes for dashboard data })
     });
 };
 
@@ -97,11 +91,11 @@ export const useInterventionDashboard = (dateRange?: { start: string; end: strin
  * Hook to fetch strategy recommendations for a category
  */
 export const useStrategyRecommendations = (category: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: queryKeys.clinicalInterventions.recommendations(category),
         queryFn: () => clinicalInterventionService.getStrategyRecommendations(category),
         enabled: !!category,
-        staleTime: 10 * 60 * 1000, // 10 minutes for recommendations (relatively static)
+        staleTime: 10 * 60 * 1000, // 10 minutes for recommendations (relatively static) })
     });
 };
 
@@ -109,11 +103,11 @@ export const useStrategyRecommendations = (category: string) => {
  * Hook to check for duplicate interventions
  */
 export const useDuplicateInterventions = (patientId: string, category: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: queryKeys.clinicalInterventions.duplicates(patientId, category),
         queryFn: () => clinicalInterventionService.checkDuplicates(patientId, category),
         enabled: !!patientId && !!category,
-        staleTime: 1 * 60 * 1000, // 1 minute for duplicate checks
+        staleTime: 1 * 60 * 1000, // 1 minute for duplicate checks })
     });
 };
 
@@ -121,10 +115,10 @@ export const useDuplicateInterventions = (patientId: string, category: string) =
  * Hook to fetch category counts
  */
 export const useCategoryCounts = () => {
-    return useQuery({
+    return useQuery({ 
         queryKey: queryKeys.clinicalInterventions.analytics.categories(),
         queryFn: () => clinicalInterventionService.getCategoryCounts(),
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 5 * 60 * 1000, // 5 minutes })
     });
 };
 
@@ -132,10 +126,10 @@ export const useCategoryCounts = () => {
  * Hook to fetch priority distribution
  */
 export const usePriorityDistribution = () => {
-    return useQuery({
+    return useQuery({ 
         queryKey: queryKeys.clinicalInterventions.analytics.priorities(),
         queryFn: () => clinicalInterventionService.getPriorityDistribution(),
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 5 * 60 * 1000, // 5 minutes })
     });
 };
 
@@ -143,10 +137,10 @@ export const usePriorityDistribution = () => {
  * Hook to fetch outcome trends
  */
 export const useOutcomeTrends = (dateRange?: { start: string; end: string }) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: queryKeys.clinicalInterventions.analytics.trends(dateRange),
         queryFn: () => clinicalInterventionService.getOutcomeTrends(dateRange),
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 5 * 60 * 1000, // 5 minutes })
     });
 };
 
@@ -161,45 +155,43 @@ export const useCreateIntervention = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (data: CreateInterventionData) =>
             clinicalInterventionService.createIntervention(data),
         onSuccess: (response, variables) => {
-            // Invalidate and refetch interventions lists
+            // Invalidate and refetch interventions lists })
             queryClient.invalidateQueries({ queryKey: queryKeys.clinicalInterventions.all });
             queryClient.invalidateQueries({ queryKey: queryKeys.clinicalInterventions.lists() });
 
             // Invalidate patient-specific interventions if patientId is provided
             if (variables.patientId) {
-                queryClient.invalidateQueries({
-                    queryKey: queryKeys.clinicalInterventions.byPatient(variables.patientId),
+                queryClient.invalidateQueries({ 
+                    queryKey: queryKeys.clinicalInterventions.byPatient(variables.patientId)}
                 });
             }
 
             // Invalidate analytics
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.clinicalInterventions.analytics.all,
+            queryClient.invalidateQueries({ 
+                queryKey: queryKeys.clinicalInterventions.analytics.all}
             });
 
             // Show success notification
             const intervention = response?.data;
-            addNotification({
+            addNotification({ 
                 type: 'success',
-                title: 'Intervention Created',
+                title: 'Intervention Created'}
                 message: `Clinical intervention ${intervention?.interventionNumber || ''} has been successfully created.`,
-                duration: 5000,
-            });
+                duration: 5000}
         },
         onError: (error: ApiError) => {
             // Show error notification
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Creation Failed',
                 message: error.message || 'Failed to create intervention. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -209,10 +201,10 @@ export const useUpdateIntervention = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             interventionId,
-            updates,
+            updates}
         }: {
             interventionId: string;
             updates: UpdateInterventionData;
@@ -229,29 +221,28 @@ export const useUpdateIntervention = () => {
 
             // Invalidate analytics if status changed
             if (variables.updates.status) {
-                queryClient.invalidateQueries({
-                    queryKey: queryKeys.clinicalInterventions.analytics.all,
+                queryClient.invalidateQueries({ 
+                    queryKey: queryKeys.clinicalInterventions.analytics.all}
                 });
             }
 
             // Show success notification
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'Intervention Updated',
                 message: 'Intervention has been successfully updated.',
-                duration: 5000,
+                duration: 5000}
             });
         },
         onError: (error: ApiError) => {
             // Show error notification
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Update Failed',
                 message: error.message || 'Failed to update intervention. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -261,41 +252,40 @@ export const useDeleteIntervention = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (interventionId: string) =>
             clinicalInterventionService.deleteIntervention(interventionId),
         onSuccess: (_, interventionId) => {
             // Remove intervention from cache
             queryClient.removeQueries({
-                queryKey: queryKeys.clinicalInterventions.detail(interventionId),
+                queryKey: queryKeys.clinicalInterventions.detail(interventionId)}
             });
 
             // Invalidate interventions lists
             queryClient.invalidateQueries({ queryKey: queryKeys.clinicalInterventions.lists() });
 
             // Invalidate analytics
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.clinicalInterventions.analytics.all,
+            queryClient.invalidateQueries({ 
+                queryKey: queryKeys.clinicalInterventions.analytics.all}
             });
 
             // Show success notification
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'Intervention Deleted',
                 message: 'Intervention has been successfully deleted.',
-                duration: 5000,
+                duration: 5000}
             });
         },
         onError: (error: ApiError) => {
             // Show error notification
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Deletion Failed',
                 message: error.message || 'Failed to delete intervention. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 // ===============================
@@ -309,10 +299,10 @@ export const useAddStrategy = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             interventionId,
-            strategy,
+            strategy}
         }: {
             interventionId: string;
             strategy: Omit<InterventionStrategy, '_id'>;
@@ -328,22 +318,21 @@ export const useAddStrategy = () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.clinicalInterventions.lists() });
 
             // Show success notification
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'Strategy Added',
                 message: 'Intervention strategy has been successfully added.',
-                duration: 4000,
+                duration: 4000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Failed to Add Strategy',
                 message: error.message || 'Unable to add strategy. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -353,11 +342,11 @@ export const useUpdateStrategy = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             interventionId,
             strategyId,
-            updates,
+            updates}
         }: {
             interventionId: string;
             strategyId: string;
@@ -373,22 +362,21 @@ export const useUpdateStrategy = () => {
             // Invalidate lists
             queryClient.invalidateQueries({ queryKey: queryKeys.clinicalInterventions.lists() });
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'Strategy Updated',
                 message: 'Strategy has been successfully updated.',
-                duration: 4000,
+                duration: 4000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Update Failed',
                 message: error.message || 'Failed to update strategy.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -398,10 +386,10 @@ export const useAssignTeamMember = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             interventionId,
-            assignment,
+            assignment}
         }: {
             interventionId: string;
             assignment: Omit<TeamAssignment, '_id' | 'assignedAt'>;
@@ -417,22 +405,21 @@ export const useAssignTeamMember = () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.clinicalInterventions.lists() });
             queryClient.invalidateQueries({ queryKey: queryKeys.clinicalInterventions.assignedToMe() });
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'Team Member Assigned',
                 message: 'Team member has been successfully assigned.',
-                duration: 4000,
+                duration: 4000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Assignment Failed',
                 message: error.message || 'Failed to assign team member.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -442,11 +429,11 @@ export const useUpdateAssignment = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             interventionId,
             assignmentId,
-            updates,
+            updates}
         }: {
             interventionId: string;
             assignmentId: string;
@@ -465,27 +452,26 @@ export const useUpdateAssignment = () => {
 
             // Invalidate analytics if assignment status changed
             if (updates.status) {
-                queryClient.invalidateQueries({
-                    queryKey: queryKeys.clinicalInterventions.analytics.all,
+                queryClient.invalidateQueries({ 
+                    queryKey: queryKeys.clinicalInterventions.analytics.all}
                 });
             }
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'Assignment Updated',
                 message: 'Assignment has been successfully updated.',
-                duration: 4000,
+                duration: 4000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Update Failed',
                 message: error.message || 'Failed to update assignment.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -495,10 +481,10 @@ export const useRecordOutcome = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             interventionId,
-            outcome,
+            outcome}
         }: {
             interventionId: string;
             outcome: InterventionOutcome;
@@ -512,26 +498,25 @@ export const useRecordOutcome = () => {
 
             // Invalidate lists and analytics
             queryClient.invalidateQueries({ queryKey: queryKeys.clinicalInterventions.lists() });
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.clinicalInterventions.analytics.all,
+            queryClient.invalidateQueries({ 
+                queryKey: queryKeys.clinicalInterventions.analytics.all}
             });
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'Outcome Recorded',
                 message: 'Intervention outcome has been successfully recorded.',
-                duration: 4000,
+                duration: 4000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Failed to Record Outcome',
                 message: error.message || 'Unable to record outcome.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -541,10 +526,10 @@ export const useScheduleFollowUp = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             interventionId,
-            followUpData,
+            followUpData}
         }: {
             interventionId: string;
             followUpData: { scheduledDate: string; notes?: string; nextReviewDate?: string };
@@ -559,22 +544,21 @@ export const useScheduleFollowUp = () => {
             // Invalidate lists
             queryClient.invalidateQueries({ queryKey: queryKeys.clinicalInterventions.lists() });
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'Follow-up Scheduled',
                 message: 'Follow-up has been successfully scheduled.',
-                duration: 4000,
+                duration: 4000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Scheduling Failed',
                 message: error.message || 'Failed to schedule follow-up.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 // ===============================
@@ -588,10 +572,10 @@ export const useLinkToMTR = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             interventionId,
-            mtrId,
+            mtrId}
         }: {
             interventionId: string;
             mtrId: string;
@@ -606,22 +590,21 @@ export const useLinkToMTR = () => {
             // Invalidate lists
             queryClient.invalidateQueries({ queryKey: queryKeys.clinicalInterventions.lists() });
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'MTR Linked',
                 message: 'Intervention has been successfully linked to MTR.',
-                duration: 4000,
+                duration: 4000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Link Failed',
                 message: error.message || 'Failed to link to MTR.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -630,31 +613,30 @@ export const useLinkToMTR = () => {
 export const useSendNotifications = () => {
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             interventionId,
-            event,
+            event}
         }: {
             interventionId: string;
             event: string;
         }) => clinicalInterventionService.sendNotifications(interventionId, event),
         onSuccess: () => {
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'Notifications Sent',
                 message: 'Notifications have been successfully sent.',
-                duration: 4000,
+                duration: 4000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Notification Failed',
                 message: error.message || 'Failed to send notifications.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 // ===============================
@@ -721,10 +703,10 @@ export const usePrefetchIntervention = () => {
     const queryClient = useQueryClient();
 
     return (interventionId: string) => {
-        queryClient.prefetchQuery({
+        queryClient.prefetchQuery({ 
             queryKey: queryKeys.clinicalInterventions.detail(interventionId),
             queryFn: () => clinicalInterventionService.getInterventionById(interventionId),
-            staleTime: 2 * 60 * 1000, // 2 minutes
+            staleTime: 2 * 60 * 1000, // 2 minutes })
         });
     };
 };

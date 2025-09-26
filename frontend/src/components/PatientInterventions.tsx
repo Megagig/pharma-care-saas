@@ -1,48 +1,4 @@
-import React, { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Alert,
-  CircularProgress,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Chip,
-  Divider,
-  TextField,
-  Autocomplete,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tooltip,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Visibility as ViewIcon,
-  Edit as EditIcon,
-  Person as PersonIcon,
-  Search as SearchIcon,
-  TrendingUp as TrendingUpIcon,
-  Schedule as ScheduleIcon,
-  CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material';
-import { format, parseISO } from 'date-fns';
-import { usePatientInterventions } from '../queries/useClinicalInterventions';
-import { useSearchPatients } from '../queries/usePatients';
-import type { ClinicalIntervention } from '../stores/clinicalInterventionStore';
-
+import { Button, Input, Card, CardContent, Tooltip, Spinner, Alert } from '@/components/ui/button';
 // Patient search interface for consistent typing
 interface PatientSearchResult {
   _id: string;
@@ -51,16 +7,13 @@ interface PatientSearchResult {
   dateOfBirth?: string;
   mrn?: string;
 }
-
 const PatientInterventions: React.FC = () => {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
-
   // State
   const [selectedPatient, setSelectedPatient] =
     useState<PatientSearchResult | null>(null);
   const [patientSearchQuery, setPatientSearchQuery] = useState<string>('');
-
   // API queries
   const { data: patientSearchResults, isLoading: searchingPatients } =
     useSearchPatients(patientSearchQuery);
@@ -70,28 +23,25 @@ const PatientInterventions: React.FC = () => {
     error,
     refetch,
   } = usePatientInterventions(selectedPatient?._id || '');
-
   const interventions = useMemo(() => {
     return interventionsResponse?.data || [];
   }, [interventionsResponse]);
-
   // Extract patients from search results with proper error handling
   const patients: PatientSearchResult[] = React.useMemo(() => {
     try {
       const results = patientSearchResults?.data?.results || [];
-      return results.map((patient: any) => ({
+      return results.map((patient: any) => ({ 
         _id: patient._id,
         firstName: patient.firstName || '',
         lastName: patient.lastName || '',
         dateOfBirth: patient.dateOfBirth || patient.dob || '',
-        mrn: patient.mrn || '',
+        mrn: patient.mrn || ''}
       }));
     } catch (error) {
       console.error('Error processing patient search results:', error);
       return [];
     }
   }, [patientSearchResults]);
-
   // Statistics
   const stats = useMemo(() => {
     if (!interventions.length) {
@@ -102,7 +52,6 @@ const PatientInterventions: React.FC = () => {
         highPriority: 0,
       };
     }
-
     return {
       total: interventions.length,
       active: interventions.filter((i: ClinicalIntervention) =>
@@ -118,7 +67,6 @@ const PatientInterventions: React.FC = () => {
       ).length,
     };
   }, [interventions]);
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical':
@@ -133,7 +81,6 @@ const PatientInterventions: React.FC = () => {
         return 'default';
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -152,7 +99,6 @@ const PatientInterventions: React.FC = () => {
         return 'default';
     }
   };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -171,25 +117,24 @@ const PatientInterventions: React.FC = () => {
         return <ScheduleIcon />;
     }
   };
-
   return (
-    <Box>
+    <div>
       {/* Header */}
-      <Box
+      <div
         display="flex"
         justifyContent="space-between"
         alignItems="center"
         mb={3}
       >
-        <Typography variant="h5" component="h2">
+        <div  component="h2">
           Patient Interventions
-        </Typography>
+        </div>
         {selectedPatient && (
           <Button
-            variant="contained"
+            
             startIcon={<AddIcon />}
             onClick={() =>
-              navigate(
+              navigate(}
                 `/pharmacy/clinical-interventions/create?patientId=${selectedPatient._id}`
               )
             }
@@ -197,203 +142,191 @@ const PatientInterventions: React.FC = () => {
             Create New Intervention
           </Button>
         )}
-      </Box>
-
+      </div>
       {/* Patient Selection */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <div  gutterBottom>
             Select Patient
-          </Typography>
+          </div>
           <Autocomplete
             options={patients}
             loading={searchingPatients}
-            getOptionLabel={(option) => {
+            getOptionLabel={(option) => {}
               const name = `${option.firstName} ${option.lastName}`.trim();
               const mrn = option.mrn ? ` (MRN: ${option.mrn})` : '';
               const dob = option.dateOfBirth
                 ? ` - DOB: ${option.dateOfBirth}`
                 : '';
               return `${name}${mrn}${dob}`;
-            }}
             value={selectedPatient}
             onChange={(_, value) => {
               setSelectedPatient(value);
               if (value) {
-                navigate(
+                navigate(}
                   `/pharmacy/clinical-interventions/patients/${value._id}`
                 );
               } else {
                 navigate('/pharmacy/clinical-interventions/patients');
               }
-            }}
-            onInputChange={(_, newInputValue) => {
-              setPatientSearchQuery(newInputValue);
-            }}
             renderInput={(params) => (
-              <TextField
+              <Input}
                 {...params}
                 placeholder="Search patients by name or MRN..."
                 InputProps={{
                   ...params.InputProps,
-                  startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+                  startAdornment: <SearchIcon color="action" className="" />,
                   endAdornment: (
-                    <>
-                      {searchingPatients ? (
-                        <CircularProgress color="inherit" size={20} />
+                    <>{searchingPatients ? (}
+                        <Spinner color="inherit" size={20} />
                       ) : null}
                       {params.InputProps.endAdornment}
                     </>
                   ),
-                }}
               />
             )}
-            renderOption={(props, option) => (
-              <Box component="li" {...props}>
-                <PersonIcon sx={{ mr: 2, color: 'action.active' }} />
-                <Box>
-                  <Typography variant="body1">
+            renderOption={(props, option) => (}
+              <div component="li" {...props}>
+                <PersonIcon className="" />
+                <div>
+                  <div >
                     {option.firstName} {option.lastName}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     {option.mrn && `MRN: ${option.mrn}`}
                     {option.mrn && option.dateOfBirth && ' • '}
                     {option.dateOfBirth && `DOB: ${option.dateOfBirth}`}
-                  </Typography>
-                </Box>
-              </Box>
+                  </div>
+                </div>
+              </div>
             )}
             noOptionsText={
               patientSearchQuery.length < 2
                 ? 'Type at least 2 characters to search patients'
                 : searchingPatients
                 ? 'Searching patients...'
-                : 'No patients found'
+                : 'No patients found'}
             }
             filterOptions={(x) => x} // Disable client-side filtering since we're using server-side search
           />
         </CardContent>
       </Card>
-
       {/* Patient Information & Statistics */}
       {selectedPatient && (
         <>
-          <Grid container spacing={3} sx={{ mb: 3 }}>
+          <div container spacing={3} className="">
             {/* Patient Info */}
-            <Grid item xs={12} md={6}>
+            <div item xs={12} md={6}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Patient Information
-                  </Typography>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <PersonIcon color="primary" sx={{ fontSize: 40 }} />
-                    <Box>
-                      <Typography variant="h6">
+                  </div>
+                  <div display="flex" alignItems="center" gap={2}>
+                    <PersonIcon color="primary" className="" />
+                    <div>
+                      <div >
                         {selectedPatient.firstName} {selectedPatient.lastName}
-                      </Typography>
+                      </div>
                       {selectedPatient.mrn && (
-                        <Typography variant="body2" color="text.secondary">
+                        <div  color="text.secondary">
                           MRN: {selectedPatient.mrn}
-                        </Typography>
+                        </div>
                       )}
                       {selectedPatient.dateOfBirth && (
                         <>
-                          <Typography variant="body2" color="text.secondary">
+                          <div  color="text.secondary">
                             Date of Birth:{' '}
                             {format(
                               parseISO(selectedPatient.dateOfBirth),
                               'MMM dd, yyyy'
                             )}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          </div>
+                          <div  color="text.secondary">
                             Age:{' '}
                             {new Date().getFullYear() -
                               new Date(
                                 selectedPatient.dateOfBirth
                               ).getFullYear()}{' '}
                             years
-                          </Typography>
+                          </div>
                         </>
                       )}
-                    </Box>
-                  </Box>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-
+            </div>
             {/* Statistics */}
-            <Grid item xs={12} md={6}>
+            <div item xs={12} md={6}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Intervention Statistics
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6}>
-                      <Box textAlign="center">
-                        <Typography variant="h4" color="primary">
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={6}>
+                      <div textAlign="center">
+                        <div  color="primary">
                           {stats.total}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Total Interventions
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Box textAlign="center">
-                        <Typography variant="h4" color="info.main">
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={6}>
+                      <div textAlign="center">
+                        <div  color="info.main">
                           {stats.active}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Active
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Box textAlign="center">
-                        <Typography variant="h4" color="success.main">
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={6}>
+                      <div textAlign="center">
+                        <div  color="success.main">
                           {stats.completed}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Completed
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Box textAlign="center">
-                        <Typography variant="h4" color="warning.main">
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={6}>
+                      <div textAlign="center">
+                        <div  color="warning.main">
                           {stats.highPriority}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           High Priority
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
-
+            </div>
+          </div>
           {/* Interventions List */}
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Clinical Interventions
-              </Typography>
-
+              </div>
               {isLoading ? (
-                <Box display="flex" justifyContent="center" py={4}>
-                  <CircularProgress />
-                </Box>
+                <div display="flex" justifyContent="center" py={4}>
+                  <Spinner />
+                </div>
               ) : error ? (
                 <Alert
                   severity="error"
                   action={
                     <Button
                       color="inherit"
-                      size="small"
+                      size="small"}
                       onClick={() => refetch()}
                     >
                       Retry
@@ -403,7 +336,7 @@ const PatientInterventions: React.FC = () => {
                   Error loading interventions: {error.message}
                 </Alert>
               ) : interventions.length > 0 ? (
-                <TableContainer component={Paper} variant="outlined">
+                <TableContainer  >
                   <Table>
                     <TableHead>
                       <TableRow>
@@ -420,17 +353,17 @@ const PatientInterventions: React.FC = () => {
                         (intervention: ClinicalIntervention) => (
                           <TableRow key={intervention._id} hover>
                             <TableCell>
-                              <Typography variant="body2" fontWeight="medium">
+                              <div  fontWeight="medium">
                                 {intervention.interventionNumber}
-                              </Typography>
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Chip
                                 label={intervention.category
-                                  .replace(/_/g, ' ')
+                                  .replace(/_/g, ' ')}
                                   .replace(/\b\w/g, (l) => l.toUpperCase())}
                                 size="small"
-                                variant="outlined"
+                                
                               />
                             </TableCell>
                             <TableCell>
@@ -438,7 +371,7 @@ const PatientInterventions: React.FC = () => {
                                 label={intervention.priority.toUpperCase()}
                                 size="small"
                                 color={
-                                  getPriorityColor(intervention.priority) as any
+                                  getPriorityColor(intervention.priority) as any}
                                 }
                               />
                             </TableCell>
@@ -446,38 +379,38 @@ const PatientInterventions: React.FC = () => {
                               <Chip
                                 icon={getStatusIcon(intervention.status)}
                                 label={intervention.status
-                                  .replace(/_/g, ' ')
+                                  .replace(/_/g, ' ')}
                                   .replace(/\b\w/g, (l) => l.toUpperCase())}
                                 size="small"
                                 color={
-                                  getStatusColor(intervention.status) as unknown
+                                  getStatusColor(intervention.status) as unknown}
                                 }
                               />
                             </TableCell>
                             <TableCell>
-                              <Typography variant="body2">
+                              <div >
                                 {format(
                                   parseISO(intervention.identifiedDate),
                                   'MMM dd, yyyy'
                                 )}
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 {format(
                                   parseISO(intervention.identifiedDate),
                                   'HH:mm'
                                 )}
-                              </Typography>
+                              </div>
                             </TableCell>
                             <TableCell>
-                              <Box display="flex" gap={0.5}>
+                              <div display="flex" gap={0.5}>
                                 <Tooltip title="View Details">
                                   <IconButton
                                     size="small"
                                     onClick={() =>
-                                      navigate(
+                                      navigate(}
                                         `/pharmacy/clinical-interventions/details/${intervention._id}`
                                       )
                                     }
@@ -489,7 +422,7 @@ const PatientInterventions: React.FC = () => {
                                   <IconButton
                                     size="small"
                                     onClick={() =>
-                                      navigate(
+                                      navigate(}
                                         `/pharmacy/clinical-interventions/edit/${intervention._id}`
                                       )
                                     }
@@ -497,7 +430,7 @@ const PatientInterventions: React.FC = () => {
                                     <EditIcon />
                                   </IconButton>
                                 </Tooltip>
-                              </Box>
+                              </div>
                             </TableCell>
                           </TableRow>
                         )
@@ -509,14 +442,14 @@ const PatientInterventions: React.FC = () => {
                 <Alert severity="info">
                   No clinical interventions found for this patient.
                   <Button
-                    variant="outlined"
+                    
                     startIcon={<AddIcon />}
                     onClick={() =>
-                      navigate(
+                      navigate(}
                         `/pharmacy/clinical-interventions/create?patientId=${selectedPatient._id}`
                       )
                     }
-                    sx={{ ml: 2 }}
+                    className=""
                   >
                     Create First Intervention
                   </Button>
@@ -526,24 +459,22 @@ const PatientInterventions: React.FC = () => {
           </Card>
         </>
       )}
-
       {/* No Patient Selected */}
       {!selectedPatient && (
         <Card>
-          <CardContent sx={{ textAlign: 'center', py: 6 }}>
-            <PersonIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
+          <CardContent className="">
+            <PersonIcon className="" />
+            <div  gutterBottom>
               Select a Patient
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
+            </div>
+            <div  color="text.secondary" paragraph>
               Choose a patient from the dropdown above to view their clinical
               interventions.
-            </Typography>
+            </div>
           </CardContent>
         </Card>
       )}
-    </Box>
+    </div>
   );
 };
-
 export default PatientInterventions;

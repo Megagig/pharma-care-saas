@@ -1,22 +1,5 @@
-import React from 'react';
-import {
-  Card,
-  CardContent,
-  CardActions,
-  Typography,
-  Box,
-  Chip,
-  Divider,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useResponsive } from '../../hooks/useResponsive';
 
+import { Card, CardContent, Accordion, Separator } from '@/components/ui/button';
 /**
  * Responsive container that adapts spacing and layout based on screen size
  */
@@ -25,25 +8,13 @@ export const ResponsiveContainer: React.FC<{
   maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false;
 }> = ({ children, maxWidth = 'lg' }) => {
   const { getSpacing, isMobile } = useResponsive();
-
   return (
-    <Box
-      sx={{
-        maxWidth: maxWidth || undefined,
-        mx: 'auto',
-        px: getSpacing(1, 2, 3),
-        py: getSpacing(1, 2, 3),
-        ...(isMobile && {
-          px: 1,
-          py: 1,
-        }),
-      }}
-    >
+    <div
+      className="">
       {children}
-    </Box>
+    </div>
   );
 };
-
 /**
  * Responsive card layout for mobile-first design
  */
@@ -59,108 +30,94 @@ interface ResponsiveCardProps {
   collapsible?: boolean;
   defaultExpanded?: boolean;
 }
-
-export const ResponsiveCard: React.FC<ResponsiveCardProps> = ({
+export const ResponsiveCard: React.FC<ResponsiveCardProps> = ({ 
   title,
   subtitle,
   actions,
   chips = [],
   children,
   collapsible = false,
-  defaultExpanded = true,
+  defaultExpanded = true
 }) => {
   const { isMobile } = useResponsive();
-
   if (collapsible && isMobile) {
     return (
       <Accordion defaultExpanded={defaultExpanded}>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="h6" component="div">
+          <div className="">
+            <div  component="div">
               {title}
-            </Typography>
+            </div>
             {chips.map((chip, index) => (
               <Chip
                 key={index}
                 label={chip.label}
                 size="small"
                 color={chip.color}
-                variant="outlined"
+                
               />
             ))}
-          </Box>
+          </div>
         </AccordionSummary>
         <AccordionDetails>
           {subtitle && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <div  color="text.secondary" className="">
               {subtitle}
-            </Typography>
+            </div>
           )}
           {children}
           {actions && (
-            <Box
-              sx={{
-                mt: 2,
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: 1,
-              }}
+            <div
+              className=""
             >
               {actions}
-            </Box>
+            </div>
           )}
         </AccordionDetails>
       </Accordion>
     );
   }
-
   return (
     <Card>
       <CardContent>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            mb: 2,
-          }}
+        <div
+          className=""
         >
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" component="div" gutterBottom>
+          <div className="">
+            <div  component="div" gutterBottom>
               {title}
-            </Typography>
+            </div>
             {subtitle && (
-              <Typography variant="body2" color="text.secondary">
+              <div  color="text.secondary">
                 {subtitle}
-              </Typography>
+              </div>
             )}
             {chips.length > 0 && (
-              <Box sx={{ mt: 1, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+              <div className="">
                 {chips.map((chip, index) => (
                   <Chip
                     key={index}
                     label={chip.label}
                     size="small"
                     color={chip.color}
-                    variant="outlined"
+                    
                   />
                 ))}
-              </Box>
+              </div>
             )}
-          </Box>
+          </div>
           {actions && !isMobile && (
-            <Box sx={{ display: 'flex', gap: 1 }}>{actions}</Box>
+            <div className="">{actions}</div>
           )}
-        </Box>
+        </div>
         {children}
       </CardContent>
       {actions && isMobile && (
-        <CardActions sx={{ justifyContent: 'flex-end' }}>{actions}</CardActions>
+        <CardActions className="">{actions}</CardActions>
       )}
     </Card>
   );
 };
-
 /**
  * Responsive list item component
  */
@@ -175,39 +132,34 @@ interface ResponsiveListItemProps {
   }>;
   onClick?: () => void;
 }
-
-export const ResponsiveListItem: React.FC<ResponsiveListItemProps> = ({
+export const ResponsiveListItem: React.FC<ResponsiveListItemProps> = ({ 
   primary,
   secondary,
   avatar,
   actions,
   chips = [],
-  onClick,
+  onClick
 }) => {
   const { isMobile } = useResponsive();
-
   if (isMobile) {
     return (
       <Card
-        sx={{ mb: 1 }}
-        onClick={onClick}
-        style={{ cursor: onClick ? 'pointer' : 'default' }}
-      >
-        <CardContent sx={{ py: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-            {avatar && <Box sx={{ flexShrink: 0 }}>{avatar}</Box>}
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle1" component="div">
+        className="">
+        <CardContent className="">
+          <div className="">
+            {avatar && <div className="">{avatar}</div>}
+            <div className="">
+              <div  component="div">
                 {primary}
-              </Typography>
+              </div>
               {secondary && (
-                <Typography variant="body2" color="text.secondary">
+                <div  color="text.secondary">
                   {secondary}
-                </Typography>
+                </div>
               )}
               {chips.length > 0 && (
-                <Box
-                  sx={{ mt: 1, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}
+                <div
+                  className=""
                 >
                   {chips.map((chip, index) => (
                     <Chip
@@ -215,33 +167,31 @@ export const ResponsiveListItem: React.FC<ResponsiveListItemProps> = ({
                       label={chip.label}
                       size="small"
                       color={chip.color}
-                      variant="outlined"
+                      
                     />
                   ))}
-                </Box>
+                </div>
               )}
-            </Box>
-            {actions && <Box sx={{ flexShrink: 0 }}>{actions}</Box>}
-          </Box>
+            </div>
+            {actions && <div className="">{actions}</div>}
+          </div>
         </CardContent>
       </Card>
     );
   }
-
   return (
-    <ListItem
+    <div
       onClick={onClick}
-      style={{ cursor: onClick ? 'pointer' : 'default' }}
-    >
+      >
       {avatar}
-      <ListItemText
+      <div
         primary={primary}
         secondary={
-          <>
+          <>}
             {secondary}
             {chips.length > 0 && (
-              <Box
-                sx={{ mt: 0.5, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}
+              <div
+                className=""
               >
                 {chips.map((chip, index) => (
                   <Chip
@@ -249,19 +199,18 @@ export const ResponsiveListItem: React.FC<ResponsiveListItemProps> = ({
                     label={chip.label}
                     size="small"
                     color={chip.color}
-                    variant="outlined"
+                    
                   />
                 ))}
-              </Box>
+              </div>
             )}
           </>
         }
       />
-      <ListItemSecondaryAction>{actions}</ListItemSecondaryAction>
-    </ListItem>
+      <divSecondaryAction>{actions}</ListItemSecondaryAction>
+    </div>
   );
 };
-
 /**
  * Responsive header component
  */
@@ -271,61 +220,43 @@ interface ResponsiveHeaderProps {
   actions?: React.ReactNode;
   backButton?: React.ReactNode;
 }
-
-export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
+export const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({ 
   title,
   subtitle,
   actions,
-  backButton,
+  backButton
 }) => {
   const { isMobile, getSpacing } = useResponsive();
-
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        justifyContent: 'space-between',
-        alignItems: isMobile ? 'stretch' : 'center',
-        mb: getSpacing(2, 3, 4),
-        gap: getSpacing(1, 2, 0),
-      }}
+    <div
+      className=""
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <div className="">
         {backButton}
-        <Box>
-          <Typography
+        <div>
+          <div
             variant={isMobile ? 'h5' : 'h4'}
             component="h1"
-            sx={{ fontWeight: 600 }}
+            className=""
           >
             {title}
-          </Typography>
+          </div>
           {subtitle && (
-            <Typography variant="body2" color="text.secondary">
+            <div  color="text.secondary">
               {subtitle}
-            </Typography>
+            </div>
           )}
-        </Box>
-      </Box>
+        </div>
+      </div>
       {actions && (
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 1,
-            ...(isMobile && {
-              justifyContent: 'stretch',
-              '& > *': { flex: 1 },
-            }),
-          }}
-        >
+        <div
+          className="">
           {actions}
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
-
 /**
  * Responsive section divider
  */
@@ -335,27 +266,17 @@ export const ResponsiveDivider: React.FC<{
 }> = ({ label, spacing }) => {
   const { getSpacing } = useResponsive();
   const actualSpacing = spacing ?? getSpacing(2, 3, 4);
-
   return (
-    <Divider
-      sx={{
-        my: actualSpacing,
-        ...(label && {
-          '&::before, &::after': {
-            borderColor: 'divider',
-          },
-        }),
-      }}
-    >
+    <Separator
+      className="">
       {label && (
-        <Typography variant="body2" color="text.secondary">
+        <div  color="text.secondary">
           {label}
-        </Typography>
+        </div>
       )}
-    </Divider>
+    </Separator>
   );
 };
-
 /**
  * Responsive grid container
  */
@@ -365,28 +286,11 @@ export const ResponsiveGrid: React.FC<{
   columns?: { xs?: number; sm?: number; md?: number; lg?: number };
 }> = ({ children, spacing = 2, columns = { xs: 1, sm: 2, md: 3, lg: 4 } }) => {
   return (
-    <Box
-      sx={{
-        display: 'grid',
-        gap: spacing,
-        gridTemplateColumns: {
-          xs: `repeat(${columns.xs || 1}, 1fr)`,
-          sm: `repeat(${columns.sm || 2}, 1fr)`,
-          md: `repeat(${columns.md || 3}, 1fr)`,
-          lg: `repeat(${columns.lg || 4}, 1fr)`,
-        },
-      }}
-    >
+    <div
+      className="">
       {children}
-    </Box>
+    </div>
   );
 };
-
 export default {
-  ResponsiveContainer,
-  ResponsiveCard,
-  ResponsiveListItem,
-  ResponsiveHeader,
-  ResponsiveDivider,
-  ResponsiveGrid,
 };

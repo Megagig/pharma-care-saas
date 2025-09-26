@@ -1,10 +1,4 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Bell, User, LogOut, Settings, CreditCard, Shield } from 'lucide-react';
 import ThemeToggle from './common/ThemeToggle';
-import { useAuth } from '../hooks/useAuth';
-import { useSubscriptionStatus } from '../hooks/useSubscription';
-
 /**
  * Modern Tailwind-based navigation bar with theme support
  */
@@ -57,7 +51,7 @@ const TailwindNavbar: React.FC = () => {
             {tier && (
               <span
                 className={`
-                  px-2 py-1 text-xs font-medium rounded-full
+                  px-2 py-1 text-xs font-medium rounded-full}
                   ${getSubscriptionBadgeColor()}
                 `}
               >
@@ -122,10 +116,7 @@ const TailwindNavbar: React.FC = () => {
                   </div>
                   <div className="border-t border-gray-200 dark:border-dark-600 px-4 py-2">
                     <button
-                      onClick={() => {
-                        setShowNotificationMenu(false);
-                        navigate('/notifications');
-                      }}
+                      
                       className="text-sm text-primary-600 dark:text-accent-400 hover:text-primary-700 dark:hover:text-accent-300 font-medium"
                     >
                       View all notifications
@@ -219,10 +210,7 @@ const TailwindNavbar: React.FC = () => {
       {(showProfileMenu || showNotificationMenu) && (
         <div
           className="fixed inset-0 z-0"
-          onClick={() => {
-            setShowProfileMenu(false);
-            setShowNotificationMenu(false);
-          }}
+          
         />
       )}
     </nav>

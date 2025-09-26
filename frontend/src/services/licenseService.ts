@@ -1,5 +1,3 @@
-import { apiClient } from './api';
-
 export interface LicenseUpload {
   firstName: string;
   lastName: string;
@@ -71,8 +69,7 @@ export const licenseService = {
     const response = await apiClient.post('/license/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
-      },
-    });
+      }
     return response.data;
   },
 
@@ -99,8 +96,7 @@ export const licenseService = {
     const response = await apiClient.put('/license/resubmit', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
-      },
-    });
+      }
     return response.data;
   },
 
@@ -164,8 +160,7 @@ export const licenseService = {
     const response = await apiClient.post('/license/additional-docs', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
-      },
-    });
+      }
     return response.data;
   },
 
@@ -198,8 +193,7 @@ export const licenseService = {
     const response = await apiClient.post('/license/renewal/submit', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
-      },
-    });
+      }
     return response.data;
   },
 
@@ -229,8 +223,7 @@ export const licenseService = {
     const response = await apiClient.post('/license/report-issue', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
-      },
-    });
+      }
     return response.data;
   },
 

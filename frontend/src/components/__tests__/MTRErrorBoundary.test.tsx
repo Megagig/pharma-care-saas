@@ -1,8 +1,5 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import MTRErrorBoundary from '../MTRErrorBoundary';
 
+import MTRErrorBoundary from '../MTRErrorBoundary';
 // Mock console.error to avoid noise in test output
 const originalError = console.error;
 beforeEach(() => {
@@ -25,10 +22,9 @@ const ThrowError: React.FC<{
 };
 
 // Component that throws an error in useEffect
-const ThrowErrorInEffect: React.FC<{ shouldThrow?: boolean }> = ({
-  shouldThrow = false,
+const ThrowErrorInEffect: React.FC<{ shouldThrow?: boolean }> = ({ 
+  shouldThrow = false
 }) => {
-  React.useEffect(() => {
     if (shouldThrow) {
       throw new Error('Error in useEffect');
     }
@@ -172,8 +168,7 @@ describe('MTRErrorBoundary', () => {
       const mockReload = vi.fn();
       Object.defineProperty(window, 'location', {
         value: { reload: mockReload },
-        writable: true,
-      });
+        writable: true}
 
       render(
         <MTRErrorBoundary>
@@ -182,8 +177,7 @@ describe('MTRErrorBoundary', () => {
       );
 
       const refreshButton = screen.getByRole('button', {
-        name: /refresh page/i,
-      });
+        name: /refresh page/i}
       fireEvent.click(refreshButton);
 
       expect(mockReload).toHaveBeenCalled();
@@ -194,8 +188,7 @@ describe('MTRErrorBoundary', () => {
       const mockBack = vi.fn();
       Object.defineProperty(window, 'history', {
         value: { back: mockBack },
-        writable: true,
-      });
+        writable: true}
 
       render(
         <MTRErrorBoundary>
@@ -240,8 +233,8 @@ describe('MTRErrorBoundary', () => {
 
       expect(onErrorSpy).toHaveBeenCalledWith(
         expect.any(Error),
-        expect.objectContaining({
-          componentStack: expect.any(String),
+        expect.objectContaining({ 
+          componentStack: expect.any(String)}
         })
       );
     });
@@ -259,8 +252,8 @@ describe('MTRErrorBoundary', () => {
 
       expect(onErrorSpy).toHaveBeenCalledWith(
         expect.any(Error),
-        expect.objectContaining({
-          componentStack: expect.stringContaining('ThrowError'),
+        expect.objectContaining({ 
+          componentStack: expect.stringContaining('ThrowError')}
         })
       );
     });
@@ -268,9 +261,9 @@ describe('MTRErrorBoundary', () => {
 
   describe('Fallback UI Customization', () => {
     it('renders custom fallback UI when provided', () => {
-      const CustomFallback = ({
+      const CustomFallback = ({ 
         error,
-        resetError,
+        resetError}
       }: {
         error: Error;
         resetError: () => void;
@@ -311,9 +304,9 @@ describe('MTRErrorBoundary', () => {
       );
 
       expect(CustomFallback).toHaveBeenCalledWith(
-        expect.objectContaining({
+        expect.objectContaining({ 
           error: expect.any(Error),
-          resetError: expect.any(Function),
+          resetError: expect.any(Function)}
         }),
         {}
       );

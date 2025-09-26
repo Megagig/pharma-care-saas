@@ -39,7 +39,7 @@ export declare const createBusinessRuleError: (rule: string) => PatientManagemen
 export declare const patientManagementErrorHandler: (error: Error, req: Request, res: Response, next: NextFunction) => void;
 export declare const asyncHandler: (fn: Function) => (req: Request, res: Response, next: NextFunction) => void;
 export declare const checkTenantAccess: (resourceWorkplaceId: string, userWorkplaceId: string, isAdmin?: boolean, isSuperAdmin?: boolean) => void;
-export declare const checkTenantAccessWithRequest: (resourceWorkplaceId: string, userWorkplaceId: string, isAdmin: boolean | undefined, req: AuthRequest) => void;
+export declare const checkTenantAccessWithRequest: (resourceWorkplaceId: string, userWorkplaceId: string, isAdmin: boolean, req: AuthRequest) => void;
 export declare const ensureResourceExists: <T>(resource: T | null, name: string, id?: string) => T;
 export declare const validateBusinessRules: {
     validateBloodPressure: (systolic?: number, diastolic?: number) => void;
@@ -52,7 +52,7 @@ export declare const respondWithPaginatedResults: <T>(res: Response, results: T[
 export declare const isSuperAdmin: (req: AuthRequest) => boolean;
 export declare const getRequestContext: (req: AuthRequest) => {
     userId: any;
-    userRole: "pharmacist" | "pharmacy_team" | "pharmacy_outlet" | "intern_pharmacist" | "super_admin" | "owner" | undefined;
+    userRole: "pharmacist" | "pharmacy_team" | "pharmacy_outlet" | "intern_pharmacist" | "super_admin" | "owner";
     workplaceId: string;
     isAdmin: any;
     isSuperAdmin: boolean;
@@ -64,7 +64,7 @@ export declare const createAuditLog: (action: string, resourceType: string, reso
     resourceType: string;
     resourceId: string;
     userId: any;
-    userRole: "pharmacist" | "pharmacy_team" | "pharmacy_outlet" | "intern_pharmacist" | "super_admin" | "owner" | undefined;
+    userRole: "pharmacist" | "pharmacy_team" | "pharmacy_outlet" | "intern_pharmacist" | "super_admin" | "owner";
     workplaceId: string;
     changes: any;
     timestamp: string;

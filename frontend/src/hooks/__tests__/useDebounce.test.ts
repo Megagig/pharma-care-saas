@@ -1,7 +1,3 @@
-import { renderHook, act } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { useDebounce, useAdvancedDebounce } from '../useDebounce';
-
 describe('useDebounce', () => {
     beforeEach(() => {
         vi.useFakeTimers();
@@ -133,11 +129,10 @@ describe('useAdvancedDebounce', () => {
         expect(result.current).toBe('initial');
 
         // Change value - should execute immediately due to leading edge
-        rerender({
+        rerender({ 
             value: 'updated',
-            delay: 500,
-            options: { leading: true, trailing: false },
-        });
+            delay: 500}
+            options: { leading: true, trailing: false }
 
         expect(result.current).toBe('updated');
     });
@@ -154,11 +149,10 @@ describe('useAdvancedDebounce', () => {
             }
         );
 
-        rerender({
+        rerender({ 
             value: 'updated',
-            delay: 500,
-            options: { leading: false, trailing: true },
-        });
+            delay: 500}
+            options: { leading: false, trailing: true }
 
         expect(result.current).toBe('initial');
 
@@ -182,21 +176,19 @@ describe('useAdvancedDebounce', () => {
         );
 
         // Rapid changes that would normally reset the timer
-        rerender({
+        rerender({ 
             value: 'change1',
-            delay: 1000,
-            options: { maxWait: 500, trailing: true },
-        });
+            delay: 1000}
+            options: { maxWait: 500, trailing: true }
 
         act(() => {
             vi.advanceTimersByTime(250);
         });
 
-        rerender({
+        rerender({ 
             value: 'change2',
-            delay: 1000,
-            options: { maxWait: 500, trailing: true },
-        });
+            delay: 1000}
+            options: { maxWait: 500, trailing: true }
 
         act(() => {
             vi.advanceTimersByTime(250);
@@ -219,20 +211,18 @@ describe('useAdvancedDebounce', () => {
         );
 
         // First change - should execute immediately (leading)
-        rerender({
+        rerender({ 
             value: 'updated1',
-            delay: 500,
-            options: { leading: true, trailing: true },
-        });
+            delay: 500}
+            options: { leading: true, trailing: true }
 
         expect(result.current).toBe('updated1');
 
         // Quick change - should not execute immediately
-        rerender({
+        rerender({ 
             value: 'updated2',
-            delay: 500,
-            options: { leading: true, trailing: true },
-        });
+            delay: 500}
+            options: { leading: true, trailing: true }
 
         expect(result.current).toBe('updated1');
 
@@ -260,11 +250,10 @@ describe('useAdvancedDebounce', () => {
         const changes = ['change1', 'change2', 'change3', 'change4', 'final'];
 
         changes.forEach((change, index) => {
-            rerender({
+            rerender({ 
                 value: change,
-                delay: 1000,
-                options: { leading: true, trailing: true, maxWait: 2000 },
-            });
+                delay: 1000}
+                options: { leading: true, trailing: true, maxWait: 2000 }
 
             if (index === 0) {
                 // First change should execute immediately (leading)

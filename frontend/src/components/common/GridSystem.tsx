@@ -1,15 +1,10 @@
-import React from 'react';
-import { Grid } from '@mui/material';
-
 /**
  * Type-safe wrapper components for Material UI v7 Grid system
  * These components ensure proper typing with MUI v7 Grid components
  */
-
 // Use any type for internal casting to avoid type errors
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyProps = any;
-
 /**
  * Props for Grid items
  */
@@ -30,20 +25,17 @@ export interface GridItemProps {
   // Allow other props we might need
   [key: string]: unknown;
 }
-
 /**
  * GridItem - A wrapper around Material UI Grid item with proper typing
  */
-export const GridItem: React.FC<GridItemProps> = ({ children, ...props }) => {
+export const GridItem: React.FC<divItemProps> = ({ children, ...props }) => {
   // Cast props to avoid MUI v7 type errors
   const safeProps = {
     item: true,
     ...props,
   } as AnyProps;
-
-  return <Grid {...safeProps}>{children}</Grid>;
+  return <div {...safeProps}>{children}</div>;
 };
-
 /**
  * Props for Grid containers
  */
@@ -65,22 +57,19 @@ export interface GridContainerProps {
   // Allow other props we might need
   [key: string]: unknown;
 }
-
 /**
  * GridContainer - A wrapper around Material UI Grid container with proper typing
  */
-export const GridContainer: React.FC<GridContainerProps> = ({
+export const GridContainer: React.FC<divContainerProps> = ({ 
   children,
-  ...props
+  ...props })
 }) => {
   // Cast props to avoid MUI v7 type errors
   const safeProps = {
     container: true,
     ...props,
   } as AnyProps;
-
-  return <Grid {...safeProps}>{children}</Grid>;
+  return <div {...safeProps}>{children}</div>;
 };
-
 // Export GridItem as the default export for backward compatibility
 export default GridItem;

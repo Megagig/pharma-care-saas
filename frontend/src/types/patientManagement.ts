@@ -405,49 +405,41 @@ export interface ApiError {
 
 // Utility Types
 export type CreatePatientData = Omit<
-  Patient,
   '_id' | 'pharmacyId' | 'mrn' | keyof AuditFields
 >;
 export type UpdatePatientData = Partial<CreatePatientData>;
 
 export type CreateAllergyData = Omit<
-  Allergy,
   '_id' | 'pharmacyId' | 'patientId' | keyof AuditFields
 >;
 export type UpdateAllergyData = Partial<CreateAllergyData>;
 
 export type CreateConditionData = Omit<
-  Condition,
   '_id' | 'pharmacyId' | 'patientId' | keyof AuditFields
 >;
 export type UpdateConditionData = Partial<CreateConditionData>;
 
 export type CreateMedicationData = Omit<
-  MedicationRecord,
   '_id' | 'pharmacyId' | 'patientId' | keyof AuditFields
 >;
 export type UpdateMedicationData = Partial<CreateMedicationData>;
 
 export type CreateAssessmentData = Omit<
-  ClinicalAssessment,
   '_id' | 'pharmacyId' | 'patientId' | keyof AuditFields
 >;
 export type UpdateAssessmentData = Partial<CreateAssessmentData>;
 
 export type CreateDTPData = Omit<
-  DrugTherapyProblem,
   '_id' | 'pharmacyId' | 'patientId' | keyof AuditFields
 >;
 export type UpdateDTPData = Partial<CreateDTPData>;
 
 export type CreateCarePlanData = Omit<
-  CarePlan,
   '_id' | 'pharmacyId' | 'patientId' | keyof AuditFields
 >;
 export type UpdateCarePlanData = Partial<CreateCarePlanData>;
 
 export type CreateVisitData = Omit<
-  Visit,
   '_id' | 'pharmacyId' | 'patientId' | keyof AuditFields
 >;
 export type UpdateVisitData = Partial<CreateVisitData>;

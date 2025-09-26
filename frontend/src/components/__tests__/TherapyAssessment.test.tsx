@@ -1,26 +1,19 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TherapyAssessment from '../TherapyAssessment';
-import type { MTRMedicationEntry } from '../../types/mtr';
-
 // Mock the MTR store
-vi.mock('../../stores/mtrStore', () => ({
+vi.mock('../../stores/mtrStore', () => ({ 
   useMTRStore: () => ({
     identifiedProblems: [],
     addProblem: vi.fn(),
     updateProblem: vi.fn(),
     setLoading: vi.fn(),
-    setError: vi.fn(),
-  }),
-}));
+    setError: vi.fn()}
+  })}
 
 // Mock the MTR service
-vi.mock('../../services/mtrService', () => ({
-  mtrService: {
+vi.mock('../../services/mtrService', () => ({ 
+  mtrService: { })
     checkDrugInteractions: vi.fn().mockResolvedValue({ data: [] }),
-  },
-}));
+  }
 
 const mockMedications: MTRMedicationEntry[] = [
   {
@@ -66,12 +59,11 @@ const mockPatientInfo = {
 };
 
 const renderWithQueryClient = (component: React.ReactElement) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return render(
     <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>

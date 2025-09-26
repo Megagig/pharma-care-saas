@@ -1,36 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Alert,
-  AlertTitle,
-  Stack,
-  Chip,
-  Button,
-  Collapse,
-  IconButton,
-  Tooltip,
-  Paper,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-} from '@mui/material';
-import {
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  LocalHospital as LocalHospitalIcon,
-  Phone as PhoneIcon,
-  Schedule as ScheduleIcon,
-  Assignment as AssignmentIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
-} from '@mui/icons-material';
-import type { DiagnosticResult } from '../types';
+import { Button, Tooltip, Alert, AlertTitle } from '@/components/ui/button';
 
 interface RedFlagAlertsProps {
   redFlags: DiagnosticResult['redFlags'];
@@ -40,7 +8,6 @@ interface RedFlagAlertsProps {
     action: string
   ) => void;
 }
-
 const SEVERITY_CONFIG = {
   critical: {
     color: 'error' as const,
@@ -75,7 +42,6 @@ const SEVERITY_CONFIG = {
     description: 'Monitor and follow up as needed',
   },
 };
-
 const ACTION_ICONS = {
   'immediate referral': LocalHospitalIcon,
   'call physician': PhoneIcon,
@@ -83,15 +49,13 @@ const ACTION_ICONS = {
   'document findings': AssignmentIcon,
   'monitor closely': VisibilityIcon,
 };
-
-const RedFlagAlerts: React.FC<RedFlagAlertsProps> = ({
+const RedFlagAlerts: React.FC<RedFlagAlertsProps> = ({ 
   redFlags,
   showActions = true,
-  onActionClick,
+  onActionClick
 }) => {
   const [expandedFlags, setExpandedFlags] = useState<Set<number>>(new Set());
   const [hiddenFlags, setHiddenFlags] = useState<Set<number>>(new Set());
-
   const handleToggleExpand = (index: number) => {
     const newExpanded = new Set(expandedFlags);
     if (newExpanded.has(index)) {
@@ -101,7 +65,6 @@ const RedFlagAlerts: React.FC<RedFlagAlertsProps> = ({
     }
     setExpandedFlags(newExpanded);
   };
-
   const handleToggleHide = (index: number) => {
     const newHidden = new Set(hiddenFlags);
     if (newHidden.has(index)) {
@@ -111,14 +74,12 @@ const RedFlagAlerts: React.FC<RedFlagAlertsProps> = ({
     }
     setHiddenFlags(newHidden);
   };
-
   const getSeverityConfig = (severity: string) => {
     return (
       SEVERITY_CONFIG[severity as keyof typeof SEVERITY_CONFIG] ||
       SEVERITY_CONFIG.medium
     );
   };
-
   const getActionIcon = (action: string) => {
     const actionLower = action.toLowerCase();
     const iconKey = Object.keys(ACTION_ICONS).find((key) =>
@@ -128,7 +89,6 @@ const RedFlagAlerts: React.FC<RedFlagAlertsProps> = ({
       ? ACTION_ICONS[iconKey as keyof typeof ACTION_ICONS]
       : AssignmentIcon;
   };
-
   const sortedFlags = [...redFlags].sort((a, b) => {
     const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
     return (
@@ -136,7 +96,6 @@ const RedFlagAlerts: React.FC<RedFlagAlertsProps> = ({
       (severityOrder[a.severity as keyof typeof severityOrder] || 0)
     );
   });
-
   const visibleFlags = sortedFlags.filter(
     (_, index) => !hiddenFlags.has(index)
   );
@@ -144,30 +103,27 @@ const RedFlagAlerts: React.FC<RedFlagAlertsProps> = ({
     (flag) => flag.severity === 'critical'
   ).length;
   const highCount = redFlags.filter((flag) => flag.severity === 'high').length;
-
   if (redFlags.length === 0) {
     return null;
   }
-
   return (
-    <Box>
+    <div>
       {/* Header with Summary */}
-      <Box sx={{ mb: 2 }}>
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center' }}
+      <div className="">
+        <div
+          
+          className=""
         >
-          <ErrorIcon sx={{ mr: 1, color: 'error.main' }} />
+          <ErrorIcon className="" />
           Clinical Red Flags ({redFlags.length})
-        </Typography>
-
-        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        </div>
+        <div className="">
           {criticalCount > 0 && (
             <Chip
               icon={<ErrorIcon />}
               label={`${criticalCount} Critical`}
               color="error"
-              variant="filled"
+              
               size="small"
             />
           )}
@@ -176,107 +132,83 @@ const RedFlagAlerts: React.FC<RedFlagAlertsProps> = ({
               icon={<ErrorIcon />}
               label={`${highCount} High Risk`}
               color="error"
-              variant="outlined"
+              
               size="small"
             />
           )}
           <Chip
             label={`${redFlags.length} Total Flags`}
-            variant="outlined"
+            
             size="small"
           />
-        </Box>
-
+        </div>
         {(criticalCount > 0 || highCount > 0) && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" className="">
             <AlertTitle>Immediate Attention Required</AlertTitle>
-            <Typography variant="body2">
+            <div >
               {criticalCount > 0 &&
                 `${criticalCount} critical finding(s) detected. `}
               {highCount > 0 &&
                 `${highCount} high-risk condition(s) identified. `}
               Review all red flags and take appropriate action immediately.
-            </Typography>
+            </div>
           </Alert>
         )}
-      </Box>
-
+      </div>
       {/* Red Flag List */}
-      <Stack spacing={2}>
+      <div spacing={2}>
         {visibleFlags.map((flag, index) => {
           const config = getSeverityConfig(flag.severity);
           const Icon = config.icon;
           const ActionIcon = getActionIcon(flag.action);
           const isExpanded = expandedFlags.has(index);
-
           return (
-            <Paper
+            <div
               key={index}
               elevation={flag.severity === 'critical' ? 3 : 1}
-              sx={{
-                border: flag.severity === 'critical' ? 2 : 1,
-                borderColor: `${config.color}.main`,
-                borderRadius: 2,
-              }}
-            >
+              className="">
               {/* Flag Header */}
-              <Box
-                sx={{
-                  p: 2,
-                  bgcolor: config.bgColor,
-                  color: config.textColor,
-                  borderRadius: '8px 8px 0 0',
-                }}
+              <div
+                className=""
               >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
+                <div
+                  className=""
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Icon sx={{ fontSize: 24 }} />
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  <div className="">
+                    <Icon className="" />
+                    <div>
+                      <div  className="">
                         {flag.flag}
-                      </Typography>
-                      <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                      </div>
+                      <div  className="">
                         {config.description}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="">
                     <Chip
                       label={config.label}
                       size="small"
-                      sx={{
-                        bgcolor: 'rgba(255, 255, 255, 0.2)',
-                        color: 'inherit',
-                        fontWeight: 600,
-                      }}
+                      className=""
                     />
-
                     <Tooltip
                       title={isExpanded ? 'Collapse details' : 'Expand details'}
                     >
                       <IconButton
                         size="small"
                         onClick={() => handleToggleExpand(index)}
-                        sx={{ color: 'inherit' }}
+                        className=""
                       >
                         {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                       </IconButton>
                     </Tooltip>
-
                     <Tooltip
                       title={hiddenFlags.has(index) ? 'Show flag' : 'Hide flag'}
                     >
                       <IconButton
                         size="small"
                         onClick={() => handleToggleHide(index)}
-                        sx={{ color: 'inherit' }}
+                        className=""
                       >
                         {hiddenFlags.has(index) ? (
                           <VisibilityOffIcon />
@@ -285,66 +217,57 @@ const RedFlagAlerts: React.FC<RedFlagAlertsProps> = ({
                         )}
                       </IconButton>
                     </Tooltip>
-                  </Box>
-                </Box>
-              </Box>
-
+                  </div>
+                </div>
+              </div>
               {/* Flag Details */}
               <Collapse in={isExpanded}>
-                <Box sx={{ p: 2 }}>
+                <div className="">
                   {/* Recommended Action */}
-                  <Box sx={{ mb: 2 }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{
-                        fontWeight: 600,
-                        mb: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
+                  <div className="">
+                    <div
+                      
+                      className=""
                     >
-                      <ActionIcon sx={{ mr: 1, fontSize: 18 }} />
+                      <ActionIcon className="" />
                       Recommended Action
-                    </Typography>
-                    <Alert severity={config.color} variant="outlined">
-                      <Typography variant="body2">{flag.action}</Typography>
+                    </div>
+                    <Alert severity={config.color} >
+                      <div >{flag.action}</div>
                     </Alert>
-                  </Box>
-
+                  </div>
                   {/* Action Buttons */}
                   {showActions && (
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <div className="">
                       {flag.severity === 'critical' && (
                         <Button
-                          variant="contained"
+                          
                           color="error"
                           size="small"
                           startIcon={<LocalHospitalIcon />}
                           onClick={() =>
-                            onActionClick?.(flag, 'emergency_referral')
+                            onActionClick?.(flag, 'emergency_referral')}
                           }
                         >
                           Emergency Referral
                         </Button>
                       )}
-
                       {(flag.severity === 'critical' ||
                         flag.severity === 'high') && (
                         <Button
-                          variant="outlined"
+                          
                           color="error"
                           size="small"
                           startIcon={<PhoneIcon />}
                           onClick={() =>
-                            onActionClick?.(flag, 'call_physician')
+                            onActionClick?.(flag, 'call_physician')}
                           }
                         >
                           Call Physician
                         </Button>
                       )}
-
                       <Button
-                        variant="outlined"
+                        
                         color="primary"
                         size="small"
                         startIcon={<AssignmentIcon />}
@@ -352,88 +275,84 @@ const RedFlagAlerts: React.FC<RedFlagAlertsProps> = ({
                       >
                         Document
                       </Button>
-
                       <Button
-                        variant="outlined"
+                        
                         color="primary"
                         size="small"
                         startIcon={<ScheduleIcon />}
                         onClick={() =>
-                          onActionClick?.(flag, 'schedule_followup')
+                          onActionClick?.(flag, 'schedule_followup')}
                         }
                       >
                         Schedule Follow-up
                       </Button>
-                    </Box>
+                    </div>
                   )}
-                </Box>
+                </div>
               </Collapse>
-            </Paper>
+            </div>
           );
         })}
-      </Stack>
-
+      </div>
       {/* Hidden Flags Summary */}
       {hiddenFlags.size > 0 && (
-        <Box sx={{ mt: 2 }}>
-          <Alert severity="info" variant="outlined">
-            <Typography variant="body2">
+        <div className="">
+          <Alert severity="info" >
+            <div >
               {hiddenFlags.size} flag(s) hidden. Click the visibility icon to
               show them again.
-            </Typography>
+            </div>
             <Button
               size="small"
               onClick={() => setHiddenFlags(new Set())}
-              sx={{ mt: 1 }}
+              className=""
             >
               Show All Flags
             </Button>
           </Alert>
-        </Box>
+        </div>
       )}
-
       {/* Emergency Contact Information */}
       {(criticalCount > 0 || highCount > 0) && (
-        <Box sx={{ mt: 3 }}>
+        <div className="">
           <Alert severity="error">
             <AlertTitle>Emergency Protocols</AlertTitle>
-            <Typography variant="body2" sx={{ mb: 1 }}>
+            <div  className="">
               For critical findings, ensure immediate medical evaluation:
-            </Typography>
+            </div>
             <List dense>
-              <ListItem>
-                <ListItemIcon>
+              <div>
+                <div>
                   <PhoneIcon color="error" />
-                </ListItemIcon>
-                <ListItemText
+                </div>
+                <div
                   primary="Emergency Services: 911"
                   secondary="For life-threatening conditions"
                 />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
+              </div>
+              <div>
+                <div>
                   <LocalHospitalIcon color="error" />
-                </ListItemIcon>
-                <ListItemText
+                </div>
+                <div
                   primary="Nearest Emergency Department"
                   secondary="For urgent medical evaluation"
                 />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
+              </div>
+              <div>
+                <div>
                   <PhoneIcon color="warning" />
-                </ListItemIcon>
-                <ListItemText
+                </div>
+                <div
                   primary="On-call Physician"
                   secondary="For immediate consultation"
                 />
-              </ListItem>
+              </div>
             </List>
           </Alert>
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
-
 export default RedFlagAlerts;

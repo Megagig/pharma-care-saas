@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Box, useTheme } from '@mui/material';
-import { useResponsive, useIsTouchDevice } from '../../hooks/useResponsive';
-import { useCommunicationStore } from '../../stores/communicationStore';
 import ChatInterface from './ChatInterface';
+
 import MobileChatInterface from './MobileChatInterface';
+
 import ConversationList from './ConversationList';
-import { Conversation } from '../../stores/types';
 
 interface ResponsiveCommunicationHubProps {
   initialConversationId?: string;
@@ -13,49 +10,41 @@ interface ResponsiveCommunicationHubProps {
   height?: string | number;
   onConversationChange?: (conversationId: string | null) => void;
 }
-
-const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({
+const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({ 
   initialConversationId,
   patientId,
   height = '100vh',
-  onConversationChange,
+  onConversationChange
 }) => {
   const theme = useTheme();
   const { isMobile, isTablet, isDesktop, screenWidth } = useResponsive();
   const isTouchDevice = useIsTouchDevice();
-
   const { activeConversation, setActiveConversation, fetchConversations } =
     useCommunicationStore();
-
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | undefined
   >(initialConversationId);
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-
   // Update conversation selection when prop changes
   useEffect(() => {
     if (initialConversationId !== selectedConversationId) {
       setSelectedConversationId(initialConversationId);
     }
   }, [initialConversationId, selectedConversationId]);
-
   // Fetch conversations on mount
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
-
   // Handle conversation selection
   const handleConversationSelect = (conversation: Conversation) => {
     setSelectedConversationId(conversation._id);
     setActiveConversation(conversation);
     onConversationChange?.(conversation._id);
-
     // Close sidebar on mobile after selection
     if (isMobile) {
       setSidebarOpen(false);
     }
   };
-
   // Handle back navigation (mobile)
   const handleBack = () => {
     setSelectedConversationId(undefined);
@@ -63,44 +52,27 @@ const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({
     onConversationChange?.(null);
     setSidebarOpen(true);
   };
-
   // Mobile layout
   if (isMobile) {
     return (
-      <Box sx={{ height, overflow: 'hidden' }}>
+      <div className="">
         <MobileChatInterface
           conversationId={selectedConversationId}
           onBack={handleBack}
           onConversationSelect={handleConversationSelect}
         />
-      </Box>
+      </div>
     );
   }
-
   // Tablet layout - side-by-side with collapsible sidebar
   if (isTablet) {
     return (
-      <Box
-        sx={{
-          height,
-          display: 'flex',
-          overflow: 'hidden',
-        }}
+      <div
+        className=""
       >
         {/* Conversation List Sidebar */}
-        <Box
-          sx={{
-            width: sidebarOpen ? 320 : 0,
-            flexShrink: 0,
-            transition: theme.transitions.create('width', {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-            overflow: 'hidden',
-            borderRight: sidebarOpen ? 1 : 0,
-            borderColor: 'divider',
-          }}
-        >
+        <div
+          className="">
           {sidebarOpen && (
             <ConversationList
               onConversationSelect={handleConversationSelect}
@@ -110,10 +82,9 @@ const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({
               compact={true}
             />
           )}
-        </Box>
-
+        </div>
         {/* Main Chat Area */}
-        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+        <div className="">
           {selectedConversationId ? (
             <ChatInterface
               conversationId={selectedConversationId}
@@ -121,100 +92,48 @@ const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({
               height="100%"
               showParticipants={true}
               showHeader={true}
-              onConversationAction={(action, conversationId) => {
-                // Handle conversation actions
-                console.log('Conversation action:', action, conversationId);
-              }}
+              
             />
           ) : (
-            <Box
-              sx={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                gap: 2,
-                p: 3,
-                textAlign: 'center',
-              }}
+            <div
+              className=""
             >
-              <Box
-                sx={{
-                  fontSize: 64,
-                  opacity: 0.3,
-                  mb: 2,
-                }}
+              <div
+                className=""
               >
                 💬
-              </Box>
-              <Box>
-                <Box sx={{ fontSize: '1.25rem', fontWeight: 600, mb: 1 }}>
+              </div>
+              <div>
+                <div className="">
                   Select a conversation
-                </Box>
-                <Box sx={{ color: 'text.secondary' }}>
+                </div>
+                <div className="">
                   Choose a conversation from the sidebar to start messaging
-                </Box>
-              </Box>
-            </Box>
+                </div>
+              </div>
+            </div>
           )}
-        </Box>
-
+        </div>
         {/* Sidebar toggle button for tablet */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 16,
-            left: sidebarOpen ? 304 : 16,
-            zIndex: theme.zIndex.fab,
-            transition: theme.transitions.create('left', {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-          }}
-        >
-          <Box
+        <div
+          className="">
+          <div
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              backgroundColor: 'primary.main',
-              color: 'primary.contrastText',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: 2,
-              '&:hover': {
-                backgroundColor: 'primary.dark',
-              },
-            }}
-          >
+            className="">
             {sidebarOpen ? '‹' : '›'}
-          </Box>
-        </Box>
-      </Box>
+          </div>
+        </div>
+      </div>
     );
   }
-
   // Desktop layout - full side-by-side
   return (
-    <Box
-      sx={{
-        height,
-        display: 'flex',
-        overflow: 'hidden',
-      }}
+    <div
+      className=""
     >
       {/* Conversation List Sidebar */}
-      <Box
-        sx={{
-          width: 360,
-          flexShrink: 0,
-          borderRight: 1,
-          borderColor: 'divider',
-        }}
+      <div
+        className=""
       >
         <ConversationList
           onConversationSelect={handleConversationSelect}
@@ -223,10 +142,9 @@ const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({
           patientId={patientId}
           compact={false}
         />
-      </Box>
-
+      </div>
       {/* Main Chat Area */}
-      <Box sx={{ flex: 1, overflow: 'hidden' }}>
+      <div className="">
         {selectedConversationId ? (
           <ChatInterface
             conversationId={selectedConversationId}
@@ -234,48 +152,31 @@ const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({
             height="100%"
             showParticipants={true}
             showHeader={true}
-            onConversationAction={(action, conversationId) => {
-              // Handle conversation actions
-              console.log('Conversation action:', action, conversationId);
-            }}
+            
           />
         ) : (
-          <Box
-            sx={{
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'column',
-              gap: 3,
-              p: 4,
-              textAlign: 'center',
-            }}
+          <div
+            className=""
           >
-            <Box
-              sx={{
-                fontSize: 96,
-                opacity: 0.2,
-                mb: 2,
-              }}
+            <div
+              className=""
             >
               💬
-            </Box>
-            <Box>
-              <Box sx={{ fontSize: '1.5rem', fontWeight: 600, mb: 1 }}>
+            </div>
+            <div>
+              <div className="">
                 Welcome to Communication Hub
-              </Box>
-              <Box sx={{ color: 'text.secondary', maxWidth: 400 }}>
+              </div>
+              <div className="">
                 Select a conversation from the sidebar to start messaging, or
                 create a new conversation to begin collaborating with your
                 healthcare team.
-              </Box>
-            </Box>
-          </Box>
+              </div>
+            </div>
+          </div>
         )}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
-
 export default ResponsiveCommunicationHub;

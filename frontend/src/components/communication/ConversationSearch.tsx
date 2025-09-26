@@ -1,50 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  InputAdornment,
-  Button,
-  Chip,
-  Card,
-  CardContent,
-  Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  IconButton,
-  Tooltip,
-  Alert,
-  CircularProgress,
-  Divider,
-  Badge,
-  Collapse,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Clear as ClearIcon,
-  FilterList as FilterIcon,
-  History as HistoryIcon,
-  Bookmark as BookmarkIcon,
-  Visibility as ViewIcon,
-  Group as GroupIcon,
-  Person as PersonIcon,
-  MedicalServices as MedicalIcon,
-  Schedule as ScheduleIcon,
-  Save as SaveIcon,
-} from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, parseISO, subDays } from 'date-fns';
-import { debounce } from 'lodash';
+import { Button, Input, Label, Card, CardContent, Badge, Select, Spinner, Alert, Avatar, Separator } from '@/components/ui/button';
 
 interface SearchFilters {
   query: string;
@@ -55,7 +9,6 @@ interface SearchFilters {
   sortBy?: 'relevance' | 'date';
   sortOrder?: 'asc' | 'desc';
 }
-
 interface ConversationResult {
   _id: string;
   title: string;
@@ -79,32 +32,29 @@ interface ConversationResult {
   unreadCount?: number;
   score?: number;
 }
-
 interface SearchStats {
   totalResults: number;
   searchTime: number;
 }
-
 interface ConversationSearchProps {
   height?: string;
   onConversationSelect?: (conversation: ConversationResult) => void;
   showSavedSearches?: boolean;
   defaultFilters?: Partial<SearchFilters>;
 }
-
-const ConversationSearch: React.FC<ConversationSearchProps> = ({
+const ConversationSearch: React.FC<ConversationSearchProps> = ({ 
   height = '600px',
   onConversationSelect,
-  showSavedSearches = true,
-  defaultFilters = {},
+  showSavedSearches = true}
+  defaultFilters = {}
 }) => {
-  const [filters, setFilters] = useState<SearchFilters>({
+  const [filters, setFilters] = useState<SearchFilters>({ 
     query: '',
     startDate: subDays(new Date(), 30),
     endDate: new Date(),
     sortBy: 'relevance',
     sortOrder: 'desc',
-    ...defaultFilters,
+    ...defaultFilters}
   });
   const [results, setResults] = useState<ConversationResult[]>([]);
   const [stats, setStats] = useState<SearchStats | null>(null);
@@ -112,7 +62,6 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
   // Debounced search function
   const debouncedSearch = useCallback(
     debounce(async (searchFilters: SearchFilters) => {
@@ -121,17 +70,13 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
         setStats(null);
         return;
       }
-
       setLoading(true);
       setError(null);
-
       try {
         const queryParams = new URLSearchParams();
-
         if (searchFilters.query.trim()) {
           queryParams.append('q', searchFilters.query.trim());
         }
-
         // Add other filters
         Object.entries(searchFilters).forEach(([key, value]) => {
           if (
@@ -149,7 +94,6 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
             }
           }
         });
-
         const response = await fetch(
           `/api/communication/search/conversations?${queryParams}`,
           {
@@ -158,15 +102,12 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
             },
           }
         );
-
         if (!response.ok) {
           throw new Error('Search failed');
         }
-
         const data = await response.json();
         setResults(data.data || []);
         setStats(data.stats);
-
         // Add to search history
         if (searchFilters.query.trim()) {
           addToSearchHistory(searchFilters.query.trim());
@@ -179,7 +120,6 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
     }, 500),
     []
   );
-
   // Check if advanced filters are set
   const hasAdvancedFilters = (filters: SearchFilters) => {
     return !!(
@@ -189,7 +129,6 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
       filters.endDate
     );
   };
-
   // Add to search history
   const addToSearchHistory = (query: string) => {
     setSearchHistory((prev) => {
@@ -197,26 +136,23 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
       return [query, ...filtered].slice(0, 10);
     });
   };
-
   // Handle filter changes
   const handleFilterChange = (key: keyof SearchFilters, value: any) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
   };
-
   // Clear all filters
   const clearFilters = () => {
-    setFilters({
+    setFilters({ 
       query: '',
       startDate: subDays(new Date(), 30),
       endDate: new Date(),
       sortBy: 'relevance',
-      sortOrder: 'desc',
+      sortOrder: 'desc'}
     });
     setResults([]);
     setStats(null);
   };
-
   // Get conversation type icon
   const getConversationIcon = (type: string) => {
     switch (type) {
@@ -231,7 +167,6 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
         return <GroupIcon />;
     }
   };
-
   // Get conversation type label
   const getConversationTypeLabel = (type: string) => {
     switch (type) {
@@ -247,7 +182,6 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
         return type;
     }
   };
-
   // Render conversation result
   const renderConversationResult = (
     conversation: ConversationResult,
@@ -257,37 +191,35 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
       .slice(0, 3)
       .map((p) => `${p.firstName} ${p.lastName}`)
       .join(', ');
-
     const moreParticipants =
       conversation.participantDetails.length > 3
         ? ` +${conversation.participantDetails.length - 3} more`
         : '';
-
     return (
-      <ListItem
+      <div
         key={conversation._id}
         button
         onClick={() => onConversationSelect?.(conversation)}
-        sx={{ alignItems: 'flex-start', py: 2 }}
+        className=""
       >
-        <ListItemAvatar>
-          <Avatar sx={{ bgcolor: 'primary.main' }}>
+        <divAvatar>
+          <Avatar className="">
             {getConversationIcon(conversation.type)}
           </Avatar>
         </ListItemAvatar>
-        <ListItemText
+        <div
           primary={
-            <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
+            <div
+              className=""
             >
-              <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+              <div  className="">}
                 {conversation.title}
-              </Typography>
+              </div>
               <Chip
                 size="small"
                 label={getConversationTypeLabel(conversation.type)}
-                variant="outlined"
-                sx={{ fontSize: '0.7rem' }}
+                
+                className=""
               />
               <Chip
                 size="small"
@@ -299,9 +231,9 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
                     ? 'warning'
                     : conversation.priority === 'low'
                     ? 'info'
-                    : 'default'
+                    : 'default'}
                 }
-                variant="outlined"
+                
               />
               <Chip
                 size="small"
@@ -311,9 +243,9 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
                     ? 'success'
                     : conversation.status === 'resolved'
                     ? 'info'
-                    : 'default'
+                    : 'default'}
                 }
-                variant="outlined"
+                
               />
               {conversation.unreadCount && conversation.unreadCount > 0 && (
                 <Badge
@@ -321,81 +253,79 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
                   color="primary"
                 />
               )}
-            </Box>
+            </div>
           }
           secondary={
-            <Box>
-              <Typography
-                variant="body2"
+            <div>
+              <div
+                
                 color="text.secondary"
-                sx={{ mb: 0.5 }}
-              >
+                className=""
+              >}
                 Participants: {participantNames}
                 {moreParticipants}
-              </Typography>
+              </div>
               {conversation.patientId && (
-                <Typography
-                  variant="body2"
+                <div
+                  
                   color="text.secondary"
-                  sx={{ mb: 0.5 }}
+                  className=""
                 >
                   Patient: {conversation.patientId.firstName}{' '}
                   {conversation.patientId.lastName}
                   (MRN: {conversation.patientId.mrn})
-                </Typography>
+                </div>
               )}
               {conversation.tags.length > 0 && (
-                <Box
-                  sx={{ display: 'flex', gap: 0.5, mb: 0.5, flexWrap: 'wrap' }}
+                <div
+                  className=""
                 >
                   {conversation.tags.map((tag, tagIndex) => (
                     <Chip
                       key={tagIndex}
                       label={tag}
                       size="small"
-                      variant="outlined"
-                      sx={{ fontSize: '0.6rem', height: 20 }}
+                      
+                      className=""
                     />
                   ))}
-                </Box>
+                </div>
               )}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <ScheduleIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                <Typography variant="caption" color="text.secondary">
+              <div className="">
+                <ScheduleIcon className="" />
+                <div  color="text.secondary">
                   Last activity:{' '}
                   {format(
                     parseISO(conversation.lastMessageAt),
                     'MMM dd, yyyy HH:mm'
                   )}
-                </Typography>
+                </div>
                 {conversation.score && (
-                  <Typography variant="caption" color="text.secondary">
+                  <div  color="text.secondary">
                     • Score: {conversation.score.toFixed(2)}
-                  </Typography>
+                  </div>
                 )}
-              </Box>
-            </Box>
+              </div>
+            </div>
           }
         />
         <IconButton>
           <ViewIcon />
         </IconButton>
-      </ListItem>
+      </div>
     );
   };
-
   useEffect(() => {
     debouncedSearch(filters);
   }, [filters, debouncedSearch]);
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ height, display: 'flex', flexDirection: 'column' }}>
+      <div className="">
         {/* Search Header */}
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography
-            variant="h6"
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}
+        <div className="">
+          <div
+            
+            className=""
           >
             <SearchIcon />
             Conversation Search
@@ -406,10 +336,9 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
                 max={999}
               />
             )}
-          </Typography>
-
+          </div>
           {/* Main Search Bar */}
-          <TextField
+          <Input
             fullWidth
             placeholder="Search conversations... (e.g., 'patient consultation', 'medication review', 'urgent cases')"
             value={filters.query}
@@ -423,19 +352,17 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
               endAdornment: filters.query && (
                 <InputAdornment position="end">
                   <IconButton
-                    size="small"
-                    onClick={() => handleFilterChange('query', '')}
+                    size="small"}
+                    onClick={() =>handleFilterChange('query', '')}
                   >
                     <ClearIcon />
                   </IconButton>
                 </InputAdornment>
               ),
-            }}
-            sx={{ mb: 2 }}
+            className=""
           />
-
           {/* Quick Actions */}
-          <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+          <div className="">
             <Button
               startIcon={<FilterIcon />}
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -449,25 +376,24 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
                 startIcon={<ClearIcon />}
                 onClick={clearFilters}
                 size="small"
-                variant="outlined"
+                
               >
                 Clear All
               </Button>
             )}
-          </Box>
-
+          </div>
           {/* Advanced Filters */}
           <Collapse in={showAdvancedFilters}>
-            <Card variant="outlined" sx={{ mb: 2 }}>
+            <Card  className="">
               <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Priority</InputLabel>
+                <div container spacing={2}>
+                  <div item xs={12} sm={6} md={3}>
+                    <div fullWidth size="small">
+                      <Label>Priority</Label>
                       <Select
                         value={filters.priority || ''}
                         onChange={(e) =>
-                          handleFilterChange('priority', e.target.value)
+                          handleFilterChange('priority', e.target.value)}
                         }
                         label="Priority"
                       >
@@ -477,147 +403,137 @@ const ConversationSearch: React.FC<ConversationSearchProps> = ({
                         <MenuItem value="high">High</MenuItem>
                         <MenuItem value="urgent">Urgent</MenuItem>
                       </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                    </div>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
                     <DatePicker
                       label="Start Date"
                       value={filters.startDate}
                       onChange={(date) => handleFilterChange('startDate', date)}
-                      slotProps={{
+                      slotProps={{}
                         textField: { size: 'small', fullWidth: true },
-                      }}
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
                     <DatePicker
                       label="End Date"
                       value={filters.endDate}
                       onChange={(date) => handleFilterChange('endDate', date)}
-                      slotProps={{
+                      slotProps={{}
                         textField: { size: 'small', fullWidth: true },
-                      }}
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Sort By</InputLabel>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
+                    <div fullWidth size="small">
+                      <Label>Sort By</Label>
                       <Select
                         value={filters.sortBy || 'relevance'}
                         onChange={(e) =>
-                          handleFilterChange('sortBy', e.target.value)
+                          handleFilterChange('sortBy', e.target.value)}
                         }
                         label="Sort By"
                       >
                         <MenuItem value="relevance">Relevance</MenuItem>
                         <MenuItem value="date">Last Activity</MenuItem>
                       </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </Collapse>
-
           {/* Search History */}
           {searchHistory.length > 0 && !filters.query && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
+            <div className="">
+              <div  gutterBottom>
                 Recent Searches
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              </div>
+              <div className="">
                 {searchHistory.slice(0, 5).map((query, index) => (
                   <Chip
                     key={index}
                     label={query}
                     onClick={() => handleFilterChange('query', query)}
-                    variant="outlined"
+                    
                     size="small"
                     icon={<HistoryIcon />}
                   />
                 ))}
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
-        </Box>
-
+        </div>
         {/* Results Area */}
-        <Box sx={{ flex: 1, overflow: 'auto' }}>
+        <div className="">
           {/* Error Alert */}
           {error && (
             <Alert
               severity="error"
-              sx={{ m: 2 }}
+              className=""
               onClose={() => setError(null)}
             >
               {error}
             </Alert>
           )}
-
           {/* Loading State */}
           {loading && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-              <CircularProgress />
-            </Box>
+            <div className="">
+              <Spinner />
+            </div>
           )}
-
           {/* Search Stats */}
           {!loading && stats && (
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-              <Typography variant="body2" color="text.secondary">
+            <div className="">
+              <div  color="text.secondary">
                 {stats.totalResults.toLocaleString()} conversations found in{' '}
                 {stats.searchTime}ms
-              </Typography>
-            </Box>
+              </div>
+            </div>
           )}
-
           {/* Results */}
           {!loading && results.length > 0 && (
             <List>
               {results.map((result, index) => (
                 <React.Fragment key={result._id}>
                   {renderConversationResult(result, index)}
-                  {index < results.length - 1 && <Divider />}
+                  {index < results.length - 1 && <Separator />}
                 </React.Fragment>
               ))}
             </List>
           )}
-
           {/* No Results */}
           {!loading &&
             results.length === 0 &&
             (filters.query || hasAdvancedFilters(filters)) && (
-              <Box sx={{ textAlign: 'center', p: 4 }}>
-                <Typography color="text.secondary" gutterBottom>
+              <div className="">
+                <div color="text.secondary" gutterBottom>
                   No conversations found matching your search criteria
-                </Typography>
-                <Button onClick={clearFilters} variant="outlined" size="small">
+                </div>
+                <Button onClick={clearFilters}  size="small">
                   Clear Search
                 </Button>
-              </Box>
+              </div>
             )}
-
           {/* Initial State */}
           {!loading &&
             results.length === 0 &&
             !filters.query &&
             !hasAdvancedFilters(filters) && (
-              <Box sx={{ textAlign: 'center', p: 4 }}>
+              <div className="">
                 <SearchIcon
-                  sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }}
+                  className=""
                 />
-                <Typography color="text.secondary" gutterBottom>
+                <div color="text.secondary" gutterBottom>
                   Enter a search query to find conversations
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Try searching for patient names, topics, or conversation types
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
-        </Box>
-      </Box>
+        </div>
+      </div>
     </LocalizationProvider>
   );
 };
-
 export default ConversationSearch;

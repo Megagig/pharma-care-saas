@@ -1,8 +1,5 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
-import MentionDisplay from '../MentionDisplay';
 
+import MentionDisplay from '../MentionDisplay';
 const mockUsers = [
   {
     _id: '1',
@@ -191,7 +188,7 @@ describe('MentionDisplay', () => {
     render(
       <MentionDisplay
         text="Hello world"
-        variant="caption"
+        
         color="secondary"
         users={mockUsers}
       />
@@ -206,7 +203,7 @@ describe('MentionDisplay', () => {
     const customSx = { fontSize: '20px', color: 'red' };
 
     render(
-      <MentionDisplay text="Hello world" sx={customSx} users={mockUsers} />
+      <MentionDisplay text="Hello world" className="" users={mockUsers} />
     );
 
     const typography = screen.getByText('Hello world');

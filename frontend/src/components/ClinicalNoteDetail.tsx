@@ -1,73 +1,124 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  IconButton,
-  Chip,
-  Stack,
-  Divider,
-  Grid,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  Snackbar,
-  Tooltip,
-  Breadcrumbs,
-  Link,
-  CircularProgress,
-  Avatar,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Collapse,
-  Badge,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  ArrowBack as ArrowBackIcon,
-  Security as SecurityIcon,
-  Schedule as ScheduleIcon,
-  AttachFile as AttachFileIcon,
-  Person as PersonIcon,
-  LocalPharmacy as PharmacyIcon,
-  CalendarToday as CalendarIcon,
-  Priority as PriorityIcon,
-  Visibility as VisibilityIcon,
-  Download as DownloadIcon,
-  History as HistoryIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  MedicalServices as MedicalIcon,
-  Assignment as AssignmentIcon,
-  Assessment as AssessmentIcon,
-  PlaylistAddCheck as PlanIcon,
-} from '@mui/icons-material';
+import React, { useState } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
-import { useClinicalNote } from '../queries/clinicalNoteQueries';
-import { useEnhancedClinicalNoteStore } from '../stores/enhancedClinicalNoteStore';
-import { useAuth } from '../hooks/useAuth';
+import { toast } from 'react-hot-toast';
 import {
-  ClinicalNote,
-  NOTE_TYPES,
-  NOTE_PRIORITIES,
-  Attachment,
-  LabResult,
-  VitalSigns,
-} from '../types/clinicalNote';
+  Home as HomeIcon,
+  FileText as NoteIcon,
+  ArrowLeft,
+  Edit,
+  Delete,
+  Download,
+  Paperclip as AttachFileIcon,
+  History,
+  ChevronDown as ExpandMoreIcon,
+  ChevronUp as ExpandLessIcon,
+  User as PersonIcon,
+  FileText as AssignmentIcon,
+  Stethoscope as MedicalInformationIcon,
+  Eye as VisibilityIcon,
+  ClipboardList as AssessmentIcon,
+  FileCheck as PlanIcon,
+  Calendar as CalendarIcon,
+  Clock as ScheduleIcon,
+  Shield as SecurityIcon,
+  ChevronLeft
+} from 'lucide-react';
+
 import ClinicalNoteForm from './ClinicalNoteForm';
 import LoadingSpinner from './LoadingSpinner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks/useAuth';
+import { useClinicalNote, useEnhancedClinicalNoteStore } from '@/hooks/useClinicalNotes';
+import { useTheme } from '@/hooks/useTheme';
+
+// Types
+interface ClinicalNote {
+  _id: string;
+  title: string;
+  type: string;
+  priority: string;
+  isConfidential: boolean;
+  followUpRequired: boolean;
+  followUpDate?: string;
+  content: {
+    subjective?: string;
+    objective?: string;
+    assessment?: string;
+    plan?: string;
+  };
+  vitalSigns?: VitalSigns;
+  laborResults?: LabResult[];
+  recommendations?: string[];
+  attachments?: Attachment[];
+  patient: {
+    firstName: string;
+    lastName: string;
+    mrn: string;
+  };
+  pharmacist: {
+    firstName: string;
+    lastName: string;
+    role: string;
+    _id: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  lastModifiedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
+  tags?: string[];
+}
+
+interface VitalSigns {
+  bloodPressure?: {
+    systolic: number;
+    diastolic: number;
+  };
+  heartRate?: number;
+  temperature?: number;
+  weight?: number;
+  height?: number;
+}
+
+interface LabResult {
+  test: string;
+  result: string;
+  normalRange: string;
+  date: string;
+  status: 'normal' | 'abnormal' | 'critical';
+}
+
+interface Attachment {
+  _id: string;
+  originalName: string;
+  size: number;
+  mimeType: string;
+  uploadedAt: string;
+}
+
+// Constants
+const NOTE_TYPES = [
+  { value: 'consultation', label: 'Consultation' },
+  { value: 'follow_up', label: 'Follow-up' },
+  { value: 'discharge', label: 'Discharge' },
+  { value: 'transfer', label: 'Transfer' },
+  { value: 'admission', label: 'Admission' },
+  { value: 'other', label: 'Other' },
+];
+
+const NOTE_PRIORITIES = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'urgent', label: 'Urgent' },
+];
 
 interface ClinicalNoteDetailProps {
   noteId?: string;
@@ -82,10 +133,8 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   onEdit,
   onDelete,
   readonly = false,
-  embedded = false,
+  embedded = false
 }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { id: paramNoteId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -103,15 +152,6 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
     labs: false,
     attachments: false,
     recommendations: false,
-  });
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'success' | 'error' | 'warning' | 'info';
-  }>({
-    open: false,
-    message: '',
-    severity: 'info',
   });
 
   // Store actions
@@ -140,16 +180,10 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   // Handle delete
   const handleDelete = async () => {
     if (!note) return;
-
     try {
       const success = await deleteNote(note._id);
       if (success) {
-        setSnackbar({
-          open: true,
-          message: 'Note deleted successfully',
-          severity: 'success',
-        });
-
+        toast.success('Note deleted successfully');
         if (onDelete) {
           onDelete();
         } else if (!embedded) {
@@ -157,11 +191,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
         }
       }
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Failed to delete note',
-        severity: 'error',
-      });
+      toast.error('Failed to delete note');
     }
     setIsDeleteDialogOpen(false);
   };
@@ -169,38 +199,24 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   // Handle attachment download
   const handleDownloadAttachment = async (attachment: Attachment) => {
     if (!note) return;
-
     try {
       await downloadAttachment(note._id, attachment._id);
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Failed to download attachment',
-        severity: 'error',
-      });
+      toast.error('Failed to download attachment');
     }
   };
 
   // Handle attachment delete
   const handleDeleteAttachment = async (attachment: Attachment) => {
     if (!note) return;
-
     try {
       const success = await deleteAttachment(note._id, attachment._id);
       if (success) {
-        setSnackbar({
-          open: true,
-          message: 'Attachment deleted successfully',
-          severity: 'success',
-        });
+        toast.success('Attachment deleted successfully');
         refetch(); // Refresh note data
       }
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Failed to delete attachment',
-        severity: 'error',
-      });
+      toast.error('Failed to delete attachment');
     }
   };
 
@@ -258,9 +274,9 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   // Loading state
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+      <div className="flex justify-center items-center h-64">
         <LoadingSpinner />
-      </Box>
+      </div>
     );
   }
 
@@ -268,17 +284,19 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   if (error || !note) {
     return (
       <Card>
-        <CardContent sx={{ textAlign: 'center', py: 8 }}>
-          <Typography variant="h6" color="error" sx={{ mb: 2 }}>
-            {error ? 'Failed to load clinical note' : 'Clinical note not found'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        <CardContent className="p-6">
+          <Alert className="mb-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+            <AlertDescription className="text-red-800 dark:text-red-200">
+              {error ? 'Failed to load clinical note' : 'Clinical note not found'}
+            </AlertDescription>
+          </Alert>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
             {error
               ? 'Please try again later'
               : 'The requested note may have been deleted or you may not have permission to view it'}
-          </Typography>
+          </p>
           {!embedded && (
-            <Button variant="contained" onClick={handleBack}>
+            <Button onClick={handleBack}>
               Back to Notes
             </Button>
           )}
@@ -291,685 +309,520 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   const priorityInfo = getPriorityInfo(note.priority);
 
   return (
-    <Box
-      sx={{
-        maxWidth: embedded ? '100%' : 1200,
-        mx: 'auto',
-        p: embedded ? 0 : 2,
-      }}
-    >
+    <div className="space-y-6">
       {/* Header */}
       {!embedded && (
-        <Box sx={{ mb: 3 }}>
-          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
-            <Link
-              component="button"
-              variant="body2"
-              onClick={handleBack}
-              sx={{ display: 'flex', alignItems: 'center' }}
-            >
-              Clinical Notes
-            </Link>
-            <Typography variant="body2" color="text.primary">
-              {note.title}
-            </Typography>
-          </Breadcrumbs>
+        <div className="mb-6">
+          <nav className="flex mb-4" aria-label="Breadcrumb">
+            <ol className="inline-flex items-center space-x-1 md:space-x-3">
+              <li className="inline-flex items-center">
+                <Link
+                  to="/dashboard"
+                  className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                >
+                  <HomeIcon className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Link>
+              </li>
+              <li>
+                <div className="flex items-center">
+                  <ChevronLeft className="h-4 w-4 text-gray-400" />
+                  <Link
+                    to="/notes"
+                    className="ml-1 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                  >
+                    Clinical Notes
+                  </Link>
+                </div>
+              </li>
+              <li>
+                <div className="flex items-center">
+                  <ChevronLeft className="h-4 w-4 text-gray-400" />
+                  <span className="ml-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {note.title}
+                  </span>
+                </div>
+              </li>
+            </ol>
+          </nav>
 
-          <Stack
-            direction={isMobile ? 'column' : 'row'}
-            justifyContent="space-between"
-            alignItems={isMobile ? 'stretch' : 'center'}
-            spacing={2}
-          >
-            <Box>
-              <Typography
-                variant="h4"
-                component="h1"
-                sx={{ fontWeight: 600, mb: 1 }}
-              >
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 {note.title}
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                <Chip
-                  label={typeInfo?.label || note.type}
-                  size="small"
-                  variant="outlined"
-                  color="primary"
-                />
-                <Chip
-                  label={priorityInfo?.label || note.priority}
-                  size="small"
-                  sx={{
-                    backgroundColor: priorityInfo?.color || '#757575',
-                    color: 'white',
-                    fontWeight: 500,
-                  }}
-                />
+              </h1>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary">
+                  {typeInfo?.label || note.type}
+                </Badge>
+                <Badge variant={note.priority === 'urgent' ? 'destructive' :
+                  note.priority === 'high' ? 'destructive' :
+                    note.priority === 'medium' ? 'default' : 'secondary'}>
+                  {priorityInfo?.label || note.priority}
+                </Badge>
                 {note.isConfidential && (
-                  <Chip
-                    icon={<SecurityIcon />}
-                    label="Confidential"
-                    size="small"
-                    color="warning"
-                  />
+                  <Badge variant="outline" className="text-amber-600 border-amber-600">
+                    <SecurityIcon className="h-3 w-3 mr-1" />
+                    Confidential
+                  </Badge>
                 )}
                 {note.followUpRequired && (
-                  <Chip
-                    icon={<ScheduleIcon />}
-                    label="Follow-up Required"
-                    size="small"
-                    color="info"
-                  />
+                  <Badge variant="outline" className="text-blue-600 border-blue-600">
+                    <ScheduleIcon className="h-3 w-3 mr-1" />
+                    Follow-up Required
+                  </Badge>
                 )}
-              </Stack>
-            </Box>
+              </div>
+            </div>
 
-            <Stack direction="row" spacing={1}>
+            <div className="flex flex-wrap gap-2">
               {!embedded && (
                 <Button
-                  startIcon={<ArrowBackIcon />}
+                  variant="outline"
                   onClick={handleBack}
-                  variant="outlined"
+                  className="flex items-center gap-2"
                 >
+                  <ArrowLeft className="h-4 w-4" />
                   Back
                 </Button>
               )}
               {canEdit && (
                 <Button
-                  startIcon={<EditIcon />}
                   onClick={handleEdit}
-                  variant="contained"
-                  color="primary"
+                  className="flex items-center gap-2"
                 >
+                  <Edit className="h-4 w-4" />
                   Edit
                 </Button>
               )}
               {canDelete && (
                 <Button
-                  startIcon={<DeleteIcon />}
+                  variant="destructive"
                   onClick={() => setIsDeleteDialogOpen(true)}
-                  variant="outlined"
-                  color="error"
+                  className="flex items-center gap-2"
                 >
+                  <Delete className="h-4 w-4" />
                   Delete
                 </Button>
               )}
-            </Stack>
-          </Stack>
-        </Box>
+            </div>
+          </div>
+        </div>
       )}
 
-      <Grid container spacing={3}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
-        <Grid item xs={12} md={8}>
+        <div className="lg:col-span-2 space-y-6">
           {/* Patient and Clinician Information */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography
-                variant="h6"
-                sx={{ mb: 2, display: 'flex', alignItems: 'center' }}
-              >
-                <PersonIcon sx={{ mr: 1 }} />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PersonIcon className="h-5 w-5" />
                 Patient & Clinician Information
-              </Typography>
-
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
-                    <Typography
-                      variant="subtitle2"
-                      color="primary"
-                      sx={{ mb: 1 }}
-                    >
-                      Patient
-                    </Typography>
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      {formatPatientName(note.patient)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      MRN: {note.patient.mrn}
-                    </Typography>
-                  </Paper>
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
-                    <Typography
-                      variant="subtitle2"
-                      color="primary"
-                      sx={{ mb: 1 }}
-                    >
-                      Pharmacist
-                    </Typography>
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      {formatPharmacistName(note.pharmacist)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Role: {note.pharmacist.role}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              </Grid>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">
+                    Patient
+                  </h3>
+                  <p className="font-medium">{formatPatientName(note.patient)}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    MRN: {note.patient.mrn}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">
+                    Pharmacist
+                  </h3>
+                  <p className="font-medium">{formatPharmacistName(note.pharmacist)}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Role: {note.pharmacist.role}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           {/* SOAP Note Content */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 2,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ display: 'flex', alignItems: 'center' }}
-                >
-                  <AssignmentIcon sx={{ mr: 1 }} />
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="flex items-center gap-2">
+                  <AssignmentIcon className="h-5 w-5" />
                   SOAP Note Content
-                </Typography>
-                <IconButton
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => toggleSection('content')}
-                  size="small"
+                  className="p-1 h-8 w-8"
                 >
                   {expandedSections.content ? (
-                    <ExpandLessIcon />
+                    <ExpandLessIcon className="h-4 w-4" />
                   ) : (
-                    <ExpandMoreIcon />
+                    <ExpandMoreIcon className="h-4 w-4" />
                   )}
-                </IconButton>
-              </Box>
-
-              <Collapse in={expandedSections.content}>
-                <Stack spacing={3}>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {expandedSections.content && (
+                <div className="space-y-4">
                   {note.content.subjective && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <MedicalIcon sx={{ mr: 1, fontSize: 20 }} />
+                    <div>
+                      <h3 className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+                        <MedicalInformationIcon className="h-4 w-4" />
                         Subjective
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
-                        <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
-                        >
+                      </h3>
+                      <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
                           {note.content.subjective}
-                        </Typography>
-                      </Paper>
-                    </Box>
+                        </p>
+                      </div>
+                    </div>
                   )}
 
                   {note.content.objective && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <VisibilityIcon sx={{ mr: 1, fontSize: 20 }} />
+                    <div>
+                      <h3 className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+                        <VisibilityIcon className="h-4 w-4" />
                         Objective
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
-                        <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
-                        >
+                      </h3>
+                      <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
                           {note.content.objective}
-                        </Typography>
-                      </Paper>
-                    </Box>
+                        </p>
+                      </div>
+                    </div>
                   )}
 
                   {note.content.assessment && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <AssessmentIcon sx={{ mr: 1, fontSize: 20 }} />
+                    <div>
+                      <h3 className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+                        <AssessmentIcon className="h-4 w-4" />
                         Assessment
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
-                        <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
-                        >
+                      </h3>
+                      <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
                           {note.content.assessment}
-                        </Typography>
-                      </Paper>
-                    </Box>
+                        </p>
+                      </div>
+                    </div>
                   )}
 
                   {note.content.plan && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <PlanIcon sx={{ mr: 1, fontSize: 20 }} />
+                    <div>
+                      <h3 className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+                        <PlanIcon className="h-4 w-4" />
                         Plan
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
-                        <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
-                        >
+                      </h3>
+                      <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
                           {note.content.plan}
-                        </Typography>
-                      </Paper>
-                    </Box>
+                        </p>
+                      </div>
+                    </div>
                   )}
-                </Stack>
-              </Collapse>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Vital Signs */}
           {note.vitalSigns && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="h6">Vital Signs</Typography>
-                  <IconButton
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Vital Signs</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => toggleSection('vitals')}
-                    size="small"
+                    className="p-1 h-8 w-8"
                   >
                     {expandedSections.vitals ? (
-                      <ExpandLessIcon />
+                      <ExpandLessIcon className="h-4 w-4" />
                     ) : (
-                      <ExpandMoreIcon />
+                      <ExpandMoreIcon className="h-4 w-4" />
                     )}
-                  </IconButton>
-                </Box>
-
-                <Collapse in={expandedSections.vitals}>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {expandedSections.vitals && (
                   <VitalSignsDisplay vitalSigns={note.vitalSigns} />
-                </Collapse>
+                )}
               </CardContent>
             </Card>
           )}
 
           {/* Lab Results */}
           {note.laborResults && note.laborResults.length > 0 && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="h6">Laboratory Results</Typography>
-                  <IconButton
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Laboratory Results</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => toggleSection('labs')}
-                    size="small"
+                    className="p-1 h-8 w-8"
                   >
                     {expandedSections.labs ? (
-                      <ExpandLessIcon />
+                      <ExpandLessIcon className="h-4 w-4" />
                     ) : (
-                      <ExpandMoreIcon />
+                      <ExpandMoreIcon className="h-4 w-4" />
                     )}
-                  </IconButton>
-                </Box>
-
-                <Collapse in={expandedSections.labs}>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {expandedSections.labs && (
                   <LabResultsDisplay labResults={note.laborResults} />
-                </Collapse>
+                )}
               </CardContent>
             </Card>
           )}
 
           {/* Recommendations */}
           {note.recommendations && note.recommendations.length > 0 && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="h6">Recommendations</Typography>
-                  <IconButton
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Recommendations</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => toggleSection('recommendations')}
-                    size="small"
+                    className="p-1 h-8 w-8"
                   >
                     {expandedSections.recommendations ? (
-                      <ExpandLessIcon />
+                      <ExpandLessIcon className="h-4 w-4" />
                     ) : (
-                      <ExpandMoreIcon />
+                      <ExpandMoreIcon className="h-4 w-4" />
                     )}
-                  </IconButton>
-                </Box>
-
-                <Collapse in={expandedSections.recommendations}>
-                  <List>
-                    {note.recommendations.map((recommendation, index) => (
-                      <ListItem key={index}>
-                        <ListItemText
-                          primary={recommendation}
-                          primaryTypographyProps={{ variant: 'body1' }}
-                        />
-                      </ListItem>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {expandedSections.recommendations && (
+                  <ul className="space-y-2">
+                    {note.recommendations.map((recommendation: string, index: number) => (
+                      <li key={index} className="flex items-start">
+                        <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mt-2 mr-2"></span>
+                        <span className="text-gray-700 dark:text-gray-300">{recommendation}</span>
+                      </li>
                     ))}
-                  </List>
-                </Collapse>
+                  </ul>
+                )}
               </CardContent>
             </Card>
           )}
-        </Grid>
+        </div>
 
         {/* Sidebar */}
-        <Grid item xs={12} md={4}>
+        <div className="space-y-6">
           {/* Note Metadata */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Note Information
-              </Typography>
+          <Card>
+            <CardHeader>
+              <CardTitle>Note Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start gap-3">
+                <CalendarIcon className="h-5 w-5 text-gray-500 mt-0.5" />
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Created</p>
+                  <p className="font-medium">{formatDate(note.createdAt)}</p>
+                </div>
+              </div>
 
-              <Stack spacing={2}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Created
-                    </Typography>
-                    <Typography variant="body1">
-                      {formatDate(note.createdAt)}
-                    </Typography>
-                  </Box>
-                </Box>
+              {note.updatedAt !== note.createdAt && (
+                <div className="flex items-start gap-3">
+                  <CalendarIcon className="h-5 w-5 text-gray-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated</p>
+                    <p className="font-medium">{formatDate(note.updatedAt)}</p>
+                  </div>
+                </div>
+              )}
 
-                {note.updatedAt !== note.createdAt && (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Last Updated
-                      </Typography>
-                      <Typography variant="body1">
-                        {formatDate(note.updatedAt)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                )}
+              {note.followUpRequired && note.followUpDate && (
+                <div className="flex items-start gap-3">
+                  <ScheduleIcon className="h-5 w-5 text-amber-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Follow-up Date</p>
+                    <p className="font-medium text-amber-600 dark:text-amber-400">
+                      {formatDate(note.followUpDate)}
+                    </p>
+                  </div>
+                </div>
+              )}
 
-                {note.followUpRequired && note.followUpDate && (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <ScheduleIcon sx={{ mr: 1, color: 'warning.main' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Follow-up Date
-                      </Typography>
-                      <Typography variant="body1" color="warning.main">
-                        {formatDate(note.followUpDate)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                )}
-
-                {note.tags && note.tags.length > 0 && (
-                  <Box>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 1 }}
-                    >
-                      Tags
-                    </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
-                      {note.tags.map((tag, index) => (
-                        <Chip
-                          key={index}
-                          label={tag}
-                          size="small"
-                          variant="outlined"
-                        />
-                      ))}
-                    </Stack>
-                  </Box>
-                )}
-              </Stack>
+              {note.tags && note.tags.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Tags</p>
+                  <div className="flex flex-wrap gap-1">
+                    {note.tags.map((tag: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Attachments */}
           {note.attachments && note.attachments.length > 0 && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 2,
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{ display: 'flex', alignItems: 'center' }}
-                  >
-                    <AttachFileIcon sx={{ mr: 1 }} />
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="flex items-center gap-2">
+                    <AttachFileIcon className="h-5 w-5" />
                     Attachments ({note.attachments.length})
-                  </Typography>
-                  <IconButton
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => toggleSection('attachments')}
-                    size="small"
+                    className="p-1 h-8 w-8"
                   >
                     {expandedSections.attachments ? (
-                      <ExpandLessIcon />
+                      <ExpandLessIcon className="h-4 w-4" />
                     ) : (
-                      <ExpandMoreIcon />
+                      <ExpandMoreIcon className="h-4 w-4" />
                     )}
-                  </IconButton>
-                </Box>
-
-                <Collapse in={expandedSections.attachments}>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {expandedSections.attachments && (
                   <AttachmentsDisplay
                     attachments={note.attachments}
                     onDownload={handleDownloadAttachment}
                     onDelete={canEdit ? handleDeleteAttachment : undefined}
                   />
-                </Collapse>
+                )}
               </CardContent>
             </Card>
           )}
 
           {/* Audit Trail */}
           <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 2,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ display: 'flex', alignItems: 'center' }}
-                >
-                  <HistoryIcon sx={{ mr: 1 }} />
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5" />
                   Audit Trail
-                </Typography>
-                <IconButton
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setShowAuditTrail(!showAuditTrail)}
-                  size="small"
+                  className="p-1 h-8 w-8"
                 >
-                  {showAuditTrail ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                </IconButton>
-              </Box>
-
-              <Collapse in={showAuditTrail}>
-                <AuditTrailDisplay note={note} />
-              </Collapse>
+                  {showAuditTrail ? <ExpandLessIcon className="h-4 w-4" /> : <ExpandMoreIcon className="h-4 w-4" />}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {showAuditTrail && <AuditTrailDisplay note={note} />}
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </div>
+      </div>
 
       {/* Edit Modal */}
-      <Dialog
-        open={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        maxWidth="lg"
-        fullWidth
-        fullScreen={isMobile}
-      >
-        <DialogTitle>Edit Clinical Note</DialogTitle>
-        <DialogContent>
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Clinical Note</DialogTitle>
+          </DialogHeader>
           <ClinicalNoteForm
             noteId={note._id}
-            onSave={() => {
-              setIsEditModalOpen(false);
-              refetch();
-              setSnackbar({
-                open: true,
-                message: 'Note updated successfully',
-                severity: 'success',
-              });
-            }}
+            onSuccess={() => setIsEditModalOpen(false)}
             onCancel={() => setIsEditModalOpen(false)}
           />
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-      >
-        <DialogTitle>Delete Clinical Note</DialogTitle>
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
-          <Typography>
-            Are you sure you want to delete this clinical note? This action
-            cannot be undone.
-          </Typography>
+          <DialogHeader>
+            <DialogTitle>Delete Clinical Note</DialogTitle>
+          </DialogHeader>
+          <p className="text-gray-600 dark:text-gray-400">
+            Are you sure you want to delete this clinical note? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={loading.deleteNote}
+            >
+              {loading.deleteNote ? 'Deleting...' : 'Delete'}
+            </Button>
+          </div>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleDelete}
-            color="error"
-            variant="contained"
-            disabled={loading.deleteNote}
-          >
-            {loading.deleteNote ? <CircularProgress size={20} /> : 'Delete'}
-          </Button>
-        </DialogActions>
       </Dialog>
-
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-      >
-        <Alert
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+    </div>
   );
 };
 
 // Helper Components
-
 interface VitalSignsDisplayProps {
   vitalSigns: VitalSigns;
 }
 
-const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
-  vitalSigns,
-}) => {
+const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({ vitalSigns }) => {
   return (
-    <Grid container spacing={2}>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       {vitalSigns.bloodPressure && (
-        <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              Blood Pressure
-            </Typography>
-            <Typography variant="h6">
-              {vitalSigns.bloodPressure.systolic}/
-              {vitalSigns.bloodPressure.diastolic}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              mmHg
-            </Typography>
-          </Paper>
-        </Grid>
+        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Blood Pressure</p>
+          <p className="font-medium">
+            {vitalSigns.bloodPressure.systolic}/{vitalSigns.bloodPressure.diastolic}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">mmHg</p>
+        </div>
       )}
 
       {vitalSigns.heartRate && (
-        <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              Heart Rate
-            </Typography>
-            <Typography variant="h6">{vitalSigns.heartRate}</Typography>
-            <Typography variant="caption" color="text.secondary">
-              bpm
-            </Typography>
-          </Paper>
-        </Grid>
+        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Heart Rate</p>
+          <p className="font-medium">{vitalSigns.heartRate}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">bpm</p>
+        </div>
       )}
 
       {vitalSigns.temperature && (
-        <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              Temperature
-            </Typography>
-            <Typography variant="h6">{vitalSigns.temperature}°C</Typography>
-          </Paper>
-        </Grid>
+        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Temperature</p>
+          <p className="font-medium">{vitalSigns.temperature}°C</p>
+        </div>
       )}
 
       {vitalSigns.weight && (
-        <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              Weight
-            </Typography>
-            <Typography variant="h6">{vitalSigns.weight} kg</Typography>
-          </Paper>
-        </Grid>
+        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Weight</p>
+          <p className="font-medium">{vitalSigns.weight} kg</p>
+        </div>
       )}
 
       {vitalSigns.height && (
-        <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              Height
-            </Typography>
-            <Typography variant="h6">{vitalSigns.height} cm</Typography>
-          </Paper>
-        </Grid>
+        <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Height</p>
+          <p className="font-medium">{vitalSigns.height} cm</p>
+        </div>
       )}
-    </Grid>
+    </div>
   );
 };
 
@@ -977,62 +830,42 @@ interface LabResultsDisplayProps {
   labResults: LabResult[];
 }
 
-const LabResultsDisplay: React.FC<LabResultsDisplayProps> = ({
-  labResults,
-}) => {
+const LabResultsDisplay: React.FC<LabResultsDisplayProps> = ({ labResults }) => {
   const getStatusColor = (status: LabResult['status']) => {
     switch (status) {
       case 'normal':
-        return 'success';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
       case 'abnormal':
-        return 'warning';
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400';
       case 'critical':
-        return 'error';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
       default:
-        return 'default';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
     }
   };
 
   return (
-    <List>
+    <div className="space-y-3">
       {labResults.map((result, index) => (
-        <ListItem key={index} divider={index < labResults.length - 1}>
-          <ListItemText
-            primary={
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <Typography variant="body1" fontWeight={500}>
-                  {result.test}
-                </Typography>
-                <Chip
-                  label={result.status}
-                  size="small"
-                  color={getStatusColor(result.status) as any}
-                />
-              </Box>
-            }
-            secondary={
-              <Box sx={{ mt: 1 }}>
-                <Typography variant="body2">
-                  Result: <strong>{result.result}</strong>
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Normal Range: {result.normalRange}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Date: {format(parseISO(result.date), 'MMM dd, yyyy')}
-                </Typography>
-              </Box>
-            }
-          />
-        </ListItem>
+        <div key={index} className="border-b border-gray-200 dark:border-gray-700 pb-3 last:border-0 last:pb-0">
+          <div className="flex justify-between items-start mb-1">
+            <h4 className="font-medium">{result.test}</h4>
+            <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(result.status)}`}>
+              {result.status}
+            </span>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+            Result: <span className="font-medium">{result.result}</span>
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Normal Range: {result.normalRange}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Date: {format(parseISO(result.date), 'MMM dd, yyyy')}
+          </p>
+        </div>
       ))}
-    </List>
+    </div>
   );
 };
 
@@ -1045,7 +878,7 @@ interface AttachmentsDisplayProps {
 const AttachmentsDisplay: React.FC<AttachmentsDisplayProps> = ({
   attachments,
   onDownload,
-  onDelete,
+  onDelete
 }) => {
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -1056,61 +889,48 @@ const AttachmentsDisplay: React.FC<AttachmentsDisplayProps> = ({
   };
 
   return (
-    <List>
-      {attachments.map((attachment, index) => (
-        <ListItem
-          key={attachment._id}
-          divider={index < attachments.length - 1}
-          secondaryAction={
-            <Stack direction="row" spacing={1}>
-              <Tooltip title="Download">
-                <IconButton
-                  edge="end"
-                  onClick={() => onDownload(attachment)}
-                  size="small"
-                >
-                  <DownloadIcon />
-                </IconButton>
-              </Tooltip>
-              {onDelete && (
-                <Tooltip title="Delete">
-                  <IconButton
-                    edge="end"
-                    onClick={() => onDelete(attachment)}
-                    size="small"
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Stack>
-          }
-        >
-          <ListItemIcon>
-            <AttachFileIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary={attachment.originalName}
-            secondary={
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  {formatFileSize(attachment.size)} • {attachment.mimeType}
-                </Typography>
-                <br />
-                <Typography variant="caption" color="text.secondary">
-                  Uploaded:{' '}
-                  {format(
-                    parseISO(attachment.uploadedAt),
-                    'MMM dd, yyyy HH:mm'
-                  )}
-                </Typography>
-              </Box>
-            }
-          />
-        </ListItem>
+    <div className="space-y-3">
+      {attachments.map((attachment) => (
+        <div key={attachment._id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+          <div className="flex items-center gap-3">
+            <AttachFileIcon className="h-5 w-5 text-gray-500" />
+            <div>
+              <p className="font-medium text-sm">{attachment.originalName}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {formatFileSize(attachment.size)} • {attachment.mimeType}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Uploaded: {format(parseISO(attachment.uploadedAt), 'MMM dd, yyyy HH:mm')}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDownload(attachment)}
+              className="p-1 h-8 w-8"
+              title="Download"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(attachment)}
+                className="p-1 h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                title="Delete"
+              >
+                <Delete className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
       ))}
-    </List>
+    </div>
   );
 };
 
@@ -1147,35 +967,29 @@ const AuditTrailDisplay: React.FC<AuditTrailDisplayProps> = ({ note }) => {
   }
 
   return (
-    <List>
+    <div className="space-y-3">
       {auditEvents.map((event, index) => (
-        <ListItem key={index} divider={index < auditEvents.length - 1}>
-          <ListItemIcon>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-              <HistoryIcon fontSize="small" />
-            </Avatar>
-          </ListItemIcon>
-          <ListItemText
-            primary={
-              <Typography variant="body2" fontWeight={500}>
-                {event.action}
-              </Typography>
-            }
-            secondary={
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  {format(parseISO(event.timestamp), 'MMM dd, yyyy HH:mm')}
-                </Typography>
-                <br />
-                <Typography variant="caption" color="text.secondary">
-                  {event.details}
-                </Typography>
-              </Box>
-            }
-          />
-        </ListItem>
+        <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+          <div className="p-1 bg-blue-100 dark:bg-blue-900/20 rounded-full">
+            <History className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="flex-1">
+            <div className="flex justify-between items-start mb-1">
+              <h4 className="font-medium">{event.action}</h4>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {format(parseISO(event.timestamp), 'MMM dd, yyyy HH:mm')}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{event.details}</p>
+            {event.user && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                By: {event.user}
+              </p>
+            )}
+          </div>
+        </div>
       ))}
-    </List>
+    </div>
   );
 };
 

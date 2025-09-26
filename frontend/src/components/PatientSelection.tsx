@@ -1,56 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Stack,
-  Alert,
-  Autocomplete,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Chip,
-  Avatar,
-  ListItemAvatar,
-  ListItemText,
-  ListItemButton,
-  Divider,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
-  Paper,
-  IconButton,
-  Zoom,
-  Collapse,
-  InputAdornment,
-  List,
-  Slide,
-} from '@mui/material';
-
-import SearchIcon from '@mui/icons-material/Search';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import PersonIcon from '@mui/icons-material/Person';
-import PhoneIcon from '@mui/icons-material/Phone';
-import EmailIcon from '@mui/icons-material/Email';
-import LocationIcon from '@mui/icons-material/LocationOn';
-import WarningIcon from '@mui/icons-material/Warning';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CloseIcon from '@mui/icons-material/Close';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-
-import { useForm, Controller } from 'react-hook-form';
-
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Spinner, Alert, Avatar, Separator } from '@/components/ui/button';
 // Custom debounce implementation to avoid lodash dependency
 const debounce = (
   func: (query: string) => void,
@@ -62,19 +10,6 @@ const debounce = (
     timeout = setTimeout(() => func(query), wait);
   };
 };
-
-import { useSearchPatients, useCreatePatient } from '../queries/usePatients';
-import { useMTRStore } from '../stores/mtrStore';
-import { useResponsive } from '../hooks/useResponsive';
-import type {
-  Patient,
-  CreatePatientData,
-  NigerianState,
-  BloodGroup,
-  Genotype,
-  Gender,
-  MaritalStatus,
-} from '../types/patientManagement';
 
 // Constants
 const NIGERIAN_STATES: NigerianState[] = [
@@ -116,7 +51,6 @@ const NIGERIAN_STATES: NigerianState[] = [
   'Yobe',
   'Zamfara',
 ];
-
 const BLOOD_GROUPS: BloodGroup[] = [
   'A+',
   'A-',
@@ -135,21 +69,18 @@ const MARITAL_STATUSES: MaritalStatus[] = [
   'divorced',
   'widowed',
 ];
-
 // Interfaces
 interface PatientSelectionProps {
   onPatientSelect: (patient: Patient) => void;
   selectedPatient?: Patient | null;
   onNext?: () => void;
 }
-
 // interface PatientSearchFilters {
 //   search: string;
 //   hasActiveMTR?: boolean;
 //   lastReviewDate?: Date;
 //   medicationCount?: number;
 // }
-
 interface NewPatientFormData {
   firstName: string;
   lastName: string;
@@ -167,38 +98,32 @@ interface NewPatientFormData {
   genotype?: Genotype;
   weightKg?: number;
 }
-
-const PatientSelection: React.FC<PatientSelectionProps> = ({
+const PatientSelection: React.FC<PatientSelectionProps> = ({ 
   onPatientSelect,
   selectedPatient,
-  onNext,
+  onNext
 }) => {
   // Responsive hooks
   const { isMobile, shouldUseCardLayout, getSpacing, getDialogMaxWidth } =
     useResponsive();
-
   // State
   const [searchQuery, setSearchQuery] = useState('');
-  // const [filters, setFilters] = useState({
-  //   search: '',
+  // const [filters, setFilters] = useState({ 
+  //   search: ''}
   // });
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
   const [recentPatients, setRecentPatients] = useState<Patient[]>([]);
   const [showRecentPatients, setShowRecentPatients] = useState(true);
-
   // Store
   const { loading, errors, setLoading, setError, currentReview, createReview } =
     useMTRStore();
-
   // Queries
   const {
     data: searchResults,
     isLoading: searchLoading,
     error: searchError,
   } = useSearchPatients(searchQuery);
-
   const createPatientMutation = useCreatePatient();
-
   // Form for new patient
   const {
     control: newPatientControl,
@@ -207,7 +132,7 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
     setValue: setNewPatientValue,
     formState: { errors: newPatientErrors },
     reset: resetNewPatientForm,
-  } = useForm<NewPatientFormData>({
+  } = useForm<NewPatientFormData>({ 
     defaultValues: {
       firstName: '',
       lastName: '',
@@ -221,13 +146,10 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
       lga: '',
       bloodGroup: undefined,
       genotype: undefined,
-      weightKg: undefined,
-    },
-  });
-
+      weightKg: undefined}
+    }
   const watchedDob = watchNewPatient('dob');
   const watchedAge = watchNewPatient('age');
-
   // Debounced search
   const debouncedSearchFn = useMemo(
     () =>
@@ -238,19 +160,16 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
       }, 300),
     []
   );
-
   const debouncedSearch = useCallback(
     (query: string) => {
       debouncedSearchFn(query);
     },
     [debouncedSearchFn]
   );
-
   // Effects
   useEffect(() => {
     debouncedSearch(searchQuery);
   }, [searchQuery, debouncedSearch]);
-
   // Auto-calculate age when DOB changes
   useEffect(() => {
     if (watchedDob && !watchedAge) {
@@ -258,20 +177,17 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
       const birthDate = new Date(watchedDob);
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
-
       if (
         monthDiff < 0 ||
         (monthDiff === 0 && today.getDate() < birthDate.getDate())
       ) {
         age--;
       }
-
       if (age >= 0 && age <= 150) {
         setNewPatientValue('age', age);
       }
     }
   }, [watchedDob, watchedAge, setNewPatientValue]);
-
   // Load recent patients on mount
   useEffect(() => {
     // Note: Recent patients functionality disabled as we've moved away from localStorage
@@ -285,27 +201,22 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
         console.error('Failed to load recent patients:', error);
       }
     };
-
     loadRecentPatients();
   }, []);
-
   // Validation functions
   const validateNigerianPhone = (phone: string): boolean => {
     const phoneRegex = /^\+234[789]\d{9}$/;
     return phoneRegex.test(phone);
   };
-
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
-
   // Handlers
   const handlePatientSelect = async (patient: Patient) => {
     try {
       setLoading('selectPatient', true);
       setError('selectPatient', null);
-
       // Add to recent patients
       const updatedRecent = [
         patient,
@@ -314,18 +225,14 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
       setRecentPatients(updatedRecent);
       // Note: localStorage removed for security - recent patients will not persist between sessions
       // In production, this could be implemented server-side for better security
-
       // First, select the patient
       onPatientSelect(patient);
-
       // Create MTR session if none exists
       if (!currentReview) {
         console.log('Creating MTR review for patient:', patient._id);
         await createReview(patient._id);
-
         // Add a small delay to ensure the review is properly set in the store
         await new Promise((resolve) => setTimeout(resolve, 500));
-
         // Verify the review was created successfully
         const { currentReview: newReview } = useMTRStore.getState();
         if (!newReview?._id) {
@@ -334,7 +241,6 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
           );
           throw new Error('Failed to create MTR review - please try again');
         }
-
         console.log('MTR review created successfully with ID:', newReview._id);
       }
     } catch (error) {
@@ -347,12 +253,10 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
       setLoading('selectPatient', false);
     }
   };
-
   const handleNewPatientSubmit = async (data: NewPatientFormData) => {
     try {
       setLoading('createNewPatient', true);
       setError('createNewPatient', null);
-
       const patientData: CreatePatientData = {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -370,10 +274,8 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
         genotype: data.genotype,
         weightKg: data.weightKg,
       };
-
       const result = await createPatientMutation.mutateAsync(patientData);
       const newPatient = result?.data?.patient;
-
       if (newPatient) {
         await handlePatientSelect(newPatient);
         setShowNewPatientModal(false);
@@ -388,24 +290,19 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
       setLoading('createNewPatient', false);
     }
   };
-
   const handleRefreshSearch = () => {
     setSearchQuery('');
     // setFilters({ search: '' });
   };
-
   // Enhanced debug logging
-  React.useEffect(() => {
     if (searchQuery.length >= 2) {
       console.log('Search Query Debug:', {
         query: searchQuery,
         isLoading: searchLoading,
         error: searchError,
-        rawResults: searchResults,
-      });
+        rawResults: searchResults}
     }
   }, [searchQuery, searchLoading, searchError, searchResults]);
-
   // Get search results with better error handling
   const patients = useMemo(() => {
     // Debug the search results structure
@@ -414,93 +311,75 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
         hasData: !!searchResults.data,
         hasResults: !!searchResults?.data?.results,
         resultsLength: searchResults?.data?.results?.length || 0,
-        searchResultsKeys: Object.keys(searchResults || {}),
-      });
+        searchResultsKeys: Object.keys(searchResults || {})}
     }
-
     return searchResults?.data?.results || [];
   }, [searchResults]);
-
   const hasSearchResults = searchQuery.length >= 2 && patients.length > 0;
   const showNoResults =
     searchQuery.length >= 2 && patients.length === 0 && !searchLoading;
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: getSpacing(1, 2, 3) }}>
+      <div className="">
         {/* Header */}
-        <Box sx={{ mb: getSpacing(2, 3, 4) }}>
-          <Typography
+        <div className="">
+          <div
             variant={isMobile ? 'h6' : 'h5'}
-            sx={{ fontWeight: 600, mb: 1 }}
+            className=""
           >
             Patient Selection
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Search for an existing patient or create a new patient record to
             begin the MTR process
-          </Typography>
-        </Box>
-
+          </div>
+        </div>
         {/* Error Display */}
         {(errors.selectPatient || errors.createNewPatient || searchError) && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" className="">
             {errors.selectPatient ||
               errors.createNewPatient ||
               'Search failed. Please try again.'}
           </Alert>
         )}
-
         {/* Selected Patient Display */}
         {selectedPatient && (
           <Zoom in={true}>
             <Card
-              sx={{
-                mb: getSpacing(2, 3, 3),
-                bgcolor: 'success.50',
-                border: 1,
-                borderColor: 'success.200',
-                borderRadius: isMobile ? 2 : 1,
-              }}
+              className=""
             >
-              <CardContent sx={{ p: getSpacing(2, 2, 3) }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    flexDirection: isMobile ? 'column' : 'row',
-                    textAlign: isMobile ? 'center' : 'left',
-                  }}
+              <CardContent className="">
+                <div
+                  className=""
                 >
                   <CheckCircleIcon
                     color="success"
-                    sx={{ fontSize: isMobile ? 32 : 24 }}
+                    className=""
                   />
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography
+                  <div className="">
+                    <div
                       variant={isMobile ? 'subtitle1' : 'h6'}
                       color="success.main"
                     >
                       Selected Patient
-                    </Typography>
-                    <Typography
+                    </div>
+                    <div
                       variant={isMobile ? 'body2' : 'body1'}
-                      sx={{ fontWeight: 500 }}
+                      className=""
                     >
                       {selectedPatient.firstName} {selectedPatient.lastName}
                       {selectedPatient.otherNames &&
                         ` ${selectedPatient.otherNames}`}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       MRN: {selectedPatient.mrn} • Age:{' '}
                       {selectedPatient.age || 'N/A'}
                       {selectedPatient.phone && ` • ${selectedPatient.phone}`}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                   {onNext && (
                     <Button
-                      variant="contained"
+                      
                       color="success"
                       onClick={async () => {
                         // Ensure patient is selected in store before proceeding
@@ -509,49 +388,35 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                           // Add a small delay to ensure the store is updated
                           await new Promise((resolve) =>
                             setTimeout(resolve, 100)
-                          );
+                          );}
                         }
                         onNext();
-                      }}
-                      sx={{
-                        minWidth: isMobile ? '100%' : 120,
-                        mt: isMobile ? 2 : 0,
-                      }}
+                      className=""
                       size={isMobile ? 'large' : 'medium'}
                     >
                       Continue
                     </Button>
                   )}
-                </Box>
+                </div>
               </CardContent>
             </Card>
           </Zoom>
         )}
-
         {/* Search Section */}
         <Card
-          sx={{
-            mb: getSpacing(2, 3, 3),
-            borderRadius: isMobile ? 2 : 1,
-          }}
+          className=""
         >
-          <CardContent sx={{ p: getSpacing(2, 2, 3) }}>
-            <Typography
+          <CardContent className="">
+            <div
               variant={isMobile ? 'subtitle1' : 'h6'}
-              sx={{ mb: getSpacing(1, 2, 2) }}
+              className=""
             >
               Search Patients
-            </Typography>
-
-            <Box
-              sx={{
-                display: 'flex',
-                gap: getSpacing(1, 2, 2),
-                mb: getSpacing(1, 2, 2),
-                flexDirection: isMobile ? 'column' : 'row',
-              }}
+            </div>
+            <div
+              className=""
             >
-              <TextField
+              <Input
                 fullWidth
                 placeholder="Search by name, MRN, or phone number..."
                 value={searchQuery}
@@ -564,9 +429,8 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                     </InputAdornment>
                   ),
                   endAdornment: searchQuery && (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
+                    <InputAdornment position=""><IconButton
+                        size="small"}
                         onClick={handleRefreshSearch}
                         edge="end"
                       >
@@ -574,85 +438,57 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                       </IconButton>
                     </InputAdornment>
                   ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: isMobile ? 2 : 1,
-                  },
-                }}
-              />
+                className="" />
               <Button
-                variant="outlined"
+                
                 startIcon={<PersonAddIcon />}
                 onClick={() => setShowNewPatientModal(true)}
-                sx={{
-                  minWidth: isMobile ? '100%' : 140,
-                  borderRadius: isMobile ? 2 : 1,
-                }}
+                className=""
                 size={isMobile ? 'large' : 'medium'}
               >
                 New Patient
               </Button>
-            </Box>
-
+            </div>
             {/* Search Results */}
             {searchLoading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-                <CircularProgress size={24} />
-              </Box>
+              <div className="">
+                <Spinner size={24} />
+              </div>
             )}
-
             {hasSearchResults && (
-              <Paper
-                variant="outlined"
-                sx={{
-                  maxHeight: isMobile ? 300 : 400,
-                  overflow: 'auto',
-                  borderRadius: isMobile ? 2 : 1,
-                }}
+              <div
+                
+                className=""
               >
                 {shouldUseCardLayout ? (
                   // Mobile card layout
-                  <Box sx={{ p: 1 }}>
+                  <div className="">
                     {patients.map((patient: Patient) => (
                       <Card
                         key={patient._id}
-                        sx={{
-                          mb: 1,
-                          cursor: 'pointer',
-                          '&:hover': { bgcolor: 'action.hover' },
+                        className=""
                           borderRadius: 2,
-                        }}
                         onClick={() => handlePatientSelect(patient)}
                       >
-                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'flex-start',
-                              gap: 2,
-                            }}
+                        <CardContent className="">
+                          <div
+                            className=""
                           >
-                            <Avatar sx={{ bgcolor: 'primary.main' }}>
+                            <Avatar className="">
                               <PersonIcon />
                             </Avatar>
-                            <Box sx={{ flex: 1 }}>
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 1,
-                                  mb: 0.5,
-                                }}
+                            <div className="">
+                              <div
+                                className=""
                               >
-                                <Typography
-                                  variant="subtitle2"
-                                  sx={{ fontWeight: 600 }}
+                                <div
+                                  
+                                  className=""
                                 >
                                   {patient.firstName} {patient.lastName}
                                   {patient.otherNames &&
                                     ` ${patient.otherNames}`}
-                                </Typography>
+                                </div>
                                 {patient.hasActiveDTP && (
                                   <Chip
                                     label="Active DTP"
@@ -661,11 +497,11 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                                     icon={<WarningIcon />}
                                   />
                                 )}
-                              </Box>
-                              <Typography
-                                variant="body2"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
-                                sx={{ mb: 1 }}
+                                className=""
                               >
                                 MRN: {patient.mrn} • Age: {patient.age || 'N/A'}
                                 {patient.gender &&
@@ -673,112 +509,85 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                                     patient.gender.charAt(0).toUpperCase() +
                                     patient.gender.slice(1)
                                   }`}
-                              </Typography>
+                              </div>
                               {patient.phone && (
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                    mb: 0.5,
-                                  }}
+                                <div
+                                  className=""
                                 >
                                   <PhoneIcon
-                                    sx={{
-                                      fontSize: 16,
-                                      color: 'text.secondary',
-                                    }}
+                                    className=""
                                   />
-                                  <Typography
-                                    variant="caption"
+                                  <div
+                                    
                                     color="text.secondary"
                                   >
                                     {patient.phone}
-                                  </Typography>
-                                </Box>
+                                  </div>
+                                </div>
                               )}
                               {patient.email && (
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                    mb: 0.5,
-                                  }}
+                                <div
+                                  className=""
                                 >
                                   <EmailIcon
-                                    sx={{
-                                      fontSize: 16,
-                                      color: 'text.secondary',
-                                    }}
+                                    className=""
                                   />
-                                  <Typography
-                                    variant="caption"
+                                  <div
+                                    
                                     color="text.secondary"
                                   >
                                     {patient.email}
-                                  </Typography>
-                                </Box>
+                                  </div>
+                                </div>
                               )}
                               {patient.address && (
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                  }}
+                                <div
+                                  className=""
                                 >
                                   <LocationIcon
-                                    sx={{
-                                      fontSize: 16,
-                                      color: 'text.secondary',
-                                    }}
+                                    className=""
                                   />
-                                  <Typography
-                                    variant="caption"
+                                  <div
+                                    
                                     color="text.secondary"
                                   >
                                     {patient.address}
-                                  </Typography>
-                                </Box>
+                                  </div>
+                                </div>
                               )}
-                            </Box>
-                          </Box>
+                            </div>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
-                  </Box>
+                  </div>
                 ) : (
                   // Desktop list layout
                   <List>
                     {patients.map((patient: Patient, index: number) => (
                       <React.Fragment key={patient._id}>
-                        <ListItemButton
+                        <Button
                           onClick={() => handlePatientSelect(patient)}
                           disabled={loading.selectPatient}
                         >
-                          <ListItemAvatar>
+                          <divAvatar>
                             <Avatar>
                               <PersonIcon />
                             </Avatar>
                           </ListItemAvatar>
-                          <ListItemText
+                          <div
                             primary={
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 1,
-                                }}
+                              <div
+                                className=""
                               >
-                                <Typography
-                                  variant="subtitle1"
-                                  sx={{ fontWeight: 500 }}
-                                >
+                                <div
+                                  
+                                  className=""
+                                >}
                                   {patient.firstName} {patient.lastName}
                                   {patient.otherNames &&
                                     ` ${patient.otherNames}`}
-                                </Typography>
+                                </div>
                                 {patient.hasActiveDTP && (
                                   <Chip
                                     label="Active DTP"
@@ -787,14 +596,14 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                                     icon={<WarningIcon />}
                                   />
                                 )}
-                              </Box>
+                              </div>
                             }
                             secondary={
-                              <Box sx={{ mt: 0.5 }}>
-                                <Typography
-                                  variant="body2"
+                              <div className="">
+                                <div
+                                  
                                   color="text.secondary"
-                                >
+                                >}
                                   MRN: {patient.mrn} • Age:{' '}
                                   {patient.age || 'N/A'}
                                   {patient.gender &&
@@ -802,86 +611,66 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                                       patient.gender.charAt(0).toUpperCase() +
                                       patient.gender.slice(1)
                                     }`}
-                                </Typography>
+                                </div>
                                 {patient.phone && (
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 0.5,
-                                      mt: 0.5,
-                                    }}
+                                  <div
+                                    className=""
                                   >
-                                    <PhoneIcon sx={{ fontSize: 14 }} />
-                                    <Typography variant="caption">
+                                    <PhoneIcon className="" />
+                                    <div >
                                       {patient.phone}
-                                    </Typography>
-                                  </Box>
+                                    </div>
+                                  </div>
                                 )}
                                 {patient.email && (
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 0.5,
-                                    }}
+                                  <div
+                                    className=""
                                   >
-                                    <EmailIcon sx={{ fontSize: 14 }} />
-                                    <Typography variant="caption">
+                                    <EmailIcon className="" />
+                                    <div >
                                       {patient.email}
-                                    </Typography>
-                                  </Box>
+                                    </div>
+                                  </div>
                                 )}
                                 {patient.address && (
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 0.5,
-                                    }}
+                                  <div
+                                    className=""
                                   >
-                                    <LocationIcon sx={{ fontSize: 14 }} />
-                                    <Typography variant="caption">
+                                    <LocationIcon className="" />
+                                    <div >
                                       {patient.address}
-                                    </Typography>
-                                  </Box>
+                                    </div>
+                                  </div>
                                 )}
-                              </Box>
+                              </div>
                             }
                           />
                         </ListItemButton>
-                        {index < patients.length - 1 && <Divider />}
+                        {index < patients.length - 1 && <Separator />}
                       </React.Fragment>
                     ))}
                   </List>
                 )}
-              </Paper>
+              </div>
             )}
-
             {showNoResults && (
-              <Alert severity="info" sx={{ mt: 2 }}>
+              <Alert severity="info" className="">
                 No patients found matching "{searchQuery}". Try a different
                 search term or create a new patient.
               </Alert>
             )}
           </CardContent>
         </Card>
-
         {/* Recent Patients */}
         {recentPatients.length > 0 && !selectedPatient && (
-          <Card sx={{ borderRadius: isMobile ? 2 : 1 }}>
-            <CardContent sx={{ p: getSpacing(2, 2, 3) }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: getSpacing(1, 2, 2),
-                }}
+          <Card className="">
+            <CardContent className="">
+              <div
+                className=""
               >
-                <Typography variant={isMobile ? 'subtitle1' : 'h6'}>
+                <div variant={isMobile ? 'subtitle1' : 'h6'}>
                   Recent Patients
-                </Typography>
+                </div>
                 {isMobile && (
                   <IconButton
                     size="small"
@@ -894,18 +683,14 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                     )}
                   </IconButton>
                 )}
-              </Box>
-
+              </div>
               <Collapse in={!isMobile || showRecentPatients}>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                <div className="">
                   {recentPatients.map((patient) => (
-                    <Box sx={{ width: '100%' }} key={patient._id}>
-                      <Paper
-                        variant="outlined"
-                        sx={{
-                          p: getSpacing(1.5, 2, 2),
-                          cursor: 'pointer',
-                          '&:hover': { bgcolor: 'action.hover' },
+                    <div className="" key={patient._id}>
+                      <div
+                        
+                        className=""
                           transition: 'all 0.2s',
                           borderRadius: isMobile ? 2 : 1,
                           '&:active': isMobile
@@ -914,48 +699,41 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                                 bgcolor: 'action.selected',
                               }
                             : {},
-                        }}
                         onClick={() => handlePatientSelect(patient)}
                       >
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            mb: 1,
-                          }}
+                        <div
+                          className=""
                         >
-                          <Avatar sx={{ width: 32, height: 32 }}>
+                          <Avatar className="">
                             <PersonIcon />
                           </Avatar>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: 500 }}
+                          <div
+                            
+                            className=""
                           >
                             {patient.firstName} {patient.lastName}
-                          </Typography>
-                        </Box>
-                        <Typography variant="caption" color="text.secondary">
+                          </div>
+                        </div>
+                        <div  color="text.secondary">
                           MRN: {patient.mrn}
-                        </Typography>
+                        </div>
                         {patient.phone && (
-                          <Typography
-                            variant="caption"
+                          <div
+                            
                             color="text.secondary"
-                            sx={{ display: 'block' }}
+                            className=""
                           >
                             {patient.phone}
-                          </Typography>
+                          </div>
                         )}
-                      </Paper>
-                    </Box>
+                      </div>
+                    </div>
                   ))}
-                </Box>
+                </div>
               </Collapse>
             </CardContent>
           </Card>
         )}
-
         {/* New Patient Modal */}
         <Dialog
           open={showNewPatientModal}
@@ -964,41 +742,33 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
           fullWidth
           fullScreen={isMobile}
           TransitionComponent={isMobile ? Slide : undefined}
-          slotProps={{
-            transition: isMobile ? { direction: 'up' } : undefined,
-          }}
-        >
+          slotProps={{}
+            transition: isMobile ? { direction: 'up' } : undefined,>
           <DialogTitle>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
+            <div
+              className=""
             >
-              <Typography variant="h6">Create New Patient</Typography>
+              <div >Create New Patient</div>
               <IconButton onClick={() => setShowNewPatientModal(false)}>
                 <CloseIcon />
               </IconButton>
-            </Box>
+            </div>
           </DialogTitle>
-
           <form onSubmit={handleNewPatientFormSubmit(handleNewPatientSubmit)}>
             <DialogContent>
-              <Stack>
+              <div>
                 {/* Basic Information */}
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 1 }}>
+                <div  className="">
                   Basic Information
-                </Typography>
-
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                  <Box sx={{ width: '100%' }}>
+                </div>
+                <div className="">
+                  <div className="">
                     <Controller
                       name="firstName"
                       control={newPatientControl}
-                      rules={{ required: 'First name is required' }}
-                      render={({ field }) => (
-                        <TextField
+                      
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           label="First Name"
@@ -1008,15 +778,14 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                         />
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="lastName"
                       control={newPatientControl}
-                      rules={{ required: 'Last name is required' }}
-                      render={({ field }) => (
-                        <TextField
+                      
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           label="Last Name"
@@ -1026,14 +795,13 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                         />
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="otherNames"
                       control={newPatientControl}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           label="Other Names"
@@ -1041,13 +809,12 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                         />
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="dob"
                       control={newPatientControl}
-                      render={({ field }) => (
+                      render={({  field  }) => (
                         <DatePicker
                           {...field}
                           label="Date of Birth"
@@ -1056,24 +823,21 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                             textField: {
                               fullWidth: true,
                               error: !!newPatientErrors.dob,
-                              helperText: newPatientErrors.dob?.message,
+                              helperText: newPatientErrors.dob?.message,}
                             },
-                          }}
                         />
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="age"
                       control={newPatientControl}
-                      rules={{
+                      rules={{}
                         min: { value: 0, message: 'Age must be positive' },
                         max: { value: 150, message: 'Age must be realistic' },
-                      }}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           type="number"
@@ -1081,23 +845,22 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                           error={!!newPatientErrors.age}
                           helperText={
                             newPatientErrors.age?.message ||
-                            'Auto-calculated from DOB'
+                            'Auto-calculated from DOB'}
                           }
                         />
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="gender"
                       control={newPatientControl}
-                      render={({ field }) => (
-                        <FormControl
+                      render={({  field  }) => (
+                        <div
                           fullWidth
                           error={!!newPatientErrors.gender}
                         >
-                          <InputLabel>Gender</InputLabel>
+                          <Label>Gender</Label>
                           <Select
                             {...field}
                             label="Gender"
@@ -1111,25 +874,24 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                             ))}
                           </Select>
                           {newPatientErrors.gender && (
-                            <FormHelperText>
+                            <p>
                               {newPatientErrors.gender.message}
-                            </FormHelperText>
+                            </p>
                           )}
-                        </FormControl>
+                        </div>
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="maritalStatus"
                       control={newPatientControl}
-                      render={({ field }) => (
-                        <FormControl
+                      render={({  field  }) => (
+                        <div
                           fullWidth
                           error={!!newPatientErrors.maritalStatus}
                         >
-                          <InputLabel>Marital Status</InputLabel>
+                          <Label>Marital Status</Label>
                           <Select
                             {...field}
                             label="Marital Status"
@@ -1143,34 +905,27 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                             ))}
                           </Select>
                           {newPatientErrors.maritalStatus && (
-                            <FormHelperText>
+                            <p>
                               {newPatientErrors.maritalStatus.message}
-                            </FormHelperText>
+                            </p>
                           )}
-                        </FormControl>
+                        </div>
                       )}
                     />
-                  </Box>
-                </Box>
-
+                  </div>
+                </div>
                 {/* Contact Information */}
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 2 }}>
+                <div  className="">
                   Contact Information
-                </Typography>
-
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                  <Box sx={{ width: '100%' }}>
+                </div>
+                <div className="">
+                  <div className="">
                     <Controller
                       name="phone"
                       control={newPatientControl}
-                      rules={{
-                        validate: (value) =>
-                          !value ||
-                          validateNigerianPhone(value) ||
-                          'Enter valid Nigerian phone (+234XXXXXXXXX)',
-                      }}
-                      render={({ field }) => (
-                        <TextField
+                      
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           label="Phone Number"
@@ -1178,25 +933,19 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                           error={!!newPatientErrors.phone}
                           helperText={
                             newPatientErrors.phone?.message ||
-                            'Nigerian format: +234XXXXXXXXX'
+                            'Nigerian format: +234XXXXXXXXX'}
                           }
                         />
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="email"
                       control={newPatientControl}
-                      rules={{
-                        validate: (value) =>
-                          !value ||
-                          validateEmail(value) ||
-                          'Enter a valid email address',
-                      }}
-                      render={({ field }) => (
-                        <TextField
+                      
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           type="email"
@@ -1206,14 +955,13 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                         />
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="address"
                       control={newPatientControl}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           label="Address"
@@ -1223,20 +971,19 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                         />
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="state"
                       control={newPatientControl}
-                      render={({ field }) => (
+                      render={({  field  }) => (
                         <Autocomplete
                           {...field}
                           options={NIGERIAN_STATES}
                           value={field.value || null}
                           onChange={(_, value) => field.onChange(value)}
                           renderInput={(params) => (
-                            <TextField
+                            <Input}
                               {...params}
                               label="State"
                               error={!!newPatientErrors.state}
@@ -1246,14 +993,13 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                         />
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="lga"
                       control={newPatientControl}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           label="Local Government Area"
@@ -1261,25 +1007,23 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                         />
                       )}
                     />
-                  </Box>
-                </Box>
-
+                  </div>
+                </div>
                 {/* Medical Information */}
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mt: 2 }}>
+                <div  className="">
                   Medical Information
-                </Typography>
-
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                  <Box sx={{ width: '100%' }}>
+                </div>
+                <div className="">
+                  <div className="">
                     <Controller
                       name="bloodGroup"
                       control={newPatientControl}
-                      render={({ field }) => (
-                        <FormControl
+                      render={({  field  }) => (
+                        <div
                           fullWidth
                           error={!!newPatientErrors.bloodGroup}
                         >
-                          <InputLabel>Blood Group</InputLabel>
+                          <Label>Blood Group</Label>
                           <Select
                             {...field}
                             label="Blood Group"
@@ -1292,25 +1036,24 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                             ))}
                           </Select>
                           {newPatientErrors.bloodGroup && (
-                            <FormHelperText>
+                            <p>
                               {newPatientErrors.bloodGroup.message}
-                            </FormHelperText>
+                            </p>
                           )}
-                        </FormControl>
+                        </div>
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="genotype"
                       control={newPatientControl}
-                      render={({ field }) => (
-                        <FormControl
+                      render={({  field  }) => (
+                        <div
                           fullWidth
                           error={!!newPatientErrors.genotype}
                         >
-                          <InputLabel>Genotype</InputLabel>
+                          <Label>Genotype</Label>
                           <Select
                             {...field}
                             label="Genotype"
@@ -1318,8 +1061,8 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                           >
                             {GENOTYPES.map((genotype) => (
                               <MenuItem key={genotype} value={genotype}>
-                                <Box
-                                  sx={{ display: 'flex', alignItems: 'center' }}
+                                <div
+                                  className=""
                                 >
                                   {genotype}
                                   {genotype.includes('S') && (
@@ -1327,72 +1070,68 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                                       label="Sickle Cell"
                                       size="small"
                                       color="warning"
-                                      sx={{ ml: 1, fontSize: '0.7rem' }}
+                                      className=""
                                     />
                                   )}
-                                </Box>
+                                </div>
                               </MenuItem>
                             ))}
                           </Select>
                           {newPatientErrors.genotype && (
-                            <FormHelperText>
+                            <p>
                               {newPatientErrors.genotype.message}
-                            </FormHelperText>
+                            </p>
                           )}
-                        </FormControl>
+                        </div>
                       )}
                     />
-                  </Box>
-
-                  <Box sx={{ width: '100%' }}>
+                  </div>
+                  <div className="">
                     <Controller
                       name="weightKg"
                       control={newPatientControl}
-                      rules={{
+                      rules={{}
                         min: { value: 0.5, message: 'Weight must be positive' },
                         max: {
                           value: 500,
                           message: 'Weight must be realistic',
                         },
-                      }}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           type="number"
                           label="Weight (kg)"
                           error={!!newPatientErrors.weightKg}
                           helperText={newPatientErrors.weightKg?.message}
-                          inputProps={{ step: 0.1, min: 0.5, max: 500 }}
+                          
                         />
                       )}
                     />
-                  </Box>
-                </Box>
-
+                  </div>
+                </div>
                 {/* Medical Information Note */}
                 <Alert severity="info">
-                  <Typography variant="body2">
+                  <div >
                     <strong>Medical Information:</strong> Blood group and
                     genotype are important for emergency situations and
                     medication compatibility. Weight is used for dosage
                     calculations.
-                  </Typography>
+                  </div>
                 </Alert>
-              </Stack>
+              </div>
             </DialogContent>
-
-            <DialogActions sx={{ p: 3 }}>
+            <DialogActions className="">
               <Button onClick={() => setShowNewPatientModal(false)}>
                 Cancel
               </Button>
               <Button
                 type="submit"
-                variant="contained"
+                
                 disabled={loading.createNewPatient}
                 startIcon={
-                  loading.createNewPatient ? (
-                    <CircularProgress size={16} />
+                  loading.createNewPatient ? (}
+                    <Spinner size={16} />
                   ) : (
                     <PersonAddIcon />
                   )
@@ -1403,9 +1142,8 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
             </DialogActions>
           </form>
         </Dialog>
-      </Box>
+      </div>
     </LocalizationProvider>
   );
 };
-
 export default PatientSelection;

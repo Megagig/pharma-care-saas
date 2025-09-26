@@ -1,6 +1,7 @@
-import React from 'react';
-import { Box, Typography, Paper, Chip, Alert } from '@mui/material';
+
 import useFeatureFlags from '../hooks/useFeatureFlags';
+
+import { Alert } from '@/components/ui/button';
 
 interface FeatureFlagDemoProps {
   featureKey: string;
@@ -11,68 +12,64 @@ interface FeatureFlagDemoProps {
 /**
  * Component to demonstrate feature flag usage
  */
-const FeatureFlagDemo: React.FC<FeatureFlagDemoProps> = ({
+const FeatureFlagDemo: React.FC<FeatureFlagDemoProps> = ({ 
   featureKey,
   title,
-  description,
+  description
 }) => {
   const { isFeatureEnabled, isLoading } = useFeatureFlags();
   const enabled = isFeatureEnabled(featureKey);
 
   if (isLoading) {
     return (
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="subtitle1">{title}</Typography>
-        <Typography>Loading feature flag status...</Typography>
-      </Paper>
+      <div className="">
+        <div >{title}</div>
+        <div>Loading feature flag status...</div>
+      </div>
     );
   }
 
   return (
-    <Paper
-      sx={{
-        p: 2,
-        mb: 2,
-        borderLeft: enabled ? '4px solid #4caf50' : '4px solid #f44336',
-      }}
+    <div
+      className=""
     >
-      <Box
+      <div
         display="flex"
         justifyContent="space-between"
         alignItems="center"
         mb={1}
       >
-        <Typography variant="h6">{title}</Typography>
+        <div >{title}</div>
         <Chip
           label={enabled ? 'Enabled' : 'Disabled'}
           color={enabled ? 'success' : 'error'}
           size="small"
         />
-      </Box>
+      </div>
 
-      <Typography variant="body2" color="textSecondary" gutterBottom>
+      <div  color="textSecondary" gutterBottom>
         Feature key: <code>{featureKey}</code>
-      </Typography>
+      </div>
 
-      <Typography variant="body1" paragraph>
+      <div  paragraph>
         {description}
-      </Typography>
+      </div>
 
       {enabled ? (
-        <Box mt={2}>
+        <div mt={2}>
           <Alert severity="success">
             This feature is enabled for your subscription tier and role!
           </Alert>
-        </Box>
+        </div>
       ) : (
-        <Box mt={2}>
+        <div mt={2}>
           <Alert severity="info">
             This feature is currently disabled. Contact your administrator or
             upgrade your subscription to access it.
           </Alert>
-        </Box>
+        </div>
       )}
-    </Paper>
+    </div>
   );
 };
 

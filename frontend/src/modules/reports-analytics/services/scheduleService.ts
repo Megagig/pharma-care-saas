@@ -1,14 +1,4 @@
 // Schedule Service - Handle report schedule execution and monitoring
-import {
-    ReportSchedule,
-    ScheduleRun,
-    ScheduleDeliveryResult,
-    ScheduleLog,
-    ExportResult
-} from '../types/exports';
-import { EmailService, EmailDeliveryResult } from './emailService';
-import { ExportService } from './exportServices';
-
 export interface ScheduleExecutionContext {
     schedule: ReportSchedule;
     reportData: any;
@@ -175,12 +165,12 @@ export class ScheduleService {
                 deliveryResults.push(deliveryResult);
 
             } catch (error) {
-                deliveryResults.push({
+                deliveryResults.push({ 
                     recipientType: recipient.type as any,
                     recipientAddress: recipient.address,
                     status: 'failed',
                     error: error instanceof Error ? error.message : 'Unknown error',
-                    retryCount: 0,
+                    retryCount: 0}
                 });
             }
         }
@@ -307,11 +297,11 @@ export class ScheduleService {
         message: string,
         details?: any
     ): void {
-        scheduleRun.logs.push({
+        scheduleRun.logs.push({ 
             timestamp: new Date(),
             level,
             message,
-            details,
+            details}
         });
     }
 

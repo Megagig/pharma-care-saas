@@ -1,5 +1,3 @@
-import { test, expect } from '@playwright/test';
-
 // Test configuration
 const BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173';
 const API_BASE_URL = process.env.PLAYWRIGHT_API_BASE_URL || 'http://localhost:5000';
@@ -26,21 +24,21 @@ test.describe('Clinical Interventions E2E Tests', () => {
     test.beforeEach(async ({ page }) => {
         // Mock API responses
         await page.route(`${API_BASE_URL}/api/auth/login`, async route => {
-            await route.fulfill({
+            await route.fulfill({ 
                 status: 200,
                 contentType: 'application/json',
                 body: JSON.stringify({
                     success: true,
                     data: {
                         user: mockUser,
-                        token: 'mock-jwt-token'
+                        token: 'mock-jwt-token' })
                     }
                 })
             });
         });
 
         await page.route(`${API_BASE_URL}/api/patients**`, async route => {
-            await route.fulfill({
+            await route.fulfill({ 
                 status: 200,
                 contentType: 'application/json',
                 body: JSON.stringify({
@@ -53,7 +51,7 @@ test.describe('Clinical Interventions E2E Tests', () => {
                             total: 1,
                             pages: 1,
                             hasNext: false,
-                            hasPrev: false
+                            hasPrev: false })
                         }
                     }
                 })
@@ -64,7 +62,7 @@ test.describe('Clinical Interventions E2E Tests', () => {
             const url = route.request().url();
 
             if (route.request().method() === 'GET') {
-                await route.fulfill({
+                await route.fulfill({ 
                     status: 200,
                     contentType: 'application/json',
                     body: JSON.stringify({
@@ -81,7 +79,7 @@ test.describe('Clinical Interventions E2E Tests', () => {
                                     patientId: 'patient-1',
                                     identifiedBy: 'user-1',
                                     identifiedDate: '2024-12-01T10:00:00Z',
-                                    patient: mockPatient
+                                    patient: mockPatient })
                                 }
                             ],
                             pagination: {
@@ -96,7 +94,7 @@ test.describe('Clinical Interventions E2E Tests', () => {
                     })
                 });
             } else if (route.request().method() === 'POST') {
-                await route.fulfill({
+                await route.fulfill({ 
                     status: 201,
                     contentType: 'application/json',
                     body: JSON.stringify({
@@ -110,7 +108,7 @@ test.describe('Clinical Interventions E2E Tests', () => {
                                 status: 'identified',
                                 issueDescription: 'New intervention created',
                                 patientId: 'patient-1',
-                                identifiedBy: 'user-1'
+                                identifiedBy: 'user-1' })
                             }
                         }
                     })
@@ -119,7 +117,7 @@ test.describe('Clinical Interventions E2E Tests', () => {
         });
 
         await page.route(`${API_BASE_URL}/api/clinical-interventions/analytics/summary**`, async route => {
-            await route.fulfill({
+            await route.fulfill({ 
                 status: 200,
                 contentType: 'application/json',
                 body: JSON.stringify({
@@ -133,7 +131,7 @@ test.describe('Clinical Interventions E2E Tests', () => {
                             successRate: 85.5,
                             averageResolutionTime: 3.2,
                             totalCostSavings: 12500,
-                            categoryDistribution: [
+                            categoryDistribution: [ })
                                 { name: 'Drug Therapy Problems', value: 12, color: '#8884d8' }
                             ],
                             priorityDistribution: [
@@ -363,14 +361,14 @@ test.describe('Clinical Interventions E2E Tests', () => {
                 const url = new URL(route.request().url());
                 const page_param = url.searchParams.get('page') || '1';
 
-                await route.fulfill({
+                await route.fulfill({ 
                     status: 200,
                     contentType: 'application/json',
                     body: JSON.stringify({
                         success: true,
                         data: {
                             interventions: [
-                                {
+                                { })
                                     _id: `intervention-${page_param}`,
                                     interventionNumber: `CI-202412-000${page_param}`,
                                     category: 'drug_therapy_problem',
@@ -503,13 +501,13 @@ test.describe('Clinical Interventions E2E Tests', () => {
         test('should handle server errors', async ({ page }) => {
             // Mock server error
             await page.route(`${API_BASE_URL}/api/clinical-interventions**`, async route => {
-                await route.fulfill({
+                await route.fulfill({ 
                     status: 500,
                     contentType: 'application/json',
                     body: JSON.stringify({
                         success: false,
                         error: {
-                            message: 'Internal server error'
+                            message: 'Internal server error' })
                         }
                     })
                 });
@@ -541,7 +539,7 @@ test.describe('Clinical Interventions E2E Tests', () => {
 
         test('should handle large datasets efficiently', async ({ page }) => {
             // Mock large dataset
-            const largeDataset = Array.from({ length: 100 }, (_, i) => ({
+            const largeDataset = Array.from({ length: 100 }, (_, i) => ({  })
                 _id: `intervention-${i + 1}`,
                 interventionNumber: `CI-202412-${String(i + 1).padStart(4, '0')}`,
                 category: 'drug_therapy_problem',
@@ -555,7 +553,7 @@ test.describe('Clinical Interventions E2E Tests', () => {
             }));
 
             await page.route(`${API_BASE_URL}/api/clinical-interventions**`, async route => {
-                await route.fulfill({
+                await route.fulfill({ 
                     status: 200,
                     contentType: 'application/json',
                     body: JSON.stringify({
@@ -568,7 +566,7 @@ test.describe('Clinical Interventions E2E Tests', () => {
                                 total: 100,
                                 pages: 5,
                                 hasNext: true,
-                                hasPrev: false
+                                hasPrev: false })
                             }
                         }
                     })

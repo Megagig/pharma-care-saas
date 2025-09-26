@@ -1,45 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  LinearProgress,
-  CircularProgress,
-  IconButton,
-  Button,
-  Chip,
-  Stack,
-  Alert,
-  Collapse,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ListItemSecondaryAction,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  useTheme,
-} from '@mui/material';
-import {
-  Cancel as CancelIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-  Pause as PauseIcon,
-  PlayArrow as PlayIcon,
-  Refresh as RetryIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  CloudUpload as UploadIcon,
-  Save as SaveIcon,
-  Sync as SyncIcon,
-  Delete as DeleteIcon,
-} from '@mui/icons-material';
-
+import { Button, Card, CardContent, Tooltip, Spinner, Progress, Alert } from '@/components/ui/button';
 // Progress tracking types
 export type OperationType =
   | 'upload'
@@ -50,7 +9,6 @@ export type OperationType =
   | 'validation'
   | 'export'
   | 'import';
-
 export type OperationStatus =
   | 'pending'
   | 'running'
@@ -58,7 +16,6 @@ export type OperationStatus =
   | 'completed'
   | 'failed'
   | 'cancelled';
-
 export interface ProgressOperation {
   id: string;
   type: OperationType;
@@ -74,7 +31,6 @@ export interface ProgressOperation {
   canRetry?: boolean;
   metadata?: Record<string, any>;
 }
-
 interface ClinicalNotesProgressTrackerProps {
   operations: ProgressOperation[];
   onCancel?: (operationId: string) => void;
@@ -86,7 +42,6 @@ interface ClinicalNotesProgressTrackerProps {
   showCompleted?: boolean;
   compact?: boolean;
 }
-
 interface ProgressItemProps {
   operation: ProgressOperation;
   onCancel?: () => void;
@@ -96,27 +51,24 @@ interface ProgressItemProps {
   onClear?: () => void;
   compact?: boolean;
 }
-
 interface ProgressSummaryProps {
   operations: ProgressOperation[];
   onClearAll?: () => void;
   onPauseAll?: () => void;
   onResumeAll?: () => void;
 }
-
 // Individual progress item component
-const ProgressItem: React.FC<ProgressItemProps> = ({
+const ProgressItem: React.FC<ProgressItemProps> = ({ 
   operation,
   onCancel,
   onPause,
   onResume,
   onRetry,
   onClear,
-  compact = false,
+  compact = false
 }) => {
   const theme = useTheme();
   const [showDetails, setShowDetails] = useState(false);
-
   const getStatusColor = () => {
     switch (operation.status) {
       case 'completed':
@@ -131,7 +83,6 @@ const ProgressItem: React.FC<ProgressItemProps> = ({
         return theme.palette.primary.main;
     }
   };
-
   const getStatusIcon = () => {
     switch (operation.status) {
       case 'completed':
@@ -143,12 +94,11 @@ const ProgressItem: React.FC<ProgressItemProps> = ({
       case 'paused':
         return <PauseIcon color="info" />;
       case 'running':
-        return <CircularProgress size={20} />;
+        return <Spinner size={20} />;
       default:
-        return <CircularProgress size={20} />;
+        return <Spinner size={20} />;
     }
   };
-
   const getTypeIcon = () => {
     switch (operation.type) {
       case 'upload':
@@ -163,12 +113,10 @@ const ProgressItem: React.FC<ProgressItemProps> = ({
         return <SaveIcon />;
     }
   };
-
   const getDuration = () => {
     const start = operation.startTime;
     const end = operation.endTime || new Date();
     const duration = Math.round((end.getTime() - start.getTime()) / 1000);
-
     if (duration < 60) {
       return `${duration}s`;
     } else if (duration < 3600) {
@@ -179,18 +127,14 @@ const ProgressItem: React.FC<ProgressItemProps> = ({
       )}m`;
     }
   };
-
   const getEstimatedTimeRemaining = () => {
     if (operation.status !== 'running' || operation.progress === 0) {
       return null;
     }
-
     const elapsed = new Date().getTime() - operation.startTime.getTime();
     const rate = operation.progress / elapsed;
     const remaining = (100 - operation.progress) / rate;
-
     const seconds = Math.round(remaining / 1000);
-
     if (seconds < 60) {
       return `${seconds}s remaining`;
     } else if (seconds < 3600) {
@@ -199,140 +143,121 @@ const ProgressItem: React.FC<ProgressItemProps> = ({
       return `${Math.round(seconds / 3600)}h remaining`;
     }
   };
-
   if (compact) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+      <div className="">
         {getStatusIcon()}
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="body2" noWrap>
+        <div className="">
+          <div  noWrap>
             {operation.title}
-          </Typography>
+          </div>
           {operation.status === 'running' && (
-            <LinearProgress
-              variant="determinate"
-              value={operation.progress}
-              sx={{ mt: 0.5, height: 4 }}
+            <Progress
+              
+              className=""
             />
           )}
-        </Box>
-        <Typography variant="caption" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           {operation.status === 'running'
             ? `${Math.round(operation.progress)}%`
             : operation.status}
-        </Typography>
+        </div>
         {(operation.canCancel || operation.canPause || operation.canRetry) && (
           <IconButton size="small" onClick={onCancel}>
             <CancelIcon fontSize="small" />
           </IconButton>
         )}
-      </Box>
+      </div>
     );
   }
-
   return (
-    <Card sx={{ mb: 1, border: `1px solid ${getStatusColor()}` }}>
-      <CardContent sx={{ pb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+    <Card className="">
+      <CardContent className="">
+        <div className="">
           {getTypeIcon()}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Typography variant="subtitle2" noWrap>
+          <div className="">
+            <div className="">
+              <div  noWrap>
                 {operation.title}
-              </Typography>
+              </div>
               <Chip
                 label={operation.status}
                 size="small"
-                sx={{
-                  backgroundColor: getStatusColor(),
-                  color: 'white',
-                  fontWeight: 'bold',
-                }}
+                className=""
               />
-            </Box>
-
+            </div>
             {operation.description && (
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              <div  color="text.secondary" className="">
                 {operation.description}
-              </Typography>
+              </div>
             )}
-
             {/* Progress Bar */}
             {operation.status === 'running' && (
-              <Box sx={{ mb: 1 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    mb: 0.5,
-                  }}
+              <div className="">
+                <div
+                  className=""
                 >
-                  <Typography variant="caption">
+                  <div >
                     {Math.round(operation.progress)}%
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     {getEstimatedTimeRemaining()}
-                  </Typography>
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={operation.progress}
-                  sx={{ height: 6, borderRadius: 3 }}
+                  </div>
+                </div>
+                <Progress
+                  
+                  className=""
                 />
-              </Box>
+              </div>
             )}
-
             {/* Status Information */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <div className="">
               {getStatusIcon()}
-              <Typography variant="caption" color="text.secondary">
+              <div  color="text.secondary">
                 Duration: {getDuration()}
-              </Typography>
+              </div>
               {operation.metadata?.fileSize && (
-                <Typography variant="caption" color="text.secondary">
+                <div  color="text.secondary">
                   Size: {formatFileSize(operation.metadata.fileSize)}
-                </Typography>
+                </div>
               )}
-            </Box>
-
+            </div>
             {/* Error Message */}
             {operation.error && (
-              <Alert severity="error" size="small" sx={{ mt: 1 }}>
+              <Alert severity="error" size="small" className="">
                 {operation.error}
               </Alert>
             )}
-
             {/* Details Toggle */}
             {operation.metadata &&
               Object.keys(operation.metadata).length > 0 && (
                 <Button
                   size="small"
                   startIcon={
-                    showDetails ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                    showDetails ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                   }
                   onClick={() => setShowDetails(!showDetails)}
-                  sx={{ mt: 1 }}
+                  className=""
                 >
                   {showDetails ? 'Hide' : 'Show'} Details
                 </Button>
               )}
-
             {/* Detailed Information */}
             <Collapse in={showDetails}>
-              <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
-                <Typography
-                  variant="caption"
+              <div className="">
+                <div
+                  
                   component="pre"
-                  sx={{ whiteSpace: 'pre-wrap' }}
+                  className=""
                 >
                   {JSON.stringify(operation.metadata, null, 2)}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             </Collapse>
-          </Box>
-
+          </div>
           {/* Action Buttons */}
-          <Stack direction="row" spacing={0.5}>
+          <div direction="row" spacing={0.5}>
             {operation.status === 'running' && operation.canPause && (
               <Tooltip title="Pause">
                 <IconButton size="small" onClick={onPause}>
@@ -340,7 +265,6 @@ const ProgressItem: React.FC<ProgressItemProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-
             {operation.status === 'paused' && (
               <Tooltip title="Resume">
                 <IconButton size="small" onClick={onResume}>
@@ -348,7 +272,6 @@ const ProgressItem: React.FC<ProgressItemProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-
             {operation.status === 'failed' && operation.canRetry && (
               <Tooltip title="Retry">
                 <IconButton size="small" onClick={onRetry}>
@@ -356,7 +279,6 @@ const ProgressItem: React.FC<ProgressItemProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-
             {(operation.status === 'running' ||
               operation.status === 'paused') &&
               operation.canCancel && (
@@ -366,7 +288,6 @@ const ProgressItem: React.FC<ProgressItemProps> = ({
                   </IconButton>
                 </Tooltip>
               )}
-
             {(operation.status === 'completed' ||
               operation.status === 'failed' ||
               operation.status === 'cancelled') && (
@@ -376,43 +297,35 @@ const ProgressItem: React.FC<ProgressItemProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-          </Stack>
-        </Box>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
 };
-
 // Progress summary component
-const ProgressSummary: React.FC<ProgressSummaryProps> = ({
+const ProgressSummary: React.FC<ProgressSummaryProps> = ({ 
   operations,
   onClearAll,
   onPauseAll,
-  onResumeAll,
+  onResumeAll
 }) => {
   const runningOps = operations.filter((op) => op.status === 'running');
   const completedOps = operations.filter((op) => op.status === 'completed');
   const failedOps = operations.filter((op) => op.status === 'failed');
   const pausedOps = operations.filter((op) => op.status === 'paused');
-
   const totalProgress =
     operations.length > 0
       ? operations.reduce((sum, op) => sum + op.progress, 0) / operations.length
       : 0;
-
   return (
-    <Card sx={{ mb: 2, bgcolor: 'primary.50' }}>
+    <Card className="">
       <CardContent>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 2,
-          }}
+        <div
+          className=""
         >
-          <Typography variant="h6">Operations Summary</Typography>
-          <Stack direction="row" spacing={1}>
+          <div >Operations Summary</div>
+          <div direction="row" spacing={1}>
             {runningOps.length > 0 && onPauseAll && (
               <Button
                 size="small"
@@ -440,10 +353,9 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({
                 Clear All
               </Button>
             )}
-          </Stack>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          </div>
+        </div>
+        <div className="">
           <Chip
             label={`${runningOps.length} Running`}
             color="primary"
@@ -464,29 +376,24 @@ const ProgressSummary: React.FC<ProgressSummaryProps> = ({
             color="info"
             size="small"
           />
-        </Box>
-
+        </div>
         {runningOps.length > 0 && (
-          <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+          <div>
+            <div  color="text.secondary" className="">
               Overall Progress: {Math.round(totalProgress)}%
-            </Typography>
-            <LinearProgress
-              variant="determinate"
-              value={totalProgress}
-              sx={{ height: 8, borderRadius: 4 }}
+            </div>
+            <Progress
+              
+              className=""
             />
-          </Box>
+          </div>
         )}
       </CardContent>
     </Card>
   );
 };
-
 // Main progress tracker component
-const ClinicalNotesProgressTracker: React.FC<
-  ClinicalNotesProgressTrackerProps
-> = ({
+const ClinicalNotesProgressTracker: React.FC = ({ 
   operations,
   onCancel,
   onPause,
@@ -495,22 +402,18 @@ const ClinicalNotesProgressTracker: React.FC<
   onClear,
   maxVisible = 5,
   showCompleted = true,
-  compact = false,
+  compact = false
 }) => {
   const [showAll, setShowAll] = useState(false);
   const [showSummary, setShowSummary] = useState(true);
-
   // Filter operations
   const filteredOperations = showCompleted
     ? operations
     : operations.filter((op) => op.status !== 'completed');
-
   const visibleOperations = showAll
     ? filteredOperations
     : filteredOperations.slice(0, maxVisible);
-
   const hasMoreOperations = filteredOperations.length > maxVisible;
-
   // Handle bulk actions
   const handleClearAll = useCallback(() => {
     operations.forEach((op) => {
@@ -523,7 +426,6 @@ const ClinicalNotesProgressTracker: React.FC<
       }
     });
   }, [operations, onClear]);
-
   const handlePauseAll = useCallback(() => {
     operations.forEach((op) => {
       if (op.status === 'running' && op.canPause) {
@@ -531,7 +433,6 @@ const ClinicalNotesProgressTracker: React.FC<
       }
     });
   }, [operations, onPause]);
-
   const handleResumeAll = useCallback(() => {
     operations.forEach((op) => {
       if (op.status === 'paused') {
@@ -539,13 +440,11 @@ const ClinicalNotesProgressTracker: React.FC<
       }
     });
   }, [operations, onResume]);
-
   if (operations.length === 0) {
     return null;
   }
-
   return (
-    <Box>
+    <div>
       {/* Summary */}
       {showSummary && !compact && (
         <ProgressSummary
@@ -555,9 +454,8 @@ const ClinicalNotesProgressTracker: React.FC<
           onResumeAll={handleResumeAll}
         />
       )}
-
       {/* Operations List */}
-      <Box>
+      <div>
         {visibleOperations.map((operation) => (
           <ProgressItem
             key={operation.id}
@@ -570,14 +468,13 @@ const ClinicalNotesProgressTracker: React.FC<
             compact={compact}
           />
         ))}
-
         {/* Show More/Less Button */}
         {hasMoreOperations && (
           <Button
             fullWidth
-            variant="outlined"
+            
             onClick={() => setShowAll(!showAll)}
-            sx={{ mt: 1 }}
+            className=""
           >
             {showAll
               ? 'Show Less'
@@ -586,21 +483,17 @@ const ClinicalNotesProgressTracker: React.FC<
                 } More Operations`}
           </Button>
         )}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
-
 // Utility function to format file sizes
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
-
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
-
 export default ClinicalNotesProgressTracker;
 export { ProgressItem, ProgressSummary };

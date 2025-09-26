@@ -1,67 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
-  Paper,
-  IconButton,
-  Tooltip,
-  Alert,
-  LinearProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  FormControlLabel,
-  Switch,
-  Tabs,
-  Tab,
-  Badge,
-} from '@mui/material';
-// Grid component removed - using Box with flexbox instead
-import {
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-  TimelineOppositeContent,
-} from '@mui/lab';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import InfoIcon from '@mui/icons-material/Info';
-import PhoneIcon from '@mui/icons-material/Phone';
-import EmailIcon from '@mui/icons-material/Email';
-import DescriptionIcon from '@mui/icons-material/Description';
-import PersonIcon from '@mui/icons-material/Person';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import { format, formatDistanceToNow, isAfter } from 'date-fns';
-import { useMTRStore } from '../stores/mtrStore';
-import {
-  MTRIntervention,
-  CreateInterventionData,
-  UpdateInterventionData,
-} from '../types/mtr';
+import { Button, Input, Label, Card, CardContent, Badge, Dialog, DialogContent, DialogTitle, Select, Tooltip, Progress, Alert, Switch, Accordion, Tabs } from '@/components/ui/button';
 // Grid component removed - using Box with flexbox instead
 
+
+// Grid component removed - using Box with flexbox instead
 // Communication templates for common interventions
 const COMMUNICATION_TEMPLATES = {
   medication_change: {
@@ -97,21 +38,17 @@ const COMMUNICATION_TEMPLATES = {
       'Key medication education points for [patient name]: [educational content].',
   },
 };
-
 interface InterventionsDashboardProps {
   reviewId: string;
   onInterventionRecorded?: (intervention: MTRIntervention) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
-
   return (
     <div
       role="tabpanel"
@@ -120,14 +57,13 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`interventions-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <div className="">{children}</div>}
     </div>
   );
 }
-
-const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
+const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({ 
   reviewId,
-  onInterventionRecorded,
+  onInterventionRecorded
 }) => {
   const {
     interventions,
@@ -138,7 +74,6 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
     loading,
     errors,
   } = useMTRStore();
-
   // Local state
   const [activeTab, setActiveTab] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -147,9 +82,8 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
   const [showCompleted, setShowCompleted] = useState(false);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterOutcome, setFilterOutcome] = useState<string>('all');
-
   // Form state for new/edit intervention
-  const [formData, setFormData] = useState<Partial<CreateInterventionData>>({
+  const [formData, setFormData] = useState<Partial<CreateInterventionData>>({ 
     reviewId,
     patientId: currentReview?.patientId || '',
     type: 'recommendation',
@@ -162,14 +96,13 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
     priority: 'medium',
     urgency: 'routine',
     followUpRequired: false,
-    followUpDate: '',
+    followUpDate: ''}
   });
-
   // Reset form when dialog closes
   useEffect(() => {
     if (!isDialogOpen) {
       setEditingIntervention(null);
-      setFormData({
+      setFormData({ 
         reviewId,
         patientId: currentReview?.patientId || '',
         type: 'recommendation',
@@ -182,15 +115,14 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
         priority: 'medium',
         urgency: 'routine',
         followUpRequired: false,
-        followUpDate: '',
+        followUpDate: ''}
       });
     }
   }, [isDialogOpen, reviewId, currentReview?.patientId]);
-
   // Load editing intervention data
   useEffect(() => {
     if (editingIntervention) {
-      setFormData({
+      setFormData({ 
         reviewId: editingIntervention._id || reviewId,
         patientId: currentReview?.patientId || '',
         type: editingIntervention.type,
@@ -205,11 +137,10 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
         followUpRequired: editingIntervention.followUpRequired,
         followUpDate: editingIntervention.followUpDate
           ? format(new Date(editingIntervention.followUpDate), 'yyyy-MM-dd')
-          : '',
+          : ''}
       });
     }
   }, [editingIntervention, reviewId, currentReview?.patientId]);
-
   // Filter interventions based on current filters
   const filteredInterventions = useMemo(() => {
     return interventions.filter((intervention) => {
@@ -217,21 +148,17 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
       if (!showCompleted && intervention.outcome !== 'pending') {
         return false;
       }
-
       // Type filter
       if (filterType !== 'all' && intervention.type !== filterType) {
         return false;
       }
-
       // Outcome filter
       if (filterOutcome !== 'all' && intervention.outcome !== filterOutcome) {
         return false;
       }
-
       return true;
     });
   }, [interventions, showCompleted, filterType, filterOutcome]);
-
   // Group interventions by status for progress visualization
   const interventionStats = useMemo(() => {
     const stats = {
@@ -243,7 +170,6 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
       followUpRequired: 0,
       overdue: 0,
     };
-
     interventions.forEach((intervention) => {
       stats[intervention.outcome as keyof typeof stats]++;
       if (intervention.followUpRequired && !intervention.followUpCompleted) {
@@ -256,17 +182,14 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
         stats.overdue++;
       }
     });
-
     return stats;
   }, [interventions]);
-
   // Handle form input changes
   const handleInputChange = (
     field: keyof CreateInterventionData,
     value: unknown
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-
     // Auto-populate template when type/category/audience changes
     if (
       field === 'type' ||
@@ -281,15 +204,14 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
           updatedData.targetAudience as keyof typeof COMMUNICATION_TEMPLATES.medication_change
         ];
       if (template && !formData.description) {
-        setFormData((prev) => ({
+        setFormData((prev) => ({ 
           ...prev,
           [field]: value,
-          description: template,
+          description: template}
         }));
       }
     }
   };
-
   // Handle form submission
   const handleSubmit = async () => {
     try {
@@ -329,7 +251,6 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
       console.error('Failed to save intervention:', error);
     }
   };
-
   // Handle intervention completion
   const handleCompleteIntervention = async (
     interventionId: string,
@@ -342,7 +263,6 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
       console.error('Failed to complete intervention:', error);
     }
   };
-
   // Get icon for intervention type
   const getInterventionIcon = (type: string) => {
     switch (type) {
@@ -360,7 +280,6 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
         return <InfoIcon />;
     }
   };
-
   // Get color for intervention outcome
   const getOutcomeColor = (outcome: string) => {
     switch (outcome) {
@@ -376,7 +295,6 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
         return 'default';
     }
   };
-
   // Get urgency color
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
@@ -392,82 +310,75 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
         return 'default';
     }
   };
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header with stats and actions */}
-      <Box sx={{ mb: 3 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'between',
-            alignItems: 'center',
-            mb: 2,
-          }}
+      <div className="">
+        <div
+          className=""
         >
-          <Typography
-            variant="h5"
+          <div
+            
             component="h2"
-            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            className=""
           >
             <TimelineIcon />
             Interventions Dashboard
-          </Typography>
+          </div>
           <Button
-            variant="contained"
+            
             startIcon={<AddIcon />}
             onClick={() => setIsDialogOpen(true)}
             disabled={loading.recordIntervention}
           >
             Record Intervention
           </Button>
-        </Box>
-
+        </div>
         {/* Statistics Cards */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h4" color="primary">
+        <div className="">
+          <div className="">
+            <div className="">
+              <div  color="primary">
                 {interventionStats.total}
-              </Typography>
-              <Typography variant="body2">Total</Typography>
-            </Paper>
-          </Box>
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h4" color="info.main">
+              </div>
+              <div >Total</div>
+            </div>
+          </div>
+          <div className="">
+            <div className="">
+              <div  color="info.main">
                 {interventionStats.pending}
-              </Typography>
-              <Typography variant="body2">Pending</Typography>
-            </Paper>
-          </Box>
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main">
+              </div>
+              <div >Pending</div>
+            </div>
+          </div>
+          <div className="">
+            <div className="">
+              <div  color="success.main">
                 {interventionStats.accepted}
-              </Typography>
-              <Typography variant="body2">Accepted</Typography>
-            </Paper>
-          </Box>
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main">
+              </div>
+              <div >Accepted</div>
+            </div>
+          </div>
+          <div className="">
+            <div className="">
+              <div  color="warning.main">
                 {interventionStats.followUpRequired}
-              </Typography>
-              <Typography variant="body2">Follow-up</Typography>
-            </Paper>
-          </Box>
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h4" color="error.main">
+              </div>
+              <div >Follow-up</div>
+            </div>
+          </div>
+          <div className="">
+            <div className="">
+              <div  color="error.main">
                 {interventionStats.overdue}
-              </Typography>
-              <Typography variant="body2">Overdue</Typography>
-            </Paper>
-          </Box>
-          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h4" color="text.secondary">
+              </div>
+              <div >Overdue</div>
+            </div>
+          </div>
+          <div className="">
+            <div className="">
+              <div  color="text.secondary">
                 {interventionStats.total > 0
                   ? Math.round(
                       (interventionStats.accepted / interventionStats.total) *
@@ -475,41 +386,34 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                     )
                   : 0}
                 %
-              </Typography>
-              <Typography variant="body2">Success Rate</Typography>
-            </Paper>
-          </Box>
-        </Box>
-
+              </div>
+              <div >Success Rate</div>
+            </div>
+          </div>
+        </div>
         {/* Progress Bar */}
         {interventionStats.total > 0 && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" sx={{ mb: 1 }}>
+          <div className="">
+            <div  className="">
               Intervention Progress (
               {interventionStats.accepted + interventionStats.modified} of{' '}
               {interventionStats.total} completed)
-            </Typography>
-            <LinearProgress
-              variant="determinate"
-              value={
-                ((interventionStats.accepted + interventionStats.modified) /
-                  interventionStats.total) *
-                100
-              }
-              sx={{ height: 8, borderRadius: 4 }}
+            </div>
+            <Progress
+              
+              className=""
             />
-          </Box>
+          </div>
         )}
-      </Box>
-
+      </div>
       {/* Tabs for different views */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+      <div className="">
         <Tabs
           value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
         >
           <Tab
-            label={
+            label={}
               <Badge badgeContent={interventionStats.pending} color="primary">
                 Timeline View
               </Badge>
@@ -517,7 +421,7 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
           />
           <Tab
             label={
-              <Badge
+              <Badge}
                 badgeContent={interventionStats.followUpRequired}
                 color="warning"
               >
@@ -527,29 +431,23 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
           />
           <Tab label="Analytics" />
         </Tabs>
-      </Box>
-
+      </div>
       {/* Filters */}
-      <Box sx={{ mb: 3 }}>
+      <div className="">
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <div className="">
               <FilterListIcon />
               Filters & Options
-            </Typography>
+            </div>
           </AccordionSummary>
           <AccordionDetails>
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 2,
-                alignItems: 'center',
-              }}
+            <div
+              className=""
             >
-              <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Type</InputLabel>
+              <div className="">
+                <div fullWidth size="small">
+                  <Label>Type</Label>
                   <Select
                     value={filterType}
                     label="Type"
@@ -562,11 +460,11 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                     <MenuItem value="communication">Communication</MenuItem>
                     <MenuItem value="education">Education</MenuItem>
                   </Select>
-                </FormControl>
-              </Box>
-              <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Outcome</InputLabel>
+                </div>
+              </div>
+              <div className="">
+                <div fullWidth size="small">
+                  <Label>Outcome</Label>
                   <Select
                     value={filterOutcome}
                     label="Outcome"
@@ -578,60 +476,58 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                     <MenuItem value="rejected">Rejected</MenuItem>
                     <MenuItem value="modified">Modified</MenuItem>
                   </Select>
-                </FormControl>
-              </Box>
-              <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
+                </div>
+              </div>
+              <div className="">
                 <FormControlLabel
                   control={
-                    <Switch
+                    <Switch}
                       checked={showCompleted}
                       onChange={(e) => setShowCompleted(e.target.checked)}
                     />
                   }
                   label="Show Completed"
                 />
-              </Box>
-            </Box>
+              </div>
+            </div>
           </AccordionDetails>
         </Accordion>
-      </Box>
-
+      </div>
       {/* Error Display */}
       {errors.recordIntervention && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" className="">
           {errors.recordIntervention}
         </Alert>
       )}
-
       {/* Tab Panels */}
       <TabPanel value={activeTab} index={0}>
         {/* Timeline View */}
         {filteredInterventions.length === 0 ? (
-          <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <div className="">
             <TimelineIcon
-              sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }}
+              className=""
             />
-            <Typography variant="h6" color="text.secondary">
+            <div  color="text.secondary">
               No interventions recorded yet
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            </div>
+            <div  color="text.secondary" className="">
               Start by recording your first intervention for this MTR session
-            </Typography>
+            </div>
             <Button
-              variant="contained"
+              
               startIcon={<AddIcon />}
               onClick={() => setIsDialogOpen(true)}
             >
               Record First Intervention
             </Button>
-          </Paper>
+          </div>
         ) : (
           <Timeline>
             {filteredInterventions.map((intervention, index) => (
               <TimelineItem key={intervention._id}>
                 <TimelineOppositeContent
-                  sx={{ m: 'auto 0' }}
-                  variant="body2"
+                  className=""
+                  
                   color="text.secondary"
                 >
                   {format(
@@ -650,9 +546,9 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                         | 'error'
                         | 'info'
                         | 'success'
-                        | 'warning'
+                        | 'warning'}
                     }
-                    sx={{ mt: 0.5 }}
+                    className=""
                   />
                 </TimelineOppositeContent>
                 <TimelineSeparator>
@@ -665,7 +561,7 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                         | 'error'
                         | 'info'
                         | 'success'
-                        | 'warning'
+                        | 'warning'}
                     }
                   >
                     {getInterventionIcon(intervention.type)}
@@ -674,37 +570,28 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                     <TimelineConnector />
                   )}
                 </TimelineSeparator>
-                <TimelineContent sx={{ py: '12px', px: 2 }}>
+                <TimelineContent className="">
                   <Card>
                     <CardContent>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'between',
-                          alignItems: 'flex-start',
-                          mb: 1,
-                        }}
+                      <div
+                        className=""
                       >
-                        <Box>
-                          <Typography variant="h6" component="div">
+                        <div>
+                          <div  component="div">
                             {intervention.type.charAt(0).toUpperCase() +
                               intervention.type.slice(1)}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          </div>
+                          <div  color="text.secondary">
                             {intervention.category
                               .replace('_', ' ')
                               .toUpperCase()}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          </div>
+                        </div>
+                        <div className="">
                           <Tooltip title="Edit Intervention">
                             <IconButton
                               size="small"
-                              onClick={() => {
-                                setEditingIntervention(intervention);
-                                setIsDialogOpen(true);
-                              }}
-                            >
+                              >
                               <EditIcon />
                             </IconButton>
                           </Tooltip>
@@ -718,38 +605,30 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                                 | 'error'
                                 | 'info'
                                 | 'success'
-                                | 'warning'
+                                | 'warning'}
                             }
                             size="small"
                           />
-                        </Box>
-                      </Box>
-
-                      <Typography variant="body1" sx={{ mb: 1 }}>
+                        </div>
+                      </div>
+                      <div  className="">
                         {intervention.description}
-                      </Typography>
-
-                      <Typography
-                        variant="body2"
+                      </div>
+                      <div
+                        
                         color="text.secondary"
-                        sx={{ mb: 2 }}
+                        className=""
                       >
                         <strong>Rationale:</strong> {intervention.rationale}
-                      </Typography>
-
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          gap: 1,
-                          mb: 2,
-                          flexWrap: 'wrap',
-                        }}
+                      </div>
+                      <div
+                        className=""
                       >
                         <Chip
                           size="small"
                           icon={<PersonIcon />}
                           label={intervention.targetAudience}
-                          variant="outlined"
+                          
                         />
                         <Chip
                           size="small"
@@ -758,10 +637,10 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                               <PhoneIcon />
                             ) : (
                               <EmailIcon />
-                            )
+                            )}
                           }
                           label={intervention.communicationMethod}
-                          variant="outlined"
+                          
                         />
                         <Chip
                           size="small"
@@ -771,22 +650,21 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                               ? 'error'
                               : intervention.priority === 'medium'
                               ? 'warning'
-                              : 'default'
+                              : 'default'}
                           }
-                          variant="outlined"
+                          
                         />
-                      </Box>
-
+                      </div>
                       {intervention.followUpRequired && (
                         <Alert
                           severity={
                             intervention.followUpCompleted
                               ? 'success'
-                              : 'warning'
+                              : 'warning'}
                           }
-                          sx={{ mb: 1 }}
+                          className=""
                         >
-                          <Typography variant="body2">
+                          <div >
                             Follow-up{' '}
                             {intervention.followUpCompleted
                               ? 'completed'
@@ -796,67 +674,60 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                                 new Date(intervention.followUpDate),
                                 'MMM dd, yyyy'
                               )}`}
-                          </Typography>
+                          </div>
                         </Alert>
                       )}
-
                       {intervention.outcome === 'pending' && (
-                        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                        <div className="">
                           <Button
                             size="small"
-                            variant="contained"
+                            
                             color="success"
                             onClick={() =>
                               handleCompleteIntervention(
                                 intervention._id!,
                                 'accepted'
-                              )
+                              )}
                             }
                           >
                             Mark Accepted
                           </Button>
                           <Button
                             size="small"
-                            variant="outlined"
+                            
                             color="warning"
                             onClick={() =>
                               handleCompleteIntervention(
                                 intervention._id!,
                                 'modified'
-                              )
+                              )}
                             }
                           >
                             Mark Modified
                           </Button>
                           <Button
                             size="small"
-                            variant="outlined"
+                            
                             color="error"
                             onClick={() =>
                               handleCompleteIntervention(
                                 intervention._id!,
                                 'rejected'
-                              )
+                              )}
                             }
                           >
                             Mark Rejected
                           </Button>
-                        </Box>
+                        </div>
                       )}
-
                       {intervention.outcomeDetails && (
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            mt: 1,
-                            p: 1,
-                            bgcolor: 'grey.100',
-                            borderRadius: 1,
-                          }}
+                        <div
+                          
+                          className=""
                         >
                           <strong>Outcome Details:</strong>{' '}
                           {intervention.outcomeDetails}
-                        </Typography>
+                        </div>
                       )}
                     </CardContent>
                   </Card>
@@ -866,38 +737,31 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
           </Timeline>
         )}
       </TabPanel>
-
       <TabPanel value={activeTab} index={1}>
         {/* Progress Tracking View */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        <div className="">
           {/* Follow-up Required */}
-          <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
+          <div className="">
             <Card>
               <CardContent>
-                <Typography
-                  variant="h6"
-                  sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+                <div
+                  
+                  className=""
                 >
                   <ScheduleIcon />
                   Follow-up Required
-                </Typography>
+                </div>
                 {interventions
                   .filter((i) => i.followUpRequired && !i.followUpCompleted)
                   .map((intervention) => (
-                    <Box
+                    <div
                       key={intervention._id}
-                      sx={{
-                        mb: 2,
-                        p: 2,
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                      }}
+                      className=""
                     >
-                      <Typography variant="subtitle2">
+                      <div >
                         {intervention.description}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         Due:{' '}
                         {intervention.followUpDate
                           ? format(
@@ -905,31 +769,30 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                               'MMM dd, yyyy'
                             )
                           : 'Not specified'}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {intervention.followUpDate &&
                           formatDistanceToNow(
                             new Date(intervention.followUpDate),
                             { addSuffix: true }
                           )}
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   ))}
               </CardContent>
             </Card>
-          </Box>
-
+          </div>
           {/* Recent Activity */}
-          <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
+          <div className="">
             <Card>
               <CardContent>
-                <Typography
-                  variant="h6"
-                  sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+                <div
+                  
+                  className=""
                 >
                   <TrendingUpIcon />
                   Recent Activity
-                </Typography>
+                </div>
                 {interventions
                   .sort(
                     (a, b) =>
@@ -938,25 +801,19 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                   )
                   .slice(0, 5)
                   .map((intervention) => (
-                    <Box
+                    <div
                       key={intervention._id}
-                      sx={{
-                        mb: 2,
-                        p: 2,
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                      }}
+                      className=""
                     >
-                      <Typography variant="subtitle2">
+                      <div >
                         {intervention.type}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {formatDistanceToNow(
                           new Date(intervention.performedAt),
                           { addSuffix: true }
                         )}
-                      </Typography>
+                      </div>
                       <Chip
                         size="small"
                         label={intervention.outcome}
@@ -968,54 +825,51 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                             | 'error'
                             | 'info'
                             | 'success'
-                            | 'warning'
+                            | 'warning'}
                         }
                       />
-                    </Box>
+                    </div>
                   ))}
               </CardContent>
             </Card>
-          </Box>
-        </Box>
+          </div>
+        </div>
       </TabPanel>
-
       <TabPanel value={activeTab} index={2}>
         {/* Analytics View */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-          <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
+        <div className="">
+          <div className="">
             <Card>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>
+                <div  className="">
                   Intervention Types
-                </Typography>
+                </div>
                 {Object.entries(
                   interventions.reduce((acc, intervention) => {
                     acc[intervention.type] = (acc[intervention.type] || 0) + 1;
                     return acc;
                   }, {} as Record<string, number>)
                 ).map(([type, count]) => (
-                  <Box key={type} sx={{ mb: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'between' }}>
-                      <Typography variant="body2">{type}</Typography>
-                      <Typography variant="body2">{count}</Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={(count / interventions.length) * 100}
-                      sx={{ height: 4, borderRadius: 2 }}
+                  <div key={type} className="">
+                    <div className="">
+                      <div >{type}</div>
+                      <div >{count}</div>
+                    </div>
+                    <Progress
+                      
+                      className=""
                     />
-                  </Box>
+                  </div>
                 ))}
               </CardContent>
             </Card>
-          </Box>
-
-          <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
+          </div>
+          <div className="">
             <Card>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>
+                <div  className="">
                   Outcome Distribution
-                </Typography>
+                </div>
                 {Object.entries(
                   interventions.reduce((acc, intervention) => {
                     acc[intervention.outcome] =
@@ -1023,14 +877,13 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                     return acc;
                   }, {} as Record<string, number>)
                 ).map(([outcome, count]) => (
-                  <Box key={outcome} sx={{ mb: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'between' }}>
-                      <Typography variant="body2">{outcome}</Typography>
-                      <Typography variant="body2">{count}</Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={(count / interventions.length) * 100}
+                  <div key={outcome} className="">
+                    <div className="">
+                      <div >{outcome}</div>
+                      <div >{count}</div>
+                    </div>
+                    <Progress
+                      
                       color={
                         getOutcomeColor(outcome) as
                           | 'inherit'
@@ -1039,18 +892,17 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                           | 'error'
                           | 'info'
                           | 'success'
-                          | 'warning'
+                          | 'warning'}
                       }
-                      sx={{ height: 4, borderRadius: 2 }}
+                      className=""
                     />
-                  </Box>
+                  </div>
                 ))}
               </CardContent>
             </Card>
-          </Box>
-        </Box>
+          </div>
+        </div>
       </TabPanel>
-
       {/* Intervention Recording Dialog */}
       <Dialog
         open={isDialogOpen}
@@ -1064,10 +916,10 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
             : 'Record New Intervention'}
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <FormControl fullWidth>
-                <InputLabel>Type</InputLabel>
+          <div className="">
+            <div className="">
+              <div fullWidth>
+                <Label>Type</Label>
                 <Select
                   value={formData.type}
                   label="Type"
@@ -1079,17 +931,16 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                   <MenuItem value="communication">Communication</MenuItem>
                   <MenuItem value="education">Education</MenuItem>
                 </Select>
-              </FormControl>
-            </Box>
-
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
+              </div>
+            </div>
+            <div className="">
+              <div fullWidth>
+                <Label>Category</Label>
                 <Select
                   value={formData.category}
                   label="Category"
                   onChange={(e) =>
-                    handleInputChange('category', e.target.value)
+                    handleInputChange('category', e.target.value)}
                   }
                 >
                   <MenuItem value="medication_change">
@@ -1103,17 +954,16 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                     Patient Education
                   </MenuItem>
                 </Select>
-              </FormControl>
-            </Box>
-
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <FormControl fullWidth>
-                <InputLabel>Target Audience</InputLabel>
+              </div>
+            </div>
+            <div className="">
+              <div fullWidth>
+                <Label>Target Audience</Label>
                 <Select
                   value={formData.targetAudience}
                   label="Target Audience"
                   onChange={(e) =>
-                    handleInputChange('targetAudience', e.target.value)
+                    handleInputChange('targetAudience', e.target.value)}
                   }
                 >
                   <MenuItem value="patient">Patient</MenuItem>
@@ -1121,17 +971,16 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                   <MenuItem value="caregiver">Caregiver</MenuItem>
                   <MenuItem value="healthcare_team">Healthcare Team</MenuItem>
                 </Select>
-              </FormControl>
-            </Box>
-
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <FormControl fullWidth>
-                <InputLabel>Communication Method</InputLabel>
+              </div>
+            </div>
+            <div className="">
+              <div fullWidth>
+                <Label>Communication Method</Label>
                 <Select
                   value={formData.communicationMethod}
                   label="Communication Method"
                   onChange={(e) =>
-                    handleInputChange('communicationMethod', e.target.value)
+                    handleInputChange('communicationMethod', e.target.value)}
                   }
                 >
                   <MenuItem value="verbal">Verbal</MenuItem>
@@ -1141,25 +990,23 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                   <MenuItem value="fax">Fax</MenuItem>
                   <MenuItem value="in_person">In Person</MenuItem>
                 </Select>
-              </FormControl>
-            </Box>
-
-            <Box sx={{ flex: '1 1 100%', width: '100%' }}>
-              <TextField
+              </div>
+            </div>
+            <div className="">
+              <Input
                 fullWidth
                 label="Description"
                 multiline
                 rows={3}
                 value={formData.description}
                 onChange={(e) =>
-                  handleInputChange('description', e.target.value)
+                  handleInputChange('description', e.target.value)}
                 }
                 placeholder="Describe the intervention..."
               />
-            </Box>
-
-            <Box sx={{ flex: '1 1 100%', width: '100%' }}>
-              <TextField
+            </div>
+            <div className="">
+              <Input
                 fullWidth
                 label="Rationale"
                 multiline
@@ -1168,28 +1015,26 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                 onChange={(e) => handleInputChange('rationale', e.target.value)}
                 placeholder="Explain the clinical rationale..."
               />
-            </Box>
-
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <FormControl fullWidth>
-                <InputLabel>Priority</InputLabel>
+            </div>
+            <div className="">
+              <div fullWidth>
+                <Label>Priority</Label>
                 <Select
                   value={formData.priority}
                   label="Priority"
                   onChange={(e) =>
-                    handleInputChange('priority', e.target.value)
+                    handleInputChange('priority', e.target.value)}
                   }
                 >
                   <MenuItem value="low">Low</MenuItem>
                   <MenuItem value="medium">Medium</MenuItem>
                   <MenuItem value="high">High</MenuItem>
                 </Select>
-              </FormControl>
-            </Box>
-
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <FormControl fullWidth>
-                <InputLabel>Urgency</InputLabel>
+              </div>
+            </div>
+            <div className="">
+              <div fullWidth>
+                <Label>Urgency</Label>
                 <Select
                   value={formData.urgency}
                   label="Urgency"
@@ -1200,70 +1045,66 @@ const InterventionsDashboard: React.FC<InterventionsDashboardProps> = ({
                   <MenuItem value="within_24h">Within 24h</MenuItem>
                   <MenuItem value="immediate">Immediate</MenuItem>
                 </Select>
-              </FormControl>
-            </Box>
-
-            <Box sx={{ flex: '1 1 100%', width: '100%' }}>
+              </div>
+            </div>
+            <div className="">
               <FormControlLabel
                 control={
-                  <Switch
+                  <Switch}
                     checked={formData.followUpRequired}
                     onChange={(e) =>
-                      handleInputChange('followUpRequired', e.target.checked)
+                      handleInputChange('followUpRequired', e.target.checked)}
                     }
                   />
                 }
                 label="Follow-up Required"
               />
-            </Box>
-
+            </div>
             {formData.followUpRequired && (
-              <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-                <TextField
+              <div className="">
+                <Input
                   fullWidth
                   label="Follow-up Date"
                   type="date"
                   value={formData.followUpDate}
                   onChange={(e) =>
-                    handleInputChange('followUpDate', e.target.value)
+                    handleInputChange('followUpDate', e.target.value)}
                   }
-                  InputLabelProps={{ shrink: true }}
+                  
                 />
-              </Box>
+              </div>
             )}
-
-            <Box sx={{ flex: '1 1 100%', width: '100%' }}>
-              <TextField
+            <div className="">
+              <Input
                 fullWidth
                 label="Documentation"
                 multiline
                 rows={3}
                 value={formData.documentation}
                 onChange={(e) =>
-                  handleInputChange('documentation', e.target.value)
+                  handleInputChange('documentation', e.target.value)}
                 }
                 placeholder="Additional documentation and notes..."
               />
-            </Box>
-          </Box>
+            </div>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsDialogOpen(false)}>Cancel</Button>
           <Button
             onClick={handleSubmit}
-            variant="contained"
+            
             disabled={
               !formData.description ||
               !formData.rationale ||
-              loading.recordIntervention
+              loading.recordIntervention}
             }
           >
             {editingIntervention ? 'Update' : 'Record'} Intervention
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
-
 export default InterventionsDashboard;

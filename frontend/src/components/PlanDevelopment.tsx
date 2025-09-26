@@ -1,59 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Stack,
-  Alert,
-  TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Chip,
-  Autocomplete,
-  Paper,
-  CircularProgress,
-  Tabs,
-  Tab,
-  Checkbox,
-  FormControlLabel,
-} from '@mui/material';
-import { FixedGrid } from './common/FixedGrid';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import SaveIcon from '@mui/icons-material/Save';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
-import PsychologyIcon from '@mui/icons-material/Psychology';
-import FlagIcon from '@mui/icons-material/Flag';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import WarningIcon from '@mui/icons-material/Warning';
-import ErrorIcon from '@mui/icons-material/Error';
-import InfoIcon from '@mui/icons-material/Info';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-
-import { useMTRStore } from '../stores/mtrStore';
-import type {
-  DrugTherapyProblem,
-  TherapyPlan,
-  TherapyRecommendation,
-  MonitoringParameter,
-  TherapyGoal,
-} from '../types/mtr';
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Spinner, Alert, Tabs } from '@/components/ui/button';
 
 interface PlanDevelopmentProps {
   problems: DrugTherapyProblem[];
@@ -78,11 +23,11 @@ interface TabPanelProps {
   value: number;
 }
 
-const TabPanel: React.FC<TabPanelProps> = ({
+const TabPanel: React.FC<TabPanelProps> = ({ 
   children,
   value,
   index,
-  ...other
+  ...other })
 }) => {
   return (
     <div
@@ -92,7 +37,7 @@ const TabPanel: React.FC<TabPanelProps> = ({
       aria-labelledby={`plan-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <div className="">{children}</div>}
     </div>
   );
 };
@@ -217,11 +162,11 @@ const RECOMMENDATION_TEMPLATES = {
   ],
 };
 
-const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
+const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({ 
   problems,
   onPlanCreated,
   onPlanUpdated,
-  existingPlan,
+  existingPlan
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [isRecommendationDialogOpen, setIsRecommendationDialogOpen] =
@@ -243,7 +188,7 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
     setValue,
     getValues,
     formState: { isDirty },
-  } = useForm<PlanFormData>({
+  } = useForm<PlanFormData>({ 
     defaultValues: {
       problems: existingPlan?.problems || [],
       recommendations: existingPlan?.recommendations || [],
@@ -251,18 +196,17 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
       counselingPoints: existingPlan?.counselingPoints || [],
       goals: existingPlan?.goals || [],
       timeline: existingPlan?.timeline || '',
-      pharmacistNotes: existingPlan?.pharmacistNotes || '',
-    },
-  });
+      pharmacistNotes: existingPlan?.pharmacistNotes || ''}
+    }
 
   const {
     fields: recommendationFields,
     append: appendRecommendation,
     remove: removeRecommendation,
     update: updateRecommendationField,
-  } = useFieldArray({
+  } = useFieldArray({ 
     control,
-    name: 'recommendations',
+    name: 'recommendations'}
   });
 
   const {
@@ -270,9 +214,9 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
     append: appendMonitoring,
     remove: removeMonitoring,
     update: updateMonitoringField,
-  } = useFieldArray({
+  } = useFieldArray({ 
     control,
-    name: 'monitoringPlan',
+    name: 'monitoringPlan'}
   });
 
   const {
@@ -280,9 +224,9 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
     append: appendGoal,
     remove: removeGoal,
     update: updateGoalField,
-  } = useFieldArray({
+  } = useFieldArray({ 
     control,
-    name: 'goals',
+    name: 'goals'}
   });
 
   const watchedProblems = watch('problems');
@@ -414,8 +358,7 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
     const currentPoints = getValues('counselingPoints');
     if (!currentPoints.includes(point)) {
       setValue('counselingPoints', [...currentPoints, point], {
-        shouldDirty: true,
-      });
+        shouldDirty: true}
     }
   };
 
@@ -446,17 +389,17 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
   if (problems.length === 0) {
     return (
       <Card>
-        <CardContent sx={{ textAlign: 'center', py: 6 }}>
+        <CardContent className="">
           <AssignmentIcon
-            sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+            className=""
           />
-          <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+          <div  color="text.secondary" className="">
             No Problems Identified
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Please complete the therapy assessment step to identify problems
             before developing a plan
-          </Typography>
+          </div>
         </CardContent>
       </Card>
     );
@@ -464,56 +407,51 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
+      <div>
         {/* Header */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3,
-          }}
+        <div
+          className=""
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <AssignmentIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <div className="">
+            <AssignmentIcon className="" />
+            <div  className="">
               Plan Development
-            </Typography>
+            </div>
             <Chip
               label={`${problems.length} problems`}
               size="small"
               color="primary"
-              variant="outlined"
-              sx={{ ml: 2 }}
+              
+              className=""
             />
-          </Box>
-          <Stack direction="row" spacing={2}>
-            <Typography variant="body2" color="text.secondary">
+          </div>
+          <div direction="row" spacing={2}>
+            <div  color="text.secondary">
               Plan Completeness: {Math.round(planCompleteness)}%
-            </Typography>
+            </div>
             <Button
-              variant="contained"
-              startIcon={
-                loading.savePlan ? <CircularProgress size={16} /> : <SaveIcon />
+              
+              startIcon={}
+                loading.savePlan ? <Spinner size={16} /> : <SaveIcon />
               }
               onClick={handleSubmit(handleSavePlan)}
               disabled={loading.savePlan || !isDirty}
             >
               {existingPlan ? 'Update Plan' : 'Save Plan'}
             </Button>
-          </Stack>
-        </Box>
+          </div>
+        </div>
 
         {/* Error Alert */}
         {saveError && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" className="">
             {saveError}
           </Alert>
         )}
 
         {/* Main Content */}
         <Card>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <div className="">
             <Tabs
               value={activeTab}
               onChange={handleTabChange}
@@ -524,50 +462,50 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
               <Tab label="Goals & Counseling" />
               <Tab label="Summary & Notes" />
             </Tabs>
-          </Box>
+          </div>
 
           {/* Tab 1: Problems & Recommendations */}
           <TabPanel value={activeTab} index={0}>
             <FixedGrid container spacing={3}>
               {/* Problems Selection */}
               <FixedGrid item xs={12} md={6}>
-                <Typography
-                  variant="h6"
-                  sx={{ mb: 2, display: 'flex', alignItems: 'center' }}
+                <div
+                  
+                  className=""
                 >
-                  <FlagIcon sx={{ mr: 1 }} />
+                  <FlagIcon className="" />
                   Identified Problems
-                </Typography>
+                </div>
 
                 <Controller
                   name="problems"
                   control={control}
-                  render={({ field }) => (
-                    <Stack spacing={2}>
+                  render={({  field  }) => (
+                    <div spacing={2}>
                       {Object.entries(problemsBySeverity).map(
                         ([severity, severityProblems]) =>
                           severityProblems.length > 0 && (
-                            <Box key={severity}>
-                              <Typography
-                                variant="subtitle2"
-                                sx={{ mb: 1, textTransform: 'capitalize' }}
+                            <div key={severity}>
+                              <div
+                                
+                                className=""
                               >
                                 {severity} Problems ({severityProblems.length})
-                              </Typography>
+                              </div>
                               {severityProblems.map((problem) => (
                                 <FormControlLabel
                                   key={problem._id}
                                   control={
                                     <Checkbox
                                       checked={field.value.includes(
-                                        problem._id
+                                        problem._id}
                                       )}
                                       onChange={(e) => {
                                         if (e.target.checked) {
                                           field.onChange([
                                             ...field.value,
                                             problem._id,
-                                          ]);
+                                          ]);}
                                         } else {
                                           field.onChange(
                                             field.value.filter(
@@ -575,98 +513,84 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
                                             )
                                           );
                                         }
-                                      }}
                                     />
                                   }
                                   label={
-                                    <Box
-                                      sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                      }}
-                                    >
+                                    <div
+                                      className=""
+                                    >}
                                       {getSeverityIcon(problem.severity)}
-                                      <Box sx={{ ml: 1 }}>
-                                        <Typography
-                                          variant="body2"
-                                          sx={{ fontWeight: 500 }}
+                                      <div className="">
+                                        <div
+                                          
+                                          className=""
                                         >
                                           {problem.description}
-                                        </Typography>
-                                        <Typography
-                                          variant="caption"
+                                        </div>
+                                        <div
+                                          
                                           color="text.secondary"
                                         >
                                           {problem.clinicalSignificance}
-                                        </Typography>
-                                      </Box>
-                                    </Box>
+                                        </div>
+                                      </div>
+                                    </div>
                                   }
                                 />
                               ))}
-                            </Box>
+                            </div>
                           )
                       )}
-                    </Stack>
+                    </div>
                   )}
                 />
               </FixedGrid>
 
               {/* Recommendations */}
               <FixedGrid item xs={12} md={6}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 2,
-                  }}
+                <div
+                  className=""
                 >
-                  <Typography
-                    variant="h6"
-                    sx={{ display: 'flex', alignItems: 'center' }}
+                  <div
+                    
+                    className=""
                   >
-                    <LightbulbIcon sx={{ mr: 1 }} />
+                    <LightbulbIcon className="" />
                     Recommendations
-                  </Typography>
+                  </div>
                   <Button
-                    variant="outlined"
+                    
                     size="small"
                     startIcon={<AddIcon />}
                     onClick={() => handleAddRecommendation()}
                   >
                     Add Recommendation
                   </Button>
-                </Box>
+                </div>
 
-                <Stack spacing={2}>
+                <div spacing={2}>
                   {recommendationFields.map((recommendation, index) => (
-                    <Card key={recommendation.id} variant="outlined">
-                      <CardContent sx={{ p: 2 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'flex-start',
-                            mb: 1,
-                          }}
+                    <Card key={recommendation.id} >
+                      <CardContent className="">
+                        <div
+                          className=""
                         >
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <div className="">
                             {
                               RECOMMENDATION_TYPES.find(
                                 (t) => t.value === recommendation.type
                               )?.icon
                             }
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ ml: 1, fontWeight: 600 }}
+                            <div
+                              
+                              className=""
                             >
                               {
                                 RECOMMENDATION_TYPES.find(
                                   (t) => t.value === recommendation.type
                                 )?.label
                               }
-                            </Typography>
+                            </div>
                             <Chip
                               label={recommendation.priority}
                               size="small"
@@ -680,16 +604,16 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
                                   | 'info'
                                   | 'default'
                                   | 'error'
-                                  | 'warning') || 'default'
+                                  | 'warning') || 'default'}
                               }
-                              sx={{ ml: 1 }}
+                              className=""
                             />
-                          </Box>
-                          <Stack direction="row" spacing={1}>
+                          </div>
+                          <div direction="row" spacing={1}>
                             <IconButton
                               size="small"
                               onClick={() =>
-                                handleAddRecommendation(recommendation)
+                                handleAddRecommendation(recommendation)}
                               }
                             >
                               <EditIcon />
@@ -700,88 +624,78 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
                             >
                               <DeleteIcon />
                             </IconButton>
-                          </Stack>
-                        </Box>
+                          </div>
+                        </div>
                         {recommendation.medication && (
-                          <Typography
-                            variant="body2"
+                          <div
+                            
                             color="primary"
-                            sx={{ mb: 1 }}
+                            className=""
                           >
                             Medication: {recommendation.medication}
-                          </Typography>
+                          </div>
                         )}
-                        <Typography variant="body2" sx={{ mb: 1 }}>
+                        <div  className="">
                           {recommendation.rationale}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Expected Outcome: {recommendation.expectedOutcome}
-                        </Typography>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
 
                   {recommendationFields.length === 0 && (
-                    <Paper
-                      sx={{ p: 3, textAlign: 'center', bgcolor: 'grey.50' }}
+                    <div
+                      className=""
                     >
-                      <Typography variant="body2" color="text.secondary">
+                      <div  color="text.secondary">
                         No recommendations added yet. Click "Add Recommendation"
                         to get started.
-                      </Typography>
-                    </Paper>
+                      </div>
+                    </div>
                   )}
-                </Stack>
+                </div>
               </FixedGrid>
             </FixedGrid>
           </TabPanel>
 
           {/* Tab 2: Monitoring Plan */}
           <TabPanel value={activeTab} index={1}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 3,
-              }}
+            <div
+              className=""
             >
-              <Typography
-                variant="h6"
-                sx={{ display: 'flex', alignItems: 'center' }}
+              <div
+                
+                className=""
               >
-                <MonitorHeartIcon sx={{ mr: 1 }} />
+                <MonitorHeartIcon className="" />
                 Monitoring Parameters
-              </Typography>
+              </div>
               <Button
-                variant="outlined"
+                
                 startIcon={<AddIcon />}
                 onClick={() => handleAddMonitoring()}
               >
                 Add Parameter
               </Button>
-            </Box>
+            </div>
 
             <FixedGrid container spacing={2}>
               {monitoringFields.map((monitoring, index) => (
                 <FixedGrid item xs={12} md={6} key={monitoring.id}>
-                  <Card variant="outlined">
+                  <Card >
                     <CardContent>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          mb: 2,
-                        }}
+                      <div
+                        className=""
                       >
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 600 }}
+                        <div
+                          
+                          className=""
                         >
                           {monitoring.parameter}
-                        </Typography>
-                        <Stack direction="row" spacing={1}>
+                        </div>
+                        <div direction="row" spacing={1}>
                           <IconButton
                             size="small"
                             onClick={() => handleAddMonitoring(monitoring)}
@@ -794,28 +708,28 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
                           >
                             <DeleteIcon />
                           </IconButton>
-                        </Stack>
-                      </Box>
-                      <Typography
-                        variant="body2"
+                        </div>
+                      </div>
+                      <div
+                        
                         color="text.secondary"
-                        sx={{ mb: 1 }}
+                        className=""
                       >
                         Frequency: {monitoring.frequency}
-                      </Typography>
+                      </div>
                       {monitoring.targetValue && (
-                        <Typography
-                          variant="body2"
+                        <div
+                          
                           color="text.secondary"
-                          sx={{ mb: 1 }}
+                          className=""
                         >
                           Target: {monitoring.targetValue}
-                        </Typography>
+                        </div>
                       )}
                       {monitoring.notes && (
-                        <Typography variant="body2">
+                        <div >
                           {monitoring.notes}
-                        </Typography>
+                        </div>
                       )}
                     </CardContent>
                   </Card>
@@ -824,12 +738,12 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
 
               {monitoringFields.length === 0 && (
                 <FixedGrid item xs={12}>
-                  <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'grey.50' }}>
-                    <Typography variant="body2" color="text.secondary">
+                  <div className="">
+                    <div  color="text.secondary">
                       No monitoring parameters defined. Add parameters to track
                       therapy effectiveness and safety.
-                    </Typography>
-                  </Paper>
+                    </div>
+                  </div>
                 </FixedGrid>
               )}
             </FixedGrid>
@@ -840,50 +754,40 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
             <FixedGrid container spacing={3}>
               {/* Therapy Goals */}
               <FixedGrid item xs={12} md={6}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 2,
-                  }}
+                <div
+                  className=""
                 >
-                  <Typography
-                    variant="h6"
-                    sx={{ display: 'flex', alignItems: 'center' }}
+                  <div
+                    
+                    className=""
                   >
-                    <FlagIcon sx={{ mr: 1 }} />
+                    <FlagIcon className="" />
                     Therapy Goals
-                  </Typography>
+                  </div>
                   <Button
-                    variant="outlined"
+                    
                     size="small"
                     startIcon={<AddIcon />}
                     onClick={() => handleAddGoal()}
                   >
                     Add Goal
                   </Button>
-                </Box>
+                </div>
 
-                <Stack spacing={2}>
+                <div spacing={2}>
                   {goalFields.map((goal, index) => (
-                    <Card key={goal.id} variant="outlined">
-                      <CardContent sx={{ p: 2 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'flex-start',
-                            mb: 1,
-                          }}
+                    <Card key={goal.id} >
+                      <CardContent className="">
+                        <div
+                          className=""
                         >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: 600, flex: 1 }}
+                          <div
+                            
+                            className=""
                           >
                             {goal.description}
-                          </Typography>
-                          <Stack direction="row" spacing={1}>
+                          </div>
+                          <div direction="row" spacing={1}>
                             <IconButton
                               size="small"
                               onClick={() => handleAddGoal(goal)}
@@ -896,17 +800,17 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
                             >
                               <DeleteIcon />
                             </IconButton>
-                          </Stack>
-                        </Box>
+                          </div>
+                        </div>
                         {goal.targetDate && (
-                          <Typography
-                            variant="body2"
+                          <div
+                            
                             color="text.secondary"
-                            sx={{ mb: 1 }}
+                            className=""
                           >
                             Target Date:{' '}
                             {new Date(goal.targetDate).toLocaleDateString()}
-                          </Typography>
+                          </div>
                         )}
                         <Chip
                           label={goal.achieved ? 'Achieved' : 'In Progress'}
@@ -919,76 +823,69 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
                   ))}
 
                   {goalFields.length === 0 && (
-                    <Paper
-                      sx={{ p: 3, textAlign: 'center', bgcolor: 'grey.50' }}
+                    <div
+                      className=""
                     >
-                      <Typography variant="body2" color="text.secondary">
+                      <div  color="text.secondary">
                         No therapy goals set. Define measurable goals to track
                         treatment success.
-                      </Typography>
-                    </Paper>
+                      </div>
+                    </div>
                   )}
-                </Stack>
+                </div>
               </FixedGrid>
 
               {/* Counseling Points */}
               <FixedGrid item xs={12} md={6}>
-                <Typography
-                  variant="h6"
-                  sx={{ mb: 2, display: 'flex', alignItems: 'center' }}
+                <div
+                  
+                  className=""
                 >
-                  <PsychologyIcon sx={{ mr: 1 }} />
+                  <PsychologyIcon className="" />
                   Patient Counseling Points
-                </Typography>
+                </div>
 
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                <div className="">
+                  <div  className="">
                     Quick Add Templates:
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  </div>
+                  <div className="">
                     {COUNSELING_TEMPLATES.map((template) => (
                       <Chip
                         key={template}
                         label={template}
                         size="small"
-                        variant="outlined"
+                        
                         onClick={() => addCounselingPoint(template)}
-                        sx={{ cursor: 'pointer' }}
+                        className=""
                       />
                     ))}
-                  </Box>
-                </Box>
+                  </div>
+                </div>
 
                 <Controller
                   name="counselingPoints"
                   control={control}
-                  render={({ field }) => (
-                    <Stack spacing={1}>
+                  render={({  field  }) => (
+                    <div spacing={1}>
                       {field.value.map((point, index) => (
-                        <Box
+                        <div
                           key={index}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            p: 1,
-                            border: 1,
-                            borderColor: 'divider',
-                            borderRadius: 1,
-                          }}
+                          className=""
                         >
-                          <Typography variant="body2" sx={{ flex: 1 }}>
+                          <div  className="">
                             {point}
-                          </Typography>
+                          </div>
                           <IconButton
                             size="small"
                             onClick={() => removeCounselingPoint(index)}
                           >
                             <DeleteIcon />
                           </IconButton>
-                        </Box>
+                        </div>
                       ))}
 
-                      <TextField
+                      <Input
                         placeholder="Add custom counseling point..."
                         size="small"
                         onKeyPress={(e) => {
@@ -996,12 +893,11 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
                             const target = e.target as HTMLInputElement;
                             if (target.value.trim()) {
                               addCounselingPoint(target.value.trim());
-                              target.value = '';
+                              target.value = '';}
                             }
                           }
-                        }}
                       />
-                    </Stack>
+                    </div>
                   )}
                 />
               </FixedGrid>
@@ -1012,107 +908,107 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
           <TabPanel value={activeTab} index={3}>
             <FixedGrid container spacing={3}>
               <FixedGrid item xs={12} md={8}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
+                <div  className="">
                   Pharmacist Notes
-                </Typography>
+                </div>
                 <Controller
                   name="pharmacistNotes"
                   control={control}
-                  render={({ field }) => (
-                    <TextField
+                  render={({  field  }) => (
+                    <Input
                       {...field}
                       multiline
                       rows={8}
                       fullWidth
                       placeholder="Enter detailed pharmacist notes, clinical reasoning, and additional considerations..."
-                      variant="outlined"
+                      
                     />
                   )}
                 />
 
-                <Box sx={{ mt: 3 }}>
-                  <Typography variant="h6" sx={{ mb: 2 }}>
+                <div className="">
+                  <div  className="">
                     Implementation Timeline
-                  </Typography>
+                  </div>
                   <Controller
                     name="timeline"
                     control={control}
-                    render={({ field }) => (
-                      <TextField
+                    render={({  field  }) => (
+                      <Input
                         {...field}
                         multiline
                         rows={4}
                         fullWidth
                         placeholder="Describe the timeline for implementing recommendations..."
-                        variant="outlined"
+                        
                       />
                     )}
                   />
-                </Box>
+                </div>
               </FixedGrid>
 
               <FixedGrid item xs={12} md={4}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
+                <div  className="">
                   Plan Summary
-                </Typography>
+                </div>
 
-                <Stack spacing={2}>
-                  <Card variant="outlined">
+                <div spacing={2}>
+                  <Card >
                     <CardContent>
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      <div  className="">
                         Problems Addressed
-                      </Typography>
-                      <Typography variant="h4" color="primary">
+                      </div>
+                      <div  color="primary">
                         {watchedProblems.length}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         of {problems.length} identified
-                      </Typography>
+                      </div>
                     </CardContent>
                   </Card>
 
-                  <Card variant="outlined">
+                  <Card >
                     <CardContent>
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      <div  className="">
                         Recommendations
-                      </Typography>
-                      <Typography variant="h4" color="primary">
+                      </div>
+                      <div  color="primary">
                         {watchedRecommendations.length}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         therapeutic interventions
-                      </Typography>
+                      </div>
                     </CardContent>
                   </Card>
 
-                  <Card variant="outlined">
+                  <Card >
                     <CardContent>
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      <div  className="">
                         Monitoring Parameters
-                      </Typography>
-                      <Typography variant="h4" color="primary">
+                      </div>
+                      <div  color="primary">
                         {watchedMonitoring.length}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         safety & efficacy checks
-                      </Typography>
+                      </div>
                     </CardContent>
                   </Card>
 
-                  <Card variant="outlined">
+                  <Card >
                     <CardContent>
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      <div  className="">
                         Therapy Goals
-                      </Typography>
-                      <Typography variant="h4" color="primary">
+                      </div>
+                      <div  color="primary">
                         {watchedGoals.length}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         measurable outcomes
-                      </Typography>
+                      </div>
                     </CardContent>
                   </Card>
-                </Stack>
+                </div>
               </FixedGrid>
             </FixedGrid>
           </TabPanel>
@@ -1141,7 +1037,7 @@ const PlanDevelopment: React.FC<PlanDevelopmentProps> = ({
           onSave={handleSaveGoal}
           goal={selectedGoal}
         />
-      </Box>
+      </div>
     </LocalizationProvider>
   );
 };
@@ -1154,11 +1050,11 @@ interface RecommendationDialogProps {
   recommendation?: TherapyRecommendation | null;
 }
 
-const RecommendationDialog: React.FC<RecommendationDialogProps> = ({
+const RecommendationDialog: React.FC<RecommendationDialogProps> = ({ 
   open,
   onClose,
   onSave,
-  recommendation,
+  recommendation
 }) => {
   const {
     control,
@@ -1166,15 +1062,14 @@ const RecommendationDialog: React.FC<RecommendationDialogProps> = ({
     reset,
     watch,
     formState: { errors },
-  } = useForm<TherapyRecommendation>({
+  } = useForm<TherapyRecommendation>({ 
     defaultValues: recommendation || {
       type: 'monitor',
       priority: 'medium',
       medication: '',
       rationale: '',
-      expectedOutcome: '',
-    },
-  });
+      expectedOutcome: ''}
+    }
 
   const watchedType = watch('type');
 
@@ -1182,12 +1077,12 @@ const RecommendationDialog: React.FC<RecommendationDialogProps> = ({
     if (recommendation) {
       reset(recommendation);
     } else {
-      reset({
+      reset({ 
         type: 'monitor',
         priority: 'medium',
         medication: '',
         rationale: '',
-        expectedOutcome: '',
+        expectedOutcome: ''}
       });
     }
   }, [recommendation, reset]);
@@ -1203,36 +1098,36 @@ const RecommendationDialog: React.FC<RecommendationDialogProps> = ({
         {recommendation ? 'Edit Recommendation' : 'Add Recommendation'}
       </DialogTitle>
       <DialogContent>
-        <FixedGrid container spacing={2} sx={{ mt: 1 }}>
+        <FixedGrid container spacing={2} className="">
           <FixedGrid item xs={12} md={6}>
             <Controller
               name="type"
               control={control}
-              rules={{ required: 'Recommendation type is required' }}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.type}>
-                  <InputLabel>Recommendation Type</InputLabel>
+              
+              render={({  field  }) => (
+                <div fullWidth error={!!errors.type}>
+                  <Label>Recommendation Type</Label>
                   <Select {...field} label="Recommendation Type">
                     {RECOMMENDATION_TYPES.map((type) => (
                       <MenuItem key={type.value} value={type.value}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <div className="">
                           {type.icon}
-                          <Box sx={{ ml: 1 }}>
-                            <Typography variant="body2">
+                          <div className="">
+                            <div >
                               {type.label}
-                            </Typography>
-                            <Typography
-                              variant="caption"
+                            </div>
+                            <div
+                              
                               color="text.secondary"
                             >
                               {type.description}
-                            </Typography>
-                          </Box>
-                        </Box>
+                            </div>
+                          </div>
+                        </div>
                       </MenuItem>
                     ))}
                   </Select>
-                </FormControl>
+                </div>
               )}
             />
           </FixedGrid>
@@ -1241,10 +1136,10 @@ const RecommendationDialog: React.FC<RecommendationDialogProps> = ({
             <Controller
               name="priority"
               control={control}
-              rules={{ required: 'Priority is required' }}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.priority}>
-                  <InputLabel>Priority</InputLabel>
+              
+              render={({  field  }) => (
+                <div fullWidth error={!!errors.priority}>
+                  <Label>Priority</Label>
                   <Select {...field} label="Priority">
                     {PRIORITY_LEVELS.map((priority) => (
                       <MenuItem key={priority.value} value={priority.value}>
@@ -1259,14 +1154,14 @@ const RecommendationDialog: React.FC<RecommendationDialogProps> = ({
                               | 'info'
                               | 'default'
                               | 'error'
-                              | 'warning'
+                              | 'warning'}
                           }
-                          sx={{ mr: 1 }}
+                          className=""
                         />
                       </MenuItem>
                     ))}
                   </Select>
-                </FormControl>
+                </div>
               )}
             />
           </FixedGrid>
@@ -1275,8 +1170,8 @@ const RecommendationDialog: React.FC<RecommendationDialogProps> = ({
             <Controller
               name="medication"
               control={control}
-              render={({ field }) => (
-                <TextField
+              render={({  field  }) => (
+                <Input
                   {...field}
                   fullWidth
                   label="Medication (if applicable)"
@@ -1290,9 +1185,9 @@ const RecommendationDialog: React.FC<RecommendationDialogProps> = ({
             <Controller
               name="rationale"
               control={control}
-              rules={{ required: 'Rationale is required' }}
-              render={({ field }) => (
-                <TextField
+              
+              render={({  field  }) => (
+                <Input
                   {...field}
                   fullWidth
                   multiline
@@ -1307,10 +1202,10 @@ const RecommendationDialog: React.FC<RecommendationDialogProps> = ({
           </FixedGrid>
 
           <FixedGrid item xs={12}>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            <div  className="">
               Quick Templates:
-            </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+            </div>
+            <div className="">
               {RECOMMENDATION_TEMPLATES[
                 watchedType as keyof typeof RECOMMENDATION_TEMPLATES
               ]?.map((template) => (
@@ -1318,31 +1213,29 @@ const RecommendationDialog: React.FC<RecommendationDialogProps> = ({
                   key={template}
                   label={template}
                   size="small"
-                  variant="outlined"
+                  
                   onClick={() => {
                     const currentRationale = watch('rationale');
                     if (!currentRationale.includes(template)) {
-                      reset({
-                        ...watch(),
-                        rationale: currentRationale
+                      reset({ 
+                        ...watch()}
+                        rationale: currentRationale}
                           ? `${currentRationale}. ${template}`
-                          : template,
-                      });
+                          : template}
                     }
-                  }}
-                  sx={{ cursor: 'pointer' }}
+                  className=""
                 />
               ))}
-            </Box>
+            </div>
           </FixedGrid>
 
           <FixedGrid item xs={12}>
             <Controller
               name="expectedOutcome"
               control={control}
-              rules={{ required: 'Expected outcome is required' }}
-              render={({ field }) => (
-                <TextField
+              
+              render={({  field  }) => (
+                <Input
                   {...field}
                   fullWidth
                   multiline
@@ -1359,7 +1252,7 @@ const RecommendationDialog: React.FC<RecommendationDialogProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit(handleSave)}>
+        <Button  onClick={handleSubmit(handleSave)}>
           Save Recommendation
         </Button>
       </DialogActions>
@@ -1375,35 +1268,34 @@ interface MonitoringDialogProps {
   monitoring?: MonitoringParameter | null;
 }
 
-const MonitoringDialog: React.FC<MonitoringDialogProps> = ({
+const MonitoringDialog: React.FC<MonitoringDialogProps> = ({ 
   open,
   onClose,
   onSave,
-  monitoring,
+  monitoring
 }) => {
   const {
     control,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<MonitoringParameter>({
+  } = useForm<MonitoringParameter>({ 
     defaultValues: monitoring || {
       parameter: '',
       frequency: '',
       targetValue: '',
-      notes: '',
-    },
-  });
+      notes: ''}
+    }
 
   useEffect(() => {
     if (monitoring) {
       reset(monitoring);
     } else {
-      reset({
+      reset({ 
         parameter: '',
         frequency: '',
         targetValue: '',
-        notes: '',
+        notes: ''}
       });
     }
   }, [monitoring, reset]);
@@ -1419,19 +1311,19 @@ const MonitoringDialog: React.FC<MonitoringDialogProps> = ({
         {monitoring ? 'Edit Monitoring Parameter' : 'Add Monitoring Parameter'}
       </DialogTitle>
       <DialogContent>
-        <FixedGrid container spacing={2} sx={{ mt: 1 }}>
+        <FixedGrid container spacing={2} className="">
           <FixedGrid item xs={12}>
             <Controller
               name="parameter"
               control={control}
-              rules={{ required: 'Parameter is required' }}
-              render={({ field }) => (
+              
+              render={({  field  }) => (
                 <Autocomplete
                   {...field}
                   options={MONITORING_PARAMETERS}
                   freeSolo
                   renderInput={(params) => (
-                    <TextField
+                    <Input}
                       {...params}
                       label="Monitoring Parameter"
                       error={!!errors.parameter}
@@ -1448,14 +1340,14 @@ const MonitoringDialog: React.FC<MonitoringDialogProps> = ({
             <Controller
               name="frequency"
               control={control}
-              rules={{ required: 'Frequency is required' }}
-              render={({ field }) => (
+              
+              render={({  field  }) => (
                 <Autocomplete
                   {...field}
                   options={MONITORING_FREQUENCIES}
                   freeSolo
                   renderInput={(params) => (
-                    <TextField
+                    <Input}
                       {...params}
                       label="Monitoring Frequency"
                       error={!!errors.frequency}
@@ -1472,8 +1364,8 @@ const MonitoringDialog: React.FC<MonitoringDialogProps> = ({
             <Controller
               name="targetValue"
               control={control}
-              render={({ field }) => (
-                <TextField
+              render={({  field  }) => (
+                <Input
                   {...field}
                   fullWidth
                   label="Target Value (optional)"
@@ -1487,8 +1379,8 @@ const MonitoringDialog: React.FC<MonitoringDialogProps> = ({
             <Controller
               name="notes"
               control={control}
-              render={({ field }) => (
-                <TextField
+              render={({  field  }) => (
+                <Input
                   {...field}
                   fullWidth
                   multiline
@@ -1503,7 +1395,7 @@ const MonitoringDialog: React.FC<MonitoringDialogProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit(handleSave)}>
+        <Button  onClick={handleSubmit(handleSave)}>
           Save Parameter
         </Button>
       </DialogActions>
@@ -1519,41 +1411,40 @@ interface GoalDialogProps {
   goal?: TherapyGoal | null;
 }
 
-const GoalDialog: React.FC<GoalDialogProps> = ({
+const GoalDialog: React.FC<GoalDialogProps> = ({ 
   open,
   onClose,
   onSave,
-  goal,
+  goal
 }) => {
   const {
     control,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<TherapyGoal>({
+  } = useForm<TherapyGoal>({ 
     defaultValues: goal || {
       description: '',
       targetDate: undefined,
       achieved: false,
-      achievedDate: undefined,
-    },
-  });
+      achievedDate: undefined}
+    }
 
   useEffect(() => {
     if (goal) {
-      reset({
+      reset({ 
         ...goal,
         targetDate: goal.targetDate ? goal.targetDate.toString() : undefined,
         achievedDate: goal.achievedDate
           ? goal.achievedDate.toString()
-          : undefined,
+          : undefined}
       });
     } else {
-      reset({
+      reset({ 
         description: '',
         targetDate: undefined,
         achieved: false,
-        achievedDate: undefined,
+        achievedDate: undefined}
       });
     }
   }, [goal, reset]);
@@ -1569,14 +1460,14 @@ const GoalDialog: React.FC<GoalDialogProps> = ({
         {goal ? 'Edit Therapy Goal' : 'Add Therapy Goal'}
       </DialogTitle>
       <DialogContent>
-        <FixedGrid container spacing={2} sx={{ mt: 1 }}>
+        <FixedGrid container spacing={2} className="">
           <FixedGrid item xs={12}>
             <Controller
               name="description"
               control={control}
-              rules={{ required: 'Goal description is required' }}
-              render={({ field }) => (
-                <TextField
+              
+              render={({  field  }) => (
+                <Input
                   {...field}
                   fullWidth
                   multiline
@@ -1594,18 +1485,17 @@ const GoalDialog: React.FC<GoalDialogProps> = ({
             <Controller
               name="targetDate"
               control={control}
-              render={({ field }) => (
+              render={({  field  }) => (
                 <DatePicker
                   label="Target Date (optional)"
                   value={field.value ? new Date(field.value) : null}
                   onChange={(date) =>
-                    field.onChange(date?.toISOString().split('T')[0])
+                    field.onChange(date?.toISOString().split('T')[0])}
                   }
                   slotProps={{
                     textField: {
-                      fullWidth: true,
+                      fullWidth: true,}
                     },
-                  }}
                 />
               )}
             />
@@ -1615,7 +1505,7 @@ const GoalDialog: React.FC<GoalDialogProps> = ({
             <Controller
               name="achieved"
               control={control}
-              render={({ field }) => (
+              render={({  field  }) => (
                 <FormControlLabel
                   control={<Checkbox {...field} checked={field.value} />}
                   label="Goal Achieved"
@@ -1628,18 +1518,17 @@ const GoalDialog: React.FC<GoalDialogProps> = ({
             <Controller
               name="achievedDate"
               control={control}
-              render={({ field }) => (
+              render={({  field  }) => (
                 <DatePicker
                   label="Achievement Date (if achieved)"
                   value={field.value ? new Date(field.value) : null}
                   onChange={(date) =>
-                    field.onChange(date?.toISOString().split('T')[0])
+                    field.onChange(date?.toISOString().split('T')[0])}
                   }
                   slotProps={{
                     textField: {
-                      fullWidth: true,
+                      fullWidth: true,}
                     },
-                  }}
                 />
               )}
             />
@@ -1648,7 +1537,7 @@ const GoalDialog: React.FC<GoalDialogProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit(handleSave)}>
+        <Button  onClick={handleSubmit(handleSave)}>
           Save Goal
         </Button>
       </DialogActions>

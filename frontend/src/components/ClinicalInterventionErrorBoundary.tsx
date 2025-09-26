@@ -1,43 +1,6 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import {
-  Box,
-  Typography,
-  Alert,
-  AlertTitle,
-  Button,
-  Card,
-  CardContent,
-  CardActions,
-  Collapse,
-  IconButton,
-  Stack,
-  Chip,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  Error as ErrorIcon,
-  Refresh as RefreshIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  BugReport as BugReportIcon,
-  ContactSupport as ContactSupportIcon,
-  CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  Send as SendIcon,
-} from '@mui/icons-material';
 import logger from '../utils/logger';
 
+import { Button, Input, Card, CardContent, Dialog, DialogContent, DialogTitle, Spinner, Alert, AlertTitle } from '@/components/ui/button';
 // Error types and interfaces
 interface ErrorDetails {
   message: string;
@@ -51,7 +14,6 @@ interface ErrorDetails {
   userId?: string;
   sessionId?: string;
 }
-
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -62,7 +24,6 @@ interface Props {
   resetOnPropsChange?: boolean;
   isolateErrors?: boolean;
 }
-
 interface State {
   hasError: boolean;
   error: Error | null;
@@ -75,23 +36,12 @@ interface State {
   isReporting: boolean;
   reportSent: boolean;
 }
-
 // Error severity classification
 enum ErrorSeverity {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  CRITICAL = 'critical',
 }
-
 // Recovery actions
 enum RecoveryAction {
-  RETRY = 'retry',
-  REFRESH = 'refresh',
-  CONTACT_SUPPORT = 'contact_support',
-  RELOAD_PAGE = 'reload_page',
 }
-
 interface ErrorClassification {
   severity: ErrorSeverity;
   recoveryAction: RecoveryAction;
@@ -99,13 +49,10 @@ interface ErrorClassification {
   technicalMessage: string;
   recoveryInstructions: string[];
 }
-
 class ClinicalInterventionErrorBoundary extends Component<Props, State> {
   private retryTimeoutId: NodeJS.Timeout | null = null;
-
   constructor(props: Props) {
     super(props);
-
     this.state = {
       hasError: false,
       error: null,
@@ -119,14 +66,12 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
       reportSent: false,
     };
   }
-
   static getDerivedStateFromError(error: Error): Partial<State> {
     return {
       hasError: true,
       error,
     };
   }
-
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const errorDetails: ErrorDetails = {
       message: error.message,
@@ -140,20 +85,16 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
       userId: this.getUserId(),
       sessionId: this.getSessionId(),
     };
-
-    this.setState({
+    this.setState({ 
       errorInfo,
-      errorDetails,
+      errorDetails}
     });
-
     // Log error
     this.logError(error, errorDetails);
-
     // Call custom error handler
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
-
     // Auto-retry for certain error types
     if (
       this.shouldAutoRetry(error) &&
@@ -162,7 +103,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
       this.scheduleRetry();
     }
   }
-
   componentDidUpdate(prevProps: Props) {
     // Reset error state when props change (if enabled)
     if (
@@ -173,13 +113,11 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
       this.handleRetry();
     }
   }
-
   componentWillUnmount() {
     if (this.retryTimeoutId) {
       clearTimeout(this.retryTimeoutId);
     }
   }
-
   private getUserId(): string | undefined {
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -188,7 +126,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
       return undefined;
     }
   }
-
   private getSessionId(): string | undefined {
     try {
       return sessionStorage.getItem('sessionId') || undefined;
@@ -196,7 +133,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
       return undefined;
     }
   }
-
   private logError(error: Error, details: ErrorDetails) {
     logger.error('Clinical Intervention Error Boundary caught error', {
       message: error.message,
@@ -206,14 +142,11 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
       url: details.url,
       userId: details.userId,
       sessionId: details.sessionId,
-      retryCount: this.state.retryCount,
-    });
+      retryCount: this.state.retryCount}
   }
-
   private classifyError(error: Error): ErrorClassification {
     const message = error.message.toLowerCase();
     const stack = error.stack?.toLowerCase() || '';
-
     // Network errors
     if (message.includes('network') || message.includes('fetch')) {
       return {
@@ -229,7 +162,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
         ],
       };
     }
-
     // Permission errors
     if (
       message.includes('permission') ||
@@ -248,7 +180,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
         ],
       };
     }
-
     // Validation errors
     if (message.includes('validation') || message.includes('invalid')) {
       return {
@@ -264,7 +195,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
         ],
       };
     }
-
     // React component errors
     if (stack.includes('react') || message.includes('component')) {
       return {
@@ -279,7 +209,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
         ],
       };
     }
-
     // Default classification
     return {
       severity: ErrorSeverity.MEDIUM,
@@ -293,7 +222,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
       ],
     };
   }
-
   private shouldAutoRetry(error: Error): boolean {
     const classification = this.classifyError(error);
     return (
@@ -301,22 +229,18 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
       classification.severity !== ErrorSeverity.CRITICAL
     );
   }
-
   private scheduleRetry() {
     const delay = Math.min(1000 * Math.pow(2, this.state.retryCount), 10000); // Exponential backoff, max 10s
-
     this.retryTimeoutId = setTimeout(() => {
       this.handleRetry();
     }, delay);
   }
-
   private handleRetry = () => {
     if (this.retryTimeoutId) {
       clearTimeout(this.retryTimeoutId);
       this.retryTimeoutId = null;
     }
-
-    this.setState((prevState) => ({
+    this.setState((prevState) => ({ 
       hasError: false,
       error: null,
       errorInfo: null,
@@ -326,46 +250,38 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
       showReportDialog: false,
       reportDescription: '',
       isReporting: false,
-      reportSent: false,
+      reportSent: false}
     }));
   };
-
   private handleRefresh = () => {
     window.location.reload();
   };
-
   private handleToggleDetails = () => {
-    this.setState((prevState) => ({
-      showDetails: !prevState.showDetails,
+    this.setState((prevState) => ({ 
+      showDetails: !prevState.showDetails}
     }));
   };
-
   private handleShowReportDialog = () => {
     this.setState({ showReportDialog: true });
   };
-
   private handleCloseReportDialog = () => {
-    this.setState({
+    this.setState({ 
       showReportDialog: false,
       reportDescription: '',
       isReporting: false,
-      reportSent: false,
+      reportSent: false}
     });
   };
-
   private handleReportDescriptionChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     this.setState({ reportDescription: event.target.value });
   };
-
   private handleSendReport = async () => {
     this.setState({ isReporting: true });
-
     try {
       // Simulate sending error report
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
       // In a real implementation, you would send the error report to your backend
       const reportData = {
         error: this.state.error?.message,
@@ -377,14 +293,11 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
         url: this.state.errorDetails?.url,
         userAgent: this.state.errorDetails?.userAgent,
       };
-
       console.log('Error report would be sent:', reportData);
-
-      this.setState({
+      this.setState({ 
         isReporting: false,
-        reportSent: true,
+        reportSent: true}
       });
-
       // Auto-close dialog after success
       setTimeout(() => {
         this.handleCloseReportDialog();
@@ -394,7 +307,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
       this.setState({ isReporting: false });
     }
   };
-
   private getSeverityColor(
     severity: ErrorSeverity
   ): 'error' | 'warning' | 'info' {
@@ -410,7 +322,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
         return 'error';
     }
   }
-
   private getSeverityIcon(severity: ErrorSeverity) {
     switch (severity) {
       case ErrorSeverity.CRITICAL:
@@ -424,102 +335,88 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
         return <ErrorIcon />;
     }
   }
-
   render() {
     if (!this.state.hasError) {
       return this.props.children;
     }
-
     // Use custom fallback if provided
     if (this.props.fallback) {
       return this.props.fallback;
     }
-
     const error = this.state.error;
     const classification = error ? this.classifyError(error) : null;
-
     if (!error || !classification) {
       return (
-        <Alert severity="error" sx={{ m: 2 }}>
+        <Alert severity="error" className="">
           <AlertTitle>Unknown Error</AlertTitle>
           An unknown error occurred. Please refresh the page.
         </Alert>
       );
     }
-
     return (
-      <Box sx={{ p: 2, maxWidth: 800, mx: 'auto' }}>
-        <Card elevation={3}>
+      <div className="">
+        <Card >
           <CardContent>
-            <Stack spacing={2}>
+            <div spacing={2}>
               {/* Error Header */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <div className="">
                 {this.getSeverityIcon(classification.severity)}
-                <Typography variant="h6" color="error">
+                <div  color="error">
                   Clinical Interventions Error
-                </Typography>
+                </div>
                 <Chip
                   label={classification.severity.toUpperCase()}
                   color={this.getSeverityColor(classification.severity)}
                   size="small"
                 />
-              </Box>
-
+              </div>
               {/* User Message */}
               <Alert severity={this.getSeverityColor(classification.severity)}>
                 <AlertTitle>What happened?</AlertTitle>
                 {classification.userMessage}
               </Alert>
-
               {/* Recovery Instructions */}
-              <Box>
-                <Typography variant="subtitle2" gutterBottom>
+              <div>
+                <div  gutterBottom>
                   What you can do:
-                </Typography>
+                </div>
                 <List dense>
                   {classification.recoveryInstructions.map(
                     (instruction, index) => (
-                      <ListItem key={index} sx={{ py: 0.5 }}>
-                        <ListItemIcon sx={{ minWidth: 32 }}>
+                      <div key={index} className="">
+                        <div className="">
                           <CheckCircleIcon color="primary" fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText primary={instruction} />
-                      </ListItem>
+                        </div>
+                        <div primary={instruction} />
+                      </div>
                     )
                   )}
                 </List>
-              </Box>
-
+              </div>
               {/* Error Details (Collapsible) */}
               {this.props.showErrorDetails && (
-                <Box>
+                <div>
                   <Button
                     startIcon={
                       this.state.showDetails ? (
                         <ExpandLessIcon />
                       ) : (
                         <ExpandMoreIcon />
-                      )
+                      )}
                     }
                     onClick={this.handleToggleDetails}
                     size="small"
                   >
                     {this.state.showDetails ? 'Hide' : 'Show'} Technical Details
                   </Button>
-
                   <Collapse in={this.state.showDetails}>
-                    <Box
-                      sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}
+                    <div
+                      className=""
                     >
-                      <Typography
-                        variant="body2"
+                      <div
+                        
                         component="pre"
-                        sx={{
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word',
-                          fontSize: '0.75rem',
-                          fontFamily: 'monospace',
-                        }}
+                        className=""
                       >
                         <strong>Error:</strong> {error.message}
                         {error.stack && (
@@ -554,30 +451,27 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
                             )}
                           </>
                         )}
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   </Collapse>
-                </Box>
+                </div>
               )}
-            </Stack>
+            </div>
           </CardContent>
-
-          <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
-            <Stack direction="row" spacing={1}>
+          <CardActions className="">
+            <div direction="row" spacing={1}>
               <Button
-                variant="contained"
+                
                 startIcon={<RefreshIcon />}
                 onClick={this.handleRetry}
                 disabled={this.state.retryCount >= (this.props.maxRetries || 3)}
               >
                 Try Again
               </Button>
-
-              <Button variant="outlined" onClick={this.handleRefresh}>
+              <Button  onClick={this.handleRefresh}>
                 Refresh Page
               </Button>
-            </Stack>
-
+            </div>
             {this.props.enableErrorReporting && (
               <Button
                 startIcon={<BugReportIcon />}
@@ -589,7 +483,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
             )}
           </CardActions>
         </Card>
-
         {/* Error Report Dialog */}
         <ErrorReportDialog
           open={this.state.showReportDialog}
@@ -600,11 +493,10 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
           isReporting={this.state.isReporting}
           reportSent={this.state.reportSent}
         />
-      </Box>
+      </div>
     );
   }
 }
-
 // Error Report Dialog Component
 interface ErrorReportDialogProps {
   open: boolean;
@@ -615,19 +507,17 @@ interface ErrorReportDialogProps {
   isReporting: boolean;
   reportSent: boolean;
 }
-
-const ErrorReportDialog: React.FC<ErrorReportDialogProps> = ({
+const ErrorReportDialog: React.FC<ErrorReportDialogProps> = ({ 
   open,
   onClose,
   onSend,
   description,
   onDescriptionChange,
   isReporting,
-  reportSent,
+  reportSent
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
   return (
     <Dialog
       open={open}
@@ -637,27 +527,25 @@ const ErrorReportDialog: React.FC<ErrorReportDialogProps> = ({
       fullScreen={isMobile}
     >
       <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <div className="">
           <BugReportIcon />
           Report Error
-        </Box>
+        </div>
       </DialogTitle>
-
       <DialogContent>
         {reportSent ? (
-          <Alert severity="success" sx={{ mb: 2 }}>
+          <Alert severity="success" className="">
             <AlertTitle>Report Sent Successfully</AlertTitle>
             Thank you for reporting this issue. Our team will investigate and
             work on a fix.
           </Alert>
         ) : (
-          <Stack spacing={2}>
-            <Typography variant="body2" color="text.secondary">
+          <div spacing={2}>
+            <div  color="text.secondary">
               Help us improve by describing what you were doing when this error
               occurred. Technical details will be included automatically.
-            </Typography>
-
-            <TextField
+            </div>
+            <Input
               fullWidth
               multiline
               rows={4}
@@ -667,18 +555,16 @@ const ErrorReportDialog: React.FC<ErrorReportDialogProps> = ({
               onChange={onDescriptionChange}
               disabled={isReporting}
             />
-          </Stack>
+          </div>
         )}
       </DialogContent>
-
       <DialogActions>
         <Button onClick={onClose}>{reportSent ? 'Close' : 'Cancel'}</Button>
-
         {!reportSent && (
           <Button
-            variant="contained"
-            startIcon={
-              isReporting ? <CircularProgress size={16} /> : <SendIcon />
+            
+            startIcon={}
+              isReporting ? <Spinner size={16} /> : <SendIcon />
             }
             onClick={onSend}
             disabled={isReporting || !description.trim()}
@@ -690,10 +576,8 @@ const ErrorReportDialog: React.FC<ErrorReportDialogProps> = ({
     </Dialog>
   );
 };
-
 // Higher-order component for wrapping components with error boundary
 export const withClinicalInterventionErrorBoundary = <P extends object>(
-  Component: React.ComponentType<P>,
   errorBoundaryProps?: Partial<Props>
 ) => {
   const WrappedComponent = (props: P) => (
@@ -701,12 +585,8 @@ export const withClinicalInterventionErrorBoundary = <P extends object>(
       <Component {...props} />
     </ClinicalInterventionErrorBoundary>
   );
-
-  WrappedComponent.displayName = `withClinicalInterventionErrorBoundary(${
     Component.displayName || Component.name
   })`;
-
   return WrappedComponent;
 };
-
 export default ClinicalInterventionErrorBoundary;

@@ -1,7 +1,3 @@
-import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useThemeToggle, useThemeTogglePerformance } from '../useThemeToggle';
-
 // Mock localStorage
 const localStorageMock = {
     getItem: vi.fn(),
@@ -32,28 +28,23 @@ describe('useThemeToggle', () => {
         // Setup DOM mock
         Object.defineProperty(window, 'localStorage', {
             value: localStorageMock,
-            writable: true,
-        });
+            writable: true}
 
         Object.defineProperty(window, 'matchMedia', {
             value: matchMediaMock,
-            writable: true,
-        });
+            writable: true}
 
         Object.defineProperty(window, 'performance', {
             value: performanceMock,
-            writable: true,
-        });
+            writable: true}
 
         Object.defineProperty(window, 'requestAnimationFrame', {
             value: requestAnimationFrameMock,
-            writable: true,
-        });
+            writable: true}
 
         Object.defineProperty(window, 'requestIdleCallback', {
             value: requestIdleCallbackMock,
-            writable: true,
-        });
+            writable: true}
 
         // Setup document.documentElement mock
         const mockClassList = {
@@ -71,16 +62,15 @@ describe('useThemeToggle', () => {
 
         Object.defineProperty(document, 'documentElement', {
             value: mockDocumentElement,
-            writable: true,
-        });
+            writable: true}
 
         // Default matchMedia response
-        matchMediaMock.mockReturnValue({
+        matchMediaMock.mockReturnValue({ 
             matches: false,
             addEventListener: vi.fn(),
             removeEventListener: vi.fn(),
             addListener: vi.fn(),
-            removeListener: vi.fn(),
+            removeListener: vi.fn()}
         });
 
         // Default localStorage responses
@@ -124,12 +114,12 @@ describe('useThemeToggle', () => {
 
         it('should handle system theme preference', () => {
             // Mock system dark mode
-            matchMediaMock.mockReturnValue({
+            matchMediaMock.mockReturnValue({ 
                 matches: true,
                 addEventListener: vi.fn(),
                 removeEventListener: vi.fn(),
                 addListener: vi.fn(),
-                removeListener: vi.fn(),
+                removeListener: vi.fn()}
             });
 
             const { result } = renderHook(() => useThemeToggle());
@@ -246,12 +236,12 @@ describe('useThemeToggle', () => {
 
     describe('System Theme Detection', () => {
         it('should detect system dark mode preference', () => {
-            matchMediaMock.mockReturnValue({
+            matchMediaMock.mockReturnValue({ 
                 matches: true,
                 addEventListener: vi.fn(),
                 removeEventListener: vi.fn(),
                 addListener: vi.fn(),
-                removeListener: vi.fn(),
+                removeListener: vi.fn()}
             });
 
             const { result } = renderHook(() => useThemeToggle());
@@ -264,12 +254,12 @@ describe('useThemeToggle', () => {
         });
 
         it('should detect system light mode preference', () => {
-            matchMediaMock.mockReturnValue({
+            matchMediaMock.mockReturnValue({ 
                 matches: false,
                 addEventListener: vi.fn(),
                 removeEventListener: vi.fn(),
                 addListener: vi.fn(),
-                removeListener: vi.fn(),
+                removeListener: vi.fn()}
             });
 
             const { result } = renderHook(() => useThemeToggle());
@@ -283,12 +273,12 @@ describe('useThemeToggle', () => {
 
         it('should listen for system theme changes', () => {
             const mockAddEventListener = vi.fn();
-            matchMediaMock.mockReturnValue({
+            matchMediaMock.mockReturnValue({ 
                 matches: false,
                 addEventListener: mockAddEventListener,
                 removeEventListener: vi.fn(),
                 addListener: vi.fn(),
-                removeListener: vi.fn(),
+                removeListener: vi.fn()}
             });
 
             renderHook(() => useThemeToggle());

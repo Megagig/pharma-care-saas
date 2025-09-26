@@ -1,5 +1,3 @@
-import { useState, useCallback, useEffect } from 'react';
-
 // Define comprehensive error type to replace any
 export interface AppError {
   message?: string;
@@ -105,9 +103,9 @@ export const useErrorHandler = () => {
         timestamp: new Date(),
       };
 
-      setErrors((prev) => ({
+      setErrors((prev) => ({ 
         ...prev,
-        [key]: errorState,
+        [key]: errorState}
       }));
 
       // Log error for debugging
@@ -165,9 +163,9 @@ export const useLoadingState = () => {
   const [loading, setLoading] = useState<LoadingState>({});
 
   const setLoadingState = useCallback((key: string, isLoading: boolean) => {
-    setLoading((prev) => ({
+    setLoading((prev) => ({ 
       ...prev,
-      [key]: isLoading,
+      [key]: isLoading}
     }));
   }, []);
 
@@ -308,9 +306,9 @@ export const useRetryLogic = () => {
         return result;
       } catch (error) {
         const nextRetryCount = currentRetries + 1;
-        setRetryCount((prev) => ({
+        setRetryCount((prev) => ({ 
           ...prev,
-          [key]: nextRetryCount,
+          [key]: nextRetryCount}
         }));
 
         if (nextRetryCount < maxRetries) {
@@ -393,8 +391,7 @@ export const useDataFetch = <T>(
               maxRetries,
               onRetry: (attempt) => {
                 console.log(`Retrying ${key} - attempt ${attempt}`);
-              },
-            })
+              }}
         : fetchFunction;
 
       const result = await executeOperation(key, operation, {
@@ -403,8 +400,7 @@ export const useDataFetch = <T>(
           setIsInitialized(true);
           if (onSuccess && data !== null) onSuccess(data);
         },
-        onError,
-      });
+        onError}
 
       return result;
     },
@@ -472,8 +468,7 @@ export const useFormSubmission = <T, R = unknown>(
 
       return executeOperation(key, () => submitFunction(data), {
         onSuccess,
-        onError,
-      });
+        onError}
     },
     [executeOperation, key, submitFunction]
   );

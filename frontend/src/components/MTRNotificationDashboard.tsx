@@ -1,234 +1,178 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  Button,
-  Alert,
-  Chip,
-  LinearProgress,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-} from '@mui/material';
-import {
-  Notifications as NotificationsIcon,
-  Email as EmailIcon,
-  Sms as SmsIcon,
-  Warning as WarningIcon,
-  Schedule as ScheduleIcon,
-  Refresh as RefreshIcon,
-  Settings as SettingsIcon,
-  TrendingUp as TrendingUpIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Pending as PendingIcon,
-} from '@mui/icons-material';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
   mtrNotificationService,
-  NotificationStatistics,
-} from '../services/mtrNotificationService';
+
 import MTRNotificationPreferences from './MTRNotificationPreferences';
 
+import { Button, Card, CardContent, Dialog, DialogContent, DialogTitle, Tooltip, Progress, Alert, Separator } from '@/components/ui/button';
 const MTRNotificationDashboard: React.FC = () => {
   const [showPreferences, setShowPreferences] = useState(false);
   const [showStatistics, setShowStatistics] = useState(false);
-
   const queryClient = useQueryClient();
-
   // Fetch notification statistics
   const {
     data: statistics,
     isLoading: statsLoading,
     error: statsError,
-  } = useQuery({
+  } = useQuery({ 
     queryKey: ['notificationStatistics'],
     queryFn: mtrNotificationService.getNotificationStatistics,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000, // Refresh every 30 seconds })
   });
-
   // Check overdue follow-ups mutation
-  const checkOverdueMutation = useMutation({
+  const checkOverdueMutation = useMutation({ 
     mutationFn: mtrNotificationService.checkOverdueFollowUps,
-    onSuccess: () => {
+    onSuccess: () => { })
       queryClient.invalidateQueries({ queryKey: ['notificationStatistics'] });
-    },
-  });
-
+    }
   // Process pending reminders mutation
-  const processPendingMutation = useMutation({
+  const processPendingMutation = useMutation({ 
     mutationFn: mtrNotificationService.processPendingReminders,
-    onSuccess: () => {
+    onSuccess: () => { })
       queryClient.invalidateQueries({ queryKey: ['notificationStatistics'] });
-    },
-  });
-
+    }
   const handleRefreshStats = () => {
     queryClient.invalidateQueries({ queryKey: ['notificationStatistics'] });
   };
-
   const getSuccessRate = (stats: NotificationStatistics) => {
     if (stats.totalScheduled === 0) return 0;
     return Math.round((stats.sent / stats.totalScheduled) * 100);
   };
-
   const getStatusColor = (rate: number) => {
     if (rate >= 90) return 'success';
     if (rate >= 70) return 'warning';
     return 'error';
   };
-
   return (
-    <Box>
+    <div>
       {/* Header */}
-      <Box
+      <div
         display="flex"
         justifyContent="space-between"
         alignItems="center"
         mb={3}
       >
-        <Box display="flex" alignItems="center">
-          <NotificationsIcon sx={{ mr: 2, color: 'primary.main' }} />
-          <Typography variant="h4" component="h1">
+        <div display="flex" alignItems="center">
+          <NotificationsIcon className="" />
+          <div  component="h1">
             MTR Notification Dashboard
-          </Typography>
-        </Box>
-        <Box display="flex" gap={1}>
+          </div>
+        </div>
+        <div display="flex" gap={1}>
           <Tooltip title="Refresh Statistics">
             <IconButton onClick={handleRefreshStats} disabled={statsLoading}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
           <Button
-            variant="outlined"
+            
             startIcon={<SettingsIcon />}
             onClick={() => setShowPreferences(true)}
           >
             Preferences
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Error Alert */}
       {statsError && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" className="">
           Failed to load notification statistics. Please try refreshing the
           page.
         </Alert>
       )}
-
       {/* Success Alerts */}
       {checkOverdueMutation.isSuccess && (
-        <Alert severity="success" sx={{ mb: 3 }}>
+        <Alert severity="success" className="">
           Overdue follow-ups checked successfully!
         </Alert>
       )}
-
       {processPendingMutation.isSuccess && (
-        <Alert severity="success" sx={{ mb: 3 }}>
+        <Alert severity="success" className="">
           Pending reminders processed successfully!
         </Alert>
       )}
-
-      <Grid container spacing={3}>
+      <div container spacing={3}>
         {/* Overview Cards */}
-        <Grid item xs={12} md={3}>
+        <div item xs={12} md={3}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <CheckCircleIcon sx={{ mr: 1, color: 'success.main' }} />
-                <Typography variant="h6">Sent</Typography>
-              </Box>
-              <Typography variant="h3" color="success.main">
+              <div display="flex" alignItems="center" mb={2}>
+                <CheckCircleIcon className="" />
+                <div >Sent</div>
+              </div>
+              <div  color="success.main">
                 {statistics?.sent || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Successfully delivered
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
+        </div>
+        <div item xs={12} md={3}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <PendingIcon sx={{ mr: 1, color: 'warning.main' }} />
-                <Typography variant="h6">Pending</Typography>
-              </Box>
-              <Typography variant="h3" color="warning.main">
+              <div display="flex" alignItems="center" mb={2}>
+                <PendingIcon className="" />
+                <div >Pending</div>
+              </div>
+              <div  color="warning.main">
                 {statistics?.pending || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Awaiting delivery
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
+        </div>
+        <div item xs={12} md={3}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <ErrorIcon sx={{ mr: 1, color: 'error.main' }} />
-                <Typography variant="h6">Failed</Typography>
-              </Box>
-              <Typography variant="h3" color="error.main">
+              <div display="flex" alignItems="center" mb={2}>
+                <ErrorIcon className="" />
+                <div >Failed</div>
+              </div>
+              <div  color="error.main">
                 {statistics?.failed || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Delivery failed
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
+        </div>
+        <div item xs={12} md={3}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <TrendingUpIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6">Success Rate</Typography>
-              </Box>
-              <Typography
-                variant="h3"
+              <div display="flex" alignItems="center" mb={2}>
+                <TrendingUpIcon className="" />
+                <div >Success Rate</div>
+              </div>
+              <div
+                
                 color={`${getStatusColor(
-                  statistics ? getSuccessRate(statistics) : 0
+                  statistics ? getSuccessRate(statistics) : 0}
                 )}.main`}
               >
                 {statistics ? getSuccessRate(statistics) : 0}%
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Delivery success rate
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
+        </div>
         {/* Notification Types Breakdown */}
-        <Grid item xs={12} md={6}>
+        <div item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Notifications by Type
-              </Typography>
+              </div>
               {statistics?.byType &&
               Object.keys(statistics.byType).length > 0 ? (
                 <List dense>
                   {Object.entries(statistics.byType).map(([type, count]) => (
-                    <ListItem key={type}>
-                      <ListItemIcon>
+                    <div key={type}>
+                      <div>
                         {type.includes('critical') ? (
                           <WarningIcon color="error" />
                         ) : type.includes('reminder') ? (
@@ -236,8 +180,8 @@ const MTRNotificationDashboard: React.FC = () => {
                         ) : (
                           <NotificationsIcon color="action" />
                         )}
-                      </ListItemIcon>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={type.replace('_', ' ').toUpperCase()}
                         secondary={`${count} notifications`}
                       />
@@ -245,39 +189,38 @@ const MTRNotificationDashboard: React.FC = () => {
                         label={count}
                         size="small"
                         color="primary"
-                        variant="outlined"
+                        
                       />
-                    </ListItem>
+                    </div>
                   ))}
                 </List>
               ) : (
-                <Typography
-                  variant="body2"
+                <div
+                  
                   color="text.secondary"
                   textAlign="center"
                   py={3}
                 >
                   No notifications sent yet
-                </Typography>
+                </div>
               )}
             </CardContent>
           </Card>
-        </Grid>
-
+        </div>
         {/* Notification Channels Breakdown */}
-        <Grid item xs={12} md={6}>
+        <div item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Notifications by Channel
-              </Typography>
+              </div>
               {statistics?.byChannel &&
               Object.keys(statistics.byChannel).length > 0 ? (
                 <List dense>
                   {Object.entries(statistics.byChannel).map(
                     ([channel, count]) => (
-                      <ListItem key={channel}>
-                        <ListItemIcon>
+                      <div key={channel}>
+                        <div>
                           {channel === 'email' ? (
                             <EmailIcon color="primary" />
                           ) : channel === 'sms' ? (
@@ -285,8 +228,8 @@ const MTRNotificationDashboard: React.FC = () => {
                           ) : (
                             <NotificationsIcon color="action" />
                           )}
-                        </ListItemIcon>
-                        <ListItemText
+                        </div>
+                        <div
                           primary={channel.toUpperCase()}
                           secondary={`${count} notifications`}
                         />
@@ -294,40 +237,38 @@ const MTRNotificationDashboard: React.FC = () => {
                           label={count}
                           size="small"
                           color={channel === 'email' ? 'primary' : 'secondary'}
-                          variant="outlined"
+                          
                         />
-                      </ListItem>
+                      </div>
                     )
                   )}
                 </List>
               ) : (
-                <Typography
-                  variant="body2"
+                <div
+                  
                   color="text.secondary"
                   textAlign="center"
                   py={3}
                 >
                   No notifications sent yet
-                </Typography>
+                </div>
               )}
             </CardContent>
           </Card>
-        </Grid>
-
+        </div>
         {/* System Actions */}
-        <Grid item xs={12}>
+        <div item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 System Actions
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mb={3}>
+              </div>
+              <div  color="text.secondary" mb={3}>
                 Manually trigger notification system tasks
-              </Typography>
-
-              <Box display="flex" gap={2} flexWrap="wrap">
+              </div>
+              <div display="flex" gap={2} flexWrap="wrap">
                 <Button
-                  variant="outlined"
+                  
                   startIcon={<WarningIcon />}
                   onClick={() => checkOverdueMutation.mutate()}
                   disabled={checkOverdueMutation.isPending}
@@ -336,9 +277,8 @@ const MTRNotificationDashboard: React.FC = () => {
                     ? 'Checking...'
                     : 'Check Overdue Follow-ups'}
                 </Button>
-
                 <Button
-                  variant="outlined"
+                  
                   startIcon={<ScheduleIcon />}
                   onClick={() => processPendingMutation.mutate()}
                   disabled={processPendingMutation.isPending}
@@ -347,20 +287,18 @@ const MTRNotificationDashboard: React.FC = () => {
                     ? 'Processing...'
                     : 'Process Pending Reminders'}
                 </Button>
-
                 <Button
-                  variant="outlined"
+                  
                   startIcon={<TrendingUpIcon />}
                   onClick={() => setShowStatistics(true)}
                 >
                   View Detailed Statistics
                 </Button>
-              </Box>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Notification Preferences Dialog */}
       <Dialog
         open={showPreferences}
@@ -376,7 +314,6 @@ const MTRNotificationDashboard: React.FC = () => {
           <Button onClick={() => setShowPreferences(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-
       {/* Detailed Statistics Dialog */}
       <Dialog
         open={showStatistics}
@@ -387,63 +324,58 @@ const MTRNotificationDashboard: React.FC = () => {
         <DialogTitle>Detailed Statistics</DialogTitle>
         <DialogContent>
           {statistics && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
+            <div>
+              <div  gutterBottom>
                 Overall Performance
-              </Typography>
-
-              <Box mb={3}>
-                <Typography variant="body2" gutterBottom>
+              </div>
+              <div mb={3}>
+                <div  gutterBottom>
                   Success Rate: {getSuccessRate(statistics)}%
-                </Typography>
-                <LinearProgress
-                  variant="determinate"
-                  value={getSuccessRate(statistics)}
+                </div>
+                <Progress
+                  
                   color={getStatusColor(getSuccessRate(statistics))}
-                  sx={{ height: 8, borderRadius: 4 }}
+                  className=""
                 />
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Typography variant="h6" gutterBottom>
+              </div>
+              <Separator className="" />
+              <div  gutterBottom>
                 Summary
-              </Typography>
+              </div>
               <List dense>
-                <ListItem>
-                  <ListItemText
+                <div>
+                  <div
                     primary="Total Scheduled"
                     secondary={statistics.totalScheduled}
                   />
-                </ListItem>
-                <ListItem>
-                  <ListItemText
+                </div>
+                <div>
+                  <div
                     primary="Successfully Sent"
                     secondary={statistics.sent}
                   />
-                </ListItem>
-                <ListItem>
-                  <ListItemText
+                </div>
+                <div>
+                  <div
                     primary="Pending Delivery"
                     secondary={statistics.pending}
                   />
-                </ListItem>
-                <ListItem>
-                  <ListItemText
+                </div>
+                <div>
+                  <div
                     primary="Failed Delivery"
                     secondary={statistics.failed}
                   />
-                </ListItem>
+                </div>
               </List>
-            </Box>
+            </div>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowStatistics(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
-
 export default MTRNotificationDashboard;

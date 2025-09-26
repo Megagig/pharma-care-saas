@@ -1,55 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Typography,
-  IconButton,
-  Slide,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  GetApp as InstallIcon,
-  Close as CloseIcon,
-  Smartphone as SmartphoneIcon,
-  Computer as ComputerIcon,
-  Update as UpdateIcon,
-} from '@mui/icons-material';
-import { pwaManager, pwaUtils } from '../utils/pwaUtils';
+import { Button, Card, CardContent } from '@/components/ui/button';
 
 interface PWAInstallPromptProps {
   onInstall?: () => void;
   onDismiss?: () => void;
   showOnMobileOnly?: boolean;
 }
-
-const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
+const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ 
   onInstall,
   onDismiss,
-  showOnMobileOnly = false,
+  showOnMobileOnly = false
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
   const [pwaState, setPwaState] = useState(pwaManager.getState());
   const [showPrompt, setShowPrompt] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
-
   useEffect(() => {
     // Subscribe to PWA state changes
     const unsubscribe = pwaManager.subscribe(setPwaState);
-
     // Check if we should show the prompt
     const shouldShow =
       pwaState.isInstallable &&
       !pwaState.isInstalled &&
       !isDismissed &&
       (!showOnMobileOnly || isMobile);
-
     setShowPrompt(shouldShow);
-
     return unsubscribe;
   }, [
     pwaState.isInstallable,
@@ -58,12 +33,10 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
     showOnMobileOnly,
     isMobile,
   ]);
-
   // Don't render if dismissed or conditions not met
   if (!showPrompt) {
     return null;
   }
-
   const handleInstall = async () => {
     try {
       const success = await pwaManager.install();
@@ -78,14 +51,12 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
       pwaUtils.trackPWAEvent('install_failed', { error: error.message });
     }
   };
-
   const handleDismiss = () => {
     setIsDismissed(true);
     setShowPrompt(false);
     onDismiss?.();
     pwaUtils.trackPWAEvent('install_prompt_dismissed');
   };
-
   const getDeviceIcon = () => {
     const deviceType = pwaUtils.getDeviceType();
     switch (deviceType) {
@@ -96,7 +67,6 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
         return <ComputerIcon />;
     }
   };
-
   const getInstallText = () => {
     const deviceType = pwaUtils.getDeviceType();
     switch (deviceType) {
@@ -108,7 +78,6 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
         return 'Install Clinical Interventions app';
     }
   };
-
   const getBenefits = () => {
     const deviceType = pwaUtils.getDeviceType();
     const commonBenefits = [
@@ -116,7 +85,6 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
       'Faster loading',
       'Push notifications',
     ];
-
     if (deviceType === 'mobile' || deviceType === 'tablet') {
       return [
         ...commonBenefits,
@@ -124,149 +92,85 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
         'Full screen experience',
       ];
     }
-
     return [...commonBenefits, 'Desktop shortcut', 'Native app feel'];
   };
-
   return (
     <Slide direction="up" in={showPrompt} mountOnEnter unmountOnExit>
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: isMobile ? 16 : 24,
-          left: isMobile ? 16 : 24,
-          right: isMobile ? 16 : 'auto',
-          zIndex: 1300,
-          maxWidth: isMobile ? 'none' : 400,
-        }}
+      <div
+        className=""
       >
         <Card
-          elevation={8}
-          sx={{
-            borderRadius: 3,
-            overflow: 'visible',
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-            color: 'white',
-          }}
-        >
+          
+          className="">
           <CardContent
-            sx={{ p: isMobile ? 2 : 3, pb: `${isMobile ? 2 : 3}px !important` }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-              <Box
-                sx={{
-                  p: 1,
-                  borderRadius: 2,
-                  bgcolor: 'rgba(255, 255, 255, 0.2)',
-                  mr: 2,
-                  flexShrink: 0,
-                }}
+            className="">
+            <div className="">
+              <div
+                className=""
               >
                 {getDeviceIcon()}
-              </Box>
-
-              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                <Typography
+              </div>
+              <div className="">
+                <div
                   variant={isMobile ? 'subtitle1' : 'h6'}
                   fontWeight="bold"
                   gutterBottom
                 >
                   {getInstallText()}
-                </Typography>
-
-                <Typography
+                </div>
+                <div
                   variant={isMobile ? 'body2' : 'body1'}
-                  sx={{ opacity: 0.9, mb: 2 }}
+                  className=""
                 >
                   Get the full Clinical Interventions experience
-                </Typography>
-
+                </div>
                 {/* Benefits list */}
-                <Box sx={{ mb: 2 }}>
+                <div className="">
                   {getBenefits()
                     .slice(0, isMobile ? 2 : 3)
                     .map((benefit, index) => (
-                      <Typography
+                      <div
                         key={index}
-                        variant="caption"
-                        sx={{
-                          display: 'block',
-                          opacity: 0.8,
-                          '&:before': {
-                            content: '"✓ "',
-                            fontWeight: 'bold',
-                          },
-                        }}
-                      >
+                        
+                        className="">
                         {benefit}
-                      </Typography>
+                      </div>
                     ))}
-                </Box>
-              </Box>
-
+                </div>
+              </div>
               <IconButton
                 size="small"
                 onClick={handleDismiss}
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  '&:hover': {
-                    color: 'white',
-                    bgcolor: 'rgba(255, 255, 255, 0.1)',
-                  },
-                }}
-              >
+                className="">
                 <CloseIcon fontSize="small" />
               </IconButton>
-            </Box>
-
+            </div>
             {/* Action buttons */}
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 1,
-                flexDirection: isMobile ? 'column' : 'row',
-              }}
+            <div
+              className=""
             >
               <Button
-                variant="contained"
+                
                 startIcon={<InstallIcon />}
                 onClick={handleInstall}
-                sx={{
-                  bgcolor: 'white',
-                  color: theme.palette.primary.main,
-                  fontWeight: 'bold',
-                  flex: isMobile ? undefined : 1,
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.9)',
-                  },
-                }}
-                fullWidth={isMobile}
+                className="" fullWidth={isMobile}
               >
                 Install Now
               </Button>
-
               <Button
-                variant="text"
+                
                 onClick={handleDismiss}
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  '&:hover': {
-                    color: 'white',
-                    bgcolor: 'rgba(255, 255, 255, 0.1)',
-                  },
-                }}
-                size={isMobile ? 'small' : 'medium'}
+                className="" size={isMobile ? 'small' : 'medium'}
               >
                 Maybe Later
               </Button>
-            </Box>
+            </div>
           </CardContent>
         </Card>
-      </Box>
+      </div>
     </Slide>
   );
 };
-
 // Update notification component
 export const PWAUpdatePrompt: React.FC<{
   onUpdate?: () => void;
@@ -274,16 +178,13 @@ export const PWAUpdatePrompt: React.FC<{
 }> = ({ onUpdate, onDismiss }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
   const [pwaState, setPwaState] = useState(pwaManager.getState());
   const [showPrompt, setShowPrompt] = useState(false);
-
   useEffect(() => {
     const unsubscribe = pwaManager.subscribe(setPwaState);
     setShowPrompt(pwaState.isUpdateAvailable);
     return unsubscribe;
   }, [pwaState.isUpdateAvailable]);
-
   const handleUpdate = async () => {
     try {
       await pwaManager.updateApp();
@@ -294,130 +195,75 @@ export const PWAUpdatePrompt: React.FC<{
       pwaUtils.trackPWAEvent('update_failed', { error: error.message });
     }
   };
-
   const handleDismiss = () => {
     setShowPrompt(false);
     onDismiss?.();
     pwaUtils.trackPWAEvent('update_dismissed');
   };
-
   if (!showPrompt) {
     return null;
   }
-
   return (
     <Slide direction="down" in={showPrompt} mountOnEnter unmountOnExit>
-      <Box
-        sx={{
-          position: 'fixed',
-          top: isMobile ? 16 : 24,
-          left: isMobile ? 16 : 24,
-          right: isMobile ? 16 : 'auto',
-          zIndex: 1300,
-          maxWidth: isMobile ? 'none' : 400,
-        }}
+      <div
+        className=""
       >
         <Card
-          elevation={8}
-          sx={{
-            borderRadius: 3,
-            background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
-            color: 'white',
-          }}
-        >
+          
+          className="">
           <CardContent
-            sx={{ p: isMobile ? 2 : 3, pb: `${isMobile ? 2 : 3}px !important` }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-              <Box
-                sx={{
-                  p: 1,
-                  borderRadius: 2,
-                  bgcolor: 'rgba(255, 255, 255, 0.2)',
-                  mr: 2,
-                  flexShrink: 0,
-                }}
+            className="">
+            <div className="">
+              <div
+                className=""
               >
                 <UpdateIcon />
-              </Box>
-
-              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                <Typography
+              </div>
+              <div className="">
+                <div
                   variant={isMobile ? 'subtitle1' : 'h6'}
                   fontWeight="bold"
                   gutterBottom
                 >
                   Update Available
-                </Typography>
-
-                <Typography
+                </div>
+                <div
                   variant={isMobile ? 'body2' : 'body1'}
-                  sx={{ opacity: 0.9, mb: 2 }}
+                  className=""
                 >
                   A new version with improvements and bug fixes is ready
-                </Typography>
-              </Box>
-
+                </div>
+              </div>
               <IconButton
                 size="small"
                 onClick={handleDismiss}
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  '&:hover': {
-                    color: 'white',
-                    bgcolor: 'rgba(255, 255, 255, 0.1)',
-                  },
-                }}
-              >
+                className="">
                 <CloseIcon fontSize="small" />
               </IconButton>
-            </Box>
-
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 1,
-                flexDirection: isMobile ? 'column' : 'row',
-              }}
+            </div>
+            <div
+              className=""
             >
               <Button
-                variant="contained"
+                
                 startIcon={<UpdateIcon />}
                 onClick={handleUpdate}
-                sx={{
-                  bgcolor: 'white',
-                  color: theme.palette.success.main,
-                  fontWeight: 'bold',
-                  flex: isMobile ? undefined : 1,
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.9)',
-                  },
-                }}
-                fullWidth={isMobile}
+                className="" fullWidth={isMobile}
               >
                 Update Now
               </Button>
-
               <Button
-                variant="text"
+                
                 onClick={handleDismiss}
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  '&:hover': {
-                    color: 'white',
-                    bgcolor: 'rgba(255, 255, 255, 0.1)',
-                  },
-                }}
-                size={isMobile ? 'small' : 'medium'}
+                className="" size={isMobile ? 'small' : 'medium'}
               >
                 Later
               </Button>
-            </Box>
+            </div>
           </CardContent>
         </Card>
-      </Box>
+      </div>
     </Slide>
   );
 };
-
 export default PWAInstallPrompt;

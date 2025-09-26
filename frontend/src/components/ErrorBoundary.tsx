@@ -1,7 +1,8 @@
-import { Component, ErrorInfo, ReactNode } from 'react';
-import { Box, Typography, Alert } from '@mui/material';
+import React, { Component, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -11,7 +12,7 @@ interface Props {
 interface State {
   hasError: boolean;
   error?: Error;
-  errorInfo?: ErrorInfo;
+  errorInfo?: React.ErrorInfo;
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -24,11 +25,11 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({
       error,
-      errorInfo,
+      errorInfo
     });
   }
 
@@ -51,57 +52,41 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            p: 3,
-            bgcolor: 'background.default',
-          }}
-        >
-          <Card
-            className="p-8 max-w-2xl w-full text-center"
-          >
-            <Alert severity="error" sx={{ mb: 3 }}>
-              <Typography variant="h5" component="h1" gutterBottom>
-                Oops! Something went wrong
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                An unexpected error occurred. This might be due to a temporary
-                issue.
-              </Typography>
-            </Alert>
+        <div className="flex items-center justify-center min-h-screen p-3 bg-background">
+          <Card className="p-8 max-w-2xl w-full text-center">
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-center space-x-2 text-destructive mb-4">
+                <AlertTriangle className="h-8 w-8" />
+                <h1 className="text-2xl font-bold">Oops! Something went wrong</h1>
+              </div>
 
-            {import.meta.env.DEV && this.state.error && (
-              <Box sx={{ textAlign: 'left', mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Error Details:
-                </Typography>
-                <Card className="p-4 bg-gray-50 overflow-auto">
-                  <Typography
-                    variant="body2"
-                    component="pre"
-                    sx={{ fontSize: '0.75rem', whiteSpace: 'pre-wrap' }}
-                  >
-                    {this.state.error.toString()}
-                    {this.state.errorInfo?.componentStack}
-                  </Typography>
-                </Card>
-              </Box>
-            )}
+              <p className="text-muted-foreground">
+                An unexpected error occurred. This might be due to a temporary issue.
+              </p>
 
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-              <Button variant="default" onClick={this.handleReset}>
-                Try Again
-              </Button>
-              <Button variant="outline" onClick={this.handleReload}>
-                Reload Page
-              </Button>
-            </Box>
+              {import.meta.env.DEV && this.state.error && (
+                <div className="text-left space-y-2">
+                  <h2 className="text-lg font-semibold">Error Details:</h2>
+                  <Card className="p-4 bg-muted overflow-auto">
+                    <pre className="text-xs whitespace-pre-wrap font-mono">
+                      {this.state.error.toString()}
+                      {this.state.errorInfo?.componentStack}
+                    </pre>
+                  </Card>
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-center">
+                <Button onClick={this.handleReset}>
+                  Try Again
+                </Button>
+                <Button onClick={this.handleReload}>
+                  Reload Page
+                </Button>
+              </div>
+            </CardContent>
           </Card>
-        </Box>
+        </div>
       );
     }
 

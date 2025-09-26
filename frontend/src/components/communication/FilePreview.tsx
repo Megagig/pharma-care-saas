@@ -1,31 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardActions,
-  Typography,
-  Button,
-  IconButton,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogActions,
-  Chip,
-  Tooltip,
-  CircularProgress,
-} from '@mui/material';
-import {
-  Download as DownloadIcon,
-  Visibility as ViewIcon,
-  Close as CloseIcon,
-  InsertDriveFile as FileIcon,
-  Image as ImageIcon,
-  PictureAsPdf as PdfIcon,
-  Description as DocIcon,
-  TableChart as ExcelIcon,
-  TextSnippet as TextIcon,
-} from '@mui/icons-material';
+import { Button, Card, CardContent, Dialog, DialogContent, DialogTitle, Tooltip, Spinner } from '@/components/ui/button';
 
 interface FileAttachment {
   fileId: string;
@@ -36,7 +9,6 @@ interface FileAttachment {
   secureUrl: string;
   uploadedAt?: string;
 }
-
 interface FilePreviewProps {
   file: FileAttachment;
   showPreview?: boolean;
@@ -46,20 +18,17 @@ interface FilePreviewProps {
   onDownload?: (file: FileAttachment) => void;
   onPreview?: (file: FileAttachment) => void;
 }
-
 interface FilePreviewDialogProps {
   file: FileAttachment;
   open: boolean;
   onClose: () => void;
   onDownload?: (file: FileAttachment) => void;
 }
-
 const getFileIcon = (
   mimeType: string,
   size: 'small' | 'medium' | 'large' = 'medium'
 ) => {
   const iconProps = { fontSize: size };
-
   if (mimeType.startsWith('image/')) return <ImageIcon {...iconProps} />;
   if (mimeType === 'application/pdf') return <PdfIcon {...iconProps} />;
   if (mimeType.includes('document') || mimeType.includes('word'))
@@ -69,7 +38,6 @@ const getFileIcon = (
   if (mimeType.startsWith('text/')) return <TextIcon {...iconProps} />;
   return <FileIcon {...iconProps} />;
 };
-
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -77,7 +45,6 @@ const formatFileSize = (bytes: number): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
-
 const getFileTypeLabel = (mimeType: string): string => {
   if (mimeType.startsWith('image/')) return 'Image';
   if (mimeType === 'application/pdf') return 'PDF';
@@ -88,31 +55,25 @@ const getFileTypeLabel = (mimeType: string): string => {
   if (mimeType.startsWith('text/')) return 'Text';
   return 'File';
 };
-
-const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
+const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({ 
   file,
   open,
   onClose,
-  onDownload,
+  onDownload
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const handleDownload = async () => {
     try {
       setLoading(true);
       setError(null);
-
       const response = await fetch(file.secureUrl, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
+        }
       if (!response.ok) {
         throw new Error('Download failed');
       }
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -122,7 +83,6 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-
       onDownload?.(file);
     } catch (err: any) {
       setError(err.message || 'Download failed');
@@ -130,143 +90,125 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
       setLoading(false);
     }
   };
-
   const renderPreview = () => {
     if (file.mimeType.startsWith('image/')) {
       return (
-        <Box
+        <div
           component="img"
           src={file.secureUrl}
           alt={file.originalName || file.fileName}
-          sx={{
-            maxWidth: '100%',
-            maxHeight: '60vh',
-            objectFit: 'contain',
-          }}
+          className=""
           onError={() => setError('Failed to load image')}
         />
       );
     }
-
     if (file.mimeType === 'application/pdf') {
       return (
-        <Box sx={{ height: '60vh', width: '100%' }}>
+        <div className="">
           <iframe
             src={`${file.secureUrl}#toolbar=0`}
             width="100%"
             height="100%"
-            style={{ border: 'none' }}
+            
             title={file.originalName || file.fileName}
           />
-        </Box>
+        </div>
       );
     }
-
     if (file.mimeType.startsWith('text/')) {
       return (
-        <Box
-          sx={{
-            p: 2,
-            backgroundColor: 'grey.50',
-            borderRadius: 1,
-            maxHeight: '60vh',
-            overflow: 'auto',
-          }}
+        <div
+          className=""
         >
-          <Typography
-            variant="body2"
+          <div
+            
             component="pre"
-            sx={{ whiteSpace: 'pre-wrap' }}
+            className=""
           >
             {/* Text content would be loaded here */}
             Text preview not available. Please download to view the file.
-          </Typography>
-        </Box>
+          </div>
+        </div>
       );
     }
-
     return (
-      <Box
+      <div
         display="flex"
         flexDirection="column"
         alignItems="center"
         justifyContent="center"
-        sx={{ height: '200px', backgroundColor: 'grey.50', borderRadius: 1 }}
+        className=""
       >
         {getFileIcon(file.mimeType, 'large')}
-        <Typography variant="h6" sx={{ mt: 2 }}>
+        <div  className="">
           {getFileTypeLabel(file.mimeType)} Preview
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Preview not available for this file type
-        </Typography>
-      </Box>
+        </div>
+      </div>
     );
   };
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={1}>
+        <div display="flex" alignItems="center" justifyContent="space-between">
+          <div display="flex" alignItems="center" gap={1}>
             {getFileIcon(file.mimeType)}
-            <Typography variant="h6" noWrap>
+            <div  noWrap>
               {file.originalName || file.fileName}
-            </Typography>
-          </Box>
+            </div>
+          </div>
           <IconButton onClick={onClose}>
             <CloseIcon />
           </IconButton>
-        </Box>
+        </div>
       </DialogTitle>
-
       <DialogContent>
         {error ? (
-          <Box
+          <div
             display="flex"
             flexDirection="column"
             alignItems="center"
             justifyContent="center"
-            sx={{ height: '200px' }}
+            className=""
           >
-            <Typography color="error" gutterBottom>
+            <div color="error" gutterBottom>
               {error}
-            </Typography>
+            </div>
             <Button onClick={() => setError(null)}>Try Again</Button>
-          </Box>
+          </div>
         ) : (
           renderPreview()
         )}
-
-        <Box mt={2} display="flex" gap={1} flexWrap="wrap">
+        <div mt={2} display="flex" gap={1} flexWrap="wrap">
           <Chip
             label={getFileTypeLabel(file.mimeType)}
             size="small"
-            variant="outlined"
+            
           />
           <Chip
             label={formatFileSize(file.fileSize)}
             size="small"
-            variant="outlined"
+            
           />
           {file.uploadedAt && (
             <Chip
               label={`Uploaded ${new Date(
-                file.uploadedAt
+                file.uploadedAt}
               ).toLocaleDateString()}`}
               size="small"
-              variant="outlined"
+              
             />
           )}
-        </Box>
+        </div>
       </DialogContent>
-
       <DialogActions>
         <Button onClick={onClose}>Close</Button>
         <Button
-          variant="contained"
-          startIcon={
-            loading ? <CircularProgress size={16} /> : <DownloadIcon />
+          
+          startIcon={}
+            loading ? <Spinner size={16} /> : <DownloadIcon />
           }
           onClick={handleDownload}
           disabled={loading}
@@ -277,33 +219,27 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
     </Dialog>
   );
 };
-
-export const FilePreview: React.FC<FilePreviewProps> = ({
+export const FilePreview: React.FC<FilePreviewProps> = ({ 
   file,
   showPreview = true,
   showDownload = true,
   showDetails = true,
   compact = false,
   onDownload,
-  onPreview,
+  onPreview
 }) => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
-
   const handleDownload = async () => {
     try {
       setDownloading(true);
-
       const response = await fetch(file.secureUrl, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
+        }
       if (!response.ok) {
         throw new Error('Download failed');
       }
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -313,7 +249,6 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-
       onDownload?.(file);
     } catch (error) {
       console.error('Download failed:', error);
@@ -321,22 +256,20 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       setDownloading(false);
     }
   };
-
   const handlePreview = () => {
     setPreviewOpen(true);
     onPreview?.(file);
   };
-
   if (compact) {
     return (
-      <Box display="flex" alignItems="center" gap={1} sx={{ p: 1 }}>
+      <div display="flex" alignItems="center" gap={1} className="">
         {getFileIcon(file.mimeType, 'small')}
-        <Typography variant="body2" noWrap sx={{ flex: 1 }}>
+        <div  noWrap className="">
           {file.originalName || file.fileName}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           {formatFileSize(file.fileSize)}
-        </Typography>
+        </div>
         {showPreview && (
           <Tooltip title="Preview">
             <IconButton size="small" onClick={handlePreview}>
@@ -352,49 +285,45 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
               disabled={downloading}
             >
               {downloading ? (
-                <CircularProgress size={16} />
+                <Spinner size={16} />
               ) : (
                 <DownloadIcon fontSize="small" />
               )}
             </IconButton>
           </Tooltip>
         )}
-
         <FilePreviewDialog
           file={file}
           open={previewOpen}
           onClose={() => setPreviewOpen(false)}
           onDownload={onDownload}
         />
-      </Box>
+      </div>
     );
   }
-
   return (
-    <Card sx={{ maxWidth: 300 }}>
+    <Card className="">
       <CardContent>
-        <Box display="flex" alignItems="center" gap={2} mb={2}>
+        <div display="flex" alignItems="center" gap={2} mb={2}>
           {getFileIcon(file.mimeType)}
-          <Box flex={1} minWidth={0}>
-            <Typography variant="subtitle2" noWrap>
+          <div flex={1} minWidth={0}>
+            <div  noWrap>
               {file.originalName || file.fileName}
-            </Typography>
+            </div>
             {showDetails && (
-              <Typography variant="caption" color="text.secondary">
+              <div  color="text.secondary">
                 {getFileTypeLabel(file.mimeType)} •{' '}
                 {formatFileSize(file.fileSize)}
-              </Typography>
+              </div>
             )}
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {showDetails && file.uploadedAt && (
-          <Typography variant="caption" color="text.secondary">
+          <div  color="text.secondary">
             Uploaded {new Date(file.uploadedAt).toLocaleDateString()}
-          </Typography>
+          </div>
         )}
       </CardContent>
-
       <CardActions>
         {showPreview && (
           <Button size="small" startIcon={<ViewIcon />} onClick={handlePreview}>
@@ -404,8 +333,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
         {showDownload && (
           <Button
             size="small"
-            startIcon={
-              downloading ? <CircularProgress size={16} /> : <DownloadIcon />
+            startIcon={}
+              downloading ? <Spinner size={16} /> : <DownloadIcon />
             }
             onClick={handleDownload}
             disabled={downloading}
@@ -414,7 +343,6 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
           </Button>
         )}
       </CardActions>
-
       <FilePreviewDialog
         file={file}
         open={previewOpen}
@@ -424,5 +352,4 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
     </Card>
   );
 };
-
 export default FilePreview;

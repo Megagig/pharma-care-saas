@@ -1,46 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-  Box,
-  Typography,
-  Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  Chip,
-  IconButton,
-  Tooltip,
-  Badge,
-  useTheme,
-  alpha,
-  Skeleton,
-} from '@mui/material';
-import {
-  Forum as ForumIcon,
-  Message as MessageIcon,
-  Notifications as NotificationsIcon,
-  TrendingUp as TrendingUpIcon,
-  ArrowForward as ArrowForwardIcon,
-  Person as PersonIcon,
-  Schedule as ScheduleIcon,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { useCommunicationStore } from '../../stores/communicationStore';
-import { formatDistanceToNow } from 'date-fns';
+import { Card, CardContent, Badge, Tooltip, Skeleton, Avatar } from '@/components/ui/button';
 
 interface CommunicationWidgetProps {
   variant?: 'overview' | 'recent-messages' | 'notifications';
   height?: number;
   showHeader?: boolean;
 }
-
-const CommunicationWidget: React.FC<CommunicationWidgetProps> = ({
+const CommunicationWidget: React.FC<CommunicationWidgetProps> = ({ 
   variant = 'overview',
   height = 300,
-  showHeader = true,
+  showHeader = true
 }) => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -51,14 +19,12 @@ const CommunicationWidget: React.FC<CommunicationWidgetProps> = ({
     getRecentMessages,
     loading,
   } = useCommunicationStore();
-
-  const [metrics, setMetrics] = useState({
+  const [metrics, setMetrics] = useState({ 
     totalConversations: 0,
     unreadMessages: 0,
     activeChats: 0,
-    pendingQueries: 0,
+    pendingQueries: 0}
   });
-
   useEffect(() => {
     // Calculate metrics from store data
     const activeConversations = conversations.filter(
@@ -67,329 +33,233 @@ const CommunicationWidget: React.FC<CommunicationWidgetProps> = ({
     const pendingQueries = conversations.filter(
       (conv) => conv.type === 'patient_query' && conv.status === 'active'
     );
-
-    setMetrics({
+    setMetrics({ 
       totalConversations: conversations.length,
       unreadMessages: unreadCount,
       activeChats: activeConversations.length,
-      pendingQueries: pendingQueries.length,
+      pendingQueries: pendingQueries.length}
     });
   }, [conversations, unreadCount]);
-
   const handleNavigateToHub = () => {
     navigate('/pharmacy/communication');
   };
-
   const handleNavigateToConversation = (conversationId: string) => {
     navigate(`/pharmacy/communication?conversation=${conversationId}`);
   };
-
   const renderOverviewWidget = () => (
     <Card
-      sx={{
-        height,
-        background: `linear-gradient(135deg, ${alpha(
-          theme.palette.primary.main,
-          0.1
-        )} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
-        border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-        position: 'relative',
-        overflow: 'hidden',
-        '&:hover': {
-          boxShadow: `0 8px 32px ${alpha(theme.palette.primary.main, 0.2)}`,
-          transform: 'translateY(-2px)',
-        },
-        transition: 'all 0.3s ease',
-      }}
-    >
+      className="">
       <CardContent
-        sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}
+        className=""
       >
         {showHeader && (
-          <Box
+          <div
             display="flex"
             alignItems="center"
             justifyContent="space-between"
             mb={2}
           >
-            <Box display="flex" alignItems="center" gap={1}>
+            <div display="flex" alignItems="center" gap={1}>
               <Avatar
-                sx={{
-                  bgcolor: theme.palette.primary.main,
-                  width: 32,
-                  height: 32,
-                }}
+                className=""
               >
                 <ForumIcon fontSize="small" />
               </Avatar>
-              <Typography variant="h6" fontWeight="bold">
+              <div  fontWeight="bold">
                 Communication Hub
-              </Typography>
-            </Box>
+              </div>
+            </div>
             <Tooltip title="Open Communication Hub">
               <IconButton
                 onClick={handleNavigateToHub}
-                sx={{
-                  bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.2),
-                  },
-                }}
-              >
+                className="">
                 <ArrowForwardIcon />
               </IconButton>
             </Tooltip>
-          </Box>
+          </div>
         )}
-
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div className="">
           {/* Metrics Grid */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 2,
-              flex: 1,
-            }}
+          <div
+            className=""
           >
-            <motion.div whileHover={{ scale: 1.02 }}>
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: alpha(theme.palette.success.main, 0.1),
-                  border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
-                  textAlign: 'center',
-                }}
-              >
-                <Typography variant="h4" color="success.main" fontWeight="bold">
+            <motion.div >
+              <div
+                className="">
+                <div  color="success.main" fontWeight="bold">
                   {loading ? (
                     <Skeleton width={40} />
                   ) : (
                     metrics.totalConversations
                   )}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Total Conversations
-                </Typography>
-              </Box>
+                </div>
+              </div>
             </motion.div>
-
-            <motion.div whileHover={{ scale: 1.02 }}>
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: alpha(theme.palette.warning.main, 0.1),
-                  border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
-                  textAlign: 'center',
-                }}
-              >
-                <Typography variant="h4" color="warning.main" fontWeight="bold">
+            <motion.div >
+              <div
+                className="">
+                <div  color="warning.main" fontWeight="bold">
                   {loading ? <Skeleton width={40} /> : metrics.unreadMessages}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Unread Messages
-                </Typography>
-              </Box>
+                </div>
+              </div>
             </motion.div>
-
-            <motion.div whileHover={{ scale: 1.02 }}>
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: alpha(theme.palette.info.main, 0.1),
-                  border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
-                  textAlign: 'center',
-                }}
-              >
-                <Typography variant="h4" color="info.main" fontWeight="bold">
+            <motion.div >
+              <div
+                className="">
+                <div  color="info.main" fontWeight="bold">
                   {loading ? <Skeleton width={40} /> : metrics.activeChats}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Active Chats
-                </Typography>
-              </Box>
+                </div>
+              </div>
             </motion.div>
-
-            <motion.div whileHover={{ scale: 1.02 }}>
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: alpha(theme.palette.error.main, 0.1),
-                  border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
-                  textAlign: 'center',
-                }}
-              >
-                <Typography variant="h4" color="error.main" fontWeight="bold">
+            <motion.div >
+              <div
+                className="">
+                <div  color="error.main" fontWeight="bold">
                   {loading ? <Skeleton width={40} /> : metrics.pendingQueries}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Pending Queries
-                </Typography>
-              </Box>
+                </div>
+              </div>
             </motion.div>
-          </Box>
-
+          </div>
           {/* Quick Actions */}
-          <Box display="flex" gap={1} justifyContent="center">
+          <div display="flex" gap={1} justifyContent="center">
             <Chip
               icon={<MessageIcon />}
               label="New Message"
               onClick={handleNavigateToHub}
-              sx={{
-                bgcolor: theme.palette.primary.main,
-                color: 'white',
-                '&:hover': { bgcolor: theme.palette.primary.dark },
-              }}
-            />
+              className="" />
             <Chip
               icon={<NotificationsIcon />}
               label={`${notifications.length} Notifications`}
               onClick={handleNavigateToHub}
-              variant="outlined"
+              
             />
-          </Box>
-        </Box>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
-
   const renderRecentMessagesWidget = () => {
     const recentMessages = getRecentMessages(5);
-
     return (
-      <Card sx={{ height, overflow: 'hidden' }}>
+      <Card className="">
         <CardContent
-          sx={{
-            p: 0,
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
+          className=""
         >
           {showHeader && (
-            <Box
-              sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}
-            >
-              <Box
+            <div
+              className="">
+              <div
                 display="flex"
                 alignItems="center"
                 justifyContent="space-between"
               >
-                <Typography variant="h6" fontWeight="bold">
+                <div  fontWeight="bold">
                   Recent Messages
-                </Typography>
+                </div>
                 <IconButton onClick={handleNavigateToHub} size="small">
                   <ArrowForwardIcon />
                 </IconButton>
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
-
-          <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <div className="">
             {loading ? (
               <List>
                 {[...Array(3)].map((_, index) => (
-                  <ListItem key={index}>
-                    <ListItemAvatar>
-                      <Skeleton variant="circular" width={40} height={40} />
+                  <div key={index}>
+                    <divAvatar>
+                      <Skeleton  width={40} height={40} />
                     </ListItemAvatar>
-                    <ListItemText
+                    <div
                       primary={<Skeleton width="60%" />}
                       secondary={<Skeleton width="80%" />}
                     />
-                  </ListItem>
+                  </div>
                 ))}
               </List>
             ) : recentMessages.length > 0 ? (
               <List dense>
                 {recentMessages.map((message) => (
-                  <ListItem
+                  <div
                     key={message._id}
                     button
                     onClick={() =>
-                      handleNavigateToConversation(message.conversationId)
+                      handleNavigateToConversation(message.conversationId)}
                     }
-                    sx={{
-                      '&:hover': {
-                        bgcolor: alpha(theme.palette.primary.main, 0.05),
-                      },
-                    }}
-                  >
-                    <ListItemAvatar>
-                      <Avatar sx={{ width: 32, height: 32 }}>
+                    className="">
+                    <divAvatar>
+                      <Avatar className="">
                         <PersonIcon fontSize="small" />
                       </Avatar>
                     </ListItemAvatar>
-                    <ListItemText
+                    <div
                       primary={
-                        <Typography variant="body2" noWrap>
+                        <div  noWrap>}
                           {message.content.text || 'File attachment'}
-                        </Typography>
+                        </div>
                       }
-                      secondary={
-                        <Box display="flex" alignItems="center" gap={1}>
+                      secondary={}
+                        <div display="flex" alignItems="center" gap={1}>
                           <ScheduleIcon fontSize="inherit" />
-                          <Typography variant="caption">
+                          <div >
                             {formatDistanceToNow(new Date(message.createdAt), {
-                              addSuffix: true,
-                            })}
-                          </Typography>
-                        </Box>
+                              addSuffix: true, }}
+                          </div>
+                        </div>
                       }
                     />
                     {message.status === 'sent' && (
-                      <Badge color="primary" variant="dot" />
+                      <Badge color="primary"  />
                     )}
-                  </ListItem>
+                  </div>
                 ))}
               </List>
             ) : (
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                  flexDirection: 'column',
-                  gap: 1,
-                }}
+              <div
+                className=""
               >
-                <ForumIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
-                <Typography variant="body2" color="text.secondary">
+                <ForumIcon className="" />
+                <div  color="text.secondary">
                   No recent messages
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
-          </Box>
+          </div>
         </CardContent>
       </Card>
     );
   };
-
   const renderNotificationsWidget = () => (
-    <Card sx={{ height, overflow: 'hidden' }}>
+    <Card className="">
       <CardContent
-        sx={{ p: 0, height: '100%', display: 'flex', flexDirection: 'column' }}
+        className=""
       >
         {showHeader && (
-          <Box
-            sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}
-          >
-            <Box
+          <div
+            className="">
+            <div
               display="flex"
               alignItems="center"
               justifyContent="space-between"
             >
-              <Typography variant="h6" fontWeight="bold">
+              <div  fontWeight="bold">
                 Notifications
-              </Typography>
+              </div>
               <Badge
                 badgeContent={
-                  notifications.filter((n) => n.status === 'unread').length
+                  notifications.filter((n) => n.status === 'unread').length}
                 }
                 color="error"
               >
@@ -397,93 +267,79 @@ const CommunicationWidget: React.FC<CommunicationWidgetProps> = ({
                   <NotificationsIcon />
                 </IconButton>
               </Badge>
-            </Box>
-          </Box>
+            </div>
+          </div>
         )}
-
-        <Box sx={{ flex: 1, overflow: 'auto' }}>
+        <div className="">
           {loading ? (
             <List>
               {[...Array(3)].map((_, index) => (
-                <ListItem key={index}>
-                  <ListItemText
+                <div key={index}>
+                  <div
                     primary={<Skeleton width="70%" />}
                     secondary={<Skeleton width="50%" />}
                   />
-                </ListItem>
+                </div>
               ))}
             </List>
           ) : notifications.length > 0 ? (
             <List dense>
               {notifications.slice(0, 5).map((notification) => (
-                <ListItem
+                <div
                   key={notification._id}
-                  sx={{
-                    bgcolor:
-                      notification.status === 'unread'
-                        ? alpha(theme.palette.primary.main, 0.05)
-                        : 'transparent',
-                  }}
+                  className=""
                 >
-                  <ListItemText
+                  <div
                     primary={
-                      <Typography
-                        variant="body2"
+                      <div
+                        
                         fontWeight={
-                          notification.status === 'unread' ? 600 : 400
+                          notification.status === 'unread' ? 600 : 400}
                         }
                       >
                         {notification.title}
-                      </Typography>
+                      </div>
                     }
-                    secondary={
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="caption">
+                    secondary={}
+                      <div display="flex" alignItems="center" gap={1}>
+                        <div >
                           {formatDistanceToNow(
                             new Date(notification.createdAt),
                             { addSuffix: true }
                           )}
-                        </Typography>
+                        </div>
                         <Chip
                           size="small"
                           label={notification.priority}
                           color={
                             notification.priority === 'urgent'
                               ? 'error'
-                              : 'default'
+                              : 'default'}
                           }
-                          sx={{ height: 16, fontSize: '0.6rem' }}
+                          className=""
                         />
-                      </Box>
+                      </div>
                     }
                   />
-                </ListItem>
+                </div>
               ))}
             </List>
           ) : (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                flexDirection: 'column',
-                gap: 1,
-              }}
+            <div
+              className=""
             >
               <NotificationsIcon
-                sx={{ fontSize: 48, color: 'text.disabled' }}
+                className=""
               />
-              <Typography variant="body2" color="text.secondary">
+              <div  color="text.secondary">
                 No notifications
-              </Typography>
-            </Box>
+              </div>
+            </div>
           )}
-        </Box>
+        </div>
       </CardContent>
     </Card>
   );
-
   switch (variant) {
     case 'recent-messages':
       return renderRecentMessagesWidget();
@@ -494,5 +350,4 @@ const CommunicationWidget: React.FC<CommunicationWidgetProps> = ({
       return renderOverviewWidget();
   }
 };
-
 export default CommunicationWidget;

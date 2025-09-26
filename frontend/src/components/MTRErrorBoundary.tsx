@@ -1,47 +1,23 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-  Alert,
-  AlertTitle,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Chip,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ErrorIcon from '@mui/icons-material/Error';
-import WarningIcon from '@mui/icons-material/Warning';
-import InfoIcon from '@mui/icons-material/Info';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import HomeIcon from '@mui/icons-material/Home';
-import BugReportIcon from '@mui/icons-material/BugReport';
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import React, { Component, ReactNode } from 'react';
+import { Button, Alert, AlertDescription, AlertTitle, Accordion, AccordionContent, AccordionItem, AccordionTrigger, Separator, Badge } from '@/components/ui';
+import { AlertTriangle, Info, RefreshCw, Home, Bug, Lightbulb, ChevronDown } from 'lucide-react';
 
 /**
  * MTR Error Boundary Component
  * Provides graceful error recovery for MTR module
  * Requirements: 2.4, 4.4, 7.1, 8.4
  */
-
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
   showDetails?: boolean;
 }
 
 interface State {
   hasError: boolean;
   error?: Error;
-  errorInfo?: ErrorInfo;
+  errorInfo?: React.ErrorInfo;
   errorId: string;
 }
 
@@ -72,7 +48,6 @@ class MTRErrorBoundary extends Component<Props, State> {
     const errorId = `mtr-error-${Date.now()}-${Math.random()
       .toString(36)
       .substr(2, 9)}`;
-
     return {
       hasError: true,
       error,
@@ -80,12 +55,10 @@ class MTRErrorBoundary extends Component<Props, State> {
     };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('MTR ErrorBoundary caught an error:', error, errorInfo);
-
     // Log error for audit trail (Requirement 7.1)
     this.logMTRError(error, errorInfo);
-
     this.setState({
       error,
       errorInfo,
@@ -97,7 +70,7 @@ class MTRErrorBoundary extends Component<Props, State> {
     }
   }
 
-  private logMTRError = (error: Error, errorInfo: ErrorInfo) => {
+  private logMTRError = (error: Error, errorInfo: React.ErrorInfo) => {
     const errorLog = {
       errorId: this.state.errorId,
       message: error.message,
@@ -114,7 +87,6 @@ class MTRErrorBoundary extends Component<Props, State> {
     try {
       // Note: localStorage removed for security - errors are only logged to console in development
       console.error('MTR Error Log:', errorLog);
-
       // In production, send to error tracking service
       if (process.env.NODE_ENV === 'production') {
         // Example: Send to error tracking service
@@ -135,7 +107,6 @@ class MTRErrorBoundary extends Component<Props, State> {
     } catch {
       // Ignore parsing errors
     }
-
     return null;
   };
 
@@ -158,7 +129,6 @@ class MTRErrorBoundary extends Component<Props, State> {
     } catch {
       // Ignore parsing errors
     }
-
     return null;
   };
 
@@ -169,7 +139,6 @@ class MTRErrorBoundary extends Component<Props, State> {
     if (mtrError?.severity) {
       return mtrError.severity;
     }
-
     // Determine severity based on error type
     if (
       error.name === 'ChunkLoadError' ||
@@ -177,41 +146,39 @@ class MTRErrorBoundary extends Component<Props, State> {
     ) {
       return 'low';
     }
-
     if (error.name === 'TypeError' || error.name === 'ReferenceError') {
       return 'high';
     }
-
     return 'medium';
   };
 
   private getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'error';
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'high':
-        return 'error';
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'medium':
-        return 'warning';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'low':
-        return 'info';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
-        return 'warning';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     }
   };
 
   private getSeverityIcon = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return <ErrorIcon />;
+        return <AlertTriangle className="h-5 w-5" />;
       case 'high':
-        return <ErrorIcon />;
+        return <AlertTriangle className="h-5 w-5" />;
       case 'medium':
-        return <WarningIcon />;
+        return <AlertTriangle className="h-5 w-5" />;
       case 'low':
-        return <InfoIcon />;
+        return <Info className="h-5 w-5" />;
       default:
-        return <WarningIcon />;
+        return <AlertTriangle className="h-5 w-5" />;
     }
   };
 
@@ -220,7 +187,6 @@ class MTRErrorBoundary extends Component<Props, State> {
     if (mtrError?.recovery) {
       return mtrError.recovery;
     }
-
     // Default recovery actions based on error type
     if (
       error.name === 'ChunkLoadError' ||
@@ -232,7 +198,6 @@ class MTRErrorBoundary extends Component<Props, State> {
         'Check your internet connection',
       ];
     }
-
     if (error.message.includes('Network')) {
       return [
         'Check your internet connection',
@@ -240,7 +205,6 @@ class MTRErrorBoundary extends Component<Props, State> {
         'Contact support if the issue persists',
       ];
     }
-
     return [
       'Try refreshing the page',
       'Go back to the previous step',
@@ -282,7 +246,6 @@ Error ID: ${errorData.errorId}
 Message: ${errorData.message}
 Timestamp: ${errorData.timestamp}
 URL: ${errorData.url}
-
 Please describe what you were doing when this error occurred:
 [Your description here]
     `);
@@ -304,204 +267,120 @@ Please describe what you were doing when this error occurred:
       const mtrError = this.parseMTRError(error);
 
       return (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '60vh',
-            p: 3,
-          }}
-        >
-          <Paper
-            sx={{
-              p: 4,
-              maxWidth: 800,
-              width: '100%',
-            }}
-          >
-            <Alert
-              severity={
-                this.getSeverityColor(severity) as
-                  | 'error'
-                  | 'warning'
-                  | 'info'
-                  | 'success'
-              }
-              icon={this.getSeverityIcon(severity)}
-              sx={{ mb: 3 }}
-            >
-              <AlertTitle>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  MTR Module Error
-                  <Chip
-                    label={severity.toUpperCase()}
-                    size="small"
-                    color={
-                      this.getSeverityColor(severity) as
-                        | 'default'
-                        | 'primary'
-                        | 'secondary'
-                        | 'error'
-                        | 'info'
-                        | 'success'
-                        | 'warning'
-                    }
-                    variant="outlined"
-                  />
-                </Box>
-              </AlertTitle>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                An error occurred in the Medication Therapy Review module.
-                {severity === 'low' && ' This is likely a temporary issue.'}
-                {severity === 'medium' &&
-                  ' Please try the suggested recovery actions.'}
-                {severity === 'high' && ' This requires immediate attention.'}
-                {severity === 'critical' &&
-                  ' This is a critical error that needs urgent resolution.'}
-              </Typography>
+        <div className="container mx-auto p-4 max-w-4xl">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <Alert className={`mb-6 ${this.getSeverityColor(severity)}`}>
+              <div className="flex items-start">
+                {this.getSeverityIcon(severity)}
+                <div className="ml-2">
+                  <AlertTitle className="flex items-center justify-between">
+                    <span>MTR Module Error</span>
+                    <Badge className={this.getSeverityColor(severity)}>
+                      {severity.toUpperCase()}
+                    </Badge>
+                  </AlertTitle>
+                  <AlertDescription>
+                    An error occurred in the Medication Therapy Review module.
+                    {severity === 'low' && ' This is likely a temporary issue.'}
+                    {severity === 'medium' && ' Please try the suggested recovery actions.'}
+                    {severity === 'high' && ' This requires immediate attention.'}
+                    {severity === 'critical' && ' This is a critical error that needs urgent resolution.'}
+                  </AlertDescription>
+                </div>
+              </div>
             </Alert>
 
             {/* Error Message */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Error Details
-              </Typography>
-              <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
-                <Typography variant="body2" color="error">
-                  {error.message}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 1, display: 'block' }}
-                >
-                  Error ID: {this.state.errorId}
-                </Typography>
-              </Paper>
-            </Box>
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-2">Error Details</h3>
+              <div className="bg-gray-50 p-4 rounded-md">
+                <p className="text-red-600 font-medium">{error.message}</p>
+                <p className="text-sm text-gray-500 mt-1">Error ID: {this.state.errorId}</p>
+              </div>
+            </div>
 
             {/* Recovery Actions */}
-            <Box sx={{ mb: 3 }}>
-              <Typography
-                variant="h6"
-                gutterBottom
-                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-              >
-                <LightbulbIcon color="primary" />
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-2 flex items-center">
+                <Lightbulb className="h-5 w-5 mr-2 text-yellow-500" />
                 Suggested Actions
-              </Typography>
-              <List dense>
+              </h3>
+              <div className="bg-gray-50 rounded-md p-2">
                 {recoveryActions.map((action, index) => (
-                  <ListItem key={index}>
-                    <ListItemIcon>
-                      <Typography
-                        variant="body2"
-                        color="primary"
-                        fontWeight="bold"
-                      >
-                        {index + 1}.
-                      </Typography>
-                    </ListItemIcon>
-                    <ListItemText primary={action} />
-                  </ListItem>
+                  <div key={index} className="py-2 flex">
+                    <span className="font-medium mr-2">{index + 1}.</span>
+                    <span>{action}</span>
+                  </div>
                 ))}
-              </List>
-            </Box>
+              </div>
+            </div>
 
             {/* MTR Error Details */}
             {mtrError?.details && (
-              <Accordion sx={{ mb: 3 }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="subtitle1">
+              <Accordion type="single" collapsible className="mb-6">
+                <AccordionItem value="mtr-details">
+                  <AccordionTrigger className="py-3">
                     MTR Validation Details
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <List dense>
-                    {mtrError.details.map((detail, index) => (
-                      <ListItem key={index}>
-                        <ListItemText
-                          primary={detail.message}
-                          secondary={detail.field && `Field: ${detail.field}`}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                </AccordionDetails>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div>
+                      {mtrError.details?.map((detail, index) => (
+                        <div key={index} className="py-2">
+                          <p className="font-medium">{detail.message}</p>
+                          {detail.field && (
+                            <p className="text-sm text-gray-500">Field: {detail.field}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
               </Accordion>
             )}
 
             {/* Technical Details (Development only) */}
             {(import.meta.env.DEV || this.props.showDetails) &&
               this.state.error && (
-                <Accordion sx={{ mb: 3 }}>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="subtitle1">
+                <Accordion type="single" collapsible className="mb-6">
+                  <AccordionItem value="technical-details">
+                    <AccordionTrigger className="py-3">
                       Technical Details
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Paper sx={{ p: 2, bgcolor: 'grey.50', overflow: 'auto' }}>
-                      <Typography
-                        variant="body2"
-                        component="pre"
-                        sx={{ fontSize: '0.75rem', whiteSpace: 'pre-wrap' }}
-                      >
-                        {this.state.error.stack}
-                        {this.state.errorInfo?.componentStack}
-                      </Typography>
-                    </Paper>
-                  </AccordionDetails>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="bg-gray-900 text-gray-100 p-4 rounded-md overflow-x-auto">
+                        <pre className="text-sm">
+                          {this.state.error.stack}
+                          {this.state.errorInfo?.componentStack}
+                        </pre>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 </Accordion>
               )}
 
-            <Divider sx={{ my: 3 }} />
+            <Separator className="my-6" />
 
             {/* Action Buttons */}
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 2,
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-              }}
-            >
-              <Button
-                variant="contained"
-                onClick={this.handleReset}
-                startIcon={<RefreshIcon />}
-              >
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={this.handleReset} variant="outline" className="flex items-center">
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Try Again
               </Button>
-
-              <Button
-                variant="outlined"
-                onClick={this.handleReload}
-                startIcon={<RefreshIcon />}
-              >
+              <Button onClick={this.handleReload} variant="outline" className="flex items-center">
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Reload Page
               </Button>
-
-              <Button
-                variant="outlined"
-                onClick={this.handleGoHome}
-                startIcon={<HomeIcon />}
-              >
+              <Button onClick={this.handleGoHome} variant="outline" className="flex items-center">
+                <Home className="h-4 w-4 mr-2" />
                 Go to Dashboard
               </Button>
-
-              <Button
-                variant="text"
-                onClick={this.handleReportError}
-                startIcon={<BugReportIcon />}
-                size="small"
-              >
+              <Button onClick={this.handleReportError} variant="outline" className="flex items-center">
+                <Bug className="h-4 w-4 mr-2" />
                 Report Error
               </Button>
-            </Box>
-          </Paper>
-        </Box>
+            </div>
+          </div>
+        </div>
       );
     }
 
@@ -522,9 +401,7 @@ export const withMTRErrorBoundary = <P extends object>(
     </MTRErrorBoundary>
   );
 
-  WrappedComponent.displayName = `withMTRErrorBoundary(${
-    Component.displayName || Component.name
-  })`;
+  WrappedComponent.displayName = `withMTRErrorBoundary(${Component.displayName || Component.name})`;
 
   return WrappedComponent;
 };

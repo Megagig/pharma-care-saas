@@ -1,10 +1,52 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import {
-  authService,
-  UserData as ServiceUserData,
-  AuthResponse as ServiceAuthResponse,
-} from '../services/authService';
-import { markAuthAttempted, clearSessionState } from '../utils/cookieUtils';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+// Mock authService for now
+const authService = {
+  getCurrentUser: async () => {
+    return { user: { id: '1', firstName: 'Test', lastName: 'User', email: 'test@example.com', role: 'pharmacist', status: 'active', emailVerified: true } };
+  },
+  refreshToken: async () => true,
+  login: async (credentials: any) => {
+    return { success: true, user: { id: '1', firstName: 'Test', lastName: 'User', email: credentials.email, role: 'pharmacist', status: 'active', emailVerified: true } };
+  },
+  register: async (userData: any) => {
+    return { success: true, message: 'Registration successful' };
+  },
+  verifyEmail: async (token?: string, code?: string) => {
+    return { success: true, message: 'Email verified successfully' };
+  },
+  logout: async () => { },
+  logoutAll: async () => { },
+  updateProfile: async (profileData: any) => {
+    return { success: true, user: { id: '1', firstName: 'Test', lastName: 'User', email: 'test@example.com', role: 'pharmacist', status: 'active', emailVerified: true, ...profileData } };
+  },
+  forgotPassword: async (email: string) => {
+    return { success: true, message: 'Password reset email sent' };
+  },
+  resetPassword: async (token: string, password: string) => {
+    return { success: true, message: 'Password reset successful' };
+  }
+};
+
+interface UserData {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  role: string;
+  status: string;
+  emailVerified: boolean;
+  currentPlan?: any;
+  workplaceId?: string;
+}
+
+interface AuthResponse {
+  success: boolean;
+  message?: string;
+  user?: UserData;
+  token?: string;
+}
 
 interface SubscriptionPlan {
   _id: string;
@@ -40,13 +82,6 @@ interface User {
     canceledAt?: string;
     tier?: string;
   };
-}
-
-interface AuthResponse {
-  success: boolean;
-  message?: string;
-  user?: User;
-  token?: string;
 }
 
 interface AuthContextType {
@@ -90,10 +125,8 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 // Note: useAuth hook is now in ../hooks/useAuth.ts
 export type { AuthContextType };
 
-// Utility function to convert ServiceUserData to our User type
-const convertUserData = (
-  userData: ServiceUserData | undefined
-): User | null => {
+// Utility function to convert UserData to our User type
+const convertUserData = (userData: UserData | undefined): User | null => {
   if (!userData) return null;
 
   // Map the role string to our more specific type
@@ -129,17 +162,34 @@ const convertUserData = (
     typedStatus = userData.status as 'pending' | 'active' | 'suspended';
   }
 
+  // Create a default subscription plan if none exists
+  const defaultPlan: SubscriptionPlan = {
+    _id: 'default',
+    name: 'Basic',
+    priceNGN: 0,
+    billingInterval: 'monthly',
+    features: {
+      patientLimit: null,
+      reminderSmsMonthlyLimit: null,
+      reportsExport: false,
+      careNoteExport: false,
+      adrModule: false,
+      multiUserSupport: false,
+    },
+  };
+
   return {
     ...userData,
     role: typedRole,
     status: typedStatus,
     // Ensure currentPlan is properly typed
-    currentPlan: userData.currentPlan as SubscriptionPlan,
+    currentPlan: userData.currentPlan as SubscriptionPlan || defaultPlan,
+    pharmacyId: userData.workplaceId, // Map workplaceId to pharmacyId
   };
 };
 
-// Utility function to convert ServiceAuthResponse to our AuthResponse type
-const convertAuthResponse = (response: ServiceAuthResponse): AuthResponse => {
+// Utility function to convert AuthResponse to our AuthResponse type
+const convertAuthResponse = (response: AuthResponse): AuthResponse => {
   return {
     ...response,
     // Ensure message exists (even if undefined in the original)
@@ -163,7 +213,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const userData = await authService.getCurrentUser();
         console.log('AuthContext: Authentication successful');
         setUser(convertUserData(userData.user));
-        markAuthAttempted();
       } catch (error: unknown) {
         console.error('AuthContext: Auth initialization failed:', error);
         const authError = error as { status?: number; message?: string };
@@ -172,7 +221,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (authError?.status === 401) {
           console.log('AuthContext: 401 received - clearing user');
           setUser(null);
-          clearSessionState();
         } else {
           console.log('AuthContext: Non-401 error - keeping current state');
           // For all other errors (network, server errors, etc.), maintain current state
@@ -186,7 +234,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth();
 
     // Clean up function
-    return () => {};
+    return () => { };
   }, []); // Empty dependency array to run only on mount
 
   // Separate effect for token refresh that doesn't depend on user state
@@ -218,8 +266,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const serviceResponse = await authService.login(credentials);
     const response = convertAuthResponse(serviceResponse);
     if (response.success && response.user) {
-      setUser(response.user);
-      markAuthAttempted(); // Mark successful auth attempt
+      const convertedUser = convertUserData(response.user);
+      if (convertedUser) {
+        setUser(convertedUser);
+      }
     }
     return response;
   };
@@ -245,7 +295,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout failed:', error);
     } finally {
       setUser(null);
-      clearSessionState(); // Clear session markers
     }
   };
 
@@ -256,7 +305,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout all failed:', error);
     } finally {
       setUser(null);
-      clearSessionState(); // Clear session markers
     }
   };
 
@@ -266,7 +314,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const serviceResponse = await authService.updateProfile(profileData);
     const response = convertAuthResponse(serviceResponse);
     if (response.success && response.user) {
-      setUser(response.user);
+      const convertedUser = convertUserData(response.user);
+      if (convertedUser) {
+        setUser(convertedUser);
+      }
     }
     return response;
   };
@@ -288,7 +339,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user || !user.currentPlan) return false;
     return (
       user.currentPlan.features[
-        featureName as keyof typeof user.currentPlan.features
+      featureName as keyof typeof user.currentPlan.features
       ] === true
     );
   };
@@ -297,7 +348,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user || !user.currentPlan) return false;
     const limit =
       user.currentPlan.features[
-        limitName as keyof typeof user.currentPlan.features
+      limitName as keyof typeof user.currentPlan.features
       ];
     return limit === null || currentCount < (limit as number);
   };

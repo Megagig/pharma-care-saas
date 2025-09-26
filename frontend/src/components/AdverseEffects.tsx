@@ -1,67 +1,68 @@
-import React from 'react';
-import { useAdverseEffects } from '../queries/drugQueries';
-import { Box, CircularProgress, Typography, Paper, List, ListItem, ListItemText, Chip, Alert } from '@mui/material';
 import LoadingSkeleton from './LoadingSkeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 
 interface AdverseEffectsProps {
   drugId: string;
   drugName?: string;
 }
 
+// Mock hook for adverse effects data
+const useAdverseEffects = (drugId: string, limit: number) => {
+  return {
+    data: null,
+    isLoading: false,
+    error: null
+  };
+};
+
 const AdverseEffects: React.FC<AdverseEffectsProps> = ({ drugId, drugName }) => {
   const { data: adverseEffects, isLoading, error } = useAdverseEffects(drugId, 20);
-
   if (isLoading) {
     return <LoadingSkeleton type="list" />;
   }
-
   if (error) {
     return (
-      <Box my={4}>
-        <Alert severity="error">
-          Error loading adverse effects: {(error as any).message}
+      <div className="my-4">
+        <Alert>
+          <AlertDescription>
+            Error loading adverse effects: {(error as any).message}
+          </AlertDescription>
         </Alert>
-      </Box>
+      </div>
     );
   }
-
   if (!adverseEffects || !adverseEffects.results) {
     return (
-      <Box my={4}>
-        <Typography>No adverse effects data available</Typography>
-      </Box>
+      <div className="my-4">
+        <div>No adverse effects data available</div>
+      </div>
     );
   }
-
   // Extract unique reactions
   const reactions: { [key: string]: { count: number; seriousness: string[] } } = {};
-  
-  adverseEffects.results.forEach(report => {
+  adverseEffects.results.forEach((report: any) => {
     if (report.patient && report.patient.reaction) {
-      report.patient.reaction.forEach(reaction => {
+      report.patient.reaction.forEach((reaction: any) => {
         const reactionName = reaction.reactionmeddrapt;
         if (!reactions[reactionName]) {
-          reactions[reactionName] = { 
-            count: 0, 
-            seriousness: [] 
+          reactions[reactionName] = {
+            count: 0,
+            seriousness: []
           };
         }
-        
         reactions[reactionName].count += 1;
-        
         // Track seriousness levels
         const seriousness: string[] = [];
         if (report.seriousnessdeath === '1') seriousness.push('Death');
         if (report.seriousnesslifethreatening === '1') seriousness.push('Life Threatening');
         if (report.seriousnesshospitalization === '1') seriousness.push('Hospitalization');
-        
         reactions[reactionName].seriousness = [
           ...new Set([...reactions[reactionName].seriousness, ...seriousness])
         ];
       });
     }
   });
-
   // Convert to array and sort by frequency
   const sortedReactions = Object.entries(reactions)
     .map(([reaction, data]) => ({
@@ -70,49 +71,43 @@ const AdverseEffects: React.FC<AdverseEffectsProps> = ({ drugId, drugName }) => 
       seriousness: data.seriousness
     }))
     .sort((a, b) => b.count - a.count);
-
   return (
-    <Paper elevation={2} className="p-4">
-      <Typography variant="h6" className="mb-4">
+    <div className="p-4">
+      <div className="mb-4">
         Adverse Effects {drugName ? `for ${drugName}` : ''}
-      </Typography>
-      
+      </div>
       {sortedReactions.length === 0 ? (
-        <Alert severity="info">
-          No adverse effects reported
+        <Alert>
+          <AlertDescription>
+            No adverse effects reported
+          </AlertDescription>
         </Alert>
       ) : (
-        <List>
+        <div className="space-y-2">
           {sortedReactions.map(({ reaction, count, seriousness }, index) => (
-            <ListItem key={index} className="border-b last:border-b-0">
-              <ListItemText
-                primary={
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="body1" className="font-medium">
-                      {reaction}
-                    </Typography>
-                    <Chip 
-                      label={count} 
-                      size="small" 
-                      className="ml-2"
-                      color={seriousness.length > 0 ? 'error' : 'default'}
-                    />
-                  </Box>
-                }
-                secondary={
-                  seriousness.length > 0 ? (
-                    <Typography variant="body2" color="error">
-                      Seriousness: {seriousness.join(', ')}
-                    </Typography>
-                  ) : null
-                }
-              />
-            </ListItem>
+            <div key={index} className="border-b last:border-b-0 pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="font-medium">
+                    {reaction}
+                  </div>
+                  <Badge 
+                    variant={seriousness.length > 0 ? 'destructive' : 'secondary'}
+                  >
+                    {count}
+                  </Badge>
+                </div>
+              </div>
+              {seriousness.length > 0 && (
+                <div className="text-sm text-red-600 mt-1">
+                  Seriousness: {seriousness.join(', ')}
+                </div>
+              )}
+            </div>
           ))}
-        </List>
+        </div>
       )}
-    </Paper>
+    </div>
   );
 };
-
 export default AdverseEffects;

@@ -1,49 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  FormGroup,
-  FormControlLabel,
-  Switch,
-  Typography,
-  Box,
-  Divider,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Slider,
-  Alert,
-  Chip,
-  IconButton,
-  Tooltip,
-} from '@mui/material';
-import {
-  VolumeUp as SoundIcon,
-  VolumeOff as SoundOffIcon,
-  Notifications as NotificationIcon,
-  Email as EmailIcon,
-  Sms as SmsIcon,
-  Schedule as ScheduleIcon,
-  Close as CloseIcon,
-  Restore as ResetIcon,
-} from '@mui/icons-material';
+import { Button, Label, Dialog, DialogContent, DialogTitle, Select, Tooltip, Alert, Switch, Separator } from '@/components/ui/button';
 
 interface NotificationPreferences {
   // General settings
   enabled: boolean;
   soundEnabled: boolean;
   soundVolume: number;
-
   // Delivery channels
   inAppNotifications: boolean;
   emailNotifications: boolean;
   smsNotifications: boolean;
   desktopNotifications: boolean;
-
   // Notification types
   newMessageNotifications: boolean;
   mentionNotifications: boolean;
@@ -55,42 +21,35 @@ interface NotificationPreferences {
   patientQueryNotifications: boolean;
   urgentMessageNotifications: boolean;
   systemNotifications: boolean;
-
   // Timing and frequency
   quietHoursEnabled: boolean;
   quietHoursStart: string;
   quietHoursEnd: string;
   batchNotifications: boolean;
   batchInterval: number; // minutes
-
   // Priority settings
   urgentBypassQuietHours: boolean;
   highPrioritySound: boolean;
   groupSimilarNotifications: boolean;
-
   // Advanced settings
   maxNotificationsPerHour: number;
   autoMarkReadAfter: number; // minutes, 0 = disabled
   showPreview: boolean;
 }
-
 interface NotificationPreferencesDialogProps {
   open: boolean;
   onClose: () => void;
   onSave: (preferences: NotificationPreferences) => void;
   initialPreferences?: Partial<NotificationPreferences>;
 }
-
 const defaultPreferences: NotificationPreferences = {
   enabled: true,
   soundEnabled: true,
   soundVolume: 50,
-
   inAppNotifications: true,
   emailNotifications: false,
   smsNotifications: false,
   desktopNotifications: true,
-
   newMessageNotifications: true,
   mentionNotifications: true,
   therapyUpdateNotifications: true,
@@ -101,70 +60,58 @@ const defaultPreferences: NotificationPreferences = {
   patientQueryNotifications: true,
   urgentMessageNotifications: true,
   systemNotifications: false,
-
   quietHoursEnabled: false,
   quietHoursStart: '22:00',
   quietHoursEnd: '08:00',
   batchNotifications: false,
   batchInterval: 15,
-
   urgentBypassQuietHours: true,
   highPrioritySound: true,
   groupSimilarNotifications: true,
-
   maxNotificationsPerHour: 20,
   autoMarkReadAfter: 0,
   showPreview: true,
 };
-
-const NotificationPreferencesDialog: React.FC<
-  NotificationPreferencesDialogProps
-> = ({ open, onClose, onSave, initialPreferences = {} }) => {
-  const [preferences, setPreferences] = useState<NotificationPreferences>({
+const NotificationPreferencesDialog: React.FC = ({ open, onClose, onSave, initialPreferences = {} }) => {
+  const [preferences, setPreferences] = useState<NotificationPreferences>({ 
     ...defaultPreferences,
-    ...initialPreferences,
+    ...initialPreferences}
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [testSoundPlaying, setTestSoundPlaying] = useState(false);
-
   // Update preferences when initial preferences change
   useEffect(() => {
-    setPreferences({
+    setPreferences({ 
       ...defaultPreferences,
-      ...initialPreferences,
+      ...initialPreferences}
     });
     setHasChanges(false);
   }, [initialPreferences]);
-
   // Handle preference changes
   const handlePreferenceChange = useCallback(
     (key: keyof NotificationPreferences, value: boolean | number | string) => {
-      setPreferences((prev) => ({
+      setPreferences((prev) => ({ 
         ...prev,
-        [key]: value,
+        [key]: value}
       }));
       setHasChanges(true);
     },
     []
   );
-
   // Handle save
   const handleSave = useCallback(() => {
     onSave(preferences);
     setHasChanges(false);
     onClose();
   }, [preferences, onSave, onClose]);
-
   // Handle reset to defaults
   const handleReset = useCallback(() => {
     setPreferences(defaultPreferences);
     setHasChanges(true);
   }, []);
-
   // Test notification sound
   const testSound = useCallback(async () => {
     if (!preferences.soundEnabled) return;
-
     setTestSoundPlaying(true);
     try {
       const audio = new Audio('/sounds/notification.mp3');
@@ -176,7 +123,6 @@ const NotificationPreferencesDialog: React.FC<
       setTimeout(() => setTestSoundPlaying(false), 1000);
     }
   }, [preferences.soundEnabled, preferences.soundVolume]);
-
   // Request desktop notification permission
   const requestDesktopPermission = useCallback(async () => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -186,29 +132,23 @@ const NotificationPreferencesDialog: React.FC<
       }
     }
   }, [handlePreferenceChange]);
-
   return (
     <Dialog
       open={open}
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{
+      PaperProps={{}
         sx: { minHeight: '70vh' },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <NotificationIcon sx={{ mr: 1 }} />
+      <DialogTitle
+        className=""
+      >
+        <div className="">
+          <NotificationIcon className="" />
           Notification Preferences
-        </Box>
-        <Box>
+        </div>
+        <div>
           <Tooltip title="Reset to defaults">
             <IconButton onClick={handleReset}>
               <ResetIcon />
@@ -217,45 +157,42 @@ const NotificationPreferencesDialog: React.FC<
           <IconButton onClick={onClose}>
             <CloseIcon />
           </IconButton>
-        </Box>
+        </div>
       </DialogTitle>
-
       <DialogContent dividers>
         {/* General Settings */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
+        <div className="">
+          <div  gutterBottom>
             General Settings
-          </Typography>
-
+          </div>
           <FormGroup>
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.enabled}
                   onChange={(e) =>
-                    handlePreferenceChange('enabled', e.target.checked)
+                    handlePreferenceChange('enabled', e.target.checked)}
                   }
                 />
               }
               label="Enable notifications"
             />
-
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.soundEnabled}
                   onChange={(e) =>
-                    handlePreferenceChange('soundEnabled', e.target.checked)
+                    handlePreferenceChange('soundEnabled', e.target.checked)}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <div className="">
                   {preferences.soundEnabled ? (
-                    <SoundIcon sx={{ mr: 1 }} />
+                    <SoundIcon className="" />
                   ) : (
-                    <SoundOffIcon sx={{ mr: 1 }} />
+                    <SoundOffIcon className="" />}
                   )}
                   Sound notifications
                   {preferences.soundEnabled && (
@@ -263,85 +200,80 @@ const NotificationPreferencesDialog: React.FC<
                       size="small"
                       onClick={testSound}
                       disabled={testSoundPlaying}
-                      sx={{ ml: 1 }}
+                      className=""
                     >
                       {testSoundPlaying ? 'Playing...' : 'Test'}
                     </Button>
                   )}
-                </Box>
+                </div>
               }
             />
           </FormGroup>
-
           {preferences.soundEnabled && (
-            <Box sx={{ mt: 2, px: 2 }}>
-              <Typography gutterBottom>Sound Volume</Typography>
+            <div className="">
+              <div gutterBottom>Sound Volume</div>
               <Slider
                 value={preferences.soundVolume}
                 onChange={(_, value) =>
-                  handlePreferenceChange('soundVolume', value as number)
+                  handlePreferenceChange('soundVolume', value as number)}
                 }
                 min={0}
                 max={100}
                 valueLabelDisplay="auto"
                 valueLabelFormat={(value) => `${value}%`}
               />
-            </Box>
+            </div>
           )}
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
+        </div>
+        <Separator className="" />
         {/* Delivery Channels */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
+        <div className="">
+          <div  gutterBottom>
             Delivery Channels
-          </Typography>
-
+          </div>
           <FormGroup>
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.inAppNotifications}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'inAppNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <NotificationIcon sx={{ mr: 1 }} />
+                <div className="">
+                  <NotificationIcon className="" />
                   In-app notifications
-                </Box>
+                </div>}
               }
             />
-
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.desktopNotifications}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'desktopNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <NotificationIcon sx={{ mr: 1 }} />
+                <div className="">
+                  <NotificationIcon className="" />
                   Desktop notifications
                   {Notification.permission === 'default' && (
                     <Button
-                      size="small"
+                      size="small"}
                       onClick={requestDesktopPermission}
-                      sx={{ ml: 1 }}
+                      className=""
                     >
                       Enable
                     </Button>
@@ -351,168 +283,157 @@ const NotificationPreferencesDialog: React.FC<
                       label="Blocked"
                       size="small"
                       color="error"
-                      sx={{ ml: 1 }}
+                      className=""
                     />
                   )}
-                </Box>
+                </div>
               }
             />
-
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.emailNotifications}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'emailNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <EmailIcon sx={{ mr: 1 }} />
+                <div className="">
+                  <EmailIcon className="" />
                   Email notifications
-                </Box>
+                </div>}
               }
             />
-
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.smsNotifications}
                   onChange={(e) =>
-                    handlePreferenceChange('smsNotifications', e.target.checked)
+                    handlePreferenceChange('smsNotifications', e.target.checked)}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <SmsIcon sx={{ mr: 1 }} />
+                <div className="">
+                  <SmsIcon className="" />
                   SMS notifications
-                </Box>
+                </div>}
               }
             />
           </FormGroup>
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
+        </div>
+        <Separator className="" />
         {/* Notification Types */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
+        <div className="">
+          <div  gutterBottom>
             Notification Types
-          </Typography>
-
+          </div>
           <FormGroup>
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.newMessageNotifications}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'newMessageNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label="New messages"
             />
-
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.mentionNotifications}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'mentionNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label="@Mentions"
             />
-
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.therapyUpdateNotifications}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'therapyUpdateNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label="Therapy updates"
             />
-
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.clinicalAlertNotifications}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'clinicalAlertNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label="Clinical alerts"
             />
-
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.urgentMessageNotifications}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'urgentMessageNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label="Urgent messages"
             />
-
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.patientQueryNotifications}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'patientQueryNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label="Patient queries"
             />
-
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.systemNotifications}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'systemNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
@@ -520,47 +441,43 @@ const NotificationPreferencesDialog: React.FC<
               label="System notifications"
             />
           </FormGroup>
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
+        </div>
+        <Separator className="" />
         {/* Timing and Frequency */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
+        <div className="">
+          <div  gutterBottom>
             Timing & Frequency
-          </Typography>
-
+          </div>
           <FormGroup>
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.quietHoursEnabled}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'quietHoursEnabled',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <ScheduleIcon sx={{ mr: 1 }} />
+                <div className="">
+                  <ScheduleIcon className="" />
                   Quiet hours
-                </Box>
+                </div>}
               }
             />
           </FormGroup>
-
           {preferences.quietHoursEnabled && (
-            <Box sx={{ mt: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
-              <FormControl size="small">
-                <InputLabel>Start</InputLabel>
+            <div className="">
+              <div size="small">
+                <Label>Start</Label>
                 <Select
                   value={preferences.quietHoursStart}
                   onChange={(e) =>
-                    handlePreferenceChange('quietHoursStart', e.target.value)
+                    handlePreferenceChange('quietHoursStart', e.target.value)}
                   }
                   label="Start"
                 >
@@ -573,16 +490,14 @@ const NotificationPreferencesDialog: React.FC<
                     );
                   })}
                 </Select>
-              </FormControl>
-
-              <Typography>to</Typography>
-
-              <FormControl size="small">
-                <InputLabel>End</InputLabel>
+              </div>
+              <div>to</div>
+              <div size="small">
+                <Label>End</Label>
                 <Select
                   value={preferences.quietHoursEnd}
                   onChange={(e) =>
-                    handlePreferenceChange('quietHoursEnd', e.target.value)
+                    handlePreferenceChange('quietHoursEnd', e.target.value)}
                   }
                   label="End"
                 >
@@ -595,73 +510,67 @@ const NotificationPreferencesDialog: React.FC<
                     );
                   })}
                 </Select>
-              </FormControl>
-            </Box>
+              </div>
+            </div>
           )}
-
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={preferences.urgentBypassQuietHours}
                 onChange={(e) =>
                   handlePreferenceChange(
                     'urgentBypassQuietHours',
                     e.target.checked
-                  )
+                  )}
                 }
                 disabled={
-                  !preferences.enabled || !preferences.quietHoursEnabled
+                  !preferences.enabled || !preferences.quietHoursEnabled}
                 }
               />
             }
             label="Urgent notifications bypass quiet hours"
           />
-
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={preferences.batchNotifications}
                 onChange={(e) =>
-                  handlePreferenceChange('batchNotifications', e.target.checked)
+                  handlePreferenceChange('batchNotifications', e.target.checked)}
                 }
                 disabled={!preferences.enabled}
               />
             }
             label="Batch similar notifications"
           />
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
+        </div>
+        <Separator className="" />
         {/* Advanced Settings */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
+        <div className="">
+          <div  gutterBottom>
             Advanced Settings
-          </Typography>
-
+          </div>
           <FormGroup>
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.groupSimilarNotifications}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'groupSimilarNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                   disabled={!preferences.enabled}
                 />
               }
               label="Group similar notifications"
             />
-
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences.showPreview}
                   onChange={(e) =>
-                    handlePreferenceChange('showPreview', e.target.checked)
+                    handlePreferenceChange('showPreview', e.target.checked)}
                   }
                   disabled={!preferences.enabled}
                 />
@@ -669,19 +578,18 @@ const NotificationPreferencesDialog: React.FC<
               label="Show message preview"
             />
           </FormGroup>
-
-          <Box sx={{ mt: 2 }}>
-            <Typography gutterBottom>
+          <div className="">
+            <div gutterBottom>
               Maximum notifications per hour:{' '}
               {preferences.maxNotificationsPerHour}
-            </Typography>
+            </div>
             <Slider
               value={preferences.maxNotificationsPerHour}
               onChange={(_, value) =>
                 handlePreferenceChange(
                   'maxNotificationsPerHour',
                   value as number
-                )
+                )}
               }
               min={1}
               max={100}
@@ -689,47 +597,43 @@ const NotificationPreferencesDialog: React.FC<
               valueLabelDisplay="auto"
               disabled={!preferences.enabled}
             />
-          </Box>
-
-          <Box sx={{ mt: 2 }}>
-            <Typography gutterBottom>
+          </div>
+          <div className="">
+            <div gutterBottom>
               Auto-mark as read after:{' '}
               {preferences.autoMarkReadAfter === 0
                 ? 'Disabled'
                 : `${preferences.autoMarkReadAfter} minutes`}
-            </Typography>
+            </div>
             <Slider
               value={preferences.autoMarkReadAfter}
               onChange={(_, value) =>
-                handlePreferenceChange('autoMarkReadAfter', value as number)
+                handlePreferenceChange('autoMarkReadAfter', value as number)}
               }
               min={0}
               max={60}
               step={5}
               valueLabelDisplay="auto"
-              valueLabelFormat={(value) =>
+              valueLabelFormat={(value) =>}
                 value === 0 ? 'Disabled' : `${value}m`
               }
               disabled={!preferences.enabled}
             />
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {hasChanges && (
-          <Alert severity="info" sx={{ mt: 2 }}>
+          <Alert severity="info" className="">
             You have unsaved changes. Click "Save" to apply them.
           </Alert>
         )}
       </DialogContent>
-
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained" disabled={!hasChanges}>
+        <Button onClick={handleSave}  disabled={!hasChanges}>
           Save Preferences
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
-
 export default NotificationPreferencesDialog;

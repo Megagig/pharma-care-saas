@@ -1,41 +1,3 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import {
-  Box,
-  Container,
-  Paper,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
-  Button,
-  Typography,
-  Alert,
-  LinearProgress,
-  Card,
-  CardContent,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Fab,
-  Snackbar,
-  SwipeableDrawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  AppBar,
-  Toolbar,
-} from '@mui/material';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
-import SaveIcon from '@mui/icons-material/Save';
-import CheckIcon from '@mui/icons-material/Check';
-import TimelineIcon from '@mui/icons-material/Timeline';
-
 // Import MTR step components
 import PatientSelection from './PatientSelection';
 import MedicationHistory from './MedicationHistory';
@@ -46,20 +8,6 @@ import FollowUpScheduler from './FollowUpScheduler';
 import MTRErrorBoundary from './MTRErrorBoundary';
 import OfflineIndicator from './common/OfflineIndicator';
 import MTRHelpSystem from './help/MTRHelpSystem';
-import { QuickReference } from './help/MTRContextualHelp';
-
-// Import store and types
-import { useMTRStore } from '../stores/mtrStore';
-import { useResponsive } from '../hooks/useResponsive';
-import type { Patient, NigerianState } from '../types/patientManagement';
-import type { Patient as StorePatient } from '../stores/types';
-import type {
-  DrugTherapyProblem,
-  MTRIntervention,
-  MTRFollowUp,
-  TherapyPlan,
-} from '../types/mtr';
-import type { MTRMedication } from '../stores/mtrStore';
 
 // Helper function to convert Patient types
 const convertPatientToStoreType = (patient: Patient): StorePatient => ({
@@ -71,11 +19,11 @@ const convertPatientToStoreType = (patient: Patient): StorePatient => ({
   dateOfBirth: patient.dob || '',
   address: {
     street: patient.address || '',
-    state: patient.state || '',
+    state: patient.state || ''
   },
   allergies: [], // Will be loaded separately
   createdAt: patient.createdAt,
-  updatedAt: patient.updatedAt,
+  updatedAt: patient.updatedAt
 });
 
 // Step configuration
@@ -146,7 +94,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
   patientId,
   reviewId,
   onComplete,
-  onCancel,
+  onCancel
 }) => {
   // Navigation and URL handling
   const [searchParams, setSearchParams] = useSearchParams();
@@ -158,11 +106,6 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
   const [autoSaveEnabled] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<
-    'success' | 'error' | 'warning' | 'info'
-  >('info');
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Store
@@ -217,7 +160,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       console.error('Auto-save skipped: Review ID is missing or invalid', {
         hasReview: !!currentReview,
         reviewId: currentReview._id,
-        reviewKeys: Object.keys(currentReview || {}),
+        reviewKeys: Object.keys(currentReview || {})
       });
       return;
     }
@@ -245,6 +188,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     const handleOnline = () => {
       // Handle online state if needed
     };
+
     const handleOffline = () => {
       // Handle offline state if needed
     };
@@ -263,11 +207,9 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     const checkUserPermissions = async () => {
       const hasPermissions = await checkPermissions();
       if (!hasPermissions) {
-        setSnackbarMessage(
+        toast.error(
           'You do not have permission to access MTR reviews. Please contact your administrator.'
         );
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
         return;
       }
     };
@@ -303,6 +245,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
             'Checking for in-progress review for patient:',
             patientId
           );
+
           // First, check if there's an in-progress review for this patient
           const inProgressReview = await loadInProgressReview(patientId);
 
@@ -311,6 +254,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
               'No in-progress review found, creating new one for patient:',
               patientId
             );
+
             // No in-progress review found, create new one
             await createReview(patientId);
 
@@ -329,17 +273,15 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
               inProgressReview._id
             );
           }
+
           // If in-progress review found, it's already loaded by loadInProgressReview
         }
       } catch (error) {
         console.error('Error initializing MTR session:', error);
-        setSnackbarMessage(
-          `Failed to initialize MTR session: ${
-            error instanceof Error ? error.message : 'Unknown error'
+        toast.error(
+          `Failed to initialize MTR session: ${error instanceof Error ? error.message : 'Unknown error'
           }`
         );
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
       }
     };
 
@@ -392,7 +334,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       'Setting up auto-save for review:',
       JSON.stringify({
         id: currentReview._id,
-        status: currentReview.status,
+        status: currentReview.status
       })
     );
 
@@ -400,7 +342,6 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       try {
         // Always re-check if currentReview is available and has ID
         const { currentReview } = useMTRStore.getState();
-
         if (!currentReview) {
           console.error('Auto-save skipped: No current review available');
           return;
@@ -411,7 +352,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
           console.error('Auto-save skipped: Review ID is missing or invalid', {
             hasReview: !!currentReview,
             reviewId: currentReview._id,
-            reviewKeys: Object.keys(currentReview || {}),
+            reviewKeys: Object.keys(currentReview || {})
           });
           return;
         }
@@ -488,9 +429,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     }
 
     if (hasValidationErrors) {
-      setSnackbarMessage(validationMessage);
-      setSnackbarSeverity('warning');
-      setSnackbarOpen(true);
+      toast.warning(validationMessage);
       return;
     }
 
@@ -499,7 +438,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       // Complete current step with basic data
       await completeStep(currentStep, {
         completedAt: new Date().toISOString(),
-        stepName: MTR_STEPS[currentStep]?.label || 'Unknown Step',
+        stepName: MTR_STEPS[currentStep]?.label || 'Unknown Step'
       });
 
       // Navigate to next step
@@ -508,14 +447,10 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         goToStep(newStep);
       }
 
-      setSnackbarMessage('Step completed successfully');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
+      toast.success('Step completed successfully');
     } catch (error) {
       console.error('Error completing step:', error);
-      setSnackbarMessage('Failed to complete step');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+      toast.error('Failed to complete step');
     }
   };
 
@@ -540,16 +475,12 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     try {
       // Check if currentReview exists and has an ID before saving
       if (!currentReview) {
-        setSnackbarMessage('Cannot save - No active review');
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
+        toast.error('Cannot save - No active review');
         return;
       }
 
       if (!currentReview._id) {
-        setSnackbarMessage('Cannot save - Review ID is missing');
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
+        toast.error('Cannot save - Review ID is missing');
         console.error('Cannot save review - ID is missing', currentReview);
         return;
       }
@@ -560,46 +491,37 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         status: currentReview.status,
         stepsCompleted: currentReview.steps
           ? Object.entries(currentReview.steps).map(([key, step]) => ({
-              step: key,
-              completed: step.completed,
-            }))
+            step: key,
+            completed: step.completed
+          }))
           : 'No steps',
         canComplete: canCompleteReview(),
-        loadingSave: loading.saveReview,
+        loadingSave: loading.saveReview
       });
 
       await saveReview();
       setLastSaved(new Date());
-      setSnackbarMessage('Review saved successfully');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
+      toast.success('Review saved successfully');
     } catch (error) {
       console.error('Save error:', error);
-      setSnackbarMessage(
-        `Failed to save review: ${
-          error instanceof Error ? error.message : 'Unknown error'
+      toast.error(
+        `Failed to save review: ${error instanceof Error ? error.message : 'Unknown error'
         }`
       );
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
     }
   };
 
   const handleComplete = async () => {
     if (!canCompleteReview()) {
-      setSnackbarMessage(
+      toast.warning(
         'Please complete all required steps before finishing the review'
       );
-      setSnackbarSeverity('warning');
-      setSnackbarOpen(true);
       return;
     }
 
     // Check if currentReview exists and has an ID before completing
     if (!currentReview) {
-      setSnackbarMessage('Cannot complete - No active review');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+      toast.error('Cannot complete - No active review');
       return;
     }
 
@@ -611,7 +533,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       hasReview: !!currentReview,
       reviewId: currentReview?._id,
       steps: !!currentReview?.steps,
-      urlReviewId: reviewId,
+      urlReviewId: reviewId
     });
 
     // Check if we're missing an ID but have a review with steps and other data
@@ -619,9 +541,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       (!currentReview._id || currentReview._id === '') &&
       currentReview.steps
     ) {
-      setSnackbarMessage('Attempting to recover review ID...');
-      setSnackbarSeverity('info');
-      setSnackbarOpen(true);
+      toast.info('Attempting to recover review ID...');
       console.warn(
         'Review missing ID but has data - attempting recovery',
         currentReview
@@ -634,7 +554,6 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         // If the store has a review with ID, use that
         if (latestReview && latestReview._id) {
           console.log('Found review ID in store:', latestReview._id);
-
           // Update our local reference to use this review with ID
           reviewToComplete = latestReview;
         } else if (reviewId) {
@@ -653,34 +572,26 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
               reviewToComplete = reloadedReview;
             } else {
               console.error('Failed to reload review with valid ID');
-              setSnackbarMessage(
+              toast.error(
                 'Cannot complete - Unable to recover review ID'
               );
-              setSnackbarSeverity('error');
-              setSnackbarOpen(true);
               return;
             }
           } catch (loadError) {
             console.error('Error reloading review:', loadError);
-            setSnackbarMessage('Cannot complete - Failed to reload review');
-            setSnackbarSeverity('error');
-            setSnackbarOpen(true);
+            toast.error('Cannot complete - Failed to reload review');
             return;
           }
         } else {
           console.error('Could not recover review ID from store or URL');
-          setSnackbarMessage(
+          toast.error(
             'Cannot complete - Review ID is missing and cannot be recovered'
           );
-          setSnackbarSeverity('error');
-          setSnackbarOpen(true);
           return;
         }
       } catch (error) {
         console.error('Error trying to recover review ID:', error);
-        setSnackbarMessage('Cannot complete - Error during recovery attempt');
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
+        toast.error('Cannot complete - Error during recovery attempt');
         return;
       }
     }
@@ -705,11 +616,9 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
             reviewToComplete
           );
         } else {
-          setSnackbarMessage(
+          toast.error(
             'Cannot complete - Review ID is still missing after recovery attempts'
           );
-          setSnackbarSeverity('error');
-          setSnackbarOpen(true);
           return;
         }
       }
@@ -726,9 +635,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       const result = await completeReview(reviewToComplete._id);
 
       if (result) {
-        setSnackbarMessage('MTR completed successfully');
-        setSnackbarSeverity('success');
-        setSnackbarOpen(true);
+        toast.success('MTR completed successfully');
         if (onComplete) {
           onComplete(reviewToComplete._id);
         }
@@ -737,13 +644,10 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       }
     } catch (error) {
       console.error('Failed to complete review:', error);
-      setSnackbarMessage(
-        `Failed to complete review: ${
-          error instanceof Error ? error.message : 'Unknown error'
+      toast.error(
+        `Failed to complete review: ${error instanceof Error ? error.message : 'Unknown error'
         }`
       );
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
     }
   };
 
@@ -759,9 +663,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         onCancel();
       }
     } catch {
-      setSnackbarMessage('Failed to cancel review');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+      toast.error('Failed to cancel review');
     }
   };
 
@@ -842,11 +744,11 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
             patientInfo={
               selectedPatient
                 ? {
-                    age: 0, // Will be calculated from dateOfBirth
-                    gender: 'unknown', // Will be loaded from patient data
-                    conditions: [], // Will be loaded from patient conditions
-                    allergies: [], // Will be loaded from patient allergies
-                  }
+                  age: 0, // Will be calculated from dateOfBirth
+                  gender: 'unknown', // Will be loaded from patient data
+                  conditions: [], // Will be loaded from patient conditions
+                  allergies: [], // Will be loaded from patient allergies
+                }
                 : undefined
             }
             onProblemsIdentified={handleProblemsIdentified}
@@ -919,30 +821,23 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
   // Loading state
   if (loading.createReview || loading.loadReview) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <LinearProgress sx={{ width: '100%', maxWidth: 400 }} />
-          <Typography variant="body1" color="text.secondary">
+      <div maxWidth="lg" className="">
+        <div className="">
+          <Progress className="" />
+          <div color="text.secondary">
             {loading.createReview
               ? 'Creating MTR session...'
               : 'Loading MTR session...'}
-          </Typography>
-        </Box>
-      </Container>
+          </div>
+        </div>
+      </div>
     );
   }
 
   // Error state
   if (errors.createReview || errors.loadReview) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <div maxWidth="lg" className="">
         <Alert
           severity="error"
           action={
@@ -953,50 +848,38 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         >
           {errors.createReview || errors.loadReview}
         </Alert>
-      </Container>
+      </div>
     );
   }
 
   // No review state - show patient selection
   if (!currentReview) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
+      <div maxWidth="lg" className="">
+        <div className="">
           Start New Medication Therapy Review
-        </Typography>
-
+        </div>
         <Card>
-          <CardContent sx={{ p: 3 }}>
+          <CardContent className="">
             <PatientSelection
-              onPatientSelect={(patient: Patient) => {
-                // Create a new review for the selected patient
-                console.log('Patient selected:', patient);
-                selectPatient(convertPatientToStoreType(patient));
-                createReview(patient._id);
-              }}
-              onNext={() => {
-                // Move to next step after patient selection
-                console.log('Moving to next step');
-                goToStep(1);
-              }}
               selectedPatient={
                 selectedPatient
                   ? {
-                      ...selectedPatient,
-                      pharmacyId: 'default-pharmacy',
-                      mrn: selectedPatient._id,
-                      dob: selectedPatient.dateOfBirth,
-                      address: selectedPatient.address?.street || '',
-                      state:
-                        (selectedPatient.address?.state as NigerianState) ||
-                        undefined,
-                    }
+                    ...selectedPatient,
+                    pharmacyId: 'default-pharmacy',
+                    mrn: selectedPatient._id,
+                    dob: selectedPatient.dateOfBirth,
+                    address: selectedPatient.address?.street || '',
+                    state:
+                      (selectedPatient.address?.state as NigerianState) ||
+                      undefined,
+                  }
                   : null
               }
             />
           </CardContent>
         </Card>
-      </Container>
+      </div>
     );
   }
 
@@ -1016,10 +899,10 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         },
       }}
     >
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" sx={{ mb: 2, textAlign: 'center' }}>
+      <div className="">
+        <div className="">
           MTR Steps
-        </Typography>
+        </div>
         <List>
           {MTR_STEPS.map((step, index) => {
             const status = getStepStatus(index);
@@ -1027,7 +910,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
               index <= (getNextStep() ?? MTR_STEPS.length - 1);
 
             return (
-              <ListItem
+              <div
                 key={step.id}
                 component="div"
                 onClick={() => {
@@ -1036,69 +919,30 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                     setMobileDrawerOpen(false);
                   }
                 }}
-                sx={{
-                  cursor: isClickable ? 'pointer' : 'default',
-                  borderRadius: 1,
-                  mb: 1,
-                  bgcolor:
-                    status === 'active'
-                      ? 'primary.50'
-                      : status === 'completed'
-                      ? 'success.50'
-                      : 'transparent',
-                }}
+                className=""
               >
-                <ListItemIcon>
+                <div>
                   {status === 'completed' ? (
                     <CheckIcon color="success" />
                   ) : status === 'active' ? (
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        bgcolor: 'primary.main',
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.75rem',
-                      }}
-                    >
+                    <div className="">
                       {index + 1}
-                    </Typography>
+                    </div>
                   ) : (
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        border: 1,
-                        borderColor: 'grey.300',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.75rem',
-                      }}
-                    >
+                    <div className="">
                       {index + 1}
-                    </Typography>
+                    </div>
                   )}
-                </ListItemIcon>
-                <ListItemText
+                </div>
+                <div
                   primary={step.label}
                   secondary={step.description}
-                  primaryTypographyProps={{
-                    fontWeight: status === 'active' ? 600 : 400,
-                  }}
                 />
-              </ListItem>
+              </div>
             );
           })}
         </List>
-      </Box>
+      </div>
     </SwipeableDrawer>
   );
 
@@ -1109,88 +953,62 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
       {/* Mobile App Bar */}
       {isMobile && (
-        <AppBar position="sticky" elevation={1}>
-          <Toolbar>
+        <header position="sticky">
+          <div>
             <IconButton
               edge="start"
               color="inherit"
               onClick={() => setMobileDrawerOpen(true)}
-              sx={{ mr: 2 }}
+              className=""
             >
               <TimelineIcon />
             </IconButton>
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" noWrap>
+            <div className="">
+              <div noWrap>
                 MTR - Step {currentStep + 1}
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+              </div>
+              <div className="">
                 {MTR_STEPS[currentStep]?.label}
-              </Typography>
-            </Box>
+              </div>
+            </div>
             <Chip
               label={`${Math.round(completionPercentage)}%`}
               size="small"
-              sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
+              className=""
             />
-          </Toolbar>
-        </AppBar>
+          </div>
+        </header>
       )}
 
-      <Container
-        maxWidth="lg"
-        sx={{
-          py: isMobile ? 1 : 2,
-          px: isMobile ? 1 : 3,
-        }}
-      >
+      <div maxWidth="lg" className="">
         {/* Desktop Header */}
         {!isMobile && (
-          <Paper sx={{ p: getSpacing(2, 3, 3), mb: getSpacing(2, 3, 3) }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                mb: 2,
-                flexDirection: isTablet ? 'column' : 'row',
-                gap: isTablet ? 2 : 0,
-              }}
-            >
-              <Box sx={{ textAlign: isTablet ? 'center' : 'left' }}>
-                <Typography
+          <div className="">
+            <div className="">
+              <div className="">
+                <div
                   variant={isTablet ? 'h5' : 'h4'}
-                  sx={{ fontWeight: 600, mb: 1 }}
+                  className=""
                 >
                   Medication Therapy Review
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
+                </div>
+                <div color="text.secondary">
                   {currentReview.reviewNumber} • {getCurrentStepName()}
-                </Typography>
+                </div>
                 {selectedPatient && (
-                  <Typography
-                    variant="body2"
+                  <div
                     color="text.secondary"
-                    sx={{ mt: 0.5 }}
+                    className=""
                   >
                     Patient: {selectedPatient.firstName}{' '}
                     {selectedPatient.lastName} (ID: {selectedPatient._id})
-                  </Typography>
+                  </div>
                 )}
-              </Box>
-
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  flexWrap: 'wrap',
-                  justifyContent: isTablet ? 'center' : 'flex-end',
-                }}
-              >
+              </div>
+              <div className="">
                 <Chip
                   label={`${Math.round(completionPercentage)}% Complete`}
                   color={completionPercentage === 100 ? 'success' : 'primary'}
-                  variant="outlined"
                 />
                 {currentReview && currentReview.status && (
                   <Chip
@@ -1203,62 +1021,32 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                     size="small"
                   />
                 )}
-              </Box>
-            </Box>
+              </div>
+            </div>
 
             {/* Progress Bar */}
-            <Box sx={{ mb: 2 }}>
-              <LinearProgress
-                variant="determinate"
-                value={completionPercentage}
-                sx={{
-                  height: 8,
-                  borderRadius: 4,
-                  bgcolor: 'grey.200',
-                  '& .MuiLinearProgress-bar': {
-                    borderRadius: 4,
-                  },
-                }}
-              />
-            </Box>
+            <div className="">
+              <Progress className="" />
+            </div>
 
             {/* Auto-save indicator */}
             {lastSaved && (
-              <Typography variant="caption" color="text.secondary">
+              <div color="text.secondary">
                 Last saved: {lastSaved.toLocaleTimeString()}
-              </Typography>
+              </div>
             )}
-          </Paper>
+          </div>
         )}
 
         {/* Main Content */}
-        <Box
-          sx={{
-            display: 'flex',
-            gap: getSpacing(1, 2, 3),
-            flexDirection: isMobile ? 'column' : 'row',
-          }}
-        >
+        <div className="">
           {/* Desktop Stepper */}
           {!isMobile && (
-            <Paper
-              sx={{
-                p: getSpacing(1, 2, 2),
-                minWidth: isTablet ? 280 : 300,
-                maxWidth: isTablet ? 320 : 350,
-                height: 'fit-content',
-                position: 'sticky',
-                top: 20,
-              }}
-            >
+            <div className="">
               <Stepper
                 activeStep={currentStep}
                 orientation="vertical"
-                sx={{
-                  '& .MuiStepLabel-root': {
-                    cursor: 'pointer',
-                  },
-                }}
+                className=""
               >
                 {MTR_STEPS.map((step, index) => {
                   const status = getStepStatus(index);
@@ -1269,175 +1057,104 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                     <Step key={step.id} completed={status === 'completed'}>
                       <StepLabel
                         onClick={() => isClickable && handleStepClick(index)}
-                        sx={{
-                          cursor: isClickable ? 'pointer' : 'default',
-                          opacity: isClickable ? 1 : 0.6,
-                        }}
-                        StepIconProps={{
-                          sx: {
-                            color:
-                              status === 'completed'
-                                ? 'success.main'
-                                : status === 'active'
-                                ? 'primary.main'
-                                : 'grey.400',
-                          },
-                        }}
+                        className=""
                       >
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: status === 'active' ? 600 : 400 }}
-                        >
+                        <div className="">
                           {step.label}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </div>
+                        <div color="text.secondary">
                           {step.description}
-                        </Typography>
+                        </div>
                       </StepLabel>
                       <StepContent>
-                        <Box sx={{ py: 1 }}>
-                          <Typography variant="caption" color="text.secondary">
+                        <div className="">
+                          <div color="text.secondary">
                             {step.description}
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </StepContent>
                     </Step>
                   );
                 })}
               </Stepper>
-            </Paper>
+            </div>
           )}
 
           {/* Step Content */}
-          <Box
-            sx={{
-              flexGrow: 1,
-              minHeight: isMobile ? 'auto' : 600,
-              width: isMobile ? '100%' : 'auto',
-            }}
-          >
-            <Paper
-              sx={{
-                p: getSpacing(1, 2, 3),
-                minHeight: isMobile ? 'auto' : '100%',
-                borderRadius: isMobile ? 2 : 1,
-              }}
-            >
+          <div className="">
+            <div className="">
               {getCurrentStepComponent()}
-            </Paper>
-          </Box>
-        </Box>
+            </div>
+          </div>
+        </div>
 
         {/* Mobile Stepper Drawer */}
         {isMobile && renderMobileStepper()}
 
         {/* Action Buttons */}
-        <Paper
-          sx={{
-            p: getSpacing(1, 2, 2),
-            mt: getSpacing(2, 3, 3),
-            position: isMobile ? 'sticky' : 'static',
-            bottom: isMobile ? 0 : 'auto',
-            zIndex: isMobile ? 1000 : 'auto',
-            borderRadius: isMobile ? '16px 16px 0 0' : 1,
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexDirection: isMobile ? 'column' : 'row',
-              gap: isMobile ? 2 : 0,
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 1,
-                width: isMobile ? '100%' : 'auto',
-                justifyContent: isMobile ? 'center' : 'flex-start',
-              }}
-            >
+        <div className="">
+          <div className="">
+            <div className="">
               <Button
-                variant="outlined"
                 onClick={handleCancel}
                 disabled={loading.cancelReview}
                 size={isMobile ? 'large' : 'medium'}
-                sx={{ minWidth: isMobile ? 120 : 'auto' }}
+                className=""
               >
                 Cancel
               </Button>
               <Button
-                variant="outlined"
                 startIcon={<SaveIcon />}
                 onClick={handleSave}
                 disabled={loading.saveReview}
                 size={isMobile ? 'large' : 'medium'}
-                sx={{ minWidth: isMobile ? 120 : 'auto' }}
+                className=""
               >
                 {loading.saveReview ? 'Saving...' : 'Save'}
               </Button>
-            </Box>
-
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 1,
-                width: isMobile ? '100%' : 'auto',
-                justifyContent: isMobile ? 'center' : 'flex-end',
-              }}
-            >
+            </div>
+            <div className="">
               <Button
-                variant="outlined"
                 startIcon={<NavigateBeforeIcon />}
                 onClick={handleBack}
                 disabled={currentStep === 0}
                 size={isMobile ? 'large' : 'medium'}
-                sx={{ minWidth: isMobile ? 120 : 'auto' }}
+                className=""
               >
                 Back
               </Button>
-
               {currentStep < MTR_STEPS.length - 1 ? (
                 <Button
-                  variant="contained"
                   endIcon={<NavigateNextIcon />}
                   onClick={handleNext}
                   disabled={loading.completeStep}
                   size={isMobile ? 'large' : 'medium'}
-                  sx={{ minWidth: isMobile ? 140 : 'auto' }}
+                  className=""
                 >
                   Next
                 </Button>
               ) : (
                 <Button
-                  variant="contained"
                   color="success"
                   startIcon={<CheckIcon />}
                   onClick={handleComplete}
                   disabled={!canCompleteReview() || loading.completeReview}
                   size={isMobile ? 'large' : 'medium'}
-                  sx={{ minWidth: isMobile ? 140 : 'auto' }}
+                  className=""
                 >
                   {loading.completeReview ? 'Completing...' : 'Complete Review'}
                 </Button>
               )}
-            </Box>
-          </Box>
-        </Paper>
+            </div>
+          </div>
+        </div>
 
         {/* Floating Action Buttons for Mobile */}
         {isMobile && (
           <>
             <Fab
               color="primary"
-              sx={{
-                position: 'fixed',
-                bottom: 80,
-                right: 16,
-                zIndex: 1000,
-              }}
+              className=""
               onClick={handleSave}
               disabled={loading.saveReview}
               size="medium"
@@ -1448,12 +1165,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
             {/* Quick step navigation */}
             <Fab
               color="secondary"
-              sx={{
-                position: 'fixed',
-                bottom: 140,
-                right: 16,
-                zIndex: 1000,
-              }}
+              className=""
               onClick={() => setMobileDrawerOpen(true)}
               size="small"
             >
@@ -1472,18 +1184,12 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         >
           <DialogTitle>Cancel MTR Session?</DialogTitle>
           <DialogContent>
-            <Typography>
+            <div>
               Are you sure you want to cancel this MTR session? Any unsaved
               changes will be lost.
-            </Typography>
+            </div>
           </DialogContent>
-          <DialogActions
-            sx={{
-              flexDirection: isMobile ? 'column' : 'row',
-              gap: isMobile ? 1 : 0,
-              p: isMobile ? 2 : 1,
-            }}
-          >
+          <DialogActions className="">
             <Button
               onClick={() => setShowExitDialog(false)}
               fullWidth={isMobile}
@@ -1494,7 +1200,6 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
             <Button
               onClick={confirmCancel}
               color="error"
-              variant="contained"
               fullWidth={isMobile}
               size={isMobile ? 'large' : 'medium'}
             >
@@ -1503,60 +1208,18 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
           </DialogActions>
         </Dialog>
 
-        {/* Snackbar for notifications */}
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={6000}
-          onClose={() => setSnackbarOpen(false)}
-          anchorOrigin={{
-            vertical: isMobile ? 'top' : 'bottom',
-            horizontal: isMobile ? 'center' : 'left',
-          }}
-          sx={{
-            ...(isMobile && {
-              top: 80, // Below mobile app bar
-            }),
-          }}
-        >
-          <Alert
-            onClose={() => setSnackbarOpen(false)}
-            severity={snackbarSeverity}
-            sx={{
-              width: '100%',
-              ...(isMobile && {
-                borderRadius: 2,
-              }),
-            }}
-          >
-            {snackbarMessage}
-          </Alert>
-        </Snackbar>
-
         {/* MTR Help System */}
         <MTRHelpSystem
           currentStep={currentStep + 1}
-          onStartTour={() => {
-            // Optional: Reset to first step for tour
-            goToStep(0);
-          }}
         />
 
         {/* Quick Reference for Current Step */}
         {currentStep >= 0 && currentStep < MTR_STEPS.length && (
-          <Box
-            sx={{
-              position: 'fixed',
-              bottom: 80,
-              left: 16,
-              width: 300,
-              zIndex: 999,
-              display: { xs: 'none', md: 'block' },
-            }}
-          >
+          <div className="">
             <QuickReference step={currentStep + 1} />
-          </Box>
+          </div>
         )}
-      </Container>
+      </div>
     </MTRErrorBoundary>
   );
 };

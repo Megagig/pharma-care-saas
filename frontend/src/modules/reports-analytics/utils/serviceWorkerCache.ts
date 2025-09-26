@@ -1,6 +1,4 @@
 // Service Worker Cache Management for Reports & Analytics Module
-import { ChartData } from '../types/charts';
-
 // Cache configuration
 const CACHE_CONFIG = {
     STATIC_CACHE: 'reports-analytics-static-v1',
@@ -39,8 +37,7 @@ class ServiceWorkerCacheManager {
             // Register service worker if not already registered
             if (!navigator.serviceWorker.controller) {
                 await navigator.serviceWorker.register('/sw.js', {
-                    scope: '/reports-analytics/',
-                });
+                    scope: '/reports-analytics/'}
             }
 
             // Listen for service worker updates
@@ -82,8 +79,7 @@ class ServiceWorkerCacheManager {
                 headers: {
                     'Content-Type': 'application/json',
                     'Cache-Control': `max-age=${Math.floor((ttl || CACHE_CONFIG.TTL.DATA) / 1000)}`,
-                },
-            });
+                }
 
             await cache.put(key, response);
         } catch (error) {
@@ -133,8 +129,7 @@ class ServiceWorkerCacheManager {
                 headers: {
                     'Content-Type': 'application/json',
                     'Cache-Control': `max-age=${Math.floor(CACHE_CONFIG.TTL.CHARTS / 1000)}`,
-                },
-            });
+                }
 
             await cache.put(`chart-${chartId}`, response);
         } catch (error) {
@@ -300,8 +295,7 @@ class MemoryCache {
         this.cache.set(key, {
             data,
             timestamp: Date.now(),
-            ttl,
-        });
+            ttl}
     }
 
     get(key: string): any | null {
@@ -426,4 +420,3 @@ export const memoryCache = new MemoryCache();
 cacheManager.preloadCriticalResources();
 
 // React import fix
-import React from 'react';

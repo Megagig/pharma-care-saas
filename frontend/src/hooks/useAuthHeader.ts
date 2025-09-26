@@ -1,5 +1,3 @@
-import { useCallback } from 'react';
-
 /**
  * Hook to get authentication headers for API requests
  * @returns Object containing auth headers with token if authenticated

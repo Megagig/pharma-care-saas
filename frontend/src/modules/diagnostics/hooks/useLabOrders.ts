@@ -1,12 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { labApi } from '../api/labApi';
-import { useUIStore } from '../../../stores';
-import type {
     LabOrder,
     LabOrderForm,
     LabOrderParams,
     ApiResponse
-} from '../types';
 
 // Error type for API calls
 type ApiError = {
@@ -33,11 +28,11 @@ export const labOrderQueryKeys = {
  * Hook to fetch lab orders with optional filters
  */
 export const useLabOrders = (params: LabOrderParams = {}) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: labOrderQueryKeys.list(params),
         queryFn: () => labApi.getOrders(params),
         staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -45,12 +40,12 @@ export const useLabOrders = (params: LabOrderParams = {}) => {
  * Hook to fetch a single lab order by ID
  */
 export const useLabOrder = (orderId: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: labOrderQueryKeys.detail(orderId),
         queryFn: () => labApi.getOrder(orderId),
         enabled: !!orderId,
         staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -58,37 +53,34 @@ export const useLabOrder = (orderId: string) => {
  * Hook to fetch lab orders for a specific patient
  */
 export const useLabOrdersByPatient = (patientId: string, params: Omit<LabOrderParams, 'patientId'> = {}) => {
-    return useQuery({
-        queryKey: labOrderQueryKeys.byPatient(patientId),
+    return useQuery({ 
+        queryKey: labOrderQueryKeys.byPatient(patientId)}
         queryFn: () => labApi.getOrders({ ...params, patientId }),
         enabled: !!patientId,
         staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchOnWindowFocus: false,
-    });
+        refetchOnWindowFocus: false}
 };
 
 /**
  * Hook to fetch pending lab orders
  */
 export const usePendingLabOrders = (params: Omit<LabOrderParams, 'status'> = {}) => {
-    return useQuery({
-        queryKey: labOrderQueryKeys.pending(),
+    return useQuery({ 
+        queryKey: labOrderQueryKeys.pending()}
         queryFn: () => labApi.getOrders({ ...params, status: 'ordered' }),
         staleTime: 1 * 60 * 1000, // 1 minute for pending orders
-        refetchOnWindowFocus: false,
-    });
+        refetchOnWindowFocus: false}
 };
 
 /**
  * Hook to fetch completed lab orders
  */
 export const useCompletedLabOrders = (params: Omit<LabOrderParams, 'status'> = {}) => {
-    return useQuery({
-        queryKey: labOrderQueryKeys.completed(),
+    return useQuery({ 
+        queryKey: labOrderQueryKeys.completed()}
         queryFn: () => labApi.getOrders({ ...params, status: 'completed' }),
         staleTime: 5 * 60 * 1000, // 5 minutes for completed orders
-        refetchOnWindowFocus: false,
-    });
+        refetchOnWindowFocus: false}
 };
 
 // ===============================
@@ -102,10 +94,10 @@ export const useCreateLabOrder = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (data: LabOrderForm) => labApi.createOrder(data),
         onMutate: async (variables) => {
-            // Cancel outgoing refetches
+            // Cancel outgoing refetches })
             await queryClient.cancelQueries({ queryKey: labOrderQueryKeys.byPatient(variables.patientId) });
 
             // Snapshot previous value
@@ -152,12 +144,11 @@ export const useCreateLabOrder = () => {
                 queryClient.invalidateQueries({ queryKey: labOrderQueryKeys.byPatient(variables.patientId) });
                 queryClient.invalidateQueries({ queryKey: labOrderQueryKeys.pending() });
 
-                addNotification({
+                addNotification({ 
                     type: 'success',
-                    title: 'Lab Order Created',
+                    title: 'Lab Order Created'}
                     message: `Lab order has been successfully created with ${order.tests.length} test(s).`,
-                    duration: 5000,
-                });
+                    duration: 5000}
             }
         },
         onError: (error: ApiError, variables, context) => {
@@ -169,14 +160,13 @@ export const useCreateLabOrder = () => {
                 );
             }
 
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Order Creation Failed',
                 message: error.message || 'Failed to create lab order. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -186,7 +176,7 @@ export const useUpdateLabOrderStatus = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({  })
         mutationFn: ({ orderId, status }: { orderId: string; status: LabOrder['status'] }) =>
             labApi.updateOrderStatus(orderId, status),
         onMutate: async ({ orderId, status }) => {
@@ -224,12 +214,11 @@ export const useUpdateLabOrderStatus = () => {
                 queryClient.invalidateQueries({ queryKey: labOrderQueryKeys.pending() });
                 queryClient.invalidateQueries({ queryKey: labOrderQueryKeys.completed() });
 
-                addNotification({
+                addNotification({ 
                     type: 'success',
-                    title: 'Order Status Updated',
+                    title: 'Order Status Updated'}
                     message: `Lab order status has been updated to ${status}.`,
-                    duration: 4000,
-                });
+                    duration: 4000}
             }
         },
         onError: (error: ApiError, { orderId }, context) => {
@@ -238,14 +227,13 @@ export const useUpdateLabOrderStatus = () => {
                 queryClient.setQueryData(labOrderQueryKeys.detail(orderId), context.previousOrder);
             }
 
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Status Update Failed',
                 message: error.message || 'Failed to update lab order status. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -255,7 +243,7 @@ export const useCancelLabOrder = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (orderId: string) => labApi.cancelOrder(orderId),
         onSuccess: (response, orderId) => {
             const order = response?.data;
@@ -264,28 +252,27 @@ export const useCancelLabOrder = () => {
                 // Update the order in cache
                 queryClient.setQueryData(labOrderQueryKeys.detail(orderId), response);
 
-                // Invalidate related queries
+                // Invalidate related queries })
                 queryClient.invalidateQueries({ queryKey: labOrderQueryKeys.lists() });
                 queryClient.invalidateQueries({ queryKey: labOrderQueryKeys.byPatient(order.patientId) });
                 queryClient.invalidateQueries({ queryKey: labOrderQueryKeys.pending() });
 
-                addNotification({
+                addNotification({ 
                     type: 'success',
                     title: 'Order Cancelled',
                     message: 'Lab order has been successfully cancelled.',
-                    duration: 4000,
+                    duration: 4000}
                 });
             }
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Cancellation Failed',
                 message: error.message || 'Failed to cancel lab order. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 // ===============================
@@ -355,10 +342,10 @@ export const usePrefetchLabOrder = () => {
     const queryClient = useQueryClient();
 
     return (orderId: string) => {
-        queryClient.prefetchQuery({
+        queryClient.prefetchQuery({ 
             queryKey: labOrderQueryKeys.detail(orderId),
             queryFn: () => labApi.getOrder(orderId),
-            staleTime: 2 * 60 * 1000, // 2 minutes
+            staleTime: 2 * 60 * 1000, // 2 minutes })
         });
     };
 };

@@ -1,35 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Box,
-  Typography,
-  LinearProgress,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Chip,
-  Alert,
-  Collapse,
-  IconButton,
-  Divider,
-} from '@mui/material';
-import {
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Group as GroupIcon,
-  Security as SecurityIcon,
-} from '@mui/icons-material';
-import { useWebSocket } from '../../services/websocketService';
-import type { BulkOperationResult } from '../../types/rbac';
+
+import { Button } from '@/components/ui/button';
+
+import { Dialog } from '@/components/ui/dialog';
+
+import { DialogContent } from '@/components/ui/dialog';
+
+import { DialogTitle } from '@/components/ui/dialog';
+
+import { Progress } from '@/components/ui/progress';
+
+import { Alert } from '@/components/ui/alert';
 
 interface BulkOperationStatus {
   id: string;
@@ -63,29 +44,26 @@ interface BulkOperationStatus {
     userCount?: number;
   };
 }
-
 interface BulkOperationProgressProps {
   open: boolean;
   onClose: () => void;
   operationId?: string;
   initialData?: Partial<BulkOperationStatus>;
 }
-
-const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
+const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({ 
   open,
   onClose,
   operationId,
-  initialData,
+  initialData
 }) => {
   const { subscribe } = useWebSocket();
   const [operation, setOperation] = useState<BulkOperationStatus | null>(null);
   const [showErrors, setShowErrors] = useState(false);
   const [showWarnings, setShowWarnings] = useState(false);
-
   // Initialize operation data
   useEffect(() => {
     if (initialData && open) {
-      setOperation({
+      setOperation({  })
         id: operationId || `op-${Date.now()}`,
         type: 'role_assignment',
         status: 'pending',
@@ -98,22 +76,17 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
         startTime: new Date().toISOString(),
         errors: [],
         warnings: [],
-        ...initialData,
-      });
+        ...initialData}
     }
   }, [initialData, operationId, open]);
-
   // Subscribe to bulk operation updates
   useEffect(() => {
     if (!operationId) return;
-
     const unsubscribe = subscribe('bulk_operation', (message) => {
       const update = message.data;
-
       if (update.operationId === operationId) {
         setOperation((prev) => {
           if (!prev) return null;
-
           return {
             ...prev,
             status: update.status || prev.status,
@@ -128,10 +101,8 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
         });
       }
     });
-
     return unsubscribe;
   }, [operationId, subscribe]);
-
   const getOperationTypeLabel = (type: BulkOperationStatus['type']) => {
     switch (type) {
       case 'role_assignment':
@@ -146,7 +117,6 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
         return 'Bulk Operation';
     }
   };
-
   const getOperationIcon = (type: BulkOperationStatus['type']) => {
     switch (type) {
       case 'role_assignment':
@@ -160,7 +130,6 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
         return <InfoIcon />;
     }
   };
-
   const getStatusColor = (status: BulkOperationStatus['status']) => {
     switch (status) {
       case 'completed':
@@ -175,26 +144,21 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
         return 'default';
     }
   };
-
   const calculateProgress = () => {
     if (!operation || operation.progress.total === 0) return 0;
     return (operation.progress.processed / operation.progress.total) * 100;
   };
-
   const getElapsedTime = () => {
     if (!operation) return '';
-
     const start = new Date(operation.startTime);
     const end = operation.endTime ? new Date(operation.endTime) : new Date();
     const elapsed = Math.floor((end.getTime() - start.getTime()) / 1000);
-
     if (elapsed < 60) return `${elapsed}s`;
     if (elapsed < 3600) return `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`;
     return `${Math.floor(elapsed / 3600)}h ${Math.floor(
       (elapsed % 3600) / 60
     )}m`;
   };
-
   const isOperationComplete = () => {
     return (
       operation?.status === 'completed' ||
@@ -202,11 +166,9 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
       operation?.status === 'cancelled'
     );
   };
-
   if (!operation) {
     return null;
   }
-
   return (
     <Dialog
       open={open}
@@ -216,66 +178,63 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
       disableEscapeKeyDown={!isOperationComplete()}
     >
       <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <div className="">
           {getOperationIcon(operation.type)}
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6">
+          <div className="">
+            <div >
               {getOperationTypeLabel(operation.type)}
-            </Typography>
-            <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}
+            </div>
+            <div
+              className=""
             >
               <Chip
                 label={operation.status.replace('_', ' ')}
                 color={getStatusColor(operation.status)}
                 size="small"
-                variant="outlined"
+                
               />
-              <Typography variant="caption" color="textSecondary">
+              <div  color="textSecondary">
                 {getElapsedTime()}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
+              </div>
+            </div>
+          </div>
+        </div>
       </DialogTitle>
-
       <DialogContent>
-        <Box sx={{ mb: 3 }}>
+        <div className="">
           {/* Progress Bar */}
-          <Box sx={{ mb: 2 }}>
-            <Box
-              sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+          <div className="">
+            <div
+              className=""
             >
-              <Typography variant="body2">
+              <div >
                 Progress: {operation.progress.processed} /{' '}
                 {operation.progress.total}
-              </Typography>
-              <Typography variant="body2">
+              </div>
+              <div >
                 {Math.round(calculateProgress())}%
-              </Typography>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={calculateProgress()}
+              </div>
+            </div>
+            <Progress
+              
               color={getStatusColor(operation.status)}
-              sx={{ height: 8, borderRadius: 4 }}
+              className=""
             />
-          </Box>
-
+          </div>
           {/* Statistics */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+          <div className="">
             <Chip
               icon={<CheckCircleIcon />}
               label={`${operation.progress.successful} Successful`}
               color="success"
-              variant="outlined"
+              
             />
             {operation.progress.failed > 0 && (
               <Chip
                 icon={<ErrorIcon />}
                 label={`${operation.progress.failed} Failed`}
                 color="error"
-                variant="outlined"
+                
               />
             )}
             {operation.warnings.length > 0 && (
@@ -283,151 +242,127 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
                 icon={<WarningIcon />}
                 label={`${operation.warnings.length} Warnings`}
                 color="warning"
-                variant="outlined"
+                
               />
             )}
-          </Box>
-
+          </div>
           {/* Operation Details */}
           {operation.metadata && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" gutterBottom>
+            <div className="">
+              <div  gutterBottom>
                 Operation Details
-              </Typography>
+              </div>
               {operation.metadata.roleNames && (
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="caption" color="textSecondary">
+                <div className="">
+                  <div  color="textSecondary">
                     Roles:
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 0.5,
-                      mt: 0.5,
-                    }}
+                  </div>
+                  <div
+                    className=""
                   >
                     {operation.metadata.roleNames.map((roleName) => (
                       <Chip
                         key={roleName}
                         label={roleName}
                         size="small"
-                        variant="outlined"
+                        
                       />
                     ))}
-                  </Box>
-                </Box>
+                  </div>
+                </div>
               )}
               {operation.metadata.permissions && (
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="caption" color="textSecondary">
+                <div className="">
+                  <div  color="textSecondary">
                     Permissions:
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 0.5,
-                      mt: 0.5,
-                    }}
+                  </div>
+                  <div
+                    className=""
                   >
                     {operation.metadata.permissions.map((permission) => (
                       <Chip
                         key={permission}
                         label={permission}
                         size="small"
-                        variant="outlined"
+                        
                       />
                     ))}
-                  </Box>
-                </Box>
+                  </div>
+                </div>
               )}
               {operation.metadata.userCount && (
-                <Typography variant="caption" color="textSecondary">
+                <div  color="textSecondary">
                   Affected Users: {operation.metadata.userCount}
-                </Typography>
+                </div>
               )}
-            </Box>
+            </div>
           )}
-
           {/* Errors Section */}
           {operation.errors.length > 0 && (
-            <Box sx={{ mb: 2 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  mb: 1,
-                }}
+            <div className="">
+              <div
+                className=""
                 onClick={() => setShowErrors(!showErrors)}
               >
                 <IconButton size="small">
                   {showErrors ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
-                <Typography variant="subtitle2" color="error">
+                <div  color="error">
                   Errors ({operation.errors.length})
-                </Typography>
-              </Box>
+                </div>
+              </div>
               <Collapse in={showErrors}>
-                <Alert severity="error" sx={{ mb: 2 }}>
+                <Alert severity="error" className="">
                   <List dense>
                     {operation.errors.map((error, index) => (
-                      <ListItem key={index} disablePadding>
-                        <ListItemIcon>
+                      <div key={index} disablePadding>
+                        <div>
                           <ErrorIcon color="error" fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText
+                        </div>
+                        <div
                           primary={error.userName || error.userId}
                           secondary={error.error}
                         />
-                      </ListItem>
+                      </div>
                     ))}
                   </List>
                 </Alert>
               </Collapse>
-            </Box>
+            </div>
           )}
-
           {/* Warnings Section */}
           {operation.warnings.length > 0 && (
-            <Box sx={{ mb: 2 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  mb: 1,
-                }}
+            <div className="">
+              <div
+                className=""
                 onClick={() => setShowWarnings(!showWarnings)}
               >
                 <IconButton size="small">
                   {showWarnings ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
-                <Typography variant="subtitle2" color="warning.main">
+                <div  color="warning.main">
                   Warnings ({operation.warnings.length})
-                </Typography>
-              </Box>
+                </div>
+              </div>
               <Collapse in={showWarnings}>
-                <Alert severity="warning" sx={{ mb: 2 }}>
+                <Alert severity="warning" className="">
                   <List dense>
                     {operation.warnings.map((warning, index) => (
-                      <ListItem key={index} disablePadding>
-                        <ListItemIcon>
+                      <div key={index} disablePadding>
+                        <div>
                           <WarningIcon color="warning" fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText
+                        </div>
+                        <div
                           primary={warning.userName || warning.userId}
                           secondary={warning.message}
                         />
-                      </ListItem>
+                      </div>
                     ))}
                   </List>
                 </Alert>
               </Collapse>
-            </Box>
+            </div>
           )}
-
           {/* Completion Message */}
           {isOperationComplete() && (
             <Alert
@@ -436,7 +371,7 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
                   ? 'success'
                   : operation.status === 'failed'
                   ? 'error'
-                  : 'warning'
+                  : 'warning'}
               }
             >
               {operation.status === 'completed' && (
@@ -462,16 +397,12 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
               )}
             </Alert>
           )}
-        </Box>
+        </div>
       </DialogContent>
-
       <DialogActions>
         {!isOperationComplete() && (
           <Button
-            onClick={() => {
-              // TODO: Implement operation cancellation
-              console.log('Cancel operation:', operation.id);
-            }}
+            
             color="error"
           >
             Cancel
@@ -488,5 +419,4 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
     </Dialog>
   );
 };
-
 export default BulkOperationProgress;

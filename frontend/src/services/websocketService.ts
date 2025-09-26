@@ -3,9 +3,6 @@
  * Handles real-time permission and role change notifications
  */
 
-import React from 'react';
-import type { PermissionChangeNotification } from '../types/rbac';
-
 export interface WebSocketMessage {
     type: 'permission_change' | 'role_change' | 'user_update' | 'bulk_operation' | 'system_notification';
     data: unknown;
@@ -255,10 +252,9 @@ class WebSocketService {
 
         this.heartbeatTimer = setInterval(() => {
             if (this.ws?.readyState === WebSocket.OPEN) {
-                this.send({
-                    type: 'system_notification',
-                    data: { type: 'heartbeat' },
-                });
+                this.send({ 
+                    type: 'system_notification'}
+                    data: { type: 'heartbeat' }
             }
         }, this.config.heartbeatInterval);
     }

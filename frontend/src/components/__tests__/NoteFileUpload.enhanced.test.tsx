@@ -1,19 +1,16 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { vi } from 'vitest';
-import NoteFileUpload from '../NoteFileUpload';
-import clinicalNoteService from '../../services/clinicalNoteService';
-import { Attachment } from '../../types/clinicalNote';
 
+import userEvent from '@testing-library/user-event';
+
+import NoteFileUpload from '../NoteFileUpload';
+
+import clinicalNoteService from '../../services/clinicalNoteService';
 // Mock the clinical note service
-vi.mock('../../services/clinicalNoteService', () => ({
+vi.mock('../../services/clinicalNoteService', () => ({ 
   default: {
     uploadAttachment: vi.fn(),
     deleteAttachment: vi.fn(),
-    downloadAttachment: vi.fn(),
-  },
-}));
+    downloadAttachment: vi.fn()}
+  }
 
 // Mock URL.createObjectURL
 global.URL.createObjectURL = vi.fn(() => 'mock-url');
@@ -114,8 +111,7 @@ describe('Enhanced NoteFileUpload Component', () => {
 
     // Test file size validation
     const largeFile = new File(['x'.repeat(2048)], 'large.jpg', {
-      type: 'image/jpeg',
-    });
+      type: 'image/jpeg'}
 
     if (fileInput) {
       await user.upload(fileInput, largeFile);
@@ -140,8 +136,7 @@ describe('Enhanced NoteFileUpload Component', () => {
       .getByLabelText(/drop files here/i)
       .querySelector('input[type="file"]');
     const invalidFile = new File(['content'], 'test.exe', {
-      type: 'application/x-executable',
-    });
+      type: 'application/x-executable'}
 
     if (fileInput) {
       await user.upload(fileInput, invalidFile);
@@ -199,8 +194,8 @@ describe('Enhanced NoteFileUpload Component', () => {
 
   it('handles attachment deletion', async () => {
     const user = userEvent.setup();
-    (clinicalNoteService.deleteAttachment as any).mockResolvedValue({
-      message: 'Deleted',
+    (clinicalNoteService.deleteAttachment as any).mockResolvedValue({ 
+      message: 'Deleted'}
     });
 
     render(
@@ -240,10 +235,10 @@ describe('Enhanced NoteFileUpload Component', () => {
     const mockRemoveChild = vi.spyOn(document.body, 'removeChild');
     const mockClick = vi.fn();
 
-    mockCreateElement.mockReturnValue({
+    mockCreateElement.mockReturnValue({ 
       href: '',
       download: '',
-      click: mockClick,
+      click: mockClick}
     } as any);
 
     render(
@@ -303,8 +298,7 @@ describe('Enhanced NoteFileUpload Component', () => {
       fireEvent.drop(dropZone, {
         dataTransfer: {
           files: [file],
-        },
-      });
+        }
     }
 
     await waitFor(() => {
@@ -360,11 +354,10 @@ describe('Enhanced NoteFileUpload Component', () => {
         new Promise((resolve) =>
           setTimeout(
             () =>
-              resolve({
-                attachments: [],
+              resolve({ 
+                attachments: []}
                 note: {},
-                message: 'Success',
-              }),
+                message: 'Success', },
             100
           )
         )

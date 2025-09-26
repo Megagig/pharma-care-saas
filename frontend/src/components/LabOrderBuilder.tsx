@@ -1,70 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  TextField,
-  Button,
-  Grid,
-  Autocomplete,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormControlLabel,
-  Checkbox,
-  Alert,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-  Stepper,
-  Step,
-  StepLabel,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Divider,
-  LinearProgress,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  Search as SearchIcon,
-  Save as SaveIcon,
-  Cancel as CancelIcon,
-  GetApp as DownloadIcon,
-  CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-} from '@mui/icons-material';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-
-import { useDebounce } from '../hooks/useDebounce';
-import { useSearchPatients } from '../queries/usePatients';
-import {
-  CreateLabOrderData,
-  TestDefinition,
-  TestCatalogItem,
-  LAB_ORDER_PRIORITIES,
-  SPECIMEN_TYPES,
-  TEST_CATEGORIES,
-  LabOrderPriority,
-} from '../types/manualLabOrder';
-import { Patient } from '../types/patientManagement';
-
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Spinner, Progress, Alert, Separator } from '@/components/ui/button';
 // Mock test catalog data - in real implementation, this would come from API
 const MOCK_TEST_CATALOG: TestCatalogItem[] = [
   {
@@ -128,7 +62,6 @@ const MOCK_TEST_CATALOG: TestCatalogItem[] = [
     isActive: true,
   },
 ];
-
 interface LabOrderFormData {
   patient: string;
   tests: TestDefinition[];
@@ -137,24 +70,20 @@ interface LabOrderFormData {
   notes: string;
   consentObtained: boolean;
 }
-
 interface LabOrderBuilderProps {
   patientId?: string;
   onOrderCreated?: (order: any) => void;
   onCancel?: () => void;
 }
-
 const steps = ['Patient & Tests', 'Order Details', 'Review & Submit'];
-
-const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
+const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({ 
   patientId,
   onOrderCreated,
-  onCancel,
+  onCancel
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
-
   // Form state
   const [activeStep, setActiveStep] = useState(0);
   const [testSearchQuery, setTestSearchQuery] = useState('');
@@ -164,11 +93,9 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [showConsentDialog, setShowConsentDialog] = useState(false);
-
   // Debounced search queries
   const debouncedTestSearch = useDebounce(testSearchQuery, 300);
   const debouncedPatientSearch = useDebounce(patientSearchQuery, 300);
-
   // Form setup
   const {
     control,
@@ -178,41 +105,35 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
     getValues,
     formState: { errors, isValid },
     reset,
-  } = useForm<LabOrderFormData>({
+  } = useForm<LabOrderFormData>({ 
     defaultValues: {
       patient: patientId || '',
       tests: [],
       indication: '',
       priority: 'routine',
       notes: '',
-      consentObtained: false,
+      consentObtained: false}
     },
-    mode: 'onChange',
-  });
-
+    mode: 'onChange'}
   // Field arrays
   const {
     fields: testFields,
     append: appendTest,
     remove: removeTest,
-  } = useFieldArray({
+  } = useFieldArray({ 
     control,
-    name: 'tests',
+    name: 'tests'}
   });
-
   // Watch form values
   const watchedPatient = watch('patient');
   const watchedTests = watch('tests');
   const watchedConsent = watch('consentObtained');
-
   // Patient search query
   const { data: patientSearchResults, isLoading: patientsLoading } =
     useSearchPatients(debouncedPatientSearch);
-
   // Filter test catalog based on search and category
   const filteredTests = useMemo(() => {
     let filtered = MOCK_TEST_CATALOG.filter((test) => test.isActive);
-
     if (debouncedTestSearch) {
       const query = debouncedTestSearch.toLowerCase();
       filtered = filtered.filter(
@@ -222,19 +143,15 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
           test.category.toLowerCase().includes(query)
       );
     }
-
     if (selectedCategory) {
       filtered = filtered.filter((test) => test.category === selectedCategory);
     }
-
     return filtered;
   }, [debouncedTestSearch, selectedCategory]);
-
   // Get patients for autocomplete
   const patients = useMemo(() => {
     return patientSearchResults?.data?.results || [];
   }, [patientSearchResults]);
-
   // Validation functions
   const canProceedToNext = (): boolean => {
     switch (activeStep) {
@@ -248,7 +165,6 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
         return true;
     }
   };
-
   // Navigation handlers
   const handleNext = () => {
     if (activeStep === 1 && !watchedConsent) {
@@ -257,11 +173,9 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
     }
     setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
-
   const handleBack = () => {
     setActiveStep((prev) => Math.max(prev - 1, 0));
   };
-
   // Test management
   const handleAddTest = (test: TestCatalogItem) => {
     const testDefinition: TestDefinition = {
@@ -273,28 +187,23 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
       refRange: test.refRange,
       category: test.category,
     };
-
     // Check if test already added
     const existingTest = watchedTests.find((t) => t.code === test.code);
     if (!existingTest) {
       appendTest(testDefinition);
     }
   };
-
   const handleRemoveTest = (index: number) => {
     removeTest(index);
   };
-
   // Form submission
   const onSubmit = async (data: LabOrderFormData) => {
     if (!data.consentObtained) {
       setShowConsentDialog(true);
       return;
     }
-
     setIsSubmitting(true);
     setPdfGenerating(true);
-
     try {
       const orderData: CreateLabOrderData = {
         patientId: data.patient,
@@ -304,10 +213,8 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
         notes: data.notes || undefined,
         consentObtained: data.consentObtained,
       };
-
       // Mock API call - replace with actual API call
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
       // Mock response
       const mockOrder = {
         _id: 'order_123',
@@ -316,11 +223,9 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
         status: 'requested',
         createdAt: new Date().toISOString(),
       };
-
       const mockPdfUrl = '/api/manual-lab-orders/LAB-2024-0001/pdf';
       setPdfUrl(mockPdfUrl);
       setPdfGenerating(false);
-
       if (onOrderCreated) {
         onOrderCreated(mockOrder);
       } else {
@@ -334,7 +239,6 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
       setIsSubmitting(false);
     }
   };
-
   // Handle consent confirmation
   const handleConsentConfirm = () => {
     setValue('consentObtained', true);
@@ -343,7 +247,6 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
       handleNext();
     }
   };
-
   // Handle cancel
   const handleCancel = () => {
     if (onCancel) {
@@ -352,22 +255,20 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
       navigate(-1);
     }
   };
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+      <div className="">
         {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+        <div className="">
+          <div  className="">
             Create Lab Order
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Create a manual lab requisition with printable PDF
-          </Typography>
-        </Box>
-
+          </div>
+        </div>
         {/* Progress Stepper */}
-        <Card sx={{ mb: 3 }}>
+        <Card className="">
           <CardContent>
             <Stepper
               activeStep={activeStep}
@@ -386,68 +287,63 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
             </Stepper>
           </CardContent>
         </Card>
-
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* Step 0: Patient & Tests */}
           {activeStep === 0 && (
-            <Grid container spacing={3}>
+            <div container spacing={3}>
               {/* Patient Selection */}
-              <Grid item xs={12}>
+              <div item xs={12}>
                 <Card>
                   <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
+                    <div  className="">
                       Patient Selection
-                    </Typography>
+                    </div>
                     <Controller
                       name="patient"
                       control={control}
-                      rules={{ required: 'Patient is required' }}
-                      render={({ field }) => (
+                      
+                      render={({  field  }) => (
                         <Autocomplete
                           {...field}
                           options={patients}
-                          getOptionLabel={(option: Patient) =>
+                          getOptionLabel={(option: Patient) =>}
                             `${option.firstName} ${option.lastName} (${option.mrn})`
                           }
                           value={
-                            patients.find((p) => p._id === field.value) || null
+                            patients.find((p) => p._id === field.value) || null}
                           }
                           onChange={(_, value) => {
                             field.onChange(value?._id || '');
                             if (value) {
-                              setPatientSearchQuery('');
+                              setPatientSearchQuery('');}
                             }
-                          }}
                           onInputChange={(_, value, reason) => {
                             if (reason === 'input') {
-                              setPatientSearchQuery(value);
+                              setPatientSearchQuery(value);}
                             }
-                          }}
                           loading={patientsLoading}
                           disabled={!!patientId}
                           renderInput={(params) => (
-                            <TextField
+                            <Input}
                               {...params}
                               label="Search Patient *"
                               error={!!errors.patient}
                               helperText={
                                 errors.patient?.message ||
-                                'Search by name or MRN'
+                                'Search by name or MRN'}
                               }
                               InputProps={{
                                 ...params.InputProps,
                                 endAdornment: (
-                                  <>
-                                    {patientsLoading ? (
-                                      <CircularProgress
-                                        color="inherit"
+                                  <>{patientsLoading ? (
+                                      <Spinner
+                                        color="inherit"}
                                         size={20}
                                       />
                                     ) : null}
                                     {params.InputProps.endAdornment}
                                   </>
                                 ),
-                              }}
                             />
                           )}
                         />
@@ -455,37 +351,33 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
                     />
                   </CardContent>
                 </Card>
-              </Grid>
-
+              </div>
               {/* Test Selection */}
-              <Grid item xs={12}>
+              <div item xs={12}>
                 <Card>
                   <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
+                    <div  className="">
                       Test Selection
-                    </Typography>
-
+                    </div>
                     {/* Test Search and Filters */}
-                    <Grid container spacing={2} sx={{ mb: 3 }}>
-                      <Grid item xs={12} md={6}>
-                        <TextField
+                    <div container spacing={2} className="">
+                      <div item xs={12} md={6}>
+                        <Input
                           fullWidth
                           label="Search Tests"
                           value={testSearchQuery}
                           onChange={(e) => setTestSearchQuery(e.target.value)}
-                          InputProps={{
-                            startAdornment: <SearchIcon sx={{ mr: 1 }} />,
-                          }}
+                          
                           placeholder="Search by test name or code"
                         />
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <FormControl fullWidth>
-                          <InputLabel>Category</InputLabel>
+                      </div>
+                      <div item xs={12} md={6}>
+                        <div fullWidth>
+                          <Label>Category</Label>
                           <Select
                             value={selectedCategory}
                             onChange={(e) =>
-                              setSelectedCategory(e.target.value)
+                              setSelectedCategory(e.target.value)}
                             }
                             label="Category"
                           >
@@ -496,69 +388,64 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
                               </MenuItem>
                             ))}
                           </Select>
-                        </FormControl>
-                      </Grid>
-                    </Grid>
-
+                        </div>
+                      </div>
+                    </div>
                     {/* Available Tests */}
-                    <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                    <div  className="">
                       Available Tests ({filteredTests.length})
-                    </Typography>
-                    <Paper
-                      variant="outlined"
-                      sx={{ maxHeight: 300, overflow: 'auto', mb: 3 }}
+                    </div>
+                    <div
+                      
+                      className=""
                     >
                       <List>
                         {filteredTests.map((test, index) => (
                           <React.Fragment key={test._id}>
-                            <ListItem>
-                              <ListItemText
+                            <div>
+                              <div
                                 primary={
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 1,
-                                    }}
+                                  <div
+                                    className=""
                                   >
-                                    <Typography variant="subtitle2">
+                                    <div >}
                                       {test.name}
-                                    </Typography>
+                                    </div>
                                     <Chip
                                       label={test.code}
                                       size="small"
-                                      variant="outlined"
+                                      
                                     />
                                     <Chip
                                       label={test.category}
                                       size="small"
                                       color="primary"
                                     />
-                                  </Box>
+                                  </div>
                                 }
                                 secondary={
-                                  <Box sx={{ mt: 1 }}>
-                                    <Typography variant="body2">
+                                  <div className="">
+                                    <div >}
                                       {test.description}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
+                                    </div>
+                                    <div
+                                      
                                       color="text.secondary"
                                     >
                                       Specimen: {test.specimenType} | Range:{' '}
                                       {test.refRange}
-                                    </Typography>
-                                  </Box>
+                                    </div>
+                                  </div>
                                 }
                               />
-                              <ListItemSecondaryAction>
+                              <divSecondaryAction>
                                 <Button
-                                  variant="outlined"
+                                  
                                   size="small"
                                   startIcon={<AddIcon />}
                                   onClick={() => handleAddTest(test)}
                                   disabled={watchedTests.some(
-                                    (t) => t.code === test.code
+                                    (t) => t.code === test.code}
                                   )}
                                 >
                                   {watchedTests.some(
@@ -568,50 +455,45 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
                                     : 'Add'}
                                 </Button>
                               </ListItemSecondaryAction>
-                            </ListItem>
-                            {index < filteredTests.length - 1 && <Divider />}
+                            </div>
+                            {index < filteredTests.length - 1 && <Separator />}
                           </React.Fragment>
                         ))}
                       </List>
-                    </Paper>
-
+                    </div>
                     {/* Selected Tests */}
-                    <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                    <div  className="">
                       Selected Tests ({watchedTests.length})
-                    </Typography>
+                    </div>
                     {watchedTests.length === 0 ? (
                       <Alert severity="info">
                         No tests selected. Please add tests from the catalog
                         above.
                       </Alert>
                     ) : (
-                      <Paper variant="outlined">
+                      <div >
                         <List>
                           {testFields.map((test, index) => (
                             <React.Fragment key={test.id}>
-                              <ListItem>
-                                <ListItemText
+                              <div>
+                                <div
                                   primary={
-                                    <Box
-                                      sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1,
-                                      }}
+                                    <div
+                                      className=""
                                     >
-                                      <Typography variant="subtitle2">
+                                      <div >}
                                         {test.name}
-                                      </Typography>
+                                      </div>
                                       <Chip
                                         label={test.code}
                                         size="small"
-                                        variant="outlined"
+                                        
                                       />
-                                    </Box>
+                                    </div>
                                   }
                                   secondary={`${test.specimenType} | ${test.refRange}`}
                                 />
-                                <ListItemSecondaryAction>
+                                <divSecondaryAction>
                                   <IconButton
                                     edge="end"
                                     onClick={() => handleRemoveTest(index)}
@@ -620,32 +502,30 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
                                     <DeleteIcon />
                                   </IconButton>
                                 </ListItemSecondaryAction>
-                              </ListItem>
-                              {index < testFields.length - 1 && <Divider />}
+                              </div>
+                              {index < testFields.length - 1 && <Separator />}
                             </React.Fragment>
                           ))}
                         </List>
-                      </Paper>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
+              </div>
+            </div>
           )}
-
           {/* Step 1: Order Details */}
           {activeStep === 1 && (
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
+            <div container spacing={3}>
+              <div item xs={12}>
                 <Card>
                   <CardContent>
-                    <Typography variant="h6" sx={{ mb: 3 }}>
+                    <div  className="">
                       Order Details
-                    </Typography>
-
-                    <Grid container spacing={3}>
+                    </div>
+                    <div container spacing={3}>
                       {/* Clinical Indication */}
-                      <Grid item xs={12}>
+                      <div item xs={12}>
                         <Controller
                           name="indication"
                           control={control}
@@ -654,11 +534,10 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
                             minLength: {
                               value: 10,
                               message:
-                                'Please provide a detailed clinical indication',
+                                'Please provide a detailed clinical indication',}
                             },
-                          }}
-                          render={({ field }) => (
-                            <TextField
+                          render={({  field  }) => (
+                            <Input
                               {...field}
                               label="Clinical Indication *"
                               multiline
@@ -667,60 +546,49 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
                               error={!!errors.indication}
                               helperText={
                                 errors.indication?.message ||
-                                'Provide the clinical reason for ordering these tests'
+                                'Provide the clinical reason for ordering these tests'}
                               }
                               placeholder="e.g., Routine health screening, Follow-up for diabetes management, Investigation of chest pain..."
                             />
                           )}
                         />
-                      </Grid>
-
+                      </div>
                       {/* Priority */}
-                      <Grid item xs={12} md={6}>
+                      <div item xs={12} md={6}>
                         <Controller
                           name="priority"
                           control={control}
-                          render={({ field }) => (
-                            <FormControl fullWidth>
-                              <InputLabel>Priority</InputLabel>
+                          render={({  field  }) => (
+                            <div fullWidth>
+                              <Label>Priority</Label>
                               <Select {...field} label="Priority">
                                 {LAB_ORDER_PRIORITIES.map((priority) => (
                                   <MenuItem
                                     key={priority.value}
                                     value={priority.value}
                                   >
-                                    <Box
-                                      sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1,
-                                      }}
+                                    <div
+                                      className=""
                                     >
-                                      <Box
-                                        sx={{
-                                          width: 12,
-                                          height: 12,
-                                          borderRadius: '50%',
-                                          bgcolor: priority.color,
-                                        }}
+                                      <div
+                                        className=""
                                       />
                                       {priority.label}
-                                    </Box>
+                                    </div>
                                   </MenuItem>
                                 ))}
                               </Select>
-                            </FormControl>
+                            </div>
                           )}
                         />
-                      </Grid>
-
+                      </div>
                       {/* Additional Notes */}
-                      <Grid item xs={12}>
+                      <div item xs={12}>
                         <Controller
                           name="notes"
                           control={control}
-                          render={({ field }) => (
-                            <TextField
+                          render={({  field  }) => (
+                            <Input
                               {...field}
                               label="Additional Notes"
                               multiline
@@ -731,248 +599,219 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
                             />
                           )}
                         />
-                      </Grid>
-
+                      </div>
                       {/* Consent Checkbox */}
-                      <Grid item xs={12}>
+                      <div item xs={12}>
                         <Controller
                           name="consentObtained"
                           control={control}
-                          render={({ field }) => (
+                          render={({  field  }) => (
                             <FormControlLabel
                               control={
-                                <Checkbox
+                                <Checkbox}
                                   {...field}
                                   checked={field.value}
                                   color="primary"
                                 />
                               }
                               label={
-                                <Typography variant="body2">
+                                <div >
                                   I confirm that patient consent has been
                                   obtained for these laboratory tests
-                                </Typography>
+                                </div>}
                               }
                             />
                           )}
                         />
                         {!watchedConsent && (
-                          <Alert severity="warning" sx={{ mt: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <WarningIcon sx={{ mr: 1 }} />
+                          <Alert severity="warning" className="">
+                            <div className="">
+                              <WarningIcon className="" />
                               Patient consent is required before proceeding
-                            </Box>
+                            </div>
                           </Alert>
                         )}
-                      </Grid>
-                    </Grid>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
+              </div>
+            </div>
           )}
-
           {/* Step 2: Review & Submit */}
           {activeStep === 2 && (
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
+            <div container spacing={3}>
+              <div item xs={12}>
                 <Card>
                   <CardContent>
-                    <Typography variant="h6" sx={{ mb: 3 }}>
+                    <div  className="">
                       Review Order
-                    </Typography>
-
+                    </div>
                     {/* Order Summary */}
-                    <Grid container spacing={3}>
-                      <Grid item xs={12} md={6}>
-                        <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                    <div container spacing={3}>
+                      <div item xs={12} md={6}>
+                        <div  className="">
                           Patient Information
-                        </Typography>
+                        </div>
                         {watchedPatient && (
-                          <Box sx={{ mb: 3 }}>
+                          <div className="">
                             {(() => {
                               const patient = patients.find(
                                 (p) => p._id === watchedPatient
                               );
                               return patient ? (
-                                <Box>
-                                  <Typography variant="body1">
+                                <div>
+                                  <div >
                                     {patient.firstName} {patient.lastName}
-                                  </Typography>
-                                  <Typography
-                                    variant="body2"
+                                  </div>
+                                  <div
+                                    
                                     color="text.secondary"
                                   >
                                     MRN: {patient.mrn}
-                                  </Typography>
-                                  <Typography
-                                    variant="body2"
+                                  </div>
+                                  <div
+                                    
                                     color="text.secondary"
                                   >
                                     Age: {patient.age || 'Not specified'}
-                                  </Typography>
-                                </Box>
+                                  </div>
+                                </div>
                               ) : (
-                                <Typography color="error">
+                                <div color="error">
                                   Patient not found
-                                </Typography>
+                                </div>
                               );
                             })()}
-                          </Box>
+                          </div>
                         )}
-
-                        <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                        <div  className="">
                           Order Details
-                        </Typography>
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2">
+                        </div>
+                        <div className="">
+                          <div >
                             <strong>Priority:</strong>{' '}
                             {
                               LAB_ORDER_PRIORITIES.find(
                                 (p) => p.value === watch('priority')
                               )?.label
                             }
-                          </Typography>
-                          <Typography variant="body2" sx={{ mt: 1 }}>
+                          </div>
+                          <div  className="">
                             <strong>Clinical Indication:</strong>
-                          </Typography>
-                          <Typography
-                            variant="body2"
+                          </div>
+                          <div
+                            
                             color="text.secondary"
-                            sx={{ mt: 0.5 }}
+                            className=""
                           >
                             {watch('indication')}
-                          </Typography>
+                          </div>
                           {watch('notes') && (
                             <>
-                              <Typography variant="body2" sx={{ mt: 1 }}>
+                              <div  className="">
                                 <strong>Additional Notes:</strong>
-                              </Typography>
-                              <Typography
-                                variant="body2"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
-                                sx={{ mt: 0.5 }}
+                                className=""
                               >
                                 {watch('notes')}
-                              </Typography>
+                              </div>
                             </>
                           )}
-                        </Box>
-                      </Grid>
-
-                      <Grid item xs={12} md={6}>
-                        <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                        </div>
+                      </div>
+                      <div item xs={12} md={6}>
+                        <div  className="">
                           Selected Tests ({watchedTests.length})
-                        </Typography>
-                        <Paper variant="outlined" sx={{ p: 2 }}>
+                        </div>
+                        <div  className="">
                           {watchedTests.map((test, index) => (
-                            <Box
+                            <div
                               key={index}
-                              sx={{
-                                mb: index < watchedTests.length - 1 ? 2 : 0,
-                              }}
+                              className=""
                             >
-                              <Typography
-                                variant="body2"
-                                sx={{ fontWeight: 600 }}
+                              <div
+                                
+                                className=""
                               >
                                 {test.name} ({test.code})
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 {test.specimenType} | {test.refRange}
-                              </Typography>
-                            </Box>
+                              </div>
+                            </div>
                           ))}
-                        </Paper>
-                      </Grid>
-                    </Grid>
-
+                        </div>
+                      </div>
+                    </div>
                     {/* Consent Confirmation */}
-                    <Box
-                      sx={{
-                        mt: 3,
-                        p: 2,
-                        bgcolor: 'success.light',
-                        borderRadius: 1,
-                      }}
+                    <div
+                      className=""
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <CheckCircleIcon color="success" sx={{ mr: 1 }} />
-                        <Typography variant="body2">
+                      <div className="">
+                        <CheckCircleIcon color="success" className="" />
+                        <div >
                           Patient consent has been obtained and confirmed
-                        </Typography>
-                      </Box>
-                    </Box>
-
+                        </div>
+                      </div>
+                    </div>
                     {/* PDF Generation Status */}
                     {pdfGenerating && (
-                      <Box sx={{ mt: 3 }}>
-                        <Typography variant="body2" sx={{ mb: 1 }}>
+                      <div className="">
+                        <div  className="">
                           Generating PDF requisition...
-                        </Typography>
-                        <LinearProgress />
-                      </Box>
+                        </div>
+                        <Progress />
+                      </div>
                     )}
-
                     {pdfUrl && (
-                      <Box sx={{ mt: 3 }}>
+                      <div className="">
                         <Alert severity="success">
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography variant="body2">
+                            <div >
                               PDF requisition generated successfully
-                            </Typography>
+                            </div>
                             <Button
-                              variant="outlined"
+                              
                               size="small"
                               startIcon={<DownloadIcon />}
                               onClick={() => window.open(pdfUrl, '_blank')}
                             >
                               Download
                             </Button>
-                          </Box>
+                          </div>
                         </Alert>
-                      </Box>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
+              </div>
+            </div>
           )}
-
           {/* Form Actions */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              mt: 4,
-              pt: 3,
-              borderTop: 1,
-              borderColor: 'divider',
-            }}
+          <div
+            className=""
           >
             <Button
-              variant="outlined"
+              
               onClick={handleCancel}
               startIcon={<CancelIcon />}
             >
               Cancel
             </Button>
-
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <div className="">
               {activeStep > 0 && <Button onClick={handleBack}>Back</Button>}
-
               {activeStep < steps.length - 1 ? (
                 <Button
-                  variant="contained"
+                  
                   onClick={handleNext}
                   disabled={!canProceedToNext()}
                 >
@@ -981,17 +820,16 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
               ) : (
                 <Button
                   type="submit"
-                  variant="contained"
+                  
                   startIcon={<SaveIcon />}
                   disabled={!isValid || isSubmitting || !watchedConsent}
                 >
                   {isSubmitting ? 'Creating Order...' : 'Create Order'}
                 </Button>
               )}
-            </Box>
-          </Box>
+            </div>
+          </div>
         </form>
-
         {/* Consent Dialog */}
         <Dialog
           open={showConsentDialog}
@@ -1000,32 +838,32 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
           fullWidth
         >
           <DialogTitle>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <InfoIcon color="primary" sx={{ mr: 1 }} />
+            <div className="">
+              <InfoIcon color="primary" className="" />
               Patient Consent Required
-            </Box>
+            </div>
           </DialogTitle>
           <DialogContent>
-            <Typography variant="body1" sx={{ mb: 2 }}>
+            <div  className="">
               Before proceeding with the lab order, please confirm that you have
               obtained proper consent from the patient for the following tests:
-            </Typography>
-            <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+            </div>
+            <div  className="">
               {watchedTests.map((test, index) => (
-                <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
+                <div key={index}  className="">
                   • {test.name} ({test.code})
-                </Typography>
+                </div>
               ))}
-            </Paper>
-            <Typography variant="body2" color="text.secondary">
+            </div>
+            <div  color="text.secondary">
               This consent confirmation will be logged with your user ID and
               timestamp for audit purposes.
-            </Typography>
+            </div>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setShowConsentDialog(false)}>Cancel</Button>
             <Button
-              variant="contained"
+              
               onClick={handleConsentConfirm}
               startIcon={<CheckCircleIcon />}
             >
@@ -1033,9 +871,8 @@ const LabOrderBuilder: React.FC<LabOrderBuilderProps> = ({
             </Button>
           </DialogActions>
         </Dialog>
-      </Box>
+      </div>
     </LocalizationProvider>
   );
 };
-
 export default LabOrderBuilder;

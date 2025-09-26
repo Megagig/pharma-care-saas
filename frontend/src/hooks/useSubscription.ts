@@ -1,6 +1,3 @@
-import { useAuth } from './useAuth';
-import { useSubscriptionContext } from '../context/SubscriptionContext';
-
 interface SubscriptionStatus {
   hasWorkspace: boolean;
   hasSubscription: boolean;

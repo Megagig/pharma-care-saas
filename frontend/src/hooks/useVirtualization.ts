@@ -1,5 +1,3 @@
-import { useMemo, useCallback, useState, useEffect } from 'react';
-
 interface VirtualizationOptions {
     itemHeight: number;
     containerHeight: number;
@@ -55,11 +53,11 @@ export function useVirtualization<T>(
     const virtualItems = useMemo(() => {
         const items: VirtualItem[] = [];
         for (let i = visibleRange.start; i <= visibleRange.end; i++) {
-            items.push({
+            items.push({ 
                 index: i,
                 start: i * itemHeight,
                 end: (i + 1) * itemHeight,
-                size: itemHeight,
+                size: itemHeight}
             });
         }
         return items;
@@ -67,9 +65,9 @@ export function useVirtualization<T>(
 
     // Get visible items
     const visibleItems = useMemo(() => {
-        return virtualItems.map((virtualItem) => ({
+        return virtualItems.map((virtualItem) => ({ 
             ...virtualItem,
-            item: items[virtualItem.index],
+            item: items[virtualItem.index]}
         }));
     }, [virtualItems, items]);
 
@@ -154,10 +152,10 @@ export function useDynamicVirtualization<T>(
 
         for (let i = 0; i < items.length; i++) {
             const height = measuredHeights.get(i) ?? estimateItemHeight(i);
-            positions.push({
+            positions.push({ 
                 start: currentPosition,
                 end: currentPosition + height,
-                size: height,
+                size: height}
             });
             currentPosition += height;
         }
@@ -213,12 +211,12 @@ export function useDynamicVirtualization<T>(
         for (let i = visibleRange.start; i <= visibleRange.end; i++) {
             const position = itemPositions[i];
             if (position) {
-                items.push({
+                items.push({ 
                     index: i,
                     start: position.start,
                     end: position.end,
                     size: position.size,
-                    item: items[i],
+                    item: items[i]}
                 });
             }
         }

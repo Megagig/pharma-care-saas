@@ -1,19 +1,3 @@
-import { apiClient } from '../services/apiClient';
-import {
-  DynamicUser,
-  Role,
-  Permission,
-  BulkUserUpdate,
-  RoleConflict,
-  RoleConflictResolution,
-  SystemConfig,
-  SecuritySettings,
-  MaintenanceStatus,
-  ApiKey,
-  FeatureFlag,
-  SystemAnalytics,
-} from '../types/rbac';
-
 // User role management
 export const getUserRoles = async (
   userId: string
@@ -115,8 +99,7 @@ export const bulkUpdateUsers = async (
   try {
     const response = await apiClient.post(`/admin/users/bulk-update`, {
       updates,
-      dryRun,
-    });
+      dryRun}
     return response.data;
   } catch (error) {
     console.error('Error in bulk user update:', error);
@@ -261,8 +244,7 @@ export const updateUserRole = async (
   try {
     const response = await apiClient.put(`/admin/users/${userId}/role`, {
       roleId,
-      workspaceId,
-    });
+      workspaceId}
     return response.data;
   } catch (error) {
     console.error('Error updating user role:', error);
@@ -276,8 +258,7 @@ export const suspendUser = async (
 ): Promise<{ success: boolean; message: string }> => {
   try {
     const response = await apiClient.post(`/admin/users/${userId}/suspend`, {
-      reason,
-    });
+      reason}
     return response.data;
   } catch (error) {
     console.error('Error suspending user:', error);
@@ -306,8 +287,7 @@ export const bulkAssignRoles = async (
     const response = await apiClient.post(`/admin/users/bulk-assign-roles`, {
       userIds,
       roleId,
-      workspaceId,
-    });
+      workspaceId}
     return response.data;
   } catch (error) {
     console.error('Error in bulk role assignment:', error);
@@ -324,8 +304,7 @@ export const bulkRevokeRoles = async (
     const response = await apiClient.post(`/admin/users/bulk-revoke-roles`, {
       userIds,
       roleId,
-      workspaceId,
-    });
+      workspaceId}
     return response.data;
   } catch (error) {
     console.error('Error in bulk role revocation:', error);
@@ -469,8 +448,7 @@ export const updateSystemConfig = async (
 }> => {
   try {
     const response = await apiClient.put(`/admin/system-config`, {
-      config,
-    });
+      config}
     return response.data;
   } catch (error) {
     console.error('Error updating system config:', error);
@@ -631,8 +609,7 @@ export const updateSecuritySettings = async (
 }> => {
   try {
     const response = await apiClient.put(`/admin/security-settings`, {
-      securitySettings,
-    });
+      securitySettings}
     return response.data;
   } catch (error) {
     console.error('Error updating security settings:', error);
@@ -662,8 +639,7 @@ export const updateMaintenanceStatus = async (
 }> => {
   try {
     const response = await apiClient.put(`/admin/maintenance-status`, {
-      maintenanceStatus,
-    });
+      maintenanceStatus}
     return response.data;
   } catch (error) {
     console.error('Error updating maintenance status:', error);
@@ -750,8 +726,7 @@ export const approveLicense = async (
   try {
     const response = await apiClient.post(`/admin/licenses/${userId}/approve`, {
       expirationDate,
-      notes,
-    });
+      notes}
     return response.data;
   } catch (error) {
     console.error('Error approving license:', error);
@@ -765,8 +740,7 @@ export const rejectLicense = async (
 ): Promise<{ success: boolean; message: string }> => {
   try {
     const response = await apiClient.post(`/admin/licenses/${userId}/reject`, {
-      reason,
-    });
+      reason}
     return response.data;
   } catch (error) {
     console.error('Error rejecting license:', error);

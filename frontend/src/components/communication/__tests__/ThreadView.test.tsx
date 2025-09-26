@@ -1,16 +1,11 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import ThreadView from '../ThreadView';
-import { Message } from '../../../stores/types';
 
+import ThreadView from '../ThreadView';
 // Mock the communication store
 const mockSendMessage = vi.fn();
-vi.mock('../../../stores/communicationStore', () => ({
+vi.mock('../../../stores/communicationStore', () => ({ 
   useCommunicationStore: () => ({
-    sendMessage: mockSendMessage,
-  }),
-}));
+    sendMessage: mockSendMessage}
+  })}
 
 // Mock fetch
 global.fetch = vi.fn();
@@ -98,21 +93,18 @@ describe('ThreadView', () => {
       value: {
         getItem: vi.fn(() => 'mock-token'),
       },
-      writable: true,
-    });
+      writable: true}
   });
 
   it('should render thread summary and expand to show messages', async () => {
     // Mock fetch responses
     (global.fetch as any)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: mockThreadSummary }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: mockThreadMessages }),
-      });
+      .mockResolvedValueOnce({ 
+        ok: true}
+        json: () => Promise.resolve({ data: mockThreadSummary })}
+      .mockResolvedValueOnce({ 
+        ok: true}
+        json: () => Promise.resolve({ data: mockThreadMessages })}
 
     render(
       <ThreadView
@@ -144,10 +136,9 @@ describe('ThreadView', () => {
   });
 
   it('should handle compact mode with expand/collapse', async () => {
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ data: mockThreadSummary }),
-    });
+    (global.fetch as any).mockResolvedValueOnce({ 
+      ok: true}
+      json: () => Promise.resolve({ data: mockThreadSummary })}
 
     render(
       <ThreadView
@@ -169,10 +160,9 @@ describe('ThreadView', () => {
     expect(expandButton).toBeInTheDocument();
 
     // Mock the thread messages fetch for expansion
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ data: mockThreadMessages }),
-    });
+    (global.fetch as any).mockResolvedValueOnce({ 
+      ok: true}
+      json: () => Promise.resolve({ data: mockThreadMessages })}
 
     fireEvent.click(expandButton);
 
@@ -183,10 +173,9 @@ describe('ThreadView', () => {
   });
 
   it('should display unread count badge', async () => {
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ data: mockThreadSummary }),
-    });
+    (global.fetch as any).mockResolvedValueOnce({ 
+      ok: true}
+      json: () => Promise.resolve({ data: mockThreadSummary })}
 
     render(
       <ThreadView
@@ -203,26 +192,21 @@ describe('ThreadView', () => {
 
   it('should handle reply to thread', async () => {
     (global.fetch as any)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: mockThreadSummary }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: mockThreadMessages }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: { _id: 'new-reply' } }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: mockThreadMessages }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: mockThreadSummary }),
-      });
+      .mockResolvedValueOnce({ 
+        ok: true}
+        json: () => Promise.resolve({ data: mockThreadSummary })}
+      .mockResolvedValueOnce({ 
+        ok: true}
+        json: () => Promise.resolve({ data: mockThreadMessages })}
+      .mockResolvedValueOnce({ 
+        ok: true}
+        json: () => Promise.resolve({ data: { _id: 'new-reply' } })}
+      .mockResolvedValueOnce({ 
+        ok: true}
+        json: () => Promise.resolve({ data: mockThreadMessages })}
+      .mockResolvedValueOnce({ 
+        ok: true}
+        json: () => Promise.resolve({ data: mockThreadSummary })}
 
     render(
       <ThreadView
@@ -255,20 +239,18 @@ describe('ThreadView', () => {
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
         '/api/communication/threads/thread-123/reply',
-        expect.objectContaining({
+        expect.objectContaining({ 
           method: 'POST',
           headers: expect.objectContaining({
             'Content-Type': 'application/json',
-            Authorization: 'Bearer mock-token',
+            Authorization: 'Bearer mock-token'}
           }),
-          body: JSON.stringify({
+          body: JSON.stringify({ 
             content: {
               text: 'New thread reply',
-              type: 'text',
+              type: 'text'}
             },
-            mentions: undefined,
-          }),
-        })
+            mentions: undefined, }}
       );
     });
   });
@@ -291,10 +273,9 @@ describe('ThreadView', () => {
   it('should call onClose when close button is clicked', async () => {
     const mockOnClose = vi.fn();
 
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ data: mockThreadSummary }),
-    });
+    (global.fetch as any).mockResolvedValueOnce({ 
+      ok: true}
+      json: () => Promise.resolve({ data: mockThreadSummary })}
 
     render(
       <ThreadView
@@ -321,17 +302,14 @@ describe('ThreadView', () => {
     };
 
     (global.fetch as any)
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce({ 
         ok: true,
         json: () =>
-          Promise.resolve({
-            data: { ...mockThreadSummary, replyCount: 0 },
-          }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: emptyThreadMessages }),
-      });
+          Promise.resolve({ })
+            data: { ...mockThreadSummary, replyCount: 0 }, }}
+      .mockResolvedValueOnce({ 
+        ok: true}
+        json: () => Promise.resolve({ data: emptyThreadMessages })}
 
     render(
       <ThreadView
@@ -354,10 +332,9 @@ describe('ThreadView', () => {
       lastReplyAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
     };
 
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ data: recentThreadSummary }),
-    });
+    (global.fetch as any).mockResolvedValueOnce({ 
+      ok: true}
+      json: () => Promise.resolve({ data: recentThreadSummary })}
 
     render(
       <ThreadView

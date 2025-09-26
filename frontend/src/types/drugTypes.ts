@@ -28,7 +28,6 @@ interface DrugMonographContent {
 }
 
 export interface DrugMonograph {
-  SPL?: {
     set_id: string;
     title: string;
     published_date: string;

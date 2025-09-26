@@ -1,182 +1,161 @@
-import React from 'react';
-import { Box, Typography, Chip } from '@mui/material';
-import { MTRTooltip } from './MTRHelpSystem';
-
 // Contextual help content for different MTR components
 export const MTRContextualHelp = {
   // Patient Selection Help
-  PatientSearch: () => (
     <MTRTooltip
       title="Patient Search"
       content="Search by patient name, ID, or phone number. Use filters to find patients who would benefit most from MTR (multiple medications, chronic conditions, recent changes)."
       placement="bottom"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
-  PatientFilters: () => (
     <MTRTooltip
       title="Patient Filters"
       content="Filter patients by medication count (5+ drugs), last MTR date, active conditions, or high-risk indicators to prioritize candidates for review."
       placement="right"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
   // Medication History Help
-  MedicationCategories: () => (
     <MTRTooltip
       title="Medication Categories"
       content="Include ALL medications: Prescriptions, Over-the-counter drugs, Herbal supplements, Vitamins, and any other substances the patient takes regularly."
       placement="top"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
-  MedicationAutocomplete: () => (
     <MTRTooltip
       title="Medication Search"
       content="Start typing drug name (brand or generic). The system will suggest matches from the drug database. Select the correct medication and strength."
       placement="bottom"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
-  DuplicateDetection: () => (
     <MTRTooltip
       title="Duplicate Detection"
       content="The system automatically identifies potential duplicate therapies or therapeutic equivalents. Review these carefully to avoid redundant treatments."
       placement="left"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
   // Therapy Assessment Help
-  InteractionAlerts: () => (
     <MTRTooltip
       title="Drug Interaction Alerts"
       content="Automated screening identifies potential interactions. Review severity levels: Critical (immediate action), Major (significant risk), Moderate (monitor closely), Minor (awareness needed)."
       placement="top"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
-  SeverityLevels: () => (
     <MTRTooltip
       title="Problem Severity"
       content="Critical: Immediate intervention required. Major: Significant clinical risk. Moderate: Monitor and consider intervention. Minor: Document and monitor."
       placement="right"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
-  ClinicalSignificance: () => (
     <MTRTooltip
       title="Clinical Significance"
       content="Assess the real-world impact on this specific patient. Consider age, kidney/liver function, other conditions, and individual risk factors."
       placement="bottom"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
   // Plan Development Help
-  RecommendationTypes: () => (
     <MTRTooltip
       title="Recommendation Types"
       content="Discontinue: Stop medication. Adjust: Change dose/frequency. Switch: Change to different therapy. Add: Start new medication. Monitor: Increase surveillance."
       placement="left"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
-  EvidenceBase: () => (
     <MTRTooltip
       title="Evidence-Based Recommendations"
       content="Base recommendations on current clinical guidelines, peer-reviewed literature, and patient-specific factors. Include rationale and supporting evidence."
       placement="top"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
-  MonitoringParameters: () => (
     <MTRTooltip
       title="Monitoring Parameters"
       content="Specify what to monitor (lab values, symptoms, side effects), frequency of monitoring, and target goals or acceptable ranges."
       placement="right"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
   // Interventions Help
-  InterventionTypes: () => (
     <MTRTooltip
       title="Intervention Types"
       content="Patient Counseling: Direct education. Provider Communication: Recommendations to prescribers. Monitoring: Lab/clinical follow-up. Care Coordination: Team communication."
       placement="bottom"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
-  CommunicationMethods: () => (
     <MTRTooltip
       title="Communication Methods"
       content="Document how you communicated: In-person, Phone call, Written note, Email, Fax. This is important for audit trails and follow-up."
       placement="left"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
-  OutcomeTracking: () => (
     <MTRTooltip
       title="Outcome Tracking"
       content="Record whether recommendations were Accepted, Rejected, Modified, or are still Pending. Include details about implementation and any barriers encountered."
       placement="top"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
   // Follow-up Help
-  FollowUpTypes: () => (
     <MTRTooltip
       title="Follow-up Types"
       content="Phone Call: Check progress/adherence. Appointment: In-person assessment. Lab Review: Monitor therapy effectiveness. Adherence Check: Assess compliance."
       placement="right"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
-  FollowUpTiming: () => (
     <MTRTooltip
       title="Follow-up Timing"
       content="Critical interventions: 24-48 hours. Major interventions: 1-2 weeks. Moderate: 2-4 weeks. Minor: 1-3 months. Adjust based on patient needs."
       placement="bottom"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 
-  ReminderSettings: () => (
     <MTRTooltip
       title="Reminder Settings"
       content="Set automatic reminders for follow-up activities. Choose notification method (email, SMS, system alert) and timing (1 day before, day of, etc.)."
       placement="left"
     >
-      <Box component="span">?</Box>
+      <div component="span">?</div>
     </MTRTooltip>
   ),
 };
@@ -267,135 +246,129 @@ export const QuickReference: React.FC<QuickReferenceProps> = ({ step }) => {
   if (!stepInfo) return null;
 
   return (
-    <Box
-      sx={{
-        p: 2,
-        bgcolor: 'background.paper',
-        borderRadius: 1,
-        border: 1,
-        borderColor: 'divider',
-      }}
+    <div
+      className=""
     >
-      <Typography variant="h6" gutterBottom color="primary">
+      <div  gutterBottom color="primary">
         {stepInfo.title} - Quick Tips
-      </Typography>
-      <Typography variant="body2" paragraph>
+      </div>
+      <div  paragraph>
         {stepInfo.content}
-      </Typography>
-      <Box>
-        <Typography variant="subtitle2" gutterBottom>
+      </div>
+      <div>
+        <div  gutterBottom>
           Best Practices:
-        </Typography>
+        </div>
         {stepInfo.tips.map((tip, index) => (
-          <Box
+          <div
             key={index}
-            sx={{ display: 'flex', alignItems: 'flex-start', mb: 0.5 }}
+            className=""
           >
-            <Typography variant="body2" sx={{ mr: 1 }}>
+            <div  className="">
               •
-            </Typography>
-            <Typography variant="body2">{tip}</Typography>
-          </Box>
+            </div>
+            <div >{tip}</div>
+          </div>
         ))}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 
 // Keyboard shortcuts help
 export const KeyboardShortcuts = () => (
-  <Box sx={{ p: 2 }}>
-    <Typography variant="h6" gutterBottom>
+  <div className="">
+    <div  gutterBottom>
       Keyboard Shortcuts
-    </Typography>
-    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 1 }}>
-      <Typography variant="body2">
+    </div>
+    <div className="">
+      <div >
         <strong>Ctrl + S</strong>
-      </Typography>
-      <Typography variant="body2">Save current progress</Typography>
+      </div>
+      <div >Save current progress</div>
 
-      <Typography variant="body2">
+      <div >
         <strong>Ctrl + N</strong>
-      </Typography>
-      <Typography variant="body2">Start new MTR session</Typography>
+      </div>
+      <div >Start new MTR session</div>
 
-      <Typography variant="body2">
+      <div >
         <strong>Ctrl + F</strong>
-      </Typography>
-      <Typography variant="body2">Search patients/medications</Typography>
+      </div>
+      <div >Search patients/medications</div>
 
-      <Typography variant="body2">
+      <div >
         <strong>Tab</strong>
-      </Typography>
-      <Typography variant="body2">Navigate between fields</Typography>
+      </div>
+      <div >Navigate between fields</div>
 
-      <Typography variant="body2">
+      <div >
         <strong>Enter</strong>
-      </Typography>
-      <Typography variant="body2">Submit forms/confirm actions</Typography>
+      </div>
+      <div >Submit forms/confirm actions</div>
 
-      <Typography variant="body2">
+      <div >
         <strong>Esc</strong>
-      </Typography>
-      <Typography variant="body2">Close dialogs/cancel actions</Typography>
+      </div>
+      <div >Close dialogs/cancel actions</div>
 
-      <Typography variant="body2">
+      <div >
         <strong>Ctrl + ?</strong>
-      </Typography>
-      <Typography variant="body2">Show help system</Typography>
-    </Box>
-  </Box>
+      </div>
+      <div >Show help system</div>
+    </div>
+  </div>
 );
 
 // Status indicators help
 export const StatusIndicators = () => (
-  <Box sx={{ p: 2 }}>
-    <Typography variant="h6" gutterBottom>
+  <div className="">
+    <div  gutterBottom>
       Status Indicators
-    </Typography>
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    </div>
+    <div className="">
+      <div className="">
         <Chip label="In Progress" color="warning" size="small" />
-        <Typography variant="body2">
+        <div >
           MTR session is active and incomplete
-        </Typography>
-      </Box>
+        </div>
+      </div>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <div className="">
         <Chip label="Completed" color="success" size="small" />
-        <Typography variant="body2">MTR session has been finished</Typography>
-      </Box>
+        <div >MTR session has been finished</div>
+      </div>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <div className="">
         <Chip label="On Hold" color="default" size="small" />
-        <Typography variant="body2">
+        <div >
           MTR session is paused pending information
-        </Typography>
-      </Box>
+        </div>
+      </div>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <div className="">
         <Chip label="Critical" color="error" size="small" />
-        <Typography variant="body2">Immediate intervention required</Typography>
-      </Box>
+        <div >Immediate intervention required</div>
+      </div>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <div className="">
         <Chip label="Major" color="warning" size="small" />
-        <Typography variant="body2">Significant clinical concern</Typography>
-      </Box>
+        <div >Significant clinical concern</div>
+      </div>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <div className="">
         <Chip label="Moderate" color="info" size="small" />
-        <Typography variant="body2">
+        <div >
           Monitor and consider intervention
-        </Typography>
-      </Box>
+        </div>
+      </div>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <div className="">
         <Chip label="Minor" color="default" size="small" />
-        <Typography variant="body2">Document and monitor</Typography>
-      </Box>
-    </Box>
-  </Box>
+        <div >Document and monitor</div>
+      </div>
+    </div>
+  </div>
 );
 
 // Utility functions for help system
@@ -415,22 +388,19 @@ export const getHelpContentForStep = (step: number): string => {
   );
 };
 
-export const getKeyboardShortcuts = () => ({
+export const getKeyboardShortcuts = () => ({ 
   'Ctrl + S': 'Save current progress',
   'Ctrl + N': 'Start new MTR session',
   'Ctrl + F': 'Search patients or medications',
-  Tab: 'Navigate between form fields',
-  Enter: 'Submit forms or confirm actions',
-  Esc: 'Close dialogs or cancel actions',
-  'Ctrl + ?': 'Show help system',
+  'Ctrl + ?': 'Show help system'}
 });
 
-export const getProblemSeverityInfo = () => ({
+export const getProblemSeverityInfo = () => ({ 
   critical: {
     color: 'error',
     description: 'Immediate intervention required',
     examples: ['Life-threatening interactions', 'Contraindicated combinations'],
-    action: 'Contact prescriber immediately',
+    action: 'Contact prescriber immediately'}
   },
   major: {
     color: 'warning',
@@ -449,7 +419,6 @@ export const getProblemSeverityInfo = () => ({
     description: 'Document and monitor',
     examples: ['Minor interactions', 'Counseling opportunities'],
     action: 'Document findings and monitor trends',
-  },
-});
+  }
 
 export default MTRContextualHelp;

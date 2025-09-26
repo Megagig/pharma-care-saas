@@ -1,10 +1,7 @@
-import React from 'react';
-import { Error as ErrorIcon, Warning as WarningIcon, Info as InfoIcon } from '@mui/icons-material';
 
 interface SeverityIconProps {
   severity: string;
 }
-
 export const SeverityIcon: React.FC<SeverityIconProps> = ({ severity }) => {
   switch (severity.toUpperCase()) {
     case 'HIGH':

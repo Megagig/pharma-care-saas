@@ -1,27 +1,18 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+// Removed MUI styles import - using Tailwind CSS
 import DiagnosticDashboard from './DiagnosticDashboard';
-
 // Mock the hooks
-jest.mock('../hooks/useDiagnostics', () => ({
-  useDiagnosticHistory: () => ({
+jest.mock('../hooks/useDiagnostics', () => ({ 
+  useDiagnosticHistory: () => ({ })
     data: { data: { results: [] } },
     isLoading: false,
     error: null,
-    refetch: jest.fn(),
-  }),
-  useDiagnosticAnalytics: () => ({
+    refetch: jest.fn(), },
+  useDiagnosticAnalytics: () => ({  })
     data: { data: {} },
     isLoading: false,
     error: null,
-    refetch: jest.fn(),
-  }),
-}));
-
-jest.mock('../store/diagnosticStore', () => ({
+    refetch: jest.fn()}
+jest.mock('../store/diagnosticStore', () => ({ 
   useDiagnosticStore: () => ({
     filters: {
       search: '',
@@ -32,41 +23,32 @@ jest.mock('../store/diagnosticStore', () => ({
       page: 1,
       limit: 20,
       sortBy: 'createdAt',
-      sortOrder: 'desc',
+      sortOrder: 'desc'}
     },
     setFilters: jest.fn(),
     clearFilters: jest.fn(),
-    selectRequest: jest.fn(),
-  }),
-}));
-
-jest.mock('../../../stores', () => ({
+    selectRequest: jest.fn()}
+jest.mock('../../../stores', () => ({ 
   usePatients: () => ({
-    patients: [],
-  }),
-}));
-
+    patients: []}
+  })}
 jest.mock('../middlewares/diagnosticFeatureGuard', () => {
-  return function DiagnosticFeatureGuard({
-    children,
+  return function DiagnosticFeatureGuard({ 
+    children}
   }: {
     children: React.ReactNode;
   }) {
     return <>{children}</>;
   };
 });
-
 const theme = createTheme();
-
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const queryClient = new QueryClient({
+  const queryClient = new QueryClient({ 
     defaultOptions: {
       queries: {
-        retry: false,
+        retry: false}
       },
-    },
-  });
-
+    }
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -75,7 +57,6 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     </QueryClientProvider>
   );
 };
-
 describe('DiagnosticDashboard', () => {
   it('renders without infinite loop', () => {
     render(
@@ -83,7 +64,6 @@ describe('DiagnosticDashboard', () => {
         <DiagnosticDashboard />
       </TestWrapper>
     );
-
     expect(screen.getByText('Diagnostic Dashboard')).toBeInTheDocument();
   });
 });

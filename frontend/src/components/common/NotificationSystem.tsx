@@ -1,22 +1,39 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  ReactNode,
-} from 'react';
-import {
-  Alert,
-  AlertTitle,
-  Stack,
-  Slide,
-  IconButton,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import SuccessIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import WarningIcon from '@mui/icons-material/Warning';
-import InfoIcon from '@mui/icons-material/Info';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+
+// Mock components for now
+const MockButton = ({ children, ...props }: any) => (
+  <button {...props} className={`px-3 py-1 rounded-md ${props.className || ''}`}>
+    {children}
+  </button>
+);
+
+const MockAlert = ({ children, variant, ...props }: any) => (
+  <div {...props} className={`p-4 mb-4 rounded-md ${variant === 'destructive'
+      ? 'bg-red-50 border-l-4 border-red-400'
+      : 'bg-blue-50 border-l-4 border-blue-400'
+    } ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockAlertTitle = ({ children, ...props }: any) => (
+  <h4 {...props} className={`font-medium ${props.className || ''}`}>
+    {children}
+  </h4>
+);
+
+const MockAlertDescription = ({ children, ...props }: any) => (
+  <div {...props} className={`text-sm ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+// Replace imports with mock components
+const Button = MockButton;
+const Alert = MockAlert;
+const AlertTitle = MockAlertTitle;
+const AlertDescription = MockAlertDescription;
 
 export type NotificationType = 'success' | 'error' | 'warning' | 'info';
 
@@ -87,7 +104,7 @@ export const useNotifications = (): NotificationContextType => {
 };
 
 interface NotificationProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
   maxNotifications?: number;
   defaultDuration?: number;
   position?: {
@@ -100,7 +117,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   children,
   maxNotifications = 5,
   defaultDuration = 6000,
-  position = { vertical: 'top', horizontal: 'right' },
+  position = { vertical: 'top', horizontal: 'right' }
 }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
@@ -149,7 +166,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         type: 'success',
         title,
         message,
-        ...options,
+        ...options
       });
     },
     [showNotification]
@@ -162,7 +179,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         title,
         message,
         duration: 8000, // Longer duration for errors
-        ...options,
+        ...options
       });
     },
     [showNotification]
@@ -175,7 +192,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         title,
         message,
         duration: 7000,
-        ...options,
+        ...options
       });
     },
     [showNotification]
@@ -187,7 +204,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         type: 'info',
         title,
         message,
-        ...options,
+        ...options
       });
     },
     [showNotification]
@@ -228,7 +245,7 @@ interface NotificationContainerProps {
 const NotificationContainer: React.FC<NotificationContainerProps> = ({
   notifications,
   onClose,
-  position,
+  position
 }) => {
   const getTransitionDirection = () => {
     if (position.horizontal === 'left') return 'right';
@@ -236,42 +253,30 @@ const NotificationContainer: React.FC<NotificationContainerProps> = ({
     return position.vertical === 'top' ? 'down' : 'up';
   };
 
+  const positionClasses = [
+    'fixed z-50 min-w-80 max-w-md space-y-2',
+    position.vertical === 'top' ? 'top-6' : 'bottom-6',
+    position.horizontal === 'left' ? 'left-6' :
+      position.horizontal === 'center' ? 'left-1/2 -translate-x-1/2' : 'right-6'
+  ].join(' ');
+
   return (
-    <Stack
-      spacing={1}
-      sx={{
-        position: 'fixed',
-        zIndex: 1400,
-        ...(position.vertical === 'top' ? { top: 24 } : { bottom: 24 }),
-        ...(position.horizontal === 'left' && { left: 24 }),
-        ...(position.horizontal === 'center' && {
-          left: '50%',
-          transform: 'translateX(-50%)',
-        }),
-        ...(position.horizontal === 'right' && { right: 24 }),
-        minWidth: 320,
-        maxWidth: 500,
-      }}
-    >
+    <div className={positionClasses}>
       {notifications.map((notification, index) => (
-        <Slide
+        <div
           key={notification.id}
-          direction={getTransitionDirection()}
-          in={true}
-          timeout={300}
+          className="animate-in slide-in-from-right duration-300"
           style={{
-            transitionDelay: `${index * 100}ms`,
+            animationDelay: `${index * 100}ms`
           }}
         >
-          <div>
-            <NotificationItem
-              notification={notification}
-              onClose={() => onClose(notification.id)}
-            />
-          </div>
-        </Slide>
+          <NotificationItem
+            notification={notification}
+            onClose={() => onClose(notification.id)}
+          />
+        </div>
       ))}
-    </Stack>
+    </div>
   );
 };
 
@@ -282,18 +287,19 @@ interface NotificationItemProps {
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
   notification,
-  onClose,
+  onClose
 }) => {
   const getIcon = () => {
+    const iconClass = "h-4 w-4";
     switch (notification.type) {
       case 'success':
-        return <SuccessIcon />;
+        return <CheckCircle className={iconClass} />;
       case 'error':
-        return <ErrorIcon />;
+        return <XCircle className={iconClass} />;
       case 'warning':
-        return <WarningIcon />;
+        return <AlertTriangle className={iconClass} />;
       case 'info':
-        return <InfoIcon />;
+        return <Info className={iconClass} />;
       default:
         return null;
     }
@@ -306,37 +312,44 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     }
   };
 
+  const getVariant = () => {
+    switch (notification.type) {
+      case 'error':
+        return 'destructive';
+      default:
+        return 'default';
+    }
+  };
+
   return (
-    <Alert
-      severity={notification.type}
-      icon={getIcon()}
-      action={
-        <Stack direction="row" spacing={1} alignItems="center">
+    <Alert variant={getVariant()} className="w-full shadow-lg">
+      <div className="flex items-start gap-3">
+        {getIcon()}
+        <div className="flex-1">
+          {notification.title && (
+            <AlertTitle className="mb-1">{notification.title}</AlertTitle>
+          )}
+          <AlertDescription>{notification.message}</AlertDescription>
+        </div>
+        <div className="flex items-center gap-2">
           {notification.action && (
-            <IconButton
-              size="small"
-              color="inherit"
+            <Button
+              size="sm"
               onClick={handleActionClick}
-              sx={{ fontSize: '0.875rem' }}
+              className="h-auto p-1 text-xs"
             >
               {notification.action.label}
-            </IconButton>
+            </Button>
           )}
-          <IconButton size="small" color="inherit" onClick={onClose}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-      }
-      sx={{
-        width: '100%',
-        boxShadow: 3,
-        '& .MuiAlert-message': {
-          flex: 1,
-        },
-      }}
-    >
-      {notification.title && <AlertTitle>{notification.title}</AlertTitle>}
-      {notification.message}
+          <Button
+            size="sm"
+            onClick={onClose}
+            className="h-auto p-1"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
     </Alert>
   );
 };

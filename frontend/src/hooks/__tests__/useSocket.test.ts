@@ -1,12 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { useSocket, useSocketConnection, useTypingIndicator, useConversationPresence } from '../useSocket';
-import { socketService } from '../../services/socketService';
-import { authService } from '../../services/authService';
-import { useCommunicationStore } from '../../stores/communicationStore';
-
 // Mock dependencies
-vi.mock('../../services/socketService', () => ({
+vi.mock('../../services/socketService', () => ({ 
     socketService: {
         connect: vi.fn(),
         disconnect: vi.fn(),
@@ -21,18 +14,16 @@ vi.mock('../../services/socketService', () => ({
         refreshAuthentication: vi.fn(),
         getConnectionStatus: vi.fn(),
         isConnected: vi.fn(),
-        getConnectionInfo: vi.fn(),
-    },
-}));
+        getConnectionInfo: vi.fn()}
+    }
 
-vi.mock('../../services/authService', () => ({
+vi.mock('../../services/authService', () => ({ 
     authService: {
-        getCurrentUser: vi.fn(),
-    },
-}));
+        getCurrentUser: vi.fn()}
+    }
 
-vi.mock('../../stores/communicationStore', () => ({
-    useCommunicationStore: vi.fn(),
+vi.mock('../../stores/communicationStore', () => ({ 
+    useCommunicationStore: vi.fn()}
 }));
 
 describe('useSocket', () => {
@@ -55,10 +46,9 @@ describe('useSocket', () => {
         (useCommunicationStore as any).mockReturnValue(mockStoreActions);
 
         // Mock auth service
-        (authService.getCurrentUser as any).mockResolvedValue({
-            success: true,
-            user: { id: 'test-user', email: 'test@example.com' },
-        });
+        (authService.getCurrentUser as any).mockResolvedValue({ 
+            success: true}
+            user: { id: 'test-user', email: 'test@example.com' }
 
         // Mock socket service
         (socketService.connect as any).mockResolvedValue(undefined);
@@ -87,13 +77,13 @@ describe('useSocket', () => {
             renderHook(() => useSocket({ autoConnect: false }));
 
             expect(socketService.setEventHandlers).toHaveBeenCalledWith(
-                expect.objectContaining({
+                expect.objectContaining({ 
                     onMessageReceived: expect.any(Function),
                     onMessageUpdated: expect.any(Function),
                     onUserTyping: expect.any(Function),
                     onUserStoppedTyping: expect.any(Function),
                     onNotificationReceived: expect.any(Function),
-                    onConversationUpdated: expect.any(Function),
+                    onConversationUpdated: expect.any(Function)}
                 })
             );
         });
@@ -101,10 +91,9 @@ describe('useSocket', () => {
 
     describe('Authentication', () => {
         it('should auto-connect when authenticated', async () => {
-            (authService.getCurrentUser as any).mockResolvedValue({
-                success: true,
-                user: { id: 'test-user' },
-            });
+            (authService.getCurrentUser as any).mockResolvedValue({ 
+                success: true}
+                user: { id: 'test-user' }
 
             renderHook(() => useSocket({ autoConnect: true }));
 
@@ -114,9 +103,9 @@ describe('useSocket', () => {
         });
 
         it('should not auto-connect when not authenticated', async () => {
-            (authService.getCurrentUser as any).mockResolvedValue({
+            (authService.getCurrentUser as any).mockResolvedValue({ 
                 success: false,
-                user: null,
+                user: null}
             });
 
             renderHook(() => useSocket({ autoConnect: true }));
@@ -132,10 +121,9 @@ describe('useSocket', () => {
             const { rerender } = renderHook(() => useSocket({ autoConnect: false }));
 
             // Initially authenticated
-            (authService.getCurrentUser as any).mockResolvedValue({
-                success: true,
-                user: { id: 'test-user' },
-            });
+            (authService.getCurrentUser as any).mockResolvedValue({ 
+                success: true}
+                user: { id: 'test-user' }
 
             rerender();
 
@@ -144,9 +132,9 @@ describe('useSocket', () => {
             });
 
             // Lose authentication
-            (authService.getCurrentUser as any).mockResolvedValue({
+            (authService.getCurrentUser as any).mockResolvedValue({ 
                 success: false,
-                user: null,
+                user: null}
             });
 
             rerender();
@@ -335,11 +323,11 @@ describe('useSocketConnection', () => {
         vi.clearAllMocks();
         (socketService.getConnectionStatus as any).mockReturnValue('connected');
         (socketService.isConnected as any).mockReturnValue(true);
-        (socketService.getConnectionInfo as any).mockReturnValue({
+        (socketService.getConnectionInfo as any).mockReturnValue({ 
             status: 'connected',
             reconnectAttempts: 0,
             joinedConversations: ['conv-1'],
-            socketId: 'test-socket-id',
+            socketId: 'test-socket-id'}
         });
     });
 
@@ -348,11 +336,11 @@ describe('useSocketConnection', () => {
 
         expect(result.current.connectionStatus).toBe('connected');
         expect(result.current.isConnected).toBe(true);
-        expect(result.current.connectionInfo).toEqual({
+        expect(result.current.connectionInfo).toEqual({ 
             status: 'connected',
             reconnectAttempts: 0,
             joinedConversations: ['conv-1'],
-            socketId: 'test-socket-id',
+            socketId: 'test-socket-id'}
         });
     });
 });

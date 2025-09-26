@@ -1,69 +1,39 @@
-import { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { extractResults } from '../utils/apiHelpers';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Stack,
-  Alert,
-  TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  FormHelperText,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Tooltip,
-  CircularProgress,
-  Divider,
-  Autocomplete,
-  InputAdornment,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import PersonIcon from '@mui/icons-material/Person';
-import CloseIcon from '@mui/icons-material/Close';
-import SearchIcon from '@mui/icons-material/Search';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import WarningIcon from '@mui/icons-material/Warning';
-import PauseCircleIcon from '@mui/icons-material/PauseCircle';
-import InfoIcon from '@mui/icons-material/Info';
+import React, { useState, useEffect } from 'react';
 
-import {
-  usePatientConditions,
+import { Button } from '@/components/ui/button';
+
+import { Input } from '@/components/ui/input';
+
+import { Label } from '@/components/ui/label';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { Dialog } from '@/components/ui/dialog';
+
+import { DialogContent } from '@/components/ui/dialog';
+
+import { DialogTitle } from '@/components/ui/dialog';
+
+import { Select } from '@/components/ui/select';
+
+import { Tooltip } from '@/components/ui/tooltip';
+
+import { Spinner } from '@/components/ui/spinner';
+
+import { Alert } from '@/components/ui/alert';
+
+import { Separator } from '@/components/ui/separator';
+usePatientConditions,
   useCreateCondition,
   useUpdateCondition,
   useDeleteCondition,
-} from '../queries/usePatients';
-import type {
-  Condition,
-  CreateConditionData,
-  UpdateConditionData,
-} from '../types/patientManagement';
+
 
 interface ConditionManagementProps {
   patientId: string;
 }
-
 interface ConditionFormData {
   name: string;
   snomedId?: string;
@@ -71,9 +41,7 @@ interface ConditionFormData {
   status: 'active' | 'resolved' | 'remission';
   notes?: string;
 }
-
 type ConditionStatus = 'active' | 'resolved' | 'remission';
-
 const CONDITION_STATUSES: {
   value: ConditionStatus;
   label: string;
@@ -99,7 +67,6 @@ const CONDITION_STATUSES: {
     icon: <CheckCircleIcon />,
   },
 ];
-
 // Common medical conditions with SNOMED CT codes
 const COMMON_CONDITIONS = [
   { name: 'Hypertension', snomedId: '38341003' },
@@ -123,9 +90,8 @@ const COMMON_CONDITIONS = [
   { name: 'Heart failure', snomedId: '84114007' },
   { name: 'Stroke', snomedId: '230690007' },
 ];
-
-const ConditionManagement: React.FC<ConditionManagementProps> = ({
-  patientId,
+const ConditionManagement: React.FC<ConditionManagementProps> = ({ 
+  patientId
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCondition, setSelectedCondition] = useState<Condition | null>(
@@ -135,7 +101,6 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
   const [statusFilter, setStatusFilter] = useState<ConditionStatus | 'all'>(
     'all'
   );
-
   // React Query hooks
   const {
     data: conditionsResponse,
@@ -146,9 +111,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
   const createConditionMutation = useCreateCondition();
   const updateConditionMutation = useUpdateCondition();
   const deleteConditionMutation = useDeleteCondition();
-
   const conditions = extractResults(conditionsResponse);
-
   // Form setup
   const {
     control,
@@ -157,16 +120,14 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
     formState: { errors, isSubmitting },
     setValue,
     watch,
-  } = useForm<ConditionFormData>({
+  } = useForm<ConditionFormData>({ 
     defaultValues: {
       name: '',
       snomedId: '',
       onsetDate: undefined,
       status: 'active',
-      notes: '',
-    },
-  });
-
+      notes: ''}
+    }
   // Filtered conditions
   const filteredConditions = (conditions as Condition[]).filter(
     (condition: Condition) => {
@@ -178,39 +139,36 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
       return matchesSearch && matchesStatus;
     }
   );
-
   // Event handlers
   const handleOpenDialog = (condition?: Condition) => {
     if (condition) {
       setSelectedCondition(condition);
-      reset({
+      reset({ 
         name: condition.name,
         snomedId: condition.snomedId || '',
         onsetDate: condition.onsetDate
           ? new Date(condition.onsetDate)
           : undefined,
         status: condition.status,
-        notes: condition.notes || '',
+        notes: condition.notes || ''}
       });
     } else {
       setSelectedCondition(null);
-      reset({
+      reset({ 
         name: '',
         snomedId: '',
         onsetDate: undefined,
         status: 'active',
-        notes: '',
+        notes: ''}
       });
     }
     setIsDialogOpen(true);
   };
-
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setSelectedCondition(null);
     reset();
   };
-
   const handleSaveCondition = async (formData: ConditionFormData) => {
     try {
       const conditionData: CreateConditionData | UpdateConditionData = {
@@ -222,27 +180,24 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
         status: formData.status,
         notes: formData.notes?.trim() || undefined,
       };
-
       if (selectedCondition) {
         // Update existing condition
-        await updateConditionMutation.mutateAsync({
+        await updateConditionMutation.mutateAsync({ 
           conditionId: selectedCondition._id,
-          conditionData: conditionData as UpdateConditionData,
+          conditionData: conditionData as UpdateConditionData}
         });
       } else {
         // Create new condition
-        await createConditionMutation.mutateAsync({
+        await createConditionMutation.mutateAsync({ 
           patientId,
-          conditionData: conditionData as CreateConditionData,
+          conditionData: conditionData as CreateConditionData}
         });
       }
-
       handleCloseDialog();
     } catch (error) {
       console.error('Error saving condition:', error);
     }
   };
-
   const handleDeleteCondition = async (conditionId: string) => {
     if (
       window.confirm(
@@ -256,7 +211,6 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
       }
     }
   };
-
   const handleCommonConditionSelect = (condition: {
     name: string;
     snomedId: string;
@@ -264,181 +218,153 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
     setValue('name', condition.name);
     setValue('snomedId', condition.snomedId);
   };
-
   const getStatusConfig = (status: ConditionStatus) => {
     return (
       CONDITION_STATUSES.find((s) => s.value === status) ||
       CONDITION_STATUSES[0]
     );
   };
-
   const validateSnomedId = (snomedId: string): boolean => {
     if (!snomedId) return true; // Optional field
     // SNOMED CT ID validation: 6-18 digits
     return /^\d{6,18}$/.test(snomedId);
   };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Not specified';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
-    });
+      day: 'numeric'}
   };
-
   // Loading state
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress />
-      </Box>
+      <div className="">
+        <Spinner />
+      </div>
     );
   }
-
   // Error state
   if (isError) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6">Failed to load conditions</Typography>
-        <Typography variant="body2">
+      <Alert severity="error" className="">
+        <div >Failed to load conditions</div>
+        <div >
           {error instanceof Error
             ? error.message
             : 'Unable to retrieve condition information.'}
-        </Typography>
+        </div>
       </Alert>
     );
   }
-
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
+      <div>
         {/* Header */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3,
-          }}
+        <div
+          className=""
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <div className="">
+            <PersonIcon className="" />
+            <div  className="">
               Condition Management
-            </Typography>
+            </div>
             {conditions.length > 0 && (
               <Chip
                 label={`${conditions.length} condition${
                   conditions.length > 1 ? 's' : ''
                 }`}
                 size="small"
-                sx={{ ml: 2 }}
+                className=""
               />
             )}
-          </Box>
+          </div>
           <Button
-            variant="contained"
+            
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
             disabled={
               createConditionMutation.isPending ||
               updateConditionMutation.isPending ||
-              deleteConditionMutation.isPending
+              deleteConditionMutation.isPending}
             }
           >
             Add Condition
           </Button>
-        </Box>
-
+        </div>
         {/* Filters and Search */}
         {conditions.length > 0 && (
-          <Card sx={{ mb: 3 }}>
+          <Card className="">
             <CardContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 2,
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                }}
+              <div
+                className=""
               >
-                <Box sx={{ flex: 1, minWidth: 250 }}>
-                  <TextField
+                <div className="">
+                  <Input
                     fullWidth
                     size="small"
                     placeholder="Search conditions..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <SearchIcon sx={{ mr: 1, opacity: 0.5 }} />
-                      ),
-                    }}
+                    
                   />
-                </Box>
-                <Box sx={{ minWidth: 200 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Status Filter</InputLabel>
+                </div>
+                <div className="">
+                  <div fullWidth size="small">
+                    <Label>Status Filter</Label>
                     <Select
                       value={statusFilter}
                       onChange={(e) =>
                         setStatusFilter(
                           e.target.value as ConditionStatus | 'all'
-                        )
+                        )}
                       }
                       label="Status Filter"
                     >
                       <MenuItem value="all">All Statuses</MenuItem>
                       {CONDITION_STATUSES.map((status) => (
                         <MenuItem key={status.value} value={status.value}>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Box
-                              sx={{
-                                mr: 1,
-                                display: 'flex',
-                                fontSize: '0.8rem',
-                              }}
+                          <div className="">
+                            <div
+                              className=""
                             >
                               {status.icon}
-                            </Box>
+                            </div>
                             {status.label}
-                          </Box>
+                          </div>
                         </MenuItem>
                       ))}
                     </Select>
-                  </FormControl>
-                </Box>
-                <Box sx={{ minWidth: 150 }}>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                </div>
+                <div className="">
+                  <div  color="text.secondary">
                     {filteredConditions.length} of {conditions.length} shown
-                  </Typography>
-                </Box>
-              </Box>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
-
         {/* Conditions List */}
         {filteredConditions.length === 0 ? (
           <Card>
-            <CardContent sx={{ textAlign: 'center', py: 6 }}>
+            <CardContent className="">
               <PersonIcon
-                sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+                className=""
               />
-              <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+              <div  color="text.secondary" className="">
                 {searchTerm || statusFilter !== 'all'
                   ? 'No matching conditions found'
                   : 'No conditions recorded'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              </div>
+              <div  color="text.secondary" className="">
                 {searchTerm || statusFilter !== 'all'
                   ? 'Try adjusting your search or filters'
                   : 'Document patient conditions to maintain comprehensive medical records'}
-              </Typography>
+              </div>
               {!searchTerm && statusFilter === 'all' && (
                 <Button
-                  variant="contained"
+                  
                   startIcon={<AddIcon />}
                   onClick={() => handleOpenDialog()}
                 >
@@ -448,7 +374,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
             </CardContent>
           </Card>
         ) : (
-          <TableContainer component={Paper}>
+          <TableContainer >
             <Table>
               <TableHead>
                 <TableRow>
@@ -479,29 +405,29 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                     return (
                       <TableRow key={condition._id} hover>
                         <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          <div  className="">
                             {condition.name}
-                          </Typography>
+                          </div>
                         </TableCell>
                         <TableCell>
                           {condition.snomedId ? (
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Typography
-                                variant="body2"
-                                sx={{ fontFamily: 'monospace', mr: 1 }}
+                            <div className="">
+                              <div
+                                
+                                className=""
                               >
                                 {condition.snomedId}
-                              </Typography>
+                              </div>
                               <Tooltip title="SNOMED CT standardized medical terminology">
                                 <InfoIcon
-                                  sx={{ fontSize: 14, color: 'info.main' }}
+                                  className=""
                                 />
                               </Tooltip>
-                            </Box>
+                            </div>
                           ) : (
-                            <Typography variant="body2" color="text.secondary">
+                            <div  color="text.secondary">
                               —
-                            </Typography>
+                            </div>
                           )}
                         </TableCell>
                         <TableCell>
@@ -509,30 +435,25 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                             label={statusConfig.label}
                             size="small"
                             color={statusConfig.color}
-                            variant="outlined"
+                            
                             icon={statusConfig.icon}
                           />
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">
+                          <div >
                             {formatDate(condition.onsetDate)}
-                          </Typography>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              maxWidth: 200,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
+                          <div
+                            
+                            className=""
                           >
                             {condition.notes || '—'}
-                          </Typography>
+                          </div>
                         </TableCell>
                         <TableCell align="right">
-                          <Stack
+                          <div
                             direction="row"
                             spacing={1}
                             justifyContent="flex-end"
@@ -544,7 +465,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                                 disabled={
                                   createConditionMutation.isPending ||
                                   updateConditionMutation.isPending ||
-                                  deleteConditionMutation.isPending
+                                  deleteConditionMutation.isPending}
                                 }
                               >
                                 <EditIcon fontSize="small" />
@@ -555,18 +476,18 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                                 size="small"
                                 color="error"
                                 onClick={() =>
-                                  handleDeleteCondition(condition._id)
+                                  handleDeleteCondition(condition._id)}
                                 }
                                 disabled={
                                   createConditionMutation.isPending ||
                                   updateConditionMutation.isPending ||
-                                  deleteConditionMutation.isPending
+                                  deleteConditionMutation.isPending}
                                 }
                               >
                                 <DeleteIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                          </Stack>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -576,37 +497,30 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
             </Table>
           </TableContainer>
         )}
-
         {/* Add/Edit Condition Dialog */}
         <Dialog
           open={isDialogOpen}
           onClose={handleCloseDialog}
           maxWidth="md"
           fullWidth
-          PaperProps={{
+          PaperProps={{}
             sx: { borderRadius: 2 },
-          }}
-        >
+          >
           <DialogTitle>
-            <Box sx={{ display: 'flex', alignItems: 'center', pr: 6 }}>
-              <PersonIcon sx={{ mr: 1 }} />
+            <div className="">
+              <PersonIcon className="" />
               {selectedCondition ? 'Edit Condition' : 'Add New Condition'}
-            </Box>
+            </div>
             <IconButton
               onClick={handleCloseDialog}
-              sx={{
-                position: 'absolute',
-                right: 8,
-                top: 8,
-              }}
+              className=""
             >
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-
           <DialogContent dividers>
-            <Box component="form" onSubmit={handleSubmit(handleSaveCondition)}>
-              <Stack spacing={3}>
+            <div component="form" onSubmit={handleSubmit(handleSaveCondition)}>
+              <div spacing={3}>
                 {/* Condition Name */}
                 <Controller
                   name="name"
@@ -615,31 +529,29 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                     required: 'Condition name is required',
                     minLength: {
                       value: 2,
-                      message: 'Condition name must be at least 2 characters',
+                      message: 'Condition name must be at least 2 characters',}
                     },
                     maxLength: {
                       value: 100,
                       message: 'Condition name cannot exceed 100 characters',
                     },
-                  }}
-                  render={({ field }) => (
+                  render={({  field  }) => (
                     <Autocomplete
                       {...field}
                       options={COMMON_CONDITIONS}
                       getOptionLabel={(option) =>
-                        typeof option === 'string' ? option : option.name
+                        typeof option === 'string' ? option : option.name}
                       }
                       freeSolo
                       value={field.value}
                       onChange={(_, newValue) => {
                         if (typeof newValue === 'string') {
-                          field.onChange(newValue);
+                          field.onChange(newValue);}
                         } else if (newValue) {
                           handleCommonConditionSelect(newValue);
                         }
-                      }}
                       renderInput={(params) => (
-                        <TextField
+                        <Input}
                           {...params}
                           label="Condition Name"
                           placeholder="e.g., Hypertension, Diabetes"
@@ -649,128 +561,104 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                           fullWidth
                         />
                       )}
-                      renderOption={(props, option) => {
+                      renderOption={(props, option) => {}
                         const { key, ...otherProps } = props;
                         return (
                           <li key={key} {...otherProps}>
-                            <Box>
-                              <Typography variant="body2">
+                            <div>
+                              <div >
                                 {option.name}
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
-                                sx={{ fontFamily: 'monospace' }}
+                                className=""
                               >
                                 SNOMED: {option.snomedId}
-                              </Typography>
-                            </Box>
+                              </div>
+                            </div>
                           </li>
                         );
-                      }}
                     />
                   )}
                 />
-
                 {/* SNOMED CT ID */}
                 <Controller
                   name="snomedId"
                   control={control}
-                  rules={{
-                    validate: (value) =>
-                      !value ||
-                      validateSnomedId(value) ||
-                      'Invalid SNOMED CT ID format (6-18 digits)',
-                  }}
-                  render={({ field }) => (
-                    <TextField
+                  
+                  render={({  field  }) => (
+                    <Input
                       {...field}
                       label="SNOMED CT Identifier"
                       placeholder="e.g., 38341003"
                       error={!!errors.snomedId}
                       helperText={
                         errors.snomedId?.message ||
-                        'Optional: SNOMED CT standardized medical terminology code'
+                        'Optional: SNOMED CT standardized medical terminology code'}
                       }
                       fullWidth
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <InfoIcon sx={{ color: 'info.main' }} />
-                          </InputAdornment>
-                        ),
-                      }}
+                      
                     />
                   )}
                 />
-
-                <Divider />
-
+                <Separator />
                 {/* Status and Date */}
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 2,
-                  }}
+                <div
+                  className=""
                 >
                   <Controller
                     name="status"
                     control={control}
-                    render={({ field }) => (
-                      <FormControl error={!!errors.status} fullWidth>
-                        <InputLabel>Status</InputLabel>
+                    render={({  field  }) => (
+                      <div error={!!errors.status} fullWidth>
+                        <Label>Status</Label>
                         <Select {...field} label="Status">
                           {CONDITION_STATUSES.map((status) => (
                             <MenuItem key={status.value} value={status.value}>
-                              <Box
-                                sx={{ display: 'flex', alignItems: 'center' }}
+                              <div
+                                className=""
                               >
-                                <Box sx={{ mr: 1, display: 'flex' }}>
+                                <div className="">
                                   {status.icon}
-                                </Box>
+                                </div>
                                 <Chip
                                   label={status.label}
                                   size="small"
                                   color={status.color}
-                                  variant="outlined"
-                                  sx={{ mr: 1 }}
+                                  
+                                  className=""
                                 />
-                              </Box>
+                              </div>
                             </MenuItem>
                           ))}
                         </Select>
                         {errors.status && (
-                          <FormHelperText>
+                          <p>
                             {errors.status.message}
-                          </FormHelperText>
+                          </p>
                         )}
-                      </FormControl>
+                      </div>
                     )}
                   />
-
                   <Controller
                     name="onsetDate"
                     control={control}
-                    render={({ field }) => (
+                    render={({  field  }) => (
                       <DatePicker
-                        {...field}
+                        value={field.value}
+                        onChange={field.onChange}
                         label="Onset Date"
                         maxDate={new Date()}
-                        slotProps={{
-                          textField: {
-                            error: !!errors.onsetDate,
-                            helperText:
-                              errors.onsetDate?.message ||
-                              'When condition started',
-                            fullWidth: true,
-                          },
-                        }}
+                        error={!!errors.onsetDate}
+                        helperText={
+                          errors.onsetDate?.message ||
+                          'When condition started'}
+                        }
                       />
                     )}
                   />
-                </Box>
-
+                </div>
                 {/* Notes */}
                 <Controller
                   name="notes"
@@ -778,11 +666,10 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                   rules={{
                     maxLength: {
                       value: 500,
-                      message: 'Notes cannot exceed 500 characters',
+                      message: 'Notes cannot exceed 500 characters',}
                     },
-                  }}
-                  render={({ field }) => (
-                    <TextField
+                  render={({  field  }) => (
+                    <Input
                       {...field}
                       label="Clinical Notes"
                       placeholder="Additional information about the condition..."
@@ -791,13 +678,12 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                       error={!!errors.notes}
                       helperText={
                         errors.notes?.message ||
-                        'Optional: Additional clinical information or observations'
+                        'Optional: Additional clinical information or observations'}
                       }
                       fullWidth
                     />
                   )}
                 />
-
                 {/* Status Information */}
                 {watch('status') && (
                   <Alert
@@ -806,11 +692,11 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                         ? 'warning'
                         : watch('status') === 'resolved'
                         ? 'success'
-                        : 'info'
+                        : 'info'}
                     }
-                    sx={{ mt: 2 }}
+                    className=""
                   >
-                    <Typography variant="body2">
+                    <div >
                       <strong>
                         {getStatusConfig(watch('status')).label} Status:
                       </strong>{' '}
@@ -820,22 +706,21 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
                         'This condition has been resolved and is no longer active.'}
                       {watch('status') === 'remission' &&
                         'This condition is in remission - symptoms are reduced or absent but may return.'}
-                    </Typography>
+                    </div>
                   </Alert>
                 )}
-              </Stack>
-            </Box>
+              </div>
+            </div>
           </DialogContent>
-
-          <DialogActions sx={{ p: 3 }}>
+          <DialogActions className="">
             <Button onClick={handleCloseDialog} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button
               onClick={handleSubmit(handleSaveCondition)}
-              variant="contained"
+              
               disabled={isSubmitting}
-              sx={{ minWidth: 120 }}
+              className=""
             >
               {isSubmitting
                 ? 'Saving...'
@@ -845,9 +730,7 @@ const ConditionManagement: React.FC<ConditionManagementProps> = ({
             </Button>
           </DialogActions>
         </Dialog>
-      </Box>
-    </LocalizationProvider>
+      </div>
   );
 };
-
 export default ConditionManagement;

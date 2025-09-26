@@ -1,5 +1,3 @@
-import { apiClient } from './apiClient';
-
 export interface User {
   _id: string;
   firstName: string;
@@ -456,8 +454,7 @@ export const adminService = {
 
   async cancelInvitation(invitationId: string, reason?: string) {
     const response = await apiClient.delete(`/admin/invitations/${invitationId}`, {
-      data: { reason },
-    });
+      data: { reason }
     return response.data;
   },
 };

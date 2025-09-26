@@ -1,67 +1,53 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ReportsAnalyticsDashboard } from '../../components/ReportsAnalyticsDashboard';
-import { mockReportData, mockFilters } from '../mocks/mockData';
-import { ReportType } from '../../types';
-
 // Mock all the stores
-vi.mock('../../stores/reportsStore', () => ({
+vi.mock('../../stores/reportsStore', () => ({ 
   useReportsStore: vi.fn(() => ({
     activeReport: ReportType.PATIENT_OUTCOMES,
     reportData: mockReportData,
     isLoading: false,
     error: null,
     setActiveReport: vi.fn(),
-    fetchReportData: vi.fn(),
-  })),
-}));
+    fetchReportData: vi.fn()}
+  }))}
 
-vi.mock('../../stores/filtersStore', () => ({
+vi.mock('../../stores/filtersStore', () => ({ 
   useFiltersStore: vi.fn(() => ({
     filters: mockFilters,
     setFilters: vi.fn(),
     resetFilters: vi.fn(),
-    isLoading: false,
-  })),
-}));
+    isLoading: false}
+  }))}
 
-vi.mock('../../stores/dashboardStore', () => ({
+vi.mock('../../stores/dashboardStore', () => ({ 
   useDashboardStore: vi.fn(() => ({
     sidebarCollapsed: false,
     setSidebarCollapsed: vi.fn(),
     theme: 'light',
-    setTheme: vi.fn(),
-  })),
-}));
+    setTheme: vi.fn()}
+  }))}
 
 // Mock the report components
-vi.mock('../../components/reports/PatientOutcomeReport', () => ({
-  PatientOutcomeReport: () => (
+vi.mock('../../components/reports/PatientOutcomeReport', () => ({ 
     <div data-testid="patient-outcome-report">Patient Outcome Report</div>
-  ),
+  )}
 }));
 
-vi.mock('../../components/reports/PharmacistInterventionReport', () => ({
-  PharmacistInterventionReport: () => (
+vi.mock('../../components/reports/PharmacistInterventionReport', () => ({ 
     <div data-testid="pharmacist-intervention-report">
       Pharmacist Intervention Report
     </div>
-  ),
+  )}
 }));
 
 // Mock Material-UI components
-vi.mock('@mui/material', () => ({
-  ...vi.importActual('@mui/material'),
-  Skeleton: ({ children, ...props }: any) => (
+vi.mock('@mui/material', () => ({ 
+  ...vi.importActual('@mui/material')}
     <div data-testid="skeleton" {...props}>
       {children}
     </div>
   ),
-  Alert: ({ children, severity }: any) => (
     <div data-testid={`alert-${severity}`}>{children}</div>
-  ),
-}));
+  )}
 
 describe('ReportsAnalyticsDashboard', () => {
   const defaultProps = {
@@ -95,13 +81,13 @@ describe('ReportsAnalyticsDashboard', () => {
     // Mock loading state
     vi.mocked(
       require('../../stores/reportsStore').useReportsStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       activeReport: ReportType.PATIENT_OUTCOMES,
       reportData: null,
       isLoading: true,
       error: null,
       setActiveReport: vi.fn(),
-      fetchReportData: vi.fn(),
+      fetchReportData: vi.fn()}
     });
 
     render(<ReportsAnalyticsDashboard {...defaultProps} />);
@@ -113,13 +99,13 @@ describe('ReportsAnalyticsDashboard', () => {
     // Mock error state
     vi.mocked(
       require('../../stores/reportsStore').useReportsStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       activeReport: ReportType.PATIENT_OUTCOMES,
       reportData: null,
       isLoading: false,
       error: 'Failed to fetch report data',
       setActiveReport: vi.fn(),
-      fetchReportData: vi.fn(),
+      fetchReportData: vi.fn()}
     });
 
     render(<ReportsAnalyticsDashboard {...defaultProps} />);
@@ -132,13 +118,13 @@ describe('ReportsAnalyticsDashboard', () => {
     const mockSetActiveReport = vi.fn();
     vi.mocked(
       require('../../stores/reportsStore').useReportsStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       activeReport: ReportType.PATIENT_OUTCOMES,
       reportData: mockReportData,
       isLoading: false,
       error: null,
       setActiveReport: mockSetActiveReport,
-      fetchReportData: vi.fn(),
+      fetchReportData: vi.fn()}
     });
 
     const user = userEvent.setup();
@@ -156,11 +142,11 @@ describe('ReportsAnalyticsDashboard', () => {
     const mockSetFilters = vi.fn();
     vi.mocked(
       require('../../stores/filtersStore').useFiltersStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       filters: mockFilters,
       setFilters: mockSetFilters,
       resetFilters: vi.fn(),
-      isLoading: false,
+      isLoading: false}
     });
 
     render(<ReportsAnalyticsDashboard {...defaultProps} />);
@@ -195,8 +181,7 @@ describe('ReportsAnalyticsDashboard', () => {
     Object.defineProperty(window, 'innerWidth', {
       writable: true,
       configurable: true,
-      value: 768,
-    });
+      value: 768}
 
     render(<ReportsAnalyticsDashboard {...defaultProps} />);
 
@@ -207,13 +192,13 @@ describe('ReportsAnalyticsDashboard', () => {
     const mockSetActiveReport = vi.fn();
     vi.mocked(
       require('../../stores/reportsStore').useReportsStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       activeReport: ReportType.PATIENT_OUTCOMES,
       reportData: mockReportData,
       isLoading: false,
       error: null,
       setActiveReport: mockSetActiveReport,
-      fetchReportData: vi.fn(),
+      fetchReportData: vi.fn()}
     });
 
     render(<ReportsAnalyticsDashboard {...defaultProps} />);
@@ -226,11 +211,11 @@ describe('ReportsAnalyticsDashboard', () => {
     const mockSetSidebarCollapsed = vi.fn();
     vi.mocked(
       require('../../stores/dashboardStore').useDashboardStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       sidebarCollapsed: true,
       setSidebarCollapsed: mockSetSidebarCollapsed,
       theme: 'dark',
-      setTheme: vi.fn(),
+      setTheme: vi.fn()}
     });
 
     render(<ReportsAnalyticsDashboard {...defaultProps} />);
@@ -242,11 +227,11 @@ describe('ReportsAnalyticsDashboard', () => {
     const mockSetTheme = vi.fn();
     vi.mocked(
       require('../../stores/dashboardStore').useDashboardStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       sidebarCollapsed: false,
       setSidebarCollapsed: vi.fn(),
       theme: 'dark',
-      setTheme: mockSetTheme,
+      setTheme: mockSetTheme}
     });
 
     render(<ReportsAnalyticsDashboard {...defaultProps} />);

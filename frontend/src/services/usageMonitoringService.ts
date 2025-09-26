@@ -1,5 +1,3 @@
-import { apiClient } from './apiClient';
-
 export interface UsageStats {
   patients: {
     current: number;
@@ -132,16 +130,15 @@ class UsageMonitoringService {
   ): Promise<{ success: boolean; data: Array<{ date: string; value: number }> }> {
     try {
       const response = await apiClient.get(`${this.baseUrl}/history/${resource}`, {
-        params: { period },
-      });
+        params: { period }
       return response.data;
     } catch (error) {
       console.error('Error fetching usage history:', error);
 
       // Return mock data for development
-      const mockData = Array.from({ length: 7 }, (_, index) => ({
+      const mockData = Array.from({ length: 7 }, (_, index) => ({ 
         date: new Date(Date.now() - (6 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        value: Math.floor(Math.random() * 100) + 50,
+        value: Math.floor(Math.random() * 100) + 50}
       }));
 
       return {
@@ -209,8 +206,7 @@ class UsageMonitoringService {
     try {
       const response = await apiClient.get(`${this.baseUrl}/export`, {
         params: { format, period },
-        responseType: 'blob',
-      });
+        responseType: 'blob'}
       return response.data;
     } catch (error) {
       console.error('Error exporting usage report:', error);

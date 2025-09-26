@@ -1,6 +1,5 @@
-import React from 'react';
-import DiagnosticDashboard from './DiagnosticDashboard';
 
+import DiagnosticDashboard from './DiagnosticDashboard';
 // Simple test component to check if DiagnosticDashboard renders without infinite loop
 const TestRender: React.FC = () => {
   console.log('TestRender component rendering');

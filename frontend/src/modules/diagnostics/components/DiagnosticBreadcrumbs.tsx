@@ -1,27 +1,17 @@
-import React from 'react';
-import { Breadcrumbs, Link, Typography, Box } from '@mui/material';
-import {
-  NavigateNext as NavigateNextIcon,
-  Science as ScienceIcon,
-} from '@mui/icons-material';
-import { Link as RouterLink, useLocation, useParams } from 'react-router-dom';
 
 interface BreadcrumbItem {
   label: string;
   path?: string;
   icon?: React.ReactNode;
 }
-
 interface DiagnosticBreadcrumbsProps {
   customItems?: BreadcrumbItem[];
 }
-
-export const DiagnosticBreadcrumbs: React.FC<DiagnosticBreadcrumbsProps> = ({
-  customItems = [],
+export const DiagnosticBreadcrumbs: React.FC<DiagnosticBreadcrumbsProps> = ({ 
+  customItems = []
 }) => {
   const location = useLocation();
   const params = useParams();
-
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
     const baseBreadcrumbs: BreadcrumbItem[] = [
       {
@@ -31,96 +21,71 @@ export const DiagnosticBreadcrumbs: React.FC<DiagnosticBreadcrumbsProps> = ({
       {
         label: 'AI Diagnostics & Therapeutics',
         path: '/pharmacy/diagnostics',
-        icon: <ScienceIcon sx={{ fontSize: 16, mr: 0.5 }} />,
+        icon: <ScienceIcon className="" />,
       },
     ];
-
     // Add path-specific breadcrumbs
     const pathSegments = location.pathname.split('/').filter(Boolean);
-
     if (pathSegments.includes('case')) {
       if (pathSegments.includes('new')) {
-        baseBreadcrumbs.push({
+        baseBreadcrumbs.push({ 
           label: 'New Case',
-          path: '/pharmacy/diagnostics/case/new',
+          path: '/pharmacy/diagnostics/case/new'}
         });
       } else if (params.requestId) {
-        baseBreadcrumbs.push({
+        baseBreadcrumbs.push({ 
           label: 'Cases',
-          path: '/pharmacy/diagnostics',
+          path: '/pharmacy/diagnostics'}
         });
-        baseBreadcrumbs.push({
+        baseBreadcrumbs.push({  })
           label: `Case ${params.requestId.slice(-8)}`,
-          path: `/pharmacy/diagnostics/case/${params.requestId}`,
-        });
+          path: `/pharmacy/diagnostics/case/${params.requestId}`}
       }
     } else if (pathSegments.includes('demo')) {
-      baseBreadcrumbs.push({
+      baseBreadcrumbs.push({ 
         label: 'Component Demo',
-        path: '/pharmacy/diagnostics/demo',
+        path: '/pharmacy/diagnostics/demo'}
       });
     }
-
     // Add any custom items
     return [...baseBreadcrumbs, ...customItems];
   };
-
   const breadcrumbs = generateBreadcrumbs();
-
   return (
-    <Box sx={{ mb: 2 }}>
+    <div className="">
       <Breadcrumbs
         separator={<NavigateNextIcon fontSize="small" />}
         aria-label="diagnostic navigation breadcrumb"
-        sx={{
-          '& .MuiBreadcrumbs-separator': {
-            color: 'text.secondary',
-          },
-        }}
-      >
+        className="">
         {breadcrumbs.map((item, index) => {
           const isLast = index === breadcrumbs.length - 1;
-
           if (isLast || !item.path) {
             return (
-              <Typography
+              <div
                 key={index}
                 color="text.primary"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontWeight: isLast ? 600 : 400,
-                }}
+                className=""
               >
                 {item.icon}
                 {item.label}
-              </Typography>
+              </div>
             );
           }
-
           return (
             <Link
               key={index}
-              component={RouterLink}
+              
               to={item.path}
               underline="hover"
               color="inherit"
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                '&:hover': {
-                  color: 'primary.main',
-                },
-              }}
-            >
+              className="">
               {item.icon}
               {item.label}
             </Link>
           );
         })}
       </Breadcrumbs>
-    </Box>
+    </div>
   );
 };
-
 export default DiagnosticBreadcrumbs;

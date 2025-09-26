@@ -1,5 +1,3 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-
 interface UseIntersectionObserverOptions extends IntersectionObserverInit {
     freezeOnceVisible?: boolean;
 }
@@ -8,11 +6,11 @@ interface UseIntersectionObserverOptions extends IntersectionObserverInit {
  * Custom hook for intersection observer
  * Useful for infinite scrolling and lazy loading
  */
-export function useIntersectionObserver({
+export function useIntersectionObserver({ 
     threshold = 0,
     root = null,
     rootMargin = '0%',
-    freezeOnceVisible = false,
+    freezeOnceVisible = false}
 }: UseIntersectionObserverOptions = {}) {
     const [entry, setEntry] = useState<IntersectionObserverEntry>();
     const [isIntersecting, setIsIntersecting] = useState(false);

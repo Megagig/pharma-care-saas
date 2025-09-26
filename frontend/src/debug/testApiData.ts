@@ -1,5 +1,3 @@
-import { api } from '../lib/api';
-
 export const testApiEndpoints = async () => {
     console.log('=== TESTING API ENDPOINTS ===');
 

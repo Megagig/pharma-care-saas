@@ -1,58 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  CardHeader,
-  LinearProgress,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Alert,
-  CircularProgress,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Divider,
-} from '@mui/material';
-import {
-  Security as SecurityIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  TrendingUp as TrendingUpIcon,
-  Assessment as AssessmentIcon,
-  Download as DownloadIcon,
-  Refresh as RefreshIcon,
-} from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-} from 'recharts';
+import { Button, Label, Card, CardContent, CardHeader, Select, Tooltip, Spinner, Progress, Alert } from '@/components/ui/button';
 
 interface ComplianceMetrics {
   totalActivities: number;
@@ -65,7 +11,6 @@ interface ComplianceMetrics {
   };
   generatedAt: string;
 }
-
 interface ComplianceCategory {
   _id: {
     complianceCategory: string;
@@ -76,7 +21,6 @@ interface ComplianceCategory {
   avgDuration: number;
   actions: string[];
 }
-
 interface HighRiskActivity {
   _id: string;
   action: string;
@@ -94,15 +38,13 @@ interface HighRiskActivity {
     fileName?: string;
   };
 }
-
 interface ComplianceDashboardProps {
   height?: string;
   refreshInterval?: number;
 }
-
-const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
+const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({ 
   height = '800px',
-  refreshInterval = 300000, // 5 minutes
+  refreshInterval = 300000, // 5 minutes })
 }) => {
   const [metrics, setMetrics] = useState<ComplianceMetrics | null>(null);
   const [highRiskActivities, setHighRiskActivities] = useState<
@@ -110,45 +52,37 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
   >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState({ 
     start: startOfDay(subDays(new Date(), 30)),
-    end: endOfDay(new Date()),
+    end: endOfDay(new Date())}
   });
   const [selectedPeriod, setSelectedPeriod] = useState('30');
-
   // Fetch compliance data
   const fetchComplianceData = async () => {
     setLoading(true);
     setError(null);
-
     try {
-      const queryParams = new URLSearchParams({
+      const queryParams = new URLSearchParams({ 
         startDate: dateRange.start.toISOString(),
-        endDate: dateRange.end.toISOString(),
+        endDate: dateRange.end.toISOString()}
       });
-
       const [metricsResponse, highRiskResponse] = await Promise.all([
         fetch(`/api/communication/audit/statistics?${queryParams}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        }),
+          }, },
         fetch(`/api/communication/audit/high-risk?${queryParams}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        }),
+          }, },
       ]);
-
       if (!metricsResponse.ok || !highRiskResponse.ok) {
         throw new Error('Failed to fetch compliance data');
       }
-
       const [metricsData, highRiskData] = await Promise.all([
         metricsResponse.json(),
         highRiskResponse.json(),
       ]);
-
       setMetrics(metricsData.data);
       setHighRiskActivities(highRiskData.data);
     } catch (err) {
@@ -159,11 +93,9 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchComplianceData();
   }, [dateRange]);
-
   // Auto-refresh
   useEffect(() => {
     if (refreshInterval > 0) {
@@ -171,39 +103,33 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
       return () => clearInterval(interval);
     }
   }, [refreshInterval, dateRange]);
-
   // Handle period change
   const handlePeriodChange = (period: string) => {
     setSelectedPeriod(period);
     const days = parseInt(period);
-    setDateRange({
+    setDateRange({ 
       start: startOfDay(subDays(new Date(), days)),
-      end: endOfDay(new Date()),
+      end: endOfDay(new Date())}
     });
   };
-
   // Calculate compliance score
   const calculateComplianceScore = () => {
     if (!metrics || metrics.totalActivities === 0) return 100;
     const failureRate = metrics.highRiskActivities / metrics.totalActivities;
     return Math.max(0, Math.round((1 - failureRate) * 100));
   };
-
   // Prepare chart data
   const prepareComplianceByCategory = () => {
     if (!metrics) return [];
-
     const categoryMap = new Map<
       string,
       { success: number; failed: number; total: number }
     >();
-
     metrics.complianceSummary.forEach((item) => {
       const category = item._id.complianceCategory;
       if (!categoryMap.has(category)) {
         categoryMap.set(category, { success: 0, failed: 0, total: 0 });
       }
-
       const data = categoryMap.get(category)!;
       data.total += item.count;
       if (item._id.success) {
@@ -212,8 +138,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
         data.failed += item.count;
       }
     });
-
-    return Array.from(categoryMap.entries()).map(([category, data]) => ({
+    return Array.from(categoryMap.entries()).map(([category, data]) => ({ 
       category: category
         .replace(/_/g, ' ')
         .replace(/\b\w/g, (l) => l.toUpperCase()),
@@ -221,42 +146,36 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
       failed: data.failed,
       total: data.total,
       successRate:
-        data.total > 0 ? Math.round((data.success / data.total) * 100) : 100,
+        data.total > 0 ? Math.round((data.success / data.total) * 100) : 100}
     }));
   };
-
   const prepareRiskLevelData = () => {
     if (!metrics) return [];
-
     const riskMap = new Map<string, number>();
     metrics.complianceSummary.forEach((item) => {
       const risk = item._id.riskLevel;
       riskMap.set(risk, (riskMap.get(risk) || 0) + item.count);
     });
-
     const colors = {
       low: '#4caf50',
       medium: '#ff9800',
       high: '#f44336',
       critical: '#9c27b0',
     };
-
-    return Array.from(riskMap.entries()).map(([risk, count]) => ({
+    return Array.from(riskMap.entries()).map(([risk, count]) => ({ 
       name: risk.charAt(0).toUpperCase() + risk.slice(1),
       value: count,
-      color: colors[risk as keyof typeof colors] || '#757575',
+      color: colors[risk as keyof typeof colors] || '#757575'}
     }));
   };
-
   // Export compliance report
   const handleExportReport = async () => {
     try {
-      const queryParams = new URLSearchParams({
+      const queryParams = new URLSearchParams({ 
         startDate: dateRange.start.toISOString(),
         endDate: dateRange.end.toISOString(),
-        format: 'json',
+        format: 'json'}
       });
-
       const response = await fetch(
         `/api/communication/audit/compliance-report?${queryParams}`,
         {
@@ -265,11 +184,9 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
           },
         }
       );
-
       if (!response.ok) {
         throw new Error('Failed to export compliance report');
       }
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -283,33 +200,26 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
       setError(err instanceof Error ? err.message : 'Failed to export report');
     }
   };
-
   const complianceScore = calculateComplianceScore();
   const categoryData = prepareComplianceByCategory();
   const riskLevelData = prepareRiskLevelData();
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ height, p: 2, overflow: 'auto' }}>
+      <div className="">
         {/* Header */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3,
-          }}
+        <div
+          className=""
         >
-          <Typography
-            variant="h5"
-            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          <div
+            
+            className=""
           >
             <AssessmentIcon />
             Compliance Dashboard
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Period</InputLabel>
+          </div>
+          <div className="">
+            <div size="small" className="">
+              <Label>Period</Label>
               <Select
                 value={selectedPeriod}
                 onChange={(e) => handlePeriodChange(e.target.value)}
@@ -320,12 +230,12 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                 <MenuItem value="90">Last 90 days</MenuItem>
                 <MenuItem value="365">Last year</MenuItem>
               </Select>
-            </FormControl>
+            </div>
             <Button
               startIcon={<RefreshIcon />}
               onClick={fetchComplianceData}
               disabled={loading}
-              variant="outlined"
+              
               size="small"
             >
               Refresh
@@ -333,149 +243,124 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
             <Button
               startIcon={<DownloadIcon />}
               onClick={handleExportReport}
-              variant="outlined"
+              
               size="small"
             >
               Export Report
             </Button>
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {/* Error Alert */}
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          <Alert severity="error" className="" onClose={() => setError(null)}>
             {error}
           </Alert>
         )}
-
         {/* Loading State */}
         {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
+          <div className="">
+            <Spinner />
+          </div>
         )}
-
         {/* Dashboard Content */}
         {!loading && metrics && (
           <>
             {/* Key Metrics Cards */}
-            <Grid container spacing={3} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={6} md={3}>
+            <div container spacing={3} className="">
+              <div item xs={12} sm={6} md={3}>
                 <Card>
                   <CardContent>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        mb: 1,
-                      }}
+                    <div
+                      className=""
                     >
                       <SecurityIcon color="primary" />
-                      <Typography variant="h6">Compliance Score</Typography>
-                    </Box>
-                    <Typography
-                      variant="h3"
+                      <div >Compliance Score</div>
+                    </div>
+                    <div
+                      
                       color={
                         complianceScore >= 90
                           ? 'success.main'
                           : complianceScore >= 70
                           ? 'warning.main'
-                          : 'error.main'
+                          : 'error.main'}
                       }
                     >
                       {complianceScore}%
-                    </Typography>
-                    <LinearProgress
-                      variant="determinate"
-                      value={complianceScore}
+                    </div>
+                    <Progress
+                      
                       color={
                         complianceScore >= 90
                           ? 'success'
                           : complianceScore >= 70
                           ? 'warning'
-                          : 'error'
+                          : 'error'}
                       }
-                      sx={{ mt: 1 }}
+                      className=""
                     />
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              </div>
+              <div item xs={12} sm={6} md={3}>
                 <Card>
                   <CardContent>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        mb: 1,
-                      }}
+                    <div
+                      className=""
                     >
                       <TrendingUpIcon color="primary" />
-                      <Typography variant="h6">Total Activities</Typography>
-                    </Box>
-                    <Typography variant="h3">
+                      <div >Total Activities</div>
+                    </div>
+                    <div >
                       {metrics.totalActivities.toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       In selected period
-                    </Typography>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              </div>
+              <div item xs={12} sm={6} md={3}>
                 <Card>
                   <CardContent>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        mb: 1,
-                      }}
+                    <div
+                      className=""
                     >
                       <WarningIcon color="warning" />
-                      <Typography variant="h6">High Risk</Typography>
-                    </Box>
-                    <Typography variant="h3" color="warning.main">
+                      <div >High Risk</div>
+                    </div>
+                    <div  color="warning.main">
                       {metrics.highRiskActivities}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Activities requiring attention
-                    </Typography>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              </div>
+              <div item xs={12} sm={6} md={3}>
                 <Card>
                   <CardContent>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        mb: 1,
-                      }}
+                    <div
+                      className=""
                     >
                       <CheckCircleIcon color="success" />
-                      <Typography variant="h6">Recent Activity</Typography>
-                    </Box>
-                    <Typography variant="h3" color="success.main">
+                      <div >Recent Activity</div>
+                    </div>
+                    <div  color="success.main">
                       {metrics.recentActivities}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Last 24 hours
-                    </Typography>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
-
+              </div>
+            </div>
             {/* Charts Row */}
-            <Grid container spacing={3} sx={{ mb: 3 }}>
+            <div container spacing={3} className="">
               {/* Risk Level Distribution */}
-              <Grid item xs={12} md={6}>
+              <div item xs={12} md={6}>
                 <Card>
                   <CardHeader title="Risk Level Distribution" />
                   <CardContent>
@@ -502,10 +387,9 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              </Grid>
-
+              </div>
               {/* Compliance by Category */}
-              <Grid item xs={12} md={6}>
+              <div item xs={12} md={6}>
                 <Card>
                   <CardHeader title="Success Rate by Category" />
                   <CardContent>
@@ -538,12 +422,11 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
-
+              </div>
+            </div>
             {/* Compliance Categories Table */}
-            <Grid container spacing={3} sx={{ mb: 3 }}>
-              <Grid item xs={12} md={8}>
+            <div container spacing={3} className="">
+              <div item xs={12} md={8}>
                 <Card>
                   <CardHeader title="Compliance Categories Overview" />
                   <CardContent>
@@ -566,14 +449,14 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                                 {category.total}
                               </TableCell>
                               <TableCell align="right">
-                                <Typography color="success.main">
+                                <div color="success.main">
                                   {category.success}
-                                </Typography>
+                                </div>
                               </TableCell>
                               <TableCell align="right">
-                                <Typography color="error.main">
+                                <div color="error.main">
                                   {category.failed}
-                                </Typography>
+                                </div>
                               </TableCell>
                               <TableCell align="right">
                                 <Chip
@@ -584,7 +467,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                                       ? 'success'
                                       : category.successRate >= 85
                                       ? 'warning'
-                                      : 'error'
+                                      : 'error'}
                                   }
                                 />
                               </TableCell>
@@ -595,72 +478,60 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                     </TableContainer>
                   </CardContent>
                 </Card>
-              </Grid>
-
+              </div>
               {/* High Risk Activities */}
-              <Grid item xs={12} md={4}>
+              <div item xs={12} md={4}>
                 <Card>
                   <CardHeader
                     title="Recent High Risk Activities"
                     action={
                       <Chip
-                        size="small"
+                        size="small"}
                         label={highRiskActivities.length}
                         color={
                           highRiskActivities.length === 0
                             ? 'success'
-                            : 'warning'
+                            : 'warning'}
                         }
                       />
                     }
                   />
                   <CardContent>
                     {highRiskActivities.length === 0 ? (
-                      <Box sx={{ textAlign: 'center', py: 2 }}>
+                      <div className="">
                         <CheckCircleIcon
                           color="success"
-                          sx={{ fontSize: 48, mb: 1 }}
+                          className=""
                         />
-                        <Typography color="text.secondary">
+                        <div color="text.secondary">
                           No high-risk activities detected
-                        </Typography>
-                      </Box>
+                        </div>
+                      </div>
                     ) : (
-                      <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                      <div className="">
                         {highRiskActivities.slice(0, 10).map((activity) => (
-                          <Box
+                          <div
                             key={activity._id}
-                            sx={{
-                              mb: 2,
-                              p: 1,
-                              border: 1,
-                              borderColor: 'divider',
-                              borderRadius: 1,
-                            }}
+                            className=""
                           >
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                mb: 1,
-                              }}
+                            <div
+                              className=""
                             >
-                              <Typography variant="body2" fontWeight="medium">
+                              <div  fontWeight="medium">
                                 {activity.action.replace(/_/g, ' ')}
-                              </Typography>
+                              </div>
                               <Chip
                                 size="small"
                                 label={activity.riskLevel}
                                 color={
                                   activity.riskLevel === 'critical'
                                     ? 'error'
-                                    : 'warning'
+                                    : 'warning'}
                                 }
                               />
-                            </Box>
-                            <Typography
-                              variant="caption"
+                            </div>
+                            <div
+                              
                               color="text.secondary"
                             >
                               {activity.userId.firstName}{' '}
@@ -669,38 +540,37 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                                 new Date(activity.timestamp),
                                 'MMM dd, HH:mm'
                               )}
-                            </Typography>
-                          </Box>
+                            </div>
+                          </div>
                         ))}
-                      </Box>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
-
+              </div>
+            </div>
             {/* Report Summary */}
             <Card>
               <CardHeader title="Report Summary" />
               <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" gutterBottom>
+                <div container spacing={2}>
+                  <div item xs={12} md={6}>
+                    <div  gutterBottom>
                       Report Period
-                    </Typography>
-                    <Typography variant="body2">
+                    </div>
+                    <div >
                       {format(dateRange.start, 'PPP')} -{' '}
                       {format(dateRange.end, 'PPP')}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Generated: {format(new Date(metrics.generatedAt), 'PPpp')}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" gutterBottom>
+                    </div>
+                  </div>
+                  <div item xs={12} md={6}>
+                    <div  gutterBottom>
                       Compliance Status
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    </div>
+                    <div className="">
                       {complianceScore >= 90 ? (
                         <CheckCircleIcon color="success" />
                       ) : complianceScore >= 70 ? (
@@ -708,23 +578,22 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                       ) : (
                         <ErrorIcon color="error" />
                       )}
-                      <Typography>
+                      <div>
                         {complianceScore >= 90
                           ? 'Excellent'
                           : complianceScore >= 70
                           ? 'Good'
                           : 'Needs Attention'}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </>
         )}
-      </Box>
+      </div>
     </LocalizationProvider>
   );
 };
-
 export default ComplianceDashboard;

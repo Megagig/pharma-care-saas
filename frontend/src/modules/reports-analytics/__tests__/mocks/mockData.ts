@@ -1,15 +1,3 @@
-import {
-    ReportData,
-    ChartData,
-    ReportFilters,
-    ReportType,
-    ChartType,
-    DateRange,
-    SummaryMetrics,
-    TableData,
-    ReportMetadata
-} from '../../types';
-
 export const mockDateRange: DateRange = {
     startDate: new Date('2024-01-01'),
     endDate: new Date('2024-12-31'),
@@ -146,7 +134,7 @@ export const mockChartConfig = {
 
 // Mock data generators
 export const generateMockChartData = (count: number = 10): ChartData[] => {
-    return Array.from({ length: count }, (_, index) => ({
+    return Array.from({ length: count }, (_, index) => ({  })
         id: `chart-${index + 1}`,
         name: `Item ${index + 1}`,
         value: Math.floor(Math.random() * 100) + 1,
@@ -155,33 +143,31 @@ export const generateMockChartData = (count: number = 10): ChartData[] => {
         metadata: {
             trend: Math.random() > 0.5 ? 'up' : 'down',
             percentage: Math.floor(Math.random() * 20) - 10,
-        },
-    }));
+        }
 };
 
-export const generateMockReportData = (reportType: ReportType): ReportData => ({
+export const generateMockReportData = (reportType: ReportType): ReportData => ({ 
     ...mockReportData,
     metadata: {
         ...mockReportMetadata,
-        reportType,
-    },
-});
+        reportType}
+    }
 
 export const createMockApiResponse = (data: unknown, delay: number = 100) => {
     return new Promise((resolve) => {
         setTimeout(() => {
-            resolve({
+            resolve({ 
                 ok: true,
-                json: () => Promise.resolve(data),
+                json: () => Promise.resolve(data)}
             });
         }, delay);
     });
 };
 
 export const createMockApiError = (message: string, status: number = 500) => {
-    return Promise.reject({
+    return Promise.reject({ 
         ok: false,
         status,
-        message,
+        message}
     });
 };

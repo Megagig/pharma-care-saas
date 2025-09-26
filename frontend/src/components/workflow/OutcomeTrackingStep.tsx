@@ -1,72 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Stack,
-  Alert,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  FormHelperText,
-  Grid,
-  Paper,
-  Chip,
-  IconButton,
-  Tooltip,
-  Checkbox,
-  FormControlLabel,
-  FormGroup,
-  Slider,
-  LinearProgress,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Rating,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  TrendingFlat as TrendingFlatIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  Assessment as AssessmentIcon,
-  Timeline as TimelineIcon,
-  Calculate as CalculateIcon,
-  ExpandMore as ExpandMoreIcon,
-  Save as SaveIcon,
-  Preview as PreviewIcon,
-} from '@mui/icons-material';
-
-import type { InterventionOutcome } from '../../stores/clinicalInterventionStore';
-
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Spinner, Progress, Alert, Accordion, Separator } from '@/components/ui/button';
 // ===============================
 // TYPES AND INTERFACES
 // ===============================
-
 interface OutcomeTrackingData {
   outcome: InterventionOutcome;
 }
-
 interface OutcomeTrackingStepProps {
   onNext: (data: OutcomeTrackingData) => void;
   onBack?: () => void;
@@ -76,7 +14,6 @@ interface OutcomeTrackingStepProps {
   };
   isLoading?: boolean;
 }
-
 interface ClinicalParameter {
   parameter: string;
   beforeValue?: string;
@@ -84,11 +21,9 @@ interface ClinicalParameter {
   unit?: string;
   improvementPercentage?: number;
 }
-
 // ===============================
 // CONSTANTS
 // ===============================
-
 const PATIENT_RESPONSE_OPTIONS = {
   improved: {
     label: 'Improved',
@@ -115,7 +50,6 @@ const PATIENT_RESPONSE_OPTIONS = {
     color: '#9e9e9e',
   },
 } as const;
-
 const SUCCESS_METRICS = [
   {
     key: 'problemResolved',
@@ -139,7 +73,6 @@ const SUCCESS_METRICS = [
     description: "Patient's overall quality of life has been enhanced",
   },
 ] as const;
-
 const COMMON_PARAMETERS = [
   { name: 'Blood Pressure (Systolic)', unit: 'mmHg', type: 'numeric' },
   { name: 'Blood Pressure (Diastolic)', unit: 'mmHg', type: 'numeric' },
@@ -157,7 +90,6 @@ const COMMON_PARAMETERS = [
   { name: 'BMI', unit: 'kg/m²', type: 'numeric' },
   { name: 'Medication Adherence', unit: '%', type: 'numeric' },
 ] as const;
-
 const SEVERITY_LEVELS = {
   mild: {
     label: 'Mild',
@@ -180,25 +112,22 @@ const SEVERITY_LEVELS = {
     color: '#d32f2f',
   },
 } as const;
-
 // ===============================
 // MAIN COMPONENT
 // ===============================
-
-const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
+const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({ 
   onNext,
   onBack,
   onCancel,
   initialData,
-  isLoading = false,
+  isLoading = false
 }) => {
   // State
   const [showPreview, setShowPreview] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>('response');
-
   // Form setup
   const defaultValues: OutcomeTrackingData = useMemo(
-    () => ({
+    () => ({ 
       outcome: {
         patientResponse: initialData?.outcome?.patientResponse || 'unknown',
         clinicalParameters: initialData?.outcome?.clinicalParameters || [],
@@ -215,13 +144,11 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
             initialData?.outcome?.successMetrics?.costSavings || undefined,
           qualityOfLifeImproved:
             initialData?.outcome?.successMetrics?.qualityOfLifeImproved ||
-            false,
+            false}
         },
-      },
-    }),
+      }, },
     [initialData?.outcome]
   );
-
   const {
     control,
     handleSubmit,
@@ -229,61 +156,51 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
     setValue,
     formState: { errors, isValid },
     reset,
-  } = useForm<OutcomeTrackingData>({
+  } = useForm<OutcomeTrackingData>({ 
     defaultValues,
-    mode: 'onChange',
+    mode: 'onChange'}
   });
-
   const {
     fields: parameterFields,
     append: appendParameter,
     remove: removeParameter,
-  } = useFieldArray({
+  } = useFieldArray({ 
     control,
-    name: 'outcome.clinicalParameters',
+    name: 'outcome.clinicalParameters'}
   });
-
   const watchedOutcome = watch('outcome');
   const watchedResponse = watch('outcome.patientResponse');
   const watchedParameters = watch('outcome.clinicalParameters');
-
   // Calculate overall improvement percentage
   const overallImprovement = useMemo(() => {
     if (!watchedParameters || watchedParameters.length === 0) return 0;
-
     const validParameters = watchedParameters.filter(
       (p) =>
         p.improvementPercentage !== undefined &&
         p.improvementPercentage !== null
     );
-
     if (validParameters.length === 0) return 0;
-
     const total = validParameters.reduce(
       (sum, p) => sum + (p.improvementPercentage || 0),
       0
     );
     return Math.round(total / validParameters.length);
   }, [watchedParameters]);
-
   // ===============================
   // HANDLERS
   // ===============================
-
   const handleAddParameter = (parameterName?: string, unit?: string) => {
-    appendParameter({
+    appendParameter({ 
       parameter: parameterName || '',
       beforeValue: '',
       afterValue: '',
       unit: unit || '',
-      improvementPercentage: undefined,
+      improvementPercentage: undefined}
     });
   };
-
   const handleRemoveParameter = (index: number) => {
     removeParameter(index);
   };
-
   const calculateImprovement = (
     beforeValue: string,
     afterValue: string,
@@ -291,9 +208,7 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
   ) => {
     const before = parseFloat(beforeValue);
     const after = parseFloat(afterValue);
-
     if (isNaN(before) || isNaN(after)) return undefined;
-
     // For parameters where lower is better (e.g., blood pressure, cholesterol, pain)
     const lowerIsBetter = [
       'blood pressure',
@@ -306,7 +221,6 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
       'weight',
       'bmi',
     ].some((term) => parameter.toLowerCase().includes(term));
-
     let improvement;
     if (lowerIsBetter) {
       improvement = ((before - after) / before) * 100;
@@ -314,17 +228,14 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
       // For parameters where higher is better (e.g., HDL, eGFR, adherence)
       improvement = ((after - before) / before) * 100;
     }
-
     return Math.round(improvement);
   };
-
   const handleParameterChange = (
     index: number,
     field: keyof ClinicalParameter,
     value: string
   ) => {
     setValue(`outcome.clinicalParameters.${index}.${field}`, value);
-
     // Auto-calculate improvement percentage when both values are present
     if (field === 'beforeValue' || field === 'afterValue') {
       const parameter = watchedParameters[index];
@@ -333,7 +244,6 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
           field === 'beforeValue' ? value : parameter.beforeValue;
         const afterValue =
           field === 'afterValue' ? value : parameter.afterValue;
-
         if (beforeValue && afterValue) {
           const improvement = calculateImprovement(
             beforeValue,
@@ -348,55 +258,43 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
       }
     }
   };
-
   const onSubmit = (data: OutcomeTrackingData) => {
     onNext(data);
   };
-
   // ===============================
   // RENDER HELPERS
   // ===============================
-
   const renderPatientResponse = () => (
     <Accordion
       expanded={expandedSection === 'response'}
       onChange={() =>
-        setExpandedSection(expandedSection === 'response' ? '' : 'response')
+        setExpandedSection(expandedSection === 'response' ? '' : 'response')}
       }
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Typography
-          variant="h6"
-          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+        <div
+          
+          className=""
         >
           <AssessmentIcon color="primary" />
           Patient Response Assessment
-        </Typography>
+        </div>
       </AccordionSummary>
       <AccordionDetails>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <div  color="text.secondary" className="">
           Evaluate the overall patient response to the intervention
-        </Typography>
-
+        </div>
         <Controller
           name="outcome.patientResponse"
           control={control}
-          rules={{ required: 'Patient response is required' }}
-          render={({ field }) => (
-            <Grid container spacing={2}>
+          
+          render={({  field  }) => (
+            <div container spacing={2}>
               {Object.entries(PATIENT_RESPONSE_OPTIONS).map(
                 ([value, config]) => (
-                  <Grid item xs={12} sm={6} md={3} key={value}>
-                    <Paper
-                      sx={{
-                        p: 2,
-                        cursor: 'pointer',
-                        border: '2px solid',
-                        borderColor:
-                          field.value === value ? config.color : 'divider',
-                        bgcolor:
-                          field.value === value
-                            ? `${config.color}10`
+                  <div item xs={12} sm={6} md={3} key={value}>
+                    <div
+                      className=""10`
                             : 'background.paper',
                         transition: 'all 0.2s ease-in-out',
                         textAlign: 'center',
@@ -404,49 +302,47 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
                           borderColor: config.color,
                           bgcolor: `${config.color}05`,
                         },
-                      }}
                       onClick={() => field.onChange(value)}
                     >
-                      <Box sx={{ color: config.color, mb: 1 }}>
+                      <div className="">
                         {config.icon}
-                      </Box>
-                      <Typography
-                        variant="subtitle1"
+                      </div>
+                      <div
+                        
                         fontWeight="medium"
-                        sx={{ mb: 1 }}
+                        className=""
                       >
                         {config.label}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {config.description}
-                      </Typography>
-                    </Paper>
-                  </Grid>
+                      </div>
+                    </div>
+                  </div>
                 )
               )}
-            </Grid>
+            </div>
           )}
         />
         {errors.outcome?.patientResponse && (
-          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+          <div  color="error" className="">
             {errors.outcome.patientResponse.message}
-          </Typography>
+          </div>
         )}
       </AccordionDetails>
     </Accordion>
   );
-
   const renderClinicalParameters = () => (
     <Accordion
       expanded={expandedSection === 'parameters'}
       onChange={() =>
-        setExpandedSection(expandedSection === 'parameters' ? '' : 'parameters')
+        setExpandedSection(expandedSection === 'parameters' ? '' : 'parameters')}
       }
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Typography
-          variant="h6"
-          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+        <div
+          
+          className=""
         >
           <TimelineIcon color="primary" />
           Clinical Parameters
@@ -456,50 +352,42 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
               label={`${watchedParameters.length} parameters`}
             />
           )}
-        </Typography>
+        </div>
       </AccordionSummary>
       <AccordionDetails>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <div  color="text.secondary" className="">
           Track measurable clinical parameters before and after intervention
-        </Typography>
-
+        </div>
         {overallImprovement !== 0 && (
           <Alert
             severity={overallImprovement > 0 ? 'success' : 'warning'}
-            sx={{ mb: 2 }}
+            className=""
             icon={
-              overallImprovement > 0 ? <TrendingUpIcon /> : <TrendingDownIcon />
+              overallImprovement > 0 ? <TrendingUpIcon /> : <TrendingDownIcon />}
             }
           >
-            <Typography variant="body2" fontWeight="medium">
+            <div  fontWeight="medium">
               Overall Improvement: {overallImprovement > 0 ? '+' : ''}
               {overallImprovement}%
-            </Typography>
+            </div>
           </Alert>
         )}
-
         {parameterFields.map((field, index) => {
           const parameter = watchedParameters[index];
           const improvement = parameter?.improvementPercentage;
-
           return (
             <Card
               key={field.id}
-              sx={{ mb: 2, border: '1px solid', borderColor: 'divider' }}
+              className=""
             >
               <CardContent>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    mb: 2,
-                  }}
+                <div
+                  className=""
                 >
-                  <Typography variant="subtitle1" fontWeight="medium">
+                  <div  fontWeight="medium">
                     Parameter {index + 1}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  </div>
+                  <div className="">
                     {improvement !== undefined && (
                       <Chip
                         size="small"
@@ -509,7 +397,7 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
                             ? 'success'
                             : improvement < 0
                             ? 'error'
-                            : 'default'
+                            : 'default'}
                         }
                         icon={
                           improvement > 0 ? (
@@ -518,7 +406,7 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
                             <TrendingDownIcon />
                           ) : (
                             <TrendingFlatIcon />
-                          )
+                          )}
                         }
                       />
                     )}
@@ -529,18 +417,17 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
                     >
                       <DeleteIcon />
                     </IconButton>
-                  </Box>
-                </Box>
-
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={4}>
+                  </div>
+                </div>
+                <div container spacing={2}>
+                  <div item xs={12} md={4}>
                     <Controller
                       name={`outcome.clinicalParameters.${index}.parameter`}
                       control={control}
-                      rules={{ required: 'Parameter name is required' }}
-                      render={({ field }) => (
-                        <FormControl fullWidth>
-                          <InputLabel>Parameter</InputLabel>
+                      
+                      render={({  field  }) => (
+                        <div fullWidth>
+                          <Label>Parameter</Label>
                           <Select
                             {...field}
                             label="Parameter"
@@ -550,13 +437,11 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
                                 (p) => p.name === e.target.value
                               );
                               if (selected) {
-                                setValue(
+                                setValue(}
                                   `outcome.clinicalParameters.${index}.unit`,
                                   selected.unit
                                 );
-                              }
-                            }}
-                          >
+                              }>
                             {COMMON_PARAMETERS.map((param) => (
                               <MenuItem key={param.name} value={param.name}>
                                 {param.name} ({param.unit})
@@ -564,17 +449,16 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
                             ))}
                             <MenuItem value="custom">Custom Parameter</MenuItem>
                           </Select>
-                        </FormControl>
+                        </div>
                       )}
                     />
-                  </Grid>
-
-                  <Grid item xs={12} md={2}>
+                  </div>
+                  <div item xs={12} md={2}>
                     <Controller
                       name={`outcome.clinicalParameters.${index}.unit`}
                       control={control}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           label="Unit"
@@ -582,110 +466,90 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
                         />
                       )}
                     />
-                  </Grid>
-
-                  <Grid item xs={12} md={3}>
+                  </div>
+                  <div item xs={12} md={3}>
                     <Controller
                       name={`outcome.clinicalParameters.${index}.beforeValue`}
                       control={control}
-                      rules={{ required: 'Before value is required' }}
-                      render={({ field }) => (
-                        <TextField
+                      
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           label="Before Value"
                           placeholder="0.0"
-                          onChange={(e) => {
-                            field.onChange(e);
-                            handleParameterChange(
-                              index,
-                              'beforeValue',
-                              e.target.value
-                            );
-                          }}
+                          
                           error={
                             !!errors.outcome?.clinicalParameters?.[index]
-                              ?.beforeValue
+                              ?.beforeValue}
                           }
                           helperText={
                             errors.outcome?.clinicalParameters?.[index]
-                              ?.beforeValue?.message
+                              ?.beforeValue?.message}
                           }
                         />
                       )}
                     />
-                  </Grid>
-
-                  <Grid item xs={12} md={3}>
+                  </div>
+                  <div item xs={12} md={3}>
                     <Controller
                       name={`outcome.clinicalParameters.${index}.afterValue`}
                       control={control}
-                      rules={{ required: 'After value is required' }}
-                      render={({ field }) => (
-                        <TextField
+                      
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           fullWidth
                           label="After Value"
                           placeholder="0.0"
-                          onChange={(e) => {
-                            field.onChange(e);
-                            handleParameterChange(
-                              index,
-                              'afterValue',
-                              e.target.value
-                            );
-                          }}
+                          
                           error={
                             !!errors.outcome?.clinicalParameters?.[index]
-                              ?.afterValue
+                              ?.afterValue}
                           }
                           helperText={
                             errors.outcome?.clinicalParameters?.[index]
-                              ?.afterValue?.message
+                              ?.afterValue?.message}
                           }
                         />
                       )}
                     />
-                  </Grid>
-                </Grid>
-
+                  </div>
+                </div>
                 {improvement !== undefined && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography
-                      variant="body2"
+                  <div className="">
+                    <div
+                      
                       color="text.secondary"
-                      sx={{ mb: 1 }}
+                      className=""
                     >
                       Improvement: {improvement}%
-                    </Typography>
-                    <LinearProgress
-                      variant="determinate"
-                      value={Math.min(Math.abs(improvement), 100)}
+                    </div>
+                    <Progress
+                      
                       color={improvement > 0 ? 'success' : 'error'}
-                      sx={{ height: 8, borderRadius: 4 }}
+                      className=""
                     />
-                  </Box>
+                  </div>
                 )}
               </CardContent>
             </Card>
           );
         })}
-
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+        <div className="">
           {COMMON_PARAMETERS.slice(0, 5).map((param) => (
             <Button
               key={param.name}
               size="small"
-              variant="outlined"
+              
               onClick={() => handleAddParameter(param.name, param.unit)}
             >
               Add {param.name}
             </Button>
           ))}
-        </Box>
-
+        </div>
         <Button
-          variant="outlined"
+          
           startIcon={<AddIcon />}
           onClick={() => handleAddParameter()}
           fullWidth
@@ -695,74 +559,68 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
       </AccordionDetails>
     </Accordion>
   );
-
   const renderSuccessMetrics = () => (
     <Accordion
       expanded={expandedSection === 'metrics'}
       onChange={() =>
-        setExpandedSection(expandedSection === 'metrics' ? '' : 'metrics')
+        setExpandedSection(expandedSection === 'metrics' ? '' : 'metrics')}
       }
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Typography
-          variant="h6"
-          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+        <div
+          
+          className=""
         >
           <CheckCircleIcon color="primary" />
           Success Metrics
-        </Typography>
+        </div>
       </AccordionSummary>
       <AccordionDetails>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <div  color="text.secondary" className="">
           Evaluate the success of the intervention across different dimensions
-        </Typography>
-
+        </div>
         <FormGroup>
           {SUCCESS_METRICS.map((metric) => (
             <Controller
               key={metric.key}
               name={`outcome.successMetrics.${metric.key}`}
               control={control}
-              render={({ field }) => (
+              render={({  field  }) => (
                 <FormControlLabel
                   control={
-                    <Checkbox
+                    <Checkbox}
                       {...field}
                       checked={field.value || false}
                       onChange={(e) => field.onChange(e.target.checked)}
                     />
                   }
                   label={
-                    <Box>
-                      <Typography variant="body1" fontWeight="medium">
+                    <div>
+                      <div  fontWeight="medium">}
                         {metric.label}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {metric.description}
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   }
                 />
               )}
             />
           ))}
         </FormGroup>
-
-        <Divider sx={{ my: 2 }} />
-
+        <Separator className="" />
         <Controller
           name="outcome.successMetrics.costSavings"
           control={control}
-          render={({ field }) => (
-            <TextField
+          render={({  field  }) => (
+            <Input
               {...field}
               fullWidth
               type="number"
               label="Estimated Cost Savings (Optional)"
               placeholder="0.00"
-              InputProps={{
-                startAdornment: '$',
-              }}
+              
               helperText="Estimated cost savings from this intervention"
             />
           )}
@@ -770,31 +628,30 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
       </AccordionDetails>
     </Accordion>
   );
-
   const renderAdverseEffects = () => (
     <Accordion
       expanded={expandedSection === 'adverse'}
       onChange={() =>
-        setExpandedSection(expandedSection === 'adverse' ? '' : 'adverse')
+        setExpandedSection(expandedSection === 'adverse' ? '' : 'adverse')}
       }
     >
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Typography
-          variant="h6"
-          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+        <div
+          
+          className=""
         >
           <WarningIcon color="primary" />
           Adverse Effects & Issues
-        </Typography>
+        </div>
       </AccordionSummary>
       <AccordionDetails>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
+        <div container spacing={2}>
+          <div item xs={12}>
             <Controller
               name="outcome.adverseEffects"
               control={control}
-              render={({ field }) => (
-                <TextField
+              render={({  field  }) => (
+                <Input
                   {...field}
                   fullWidth
                   multiline
@@ -805,14 +662,13 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
                 />
               )}
             />
-          </Grid>
-
-          <Grid item xs={12}>
+          </div>
+          <div item xs={12}>
             <Controller
               name="outcome.additionalIssues"
               control={control}
-              render={({ field }) => (
-                <TextField
+              render={({  field  }) => (
+                <Input
                   {...field}
                   fullWidth
                   multiline
@@ -823,98 +679,86 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
                 />
               )}
             />
-          </Grid>
-        </Grid>
+          </div>
+        </div>
       </AccordionDetails>
     </Accordion>
   );
-
   const renderOutcomeSummary = () => {
     const successCount = Object.values(watchedOutcome.successMetrics).filter(
       Boolean
     ).length;
     const responseConfig = PATIENT_RESPONSE_OPTIONS[watchedResponse];
-
     return (
       <Card
-        sx={{
-          mb: 3,
-          bgcolor: 'primary.50',
-          border: '1px solid',
-          borderColor: 'primary.200',
-        }}
+        className=""
       >
         <CardContent>
-          <Typography
-            variant="h6"
+          <div
+            
             gutterBottom
-            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            className=""
           >
             <CalculateIcon color="primary" />
             Outcome Summary
-          </Typography>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Box sx={{ color: responseConfig.color, mb: 1 }}>
+          </div>
+          <div container spacing={2}>
+            <div item xs={12} sm={6} md={3}>
+              <div className="">
+                <div className="">
                   {responseConfig.icon}
-                </Box>
-                <Typography variant="h6">{responseConfig.label}</Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div >{responseConfig.label}</div>
+                <div  color="text.secondary">
                   Patient Response
-                </Typography>
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h4" color="primary">
+                </div>
+              </div>
+            </div>
+            <div item xs={12} sm={6} md={3}>
+              <div className="">
+                <div  color="primary">
                   {watchedParameters.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Parameters Tracked
-                </Typography>
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h4" color="success.main">
+                </div>
+              </div>
+            </div>
+            <div item xs={12} sm={6} md={3}>
+              <div className="">
+                <div  color="success.main">
                   {successCount}/4
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Success Metrics
-                </Typography>
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography
-                  variant="h4"
+                </div>
+              </div>
+            </div>
+            <div item xs={12} sm={6} md={3}>
+              <div className="">
+                <div
+                  
                   color={
                     overallImprovement > 0
                       ? 'success.main'
                       : overallImprovement < 0
                       ? 'error.main'
-                      : 'text.secondary'
+                      : 'text.secondary'}
                   }
                 >
                   {overallImprovement > 0 ? '+' : ''}
                   {overallImprovement}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Overall Improvement
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   };
-
   const renderPreviewDialog = () => (
     <Dialog
       open={showPreview}
@@ -924,59 +768,55 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
     >
       <DialogTitle>Outcome Preview</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <div  color="text.secondary" className="">
           Review the complete outcome assessment before finalizing
-        </Typography>
-
+        </div>
         {renderOutcomeSummary()}
-
-        <Typography variant="h6" gutterBottom>
+        <div  gutterBottom>
           Patient Response
-        </Typography>
-        <Typography variant="body1" sx={{ mb: 2 }}>
+        </div>
+        <div  className="">
           {PATIENT_RESPONSE_OPTIONS[watchedResponse].label}:{' '}
           {PATIENT_RESPONSE_OPTIONS[watchedResponse].description}
-        </Typography>
-
+        </div>
         {watchedParameters.length > 0 && (
           <>
-            <Typography variant="h6" gutterBottom>
+            <div  gutterBottom>
               Clinical Parameters
-            </Typography>
+            </div>
             <List dense>
               {watchedParameters.map((param, index) => (
-                <ListItem key={index}>
-                  <ListItemText
+                <div key={index}>
+                  <div
                     primary={`${param.parameter}: ${param.beforeValue} → ${param.afterValue} ${param.unit}`}
                     secondary={
                       param.improvementPercentage !== undefined
                         ? `Improvement: ${
-                            param.improvementPercentage > 0 ? '+' : ''
+                            param.improvementPercentage > 0 ? '+' : ''}
                           }${param.improvementPercentage}%`
                         : 'No improvement calculated'
                     }
                   />
-                </ListItem>
+                </div>
               ))}
             </List>
           </>
         )}
-
-        <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+        <div  gutterBottom className="">
           Success Metrics
-        </Typography>
+        </div>
         <List dense>
           {SUCCESS_METRICS.map((metric) => (
-            <ListItem key={metric.key}>
-              <ListItemIcon>
+            <div key={metric.key}>
+              <div>
                 {watchedOutcome.successMetrics[metric.key] ? (
                   <CheckCircleIcon color="success" />
                 ) : (
                   <CancelIcon color="disabled" />
                 )}
-              </ListItemIcon>
-              <ListItemText primary={metric.label} />
-            </ListItem>
+              </div>
+              <div primary={metric.label} />
+            </div>
           ))}
         </List>
       </DialogContent>
@@ -985,66 +825,60 @@ const OutcomeTrackingStep: React.FC<OutcomeTrackingStepProps> = ({
       </DialogActions>
     </Dialog>
   );
-
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
+    <div>
+      <div  gutterBottom>
         Step 4: Outcome Tracking
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+      </div>
+      <div  color="text.secondary" className="">
         Document and measure the outcomes of the clinical intervention
-      </Typography>
-
+      </div>
       <form onSubmit={handleSubmit(onSubmit)}>
         {renderOutcomeSummary()}
-
-        <Box sx={{ mb: 3 }}>
+        <div className="">
           {renderPatientResponse()}
           {renderClinicalParameters()}
           {renderSuccessMetrics()}
           {renderAdverseEffects()}
-        </Box>
-
+        </div>
         {renderPreviewDialog()}
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-          <Box>
+        <div className="">
+          <div>
             <Button
-              variant="outlined"
+              
               onClick={onCancel}
               disabled={isLoading}
-              sx={{ mr: 1 }}
+              className=""
             >
               Cancel
             </Button>
-            <Button variant="outlined" onClick={onBack} disabled={isLoading}>
+            <Button  onClick={onBack} disabled={isLoading}>
               Back
             </Button>
-          </Box>
-          <Box>
+          </div>
+          <div>
             <Button
-              variant="outlined"
+              
               startIcon={<PreviewIcon />}
               onClick={() => setShowPreview(true)}
-              sx={{ mr: 1 }}
+              className=""
             >
               Preview
             </Button>
             <Button
               type="submit"
-              variant="contained"
+              
               disabled={!isValid || isLoading}
-              startIcon={
-                isLoading ? <CircularProgress size={20} /> : <SaveIcon />
+              startIcon={}
+                isLoading ? <Spinner size={20} /> : <SaveIcon />
               }
             >
               {isLoading ? 'Saving...' : 'Complete Intervention'}
             </Button>
-          </Box>
-        </Box>
+          </div>
+        </div>
       </form>
-    </Box>
+    </div>
   );
 };
-
 export default OutcomeTrackingStep;

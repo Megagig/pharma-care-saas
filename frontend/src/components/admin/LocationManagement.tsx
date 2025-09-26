@@ -1,45 +1,30 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  Chip,
-  CircularProgress,
-  Divider,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  Typography,
-  Alert,
-  Button,
-  Paper,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
-  Switch,
-  FormControlLabel,
-} from '@mui/material';
-import {
-  LocationOn as LocationIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Refresh as RefreshIcon,
-  Search as SearchIcon,
-  Phone as PhoneIcon,
-  Email as EmailIcon,
-  Business as BusinessIcon,
-} from '@mui/icons-material';
-import { useUIStore } from '../../stores';
+import React, { useState, useEffect } from 'react';
+
+import { Button } from '@/components/ui/button';
+
+import { Input } from '@/components/ui/input';
+
+import { Label } from '@/components/ui/label';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { CardHeader } from '@/components/ui/card';
+
+import { Dialog } from '@/components/ui/dialog';
+
+import { DialogContent } from '@/components/ui/dialog';
+
+import { DialogTitle } from '@/components/ui/dialog';
+
+import { Select } from '@/components/ui/select';
+
+import { Spinner } from '@/components/ui/spinner';
+
+import { Switch } from '@/components/ui/switch';
+
+import { Separator } from '@/components/ui/separator';
 
 interface Location {
   id: string;
@@ -56,7 +41,6 @@ interface Location {
   manager?: string;
   capacity?: number;
 }
-
 const LocationManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [locations, setLocations] = useState<Location[]>([
@@ -110,7 +94,7 @@ const LocationManagement: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [newLocation, setNewLocation] = useState<
     Omit<Location, 'id' | 'createdAt' | 'updatedAt'>
-  >({
+  >({ 
     name: '',
     address: '',
     city: '',
@@ -118,28 +102,21 @@ const LocationManagement: React.FC = () => {
     country: 'Nigeria',
     phone: '',
     email: '',
-    isActive: true,
+    isActive: true}
   });
-
   const addNotification = useUIStore((state) => state.addNotification);
-
   const handleSaveLocation = async () => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
       const action = editingLocation ? 'updated' : 'created';
-
-      addNotification({
-        type: 'info',
+      addNotification({ 
+        type: 'info'}
         title: `Location ${action}`,
-        message: `Location ${newLocation.name} has been ${action}`,
-      });
-
+        message: `Location ${newLocation.name} has been ${action}`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       if (editingLocation) {
         // Update existing location
         setLocations(
@@ -161,13 +138,11 @@ const LocationManagement: React.FC = () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-
         setLocations([location, ...locations]);
       }
-
       setShowLocationDialog(false);
       setEditingLocation(null);
-      setNewLocation({
+      setNewLocation({ 
         name: '',
         address: '',
         city: '',
@@ -175,66 +150,53 @@ const LocationManagement: React.FC = () => {
         country: 'Nigeria',
         phone: '',
         email: '',
-        isActive: true,
+        isActive: true}
       });
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
-        title: 'Operation Failed',
-        message: `Failed to save location: ${newLocation.name}`,
-      });
+        title: 'Operation Failed'}
+        message: `Failed to save location: ${newLocation.name}`}
     } finally {
       setLoading(false);
     }
   };
-
   const handleDeleteLocation = async (locationId: string) => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
       const location = locations.find((loc) => loc.id === locationId);
-
-      addNotification({
+      addNotification({ 
         type: 'info',
-        title: 'Location Deleted',
-        message: `Location ${location?.name} has been deleted`,
-      });
-
+        title: 'Location Deleted'}
+        message: `Location ${location?.name} has been deleted`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       // Remove the location
       setLocations(locations.filter((loc) => loc.id !== locationId));
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
         title: 'Delete Failed',
-        message: 'Failed to delete location',
+        message: 'Failed to delete location'}
       });
     } finally {
       setLoading(false);
     }
   };
-
   const handleToggleLocationStatus = async (locationId: string) => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
       const location = locations.find((loc) => loc.id === locationId);
-
-      addNotification({
+      addNotification({ 
         type: 'info',
-        title: 'Status Updated',
-        message: `Location ${location?.name} status updated`,
-      });
-
+        title: 'Status Updated'}
+        message: `Location ${location?.name} status updated`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 500));
-
       // Toggle the location status
       setLocations(
         locations.map((loc) =>
@@ -248,19 +210,18 @@ const LocationManagement: React.FC = () => {
         )
       );
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
         title: 'Status Update Failed',
-        message: 'Failed to update location status',
+        message: 'Failed to update location status'}
       });
     } finally {
       setLoading(false);
     }
   };
-
   const openEditDialog = (location: Location) => {
     setEditingLocation(location);
-    setNewLocation({
+    setNewLocation({ 
       name: location.name,
       address: location.address,
       city: location.city,
@@ -268,14 +229,13 @@ const LocationManagement: React.FC = () => {
       country: location.country,
       phone: location.phone,
       email: location.email,
-      isActive: location.isActive,
+      isActive: location.isActive}
     });
     setShowLocationDialog(true);
   };
-
   const openCreateDialog = () => {
     setEditingLocation(null);
-    setNewLocation({
+    setNewLocation({ 
       name: '',
       address: '',
       city: '',
@@ -283,11 +243,10 @@ const LocationManagement: React.FC = () => {
       country: 'Nigeria',
       phone: '',
       email: '',
-      isActive: true,
+      isActive: true}
     });
     setShowLocationDialog(true);
   };
-
   const filteredLocations = locations.filter((location) => {
     const matchesSearch =
       location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -299,117 +258,102 @@ const LocationManagement: React.FC = () => {
       (filterStatus === 'inactive' && !location.isActive);
     return matchesSearch && matchesStatus;
   });
-
   return (
-    <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
+    <div>
+      <div
+        className=""
       >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <LocationIcon sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h5" component="h1">
+        <div className="">
+          <LocationIcon className="" />
+          <div  component="h1">
             Location Management
-          </Typography>
-        </Box>
-        <Box>
+          </div>
+        </div>
+        <div>
           <Button
-            variant="contained"
+            
             startIcon={<AddIcon />}
             onClick={openCreateDialog}
-            sx={{ mr: 1 }}
+            className=""
           >
             Add Location
           </Button>
           <Button
-            variant="outlined"
+            
             startIcon={<RefreshIcon />}
             onClick={() => setLoading(true)}
           >
             Refresh
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Location Stats */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <div container spacing={3} className="">
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary.main" gutterBottom>
+            <CardContent className="">
+              <div  color="primary.main" gutterBottom>
                 {locations.length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Total Locations
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main" gutterBottom>
+            <CardContent className="">
+              <div  color="success.main" gutterBottom>
                 {locations.filter((l) => l.isActive).length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Active
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main" gutterBottom>
+            <CardContent className="">
+              <div  color="warning.main" gutterBottom>
                 {locations.filter((l) => !l.isActive).length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Inactive
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="info.main" gutterBottom>
+            <CardContent className="">
+              <div  color="info.main" gutterBottom>
                 {locations.filter((l) => l.manager).length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Managed Locations
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Search and Filter */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <CardContent>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
+          <div container spacing={2}>
+            <div item xs={12} md={6}>
+              <Input
                 fullWidth
                 placeholder="Search by name, city, or state..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  ),
-                }}
+                
               />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Status Filter</InputLabel>
+            </div>
+            <div item xs={12} md={6}>
+              <div fullWidth>
+                <Label>Status Filter</Label>
                 <Select
                   value={filterStatus}
                   label="Status Filter"
@@ -419,56 +363,45 @@ const LocationManagement: React.FC = () => {
                   <MenuItem value="active">Active</MenuItem>
                   <MenuItem value="inactive">Inactive</MenuItem>
                 </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
       {/* Location List */}
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
+      <div container spacing={3}>
+        <div item xs={12}>
           <Card>
             <CardHeader
               title="Location List"
               subheader="Manage all pharmacy locations"
             />
-            <Divider />
+            <Separator />
             <CardContent>
               {filteredLocations.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="body1" color="textSecondary">
+                <div className="">
+                  <div  color="textSecondary">
                     No locations found
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               ) : (
                 <List>
                   {filteredLocations.map((location) => (
-                    <ListItem
+                    <div
                       key={location.id}
-                      sx={{
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        mb: 1,
-                        '&:last-child': { mb: 0 },
-                      }}
+                      className=""
                     >
-                      <Box sx={{ mr: 2, mt: 0.5 }}>
+                      <div className="">
                         <LocationIcon />
-                      </Box>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              mb: 0.5,
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography variant="subtitle1" sx={{ mr: 1 }}>
+                            <div  className="">}
                               {location.name}
-                            </Typography>
+                            </div>
                             <Chip
                               label={location.isActive ? 'Active' : 'Inactive'}
                               size="small"
@@ -478,77 +411,69 @@ const LocationManagement: React.FC = () => {
                               <Chip
                                 label={`Manager: ${location.manager}`}
                                 size="small"
-                                variant="outlined"
-                                sx={{ ml: 1 }}
+                                
+                                className=""
                               />
                             )}
-                          </Box>
+                          </div>
                         }
                         secondary={
-                          <Box>
-                            <Typography
-                              variant="body2"
+                          <div>
+                            <div
+                              
                               color="textSecondary"
-                              sx={{ mb: 1 }}
-                            >
+                              className=""
+                            >}
                               {location.address}, {location.city},{' '}
                               {location.state}, {location.country}
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Typography
-                                variant="caption"
+                            </div>
+                            <div className="">
+                              <div
+                                
                                 color="textSecondary"
-                                sx={{
-                                  mr: 2,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                }}
+                                className=""
                               >
                                 <PhoneIcon
-                                  sx={{ fontSize: '0.8rem', mr: 0.5 }}
+                                  className=""
                                 />
                                 {location.phone}
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="textSecondary"
-                                sx={{
-                                  mr: 2,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                }}
+                                className=""
                               >
                                 <EmailIcon
-                                  sx={{ fontSize: '0.8rem', mr: 0.5 }}
+                                  className=""
                                 />
                                 {location.email}
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="textSecondary"
                               >
                                 Updated:{' '}
                                 {new Date(
                                   location.updatedAt
                                 ).toLocaleDateString()}
-                              </Typography>
-                            </Box>
-                          </Box>
+                              </div>
+                            </div>
+                          </div>
                         }
                       />
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <div className="">
                         <FormControlLabel
                           control={
-                            <Switch
+                            <Switch}
                               checked={location.isActive}
                               onChange={() =>
-                                handleToggleLocationStatus(location.id)
+                                handleToggleLocationStatus(location.id)}
                               }
                               disabled={loading}
                             />
                           }
                           label={location.isActive ? 'Active' : 'Inactive'}
-                          sx={{ mr: 1 }}
+                          className=""
                         />
                         <IconButton
                           onClick={() => openEditDialog(location)}
@@ -563,16 +488,15 @@ const LocationManagement: React.FC = () => {
                         >
                           <DeleteIcon />
                         </IconButton>
-                      </Box>
-                    </ListItem>
+                      </div>
+                    </div>
                   ))}
                 </List>
               )}
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Location Dialog */}
       <Dialog
         open={showLocationDialog}
@@ -581,126 +505,126 @@ const LocationManagement: React.FC = () => {
         fullWidth
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <LocationIcon sx={{ mr: 1 }} />
+          <div className="">
+            <LocationIcon className="" />
             {editingLocation ? 'Edit Location' : 'Add New Location'}
-          </Box>
+          </div>
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <TextField
+          <div className="">
+            <Input
               fullWidth
               label="Location Name"
               value={newLocation.name}
-              onChange={(e) =>
+              onChange={(e) =>}
                 setNewLocation({ ...newLocation, name: e.target.value })
               }
               margin="normal"
               required
             />
-            <TextField
+            <Input
               fullWidth
               label="Address"
               value={newLocation.address}
-              onChange={(e) =>
+              onChange={(e) =>}
                 setNewLocation({ ...newLocation, address: e.target.value })
               }
               margin="normal"
               required
             />
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
+            <div container spacing={2}>
+              <div item xs={12} sm={6}>
+                <Input
                   fullWidth
                   label="City"
                   value={newLocation.city}
-                  onChange={(e) =>
+                  onChange={(e) =>}
                     setNewLocation({ ...newLocation, city: e.target.value })
                   }
                   margin="normal"
                   required
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
+              </div>
+              <div item xs={12} sm={6}>
+                <Input
                   fullWidth
                   label="State"
                   value={newLocation.state}
-                  onChange={(e) =>
+                  onChange={(e) =>}
                     setNewLocation({ ...newLocation, state: e.target.value })
                   }
                   margin="normal"
                   required
                 />
-              </Grid>
-            </Grid>
-            <TextField
+              </div>
+            </div>
+            <Input
               fullWidth
               label="Country"
               value={newLocation.country}
-              onChange={(e) =>
+              onChange={(e) =>}
                 setNewLocation({ ...newLocation, country: e.target.value })
               }
               margin="normal"
               required
             />
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
+            <div container spacing={2}>
+              <div item xs={12} sm={6}>
+                <Input
                   fullWidth
                   label="Phone"
                   value={newLocation.phone}
-                  onChange={(e) =>
+                  onChange={(e) =>}
                     setNewLocation({ ...newLocation, phone: e.target.value })
                   }
                   margin="normal"
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
+              </div>
+              <div item xs={12} sm={6}>
+                <Input
                   fullWidth
                   label="Email"
                   type="email"
                   value={newLocation.email}
-                  onChange={(e) =>
+                  onChange={(e) =>}
                     setNewLocation({ ...newLocation, email: e.target.value })
                   }
                   margin="normal"
                 />
-              </Grid>
-            </Grid>
+              </div>
+            </div>
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={newLocation.isActive}
                   onChange={(e) =>
-                    setNewLocation({
-                      ...newLocation,
-                      isActive: e.target.checked,
+                    setNewLocation({ 
+                      ...newLocation}
+                      isActive: e.target.checked,}
                     })
                   }
                 />
               }
               label="Active Location"
-              sx={{ mt: 1 }}
+              className=""
             />
-          </Box>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowLocationDialog(false)}>Cancel</Button>
           <Button
-            variant="contained"
+            
             onClick={handleSaveLocation}
             disabled={
               loading ||
               !newLocation.name ||
               !newLocation.address ||
               !newLocation.city ||
-              !newLocation.state
+              !newLocation.state}
             }
             startIcon={
-              loading ? (
-                <CircularProgress size={20} />
+              loading ? (}
+                <Spinner size={20} />
               ) : editingLocation ? (
                 <EditIcon />
               ) : (
@@ -712,8 +636,7 @@ const LocationManagement: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
-
 export default LocationManagement;

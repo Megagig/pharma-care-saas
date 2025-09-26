@@ -1,14 +1,11 @@
-import axios, { AxiosError } from 'axios';
-
 // Create axios instance with base configuration similar to api.ts
-const apiClient = axios.create({
+const apiClient = axios.create({ 
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
   timeout: 30000,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
-  },
-});
+    'Content-Type': 'application/json'}
+  }
 
 export interface SubscriptionPlan {
   _id: string;
@@ -59,8 +56,7 @@ export const subscriptionService = {
   async fetchPlans(options: { sortBy?: string } = {}): Promise<SubscriptionPlan[]> {
     try {
       const response = await apiClient.get('/subscription/plans', {
-        params: { sortBy: options.sortBy },
-      });
+        params: { sortBy: options.sortBy }
       return response.data.data || [];
     } catch (error: unknown) {
       console.error('Failed to fetch subscription plans', error);
@@ -80,12 +76,12 @@ export const subscriptionService = {
   },
 
   // Create a checkout session for a plan
-  async createCheckoutSession({
+  async createCheckoutSession({ 
     planId,
     interval,
     successUrl,
     cancelUrl,
-    couponCode,
+    couponCode}
   }: {
     planId: string;
     interval: 'monthly' | 'yearly';
@@ -99,8 +95,7 @@ export const subscriptionService = {
         interval,
         successUrl,
         cancelUrl,
-        couponCode,
-      });
+        couponCode}
 
       return {
         success: true,
@@ -118,9 +113,9 @@ export const subscriptionService = {
   },
 
   // Handle checkout success
-  async handleCheckoutSuccess({
+  async handleCheckoutSuccess({ 
     sessionId,
-    planId,
+    planId}
   }: {
     sessionId: string;
     planId: string;
@@ -140,8 +135,7 @@ export const subscriptionService = {
   async processPaymentSuccess(sessionId: string) {
     try {
       const response = await apiClient.post('/subscription/payment-success', {
-        sessionId,
-      });
+        sessionId}
       return response.data;
     } catch (error) {
       console.error('Failed to process payment', error);
@@ -153,8 +147,7 @@ export const subscriptionService = {
   async cancelSubscription(subscriptionId: string) {
     try {
       const response = await apiClient.post('/subscription/cancel', {
-        subscriptionId,
-      });
+        subscriptionId}
       return response.data;
     } catch (error) {
       console.error('Failed to cancel subscription', error);
@@ -178,8 +171,7 @@ export const subscriptionService = {
     try {
       const response = await apiClient.put('/subscription/update', {
         planId,
-        interval,
-      });
+        interval}
       return response.data;
     } catch (error) {
       console.error('Failed to update subscription', error);
@@ -202,8 +194,7 @@ export const subscriptionService = {
   async getInvoice(invoiceId: string) {
     try {
       const response = await apiClient.get(`/subscription/invoice/${invoiceId}`, {
-        responseType: 'blob',
-      });
+        responseType: 'blob'}
       return response.data;
     } catch (error) {
       console.error('Failed to fetch invoice', error);
@@ -272,8 +263,7 @@ export const subscriptionService = {
   async applyCoupon(couponCode: string) {
     try {
       const response = await apiClient.post('/subscription/coupon/apply', {
-        couponCode,
-      });
+        couponCode}
       return response.data;
     } catch (error) {
       console.error('Failed to apply coupon', error);
@@ -306,21 +296,21 @@ export const subscriptionService = {
   // Generate comparison table data
   generateComparisonTable(plans: SubscriptionPlan[]) {
     // Implementation details
-    return plans.map((plan) => ({
+    return plans.map((plan) => ({ 
       name: plan.name,
       features: plan.features,
       price: plan.priceNGN,
-      tier: plan.tier,
+      tier: plan.tier}
     }));
   },
 
   // Request custom quote
-  async requestCustomQuote({
+  async requestCustomQuote({ 
     name,
     email,
     phone,
     companySize,
-    message,
+    message}
   }: {
     name: string;
     email: string;

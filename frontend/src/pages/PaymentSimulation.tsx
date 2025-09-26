@@ -1,129 +1,98 @@
-import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  Container,
-  Paper,
-  Typography,
-  Button,
-  Box,
-  Card,
-  CardContent,
-  Divider,
-  Alert,
-  LinearProgress,
-} from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import PaymentIcon from '@mui/icons-material/Payment';
-
+import { Button, Card, CardContent, Progress, Alert, Separator } from '@/components/ui/button';
 const PaymentSimulation: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
-
   const reference = searchParams.get('ref');
   const amount = searchParams.get('amount');
-
   const handlePaymentSuccess = async () => {
     setProcessing(true);
-
     // Simulate payment processing delay
     setTimeout(() => {
       // Redirect to success page with reference
       navigate(`/subscription-management/success?reference=${reference}`);
     }, 2000);
   };
-
   const handlePaymentFailure = () => {
     navigate('/subscription-management?payment=failed');
   };
-
   const handleCancel = () => {
     navigate('/subscription-management');
   };
-
   if (!reference || !amount) {
     return (
-      <Container maxWidth="sm" sx={{ py: 8 }}>
+      <div maxWidth="sm" className="">
         <Alert severity="error">
           Invalid payment session. Please try again.
         </Alert>
         <Button
-          variant="contained"
+          
           onClick={() => navigate('/subscription-management')}
-          sx={{ mt: 2 }}
+          className=""
         >
           Back to Subscription Plans
         </Button>
-      </Container>
+      </div>
     );
   }
-
   return (
-    <Container maxWidth="sm" sx={{ py: 8 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <PaymentIcon color="primary" sx={{ fontSize: 60, mb: 2 }} />
-          <Typography variant="h4" component="h1" gutterBottom>
+    <div maxWidth="sm" className="">
+      <div className="">
+        <div className="">
+          <PaymentIcon color="primary" className="" />
+          <div  component="h1" gutterBottom>
             Payment Simulation
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Development Mode
-          </Typography>
-        </Box>
-
-        <Card sx={{ mb: 4 }}>
+          </div>
+        </div>
+        <Card className="">
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <div  gutterBottom>
               Payment Details
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-
-            <Box
-              sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+            </div>
+            <Separator className="" />
+            <div
+              className=""
             >
-              <Typography>Amount:</Typography>
-              <Typography fontWeight="bold">
+              <div>Amount:</div>
+              <div fontWeight="bold">
                 ₦{Number(amount).toLocaleString()}
-              </Typography>
-            </Box>
-
-            <Box
-              sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+              </div>
+            </div>
+            <div
+              className=""
             >
-              <Typography>Reference:</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <div>Reference:</div>
+              <div  color="text.secondary">
                 {reference}
-              </Typography>
-            </Box>
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography>Status:</Typography>
-              <Typography color="warning.main">Pending Payment</Typography>
-            </Box>
+              </div>
+            </div>
+            <div className="">
+              <div>Status:</div>
+              <div color="warning.main">Pending Payment</div>
+            </div>
           </CardContent>
         </Card>
-
-        <Alert severity="info" sx={{ mb: 4 }}>
-          <Typography variant="body2">
+        <Alert severity="info" className="">
+          <div >
             <strong>Development Mode:</strong> This is a simulated payment page.
             In production, this would redirect to the actual Nomba payment
             gateway.
-          </Typography>
+          </div>
         </Alert>
-
         {processing && (
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="body2" align="center" sx={{ mb: 2 }}>
+          <div className="">
+            <div  align="center" className="">
               Processing payment...
-            </Typography>
-            <LinearProgress />
-          </Box>
+            </div>
+            <Progress />
+          </div>
         )}
-
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+        <div className="">
           <Button
-            variant="contained"
+            
             color="success"
             startIcon={<CheckCircleIcon />}
             onClick={handlePaymentSuccess}
@@ -132,9 +101,8 @@ const PaymentSimulation: React.FC = () => {
           >
             Simulate Success
           </Button>
-
           <Button
-            variant="outlined"
+            
             color="error"
             startIcon={<CancelIcon />}
             onClick={handlePaymentFailure}
@@ -143,26 +111,23 @@ const PaymentSimulation: React.FC = () => {
           >
             Simulate Failure
           </Button>
-
           <Button
-            variant="outlined"
+            
             onClick={handleCancel}
             disabled={processing}
             size="large"
           >
             Cancel
           </Button>
-        </Box>
-
-        <Box sx={{ mt: 4, textAlign: 'center' }}>
-          <Typography variant="caption" color="text.secondary">
+        </div>
+        <div className="">
+          <div  color="text.secondary">
             This simulation will be replaced with real Nomba integration in
             production
-          </Typography>
-        </Box>
-      </Paper>
-    </Container>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
-
 export default PaymentSimulation;

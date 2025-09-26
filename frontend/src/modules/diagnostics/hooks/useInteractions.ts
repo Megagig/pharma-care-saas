@@ -1,13 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { interactionApi } from '../api/interactionApi';
-import { useUIStore } from '../../../stores';
-import type {
     DrugInteraction,
     AllergyAlert,
     Contraindication,
     ApiResponse
-} from '../types';
-import React from 'react';
+
 
 // Error type for API calls
 type ApiError = {
@@ -68,11 +63,11 @@ export const useCheckInteractions = (
         return () => clearTimeout(timer);
     }, [medications, patientAllergies, debounceMs]);
 
-    return useQuery({
+    return useQuery({ 
         queryKey: interactionQueryKeys.check(debouncedMedications, debouncedAllergies),
         queryFn: () => interactionApi.checkInteractions({
             medications: debouncedMedications,
-            patientAllergies: debouncedAllergies,
+            patientAllergies: debouncedAllergies}
         }),
         enabled: enabled && debouncedMedications.length >= 2, // Need at least 2 medications
         staleTime: 5 * 60 * 1000, // 5 minutes
@@ -83,20 +78,19 @@ export const useCheckInteractions = (
                 return false;
             }
             return failureCount < 3;
-        },
-    });
+        }
 };
 
 /**
  * Hook to get drug information for medication lookup
  */
 export const useDrugInfo = (drugName: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: interactionQueryKeys.drugInfo(drugName),
         queryFn: () => interactionApi.getDrugInfo(drugName),
         enabled: !!drugName && drugName.length >= 2,
         staleTime: 30 * 60 * 1000, // 30 minutes for drug info
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -114,12 +108,12 @@ export const useSearchDrugs = (query: string, limit: number = 10, debounceMs: nu
         return () => clearTimeout(timer);
     }, [query, debounceMs]);
 
-    return useQuery({
+    return useQuery({ 
         queryKey: interactionQueryKeys.search(debouncedQuery, limit),
         queryFn: () => interactionApi.searchDrugs(debouncedQuery, limit),
         enabled: debouncedQuery.length >= 2, // Only search with 2+ characters
         staleTime: 10 * 60 * 1000, // 10 minutes for search results
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -127,25 +121,24 @@ export const useSearchDrugs = (query: string, limit: number = 10, debounceMs: nu
  * Hook to check allergy contraindications
  */
 export const useAllergyCheck = (medications: string[], allergies: string[]) => {
-    return useQuery({
-        queryKey: interactionQueryKeys.allergies(medications, allergies),
+    return useQuery({ 
+        queryKey: interactionQueryKeys.allergies(medications, allergies)}
         queryFn: () => interactionApi.checkAllergies({ medications, allergies }),
         enabled: medications.length > 0 && allergies.length > 0,
         staleTime: 10 * 60 * 1000, // 10 minutes for allergy checks
-        refetchOnWindowFocus: false,
-    });
+        refetchOnWindowFocus: false}
 };
 
 /**
  * Hook to get detailed interaction information
  */
 export const useInteractionDetails = (drug1: string, drug2: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: interactionQueryKeys.details(drug1, drug2),
         queryFn: () => interactionApi.getInteractionDetails(drug1, drug2),
         enabled: !!drug1 && !!drug2,
         staleTime: 60 * 60 * 1000, // 1 hour for interaction details
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -153,12 +146,12 @@ export const useInteractionDetails = (drug1: string, drug2: string) => {
  * Hook to get drug class interactions
  */
 export const useClassInteractions = (drugClass: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: interactionQueryKeys.classInteractions(drugClass),
         queryFn: () => interactionApi.getClassInteractions(drugClass),
         enabled: !!drugClass,
         staleTime: 60 * 60 * 1000, // 1 hour for class interactions
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -166,12 +159,12 @@ export const useClassInteractions = (drugClass: string) => {
  * Hook to get food interactions
  */
 export const useFoodInteractions = (drugName: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: interactionQueryKeys.foodInteractions(drugName),
         queryFn: () => interactionApi.getFoodInteractions(drugName),
         enabled: !!drugName,
         staleTime: 60 * 60 * 1000, // 1 hour for food interactions
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -179,12 +172,12 @@ export const useFoodInteractions = (drugName: string) => {
  * Hook to get pregnancy and lactation information
  */
 export const usePregnancyInfo = (drugName: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: interactionQueryKeys.pregnancyInfo(drugName),
         queryFn: () => interactionApi.getPregnancyInfo(drugName),
         enabled: !!drugName,
         staleTime: 24 * 60 * 60 * 1000, // 24 hours for pregnancy info
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -199,7 +192,7 @@ export const useManualInteractionCheck = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({  })
         mutationFn: (data: { medications: string[]; patientAllergies?: string[] }) =>
             interactionApi.checkInteractions(data),
         onSuccess: (response, variables) => {
@@ -219,34 +212,32 @@ export const useManualInteractionCheck = () => {
                     result.contraindications.length;
 
                 if (totalIssues === 0) {
-                    addNotification({
+                    addNotification({ 
                         type: 'success',
                         title: 'No Interactions Found',
                         message: 'No significant drug interactions, allergies, or contraindications detected.',
-                        duration: 4000,
+                        duration: 4000}
                     });
                 } else {
                     const severityLevel = result.interactions.some(i => i.severity === 'major') ||
                         result.allergicReactions.some(a => a.severity === 'severe') ? 'error' : 'warning';
 
-                    addNotification({
+                    addNotification({ 
                         type: severityLevel,
-                        title: 'Interactions Detected',
+                        title: 'Interactions Detected'}
                         message: `Found ${totalIssues} potential issue(s). Please review carefully.`,
-                        duration: 6000,
-                    });
+                        duration: 6000}
                 }
             }
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Interaction Check Failed',
                 message: error.message || 'Failed to check drug interactions. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -256,26 +247,26 @@ export const useBatchInteractionCheck = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: async (drugCombinations: Array<{
             medications: string[];
             patientAllergies?: string[];
-            label?: string;
+            label?: string; })
         }>) => {
             const results = await Promise.allSettled(
                 drugCombinations.map(combo =>
-                    interactionApi.checkInteractions({
+                    interactionApi.checkInteractions({ 
                         medications: combo.medications,
-                        patientAllergies: combo.patientAllergies,
+                        patientAllergies: combo.patientAllergies}
                     })
                 )
             );
 
-            return results.map((result, index) => ({
+            return results.map((result, index) => ({ 
                 ...drugCombinations[index],
                 status: result.status,
                 data: result.status === 'fulfilled' ? result.value.data : null,
-                error: result.status === 'rejected' ? result.reason : null,
+                error: result.status === 'rejected' ? result.reason : null}
             }));
         },
         onSuccess: (results) => {
@@ -293,30 +284,27 @@ export const useBatchInteractionCheck = () => {
             const errorCount = results.filter(r => r.status === 'rejected').length;
 
             if (errorCount === 0) {
-                addNotification({
+                addNotification({ 
                     type: 'success',
-                    title: 'Batch Check Complete',
+                    title: 'Batch Check Complete'}
                     message: `Successfully checked ${successCount} drug combination(s).`,
-                    duration: 4000,
-                });
+                    duration: 4000}
             } else {
-                addNotification({
+                addNotification({ 
                     type: 'warning',
-                    title: 'Batch Check Partial',
+                    title: 'Batch Check Partial'}
                     message: `Checked ${successCount} combination(s), ${errorCount} failed.`,
-                    duration: 5000,
-                });
+                    duration: 5000}
             }
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Batch Check Failed',
                 message: error.message || 'Failed to perform batch interaction check.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 // ===============================
@@ -345,10 +333,10 @@ export const usePrefetchDrugInfo = () => {
     const queryClient = useQueryClient();
 
     return (drugName: string) => {
-        queryClient.prefetchQuery({
+        queryClient.prefetchQuery({ 
             queryKey: interactionQueryKeys.drugInfo(drugName),
             queryFn: () => interactionApi.getDrugInfo(drugName),
-            staleTime: 30 * 60 * 1000, // 30 minutes
+            staleTime: 30 * 60 * 1000, // 30 minutes })
         });
     };
 };
@@ -398,18 +386,17 @@ export const useInteractionMonitoring = (
 ) => {
     const { enableBackgroundRefetch = false, refetchInterval = 5 * 60 * 1000 } = options || {};
 
-    return useQuery({
+    return useQuery({ 
         queryKey: interactionQueryKeys.check(medications, allergies),
         queryFn: () => interactionApi.checkInteractions({
             medications,
-            patientAllergies: allergies,
+            patientAllergies: allergies}
         }),
         enabled: medications.length >= 2,
         staleTime: 2 * 60 * 1000, // 2 minutes
         refetchInterval: enableBackgroundRefetch ? refetchInterval : false,
         refetchIntervalInBackground: enableBackgroundRefetch,
-        refetchOnWindowFocus: false,
-    });
+        refetchOnWindowFocus: false}
 };
 
 export default useCheckInteractions;

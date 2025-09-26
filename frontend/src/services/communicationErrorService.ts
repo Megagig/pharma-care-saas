@@ -1,7 +1,3 @@
-import { retryMechanism, RetryConfig } from '../utils/retryMechanism';
-import { performanceMonitor } from '../utils/performanceMonitor';
-import { socketService } from './socketService';
-
 // Error types specific to communication features
 export type CommunicationErrorType =
     | 'connection_lost'
@@ -144,8 +140,7 @@ class CommunicationErrorService {
                 suggestedActions: [
                     { label: 'Retry', type: 'retry', primary: true },
                     { label: 'Check Connection', type: 'custom', handler: this.checkConnection },
-                ],
-            });
+                ]}
         }
 
         // WebSocket errors
@@ -158,8 +153,7 @@ class CommunicationErrorService {
                 suggestedActions: [
                     { label: 'Reconnect', type: 'custom', handler: this.reconnectSocket, primary: true },
                     { label: 'Refresh Page', type: 'refresh' },
-                ],
-            });
+                ]}
         }
 
         // Authentication errors
@@ -171,8 +165,7 @@ class CommunicationErrorService {
                 userMessage: 'Your session has expired. Please log in again.',
                 suggestedActions: [
                     { label: 'Log In', type: 'navigate', handler: () => window.location.href = '/login', primary: true },
-                ],
-            });
+                ]}
         }
 
         // Permission errors
@@ -184,8 +177,7 @@ class CommunicationErrorService {
                 userMessage: 'You do not have permission to perform this action.',
                 suggestedActions: [
                     { label: 'Contact Support', type: 'contact_support' },
-                ],
-            });
+                ]}
         }
 
         // Rate limiting
@@ -197,8 +189,7 @@ class CommunicationErrorService {
                 userMessage: 'Too many requests. Please wait a moment and try again.',
                 suggestedActions: [
                     { label: 'Wait and Retry', type: 'retry', primary: true },
-                ],
-            });
+                ]}
         }
 
         // Server errors
@@ -211,8 +202,7 @@ class CommunicationErrorService {
                 suggestedActions: [
                     { label: 'Retry', type: 'retry', primary: true },
                     { label: 'Contact Support', type: 'contact_support' },
-                ],
-            });
+                ]}
         }
 
         // Timeout errors
@@ -224,8 +214,7 @@ class CommunicationErrorService {
                 userMessage: 'Request timed out. Please try again.',
                 suggestedActions: [
                     { label: 'Retry', type: 'retry', primary: true },
-                ],
-            });
+                ]}
         }
 
         // Validation errors
@@ -237,8 +226,7 @@ class CommunicationErrorService {
                 userMessage: 'Please check your input and try again.',
                 suggestedActions: [
                     { label: 'Review Input', type: 'custom' },
-                ],
-            });
+                ]}
         }
 
         // Storage quota errors
@@ -251,8 +239,7 @@ class CommunicationErrorService {
                 suggestedActions: [
                     { label: 'Clear Cache', type: 'custom', handler: this.clearCache },
                     { label: 'Contact Support', type: 'contact_support' },
-                ],
-            });
+                ]}
         }
 
         // Context-specific errors
@@ -266,8 +253,7 @@ class CommunicationErrorService {
                     suggestedActions: [
                         { label: 'Retry Send', type: 'retry', primary: true },
                         { label: 'Save Draft', type: 'custom' },
-                    ],
-                });
+                    ]}
             }
 
             if (context.includes('file') && context.includes('upload')) {
@@ -279,8 +265,7 @@ class CommunicationErrorService {
                     suggestedActions: [
                         { label: 'Retry Upload', type: 'retry', primary: true },
                         { label: 'Check File Size', type: 'custom' },
-                    ],
-                });
+                    ]}
             }
         }
 
@@ -294,8 +279,7 @@ class CommunicationErrorService {
                 { label: 'Retry', type: 'retry', primary: true },
                 { label: 'Refresh Page', type: 'refresh' },
                 { label: 'Contact Support', type: 'contact_support' },
-            ],
-        });
+            ]}
     }
 
     /**
@@ -366,8 +350,7 @@ class CommunicationErrorService {
             context: error.context,
             severity: error.severity,
             timestamp: new Date(error.timestamp).toISOString(),
-            details: error.details,
-        });
+            details: error.details}
     }
 
     /**
@@ -378,8 +361,7 @@ class CommunicationErrorService {
             error_type: error.type,
             severity: error.severity,
             context: error.context || 'unknown',
-            recoverable: error.recoverable.toString(),
-        });
+            recoverable: error.recoverable.toString()}
     }
 
     /**

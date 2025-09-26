@@ -1,48 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  TextField,
-  InputAdornment,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Chip,
-  Button,
-  IconButton,
-  Tooltip,
-  Badge,
-  LinearProgress,
-  Alert,
-} from '@mui/material';
-import {
-  Search,
-  FilterList,
-  Refresh,
-  Assignment,
-  Schedule,
-  CheckCircle,
-  Archive,
-  PriorityHigh,
-  TrendingUp,
-  Assessment,
-  Download,
-  Add,
-} from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import QueryCard from './QueryCard';
+
 import NewConversationModal from './NewConversationModal';
-import { useCommunicationStore } from '../../stores/communicationStore';
-import { Conversation, ConversationFilters } from '../../stores/types';
+
+import { Button, Input, Label, Card, CardContent, Badge, Select, Tooltip, Progress, Alert, Tabs } from '@/components/ui/button';
 
 interface PatientQueryDashboardProps {
   patientId?: string;
@@ -51,7 +11,6 @@ interface PatientQueryDashboardProps {
   onQuerySelect?: (query: Conversation) => void;
   onCreateQuery?: () => void;
 }
-
 interface QueryAnalytics {
   totalQueries: number;
   openQueries: number;
@@ -63,13 +22,12 @@ interface QueryAnalytics {
     count: number;
   }[];
 }
-
-const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
+const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({ 
   patientId,
   height = '600px',
   showAnalytics = true,
   onQuerySelect,
-  onCreateQuery,
+  onCreateQuery
 }) => {
   const {
     conversations,
@@ -83,7 +41,6 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
     archiveConversation,
     updateConversation,
   } = useCommunicationStore();
-
   // Local state
   const [activeTab, setActiveTab] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
@@ -93,22 +50,19 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
   const [dateRange, setDateRange] = useState<{
     start: Date | null;
     end: Date | null;
-  }>({
+  }>({ 
     start: null,
-    end: null,
+    end: null
   });
   const [showNewQueryModal, setShowNewQueryModal] = useState(false);
   const [selectedQueries, setSelectedQueries] = useState<string[]>([]);
-
   // Filter conversations to only patient queries
   const patientQueries = useMemo(() => {
     return conversations.filter((conv) => {
       // Filter by type
       if (conv.type !== 'patient_query') return false;
-
       // Filter by patient ID if provided
       if (patientId && conv.patientId !== patientId) return false;
-
       // Apply search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -119,17 +73,13 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
         const tagMatch = conv.tags.some((tag) =>
           tag.toLowerCase().includes(searchLower)
         );
-
         if (!titleMatch && !participantMatch && !tagMatch) return false;
       }
-
       // Apply status filter
       if (statusFilter !== 'all' && conv.status !== statusFilter) return false;
-
       // Apply priority filter
       if (priorityFilter !== 'all' && conv.priority !== priorityFilter)
         return false;
-
       // Apply date range filter
       if (dateRange.start || dateRange.end) {
         const queryDate = new Date(conv.createdAt);
@@ -137,7 +87,6 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
           return false;
         if (dateRange.end && queryDate > endOfDay(dateRange.end)) return false;
       }
-
       return true;
     });
   }, [
@@ -148,7 +97,6 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
     priorityFilter,
     dateRange,
   ]);
-
   // Group queries by status for tabs
   const queriesByStatus = useMemo(() => {
     return {
@@ -161,7 +109,6 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
       archived: patientQueries.filter((q) => q.status === 'archived'),
     };
   }, [patientQueries]);
-
   // Calculate analytics
   const analytics: QueryAnalytics = useMemo(() => {
     const totalQueries = patientQueries.length;
@@ -170,11 +117,9 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
     const urgentQueries = patientQueries.filter(
       (q) => q.priority === 'urgent'
     ).length;
-
     // Calculate average response time (mock calculation)
     const averageResponseTime =
       resolvedQueries > 0 ? Math.round(Math.random() * 24 + 2) : 0; // Mock: 2-26 hours
-
     // Generate trend data for the last 7 days
     const queryTrends = Array.from({ length: 7 }, (_, i) => {
       const date = subDays(new Date(), 6 - i);
@@ -182,13 +127,11 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
         const queryDate = new Date(q.createdAt);
         return format(queryDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
       });
-
       return {
         period: format(date, 'MMM dd'),
         count: dayQueries.length,
       };
     });
-
     return {
       totalQueries,
       openQueries,
@@ -198,7 +141,6 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
       queryTrends,
     };
   }, [patientQueries, queriesByStatus]);
-
   // Tab configuration
   const tabs = [
     { label: 'All Queries', value: 'all', count: queriesByStatus.all.length },
@@ -219,11 +161,9 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
       count: queriesByStatus.archived.length,
     },
   ];
-
   // Get current tab queries
   const currentTabQueries =
     queriesByStatus[tabs[activeTab].value as keyof typeof queriesByStatus];
-
   // Load conversations on mount
   useEffect(() => {
     const filters: ConversationFilters = {
@@ -232,15 +172,12 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
       sortBy: 'lastMessageAt',
       sortOrder: 'desc',
     };
-
     fetchConversations(filters);
   }, [patientId, fetchConversations]);
-
   // Handle tab change
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   // Handle query actions
   const handleQueryAction = async (action: string, queryId: string) => {
     try {
@@ -265,7 +202,6 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
       console.error('Query action failed:', error);
     }
   };
-
   // Handle bulk actions
   const handleBulkAction = async (action: string) => {
     try {
@@ -279,14 +215,12 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
             return Promise.resolve();
         }
       });
-
       await Promise.all(promises);
       setSelectedQueries([]);
     } catch (error) {
       console.error('Bulk action failed:', error);
     }
   };
-
   // Handle refresh
   const handleRefresh = () => {
     const filters: ConversationFilters = {
@@ -295,16 +229,13 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
       sortBy: 'lastMessageAt',
       sortOrder: 'desc',
     };
-
     fetchConversations(filters);
   };
-
   // Handle export
   const handleExport = () => {
     // TODO: Implement export functionality
     console.log('Export queries:', currentTabQueries);
   };
-
   // Clear all filters
   const handleClearFilters = () => {
     setSearchTerm('');
@@ -314,25 +245,18 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
     setDateRange({ start: null, end: null });
     clearConversationFilters();
   };
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ height, display: 'flex', flexDirection: 'column' }}>
+      <div className="">
         {/* Header */}
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 2,
-            }}
+        <div className="">
+          <div
+            className=""
           >
-            <Typography variant="h5" component="h1">
+            <div  component="h1">
               Patient Query Dashboard
-            </Typography>
-
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            </div>
+            <div className="">
               <Tooltip title="Refresh">
                 <IconButton
                   onClick={handleRefresh}
@@ -341,15 +265,13 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
                   <Refresh />
                 </IconButton>
               </Tooltip>
-
               <Tooltip title="Export">
                 <IconButton onClick={handleExport}>
                   <Download />
                 </IconButton>
               </Tooltip>
-
               <Button
-                variant="contained"
+                
                 startIcon={<Add />}
                 onClick={() => {
                   if (onCreateQuery) {
@@ -358,129 +280,115 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
                     setShowNewQueryModal(true);
                   }
                 }}
-              >
                 New Query
               </Button>
-            </Box>
-          </Box>
-
+            </div>
+          </div>
           {/* Analytics Cards */}
           {showAnalytics && (
-            <Grid container spacing={2} sx={{ mb: 2 }}>
-              <Grid item xs={12} sm={6} md={2.4}>
+            <div container spacing={2} className="">
+              <div item xs={12} sm={6} md={2.4}>
                 <Card>
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CardContent className="">
+                    <div className="">
                       <Assignment color="primary" />
-                      <Box>
-                        <Typography variant="h6">
+                      <div>
+                        <div >
                           {analytics.totalQueries}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Total Queries
-                        </Typography>
-                      </Box>
-                    </Box>
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={2.4}>
+              </div>
+              <div item xs={12} sm={6} md={2.4}>
                 <Card>
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CardContent className="">
+                    <div className="">
                       <Schedule color="warning" />
-                      <Box>
-                        <Typography variant="h6">
+                      <div>
+                        <div >
                           {analytics.openQueries}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Open Queries
-                        </Typography>
-                      </Box>
-                    </Box>
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={2.4}>
+              </div>
+              <div item xs={12} sm={6} md={2.4}>
                 <Card>
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CardContent className="">
+                    <div className="">
                       <CheckCircle color="success" />
-                      <Box>
-                        <Typography variant="h6">
+                      <div>
+                        <div >
                           {analytics.resolvedQueries}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Resolved
-                        </Typography>
-                      </Box>
-                    </Box>
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={2.4}>
+              </div>
+              <div item xs={12} sm={6} md={2.4}>
                 <Card>
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CardContent className="">
+                    <div className="">
                       <PriorityHigh color="error" />
-                      <Box>
-                        <Typography variant="h6">
+                      <div>
+                        <div >
                           {analytics.urgentQueries}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Urgent
-                        </Typography>
-                      </Box>
-                    </Box>
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={2.4}>
+              </div>
+              <div item xs={12} sm={6} md={2.4}>
                 <Card>
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CardContent className="">
+                    <div className="">
                       <TrendingUp color="info" />
-                      <Box>
-                        <Typography variant="h6">
+                      <div>
+                        <div >
                           {analytics.averageResponseTime}h
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Avg Response
-                        </Typography>
-                      </Box>
-                    </Box>
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
+              </div>
+            </div>
           )}
-
           {/* Filters */}
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={3}>
-              <TextField
+          <div container spacing={2} alignItems="center">
+            <div item xs={12} md={3}>
+              <Input
                 fullWidth
                 size="small"
                 placeholder="Search queries..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search />
-                    </InputAdornment>
-                  ),
-                }}
+                
               />
-            </Grid>
-
-            <Grid item xs={6} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
+            </div>
+            <div item xs={6} md={2}>
+              <div fullWidth size="small">
+                <Label>Status</Label>
                 <Select
                   value={statusFilter}
                   label="Status"
@@ -491,12 +399,11 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
                   <MenuItem value="resolved">Resolved</MenuItem>
                   <MenuItem value="archived">Archived</MenuItem>
                 </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={6} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Priority</InputLabel>
+              </div>
+            </div>
+            <div item xs={6} md={2}>
+              <div fullWidth size="small">
+                <Label>Priority</Label>
                 <Select
                   value={priorityFilter}
                   label="Priority"
@@ -508,171 +415,145 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
                   <MenuItem value="high">High</MenuItem>
                   <MenuItem value="urgent">Urgent</MenuItem>
                 </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={6} md={2}>
+              </div>
+            </div>
+            <div item xs={6} md={2}>
               <DatePicker
                 label="Start Date"
                 value={dateRange.start}
-                onChange={(date) =>
+                onChange={(date) =>}
                   setDateRange((prev) => ({ ...prev, start: date }))
                 }
-                slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                slotProps={{ textField: { size: 'small', fullWidth: true }
               />
-            </Grid>
-
-            <Grid item xs={6} md={2}>
+            </div>
+            <div item xs={6} md={2}>
               <DatePicker
                 label="End Date"
                 value={dateRange.end}
-                onChange={(date) =>
+                onChange={(date) =>}
                   setDateRange((prev) => ({ ...prev, end: date }))
                 }
-                slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                slotProps={{ textField: { size: 'small', fullWidth: true }
               />
-            </Grid>
-
-            <Grid item xs={12} md={1}>
+            </div>
+            <div item xs={12} md={1}>
               <Button
-                variant="outlined"
+                
                 startIcon={<FilterList />}
                 onClick={handleClearFilters}
                 size="small"
               >
                 Clear
               </Button>
-            </Grid>
-          </Grid>
-        </Box>
-
+            </div>
+          </div>
+        </div>
         {/* Loading indicator */}
-        {loading.fetchConversations && <LinearProgress />}
-
+        {loading.fetchConversations && <Progress />}
         {/* Error display */}
         {errors.fetchConversations && (
-          <Alert severity="error" sx={{ m: 2 }}>
+          <Alert severity="error" className="">
             {errors.fetchConversations}
           </Alert>
         )}
-
         {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <div className="">
           <Tabs value={activeTab} onChange={handleTabChange}>
             {tabs.map((tab, index) => (
               <Tab
                 key={tab.value}
                 label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <div className="">}
                     {tab.label}
                     <Badge badgeContent={tab.count} color="primary" />
-                  </Box>
+                  </div>
                 }
               />
             ))}
           </Tabs>
-        </Box>
-
+        </div>
         {/* Bulk actions */}
         {selectedQueries.length > 0 && (
-          <Box
-            sx={{
-              p: 2,
-              bgcolor: 'action.selected',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-            }}
+          <div
+            className=""
           >
-            <Typography variant="body2">
+            <div >
               {selectedQueries.length} queries selected
-            </Typography>
-
+            </div>
             <Button
               size="small"
-              variant="outlined"
+              
               onClick={() => handleBulkAction('resolve')}
             >
               Resolve Selected
             </Button>
-
             <Button
               size="small"
-              variant="outlined"
+              
               onClick={() => handleBulkAction('archive')}
             >
               Archive Selected
             </Button>
-
             <Button
               size="small"
-              variant="text"
+              
               onClick={() => setSelectedQueries([])}
             >
               Clear Selection
             </Button>
-          </Box>
+          </div>
         )}
-
         {/* Query List */}
-        <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+        <div className="">
           {currentTabQueries.length === 0 ? (
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                textAlign: 'center',
-              }}
+            <div
+              className=""
             >
               <Assessment
-                sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }}
+                className=""
               />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
+              <div  color="text.secondary" gutterBottom>
                 No queries found
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              </div>
+              <div  color="text.secondary" className="">
                 {activeTab === 0
                   ? 'No patient queries match your current filters.'
                   : `No ${tabs[activeTab].label.toLowerCase()} queries found.`}
-              </Typography>
+              </div>
               {activeTab === 0 && (
                 <Button
-                  variant="contained"
+                  
                   startIcon={<Add />}
                   onClick={() => setShowNewQueryModal(true)}
                 >
                   Create First Query
                 </Button>
               )}
-            </Box>
+            </div>
           ) : (
-            <Grid container spacing={2}>
+            <div container spacing={2}>
               {currentTabQueries.map((query) => (
-                <Grid item xs={12} key={query._id}>
+                <div item xs={12} key={query._id}>
                   <QueryCard
                     query={query}
-                    selected={selectedQueries.includes(query._id)}
+                    
                     onSelect={(selected) => {
                       if (selected) {
-                        setSelectedQueries((prev) => [...prev, query._id]);
+                        setSelectedQueries((prev) => [...prev, query._id]);}
                       } else {
                         setSelectedQueries((prev) =>
                           prev.filter((id) => id !== query._id)
                         );
                       }
-                    }}
                     onClick={() => onQuerySelect?.(query)}
                     onAction={handleQueryAction}
                   />
-                </Grid>
+                </div>
               ))}
-            </Grid>
+            </div>
           )}
-        </Box>
-
+        </div>
         {/* New Query Modal */}
         <NewConversationModal
           open={showNewQueryModal}
@@ -680,9 +561,8 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
           defaultType="patient_query"
           patientId={patientId}
         />
-      </Box>
+      </div>
     </LocalizationProvider>
   );
 };
-
 export default PatientQueryDashboard;

@@ -1,36 +1,4 @@
-import { apiHelpers } from './api';
 import axios from 'axios';
-import { format, addMonths } from 'date-fns';
-import {
-  MedicationTherapyReview,
-  DrugTherapyProblem,
-  MTRIntervention,
-  MTRFollowUp,
-  TherapyPlan,
-  MTRMedicationEntry,
-  CreateMTRData as TypedCreateMTRData,
-  UpdateMTRData as TypedUpdateMTRData,
-  CreateDTPData as TypedCreateDTPData,
-  UpdateDTPData as TypedUpdateDTPData,
-  CreateInterventionData as TypedCreateInterventionData,
-  UpdateInterventionData as TypedUpdateInterventionData,
-  CreateFollowUpData as TypedCreateFollowUpData,
-  UpdateFollowUpData as TypedUpdateFollowUpData,
-  MTRSearchParams as TypedMTRSearchParams,
-  DTPSearchParams as TypedDTPSearchParams,
-  InterventionSearchParams as TypedInterventionSearchParams,
-  FollowUpSearchParams as TypedFollowUpSearchParams,
-  MTRResponse,
-  DTPResponse,
-  InterventionResponse,
-  FollowUpResponse,
-  MTRListResponse,
-  DTPListResponse,
-  InterventionListResponse,
-  FollowUpListResponse,
-} from '../types/mtr';
-import { ApiResponse } from '../types/patientManagement';
-
 // ===============================
 // ERROR HANDLING TYPES
 // ===============================
@@ -208,7 +176,6 @@ function _transformDatesForAPI(
 ): Record<string, unknown> {
   const transformed = { ...obj } as Record<string, unknown>;
 
-  Object.keys(transformed).forEach((key) => {
     const value = transformed[key];
     if (value instanceof Date) {
       transformed[key] = value.toISOString();
@@ -409,7 +376,6 @@ export const formatSearchParams = (
 ): URLSearchParams => {
   const searchParams = new URLSearchParams();
 
-  Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       if (Array.isArray(value)) {
         value.forEach((item) => searchParams.append(key, item.toString()));
@@ -683,8 +649,7 @@ export const mtrService = {
 
         if (medicationErrors.length > 0) {
           throw new MTRValidationError('Medication validation failed', {
-            medications: medicationErrors,
-          });
+            medications: medicationErrors}
         }
       }
 
@@ -693,8 +658,7 @@ export const mtrService = {
         const planErrors = validateTherapyPlan(sessionData.plan, false);
         if (planErrors.length > 0) {
           throw new MTRValidationError('Therapy plan validation failed', {
-            plan: planErrors,
-          });
+            plan: planErrors}
         }
       }
 
@@ -788,8 +752,7 @@ export const mtrService = {
         const planErrors = validateTherapyPlan(stepData.plan as Partial<TherapyPlan>, true);
         if (planErrors.length > 0) {
           throw new MTRValidationError('Cannot complete plan development - validation failed', {
-            plan: planErrors,
-          });
+            plan: planErrors}
         }
       }
 
@@ -1527,9 +1490,9 @@ export const mtrService = {
   async getActiveDrugTherapyProblems(
     params: Omit<TypedDTPSearchParams, 'status'> = {}
   ) {
-    return this.getDrugTherapyProblems({
+    return this.getDrugTherapyProblems({ 
       ...params,
-      status: 'identified,addressed,monitoring',
+      status: 'identified,addressed,monitoring'}
     });
   },
 
@@ -1812,8 +1775,7 @@ export const mtrService = {
 
       const response = await apiHelpers.post('/mtr/bulk-update-status', {
         sessionIds,
-        status,
-      });
+        status}
 
       return response.data.data as { updated: number; failed: string[] };
     } catch (error) {
@@ -1964,8 +1926,7 @@ export const mtrService = {
 
       // Convert JSON response to blob if needed
       const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-        type: 'application/json',
-      });
+        type: 'application/json'}
 
       return blob;
     } catch (error) {

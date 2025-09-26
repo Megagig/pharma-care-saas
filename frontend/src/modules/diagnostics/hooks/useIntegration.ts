@@ -1,7 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { diagnosticIntegrationApi } from '../api/integrationApi';
-import { toast } from 'react-hot-toast';
-
 export interface CreateClinicalNoteFromDiagnosticData {
     diagnosticRequestId: string;
     diagnosticResultId?: string;
@@ -45,7 +41,7 @@ export interface CreateMTRFromDiagnosticData {
 export const useCreateClinicalNoteFromDiagnostic = () => {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (data: CreateClinicalNoteFromDiagnosticData) =>
             diagnosticIntegrationApi.createClinicalNoteFromDiagnostic(data),
         onSuccess: (response, variables) => {
@@ -53,17 +49,16 @@ export const useCreateClinicalNoteFromDiagnostic = () => {
 
             // Invalidate related queries
             queryClient.invalidateQueries({
-                queryKey: ['clinicalNotes', variables.patientId],
+                queryKey: ['clinicalNotes', variables.patientId]}
             });
-            queryClient.invalidateQueries({
-                queryKey: ['patientTimeline', variables.patientId],
+            queryClient.invalidateQueries({ 
+                queryKey: ['patientTimeline', variables.patientId]}
             });
         },
         onError: (error: any) => {
             const message = error?.response?.data?.error?.message || 'Failed to create clinical note';
             toast.error(message);
-        },
-    });
+        }
 };
 
 /**
@@ -72,28 +67,27 @@ export const useCreateClinicalNoteFromDiagnostic = () => {
 export const useAddDiagnosticDataToMTR = () => {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useMutation({  })
         mutationFn: ({ mtrId, data }: { mtrId: string; data: AddDiagnosticDataToMTRData }) =>
             diagnosticIntegrationApi.addDiagnosticDataToMTR(mtrId, data),
         onSuccess: (response, variables) => {
             toast.success('MTR enriched successfully with diagnostic data');
 
             // Invalidate related queries
-            queryClient.invalidateQueries({
-                queryKey: ['mtr', variables.mtrId],
+            queryClient.invalidateQueries({ 
+                queryKey: ['mtr', variables.mtrId]}
             });
-            queryClient.invalidateQueries({
-                queryKey: ['mtrs', variables.data.patientId],
+            queryClient.invalidateQueries({ 
+                queryKey: ['mtrs', variables.data.patientId]}
             });
-            queryClient.invalidateQueries({
-                queryKey: ['patientTimeline', variables.data.patientId],
+            queryClient.invalidateQueries({ 
+                queryKey: ['patientTimeline', variables.data.patientId]}
             });
         },
         onError: (error: any) => {
             const message = error?.response?.data?.error?.message || 'Failed to enrich MTR with diagnostic data';
             toast.error(message);
-        },
-    });
+        }
 };
 
 /**
@@ -102,7 +96,7 @@ export const useAddDiagnosticDataToMTR = () => {
 export const useCreateMTRFromDiagnostic = () => {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (data: CreateMTRFromDiagnosticData) =>
             diagnosticIntegrationApi.createMTRFromDiagnostic(data),
         onSuccess: (response, variables) => {
@@ -110,17 +104,16 @@ export const useCreateMTRFromDiagnostic = () => {
 
             // Invalidate related queries
             queryClient.invalidateQueries({
-                queryKey: ['mtrs', variables.patientId],
+                queryKey: ['mtrs', variables.patientId]}
             });
-            queryClient.invalidateQueries({
-                queryKey: ['patientTimeline', variables.patientId],
+            queryClient.invalidateQueries({ 
+                queryKey: ['patientTimeline', variables.patientId]}
             });
         },
         onError: (error: any) => {
             const message = error?.response?.data?.error?.message || 'Failed to create MTR from diagnostic';
             toast.error(message);
-        },
-    });
+        }
 };
 
 /**
@@ -137,17 +130,15 @@ export const useUnifiedPatientTimeline = (
 ) => {
     const { startDate, endDate, limit, enabled = true } = options;
 
-    return useQuery({
+    return useQuery({  })
         queryKey: ['patientTimeline', patientId, { startDate, endDate, limit }],
         queryFn: () => diagnosticIntegrationApi.getUnifiedPatientTimeline(patientId, {
             startDate,
             endDate,
-            limit,
-        }),
+            limit, },
         enabled: enabled && !!patientId,
         staleTime: 5 * 60 * 1000, // 5 minutes
-        refetchOnWindowFocus: false,
-    });
+        refetchOnWindowFocus: false}
 };
 
 /**
@@ -161,12 +152,12 @@ export const useCrossReferenceWithExistingRecords = (
 ) => {
     const { enabled = true } = options;
 
-    return useQuery({
+    return useQuery({ 
         queryKey: ['crossReference', diagnosticRequestId],
         queryFn: () => diagnosticIntegrationApi.crossReferenceWithExistingRecords(diagnosticRequestId),
         enabled: enabled && !!diagnosticRequestId,
         staleTime: 10 * 60 * 1000, // 10 minutes
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -181,12 +172,12 @@ export const useIntegrationOptions = (
 ) => {
     const { enabled = true } = options;
 
-    return useQuery({
+    return useQuery({ 
         queryKey: ['integrationOptions', diagnosticRequestId],
         queryFn: () => diagnosticIntegrationApi.getIntegrationOptions(diagnosticRequestId),
         enabled: enabled && !!diagnosticRequestId,
         staleTime: 5 * 60 * 1000, // 5 minutes
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -259,11 +250,11 @@ export const useBatchIntegration = () => {
             // Create clinical note if requested
             if (operations.createClinicalNote) {
                 try {
-                    const clinicalNoteResult = await createClinicalNote.mutateAsync({
+                    const clinicalNoteResult = await createClinicalNote.mutateAsync({ 
                         diagnosticRequestId,
                         diagnosticResultId,
                         patientId,
-                        noteData: operations.noteData,
+                        noteData: operations.noteData}
                     });
                     results.clinicalNote = clinicalNoteResult.data.clinicalNote;
                 } catch (error: any) {
@@ -274,11 +265,11 @@ export const useBatchIntegration = () => {
             // Create new MTR if requested
             if (operations.createMTR) {
                 try {
-                    const mtrResult = await createMTR.mutateAsync({
+                    const mtrResult = await createMTR.mutateAsync({ 
                         diagnosticRequestId,
                         diagnosticResultId,
                         patientId,
-                        mtrData: operations.mtrData,
+                        mtrData: operations.mtrData}
                     });
                     results.mtr = mtrResult.data.mtr;
                 } catch (error: any) {
@@ -289,14 +280,13 @@ export const useBatchIntegration = () => {
             // Enrich existing MTR if requested
             if (operations.enrichMTRId) {
                 try {
-                    const enrichResult = await enrichMTR.mutateAsync({
+                    const enrichResult = await enrichMTR.mutateAsync({ 
                         mtrId: operations.enrichMTRId,
                         data: {
                             diagnosticRequestId,
                             diagnosticResultId,
-                            patientId,
-                        },
-                    });
+                            patientId}
+                        }
                     results.enrichedMTR = enrichResult.data.mtr;
                 } catch (error: any) {
                     results.errors.push(`MTR enrichment failed: ${error.message}`);

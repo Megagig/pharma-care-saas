@@ -1,36 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  TextField,
-  Alert,
-  CircularProgress,
-  Chip,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from '@mui/material';
-import ReportIcon from '@mui/icons-material/Assessment';
-import CheckIcon from '@mui/icons-material/CheckCircle';
-import WarningIcon from '@mui/icons-material/Warning';
-import ErrorIcon from '@mui/icons-material/Error';
-import SecurityIcon from '@mui/icons-material/Security';
-import DownloadIcon from '@mui/icons-material/Download';
-import { useQuery } from '@tanstack/react-query';
-import { format, subMonths } from 'date-fns';
-import { auditService } from '../../services/auditService';
+import { Button, Input, Card, CardContent, Spinner, Alert, Separator } from '@/components/ui/button';
 
 interface ComplianceMetric {
   _id: string;
@@ -38,7 +6,6 @@ interface ComplianceMetric {
   riskDistribution: string[];
   errorCount: number;
 }
-
 interface ComplianceReportData {
   summary: {
     totalLogs: number;
@@ -78,55 +45,47 @@ interface ComplianceReportData {
   }>;
   recommendations: string[];
 }
-
 const ComplianceReport: React.FC = () => {
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState({ 
     startDate: subMonths(new Date(), 1), // Default to last month
-    endDate: new Date(),
+    endDate: new Date()}
   });
   const [reportGenerated, setReportGenerated] = useState(false);
-
   // Fetch compliance report
   const {
     data: reportData,
     isLoading,
     error,
     refetch,
-  } = useQuery<ComplianceReportData>({
+  } = useQuery<ComplianceReportData>({ 
     queryKey: ['complianceReport', dateRange.startDate, dateRange.endDate],
     queryFn: () =>
       auditService.getComplianceReport({
         startDate: dateRange.startDate.toISOString(),
-        endDate: dateRange.endDate.toISOString(),
+        endDate: dateRange.endDate.toISOString()}
       }),
-    enabled: reportGenerated,
-  });
-
+    enabled: reportGenerated}
   const handleGenerateReport = () => {
     setReportGenerated(true);
     refetch();
   };
-
   const handleExportReport = async () => {
     if (!reportData) return;
-
     try {
-      const exportData = await auditService.exportAuditData({
+      const exportData = await auditService.exportAuditData({ 
         format: 'pdf',
         startDate: dateRange.startDate.toISOString(),
         endDate: dateRange.endDate.toISOString(),
-        includeDetails: true,
+        includeDetails: true}
       });
-
       // Generate PDF report
-      const pdfBlob = await auditService.generatePDFReport({
+      const pdfBlob = await auditService.generatePDFReport({ 
         title: 'MTR Compliance Report',
         generatedAt: new Date(),
         dateRange,
         ...reportData,
-        exportData,
+        exportData}
       });
-
       auditService.downloadFile(
         pdfBlob,
         `compliance_report_${format(new Date(), 'yyyy-MM-dd')}.pdf`,
@@ -136,36 +95,31 @@ const ComplianceReport: React.FC = () => {
       console.error('Failed to export compliance report:', error);
     }
   };
-
   const getComplianceScoreColor = (score: number) => {
     if (score >= 90) return 'success';
     if (score >= 70) return 'warning';
     return 'error';
   };
-
   const getComplianceScoreIcon = (score: number) => {
     if (score >= 90) return <CheckIcon color="success" />;
     if (score >= 70) return <WarningIcon color="warning" />;
     return <ErrorIcon color="error" />;
   };
-
   const getRiskDistributionSummary = (riskDistribution: string[]) => {
     const counts = riskDistribution.reduce((acc, risk) => {
       acc[risk] = (acc[risk] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
     return Object.entries(counts).map(([risk, count]) => (
       <Chip
         key={risk}
         label={`${risk}: ${count}`}
         color={auditService.getRiskLevelColor(risk)}
         size="small"
-        sx={{ mr: 1, mb: 1 }}
+        className=""
       />
     ));
   };
-
   if (error) {
     return (
       <Alert severity="error">
@@ -173,170 +127,149 @@ const ComplianceReport: React.FC = () => {
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
+    <div className="">
+      <div  gutterBottom>
         MTR Compliance Report
-      </Typography>
-
+      </div>
       {/* Date Range Selection */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <div  gutterBottom>
             Report Parameters
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 2,
-              alignItems: 'center',
-            }}
+          </div>
+          <div
+            className=""
           >
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <TextField
+            <div className="">
+              <Input
                 fullWidth
                 type="date"
                 label="Start Date"
                 value={format(dateRange.startDate, 'yyyy-MM-dd')}
                 onChange={(e) =>
-                  setDateRange((prev) => ({
-                    ...prev,
-                    startDate: new Date(e.target.value),
+                  setDateRange((prev) => ({ 
+                    ...prev}
+                    startDate: new Date(e.target.value),}
                   }))
                 }
-                InputLabelProps={{ shrink: true }}
+                
               />
-            </Box>
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
-              <TextField
+            </div>
+            <div className="">
+              <Input
                 fullWidth
                 type="date"
                 label="End Date"
                 value={format(dateRange.endDate, 'yyyy-MM-dd')}
                 onChange={(e) =>
-                  setDateRange((prev) => ({
-                    ...prev,
-                    endDate: new Date(e.target.value),
+                  setDateRange((prev) => ({ 
+                    ...prev}
+                    endDate: new Date(e.target.value),}
                   }))
                 }
-                InputLabelProps={{ shrink: true }}
+                
               />
-            </Box>
-            <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+            </div>
+            <div className="">
               <Button
-                variant="contained"
+                
                 onClick={handleGenerateReport}
                 disabled={isLoading}
                 fullWidth
               >
                 {isLoading ? 'Generating...' : 'Generate Report'}
               </Button>
-            </Box>
-          </Box>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
       {/* Loading State */}
       {isLoading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-          <CircularProgress />
-        </Box>
+        <div className="">
+          <Spinner />
+        </div>
       )}
-
       {/* Report Content */}
       {reportData && (
         <>
           {/* Executive Summary */}
-          <Card sx={{ mb: 3 }}>
+          <Card className="">
             <CardContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 2,
-                }}
+              <div
+                className=""
               >
-                <Typography variant="h6">Executive Summary</Typography>
+                <div >Executive Summary</div>
                 <Button
-                  variant="outlined"
+                  
                   startIcon={<DownloadIcon />}
                   onClick={handleExportReport}
                 >
                   Export PDF
                 </Button>
-              </Box>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="primary">
+              </div>
+              <div className="">
+                <div className="">
+                  <div className="">
+                    <div  color="primary">
                       {reportData.summary.totalLogs.toLocaleString()}
-                    </Typography>
-                    <Typography color="textSecondary">
+                    </div>
+                    <div color="textSecondary">
                       Total Audit Logs
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="primary">
+                    </div>
+                  </div>
+                </div>
+                <div className="">
+                  <div className="">
+                    <div  color="primary">
                       {reportData.summary.uniqueUserCount}
-                    </Typography>
-                    <Typography color="textSecondary">Active Users</Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography
-                      variant="h4"
+                    </div>
+                    <div color="textSecondary">Active Users</div>
+                  </div>
+                </div>
+                <div className="">
+                  <div className="">
+                    <div
+                      
                       color={
-                        reportData.summary.errorRate > 5 ? 'error' : 'success'
+                        reportData.summary.errorRate > 5 ? 'error' : 'success'}
                       }
                     >
                       {reportData.summary.errorRate.toFixed(1)}%
-                    </Typography>
-                    <Typography color="textSecondary">Error Rate</Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-                  <Box
-                    sx={{
-                      textAlign: 'center',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 1,
-                    }}
+                    </div>
+                    <div color="textSecondary">Error Rate</div>
+                  </div>
+                </div>
+                <div className="">
+                  <div
+                    className=""
                   >
                     {getComplianceScoreIcon(reportData.summary.complianceScore)}
-                    <Box>
-                      <Typography
-                        variant="h4"
+                    <div>
+                      <div
+                        
                         color={getComplianceScoreColor(
-                          reportData.summary.complianceScore
+                          reportData.summary.complianceScore}
                         )}
                       >
                         {reportData.summary.complianceScore}
-                      </Typography>
-                      <Typography color="textSecondary">
+                      </div>
+                      <div color="textSecondary">
                         Compliance Score
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
-
           {/* Compliance Metrics by Category */}
-          <Card sx={{ mb: 3 }}>
+          <Card className="">
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Compliance Metrics by Category
-              </Typography>
-              <TableContainer component={Paper}>
+              </div>
+              <TableContainer >
                 <Table>
                   <TableHead>
                     <TableRow>
@@ -356,11 +289,11 @@ const ComplianceReport: React.FC = () => {
                       return (
                         <TableRow key={metric._id}>
                           <TableCell>
-                            <Typography variant="body2">
+                            <div >
                               {auditService.getComplianceCategoryDisplay(
                                 metric._id
                               )}
-                            </Typography>
+                            </div>
                           </TableCell>
                           <TableCell align="right">
                             {metric.count.toLocaleString()}
@@ -369,18 +302,18 @@ const ComplianceReport: React.FC = () => {
                             {metric.errorCount}
                           </TableCell>
                           <TableCell align="right">
-                            <Typography
+                            <div
                               color={errorRate > 5 ? 'error' : 'success'}
                             >
                               {errorRate.toFixed(1)}%
-                            </Typography>
+                            </div>
                           </TableCell>
                           <TableCell>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
+                            <div className="">
                               {getRiskDistributionSummary(
                                 metric.riskDistribution
                               )}
-                            </Box>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -390,29 +323,28 @@ const ComplianceReport: React.FC = () => {
               </TableContainer>
             </CardContent>
           </Card>
-
           {/* Security Alerts */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-            <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
+          <div className="">
+            <div className="">
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom color="warning.main">
-                    <WarningIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  <div  gutterBottom color="warning.main">
+                    <WarningIcon className="" />
                     High-Risk Activities (
                     {reportData.summary.highRiskActivitiesCount})
-                  </Typography>
+                  </div>
                   {reportData.highRiskActivities.length > 0 ? (
                     <List dense>
                       {reportData.highRiskActivities
                         .slice(0, 5)
                         .map((activity, index) => (
-                          <ListItem key={index}>
-                            <ListItemIcon>
+                          <div key={index}>
+                            <div>
                               <SecurityIcon color="warning" />
-                            </ListItemIcon>
-                            <ListItemText
+                            </div>
+                            <div
                               primary={
-                                activity.actionDisplay || activity.action
+                                activity.actionDisplay || activity.action}
                               }
                               secondary={`${activity.userId?.firstName} ${
                                 activity.userId?.lastName
@@ -421,93 +353,92 @@ const ComplianceReport: React.FC = () => {
                                 'MMM dd, HH:mm'
                               )}`}
                             />
-                          </ListItem>
+                          </div>
                         ))}
                       {reportData.highRiskActivities.length > 5 && (
-                        <ListItem>
-                          <ListItemText
+                        <div>
+                          <div
                             primary={`... and ${
-                              reportData.highRiskActivities.length - 5
+                              reportData.highRiskActivities.length - 5}
                             } more`}
-                            sx={{ fontStyle: 'italic' }}
+                            className=""
                           />
-                        </ListItem>
+                        </div>
                       )}
                     </List>
                   ) : (
-                    <Typography color="textSecondary">
+                    <div color="textSecondary">
                       No high-risk activities detected
-                    </Typography>
+                    </div>
                   )}
                 </CardContent>
               </Card>
-            </Box>
-            <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
+            </div>
+            <div className="">
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom color="error.main">
-                    <ErrorIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  <div  gutterBottom color="error.main">
+                    <ErrorIcon className="" />
                     Suspicious Activities (
                     {reportData.summary.suspiciousActivitiesCount})
-                  </Typography>
+                  </div>
                   {reportData.suspiciousActivities.length > 0 ? (
                     <List dense>
                       {reportData.suspiciousActivities
                         .slice(0, 5)
                         .map((activity, index) => (
-                          <ListItem key={index}>
-                            <ListItemIcon>
+                          <div key={index}>
+                            <div>
                               <ErrorIcon color="error" />
-                            </ListItemIcon>
-                            <ListItemText
+                            </div>
+                            <div
                               primary={`${activity.actionCount} actions from ${activity.user?.firstName} ${activity.user?.lastName}`}
                               secondary={`IP: ${
-                                activity.ipAddress
+                                activity.ipAddress}
                               } - Error Rate: ${activity.errorRate?.toFixed(
                                 1
                               )}%`}
                             />
-                          </ListItem>
+                          </div>
                         ))}
                       {reportData.suspiciousActivities.length > 5 && (
-                        <ListItem>
-                          <ListItemText
+                        <div>
+                          <div
                             primary={`... and ${
-                              reportData.suspiciousActivities.length - 5
+                              reportData.suspiciousActivities.length - 5}
                             } more`}
-                            sx={{ fontStyle: 'italic' }}
+                            className=""
                           />
-                        </ListItem>
+                        </div>
                       )}
                     </List>
                   ) : (
-                    <Typography color="textSecondary">
+                    <div color="textSecondary">
                       No suspicious activities detected
-                    </Typography>
+                    </div>
                   )}
                 </CardContent>
               </Card>
-            </Box>
-          </Box>
-
+            </div>
+          </div>
           {/* Recommendations */}
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <ReportIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              <div  gutterBottom>
+                <ReportIcon className="" />
                 Compliance Recommendations
-              </Typography>
+              </div>
               <List>
                 {reportData.recommendations.map((recommendation, index) => (
                   <React.Fragment key={index}>
-                    <ListItem>
-                      <ListItemIcon>
+                    <div>
+                      <div>
                         <CheckIcon color="primary" />
-                      </ListItemIcon>
-                      <ListItemText primary={recommendation} />
-                    </ListItem>
+                      </div>
+                      <div primary={recommendation} />
+                    </div>
                     {index < reportData.recommendations.length - 1 && (
-                      <Divider />
+                      <Separator />
                     )}
                   </React.Fragment>
                 ))}
@@ -516,8 +447,7 @@ const ComplianceReport: React.FC = () => {
           </Card>
         </>
       )}
-    </Box>
+    </div>
   );
 };
-
 export default ComplianceReport;

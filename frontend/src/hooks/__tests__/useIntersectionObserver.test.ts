@@ -1,7 +1,3 @@
-import { renderHook, act } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
-import { useIntersectionObserver, useMultipleIntersectionObserver } from '../useIntersectionObserver';
-
 // Mock IntersectionObserver
 const mockIntersectionObserver = vi.fn();
 const mockObserve = vi.fn();

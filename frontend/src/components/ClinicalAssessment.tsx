@@ -1,68 +1,32 @@
-import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Stack,
-  TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  CircularProgress,
-  Divider,
-  InputAdornment,
-} from '@mui/material';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import React, { useState, useEffect } from 'react';
 
+import { Button } from '@/components/ui/button';
+
+import { Input } from '@/components/ui/input';
+
+import { Label } from '@/components/ui/label';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { Dialog } from '@/components/ui/dialog';
+
+import { DialogContent } from '@/components/ui/dialog';
+
+import { DialogTitle } from '@/components/ui/dialog';
+
+import { Select } from '@/components/ui/select';
+
+import { Spinner } from '@/components/ui/spinner';
+
+import { Separator } from '@/components/ui/separator';
 // Icons
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
-import BiotechIcon from '@mui/icons-material/Biotech';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import SearchIcon from '@mui/icons-material/Search';
 
-import { RBACGuard } from '../hooks/useRBAC';
-import {
-  ErrorDisplay,
-  LoadingSkeleton,
-  LoadingState,
-} from './common/ErrorDisplay';
-import { useCRUDNotifications } from './common/NotificationSystem';
-import { useAsyncOperation } from '../hooks/useErrorHandling';
-import { useResponsive } from '../hooks/useResponsive';
-import {
-  ResponsiveContainer,
-  ResponsiveHeader,
-  ResponsiveCard,
-} from './common/ResponsiveComponents';
-
-import {
-  usePatientAssessments,
-  useCreateAssessment,
-  useUpdateAssessment,
-} from '../queries/usePatientResources';
-import type {
-  ClinicalAssessment,
-  CreateAssessmentData,
-  UpdateAssessmentData,
-} from '../types/patientManagement';
 
 interface ClinicalAssessmentProps {
   patientId: string;
 }
-
 interface AssessmentFormData {
   // Vitals
   bpSys?: number;
@@ -72,7 +36,6 @@ interface AssessmentFormData {
   heartSounds?: string;
   pallor?: 'none' | 'mild' | 'moderate' | 'severe';
   dehydration?: 'none' | 'mild' | 'moderate' | 'severe';
-
   // Labs
   pcv?: number;
   mcs?: string;
@@ -80,30 +43,25 @@ interface AssessmentFormData {
   fbc?: string;
   fbs?: number;
   hba1c?: number;
-
   recordedAt: Date;
 }
-
 const PALLOR_LEVELS = [
   { value: 'none', label: 'None', color: 'success' as const },
   { value: 'mild', label: 'Mild', color: 'warning' as const },
   { value: 'moderate', label: 'Moderate', color: 'error' as const },
   { value: 'severe', label: 'Severe', color: 'error' as const },
 ];
-
-const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
-  patientId,
+const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({ 
+  patientId
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAssessment, setSelectedAssessment] =
     useState<ClinicalAssessment | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-
   // Enhanced notifications, error handling and responsive design
   const crudNotifications = useCRUDNotifications();
   const { executeOperation, isLoading } = useAsyncOperation();
   const { isMobile } = useResponsive();
-
   // React Query hooks
   const {
     data: assessmentsResponse,
@@ -113,16 +71,14 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
   } = usePatientAssessments(patientId);
   const createAssessmentMutation = useCreateAssessment();
   const updateAssessmentMutation = useUpdateAssessment();
-
   const assessments = assessmentsResponse?.data?.results || [];
-
   // Form setup
   const {
     control,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<AssessmentFormData>({
+  } = useForm<AssessmentFormData>({ 
     defaultValues: {
       bpSys: undefined,
       bpDia: undefined,
@@ -137,17 +93,14 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
       fbc: '',
       fbs: undefined,
       hba1c: undefined,
-      recordedAt: new Date(),
-    },
-  });
-
+      recordedAt: new Date()}
+    }
   const handleOpenDialog = (assessment?: ClinicalAssessment) => {
     console.log('handleOpenDialog called with:', assessment);
     console.log('Current isDialogOpen state:', isDialogOpen);
-
     if (assessment) {
       setSelectedAssessment(assessment);
-      reset({
+      reset({ 
         bpSys: assessment.vitals?.bpSys,
         bpDia: assessment.vitals?.bpDia,
         rr: assessment.vitals?.rr,
@@ -161,11 +114,11 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
         fbc: assessment.labs?.fbc || '',
         fbs: assessment.labs?.fbs,
         hba1c: assessment.labs?.hba1c,
-        recordedAt: new Date(assessment.recordedAt),
+        recordedAt: new Date(assessment.recordedAt)}
       });
     } else {
       setSelectedAssessment(null);
-      reset({
+      reset({ 
         bpSys: undefined,
         bpDia: undefined,
         rr: undefined,
@@ -179,19 +132,16 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
         fbc: '',
         fbs: undefined,
         hba1c: undefined,
-        recordedAt: new Date(),
+        recordedAt: new Date()}
       });
     }
-
     setIsDialogOpen(true);
   };
-
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setSelectedAssessment(null);
     reset();
   };
-
   const handleSaveAssessment = async (formData: AssessmentFormData) => {
     const assessmentData: CreateAssessmentData | UpdateAssessmentData = {
       vitals: {
@@ -213,19 +163,17 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
       },
       recordedAt: formData.recordedAt.toISOString(),
     };
-
     const operation = selectedAssessment
       ? () =>
-          updateAssessmentMutation.mutateAsync({
+          updateAssessmentMutation.mutateAsync({ 
             assessmentId: selectedAssessment._id,
-            assessmentData: assessmentData as UpdateAssessmentData,
+            assessmentData: assessmentData as UpdateAssessmentData}
           })
       : () =>
-          createAssessmentMutation.mutateAsync({
+          createAssessmentMutation.mutateAsync({ 
             patientId,
-            assessmentData: assessmentData as CreateAssessmentData,
+            assessmentData: assessmentData as CreateAssessmentData}
           });
-
     await executeOperation(
       selectedAssessment ? 'updateAssessment' : 'createAssessment',
       operation,
@@ -248,20 +196,16 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
       }
     );
   };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit',
-    });
+      minute: '2-digit'}
   };
-
   const getFilteredAssessments = () => {
     let filtered = assessments;
-
     if (searchTerm) {
       filtered = filtered.filter((assessment: ClinicalAssessment) =>
         formatDate(assessment.recordedAt)
@@ -269,23 +213,19 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
           .includes(searchTerm.toLowerCase())
       );
     }
-
     return filtered;
   };
-
   const filteredAssessments = getFilteredAssessments();
-
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
       <ResponsiveContainer>
         <LoadingState
           loading={allLoading}
           error={allError ? error : null}
-          loadingComponent={
-            <LoadingSkeleton variant="table" count={5} animation="wave" />
+          loadingComponent={}
+            <LoadingSkeleton  count={5} animation="wave" />
           }
           errorComponent={
-            <ErrorDisplay
+            <ErrorDisplay}
               error={error}
               title="Failed to load assessments"
               type={allError ? 'server' : 'error'}
@@ -298,18 +238,18 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
               title="No assessments recorded"
               subtitle="Start by adding the patient's clinical assessments and lab results."
             >
-              <Box sx={{ textAlign: 'center', py: 4 }}>
+              <div className="">
                 <MonitorHeartIcon
-                  sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }}
+                  className=""
                 />
                 <Button
-                  variant="contained"
+                  }
                   startIcon={<AddIcon />}
                   onClick={() => handleOpenDialog()}
                 >
                   Add First Assessment
                 </Button>
-              </Box>
+              </div>
             </ResponsiveCard>
           }
           isEmpty={!allLoading && !allError && assessments.length === 0}
@@ -323,10 +263,10 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
             actions={
               <RBACGuard action="canCreate">
                 <Button
-                  variant="contained"
+                  
                   startIcon={
-                    isLoading('createAssessment') ? (
-                      <CircularProgress size={16} />
+                    isLoading('createAssessment') ? (}
+                      <Spinner size={16} />
                     ) : (
                       <AddIcon />
                     )
@@ -334,7 +274,7 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                   onClick={() => handleOpenDialog()}
                   disabled={
                     isLoading('createAssessment') ||
-                    isLoading('updateAssessment')
+                    isLoading('updateAssessment')}
                   }
                   fullWidth={isMobile}
                 >
@@ -345,47 +285,36 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
               </RBACGuard>
             }
           />
-
           {/* Simple assessment list */}
           {assessments.length > 0 && (
             <Card>
               <CardContent>
-                <Box sx={{ mb: 2 }}>
-                  <TextField
+                <div className="">
+                  <Input
                     size="small"
                     placeholder="Search assessments..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <SearchIcon sx={{ mr: 1, opacity: 0.5 }} />
-                      ),
-                    }}
+                    
                   />
-                </Box>
-
+                </div>
                 {filteredAssessments.length === 0 ? (
-                  <Typography color="text.secondary">
+                  <div color="text.secondary">
                     No assessments found.
-                  </Typography>
+                  </div>
                 ) : (
-                  <Stack spacing={2}>
+                  <div spacing={2}>
                     {filteredAssessments.map(
                       (assessment: ClinicalAssessment) => (
-                        <Card key={assessment._id} variant="outlined">
-                          <CardContent sx={{ py: 2 }}>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                mb: 2,
-                              }}
+                        <Card key={assessment._id} >
+                          <CardContent className="">
+                            <div
+                              className=""
                             >
-                              <Typography variant="subtitle2">
+                              <div >
                                 {formatDate(assessment.recordedAt)}
-                              </Typography>
-                              <Box sx={{ display: 'flex', gap: 1 }}>
+                              </div>
+                              <div className="">
                                 <RBACGuard action="canUpdate">
                                   <IconButton
                                     size="small"
@@ -394,84 +323,74 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                                     <EditIcon />
                                   </IconButton>
                                 </RBACGuard>
-                              </Box>
-                            </Box>
-
-                            <Box
-                              sx={{
-                                display: 'grid',
-                                gridTemplateColumns: {
-                                  xs: '1fr',
-                                  md: '1fr 1fr',
-                                },
-                                gap: 2,
-                              }}
+                              </div>
+                            </div>
+                            <div
+                              className=""
                             >
                               {/* Vitals */}
-                              <Box>
-                                <Typography
-                                  variant="body2"
+                              <div>
+                                <div
+                                  
                                   color="text.secondary"
                                   gutterBottom
                                 >
                                   Vitals
-                                </Typography>
+                                </div>
                                 {assessment.vitals?.bpSys &&
                                   assessment.vitals?.bpDia && (
-                                    <Typography variant="body2">
+                                    <div >
                                       BP: {assessment.vitals.bpSys}/
                                       {assessment.vitals.bpDia} mmHg
-                                    </Typography>
+                                    </div>
                                   )}
                                 {assessment.vitals?.tempC && (
-                                  <Typography variant="body2">
+                                  <div >
                                     Temp: {assessment.vitals.tempC}°C
-                                  </Typography>
+                                  </div>
                                 )}
                                 {assessment.vitals?.rr && (
-                                  <Typography variant="body2">
+                                  <div >
                                     RR: {assessment.vitals.rr}/min
-                                  </Typography>
+                                  </div>
                                 )}
-                              </Box>
-
+                              </div>
                               {/* Labs */}
-                              <Box>
-                                <Typography
-                                  variant="body2"
+                              <div>
+                                <div
+                                  
                                   color="text.secondary"
                                   gutterBottom
                                 >
                                   Lab Results
-                                </Typography>
+                                </div>
                                 {assessment.labs?.pcv && (
-                                  <Typography variant="body2">
+                                  <div >
                                     PCV: {assessment.labs.pcv}%
-                                  </Typography>
+                                  </div>
                                 )}
                                 {assessment.labs?.fbs && (
-                                  <Typography variant="body2">
+                                  <div >
                                     FBS: {assessment.labs.fbs} mg/dL
-                                  </Typography>
+                                  </div>
                                 )}
                                 {assessment.labs?.hba1c && (
-                                  <Typography variant="body2">
+                                  <div >
                                     HbA1c: {assessment.labs.hba1c}%
-                                  </Typography>
+                                  </div>
                                 )}
-                              </Box>
-                            </Box>
+                              </div>
+                            </div>
                           </CardContent>
                         </Card>
                       )
                     )}
-                  </Stack>
+                  </div>
                 )}
               </CardContent>
             </Card>
           )}
         </LoadingState>
-
         {/* Add/Edit Assessment Dialog - Outside LoadingState so it can always render */}
         <Dialog
           open={isDialogOpen}
@@ -481,60 +400,44 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
           fullScreen={isMobile}
         >
           <DialogTitle>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <div className="">
               <MonitorHeartIcon color="primary" />
-              <Typography variant="h6">
+              <div >
                 {selectedAssessment ? 'Edit Assessment' : 'Add New Assessment'}
-              </Typography>
-            </Box>
+              </div>
+            </div>
           </DialogTitle>
-
           <DialogContent>
             <form onSubmit={handleSubmit(handleSaveAssessment)}>
-              <Stack spacing={3} sx={{ mt: 1 }}>
+              <div spacing={3} className="">
                 <Controller
                   name="recordedAt"
                   control={control}
-                  rules={{ required: 'Date and time is required' }}
-                  render={({ field }) => (
+                  
+                  render={({  field  }) => (
                     <DateTimePicker
-                      {...field}
-                      label="Date & Time *"
-                      maxDate={new Date()}
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          error: !!errors.recordedAt,
-                          helperText: errors.recordedAt?.message,
-                        },
-                      }}
+                      value={field.value}
+                      onChange={field.onChange}
+                      label="Date & Time"
+                      required
+                      maxDateTime={new Date()}
+                      error={!!errors.recordedAt}
+                      helperText={errors.recordedAt?.message}
                     />
                   )}
                 />
-
-                <Divider />
-
+                <Separator />
                 {/* Vitals Section */}
-                <Box>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      mb: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                    }}
+                <div>
+                  <div
+                    
+                    className=""
                   >
                     <FavoriteIcon color="primary" />
                     Vital Signs
-                  </Typography>
-
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                      gap: 2,
-                    }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Controller
                       name="bpSys"
@@ -542,162 +445,115 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                       rules={{
                         min: {
                           value: 50,
-                          message: 'Systolic BP must be at least 50',
+                          message: 'Systolic BP must be at least 50',}
                         },
                         max: {
                           value: 300,
                           message: 'Systolic BP cannot exceed 300',
                         },
-                      }}
                       render={({ field: { onChange, value, ...field } }) => (
-                        <TextField
+                        <Input
                           {...field}
                           value={value || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            onChange(val === '' ? undefined : Number(val));
-                          }}
+                          
                           label="Systolic BP"
                           type="number"
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                mmHg
-                              </InputAdornment>
-                            ),
-                          }}
+                          
                           error={!!errors.bpSys}
                           helperText={errors.bpSys?.message}
                           fullWidth
                         />
                       )}
                     />
-
                     <Controller
                       name="bpDia"
                       control={control}
                       rules={{
                         min: {
                           value: 30,
-                          message: 'Diastolic BP must be at least 30',
+                          message: 'Diastolic BP must be at least 30',}
                         },
                         max: {
                           value: 200,
                           message: 'Diastolic BP cannot exceed 200',
                         },
-                      }}
                       render={({ field: { onChange, value, ...field } }) => (
-                        <TextField
+                        <Input
                           {...field}
                           value={value || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            onChange(val === '' ? undefined : Number(val));
-                          }}
+                          
                           label="Diastolic BP"
                           type="number"
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                mmHg
-                              </InputAdornment>
-                            ),
-                          }}
+                          
                           error={!!errors.bpDia}
                           helperText={errors.bpDia?.message}
                           fullWidth
                         />
                       )}
                     />
-
                     <Controller
                       name="tempC"
                       control={control}
                       rules={{
                         min: {
                           value: 30,
-                          message: 'Temperature must be at least 30°C',
+                          message: 'Temperature must be at least 30°C',}
                         },
                         max: {
                           value: 45,
                           message: 'Temperature cannot exceed 45°C',
                         },
-                      }}
                       render={({ field: { onChange, value, ...field } }) => (
-                        <TextField
+                        <Input
                           {...field}
                           value={value || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            onChange(val === '' ? undefined : Number(val));
-                          }}
+                          
                           label="Temperature"
                           type="number"
-                          inputProps={{ step: '0.1' }}
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">°C</InputAdornment>
-                            ),
-                          }}
+                          
+                          
                           error={!!errors.tempC}
                           helperText={errors.tempC?.message}
                           fullWidth
                         />
                       )}
                     />
-
                     <Controller
                       name="rr"
                       control={control}
                       rules={{
                         min: {
                           value: 5,
-                          message: 'Respiratory rate must be at least 5',
+                          message: 'Respiratory rate must be at least 5',}
                         },
                         max: {
                           value: 60,
                           message: 'Respiratory rate cannot exceed 60',
                         },
-                      }}
                       render={({ field: { onChange, value, ...field } }) => (
-                        <TextField
+                        <Input
                           {...field}
                           value={value || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            onChange(val === '' ? undefined : Number(val));
-                          }}
+                          
                           label="Respiratory Rate"
                           type="number"
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                /min
-                              </InputAdornment>
-                            ),
-                          }}
+                          
                           error={!!errors.rr}
                           helperText={errors.rr?.message}
                           fullWidth
                         />
                       )}
                     />
-                  </Box>
-
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-                      gap: 2,
-                      mt: 2,
-                    }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Controller
                       name="pallor"
                       control={control}
-                      render={({ field }) => (
-                        <FormControl fullWidth>
-                          <InputLabel>Pallor</InputLabel>
+                      render={({  field  }) => (
+                        <div fullWidth>
+                          <Label>Pallor</Label>
                           <Select {...field} label="Pallor">
                             {PALLOR_LEVELS.map((level) => (
                               <MenuItem key={level.value} value={level.value}>
@@ -705,16 +561,15 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                               </MenuItem>
                             ))}
                           </Select>
-                        </FormControl>
+                        </div>
                       )}
                     />
-
                     <Controller
                       name="dehydration"
                       control={control}
-                      render={({ field }) => (
-                        <FormControl fullWidth>
-                          <InputLabel>Dehydration</InputLabel>
+                      render={({  field  }) => (
+                        <div fullWidth>
+                          <Label>Dehydration</Label>
                           <Select {...field} label="Dehydration">
                             {PALLOR_LEVELS.map((level) => (
                               <MenuItem key={level.value} value={level.value}>
@@ -722,15 +577,14 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                               </MenuItem>
                             ))}
                           </Select>
-                        </FormControl>
+                        </div>
                       )}
                     />
-
                     <Controller
                       name="heartSounds"
                       control={control}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           label="Heart Sounds"
                           placeholder="e.g., Normal S1, S2"
@@ -738,32 +592,20 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                         />
                       )}
                     />
-                  </Box>
-                </Box>
-
-                <Divider />
-
+                  </div>
+                </div>
+                <Separator />
                 {/* Lab Results Section */}
-                <Box>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      mb: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                    }}
+                <div>
+                  <div
+                    
+                    className=""
                   >
                     <BiotechIcon color="primary" />
                     Lab Results
-                  </Typography>
-
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                      gap: 2,
-                    }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Controller
                       name="pcv"
@@ -771,110 +613,81 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                       rules={{
                         min: {
                           value: 10,
-                          message: 'PCV must be at least 10%',
+                          message: 'PCV must be at least 10%',}
                         },
                         max: { value: 60, message: 'PCV cannot exceed 60%' },
-                      }}
                       render={({ field: { onChange, value, ...field } }) => (
-                        <TextField
+                        <Input
                           {...field}
                           value={value || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            onChange(val === '' ? undefined : Number(val));
-                          }}
+                          
                           label="PCV"
                           type="number"
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">%</InputAdornment>
-                            ),
-                          }}
+                          
                           error={!!errors.pcv}
                           helperText={errors.pcv?.message}
                           fullWidth
                         />
                       )}
                     />
-
                     <Controller
                       name="fbs"
                       control={control}
                       rules={{
                         min: {
                           value: 30,
-                          message: 'FBS must be at least 30 mg/dL',
+                          message: 'FBS must be at least 30 mg/dL',}
                         },
                         max: {
                           value: 500,
                           message: 'FBS cannot exceed 500 mg/dL',
                         },
-                      }}
                       render={({ field: { onChange, value, ...field } }) => (
-                        <TextField
+                        <Input
                           {...field}
                           value={value || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            onChange(val === '' ? undefined : Number(val));
-                          }}
+                          
                           label="FBS"
                           type="number"
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                mg/dL
-                              </InputAdornment>
-                            ),
-                          }}
+                          
                           error={!!errors.fbs}
                           helperText={errors.fbs?.message}
                           fullWidth
                         />
                       )}
                     />
-
                     <Controller
                       name="hba1c"
                       control={control}
                       rules={{
                         min: {
                           value: 3,
-                          message: 'HbA1c must be at least 3%',
+                          message: 'HbA1c must be at least 3%',}
                         },
                         max: {
                           value: 15,
                           message: 'HbA1c cannot exceed 15%',
                         },
-                      }}
                       render={({ field: { onChange, value, ...field } }) => (
-                        <TextField
+                        <Input
                           {...field}
                           value={value || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            onChange(val === '' ? undefined : Number(val));
-                          }}
+                          
                           label="HbA1c"
                           type="number"
-                          inputProps={{ step: '0.1' }}
-                          InputProps={{
-                            endAdornment: (
-                              <InputAdornment position="end">%</InputAdornment>
-                            ),
-                          }}
+                          
+                          
                           error={!!errors.hba1c}
                           helperText={errors.hba1c?.message}
                           fullWidth
                         />
                       )}
                     />
-
                     <Controller
                       name="mcs"
                       control={control}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           label="MCS"
                           placeholder="e.g., No growth"
@@ -882,12 +695,11 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                         />
                       )}
                     />
-
                     <Controller
                       name="eucr"
                       control={control}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           label="E/U/Cr"
                           placeholder="e.g., Normal"
@@ -895,12 +707,11 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                         />
                       )}
                     />
-
                     <Controller
                       name="fbc"
                       control={control}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           label="FBC"
                           placeholder="e.g., Normal"
@@ -908,19 +719,18 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
                         />
                       )}
                     />
-                  </Box>
-                </Box>
-              </Stack>
+                  </div>
+                </div>
+              </div>
             </form>
           </DialogContent>
-
           <DialogActions>
             <Button onClick={handleCloseDialog}>Cancel</Button>
             <Button
               onClick={handleSubmit(handleSaveAssessment)}
-              variant="contained"
+              
               disabled={
-                isLoading('createAssessment') || isLoading('updateAssessment')
+                isLoading('createAssessment') || isLoading('updateAssessment')}
               }
             >
               {selectedAssessment ? 'Update' : 'Add'}
@@ -928,8 +738,6 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
           </DialogActions>
         </Dialog>
       </ResponsiveContainer>
-    </LocalizationProvider>
   );
 };
-
 export default ClinicalAssessmentComponent;

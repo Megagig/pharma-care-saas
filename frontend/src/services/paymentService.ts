@@ -89,9 +89,9 @@ class PaymentService {
     dateFrom?: string,
     dateTo?: string
   ): Promise<PaginatedPayments> {
-    const params = new URLSearchParams({
+    const params = new URLSearchParams({ 
       page: page.toString(),
-      limit: limit.toString(),
+      limit: limit.toString()}
     });
 
     if (status) params.append('status', status);
@@ -120,16 +120,14 @@ class PaymentService {
 
   async createSetupIntent() {
     const response = await this.makeRequest('/payments/methods/setup-intent', {
-      method: 'POST',
-    });
+      method: 'POST'}
     return response.data;
   }
 
   async addPaymentMethod(paymentMethodId: string, setAsDefault = false) {
     const response = await this.makeRequest('/payments/methods/add', {
       method: 'POST',
-      body: JSON.stringify({ paymentMethodId, setAsDefault }),
-    });
+      body: JSON.stringify({ paymentMethodId, setAsDefault })}
     return response;
   }
 
@@ -146,8 +144,7 @@ class PaymentService {
   async setDefaultPaymentMethod(paymentMethodId: string) {
     const response = await this.makeRequest('/payments/methods/default', {
       method: 'PUT',
-      body: JSON.stringify({ paymentMethodId }),
-    });
+      body: JSON.stringify({ paymentMethodId })}
     return response;
   }
 
@@ -205,8 +202,7 @@ class PaymentService {
   async cancelSubscription(reason?: string) {
     const response = await this.makeRequest('/subscription-management/cancel', {
       method: 'POST',
-      body: JSON.stringify({ reason }),
-    });
+      body: JSON.stringify({ reason })}
     return response.data;
   }
 
@@ -225,8 +221,7 @@ class PaymentService {
   async createPayment(paymentData: Record<string, unknown>) {
     const response = await this.makeRequest('/payments', {
       method: 'POST',
-      body: JSON.stringify(paymentData),
-    });
+      body: JSON.stringify(paymentData)}
     return response.data;
   }
 

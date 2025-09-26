@@ -1,85 +1,64 @@
 import React, { useState } from 'react';
-import { Box, Tabs, Tab, Paper, Typography, Container } from '@mui/material';
 import SubscriptionManagement from '../components/subscription/SubscriptionManagement';
 import BillingHistory from '../components/subscription/BillingHistory';
 import PaymentMethodsManagement from '../components/subscription/PaymentMethodsManagement';
 import SubscriptionAnalytics from '../components/subscription/SubscriptionAnalytics';
 import FeatureGuard from '../components/FeatureGuard';
 import ErrorBoundary from '../components/ErrorBoundary';
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const TabPanel = (props: TabPanelProps) => {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`subscription-tabpanel-${index}`}
-      aria-labelledby={`subscription-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
-};
+import { Button } from '@/components/ui/button';
 
 const Subscriptions: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const [activeTab, setActiveTab] = useState(0);
 
-  const handleChange = (_: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
+  const tabs = [
+    { id: 0, label: 'Plans', component: <SubscriptionManagement /> },
+    { id: 1, label: 'Billing History', component: <BillingHistory /> },
+    { id: 2, label: 'Payment Methods', component: <PaymentMethodsManagement /> },
+    {
+      id: 3,
+      label: 'Analytics',
+      component: (
+        <FeatureGuard feature="advanced_analytics">
+          <SubscriptionAnalytics />
+        </FeatureGuard>
+      )
+    },
+  ];
 
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Subscription Management
-        </Typography>
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Manage your subscription plans, billing, and payment methods
+        </p>
+      </div>
 
-        <Paper sx={{ width: '100%', mb: 4 }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleChange}
-            indicatorColor="primary"
-            textColor="primary"
-            variant="fullWidth"
-            aria-label="subscription tabs"
-          >
-            <Tab label="Plans" />
-            <Tab label="Billing History" />
-            <Tab label="Payment Methods" />
-            <Tab label="Analytics" />
-          </Tabs>
-        </Paper>
+      <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`py-4 px-1 text-center border-b-2 font-medium text-sm ${activeTab === tab.id
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                }`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
 
-        <ErrorBoundary>
-          <TabPanel value={tabValue} index={0}>
-            <SubscriptionManagement />
-          </TabPanel>
-
-          <TabPanel value={tabValue} index={1}>
-            <BillingHistory />
-          </TabPanel>
-
-          <TabPanel value={tabValue} index={2}>
-            <PaymentMethodsManagement />
-          </TabPanel>
-
-          <TabPanel value={tabValue} index={3}>
-            <FeatureGuard feature="advanced_analytics">
-              <SubscriptionAnalytics />
-            </FeatureGuard>
-          </TabPanel>
-        </ErrorBoundary>
-      </Box>
-    </Container>
+      <ErrorBoundary>
+        <div className="mt-6">
+          {tabs[activeTab].component}
+        </div>
+      </ErrorBoundary>
+    </div>
   );
 };
 

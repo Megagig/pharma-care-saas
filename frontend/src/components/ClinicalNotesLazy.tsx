@@ -1,7 +1,6 @@
-import React, { Suspense, lazy } from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
-import ClinicalNotesErrorBoundary from './ClinicalNotesErrorBoundary';
+// import ClinicalNotesErrorBoundary from './ClinicalNotesErrorBoundary';
 
+import { Spinner } from '@/components/ui/button';
 // Lazy load Clinical Notes components
 const ClinicalNotesDashboard = lazy(() => import('./ClinicalNotesDashboard'));
 const ClinicalNoteForm = lazy(() => import('./ClinicalNoteForm'));
@@ -13,7 +12,7 @@ const ClinicalNotesLoadingFallback: React.FC<{
   message?: string;
   minHeight?: number;
 }> = ({ message = 'Loading Clinical Notes...', minHeight = 400 }) => (
-  <Box
+  <div
     display="flex"
     flexDirection="column"
     justifyContent="center"
@@ -21,11 +20,11 @@ const ClinicalNotesLoadingFallback: React.FC<{
     minHeight={minHeight}
     gap={2}
   >
-    <CircularProgress size={40} />
-    <Typography variant="body2" color="text.secondary">
+    <Spinner size={40} />
+    <div  color="text.secondary">
       {message}
-    </Typography>
-  </Box>
+    </div>
+  </div>
 );
 
 // Lazy-loaded Dashboard wrapper
@@ -55,7 +54,7 @@ export const LazyClinicalNoteDetail: React.FC<any> = (props) => (
   <ClinicalNotesErrorBoundary>
     <Suspense
       fallback={
-        <ClinicalNotesLoadingFallback message="Loading Note Details..." />
+        <ClinicalNotesLoadingFallback message="Loading Note Details..." />}
       }
     >
       <ClinicalNoteDetail {...props} />
@@ -69,7 +68,7 @@ export const LazyPatientClinicalNotes: React.FC<any> = (props) => (
     <Suspense
       fallback={
         <ClinicalNotesLoadingFallback
-          message="Loading Patient Notes..."
+          message="Loading Patient Notes..."}
           minHeight={200}
         />
       }
@@ -113,10 +112,6 @@ export const useClinicalNotesPreloader = () => {
 };
 
 export default {
-  LazyClinicalNotesDashboard,
-  LazyClinicalNoteForm,
-  LazyClinicalNoteDetail,
-  LazyPatientClinicalNotes,
   preloadClinicalNotesComponents,
   useClinicalNotesPreloader,
 };

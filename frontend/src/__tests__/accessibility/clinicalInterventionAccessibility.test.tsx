@@ -1,13 +1,10 @@
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { axe, toHaveNoViolations } from 'jest-axe';
 import ClinicalInterventionDashboard from '../../components/ClinicalInterventionDashboard';
-import InterventionForm from '../../components/InterventionForm';
-import * as clinicalInterventionService from '../../services/clinicalInterventionService';
-import * as patientService from '../../services/patientService';
 
+import InterventionForm from '../../components/InterventionForm';
+
+import * as clinicalInterventionService from '../../services/clinicalInterventionService';
+
+import * as patientService from '../../services/patientService';
 // Extend Jest matchers
 expect.extend(toHaveNoViolations);
 
@@ -16,34 +13,30 @@ vi.mock('../../services/clinicalInterventionService');
 vi.mock('../../services/patientService');
 
 // Mock the hooks
-vi.mock('../../hooks/useAuth', () => ({
+vi.mock('../../hooks/useAuth', () => ({ 
   useAuth: () => ({
     user: {
       id: 'user-1',
       firstName: 'Test',
       lastName: 'User',
-      role: 'pharmacist',
+      role: 'pharmacist'}
     },
-    isAuthenticated: true,
-  }),
-}));
+    isAuthenticated: true}
 
-vi.mock('../../hooks/useErrorHandling', () => ({
+vi.mock('../../hooks/useErrorHandling', () => ({ 
   useErrorHandling: () => ({
     handleError: vi.fn(),
     clearError: vi.fn(),
-    error: null,
-  }),
-}));
+    error: null}
+  })}
 
 // Test wrapper component
 const TestWrapper = ({ children }: { children: React.ReactNode }) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return (
     <QueryProvider client={queryClient}>
@@ -108,7 +101,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
     vi.clearAllMocks();
 
     // Mock service methods
-    vi.mocked(patientService.getPatients).mockResolvedValue({
+    vi.mocked(patientService.getPatients).mockResolvedValue({ 
       data: mockPatients,
       pagination: {
         page: 1,
@@ -116,11 +109,10 @@ describe('Clinical Intervention Accessibility Tests', () => {
         total: 2,
         pages: 1,
         hasNext: false,
-        hasPrev: false,
-      },
-    });
+        hasPrev: false}
+      }
 
-    vi.mocked(clinicalInterventionService.getInterventions).mockResolvedValue({
+    vi.mocked(clinicalInterventionService.getInterventions).mockResolvedValue({ 
       data: mockInterventions,
       pagination: {
         page: 1,
@@ -128,9 +120,8 @@ describe('Clinical Intervention Accessibility Tests', () => {
         total: 1,
         pages: 1,
         hasNext: false,
-        hasPrev: false,
-      },
-    });
+        hasPrev: false}
+      }
 
     vi.mocked(
       clinicalInterventionService.getDashboardMetrics
@@ -257,8 +248,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
 
       // Check that interactive elements are focusable
       const createButton = screen.getByRole('button', {
-        name: /create intervention/i,
-      });
+        name: /create intervention/i}
       expect(createButton).toHaveAttribute('tabindex', '0');
 
       const searchInput = screen.getByRole('searchbox');
@@ -415,8 +405,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
 
       // Try to trigger validation errors
       const submitButton = screen.getByRole('button', {
-        name: /create intervention/i,
-      });
+        name: /create intervention/i}
       submitButton.click();
 
       // Wait for validation errors to appear
@@ -443,8 +432,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
 
       // Add a strategy to show the strategy section
       const addStrategyButton = screen.getByRole('button', {
-        name: /add strategy/i,
-      });
+        name: /add strategy/i}
       addStrategyButton.click();
 
       // Check for fieldset and legend
@@ -464,8 +452,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
 
       // Check submit button
       const submitButton = screen.getByRole('button', {
-        name: /create intervention/i,
-      });
+        name: /create intervention/i}
       expect(submitButton).toHaveAttribute('type', 'submit');
 
       // Check cancel button
@@ -474,8 +461,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
 
       // Check add strategy button
       const addStrategyButton = screen.getByRole('button', {
-        name: /add strategy/i,
-      });
+        name: /add strategy/i}
       expect(addStrategyButton).toHaveAttribute('type', 'button');
     });
 
@@ -484,7 +470,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
 
       vi.mocked(
         clinicalInterventionService.createIntervention
-      ).mockResolvedValue({
+      ).mockResolvedValue({ 
         _id: 'intervention-1',
         interventionNumber: 'CI-202412-0001',
         category: 'drug_therapy_problem',
@@ -492,7 +478,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
         status: 'identified',
         issueDescription: 'Test intervention',
         patientId: 'patient-1',
-        identifiedBy: 'user-1',
+        identifiedBy: 'user-1'}
       });
 
       render(
@@ -515,8 +501,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
       descriptionInput.value = 'Test intervention description';
 
       const submitButton = screen.getByRole('button', {
-        name: /create intervention/i,
-      });
+        name: /create intervention/i}
       submitButton.click();
 
       // Check for success message with proper ARIA live region
@@ -540,8 +525,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
 
       // Open create intervention modal
       const createButton = screen.getByRole('button', {
-        name: /create intervention/i,
-      });
+        name: /create intervention/i}
       createButton.click();
 
       // Focus should move to modal
@@ -590,8 +574,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
       await screen.findByText('Clinical Interventions Dashboard');
 
       const createButton = screen.getByRole('button', {
-        name: /create intervention/i,
-      });
+        name: /create intervention/i}
       createButton.focus();
       expect(createButton).toHaveFocus();
 
@@ -683,8 +666,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
 
       // Check that important elements are still visible
       const createButton = screen.getByRole('button', {
-        name: /create intervention/i,
-      });
+        name: /create intervention/i}
       const computedStyle = window.getComputedStyle(createButton);
 
       // Button should have visible border or background
@@ -703,7 +685,7 @@ describe('Clinical Intervention Accessibility Tests', () => {
       // Mock reduced motion preference
       Object.defineProperty(window, 'matchMedia', {
         writable: true,
-        value: vi.fn().mockImplementation((query) => ({
+        value: vi.fn().mockImplementation((query) => ({ 
           matches: query === '(prefers-reduced-motion: reduce)',
           media: query,
           onchange: null,
@@ -711,9 +693,8 @@ describe('Clinical Intervention Accessibility Tests', () => {
           removeListener: vi.fn(),
           addEventListener: vi.fn(),
           removeEventListener: vi.fn(),
-          dispatchEvent: vi.fn(),
-        })),
-      });
+          dispatchEvent: vi.fn()}
+        }))}
 
       render(
         <TestWrapper>

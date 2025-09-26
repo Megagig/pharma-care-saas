@@ -1,71 +1,32 @@
 // Therapy Effectiveness Metrics Report Component
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  LinearProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-} from '@mui/material';
-import {
-  Medication,
-  TrendingUp,
-  Assessment,
-  Timeline,
-  CompareArrows,
-  CheckCircle,
-  Schedule,
-  Analytics,
-} from '@mui/icons-material';
 import ChartComponent from '../shared/ChartComponent';
-import {
-  ChartData,
-  KPICardData,
-  ProgressRingData,
-  GaugeData,
-} from '../../types/charts';
-import { TherapyEffectivenessFilters } from '../../types/filters';
+
+import { Card, CardContent, Progress, Alert, Tabs } from '@/components/ui/button';
 
 interface TherapyEffectivenessReportProps {
   filters: TherapyEffectivenessFilters;
   onFilterChange?: (filters: TherapyEffectivenessFilters) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
-
-const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
+const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({ 
   filters,
-  onFilterChange,
+  onFilterChange
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   // Mock data - in real implementation, this would come from API
   const mockData = useMemo(
-    () => ({
+    () => ({ 
       // KPI Cards Data
       kpiData: [
         {
@@ -75,7 +36,7 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
           trend: {
             direction: 'up' as const,
             value: 7.3,
-            period: 'vs last quarter',
+            period: 'vs last quarter'}
           },
           status: 'success' as const,
           target: { value: 80, label: 'Target' },
@@ -120,7 +81,6 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
           status: 'success' as const,
         },
       ],
-
       // Medication Adherence Over Time
       adherenceData: {
         id: 'adherence-trends',
@@ -325,7 +285,6 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
           },
         },
       },
-
       // Therapy Completion Rates
       completionRatesData: {
         title: 'Therapy Completion Progress',
@@ -343,7 +302,6 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
           secondary: 'Completion Rate',
         },
       },
-
       // Effectiveness by Category
       categoryEffectivenessData: {
         id: 'category-effectiveness',
@@ -508,7 +466,6 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
           },
         },
       },
-
       // Predictive Insights
       predictiveInsightsData: {
         id: 'predictive-insights',
@@ -653,7 +610,6 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
           },
         },
       },
-
       // Benchmark Comparison
       benchmarkData: {
         id: 'benchmark-comparison',
@@ -834,7 +790,6 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
           },
         },
       },
-
       // Detailed Therapy Data
       therapyDetails: [
         {
@@ -877,82 +832,73 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
           avgDuration: 165,
           effectiveness: 87.9,
         },
-      ],
-    }),
+      ], },
     []
   );
-
   // Simulate data loading
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [filters]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Alert severity="error" className="">
+        <div  gutterBottom>
           Error Loading Therapy Effectiveness Data
-        </Typography>
-        <Typography variant="body2">{error}</Typography>
+        </div>
+        <div >{error}</div>
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center' }}
+          className=""
         >
-          <Medication sx={{ mr: 2, color: 'primary.main' }} />
+          <Medication className="" />
           Therapy Effectiveness Metrics
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Comprehensive analysis of medication adherence, therapy completion
           rates, and clinical effectiveness.
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div container spacing={3} className="">
         {mockData.kpiData.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <ChartComponent
-              data={{
+              data={{}
                 id: `kpi-${index}`,
                 title: '',
                 type: 'kpi-card',
                 data: [kpi],
                 config: {} as any,
-              }}
               height={180}
               loading={loading}
             />
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          
           scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          className=""
         >
           <Tab
             icon={<TrendingUp />}
@@ -980,25 +926,24 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
             iconPosition="start"
           />
         </Tabs>
-
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.adherenceData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Adherence Insights
-                  </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Chip
                       label="Respiratory: Best Performance"
@@ -1020,132 +965,109 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
                       color="info"
                       size="small"
                     />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Medication adherence shows consistent improvement across all
                     therapeutic areas. Respiratory therapies demonstrate the
                     highest adherence rates, while mental health treatments
                     require additional support strategies to improve patient
                     compliance.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+          <div container spacing={3}>
+            <div item xs={12} md={6}>
               <ChartComponent
                 data={{
                   id: 'completion-rates',
                   title: '',
                   type: 'progress-ring',
-                  data: [mockData.completionRatesData],
+                  data: [mockData.completionRatesData],}
                   config: {} as any,
-                }}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: 400 }}>
+            </div>
+            <div item xs={12} md={6}>
+              <Card className="">
                 <CardContent
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
+                  className=""
                 >
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Completion Rate Analysis
-                  </Typography>
-
+                  </div>
                   {mockData.completionRatesData.segments?.map(
                     (segment, index) => (
-                      <Box key={index} sx={{ mb: 2 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            mb: 1,
-                          }}
+                      <div key={index} className="">
+                        <div
+                          className=""
                         >
-                          <Typography variant="body2">
+                          <div >
                             {segment.label}
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
+                          </div>
+                          <div  fontWeight="bold">
                             {segment.value}%
-                          </Typography>
-                        </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={segment.value}
-                          sx={{
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: `${segment.color}20`,
+                          </div>
+                        </div>
+                        <Progress
+                          
+                          className=""20`,
                             '& .MuiLinearProgress-bar': {
                               backgroundColor: segment.color,
                               borderRadius: 4,
                             },
-                          }}
                         />
-                      </Box>
+                      </div>
                     )
                   )}
-
-                  <Box
-                    sx={{
-                      mt: 'auto',
-                      pt: 2,
-                      borderTop: 1,
-                      borderColor: 'divider',
-                    }}
+                  <div
+                    className=""
                   >
-                    <Typography variant="body2" gutterBottom>
+                    <div  gutterBottom>
                       <strong>Key Factors for Success:</strong>
-                    </Typography>
-                    <Typography
-                      variant="caption"
+                    </div>
+                    <div
+                      
                       color="text.secondary"
                       display="block"
                     >
                       • Regular monitoring and follow-up appointments
-                    </Typography>
-                    <Typography
-                      variant="caption"
+                    </div>
+                    <div
+                      
                       color="text.secondary"
                       display="block"
                     >
                       • Patient education and engagement programs
-                    </Typography>
-                    <Typography
-                      variant="caption"
+                    </div>
+                    <div
+                      
                       color="text.secondary"
                       display="block"
                     >
                       • Personalized therapy adjustments
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.categoryEffectivenessData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <TableContainer component={Paper}>
+            </div>
+            <div item xs={12}>
+              <TableContainer >
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -1173,16 +1095,12 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
                     {mockData.therapyDetails.map((row) => (
                       <TableRow key={row.category} hover>
                         <TableCell component="th" scope="row">
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <div className="">
                             <Medication
-                              sx={{
-                                mr: 1,
-                                fontSize: 16,
-                                color: 'primary.main',
-                              }}
+                              className=""
                             />
                             {row.category}
-                          </Box>
+                          </div>
                         </TableCell>
                         <TableCell align="right">
                           {row.totalPatients.toLocaleString()}
@@ -1195,7 +1113,7 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
                                 ? 'success'
                                 : row.adherenceRate > 85
                                 ? 'warning'
-                                : 'error'
+                                : 'error'}
                             }
                             size="small"
                           />
@@ -1208,238 +1126,185 @@ const TherapyEffectivenessReport: React.FC<TherapyEffectivenessReportProps> = ({
                                 ? 'success'
                                 : row.completionRate > 87
                                 ? 'warning'
-                                : 'error'
+                                : 'error'}
                             }
                             size="small"
                           />
                         </TableCell>
                         <TableCell align="right">{row.avgDuration}</TableCell>
                         <TableCell align="right">
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'flex-end',
-                            }}
+                          <div
+                            className=""
                           >
-                            <LinearProgress
-                              variant="determinate"
-                              value={row.effectiveness}
-                              sx={{
-                                width: 60,
-                                mr: 1,
-                                height: 6,
-                                borderRadius: 3,
-                                backgroundColor: '#e5e7eb',
-                                '& .MuiLinearProgress-bar': {
-                                  backgroundColor:
-                                    row.effectiveness > 88
-                                      ? '#10b981'
-                                      : row.effectiveness > 85
-                                      ? '#f59e0b'
-                                      : '#ef4444',
-                                  borderRadius: 3,
-                                },
-                              }}
-                            />
-                            <Typography variant="caption">
+                            <Progress
+                              
+                              className="" />
+                            <div >
                               {row.effectiveness}%
-                            </Typography>
-                          </Box>
+                            </div>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.predictiveInsightsData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Predictive Analytics Insights
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'primary.light',
-                          borderRadius: 2,
-                          color: 'primary.contrastText',
-                        }}
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <TrendingUp sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">92.7%</Typography>
-                        <Typography variant="caption">
+                        <TrendingUp className="" />
+                        <div >92.7%</div>
+                        <div >
                           Predicted Success Rate
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'success.light',
-                          borderRadius: 2,
-                          color: 'success.contrastText',
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <CheckCircle sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">88.1%</Typography>
-                        <Typography variant="caption">
+                        <CheckCircle className="" />
+                        <div >88.1%</div>
+                        <div >
                           Confidence Level
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'warning.light',
-                          borderRadius: 2,
-                          color: 'warning.contrastText',
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Schedule sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">6 months</Typography>
-                        <Typography variant="caption">
+                        <Schedule className="" />
+                        <div >6 months</div>
+                        <div >
                           Forecast Period
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'info.light',
-                          borderRadius: 2,
-                          color: 'info.contrastText',
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Analytics sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">15</Typography>
-                        <Typography variant="caption">Risk Factors</Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    <Typography variant="body2">
+                        <Analytics className="" />
+                        <div >15</div>
+                        <div >Risk Factors</div>
+                      </div>
+                    </div>
+                  </div>
+                  <Alert severity="info" className="">
+                    <div >
                       Predictive models indicate continued improvement in
                       therapy outcomes. Key factors include enhanced patient
                       engagement, optimized dosing protocols, and improved
                       monitoring systems.
-                    </Typography>
+                    </div>
                   </Alert>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={4}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.benchmarkData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Benchmark Analysis Summary
-                  </Typography>
-                  <Grid container spacing={2}>
+                  </div>
+                  <div container spacing={2}>
                     {mockData.benchmarkData.data.map((item, index) => {
                       const performanceVsIndustry =
                         item.ourPerformance - item.industryAverage;
                       const performanceVsBest =
                         item.ourPerformance - item.bestPractice;
-
                       return (
-                        <Grid item xs={12} sm={6} md={4} key={index}>
-                          <Card variant="outlined">
-                            <CardContent sx={{ textAlign: 'center' }}>
-                              <Typography variant="subtitle2" gutterBottom>
+                        <div item xs={12} sm={6} md={4} key={index}>
+                          <Card >
+                            <CardContent className="">
+                              <div  gutterBottom>
                                 {item.metric}
-                              </Typography>
-                              <Typography
-                                variant="h5"
+                              </div>
+                              <div
+                                
                                 color="primary.main"
                                 gutterBottom
                               >
                                 {item.ourPerformance}%
-                              </Typography>
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  mt: 1,
-                                }}
+                              </div>
+                              <div
+                                className=""
                               >
                                 <Chip
                                   label={`${
-                                    performanceVsIndustry > 0 ? '+' : ''
+                                    performanceVsIndustry > 0 ? '+' : ''}
                                   }${performanceVsIndustry.toFixed(
                                     1
                                   )}% vs Industry`}
                                   color={
                                     performanceVsIndustry > 0
                                       ? 'success'
-                                      : 'error'
+                                      : 'error'}
                                   }
                                   size="small"
                                 />
-                              </Box>
-                              <Box sx={{ mt: 1 }}>
+                              </div>
+                              <div className="">
                                 <Chip
                                   label={`${
-                                    performanceVsBest > 0 ? '+' : ''
+                                    performanceVsBest > 0 ? '+' : ''}
                                   }${performanceVsBest.toFixed(1)}% vs Best`}
                                   color={
                                     performanceVsBest > -2
                                       ? 'success'
                                       : performanceVsBest > -5
                                       ? 'warning'
-                                      : 'error'
+                                      : 'error'}
                                   }
                                   size="small"
-                                  variant="outlined"
+                                  
                                 />
-                              </Box>
+                              </div>
                             </CardContent>
                           </Card>
-                        </Grid>
+                        </div>
                       );
                     })}
-                  </Grid>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default TherapyEffectivenessReport;

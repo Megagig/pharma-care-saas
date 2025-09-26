@@ -1,73 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  IconButton,
-  Tooltip,
-  Button,
-  Skeleton,
-  Alert,
-  useTheme,
-  alpha,
-  Fab,
-  Zoom,
-  Chip,
-  Avatar,
-  LinearProgress,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Divider,
-} from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  People as PeopleIcon,
-  Description as DescriptionIcon,
-  Medication as MedicationIcon,
-  Assessment as AssessmentIcon,
-  Science as ScienceIcon,
-  Refresh as RefreshIcon,
-  Add as AddIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  Schedule as ScheduleIcon,
-  Notifications as NotificationsIcon,
-  Settings as SettingsIcon,
-  PersonAdd as PersonAddIcon,
-  NoteAdd as NoteAddIcon,
-  Event as EventIcon,
-  Warning as WarningIcon,
-  Login as LoginIcon,
-  Assignment as AssignmentIcon,
-  Security as SecurityIcon,
-  CheckCircle as CheckCircleIcon,
-} from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useDashboardData } from '../../hooks/useDashboardData';
-import { useDashboardCharts } from '../../hooks/useDashboardCharts';
-import { useClinicalInterventionDashboard } from '../../hooks/useClinicalInterventionDashboard';
-import { useRecentActivities } from '../../hooks/useRecentActivities';
-import { activityService } from '../../services/activityService';
-import { testApiEndpoints } from '../../debug/testApiData';
-import { testDashboardService } from '../../debug/testDashboardService';
 import DashboardChart from './DashboardChart';
-import QuickActionCard from './QuickActionCard';
-import { useResponsive } from '../../hooks/useResponsive';
-import { useNavigate } from 'react-router-dom';
 
+import QuickActionCard from './QuickActionCard';
 // Communication Hub Components
 import CommunicationWidget from '../communication/CommunicationWidget';
-import CommunicationMetrics from '../communication/CommunicationMetrics';
 
+import CommunicationMetrics from '../communication/CommunicationMetrics';
 // All components enabled
 import AdminDashboardIntegration from './AdminDashboardIntegration';
+
 import UsageDashboard from './UsageDashboard';
+
 import PharmacistPerformanceTable from './PharmacistPerformanceTable';
 
+import { Button, Card, CardContent, Tooltip, Progress, Alert, Skeleton, Avatar, Separator } from '@/components/ui/button';
 // Enhanced KPI Card Component
 interface KPICardProps {
   title: string;
@@ -83,8 +28,7 @@ interface KPICardProps {
   loading?: boolean;
   onClick?: () => void;
 }
-
-const KPICard: React.FC<KPICardProps> = ({
+const KPICard: React.FC<KPICardProps> = ({ 
   title,
   value,
   subtitle,
@@ -92,21 +36,15 @@ const KPICard: React.FC<KPICardProps> = ({
   color,
   trend,
   loading = false,
-  onClick,
+  onClick
 }) => {
   const theme = useTheme();
-
   return (
     <motion.div
-      whileHover={{ y: -4, scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-    >
+      
+      >
       <Card
-        sx={{
-          height: '100%',
-          cursor: onClick ? 'pointer' : 'default',
-          background: `linear-gradient(135deg, ${alpha(color, 0.1)} 0%, ${alpha(
+        className="" 0%, ${alpha(
             color,
             0.05
           )} 100%)`,
@@ -119,181 +57,145 @@ const KPICard: React.FC<KPICardProps> = ({
                 transform: 'translateY(-2px)',
               }
             : {},
-        }}
         onClick={onClick}
       >
-        <CardContent sx={{ p: 3, position: 'relative' }}>
+        <CardContent className="">
           {/* Background Pattern */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: -20,
-              right: -20,
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              background: `linear-gradient(135deg, ${alpha(
-                color,
-                0.1
-              )}, ${alpha(color, 0.05)})`,
+          <div
+            className="" ${alpha(color, 0.05)})`,
               zIndex: 0,
-            }}
           />
-
-          <Box sx={{ position: 'relative', zIndex: 1 }}>
-            <Box
+          <div className="">
+            <div
               display="flex"
               alignItems="center"
               justifyContent="space-between"
               mb={2}
             >
               <Avatar
-                sx={{
-                  bgcolor: alpha(color, 0.15),
-                  color: color,
-                  width: 56,
-                  height: 56,
-                }}
+                className=""
               >
                 {icon}
               </Avatar>
               {trend && (
                 <Chip
                   icon={
-                    trend.isPositive ? <TrendingUpIcon /> : <TrendingDownIcon />
+                    trend.isPositive ? <TrendingUpIcon /> : <TrendingDownIcon />}
                   }
                   label={`${trend.isPositive ? '+' : ''}${trend.value}%`}
                   size="small"
                   color={trend.isPositive ? 'success' : 'error'}
-                  variant="outlined"
+                  
                 />
               )}
-            </Box>
-
-            <Typography variant="h6" color="text.secondary" gutterBottom>
+            </div>
+            <div  color="text.secondary" gutterBottom>
               {title}
-            </Typography>
-
+            </div>
             {loading ? (
-              <Skeleton variant="text" width="60%" height={48} />
+              <Skeleton  width="60%" height={48} />
             ) : (
-              <Typography
-                variant="h3"
+              <div
+                
                 component="div"
-                sx={{
-                  color: color,
-                  fontWeight: 'bold',
-                  mb: 1,
-                }}
+                className=""
               >
                 {typeof value === 'number'
                   ? value.toLocaleString()
                   : value || '0'}
-              </Typography>
+              </div>
             )}
-
             {subtitle && (
-              <Typography variant="body2" color="text.secondary">
+              <div  color="text.secondary">
                 {subtitle}
-              </Typography>
+              </div>
             )}
-
             {trend && (
-              <Typography
-                variant="caption"
+              <div
+                
                 color="text.secondary"
-                sx={{ mt: 1, display: 'block' }}
+                className=""
               >
                 vs {trend.period}
-              </Typography>
+              </div>
             )}
-          </Box>
+          </div>
         </CardContent>
       </Card>
     </motion.div>
   );
 };
-
 // System Health Component
 const SystemHealthCard: React.FC = () => {
   const theme = useTheme();
-  const [healthStatus, setHealthStatus] = useState({
+  const [healthStatus, setHealthStatus] = useState({ 
     database: 'healthy',
     api: 'healthy',
     uptime: '99.9%',
-    responseTime: '120ms',
+    responseTime: '120ms'}
   });
-
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card className="">
       <CardContent>
-        <Box display="flex" alignItems="center" mb={2}>
-          <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+        <div display="flex" alignItems="center" mb={2}>
+          <Avatar className="">
             <SettingsIcon />
           </Avatar>
-          <Typography variant="h6">System Health</Typography>
-        </Box>
-
-        <Box mb={2}>
-          <Box
+          <div >System Health</div>
+        </div>
+        <div mb={2}>
+          <div
             display="flex"
             justifyContent="space-between"
             alignItems="center"
             mb={1}
           >
-            <Typography variant="body2">Database</Typography>
+            <div >Database</div>
             <Chip label="Healthy" color="success" size="small" />
-          </Box>
-          <LinearProgress variant="determinate" value={100} color="success" />
-        </Box>
-
-        <Box mb={2}>
-          <Box
+          </div>
+          <Progress  color="success" />
+        </div>
+        <div mb={2}>
+          <div
             display="flex"
             justifyContent="space-between"
             alignItems="center"
             mb={1}
           >
-            <Typography variant="body2">API Response</Typography>
-            <Typography variant="caption">
+            <div >API Response</div>
+            <div >
               {healthStatus.responseTime}
-            </Typography>
-          </Box>
-          <LinearProgress variant="determinate" value={85} color="info" />
-        </Box>
-
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="body2">Uptime</Typography>
-          <Typography variant="h6" color="success.main">
+            </div>
+          </div>
+          <Progress  color="info" />
+        </div>
+        <div display="flex" justifyContent="space-between" alignItems="center">
+          <div >Uptime</div>
+          <div  color="success.main">
             {healthStatus.uptime}
-          </Typography>
-        </Box>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
 };
-
 export const ModernDashboard: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsive();
-
   // Debug API endpoints and dashboard service
   useEffect(() => {
     console.log('🔍 Running API debug test...');
     testApiEndpoints();
-
     console.log('🔍 Running Dashboard Service test...');
     testDashboardService().catch(console.error);
   }, []);
-
   // Dashboard data hooks
   const {
     stats,
     loading: dashboardLoading,
     error: dashboardError,
   } = useDashboardData();
-
   // Chart data hooks - separate for better performance and real data
   const {
     clinicalNotesByType,
@@ -306,14 +208,12 @@ export const ModernDashboard: React.FC = () => {
     error: chartsError,
     refresh: refreshCharts,
   } = useDashboardCharts();
-
   const {
     dashboardMetrics: clinicalMetrics,
     loading: clinicalLoading,
     error: clinicalError,
     refresh: refreshClinical,
   } = useClinicalInterventionDashboard('month');
-
   const {
     systemActivities,
     userActivities,
@@ -321,9 +221,7 @@ export const ModernDashboard: React.FC = () => {
     error: activitiesError,
     refresh: refreshActivities,
   } = useRecentActivities(10);
-
   const [refreshing, setRefreshing] = useState(false);
-
   // Handle refresh
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -337,7 +235,6 @@ export const ModernDashboard: React.FC = () => {
       setRefreshing(false);
     }
   };
-
   // Loading state - only show loading if we're actually loading and have no data at all
   if (
     dashboardLoading &&
@@ -345,46 +242,34 @@ export const ModernDashboard: React.FC = () => {
     stats.totalClinicalNotes === 0
   ) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Skeleton variant="text" width="40%" height={60} sx={{ mb: 2 }} />
-        <Skeleton variant="text" width="60%" height={30} sx={{ mb: 4 }} />
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: '1fr 1fr',
-              md: 'repeat(3, 1fr)',
-              lg: 'repeat(6, 1fr)',
-            },
-            gap: 3,
-            width: '100%',
-          }}
-        >
+      <div className="">
+        <Skeleton  width="40%" height={60} className="" />
+        <Skeleton  width="60%" height={30} className="" />
+        <div
+          className="">
           {[...Array(6)].map((_, index) => (
-            <Box key={index} sx={{ width: '100%' }}>
+            <div key={index} className="">
               <Skeleton
-                variant="rectangular"
+                
                 height={160}
-                sx={{ borderRadius: 2 }}
+                className=""
               />
-            </Box>
+            </div>
           ))}
-        </Box>
-      </Box>
+        </div>
+      </div>
     );
   }
-
   // Error state
   if (dashboardError) {
     return (
-      <Box sx={{ p: 3 }}>
+      <div className="">
         <Alert
           severity="error"
           action={
             <Button
               color="inherit"
-              size="small"
+              size="small"}
               onClick={() => window.location.reload()}
             >
               Retry
@@ -393,229 +278,152 @@ export const ModernDashboard: React.FC = () => {
         >
           Error loading dashboard: {dashboardError}
         </Alert>
-      </Box>
+      </div>
     );
   }
-
   return (
-    <Box
-      sx={{
-        p: { xs: 2, sm: 3 },
-        width: '100%',
-        maxWidth: '100%',
-        mx: 0,
-      }}
-    >
+    <div
+      className="">
       {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Box
+        
+        >
+        <div
           display="flex"
           justifyContent="space-between"
           alignItems="center"
           mb={4}
         >
-          <Box>
-            <Typography
+          <div>
+            <div
               variant={isMobile ? 'h4' : 'h3'}
               component="h1"
-              sx={{
-                fontWeight: 'bold',
-                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 1,
-              }}
-            >
+              className="">
               Pharmacare Dashboard
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
+            </div>
+            <div  color="text.secondary">
               Welcome back! Here's your healthcare system overview.
-            </Typography>
-          </Box>
-
-          <Box display="flex" gap={1}>
+            </div>
+          </div>
+          <div display="flex" gap={1}>
             <Tooltip title="Refresh Dashboard">
               <IconButton
                 onClick={handleRefresh}
                 disabled={refreshing}
-                sx={{
-                  bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.2),
-                  },
-                }}
-              >
+                className="">
                 <RefreshIcon
-                  sx={{
-                    animation: refreshing ? 'spin 1s linear infinite' : 'none',
-                    '@keyframes spin': {
-                      '0%': { transform: 'rotate(0deg)' },
+                  className=""
                       '100%': { transform: 'rotate(360deg)' },
                     },
-                  }}
                 />
               </IconButton>
             </Tooltip>
-
             <Tooltip title="Notifications">
               <IconButton
-                sx={{
-                  bgcolor: alpha(theme.palette.warning.main, 0.1),
-                  '&:hover': {
-                    bgcolor: alpha(theme.palette.warning.main, 0.2),
-                  },
-                }}
-              >
+                className="">
                 <NotificationsIcon />
               </IconButton>
             </Tooltip>
-          </Box>
-        </Box>
+          </div>
+        </div>
       </motion.div>
-
       {/* KPI Cards */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
-        <Box
-          className="main-kpis-grid"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: '1fr 1fr',
-              md: 'repeat(3, 1fr)',
-              lg: 'repeat(6, 1fr)',
-            },
-            gap: 3,
-            mb: 4,
-            width: '100%',
-          }}
+        
         >
-          <Box sx={{ width: '100%' }}>
+        <div
+          className="">
+          <div className="">
             <KPICard
               title="Total Patients"
               value={stats.totalPatients || 0}
               subtitle="Active patients in system"
               icon={<PeopleIcon />}
               color={theme.palette.primary.main}
-              trend={{ value: 12, isPositive: true, period: 'last month' }}
+              
               loading={dashboardLoading}
               onClick={() => navigate('/patients')}
             />
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <KPICard
               title="Clinical Notes"
               value={stats.totalClinicalNotes || 0}
               subtitle="Total notes recorded"
               icon={<DescriptionIcon />}
               color={theme.palette.success.main}
-              trend={{ value: 8, isPositive: true, period: 'last month' }}
+              
               loading={dashboardLoading}
               onClick={() => navigate('/notes')}
             />
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <KPICard
               title="Medications"
               value={stats.totalMedications || 0}
               subtitle="Medication records"
               icon={<MedicationIcon />}
               color={theme.palette.warning.main}
-              trend={{ value: 5, isPositive: true, period: 'last month' }}
+              
               loading={dashboardLoading}
               onClick={() => navigate('/medications')}
             />
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <KPICard
               title="MTR Sessions"
               value={stats.totalMTRs || 0}
               subtitle="Medication therapy reviews"
               icon={<AssessmentIcon />}
               color={theme.palette.secondary.main}
-              trend={{ value: 15, isPositive: true, period: 'last month' }}
+              
               loading={dashboardLoading}
               onClick={() => navigate('/pharmacy/medication-therapy')}
             />
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <KPICard
               title="Diagnostics"
               value={stats.totalDiagnostics || 0}
               subtitle="Diagnostic tests"
               icon={<ScienceIcon />}
               color={theme.palette.error.main}
-              trend={{ value: -3, isPositive: false, period: 'last month' }}
+              
               loading={dashboardLoading}
               onClick={() => navigate('/pharmacy/diagnostics')}
             />
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <SystemHealthCard />
-          </Box>
-        </Box>
+          </div>
+        </div>
       </motion.div>
-
       {/* Charts Section */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        {/* Charts Grid - Full Width Layout */}
-        <Box
-          className="dashboard-charts-grid"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-            gap: 4,
-            mb: 4,
-            width: '100%',
-          }}
+        
         >
+        {/* Charts Grid - Full Width Layout */}
+        <div
+          className="">
           {/* Patients by Month - Line Chart */}
-          <Box sx={{ width: '100%' }}>
+          <div className="">
             {chartsLoading ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
-                <Box sx={{ textAlign: 'center' }}>
+                <div className="">
                   <Skeleton
-                    variant="text"
+                    
                     width="60%"
                     height={40}
-                    sx={{ mb: 2 }}
+                    className=""
                   />
-                  <Skeleton variant="rectangular" width="100%" height={300} />
-                </Box>
+                  <Skeleton  width="100%" height={300} />
+                </div>
               </Card>
             ) : chartsError ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
                 <Alert severity="error">
                   Error loading chart: {chartsError}
@@ -626,7 +434,7 @@ export const ModernDashboard: React.FC = () => {
                 title="Patients by Month"
                 data={
                   patientsByMonth.length > 0
-                    ? patientsByMonth
+                    ? patientsByMonth}
                     : [{ name: 'No Data', value: 0 }]
                 }
                 type="line"
@@ -634,43 +442,32 @@ export const ModernDashboard: React.FC = () => {
                 colors={[theme.palette.primary.main]}
                 subtitle={`Monthly patient registration trends (${patientsByMonth.reduce(
                   (sum, item) => sum + item.value,
-                  0
+                  0}
                 )} total)`}
                 showLegend={false}
                 interactive={true}
               />
             )}
-          </Box>
-
+          </div>
           {/* Medications by Status - Pie Chart */}
-          <Box sx={{ width: '100%' }}>
+          <div className="">
             {chartsLoading ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
-                <Box sx={{ textAlign: 'center' }}>
+                <div className="">
                   <Skeleton
-                    variant="text"
+                    
                     width="60%"
                     height={40}
-                    sx={{ mb: 2 }}
+                    className=""
                   />
-                  <Skeleton variant="circular" width={300} height={300} />
-                </Box>
+                  <Skeleton  width={300} height={300} />
+                </div>
               </Card>
             ) : chartsError ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
                 <Alert severity="error">
                   Error loading chart: {chartsError}
@@ -686,7 +483,7 @@ export const ModernDashboard: React.FC = () => {
                         {
                           name: 'No Data',
                           value: 1,
-                          color: theme.palette.grey[400],
+                          color: theme.palette.grey[400],}
                         },
                       ]
                 }
@@ -696,47 +493,36 @@ export const ModernDashboard: React.FC = () => {
                   theme.palette.success.main,
                   theme.palette.info.main,
                   theme.palette.warning.main,
-                  theme.palette.grey[400],
+                  theme.palette.grey[400],}
                 ]}
                 subtitle={`Current medication status distribution (${medicationsByStatus.reduce(
                   (sum, item) => sum + item.value,
-                  0
+                  0}
                 )} total)`}
                 showLegend={true}
                 interactive={true}
               />
             )}
-          </Box>
-
+          </div>
           {/* Clinical Notes by Type - Bar Chart */}
-          <Box sx={{ width: '100%' }}>
+          <div className="">
             {chartsLoading ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
-                <Box sx={{ textAlign: 'center' }}>
+                <div className="">
                   <Skeleton
-                    variant="text"
+                    
                     width="60%"
                     height={40}
-                    sx={{ mb: 2 }}
+                    className=""
                   />
-                  <Skeleton variant="rectangular" width="100%" height={300} />
-                </Box>
+                  <Skeleton  width="100%" height={300} />
+                </div>
               </Card>
             ) : chartsError ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
                 <Alert severity="error">
                   Error loading chart: {chartsError}
@@ -751,43 +537,32 @@ export const ModernDashboard: React.FC = () => {
                 colors={[theme.palette.secondary.main]}
                 subtitle={`Distribution of clinical note types (${clinicalNotesByType.reduce(
                   (sum, item) => sum + item.value,
-                  0
+                  0}
                 )} total)`}
                 showLegend={false}
                 interactive={true}
               />
             )}
-          </Box>
-
+          </div>
           {/* MTR Sessions by Status - Pie Chart */}
-          <Box sx={{ width: '100%' }}>
+          <div className="">
             {chartsLoading ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
-                <Box sx={{ textAlign: 'center' }}>
+                <div className="">
                   <Skeleton
-                    variant="text"
+                    
                     width="60%"
                     height={40}
-                    sx={{ mb: 2 }}
+                    className=""
                   />
-                  <Skeleton variant="circular" width={300} height={300} />
-                </Box>
+                  <Skeleton  width={300} height={300} />
+                </div>
               </Card>
             ) : chartsError ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
                 <Alert severity="error">
                   Error loading chart: {chartsError}
@@ -803,47 +578,36 @@ export const ModernDashboard: React.FC = () => {
                   theme.palette.warning.main,
                   theme.palette.success.main,
                   theme.palette.grey[400],
-                  theme.palette.info.main,
+                  theme.palette.info.main,}
                 ]}
                 subtitle={`Medication therapy review status (${mtrsByStatus.reduce(
                   (sum, item) => sum + item.value,
-                  0
+                  0}
                 )} total)`}
                 showLegend={true}
                 interactive={true}
               />
             )}
-          </Box>
-
+          </div>
           {/* Patient Age Distribution - Bar Chart */}
-          <Box sx={{ width: '100%' }}>
+          <div className="">
             {chartsLoading ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
-                <Box sx={{ textAlign: 'center' }}>
+                <div className="">
                   <Skeleton
-                    variant="text"
+                    
                     width="60%"
                     height={40}
-                    sx={{ mb: 2 }}
+                    className=""
                   />
-                  <Skeleton variant="rectangular" width="100%" height={300} />
-                </Box>
+                  <Skeleton  width="100%" height={300} />
+                </div>
               </Card>
             ) : chartsError ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
                 <Alert severity="error">
                   Error loading chart: {chartsError}
@@ -854,7 +618,7 @@ export const ModernDashboard: React.FC = () => {
                 title="Patient Age Distribution"
                 data={
                   patientAgeDistribution.length > 0
-                    ? patientAgeDistribution
+                    ? patientAgeDistribution}
                     : [{ name: 'No Data', value: 0 }]
                 }
                 type="bar"
@@ -862,43 +626,32 @@ export const ModernDashboard: React.FC = () => {
                 colors={[theme.palette.info.main]}
                 subtitle={`Age demographics of patients (${patientAgeDistribution.reduce(
                   (sum, item) => sum + item.value,
-                  0
+                  0}
                 )} total)`}
                 showLegend={false}
                 interactive={true}
               />
             )}
-          </Box>
-
+          </div>
           {/* Monthly Activity Trend - Line Chart */}
-          <Box sx={{ width: '100%' }}>
+          <div className="">
             {chartsLoading ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
-                <Box sx={{ textAlign: 'center' }}>
+                <div className="">
                   <Skeleton
-                    variant="text"
+                    
                     width="60%"
                     height={40}
-                    sx={{ mb: 2 }}
+                    className=""
                   />
-                  <Skeleton variant="rectangular" width="100%" height={300} />
-                </Box>
+                  <Skeleton  width="100%" height={300} />
+                </div>
               </Card>
             ) : chartsError ? (
               <Card
-                sx={{
-                  height: 450,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                className=""
               >
                 <Alert severity="error">
                   Error loading chart: {chartsError}
@@ -913,174 +666,120 @@ export const ModernDashboard: React.FC = () => {
                 colors={[theme.palette.success.main]}
                 subtitle={`Overall system activity trends (${monthlyActivity.reduce(
                   (sum, item) => sum + item.value,
-                  0
+                  0}
                 )} total activities)`}
                 showLegend={false}
                 interactive={true}
               />
             )}
-          </Box>
-        </Box>
+          </div>
+        </div>
       </motion.div>
-
       {/* Communication Hub Section */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.25 }}
-      >
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
-          Communication Hub
-        </Typography>
-        <Box
-          className="communication-widgets-grid"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              md: '1fr 1fr',
-              lg: '2fr 1fr 1fr',
-            },
-            gap: 3,
-            mb: 4,
-            width: '100%',
-          }}
+        
         >
-          <Box sx={{ width: '100%' }}>
-            <CommunicationWidget variant="overview" height={320} />
-          </Box>
-          <Box sx={{ width: '100%' }}>
-            <CommunicationWidget variant="recent-messages" height={320} />
-          </Box>
-          <Box sx={{ width: '100%' }}>
-            <CommunicationWidget variant="notifications" height={320} />
-          </Box>
-        </Box>
+        <div  className="">
+          Communication Hub
+        </div>
+        <div
+          className="">
+          <div className="">
+            <CommunicationWidget  height={320} />
+          </div>
+          <div className="">
+            <CommunicationWidget  height={320} />
+          </div>
+          <div className="">
+            <CommunicationWidget  height={320} />
+          </div>
+        </div>
       </motion.div>
-
       {/* Communication Metrics */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.28 }}
-      >
-        <Box sx={{ mb: 4 }}>
+        
+        >
+        <div className="">
           <CommunicationMetrics timeRange="week" showTrends={true} />
-        </Box>
+        </div>
       </motion.div>
-
       {/* Recent Activities Section */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-      >
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
-          Recent Activities
-        </Typography>
-        <Box
-          className="recent-activities-grid"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-            gap: 3,
-            mb: 4,
-            width: '100%',
-          }}
+        
         >
+        <div  className="">
+          Recent Activities
+        </div>
+        <div
+          className="">
           {/* Recent System Activities */}
-          <Box sx={{ width: '100%' }}>
-            <Card sx={{ height: '100%' }}>
+          <div className="">
+            <Card className="">
               <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                <div display="flex" alignItems="center" mb={2}>
+                  <Avatar className="">
                     <NotificationsIcon />
                   </Avatar>
-                  <Typography variant="h6">System Activities</Typography>
-                </Box>
-                <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
+                  <div >System Activities</div>
+                </div>
+                <List dense className="">
                   {activitiesLoading ? (
                     // Loading skeleton
                     [...Array(5)].map((_, index) => (
-                      <Box key={index}>
-                        <ListItem>
-                          <ListItemAvatar>
+                      <div key={index}>
+                        <div>
+                          <divAvatar>
                             <Avatar
-                              sx={{
-                                bgcolor: 'grey.200',
-                                width: 32,
-                                height: 32,
-                              }}
+                              className=""
                             >
-                              <Box
-                                sx={{
-                                  width: 16,
-                                  height: 16,
-                                  bgcolor: 'grey.300',
-                                  borderRadius: '50%',
-                                }}
+                              <div
+                                className=""
                               />
                             </Avatar>
                           </ListItemAvatar>
-                          <ListItemText
+                          <div
                             primary={
-                              <Box
-                                sx={{
-                                  bgcolor: 'grey.200',
-                                  height: 16,
-                                  width: '60%',
-                                  borderRadius: 1,
-                                }}
-                              />
+                              <div
+                                className=""
+                              />}
                             }
                             secondary={
-                              <Box>
-                                <Box
-                                  sx={{
-                                    bgcolor: 'grey.200',
-                                    height: 12,
-                                    width: '80%',
-                                    borderRadius: 1,
-                                    mb: 0.5,
-                                  }}
+                              <div>
+                                <div
+                                  className=""
                                 />
-                                <Box
-                                  sx={{
-                                    bgcolor: 'grey.200',
-                                    height: 10,
-                                    width: '40%',
-                                    borderRadius: 1,
-                                  }}
+                                <div
+                                  className=""
                                 />
-                              </Box>
+                              </div>}
                             }
                           />
-                        </ListItem>
+                        </div>
                         {index < 4 && (
-                          <Divider variant="inset" component="li" />
+                          <Separator  component="li" />
                         )}
-                      </Box>
+                      </div>
                     ))
                   ) : activitiesError ? (
-                    <ListItem>
-                      <ListItemText
+                    <div>
+                      <div
                         primary={
-                          <Typography color="error" variant="body2">
+                          <div color="error" >}
                             Error loading activities: {activitiesError}
-                          </Typography>
+                          </div>
                         }
                       />
-                    </ListItem>
+                    </div>
                   ) : systemActivities.length === 0 ? (
-                    <ListItem>
-                      <ListItemText
+                    <div>
+                      <div
                         primary={
-                          <Typography color="text.secondary" variant="body2">
+                          <div color="text.secondary" >
                             No recent system activities
-                          </Typography>
+                          </div>}
                         }
                       />
-                    </ListItem>
+                    </div>
                   ) : (
                     systemActivities.map((activity, index) => {
                       const getActivityColor = (type: string) => {
@@ -1099,312 +798,243 @@ export const ModernDashboard: React.FC = () => {
                             return 'primary.main';
                         }
                       };
-
                       const getActivityIcon = (type: string) => {
                         switch (type) {
                           case 'patient_registration':
-                            return <PersonAddIcon sx={{ fontSize: 16 }} />;
+                            return <PersonAddIcon className="" />;
                           case 'clinical_note':
-                            return <NoteAddIcon sx={{ fontSize: 16 }} />;
+                            return <NoteAddIcon className="" />;
                           case 'medication_update':
-                            return <MedicationIcon sx={{ fontSize: 16 }} />;
+                            return <MedicationIcon className="" />;
                           case 'mtr_session':
-                            return <EventIcon sx={{ fontSize: 16 }} />;
+                            return <EventIcon className="" />;
                           case 'system_alert':
-                            return <WarningIcon sx={{ fontSize: 16 }} />;
+                            return <WarningIcon className="" />;
                           default:
-                            return <NotificationsIcon sx={{ fontSize: 16 }} />;
+                            return <NotificationsIcon className="" />;
                         }
                       };
-
                       return (
-                        <Box key={activity.id}>
-                          <ListItem>
-                            <ListItemAvatar>
+                        <div key={activity.id}>
+                          <div>
+                            <divAvatar>
                               <Avatar
-                                sx={{
-                                  bgcolor: getActivityColor(activity.type),
-                                  width: 32,
-                                  height: 32,
-                                }}
+                                className=""
                               >
                                 {getActivityIcon(activity.type)}
                               </Avatar>
                             </ListItemAvatar>
-                            <ListItemText
+                            <div
                               primary={activity.title}
                               secondary={
-                                <Box component="div">
-                                  <Box
+                                <div component="div">
+                                  <div
                                     component="div"
-                                    sx={{
-                                      color: 'text.secondary',
-                                      fontSize: '0.875rem',
-                                    }}
-                                  >
+                                    className=""
+                                  >}
                                     {activity.description}
-                                  </Box>
-                                  <Box
+                                  </div>
+                                  <div
                                     component="div"
-                                    sx={{
-                                      color: 'text.secondary',
-                                      fontSize: '0.75rem',
-                                    }}
+                                    className=""
                                   >
                                     {activityService.formatRelativeTime(
                                       activity.createdAt
                                     )}
-                                  </Box>
-                                </Box>
+                                  </div>
+                                </div>
                               }
                             />
-                          </ListItem>
+                          </div>
                           {index < systemActivities.length - 1 && (
-                            <Divider variant="inset" component="li" />
+                            <Separator  component="li" />
                           )}
-                        </Box>
+                        </div>
                       );
                     })
                   )}
                 </List>
               </CardContent>
             </Card>
-          </Box>
-
+          </div>
           {/* Recent User Activities */}
-          <Box sx={{ width: '100%' }}>
-            <Card sx={{ height: '100%' }}>
+          <div className="">
+            <Card className="">
               <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+                <div display="flex" alignItems="center" mb={2}>
+                  <Avatar className="">
                     <PeopleIcon />
                   </Avatar>
-                  <Typography variant="h6">User Activities</Typography>
-                </Box>
-                <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
-                  <ListItem>
-                    <ListItemAvatar>
+                  <div >User Activities</div>
+                </div>
+                <List dense className="">
+                  <div>
+                    <divAvatar>
                       <Avatar
-                        sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}
+                        className=""
                       >
-                        <LoginIcon sx={{ fontSize: 16 }} />
+                        <LoginIcon className="" />
                       </Avatar>
                     </ListItemAvatar>
-                    <ListItemText
+                    <div
                       primary="User Login"
                       secondary={
-                        <Box component="div">
-                          <Box
+                        <div component="div">
+                          <div
                             component="div"
-                            sx={{
-                              color: 'text.secondary',
-                              fontSize: '0.875rem',
-                            }}
+                            className=""
                           >
                             Dr. Sarah Wilson logged in
-                          </Box>
-                          <Box
+                          </div>
+                          <div
                             component="div"
-                            sx={{
-                              color: 'text.secondary',
-                              fontSize: '0.75rem',
-                            }}
+                            className=""
                           >
                             5 minutes ago
-                          </Box>
-                        </Box>
+                          </div>
+                        </div>}
                       }
                     />
-                  </ListItem>
-                  <Divider variant="inset" component="li" />
-
-                  <ListItem>
-                    <ListItemAvatar>
+                  </div>
+                  <Separator  component="li" />
+                  <div>
+                    <divAvatar>
                       <Avatar
-                        sx={{ bgcolor: 'info.main', width: 32, height: 32 }}
+                        className=""
                       >
-                        <AssignmentIcon sx={{ fontSize: 16 }} />
+                        <AssignmentIcon className="" />
                       </Avatar>
                     </ListItemAvatar>
-                    <ListItemText
+                    <div
                       primary="Report Generated"
                       secondary={
-                        <Box component="div">
-                          <Box
+                        <div component="div">
+                          <div
                             component="div"
-                            sx={{
-                              color: 'text.secondary',
-                              fontSize: '0.875rem',
-                            }}
+                            className=""
                           >
                             Monthly performance report by Admin
-                          </Box>
-                          <Box
+                          </div>
+                          <div
                             component="div"
-                            sx={{
-                              color: 'text.secondary',
-                              fontSize: '0.75rem',
-                            }}
+                            className=""
                           >
                             30 minutes ago
-                          </Box>
-                        </Box>
+                          </div>
+                        </div>}
                       }
                     />
-                  </ListItem>
-                  <Divider variant="inset" component="li" />
-
-                  <ListItem>
-                    <ListItemAvatar>
+                  </div>
+                  <Separator  component="li" />
+                  <div>
+                    <divAvatar>
                       <Avatar
-                        sx={{ bgcolor: 'warning.main', width: 32, height: 32 }}
+                        className=""
                       >
-                        <SettingsIcon sx={{ fontSize: 16 }} />
+                        <SettingsIcon className="" />
                       </Avatar>
                     </ListItemAvatar>
-                    <ListItemText
+                    <div
                       primary="Settings Updated"
                       secondary={
-                        <Box component="div">
-                          <Box
+                        <div component="div">
+                          <div
                             component="div"
-                            sx={{
-                              color: 'text.secondary',
-                              fontSize: '0.875rem',
-                            }}
+                            className=""
                           >
                             Notification preferences changed
-                          </Box>
-                          <Box
+                          </div>
+                          <div
                             component="div"
-                            sx={{
-                              color: 'text.secondary',
-                              fontSize: '0.75rem',
-                            }}
+                            className=""
                           >
                             1 hour ago
-                          </Box>
-                        </Box>
+                          </div>
+                        </div>}
                       }
                     />
-                  </ListItem>
-                  <Divider variant="inset" component="li" />
-
-                  <ListItem>
-                    <ListItemAvatar>
+                  </div>
+                  <Separator  component="li" />
+                  <div>
+                    <divAvatar>
                       <Avatar
-                        sx={{
-                          bgcolor: 'secondary.main',
-                          width: 32,
-                          height: 32,
-                        }}
+                        className=""
                       >
-                        <SecurityIcon sx={{ fontSize: 16 }} />
+                        <SecurityIcon className="" />
                       </Avatar>
                     </ListItemAvatar>
-                    <ListItemText
+                    <div
                       primary="Security Update"
                       secondary={
-                        <Box component="div">
-                          <Box
+                        <div component="div">
+                          <div
                             component="div"
-                            sx={{
-                              color: 'text.secondary',
-                              fontSize: '0.875rem',
-                            }}
+                            className=""
                           >
                             Password changed for user account
-                          </Box>
-                          <Box
+                          </div>
+                          <div
                             component="div"
-                            sx={{
-                              color: 'text.secondary',
-                              fontSize: '0.75rem',
-                            }}
+                            className=""
                           >
                             4 hours ago
-                          </Box>
-                        </Box>
+                          </div>
+                        </div>}
                       }
                     />
-                  </ListItem>
-                  <Divider variant="inset" component="li" />
-
-                  <ListItem>
-                    <ListItemAvatar>
+                  </div>
+                  <Separator  component="li" />
+                  <div>
+                    <divAvatar>
                       <Avatar
-                        sx={{ bgcolor: 'success.main', width: 32, height: 32 }}
+                        className=""
                       >
-                        <CheckCircleIcon sx={{ fontSize: 16 }} />
+                        <CheckCircleIcon className="" />
                       </Avatar>
                     </ListItemAvatar>
-                    <ListItemText
+                    <div
                       primary="Task Completed"
                       secondary={
-                        <Box component="div">
-                          <Box
+                        <div component="div">
+                          <div
                             component="div"
-                            sx={{
-                              color: 'text.secondary',
-                              fontSize: '0.875rem',
-                            }}
+                            className=""
                           >
                             Data backup completed successfully
-                          </Box>
-                          <Box
+                          </div>
+                          <div
                             component="div"
-                            sx={{
-                              color: 'text.secondary',
-                              fontSize: '0.75rem',
-                            }}
+                            className=""
                           >
                             6 hours ago
-                          </Box>
-                        </Box>
+                          </div>
+                        </div>}
                       }
                     />
-                  </ListItem>
+                  </div>
                 </List>
               </CardContent>
             </Card>
-          </Box>
-        </Box>
+          </div>
+        </div>
       </motion.div>
-
       {/* Admin Dashboard Integration */}
       <AdminDashboardIntegration />
-
       {/* Usage Dashboard */}
       <UsageDashboard />
-
       {/* Pharmacist Performance */}
       <PharmacistPerformanceTable />
-
       {/* Clinical Interventions Dashboard */}
       {clinicalMetrics && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
-            Clinical Interventions Overview
-          </Typography>
-          <Box
-            className="clinical-interventions-grid"
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: '1fr 1fr',
-                md: 'repeat(4, 1fr)',
-              },
-              gap: 3,
-              mb: 4,
-              width: '100%',
-            }}
+          
           >
-            <Box sx={{ width: '100%' }}>
+          <div  className="">
+            Clinical Interventions Overview
+          </div>
+          <div
+            className="">
+            <div className="">
               <KPICard
                 title="Total Interventions"
                 value={clinicalMetrics.totalInterventions || 0}
@@ -1413,8 +1043,8 @@ export const ModernDashboard: React.FC = () => {
                 color={theme.palette.primary.main}
                 loading={clinicalLoading}
               />
-            </Box>
-            <Box sx={{ width: '100%' }}>
+            </div>
+            <div className="">
               <KPICard
                 title="Active"
                 value={clinicalMetrics.activeInterventions || 0}
@@ -1423,8 +1053,8 @@ export const ModernDashboard: React.FC = () => {
                 color={theme.palette.info.main}
                 loading={clinicalLoading}
               />
-            </Box>
-            <Box sx={{ width: '100%' }}>
+            </div>
+            <div className="">
               <KPICard
                 title="Success Rate"
                 value={`${Math.round(clinicalMetrics.successRate || 0)}%`}
@@ -1433,46 +1063,32 @@ export const ModernDashboard: React.FC = () => {
                 color={theme.palette.success.main}
                 loading={clinicalLoading}
               />
-            </Box>
-            <Box sx={{ width: '100%' }}>
+            </div>
+            <div className="">
               <KPICard
                 title="Cost Savings"
                 value={`₦${(
-                  (clinicalMetrics.totalCostSavings || 0) / 1000
+                  (clinicalMetrics.totalCostSavings || 0) / 1000}
                 ).toFixed(0)}K`}
                 subtitle="Estimated savings"
                 icon={<TrendingUpIcon />}
                 color={theme.palette.success.main}
                 loading={clinicalLoading}
               />
-            </Box>
-          </Box>
+            </div>
+          </div>
         </motion.div>
       )}
-
       {/* Quick Actions */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.5 }}
-      >
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
-          Quick Actions
-        </Typography>
-        <Box
-          className="quick-actions-grid"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: '1fr 1fr',
-              md: 'repeat(4, 1fr)',
-            },
-            gap: 3,
-            width: '100%',
-          }}
+        
         >
-          <Box sx={{ width: '100%' }}>
+        <div  className="">
+          Quick Actions
+        </div>
+        <div
+          className="">
+          <div className="">
             <QuickActionCard
               title="Add New Patient"
               description="Register a new patient in the system"
@@ -1481,8 +1097,8 @@ export const ModernDashboard: React.FC = () => {
               navigateTo="/patients/new"
               buttonText="Add Patient"
             />
-          </Box>
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <QuickActionCard
               title="Create Clinical Note"
               description="Document a new clinical observation"
@@ -1491,8 +1107,8 @@ export const ModernDashboard: React.FC = () => {
               navigateTo="/notes/new"
               buttonText="Create Note"
             />
-          </Box>
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <QuickActionCard
               title="Schedule MTR"
               description="Schedule a medication therapy review"
@@ -1501,8 +1117,8 @@ export const ModernDashboard: React.FC = () => {
               navigateTo="/pharmacy/medication-therapy/new"
               buttonText="Schedule"
             />
-          </Box>
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <QuickActionCard
               title="View Reports"
               description="Access detailed analytics and reports"
@@ -1511,29 +1127,22 @@ export const ModernDashboard: React.FC = () => {
               navigateTo="/pharmacy/reports"
               buttonText="View Reports"
             />
-          </Box>
-        </Box>
+          </div>
+        </div>
       </motion.div>
-
       {/* Floating Action Button */}
       <AnimatePresence>
         <Zoom in={!isMobile}>
           <Fab
             color="primary"
-            sx={{
-              position: 'fixed',
-              bottom: 24,
-              right: 24,
-              zIndex: 1000,
-            }}
+            className=""
             onClick={() => navigate('/patients/new')}
           >
             <AddIcon />
           </Fab>
         </Zoom>
       </AnimatePresence>
-    </Box>
+    </div>
   );
 };
-
 export default ModernDashboard;

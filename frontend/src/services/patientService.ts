@@ -1,39 +1,4 @@
 import axios from 'axios';
-import {
-  Patient,
-  Allergy,
-  Condition,
-  MedicationRecord,
-  ClinicalAssessment,
-  DrugTherapyProblem,
-  CarePlan,
-  Visit,
-  PatientSummary,
-  ApiResponse,
-  PaginatedResponse,
-  PatientSearchParams,
-  AllergySearchParams,
-  MedicationSearchParams,
-  DTPSearchParams,
-  CreatePatientData,
-  UpdatePatientData,
-  CreateAllergyData,
-  UpdateAllergyData,
-  CreateConditionData,
-  UpdateConditionData,
-  CreateMedicationData,
-  UpdateMedicationData,
-  CreateAssessmentData,
-  UpdateAssessmentData,
-  CreateDTPData,
-  UpdateDTPData,
-  CreateCarePlanData,
-  UpdateCarePlanData,
-  CreateVisitData,
-  UpdateVisitData,
-  VisitAttachment,
-} from '../types/patientManagement';
-
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -50,7 +15,7 @@ class PatientService {
     options: RequestOptions = {}
   ): Promise<T> {
     try {
-      const response = await axios({
+      const response = await axios({  })
         url: `${API_BASE_URL}${url}`,
         method: options.method || 'GET',
         data: options.body ? JSON.parse(options.body as string) : undefined,
@@ -126,8 +91,7 @@ class PatientService {
   ): Promise<ApiResponse<{ patient: Patient }>> {
     return this.makeRequest<ApiResponse<{ patient: Patient }>>('/patients', {
       method: 'POST',
-      body: JSON.stringify(patientData),
-    });
+      body: JSON.stringify(patientData)}
   }
 
   /**
@@ -151,8 +115,7 @@ class PatientService {
    */
   async deletePatient(patientId: string): Promise<ApiResponse<null>> {
     return this.makeRequest<ApiResponse<null>>(`/patients/${patientId}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'}
   }
 
   /**
@@ -177,8 +140,7 @@ class PatientService {
         hasPatients: result?.data?.patients || result?.patients,
         responseType: typeof result,
         isArray: Array.isArray(result),
-        keys: result ? Object.keys(result) : [],
-      });
+        keys: result ? Object.keys(result) : []}
 
       return result;
     } catch (error) {
@@ -259,8 +221,7 @@ class PatientService {
    */
   async deleteAllergy(allergyId: string): Promise<ApiResponse<null>> {
     return this.makeRequest<ApiResponse<null>>(`/allergies/${allergyId}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'}
   }
 
   /**
@@ -343,8 +304,7 @@ class PatientService {
         ApiResponse<{ condition: Condition }>
       >(`/patients/${patientId}/conditions`, {
         method: 'POST',
-        body: JSON.stringify(conditionData),
-      });
+        body: JSON.stringify(conditionData)}
       console.log('Condition creation response:', response);
       return response;
     } catch (error) {
@@ -374,8 +334,7 @@ class PatientService {
    */
   async deleteCondition(conditionId: string): Promise<ApiResponse<null>> {
     return this.makeRequest<ApiResponse<null>>(`/conditions/${conditionId}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'}
   }
 
   // =============================================
@@ -420,8 +379,7 @@ class PatientService {
         ApiResponse<{ medication: MedicationRecord }>
       >(`/patients/${patientId}/medications`, {
         method: 'POST',
-        body: JSON.stringify(medicationData),
-      });
+        body: JSON.stringify(medicationData)}
       console.log('Medication creation response:', response);
       return response;
     } catch (error) {
@@ -451,8 +409,7 @@ class PatientService {
    */
   async deleteMedication(medicationId: string): Promise<ApiResponse<null>> {
     return this.makeRequest<ApiResponse<null>>(`/medications/${medicationId}`, {
-      method: 'DELETE',
-    });
+      method: 'DELETE'}
   }
 
   // =============================================
@@ -497,8 +454,7 @@ class PatientService {
         ApiResponse<{ assessment: ClinicalAssessment }>
       >(`/patients/${patientId}/assessments`, {
         method: 'POST',
-        body: JSON.stringify(assessmentData),
-      });
+        body: JSON.stringify(assessmentData)}
       console.log('Assessment creation response:', response);
       return response;
     } catch (error) {
@@ -565,8 +521,7 @@ class PatientService {
         ApiResponse<{ dtp: DrugTherapyProblem }>
       >(`/patients/${patientId}/dtps`, {
         method: 'POST',
-        body: JSON.stringify(dtpData),
-      });
+        body: JSON.stringify(dtpData)}
       console.log('DTP creation response:', response);
       return response;
     } catch (error) {
@@ -817,8 +772,7 @@ class PatientService {
         withCredentials: true,
         headers: {
           'Content-Type': 'multipart/form-data',
-        },
-      });
+        }
 
       return {
         url: response.data.url,

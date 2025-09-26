@@ -1,20 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
-import {
-  Box,
-  TextField,
-  IconButton,
-  Paper,
-  Typography,
-  CircularProgress,
-  Alert,
-  Divider,
-} from '@mui/material';
-import { Send, AttachFile, EmojiEmotions, Reply } from '@mui/icons-material';
-import { Message } from '../../stores/types';
 import MessageItem from './MessageItem';
+
 import MentionInput from './MentionInput';
-import { useSocketConnection } from '../../hooks/useSocket';
-import { socketService } from '../../services/socketService';
+
+import { Spinner, Alert, Separator } from '@/components/ui/button';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -32,8 +20,7 @@ interface MessageThreadProps {
   parentMessage?: Message;
   maxHeight?: string | number;
 }
-
-const MessageThread: React.FC<MessageThreadProps> = ({
+const MessageThread: React.FC<MessageThreadProps> = ({ 
   conversationId,
   messages,
   onSendMessage,
@@ -41,7 +28,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   error = null,
   threadId,
   parentMessage,
-  maxHeight = '100%',
+  maxHeight = '100%'
 }) => {
   const [messageText, setMessageText] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -52,9 +39,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   const messageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
-
   const { isConnected } = useSocketConnection();
-
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesContainerRef.current) {
@@ -62,57 +47,47 @@ const MessageThread: React.FC<MessageThreadProps> = ({
         messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
-
   // Handle typing indicators
   const handleTypingStart = () => {
     if (!isTyping && isConnected) {
       setIsTyping(true);
       socketService.startTyping(conversationId);
     }
-
     // Clear existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-
     // Set new timeout to stop typing after 3 seconds
     typingTimeoutRef.current = setTimeout(() => {
       handleTypingStop();
     }, 3000);
   };
-
   const handleTypingStop = () => {
     if (isTyping) {
       setIsTyping(false);
       socketService.stopTyping(conversationId);
     }
-
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
   };
-
   // Handle message input changes
   const handleMessageChange = (value: string, newMentions: string[]) => {
     setMessageText(value);
     setMentions(newMentions);
-
     if (value.trim()) {
       handleTypingStart();
     } else {
       handleTypingStop();
     }
   };
-
   // Handle sending message
   const handleSend = async () => {
     if ((!messageText.trim() && attachments.length === 0) || sending) {
       return;
     }
-
     setSending(true);
     handleTypingStop();
-
     try {
       await onSendMessage(
         messageText,
@@ -121,7 +96,6 @@ const MessageThread: React.FC<MessageThreadProps> = ({
         parentMessage?._id,
         mentions.length > 0 ? mentions : undefined
       );
-
       // Clear input after successful send
       setMessageText('');
       setAttachments([]);
@@ -133,7 +107,6 @@ const MessageThread: React.FC<MessageThreadProps> = ({
       setSending(false);
     }
   };
-
   // Handle key press in message input
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -141,30 +114,25 @@ const MessageThread: React.FC<MessageThreadProps> = ({
       handleSend();
     }
   };
-
   // Handle file attachment
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     setAttachments((prev) => [...prev, ...files]);
-
     // Clear the input so the same file can be selected again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
-
   // Remove attachment
   const removeAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
-
   // Handle reply to message
   const handleReplyToMessage = (message: Message) => {
     // Focus input and add reply context
     messageInputRef.current?.focus();
     // TODO: Implement reply functionality with parent message reference
   };
-
   // Handle thread creation
   const handleCreateThread = async (messageId: string) => {
     try {
@@ -177,102 +145,71 @@ const MessageThread: React.FC<MessageThreadProps> = ({
           },
         }
       );
-
       if (!response.ok) {
         throw new Error('Failed to create thread');
       }
-
       const result = await response.json();
       console.log('Thread created:', result.data.threadId);
-
       // Refresh messages to show the new thread
       // This would typically be handled by the parent component
     } catch (error) {
       console.error('Failed to create thread:', error);
     }
   };
-
   // Handle thread view
   const handleViewThread = (threadId: string) => {
     // This would typically open a thread view modal or navigate to thread
     console.log('View thread:', threadId);
   };
-
   // Filter messages for this thread
   const threadMessages = threadId
     ? messages.filter((msg) => msg.threadId === threadId)
     : messages.filter((msg) => !msg.threadId);
-
   return (
-    <Box
-      sx={{
-        height: maxHeight,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
+    <div
+      className=""
     >
       {/* Thread Header (if this is a thread) */}
       {threadId && parentMessage && (
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="subtitle2" color="primary" gutterBottom>
+        <div className="">
+          <div  color="primary" gutterBottom>
             Thread
-          </Typography>
-          <Box sx={{ pl: 2, borderLeft: 2, borderColor: 'primary.main' }}>
-            <Typography variant="body2" color="text.secondary">
+          </div>
+          <div className="">
+            <div  color="text.secondary">
               Replying to: {parentMessage.content.text?.substring(0, 100)}
               {(parentMessage.content.text?.length || 0) > 100 ? '...' : ''}
-            </Typography>
-          </Box>
-        </Box>
+            </div>
+          </div>
+        </div>
       )}
-
       {/* Error Display */}
       {error && (
-        <Alert severity="error" sx={{ m: 1 }}>
+        <Alert severity="error" className="">
           {error}
         </Alert>
       )}
-
       {/* Messages Container */}
-      <Box
+      <div
         ref={messagesContainerRef}
-        sx={{
-          flex: 1,
-          overflow: 'auto',
-          p: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 1,
-        }}
+        className=""
       >
         {loading && threadMessages.length === 0 ? (
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100%',
-            }}
+          <div
+            className=""
           >
-            <CircularProgress />
-          </Box>
+            <Spinner />
+          </div>
         ) : threadMessages.length === 0 ? (
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100%',
-              textAlign: 'center',
-            }}
+          <div
+            className=""
           >
-            <Typography variant="body2" color="text.secondary">
+            <div  color="text.secondary">
               {threadId
                 ? 'No replies yet'
                 : 'No messages yet. Start the conversation!'}
-            </Typography>
-          </Box>
+            </div>
+          </div>
         ) : (
           threadMessages.map((message, index) => {
             const prevMessage = index > 0 ? threadMessages[index - 1] : null;
@@ -280,37 +217,27 @@ const MessageThread: React.FC<MessageThreadProps> = ({
               prevMessage &&
               new Date(message.createdAt).toDateString() !==
                 new Date(prevMessage.createdAt).toDateString();
-
             return (
               <React.Fragment key={message._id}>
                 {showDateDivider && (
-                  <Box sx={{ my: 2 }}>
-                    <Divider>
-                      <Typography variant="caption" color="text.secondary">
+                  <div className="">
+                    <Separator>
+                      <div  color="text.secondary">
                         {new Date(message.createdAt).toLocaleDateString()}
-                      </Typography>
-                    </Divider>
-                  </Box>
+                      </div>
+                    </Separator>
+                  </div>
                 )}
                 <MessageItem
                   message={message}
                   showAvatar={
-                    !prevMessage || prevMessage.senderId !== message.senderId
+                    !prevMessage || prevMessage.senderId !== message.senderId}
                   }
                   showTimestamp={true}
                   onReply={() => handleReplyToMessage(message)}
-                  onEdit={(messageId, newContent) => {
-                    // TODO: Implement message editing
-                    console.log('Edit message:', messageId, newContent);
-                  }}
-                  onDelete={(messageId) => {
-                    // TODO: Implement message deletion
-                    console.log('Delete message:', messageId);
-                  }}
-                  onReaction={(messageId, emoji) => {
-                    // TODO: Implement message reactions
-                    console.log('Add reaction:', messageId, emoji);
-                  }}
+                  
+                  
+                  
                   onCreateThread={handleCreateThread}
                   onViewThread={handleViewThread}
                   showThreading={!threadId} // Don't show threading inside a thread
@@ -320,50 +247,41 @@ const MessageThread: React.FC<MessageThreadProps> = ({
             );
           })
         )}
-      </Box>
-
+      </div>
       {/* Message Input */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+      <div className="">
         {/* Attachments Preview */}
         {attachments.length > 0 && (
-          <Box sx={{ mb: 1 }}>
+          <div className="">
             {attachments.map((file, index) => (
-              <Paper
+              <div
                 key={index}
-                variant="outlined"
-                sx={{
-                  p: 1,
-                  mb: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
+                
+                className=""
               >
-                <Typography variant="body2" noWrap>
+                <div  noWrap>
                   {file.name}
-                </Typography>
+                </div>
                 <IconButton
                   size="small"
                   onClick={() => removeAttachment(index)}
                 >
                   ×
                 </IconButton>
-              </Paper>
+              </div>
             ))}
-          </Box>
+          </div>
         )}
-
         {/* Input Row */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+        <div className="">
           {/* File Input */}
           <input
             ref={fileInputRef}
             type="file"
             multiple
-            style={{ display: 'none' }}
+            
             onChange={handleFileSelect}
           />
-
           {/* Attach File Button */}
           <IconButton
             size="small"
@@ -372,7 +290,6 @@ const MessageThread: React.FC<MessageThreadProps> = ({
           >
             <AttachFile />
           </IconButton>
-
           {/* Message Input with Mentions */}
           <MentionInput
             value={messageText}
@@ -385,12 +302,10 @@ const MessageThread: React.FC<MessageThreadProps> = ({
             conversationId={conversationId}
             autoFocus={false}
           />
-
           {/* Emoji Button */}
           <IconButton size="small" disabled={sending}>
             <EmojiEmotions />
           </IconButton>
-
           {/* Send Button */}
           <IconButton
             color="primary"
@@ -398,41 +313,28 @@ const MessageThread: React.FC<MessageThreadProps> = ({
             disabled={
               (!messageText.trim() && attachments.length === 0) ||
               sending ||
-              !isConnected
+              !isConnected}
             }
-            sx={{
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
-              '&:hover': {
-                bgcolor: 'primary.dark',
-              },
-              '&:disabled': {
-                bgcolor: 'action.disabledBackground',
-                color: 'action.disabled',
-              },
-            }}
-          >
+            className="">
             {sending ? (
-              <CircularProgress size={20} color="inherit" />
+              <Spinner size={20} color="inherit" />
             ) : (
               <Send />
             )}
           </IconButton>
-        </Box>
-
+        </div>
         {/* Connection Status */}
         {!isConnected && (
-          <Typography
-            variant="caption"
+          <div
+            
             color="warning.main"
-            sx={{ mt: 1, display: 'block' }}
+            className=""
           >
             Offline - Messages will be sent when connection is restored
-          </Typography>
+          </div>
         )}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
-
 export default MessageThread;

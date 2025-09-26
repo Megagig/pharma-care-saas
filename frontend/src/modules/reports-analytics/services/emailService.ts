@@ -1,6 +1,4 @@
 // Email Service - Handle email delivery for scheduled reports
-import { ScheduleRecipient, ExportResult, ReportSchedule } from '../types/exports';
-
 export interface EmailTemplate {
     subject: string;
     body: string;
@@ -25,18 +23,16 @@ Dear {{recipientName}},
 Please find attached the {{reportTitle}} report generated on {{date}}.
 
 Report Details:
-- Report Type: {{reportType}}
-- Generated At: {{generatedAt}}
-- File Format: {{format}}
-- File Size: {{fileSize}}
-
-{{#if filters}}
+- Report Type: {{reportType
+- Generated At: {{generatedAt
+- File Format: {{format
+- File Size: {{fileSize
+{{#if filters
 Applied Filters:
-{{#each filters}}
-- {{@key}}: {{this}}
-{{/each}}
-{{/if}}
-
+{{#each filters
+- {{@key}}: {{this
+{{/each
+{{/if
 This report was automatically generated and delivered as part of your scheduled report subscription.
 
 If you have any questions or need assistance, please contact our support team.
@@ -53,17 +49,15 @@ Dear {{recipientName}},
 We encountered an issue while generating your scheduled {{reportTitle}} report.
 
 Error Details:
-- Report Type: {{reportType}}
-- Scheduled Time: {{scheduledTime}}
-- Error: {{error}}
-- Attempt: {{retryCount}} of {{maxRetries}}
-
-{{#if willRetry}}
+- Report Type: {{reportType
+- Scheduled Time: {{scheduledTime
+- Error: {{error
+- Attempt: {{retryCount}} of {{maxRetries
+{{#if willRetry
 We will automatically retry generating this report. You will receive another notification if the issue persists.
-{{else}}
+{{else
 Please contact our support team for assistance with this issue.
-{{/if}}
-
+{{/if
 We apologize for any inconvenience.
 
 Best regards,
@@ -89,10 +83,10 @@ Pharmacy Care Platform
                 const result = await this.sendSingleEmail(schedule, exportResult, recipient);
                 results.push(result);
             } catch (error) {
-                results.push({
+                results.push({ 
                     recipientAddress: recipient.address,
                     status: 'failed',
-                    error: error instanceof Error ? error.message : 'Unknown error',
+                    error: error instanceof Error ? error.message : 'Unknown error'}
                 });
             }
         }
@@ -174,17 +168,16 @@ Pharmacy Care Platform
                 console.log('Sending error notification:', emailData);
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                results.push({
+                results.push({ 
                     recipientAddress: recipient.address,
                     status: 'delivered',
-                    deliveredAt: new Date(),
-                    messageId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                });
+                    deliveredAt: new Date()}
+                    messageId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`}
             } catch (emailError) {
-                results.push({
+                results.push({ 
                     recipientAddress: recipient.address,
                     status: 'failed',
-                    error: emailError instanceof Error ? emailError.message : 'Unknown error',
+                    error: emailError instanceof Error ? emailError.message : 'Unknown error'}
                 });
             }
         }

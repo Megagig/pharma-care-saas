@@ -13,12 +13,12 @@ export declare class MTRError extends Error {
     isOperational: boolean;
     constructor(message: string, statusCode?: number, errorType?: string, details?: MTRErrorDetails[]);
     toJSON(): {
-        stack?: string | undefined;
+        stack: string;
         name: string;
         message: string;
         statusCode: number;
         errorType: string;
-        details: MTRErrorDetails[] | undefined;
+        details: MTRErrorDetails[];
         timestamp: Date;
     };
 }

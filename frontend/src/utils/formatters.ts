@@ -11,8 +11,7 @@ export const formatCurrency = (
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
+    maximumFractionDigits: 2}
 
   return formatter.format(amount);
 };
@@ -43,8 +42,7 @@ export const formatDateShort = (date: string | Date): string => {
   return formatDate(date, {
     year: 'numeric',
     month: 'short',
-    day: 'numeric',
-  });
+    day: 'numeric'}
 };
 
 /**

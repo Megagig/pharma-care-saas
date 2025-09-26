@@ -1,9 +1,4 @@
 // Template Performance Service - Optimize template rendering and caching
-import { ReportTemplate, TemplateSection } from '../types/templates';
-import { ChartData } from '../types/charts';
-import { ReportData } from '../types/reports';
-import { RenderResult, RenderContext } from './templateRenderingService';
-
 export interface PerformanceOptimization {
     type: 'cache' | 'lazy-load' | 'virtualization' | 'compression' | 'precompute';
     enabled: boolean;
@@ -195,13 +190,13 @@ export class TemplatePerformanceService {
         const totalCount = optimizedSections.length;
 
         if (cacheableCount / totalCount < 0.5) {
-            recommendations.push({
+            recommendations.push({ 
                 type: 'performance',
                 priority: 'medium',
                 description: 'Low cache utilization detected',
                 action: 'Consider making more sections cacheable by reducing dynamic content',
                 estimatedImpact: 25,
-                effort: 'medium',
+                effort: 'medium'}
             });
         }
 
@@ -246,14 +241,13 @@ export class TemplatePerformanceService {
         const lazyLoadCount = optimizedSections.filter(s => (s as any).lazyLoad?.enabled).length;
 
         if (lazyLoadCount > 0) {
-            recommendations.push({
+            recommendations.push({ 
                 type: 'performance',
-                priority: 'high',
+                priority: 'high'}
                 description: `${lazyLoadCount} sections optimized for lazy loading`,
                 action: 'Sections will load as they come into view',
                 estimatedImpact: lazyLoadCount * 10,
-                effort: 'low',
-            });
+                effort: 'low'}
         }
 
         return {
@@ -286,14 +280,13 @@ export class TemplatePerformanceService {
                     scrollDebounce: config.scrollDebounce,
                 };
 
-                recommendations.push({
+                recommendations.push({ 
                     type: 'performance',
-                    priority: 'high',
+                    priority: 'high'}
                     description: `Section "${section.title}" optimized with virtualization`,
                     action: 'Large datasets will be rendered efficiently',
                     estimatedImpact: 40,
-                    effort: 'low',
-                });
+                    effort: 'low'}
             }
 
             return sectionCopy;
@@ -329,14 +322,13 @@ export class TemplatePerformanceService {
                     (chart as any).compressed = true;
                     (chart as any).compressionConfig = config;
 
-                    recommendations.push({
+                    recommendations.push({ 
                         type: 'network',
-                        priority: 'medium',
+                        priority: 'medium'}
                         description: `Chart "${chart.title}" data will be compressed`,
                         action: `${config.algorithm} compression applied`,
                         estimatedImpact: 30,
-                        effort: 'low',
-                    });
+                        effort: 'low'}
                 }
 
                 return chart;
@@ -373,14 +365,13 @@ export class TemplatePerformanceService {
                     priority: config.priority,
                 };
 
-                recommendations.push({
+                recommendations.push({ 
                     type: 'performance',
-                    priority: 'medium',
+                    priority: 'medium'}
                     description: `Section "${section.title}" will be precomputed`,
                     action: 'Expensive calculations will be cached',
                     estimatedImpact: 20,
-                    effort: 'medium',
-                });
+                    effort: 'medium'}
             }
 
             return sectionCopy;
@@ -403,13 +394,13 @@ export class TemplatePerformanceService {
 
         // Check template complexity
         if (template.sections.length > 10) {
-            recommendations.push({
+            recommendations.push({ 
                 type: 'performance',
                 priority: 'high',
                 description: 'Template has many sections',
                 action: 'Consider breaking into multiple templates or using lazy loading',
                 estimatedImpact: 30,
-                effort: 'medium',
+                effort: 'medium'}
             });
         }
 
@@ -420,38 +411,38 @@ export class TemplatePerformanceService {
         );
 
         if (totalCharts > 8) {
-            recommendations.push({
+            recommendations.push({ 
                 type: 'performance',
                 priority: 'medium',
                 description: 'Many charts may impact performance',
                 action: 'Consider using tabs or carousel layout for charts',
                 estimatedImpact: 25,
-                effort: 'low',
+                effort: 'low'}
             });
         }
 
         // Check data size
         const dataSize = JSON.stringify(context.data).length;
         if (dataSize > 1024 * 1024) { // 1MB
-            recommendations.push({
+            recommendations.push({ 
                 type: 'network',
                 priority: 'high',
                 description: 'Large data payload detected',
                 action: 'Enable compression and consider data pagination',
                 estimatedImpact: 40,
-                effort: 'medium',
+                effort: 'medium'}
             });
         }
 
         // Check responsive design
         if (!template.layout.responsive) {
-            recommendations.push({
+            recommendations.push({ 
                 type: 'user-experience',
                 priority: 'medium',
                 description: 'Template is not responsive',
                 action: 'Enable responsive layout for better mobile experience',
                 estimatedImpact: 20,
-                effort: 'low',
+                effort: 'low'}
             });
         }
 

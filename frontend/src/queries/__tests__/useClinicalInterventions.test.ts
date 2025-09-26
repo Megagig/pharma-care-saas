@@ -1,38 +1,24 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
-import {
-    useClinicalInterventions,
-    useClinicalIntervention,
-    useCreateIntervention,
-} from '../useClinicalInterventions';
-import type { CreateInterventionData } from '../../stores/clinicalInterventionStore';
-
 // Mock the clinical intervention service
-vi.mock('../../services/clinicalInterventionService', () => ({
+vi.mock('../../services/clinicalInterventionService', () => ({ 
     clinicalInterventionService: {
         getInterventions: vi.fn(),
         getInterventionById: vi.fn(),
-        createIntervention: vi.fn(),
-    },
-}));
+        createIntervention: vi.fn()}
+    }
 
 // Mock the UI store
-vi.mock('../../stores', () => ({
+vi.mock('../../stores', () => ({ 
     useUIStore: vi.fn(() => ({
-        addNotification: vi.fn(),
-    })),
-}));
+        addNotification: vi.fn()}
+    }))}
 
 // Test wrapper with QueryClient
 const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: {
+    const queryClient = new QueryClient({ 
+        defaultOptions: { })
             queries: { retry: false },
             mutations: { retry: false },
-        },
-    });
+        }
 
     return ({ children }: { children: ReactNode }) => (
         <QueryClientProvider client= { queryClient } > { children } </QueryClientProvider>
@@ -73,8 +59,7 @@ describe('useClinicalInterventions Query Hooks', () => {
             mockService.getInterventions.mockResolvedValue(mockData);
 
             const { result } = renderHook(() => useClinicalInterventions(), {
-                wrapper: createWrapper(),
-            });
+                wrapper: createWrapper()}
 
             await waitFor(() => {
                 expect(result.current.isSuccess).toBe(true);
@@ -101,8 +86,7 @@ describe('useClinicalInterventions Query Hooks', () => {
             mockService.getInterventionById.mockResolvedValue(mockData);
 
             const { result } = renderHook(() => useClinicalIntervention('intervention1'), {
-                wrapper: createWrapper(),
-            });
+                wrapper: createWrapper()}
 
             await waitFor(() => {
                 expect(result.current.isSuccess).toBe(true);
@@ -136,8 +120,7 @@ describe('useClinicalInterventions Query Hooks', () => {
             mockService.createIntervention.mockResolvedValue(mockData);
 
             const { result } = renderHook(() => useCreateIntervention(), {
-                wrapper: createWrapper(),
-            });
+                wrapper: createWrapper()}
 
             result.current.mutate(createData);
 

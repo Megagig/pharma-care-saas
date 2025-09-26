@@ -1,5 +1,3 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-
 // Define the notification type
 export interface Notification {
   id: string;
@@ -25,8 +23,8 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined
 );
 
-export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
-  children,
+export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ 
+  children
 }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
@@ -73,14 +71,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
 
   return (
     <NotificationContext.Provider
-      value={{
-        notifications,
-        addNotification,
-        removeNotification,
-        markNotificationAsRead,
-        clearAllNotifications,
-      }}
-    >
+      >
       {children}
     </NotificationContext.Provider>
   );

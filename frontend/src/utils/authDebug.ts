@@ -1,5 +1,3 @@
-import axios, { AxiosError } from 'axios';
-
 // Function to clear invalid cookies
 export const clearInvalidCookies = async (): Promise<boolean> => {
   try {

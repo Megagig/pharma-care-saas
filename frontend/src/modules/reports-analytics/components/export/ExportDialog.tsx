@@ -1,45 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Switch,
-  FormControlLabel,
-  Box,
-  Typography,
-  Stepper,
-  Step,
-  StepLabel,
-  Alert,
-  Chip,
-  Grid,
-  Card,
-  CardContent,
-  LinearProgress,
-  Divider,
-} from '@mui/material';
-import {
-  Download as DownloadIcon,
-  Settings as SettingsIcon,
-  Preview as PreviewIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
-import { useExportsStore } from '../../stores/exportsStore';
-import { ExportFormat, ExportConfig, ExportOptions } from '../../types/exports';
-import {
-  getDefaultExportOptions,
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Progress, Alert, Switch } from '@/components/ui/button';
+getDefaultExportOptions,
   validateExportConfig,
   estimateExportSize,
   generateExportFilename,
   getMimeType,
-} from '../../utils/exportHelpers';
 
 interface ExportDialogProps {
   open: boolean;
@@ -48,19 +12,16 @@ interface ExportDialogProps {
   reportData: any;
   filters: Record<string, any>;
 }
-
 const steps = ['Format Selection', 'Configuration', 'Preview & Export'];
-
-export const ExportDialog: React.FC<ExportDialogProps> = ({
+export const ExportDialog: React.FC<ExportDialogProps> = ({ 
   open,
   onClose,
   reportType,
   reportData,
-  filters,
+  filters
 }) => {
   const { selectedExportFormat, setSelectedExportFormat, addExportJob } =
     useExportsStore();
-
   const [activeStep, setActiveStep] = useState(0);
   const [exportOptions, setExportOptions] = useState<ExportOptions>(() =>
     getDefaultExportOptions(selectedExportFormat)
@@ -68,13 +29,11 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-
   // Update options when format changes
   useEffect(() => {
     setExportOptions(getDefaultExportOptions(selectedExportFormat));
     setValidationErrors([]);
   }, [selectedExportFormat]);
-
   // Validate configuration
   useEffect(() => {
     const config: ExportConfig = {
@@ -94,40 +53,32 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         version: '1.0',
       },
     };
-
     const validation = validateExportConfig(config);
     setValidationErrors(validation.errors);
   }, [selectedExportFormat, exportOptions, reportType, filters]);
-
   const handleFormatChange = (format: ExportFormat) => {
     setSelectedExportFormat(format);
   };
-
   const handleOptionChange = (key: keyof ExportOptions, value: any) => {
-    setExportOptions((prev) => ({
+    setExportOptions((prev) => ({ 
       ...prev,
-      [key]: value,
+      [key]: value}
     }));
   };
-
   const handleNext = () => {
     if (activeStep < steps.length - 1) {
       setActiveStep((prev) => prev + 1);
     }
   };
-
   const handleBack = () => {
     if (activeStep > 0) {
       setActiveStep((prev) => prev - 1);
     }
   };
-
   const handleExport = async () => {
     if (validationErrors.length > 0) return;
-
     setIsExporting(true);
     setExportProgress(0);
-
     try {
       const config: ExportConfig = {
         format: selectedExportFormat,
@@ -146,7 +97,6 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           version: '1.0',
         },
       };
-
       // Create export job
       const jobId = `export_${Date.now()}_${Math.random()
         .toString(36)
@@ -164,9 +114,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         retryCount: 0,
         maxRetries: 3,
       };
-
       addExportJob(exportJob);
-
       // Simulate export progress
       const progressInterval = setInterval(() => {
         setExportProgress((prev) => {
@@ -179,7 +127,6 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           return prev + 10;
         });
       }, 500);
-
       // TODO: Implement actual export API call
       console.log('Starting export with config:', config);
     } catch (error) {
@@ -187,7 +134,6 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       setIsExporting(false);
     }
   };
-
   const renderFormatSelection = () => {
     const formats: {
       value: ExportFormat;
@@ -232,63 +178,52 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         icon: '💾',
       },
     ];
-
     return (
-      <Grid container spacing={2}>
+      <div container spacing={2}>
         {formats.map((format) => (
-          <Grid item xs={12} sm={6} key={format.value}>
+          <div item xs={12} sm={6} key={format.value}>
             <Card
               variant={
-                selectedExportFormat === format.value ? 'outlined' : 'elevation'
+                selectedExportFormat === format.value ? 'outlined' : 'elevation'}
               }
-              sx={{
-                cursor: 'pointer',
-                border: selectedExportFormat === format.value ? 2 : 1,
-                borderColor:
-                  selectedExportFormat === format.value
-                    ? 'primary.main'
-                    : 'divider',
-                '&:hover': { elevation: 4 },
-              }}
-              onClick={() => handleFormatChange(format.value)}
+              className="" onClick={() => handleFormatChange(format.value)}
             >
               <CardContent>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <Typography variant="h4" component="span" mr={1}>
+                <div display="flex" alignItems="center" mb={1}>
+                  <div  component="span" mr={1}>
                     {format.icon}
-                  </Typography>
-                  <Typography variant="h6" component="div">
+                  </div>
+                  <div  component="div">
                     {format.label}
-                  </Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary">
+                  </div>
+                </div>
+                <div  color="text.secondary">
                   {format.description}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Grid>
+          </div>
         ))}
-      </Grid>
+      </div>
     );
   };
-
   const renderConfiguration = () => {
     return (
-      <Box>
+      <div>
         {/* PDF Options */}
         {selectedExportFormat === 'pdf' && (
-          <Box mb={3}>
-            <Typography variant="h6" gutterBottom>
+          <div mb={3}>
+            <div  gutterBottom>
               PDF Options
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Page Size</InputLabel>
+            </div>
+            <div container spacing={2}>
+              <div item xs={6}>
+                <div fullWidth>
+                  <Label>Page Size</Label>
                   <Select
                     value={exportOptions.pageSize || 'A4'}
                     onChange={(e) =>
-                      handleOptionChange('pageSize', e.target.value)
+                      handleOptionChange('pageSize', e.target.value)}
                     }
                   >
                     <MenuItem value="A4">A4</MenuItem>
@@ -296,149 +231,146 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                     <MenuItem value="Letter">Letter</MenuItem>
                     <MenuItem value="Legal">Legal</MenuItem>
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Orientation</InputLabel>
+                </div>
+              </div>
+              <div item xs={6}>
+                <div fullWidth>
+                  <Label>Orientation</Label>
                   <Select
                     value={exportOptions.orientation || 'portrait'}
                     onChange={(e) =>
-                      handleOptionChange('orientation', e.target.value)
+                      handleOptionChange('orientation', e.target.value)}
                     }
                   >
                     <MenuItem value="portrait">Portrait</MenuItem>
                     <MenuItem value="landscape">Landscape</MenuItem>
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
+                </div>
+              </div>
+              <div item xs={12}>
                 <FormControlLabel
                   control={
-                    <Switch
+                    <Switch}
                       checked={exportOptions.includeCharts !== false}
                       onChange={(e) =>
-                        handleOptionChange('includeCharts', e.target.checked)
+                        handleOptionChange('includeCharts', e.target.checked)}
                       }
                     />
                   }
                   label="Include Charts"
                 />
-              </Grid>
-            </Grid>
-          </Box>
+              </div>
+            </div>
+          </div>
         )}
-
         {/* CSV Options */}
         {selectedExportFormat === 'csv' && (
-          <Box mb={3}>
-            <Typography variant="h6" gutterBottom>
+          <div mb={3}>
+            <div  gutterBottom>
               CSV Options
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
+            </div>
+            <div container spacing={2}>
+              <div item xs={6}>
+                <Input
                   fullWidth
                   label="Delimiter"
                   value={exportOptions.delimiter || ','}
                   onChange={(e) =>
-                    handleOptionChange('delimiter', e.target.value)
+                    handleOptionChange('delimiter', e.target.value)}
                   }
-                  inputProps={{ maxLength: 1 }}
+                  
                 />
-              </Grid>
-              <Grid item xs={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Encoding</InputLabel>
+              </div>
+              <div item xs={6}>
+                <div fullWidth>
+                  <Label>Encoding</Label>
                   <Select
                     value={exportOptions.encoding || 'utf-8'}
                     onChange={(e) =>
-                      handleOptionChange('encoding', e.target.value)
+                      handleOptionChange('encoding', e.target.value)}
                     }
                   >
                     <MenuItem value="utf-8">UTF-8</MenuItem>
                     <MenuItem value="utf-16">UTF-16</MenuItem>
                     <MenuItem value="ascii">ASCII</MenuItem>
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
+                </div>
+              </div>
+              <div item xs={12}>
                 <FormControlLabel
                   control={
-                    <Switch
+                    <Switch}
                       checked={exportOptions.includeHeaders !== false}
                       onChange={(e) =>
-                        handleOptionChange('includeHeaders', e.target.checked)
+                        handleOptionChange('includeHeaders', e.target.checked)}
                       }
                     />
                   }
                   label="Include Headers"
                 />
-              </Grid>
-            </Grid>
-          </Box>
+              </div>
+            </div>
+          </div>
         )}
-
         {/* Image Options */}
         {(['png', 'svg'] as ExportFormat[]).includes(selectedExportFormat) && (
-          <Box mb={3}>
-            <Typography variant="h6" gutterBottom>
+          <div mb={3}>
+            <div  gutterBottom>
               Image Options
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
+            </div>
+            <div container spacing={2}>
+              <div item xs={6}>
+                <Input
                   fullWidth
                   label="Width (px)"
                   type="number"
                   value={exportOptions.width || 1200}
                   onChange={(e) =>
-                    handleOptionChange('width', parseInt(e.target.value))
+                    handleOptionChange('width', parseInt(e.target.value))}
                   }
-                  inputProps={{ min: 100, max: 5000 }}
+                  
                 />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
+              </div>
+              <div item xs={6}>
+                <Input
                   fullWidth
                   label="Height (px)"
                   type="number"
                   value={exportOptions.height || 800}
                   onChange={(e) =>
-                    handleOptionChange('height', parseInt(e.target.value))
+                    handleOptionChange('height', parseInt(e.target.value))}
                   }
-                  inputProps={{ min: 100, max: 5000 }}
+                  
                 />
-              </Grid>
+              </div>
               {selectedExportFormat === 'png' && (
-                <Grid item xs={6}>
-                  <TextField
+                <div item xs={6}>
+                  <Input
                     fullWidth
                     label="DPI"
                     type="number"
                     value={exportOptions.dpi || 150}
                     onChange={(e) =>
-                      handleOptionChange('dpi', parseInt(e.target.value))
+                      handleOptionChange('dpi', parseInt(e.target.value))}
                     }
-                    inputProps={{ min: 72, max: 300 }}
+                    
                   />
-                </Grid>
+                </div>
               )}
-            </Grid>
-          </Box>
+            </div>
+          </div>
         )}
-
         {/* General Options */}
-        <Box>
-          <Typography variant="h6" gutterBottom>
+        <div>
+          <div  gutterBottom>
             General Options
-          </Typography>
+          </div>
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={exportOptions.includeMetadata !== false}
                 onChange={(e) =>
-                  handleOptionChange('includeMetadata', e.target.checked)
+                  handleOptionChange('includeMetadata', e.target.checked)}
                 }
               />
             }
@@ -446,10 +378,10 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           />
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={exportOptions.includeFilters !== false}
                 onChange={(e) =>
-                  handleOptionChange('includeFilters', e.target.checked)
+                  handleOptionChange('includeFilters', e.target.checked)}
                 }
               />
             }
@@ -457,20 +389,19 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           />
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={exportOptions.includeTimestamp !== false}
                 onChange={(e) =>
-                  handleOptionChange('includeTimestamp', e.target.checked)
+                  handleOptionChange('includeTimestamp', e.target.checked)}
                 }
               />
             }
             label="Include Timestamp"
           />
-        </Box>
-      </Box>
+        </div>
+      </div>
     );
   };
-
   const renderPreview = () => {
     const dataPoints = reportData?.summary?.totalRecords || 0;
     const chartCount = reportData?.charts?.length || 0;
@@ -480,58 +411,54 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       chartCount
     );
     const filename = generateExportFilename(reportType, selectedExportFormat);
-
     return (
-      <Box>
-        <Typography variant="h6" gutterBottom>
+      <div>
+        <div  gutterBottom>
           Export Preview
-        </Typography>
-
-        <Card variant="outlined" sx={{ mb: 2 }}>
+        </div>
+        <Card  className="">
           <CardContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="text.secondary">
+            <div container spacing={2}>
+              <div item xs={12} sm={6}>
+                <div  color="text.secondary">
                   Format
-                </Typography>
-                <Typography variant="body1">
+                </div>
+                <div >
                   {selectedExportFormat.toUpperCase()}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="text.secondary">
+                </div>
+              </div>
+              <div item xs={12} sm={6}>
+                <div  color="text.secondary">
                   Estimated Size
-                </Typography>
-                <Typography variant="body1">
+                </div>
+                <div >
                   {sizeEstimate.formatted}
-                </Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="text.secondary">
+                </div>
+              </div>
+              <div item xs={12}>
+                <div  color="text.secondary">
                   Filename
-                </Typography>
-                <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                </div>
+                <div  className="">
                   {filename}
-                </Typography>
-              </Grid>
-            </Grid>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
         {validationErrors.length > 0 && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
+          <Alert severity="error" className="">
+            <div  gutterBottom>
               Configuration Errors:
-            </Typography>
-            <ul style={{ margin: 0, paddingLeft: 20 }}>
+            </div>
+            <ul >
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>
               ))}
             </ul>
           </Alert>
         )}
-
-        <Box display="flex" flexWrap="wrap" gap={1}>
+        <div display="flex" flexWrap="wrap" gap={1}>
           {exportOptions.includeCharts && (
             <Chip label="Charts Included" color="primary" size="small" />
           )}
@@ -544,11 +471,10 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           {exportOptions.includeTimestamp && (
             <Chip label="Timestamp Included" color="primary" size="small" />
           )}
-        </Box>
-      </Box>
+        </div>
+      </div>
     );
   };
-
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
@@ -561,74 +487,65 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         return null;
     }
   };
-
   return (
     <Dialog
       open={open}
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{ sx: { minHeight: '600px' } }}
-    >
+      PaperProps={{ sx: { minHeight: '600px' } >
       <DialogTitle>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center">
-            <DownloadIcon sx={{ mr: 1 }} />
+        <div display="flex" alignItems="center" justifyContent="space-between">
+          <div display="flex" alignItems="center">
+            <DownloadIcon className="" />
             Export Report
-          </Box>
+          </div>
           <Button
             onClick={onClose}
             size="small"
-            sx={{ minWidth: 'auto', p: 1 }}
+            className=""
           >
             <CloseIcon />
           </Button>
-        </Box>
+        </div>
       </DialogTitle>
-
       <DialogContent>
-        <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
+        <Stepper activeStep={activeStep} className="">
           {steps.map((label) => (
             <Step key={label}>
               <StepLabel>{label}</StepLabel>
             </Step>
           ))}
         </Stepper>
-
         {isExporting && (
-          <Box mb={3}>
-            <Typography variant="body2" gutterBottom>
+          <div mb={3}>
+            <div  gutterBottom>
               Exporting report...
-            </Typography>
-            <LinearProgress
-              variant="determinate"
-              value={exportProgress}
-              sx={{ mb: 1 }}
+            </div>
+            <Progress
+              
+              className=""
             />
-            <Typography variant="caption" color="text.secondary">
+            <div  color="text.secondary">
               {exportProgress}% complete
-            </Typography>
-          </Box>
+            </div>
+          </div>
         )}
-
         {renderStepContent()}
       </DialogContent>
-
       <DialogActions>
         <Button onClick={onClose} disabled={isExporting}>
           Cancel
         </Button>
-
         {activeStep > 0 && (
           <Button onClick={handleBack} disabled={isExporting}>
             Back
           </Button>
         )}
-
         {activeStep < steps.length - 1 ? (
           <Button
             onClick={handleNext}
-            variant="contained"
+            
             disabled={isExporting}
           >
             Next
@@ -636,7 +553,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         ) : (
           <Button
             onClick={handleExport}
-            variant="contained"
+            
             disabled={isExporting || validationErrors.length > 0}
             startIcon={<DownloadIcon />}
           >

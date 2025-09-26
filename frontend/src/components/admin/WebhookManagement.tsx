@@ -1,47 +1,32 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  Chip,
-  CircularProgress,
-  Divider,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  Typography,
-  Alert,
-  Button,
-  Paper,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
-  Switch,
-  FormControlLabel,
-  Tooltip,
-} from '@mui/material';
-import {
-  Webhook as WebhookIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Refresh as RefreshIcon,
-  Search as SearchIcon,
-  Visibility as ViewIcon,
-  FileCopy as CopyIcon,
-  Check as CheckIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material';
-import { useUIStore } from '../../stores';
+import React, { useState, useEffect } from 'react';
+
+import { Button } from '@/components/ui/button';
+
+import { Input } from '@/components/ui/input';
+
+import { Label } from '@/components/ui/label';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { CardHeader } from '@/components/ui/card';
+
+import { Dialog } from '@/components/ui/dialog';
+
+import { DialogContent } from '@/components/ui/dialog';
+
+import { DialogTitle } from '@/components/ui/dialog';
+
+import { Select } from '@/components/ui/select';
+
+import { Tooltip } from '@/components/ui/tooltip';
+
+import { Spinner } from '@/components/ui/spinner';
+
+import { Switch } from '@/components/ui/switch';
+
+import { Separator } from '@/components/ui/separator';
 
 interface Webhook {
   id: string;
@@ -56,7 +41,6 @@ interface Webhook {
   secret?: string;
   description?: string;
 }
-
 const WebhookManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [webhooks, setWebhooks] = useState<Webhook[]>([
@@ -107,35 +91,28 @@ const WebhookManagement: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [newWebhook, setNewWebhook] = useState<
     Omit<Webhook, 'id' | 'createdAt' | 'updatedAt'>
-  >({
+  >({ 
     name: '',
     url: '',
     events: [],
     status: 'active',
     secret: '',
-    description: '',
+    description: ''}
   });
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
   const addNotification = useUIStore((state) => state.addNotification);
-
   const handleSaveWebhook = async () => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
       const action = editingWebhook ? 'updated' : 'created';
-
-      addNotification({
-        type: 'info',
+      addNotification({ 
+        type: 'info'}
         title: `Webhook ${action}`,
-        message: `Webhook ${newWebhook.name} has been ${action}`,
-      });
-
+        message: `Webhook ${newWebhook.name} has been ${action}`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       if (editingWebhook) {
         // Update existing webhook
         setWebhooks(
@@ -157,78 +134,63 @@ const WebhookManagement: React.FC = () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-
         setWebhooks([webhook, ...webhooks]);
       }
-
       setShowWebhookDialog(false);
       setEditingWebhook(null);
-      setNewWebhook({
+      setNewWebhook({ 
         name: '',
         url: '',
         events: [],
         status: 'active',
         secret: '',
-        description: '',
+        description: ''}
       });
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
-        title: 'Operation Failed',
-        message: `Failed to save webhook: ${newWebhook.name}`,
-      });
+        title: 'Operation Failed'}
+        message: `Failed to save webhook: ${newWebhook.name}`}
     } finally {
       setLoading(false);
     }
   };
-
   const handleDeleteWebhook = async (webhookId: string) => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
       const webhook = webhooks.find((w) => w.id === webhookId);
-
-      addNotification({
+      addNotification({ 
         type: 'info',
-        title: 'Webhook Deleted',
-        message: `Webhook ${webhook?.name} has been deleted`,
-      });
-
+        title: 'Webhook Deleted'}
+        message: `Webhook ${webhook?.name} has been deleted`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       // Remove the webhook
       setWebhooks(webhooks.filter((w) => w.id !== webhookId));
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
         title: 'Delete Failed',
-        message: 'Failed to delete webhook',
+        message: 'Failed to delete webhook'}
       });
     } finally {
       setLoading(false);
     }
   };
-
   const handleToggleWebhookStatus = async (webhookId: string) => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
       const webhook = webhooks.find((w) => w.id === webhookId);
-
-      addNotification({
+      addNotification({ 
         type: 'info',
-        title: 'Status Updated',
-        message: `Webhook ${webhook?.name} status updated`,
-      });
-
+        title: 'Status Updated'}
+        message: `Webhook ${webhook?.name} status updated`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 500));
-
       // Toggle the webhook status
       setWebhooks(
         webhooks.map((w) =>
@@ -242,33 +204,27 @@ const WebhookManagement: React.FC = () => {
         )
       );
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
         title: 'Status Update Failed',
-        message: 'Failed to update webhook status',
+        message: 'Failed to update webhook status'}
       });
     } finally {
       setLoading(false);
     }
   };
-
   const handleTestWebhook = async (webhookId: string) => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
       const webhook = webhooks.find((w) => w.id === webhookId);
-
-      addNotification({
+      addNotification({ 
         type: 'info',
-        title: 'Test Sent',
-        message: `Test event sent to webhook ${webhook?.name}`,
-      });
-
+        title: 'Test Sent'}
+        message: `Test event sent to webhook ${webhook?.name}`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       // Update last delivery status
       setWebhooks(
         webhooks.map((w) =>
@@ -282,54 +238,49 @@ const WebhookManagement: React.FC = () => {
         )
       );
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
         title: 'Test Failed',
-        message: 'Failed to send test event',
+        message: 'Failed to send test event'}
       });
     } finally {
       setLoading(false);
     }
   };
-
   const handleCopySecret = (secret: string, webhookId: string) => {
     navigator.clipboard.writeText(secret);
     setCopiedId(webhookId);
     setTimeout(() => setCopiedId(null), 2000);
-
-    addNotification({
+    addNotification({ 
       type: 'success',
       title: 'Copied',
-      message: 'Webhook secret copied to clipboard',
+      message: 'Webhook secret copied to clipboard'}
     });
   };
-
   const openEditDialog = (webhook: Webhook) => {
     setEditingWebhook(webhook);
-    setNewWebhook({
+    setNewWebhook({ 
       name: webhook.name,
       url: webhook.url,
       events: [...webhook.events],
       status: webhook.status,
       secret: webhook.secret || '',
-      description: webhook.description || '',
+      description: webhook.description || ''}
     });
     setShowWebhookDialog(true);
   };
-
   const openCreateDialog = () => {
     setEditingWebhook(null);
-    setNewWebhook({
+    setNewWebhook({ 
       name: '',
       url: '',
       events: [],
       status: 'active',
       secret: '',
-      description: '',
+      description: ''}
     });
     setShowWebhookDialog(true);
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -342,7 +293,6 @@ const WebhookManagement: React.FC = () => {
         return 'default';
     }
   };
-
   const getDeliveryStatusColor = (status?: string) => {
     switch (status) {
       case 'success':
@@ -353,7 +303,6 @@ const WebhookManagement: React.FC = () => {
         return 'default';
     }
   };
-
   const filteredWebhooks = webhooks.filter((webhook) => {
     const matchesSearch =
       webhook.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -365,120 +314,105 @@ const WebhookManagement: React.FC = () => {
       filterStatus === 'all' || webhook.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
-
   return (
-    <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
+    <div>
+      <div
+        className=""
       >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <WebhookIcon sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h5" component="h1">
+        <div className="">
+          <WebhookIcon className="" />
+          <div  component="h1">
             Webhook Management
-          </Typography>
-        </Box>
-        <Box>
+          </div>
+        </div>
+        <div>
           <Button
-            variant="contained"
+            
             startIcon={<AddIcon />}
             onClick={openCreateDialog}
-            sx={{ mr: 1 }}
+            className=""
           >
             Add Webhook
           </Button>
           <Button
-            variant="outlined"
+            
             startIcon={<RefreshIcon />}
             onClick={() => setLoading(true)}
           >
             Refresh
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Webhook Stats */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <div container spacing={3} className="">
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary.main" gutterBottom>
+            <CardContent className="">
+              <div  color="primary.main" gutterBottom>
                 {webhooks.length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Total Webhooks
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main" gutterBottom>
+            <CardContent className="">
+              <div  color="success.main" gutterBottom>
                 {webhooks.filter((w) => w.status === 'active').length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Active
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="error.main" gutterBottom>
+            <CardContent className="">
+              <div  color="error.main" gutterBottom>
                 {webhooks.filter((w) => w.status === 'error').length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 With Errors
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="info.main" gutterBottom>
+            <CardContent className="">
+              <div  color="info.main" gutterBottom>
                 {
                   webhooks.filter((w) => w.lastDeliveryStatus === 'success')
                     .length
                 }
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Recent Success
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Search and Filter */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <CardContent>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
+          <div container spacing={2}>
+            <div item xs={12} md={6}>
+              <Input
                 fullWidth
                 placeholder="Search by name, URL, or events..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  ),
-                }}
+                
               />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Status Filter</InputLabel>
+            </div>
+            <div item xs={12} md={6}>
+              <div fullWidth>
+                <Label>Status Filter</Label>
                 <Select
                   value={filterStatus}
                   label="Status Filter"
@@ -489,56 +423,45 @@ const WebhookManagement: React.FC = () => {
                   <MenuItem value="inactive">Inactive</MenuItem>
                   <MenuItem value="error">Error</MenuItem>
                 </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
       {/* Webhook List */}
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
+      <div container spacing={3}>
+        <div item xs={12}>
           <Card>
             <CardHeader
               title="Webhook Endpoints"
               subheader="Manage all webhook endpoints and their configurations"
             />
-            <Divider />
+            <Separator />
             <CardContent>
               {filteredWebhooks.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="body1" color="textSecondary">
+                <div className="">
+                  <div  color="textSecondary">
                     No webhooks found
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               ) : (
                 <List>
                   {filteredWebhooks.map((webhook) => (
-                    <ListItem
+                    <div
                       key={webhook.id}
-                      sx={{
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        mb: 1,
-                        '&:last-child': { mb: 0 },
-                      }}
+                      className=""
                     >
-                      <Box sx={{ mr: 2, mt: 0.5 }}>
+                      <div className="">
                         <WebhookIcon />
-                      </Box>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              mb: 0.5,
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography variant="subtitle1" sx={{ mr: 1 }}>
+                            <div  className="">}
                               {webhook.name}
-                            </Typography>
+                            </div>
                             <Chip
                               label={webhook.status}
                               size="small"
@@ -551,68 +474,64 @@ const WebhookManagement: React.FC = () => {
                                 color={
                                   getDeliveryStatusColor(
                                     webhook.lastDeliveryStatus
-                                  ) as any
+                                  ) as any}
                                 }
-                                variant="outlined"
-                                sx={{ ml: 1 }}
+                                
+                                className=""
                               />
                             )}
-                          </Box>
+                          </div>
                         }
                         secondary={
-                          <Box>
-                            <Typography
-                              variant="body2"
+                          <div>
+                            <div
+                              
                               color="textSecondary"
-                              sx={{ mb: 1 }}
-                            >
+                              className=""
+                            >}
                               {webhook.url}
-                            </Typography>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                flexWrap: 'wrap',
-                              }}
+                            </div>
+                            <div
+                              className=""
                             >
-                              <Typography
-                                variant="caption"
+                              <div
+                                
                                 color="textSecondary"
-                                sx={{ mr: 2 }}
+                                className=""
                               >
                                 Events: {webhook.events.join(', ')}
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="textSecondary"
-                                sx={{ mr: 2 }}
+                                className=""
                               >
                                 Created:{' '}
                                 {new Date(
                                   webhook.createdAt
                                 ).toLocaleDateString()}
-                              </Typography>
+                              </div>
                               {webhook.lastDelivery && (
-                                <Typography
-                                  variant="caption"
+                                <div
+                                  
                                   color="textSecondary"
                                 >
                                   Last delivery:{' '}
                                   {new Date(
                                     webhook.lastDelivery
                                   ).toLocaleDateString()}
-                                </Typography>
+                                </div>
                               )}
-                            </Box>
-                          </Box>
+                            </div>
+                          </div>
                         }
                       />
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <div className="">
                         <Tooltip title="Test Webhook">
                           <IconButton
                             onClick={() => handleTestWebhook(webhook.id)}
                             disabled={loading}
-                            sx={{ mr: 1 }}
+                            className=""
                           >
                             <WebhookIcon />
                           </IconButton>
@@ -621,25 +540,25 @@ const WebhookManagement: React.FC = () => {
                           <IconButton
                             onClick={() => openEditDialog(webhook)}
                             disabled={loading}
-                            sx={{ mr: 1 }}
+                            className=""
                           >
                             <ViewIcon />
                           </IconButton>
                         </Tooltip>
                         <FormControlLabel
                           control={
-                            <Switch
+                            <Switch}
                               checked={webhook.status === 'active'}
                               onChange={() =>
-                                handleToggleWebhookStatus(webhook.id)
+                                handleToggleWebhookStatus(webhook.id)}
                               }
                               disabled={loading}
                             />
                           }
                           label={
-                            webhook.status === 'active' ? 'Active' : 'Inactive'
+                            webhook.status === 'active' ? 'Active' : 'Inactive'}
                           }
-                          sx={{ mr: 1 }}
+                          className=""
                         />
                         <IconButton
                           onClick={() => handleDeleteWebhook(webhook.id)}
@@ -648,16 +567,15 @@ const WebhookManagement: React.FC = () => {
                         >
                           <DeleteIcon />
                         </IconButton>
-                      </Box>
-                    </ListItem>
+                      </div>
+                    </div>
                   ))}
                 </List>
               )}
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Webhook Dialog */}
       <Dialog
         open={showWebhookDialog}
@@ -666,50 +584,50 @@ const WebhookManagement: React.FC = () => {
         fullWidth
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <WebhookIcon sx={{ mr: 1 }} />
+          <div className="">
+            <WebhookIcon className="" />
             {editingWebhook ? 'Edit Webhook' : 'Add New Webhook'}
-          </Box>
+          </div>
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <TextField
+          <div className="">
+            <Input
               fullWidth
               label="Webhook Name"
               value={newWebhook.name}
-              onChange={(e) =>
+              onChange={(e) =>}
                 setNewWebhook({ ...newWebhook, name: e.target.value })
               }
               margin="normal"
               required
             />
-            <TextField
+            <Input
               fullWidth
               label="Endpoint URL"
               value={newWebhook.url}
-              onChange={(e) =>
+              onChange={(e) =>}
                 setNewWebhook({ ...newWebhook, url: e.target.value })
               }
               margin="normal"
               required
               helperText="The URL where webhook events will be sent"
             />
-            <TextField
+            <Input
               fullWidth
               label="Description"
               value={newWebhook.description}
-              onChange={(e) =>
+              onChange={(e) =>}
                 setNewWebhook({ ...newWebhook, description: e.target.value })
               }
               margin="normal"
               multiline
               rows={2}
             />
-            <TextField
+            <Input
               fullWidth
               label="Webhook Secret"
               value={newWebhook.secret}
-              onChange={(e) =>
+              onChange={(e) =>}
                 setNewWebhook({ ...newWebhook, secret: e.target.value })
               }
               margin="normal"
@@ -717,51 +635,51 @@ const WebhookManagement: React.FC = () => {
               helperText="Used to verify webhook authenticity"
             />
             {editingWebhook && newWebhook.secret && (
-              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+              <div className="">
                 <Button
                   startIcon={
                     copiedId === editingWebhook.id ? (
                       <CheckIcon />
                     ) : (
                       <CopyIcon />
-                    )
+                    )}
                   }
                   onClick={() =>
-                    handleCopySecret(newWebhook.secret, editingWebhook.id)
+                    handleCopySecret(newWebhook.secret, editingWebhook.id)}
                   }
                   size="small"
                 >
                   {copiedId === editingWebhook.id ? 'Copied!' : 'Copy Secret'}
                 </Button>
-              </Box>
+              </div>
             )}
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Status</InputLabel>
+            <div fullWidth margin="normal">
+              <Label>Status</Label>
               <Select
                 value={newWebhook.status}
                 label="Status"
                 onChange={(e) =>
-                  setNewWebhook({
-                    ...newWebhook,
-                    status: e.target.value as any,
+                  setNewWebhook({ 
+                    ...newWebhook}
+                    status: e.target.value as any,}
                   })
                 }
               >
                 <MenuItem value="active">Active</MenuItem>
                 <MenuItem value="inactive">Inactive</MenuItem>
               </Select>
-            </FormControl>
-          </Box>
+            </div>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowWebhookDialog(false)}>Cancel</Button>
           <Button
-            variant="contained"
+            
             onClick={handleSaveWebhook}
             disabled={loading || !newWebhook.name || !newWebhook.url}
             startIcon={
-              loading ? (
-                <CircularProgress size={20} />
+              loading ? (}
+                <Spinner size={20} />
               ) : editingWebhook ? (
                 <EditIcon />
               ) : (
@@ -773,8 +691,7 @@ const WebhookManagement: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
-
 export default WebhookManagement;

@@ -1,163 +1,133 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Container,
-  Grid,
-  Card,
-  CardContent,
-  Divider,
-} from '@mui/material';
-import {
-  SymptomInput,
-  VitalSignsInput,
-  MedicationHistoryInput,
-  AllergyInput,
-} from '../components';
-import type { DiagnosticRequestForm } from '../types';
+
 import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
 
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { Separator } from '@/components/ui/separator';
 const ComponentDemo: React.FC = () => {
-  const [formData, setFormData] = useState<Partial<DiagnosticRequestForm>>({
+  const [formData, setFormData] = useState<Partial<DiagnosticRequestForm>>({ 
     symptoms: {
       subjective: [],
       objective: [],
       duration: '',
       severity: 'mild',
-      onset: 'acute',
+      onset: 'acute'
     },
     vitals: undefined,
     currentMedications: [],
-    allergies: [],
+    allergies: []
   });
-
   const handleSymptomsChange = (
     symptoms: DiagnosticRequestForm['symptoms']
   ) => {
     setFormData((prev) => ({ ...prev, symptoms }));
   };
-
   const handleVitalsChange = (vitals: DiagnosticRequestForm['vitals']) => {
     setFormData((prev) => ({ ...prev, vitals }));
   };
-
   const handleMedicationsChange = (
     currentMedications: DiagnosticRequestForm['currentMedications']
   ) => {
     setFormData((prev) => ({ ...prev, currentMedications }));
   };
-
   const handleAllergiesChange = (allergies: string[]) => {
     setFormData((prev) => ({ ...prev, allergies }));
   };
-
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600, mb: 2 }}>
+    <div maxWidth="lg" className="">
+      <div className="">
+        <div  className="">
           Diagnostic Components Demo
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Interactive demonstration of the symptom input and patient assessment
           components
-        </Typography>
-      </Box>
-
-      <Grid container spacing={4}>
+        </div>
+      </div>
+      <div container spacing={4}>
         {/* Symptom Input */}
-        <Grid item xs={12}>
+        <div item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              <div  className="">
                 1. Symptom Assessment Component
-              </Typography>
+              </div>
               <SymptomInput
                 value={formData.symptoms!}
                 onChange={handleSymptomsChange}
               />
             </CardContent>
           </Card>
-        </Grid>
-
+        </div>
         {/* Vital Signs Input */}
-        <Grid item xs={12}>
+        <div item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              <div  className="">
                 2. Vital Signs Component
-              </Typography>
+              </div>
               <VitalSignsInput
                 value={formData.vitals}
                 onChange={handleVitalsChange}
               />
             </CardContent>
           </Card>
-        </Grid>
-
+        </div>
         {/* Medication History Input */}
-        <Grid item xs={12}>
+        <div item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              <div  className="">
                 3. Medication History Component
-              </Typography>
+              </div>
               <MedicationHistoryInput
                 value={formData.currentMedications}
                 onChange={handleMedicationsChange}
               />
             </CardContent>
           </Card>
-        </Grid>
-
+        </div>
         {/* Allergy Input */}
-        <Grid item xs={12}>
+        <div item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              <div  className="">
                 4. Allergy Management Component
-              </Typography>
+              </div>
               <AllergyInput
                 value={formData.allergies}
                 onChange={handleAllergiesChange}
               />
             </CardContent>
           </Card>
-        </Grid>
-
+        </div>
         {/* Form Data Preview */}
-        <Grid item xs={12}>
+        <div item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              <div  className="">
                 Current Form Data
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              <Box
+              </div>
+              <Separator className="" />
+              <div
                 component="pre"
-                sx={{
-                  backgroundColor: 'grey.100',
-                  p: 2,
-                  borderRadius: 1,
-                  overflow: 'auto',
-                  fontSize: '0.875rem',
-                  fontFamily: 'monospace',
-                }}
+                className=""
               >
                 {JSON.stringify(formData, null, 2)}
-              </Box>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-    </Container>
+        </div>
+      </div>
+    </div>
   );
 };
-
 // Wrap with feature guard
 const ComponentDemoWithGuard: React.FC = () => (
   <DiagnosticFeatureGuard>
     <ComponentDemo />
   </DiagnosticFeatureGuard>
 );
-
 export default ComponentDemoWithGuard;

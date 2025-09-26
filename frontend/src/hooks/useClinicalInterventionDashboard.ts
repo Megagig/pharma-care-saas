@@ -1,7 +1,3 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { subDays, subMonths } from 'date-fns';
-import { useClinicalInterventionStore } from '../stores/clinicalInterventionStore';
-
 type DateRange = 'week' | 'month' | 'quarter' | 'year';
 
 export const useClinicalInterventionDashboard = (dateRange: DateRange) => {

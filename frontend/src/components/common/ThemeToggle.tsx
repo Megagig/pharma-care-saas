@@ -1,7 +1,5 @@
-import React from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
-import { useTheme } from '../../stores/themeStore';
-import { ThemeMode } from '../../stores/types';
+import { useThemeToggle, ThemeMode } from '@/hooks/useThemeToggle';
 
 interface ThemeToggleProps {
   showLabel?: boolean;
@@ -14,9 +12,9 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({
   showLabel = false,
   size = 'md',
   variant = 'button',
-  className = '',
+  className = ''
 }) => {
-  const { theme, setTheme, toggleTheme, resolvedTheme } = useTheme();
+  const { theme, setTheme, toggle, resolvedTheme } = useThemeToggle();
 
   const sizeClasses = {
     sm: 'h-8 w-8 text-sm',
@@ -60,7 +58,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({
   if (variant === 'dropdown') {
     return (
       <div className={`relative inline-block ${className}`}>
-        <div className="flex space-x-1 p-1 bg-gray-100 dark:bg-dark-800 rounded-lg">
+        <div className="flex space-x-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
           {(['light', 'dark', 'system'] as ThemeMode[]).map((themeMode) => (
             <button
               key={themeMode}
@@ -68,12 +66,11 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({
               className={`
                 ${sizeClasses[size]}
                 flex items-center justify-center rounded-md transition-all duration-200
-                ${
-                  theme === themeMode
-                    ? 'bg-white dark:bg-dark-700 shadow-sm text-primary-600 dark:text-accent-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                ${theme === themeMode
+                  ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }
-                hover:bg-white/50 dark:hover:bg-dark-700/50
+                hover:bg-white/50 dark:hover:bg-gray-700/50
               `}
               title={`Switch to ${getThemeLabel(themeMode)} mode`}
               aria-label={`Switch to ${getThemeLabel(themeMode)} mode`}
@@ -95,20 +92,21 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({
     <div className={`inline-flex items-center ${className}`}>
       <button
         onClick={() => {
-          console.log(
-            'ThemeToggle: toggleTheme clicked, current theme:',
-            theme
-          );
-          toggleTheme();
+          if (process.env.NODE_ENV === 'development') {
+            const { measureThemeTogglePerformance } = require('@/hooks/useThemeToggle');
+            measureThemeTogglePerformance(toggle);
+          } else {
+            toggle();
+          }
         }}
         className={`
           ${sizeClasses[size]}
           flex items-center justify-center rounded-lg transition-all duration-200
-          bg-gray-100 hover:bg-gray-200 dark:bg-dark-800 dark:hover:bg-dark-700
+          bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700
           text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white
-          border border-gray-200 dark:border-dark-600
-          focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-accent-500
-          focus:ring-offset-2 dark:focus:ring-offset-dark-900
+          border border-gray-200 dark:border-gray-600
+          focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500
+          focus:ring-offset-2 dark:focus:ring-offset-gray-900
           shadow-sm hover:shadow-md
         `}
         title={`Current: ${getThemeLabel(theme)} (click to toggle)`}
@@ -124,7 +122,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({
               className={`
                 absolute -bottom-1 -right-1 w-2 h-2 rounded-full
                 ${resolvedTheme === 'dark' ? 'bg-gray-800' : 'bg-yellow-400'}
-                border border-white dark:border-dark-800
+                border border-white dark:border-gray-800
               `}
               title={`System preference: ${resolvedTheme}`}
             />

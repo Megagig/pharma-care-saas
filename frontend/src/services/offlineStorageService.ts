@@ -1,5 +1,3 @@
-import { Message, Conversation, CommunicationNotification } from '../stores/types';
-
 interface OfflineMessage extends Message {
     isOffline: boolean;
     syncStatus: 'pending' | 'syncing' | 'synced' | 'failed';
@@ -93,9 +91,9 @@ export class OfflineStorageService {
             const transaction = this.db!.transaction(['conversations'], 'readwrite');
             const store = transaction.objectStore('conversations');
 
-            const request = store.put({
+            const request = store.put({ 
                 ...conversation,
-                cachedAt: new Date().toISOString(),
+                cachedAt: new Date().toISOString()}
             });
 
             request.onsuccess = () => resolve();

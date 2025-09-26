@@ -1,21 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useDebounce } from '../hooks/useDebounce';
-import { useDrugSearch } from '../queries/drugQueries';
-import { useDrugStore } from '../stores/drugStore';
-import {
-  Box,
-  TextField,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
-  Typography,
-  Paper,
-  InputAdornment,
-  useTheme,
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
 import LoadingSkeleton from './LoadingSkeleton';
+
+import { Input, Spinner } from '@/components/ui/button';
 
 interface DrugConcept {
   rxcui: string;
@@ -106,7 +91,7 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
   const handleDrugSelect = (drug: DrugConcept) => {
     setSelectedDrug({
       rxCui: drug.rxcui,
-      name: drug.name,
+      name: drug.name
     });
 
     if (onDrugSelect) {
@@ -127,178 +112,91 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
   }
 
   return (
-    <Box className="drug-search">
+    <div className="drug-search">
       {/* Debug info */}
-      <TextField
+      <Input
         fullWidth
-        variant="outlined"
+
         placeholder="Search for medications by name..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon color="primary" />
-            </InputAdornment>
-          ),
-          endAdornment: isLoading && (
-            <InputAdornment position="end">
-              <CircularProgress size={20} color="primary" />
-            </InputAdornment>
-          ),
-        }}
-        sx={{
-          mb: 2,
-          '& .MuiOutlinedInput-root': {
-            borderRadius: '8px',
-            '&:hover fieldset': {
-              borderColor:
-                theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor:
-                theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
-              borderWidth: 2,
-            },
-          },
-        }}
+        className=""
       />
 
       {error && (
-        <Box
-          sx={{
-            mb: 3,
-            p: 1,
-            borderRadius: '8px',
-            bgcolor: theme.palette.mode === 'dark' ? '#4c1d1d' : '#fff0f0',
-            border: '1px solid',
-            borderColor: theme.palette.mode === 'dark' ? '#dc2626' : '#ffcccc',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
+        <div
+          className=""
         >
-          <Typography color="error">
+          <div color="error">
             Error: {(error as Error).message || 'Failed to search drugs'}
-          </Typography>
-          <Typography
+          </div>
+          <div
             component="button"
             onClick={handleRetry}
-            sx={{
-              cursor: 'pointer',
-              color: theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
-              fontWeight: 500,
-              fontSize: '0.875rem',
-              textDecoration: 'underline',
-              border: 'none',
-              background: 'none',
-              '&:hover': {
-                color: theme.palette.mode === 'dark' ? '#5bb0d4' : '#002D69',
-              },
-            }}
-          >
+            className="">
             Retry
-          </Typography>
-        </Box>
+          </div>
+        </div>
       )}
 
       {debouncedSearchTerm.length > 2 && drugConcepts.length > 0 && (
-        <Paper
-          elevation={2}
-          sx={{
-            borderRadius: '8px',
-            overflow: 'hidden',
-            border: '1px solid #e0e0e0',
-          }}
+        <div
+          className=""
         >
-          <List sx={{ maxHeight: '350px', overflow: 'auto' }}>
+          <List className="">
             {drugConcepts.map((drug) => (
-              <ListItem
+              <div
                 key={drug.rxcui}
                 onClick={() => handleDrugSelect(drug)}
-                sx={{
-                  borderBottom: '1px solid #f0f0f0',
-                  '&:last-child': { border: 'none' },
-                  '&:hover': {
-                    bgcolor:
-                      theme.palette.mode === 'dark' ? '#374151' : '#f5f9ff',
-                    cursor: 'pointer',
-                  },
-                }}
+                className=""
               >
-                <ListItemText
-                  primary={
-                    <Typography component="span" fontWeight={500}>
-                      {drug.name}
-                    </Typography>
-                  }
-                  secondary={
-                    drug.synonym ? `Also known as: ${drug.synonym}` : ''
-                  }
-                />
-                {drug.tty && (
-                  <Box
-                    component="span"
-                    sx={{
-                      ml: 2,
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: '16px',
-                      fontSize: '0.75rem',
-                      fontWeight: 500,
-                      color:
-                        theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
-                      bgcolor:
-                        theme.palette.mode === 'dark' ? '#374151' : '#f0f7ff',
-                      border: '1px solid',
-                      borderColor:
-                        theme.palette.mode === 'dark' ? '#4b5563' : '#d0e4ff',
-                    }}
-                  >
-                    {drug.tty}
-                  </Box>
-                )}
-              </ListItem>
+                <div className="p-2">
+                  <div className="font-medium">
+                    {drug.name}
+                  </div>
+                  {drug.synonym && (
+                    <div className="text-sm text-gray-600">
+                      Also known as: {drug.synonym}
+                    </div>
+                  )}
+                  {drug.tty && (
+                    <div
+                      component="span"
+                      className=""
+                    >
+                      {drug.tty}
+                    </div>
+                  )}
+                </div>
+              </div>
             ))}
           </List>
-        </Paper>
+        </div>
       )}
 
       {debouncedSearchTerm.length > 2 &&
         drugConcepts.length === 0 &&
         !isLoading && (
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              py: 4,
-              bgcolor: theme.palette.mode === 'dark' ? '#0f172a' : '#f9fbff',
-              borderRadius: '8px',
-            }}
+          <div
+            className=""
           >
             <SearchIcon
-              sx={{
-                fontSize: '2rem',
-                color: theme.palette.mode === 'dark' ? '#6b7280' : '#9e9e9e',
-                mb: 1,
-              }}
+              className=""
             />
-            <Typography color="text.secondary" align="center">
+            <div color="text.secondary" align="center">
               No medications found matching "{debouncedSearchTerm}"
-            </Typography>
-            <Typography
-              variant="body2"
+            </div>
+            <div
+
               color="text.secondary"
               align="center"
-              sx={{ mt: 1 }}
+              className=""
             >
               Try using a different spelling or search term
-            </Typography>
-          </Box>
+            </div>
+          </div>
         )}
-    </Box>
+    </div>
   );
 };
 

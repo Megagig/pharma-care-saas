@@ -15,7 +15,7 @@ declare function validateCommunicationModels(): Promise<{
 } | {
     success: boolean;
     message: string;
-    error: string | undefined;
+    error: string;
     tests?: undefined;
 }>;
 export default validateCommunicationModels;

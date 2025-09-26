@@ -1,56 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  Alert,
-  Tabs,
-  Tab,
-  Badge,
-  Tooltip,
-  LinearProgress,
-  Paper,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import CalendarIcon from '@mui/icons-material/CalendarToday';
-import PhoneIcon from '@mui/icons-material/Phone';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import ScienceIcon from '@mui/icons-material/Science';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import PersonIcon from '@mui/icons-material/Person';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, isAfter, isBefore, addDays, differenceInDays } from 'date-fns';
-import { useMTRStore } from '../stores/mtrStore';
-import { useUIStore } from '../stores';
-import type { MTRFollowUp, MTRIntervention } from '../types/mtr';
+import { Button, Input, Label, Card, CardContent, Badge, Dialog, DialogContent, DialogTitle, Select, Tooltip, Progress, Alert, Accordion, Tabs } from '@/components/ui/button';
 
 interface FollowUpSchedulerProps {
   reviewId: string;
@@ -65,18 +13,16 @@ interface FollowUpSchedulerProps {
     outcome: Record<string, unknown>
   ) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
-const TabPanel: React.FC<TabPanelProps> = ({
+const TabPanel: React.FC<TabPanelProps> = ({ 
   children,
   value,
   index,
-  ...other
+  ...other })
 }) => {
   return (
     <div
@@ -86,17 +32,16 @@ const TabPanel: React.FC<TabPanelProps> = ({
       aria-labelledby={`followup-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <div className="">{children}</div>}
     </div>
   );
 };
-
-const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
+const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({ 
   reviewId,
   interventions,
   onFollowUpScheduled,
   onFollowUpUpdated,
-  onFollowUpCompleted,
+  onFollowUpCompleted
 }) => {
   const {
     followUps,
@@ -107,13 +52,10 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
     loading,
     errors,
   } = useMTRStore();
-
   // Available interventions for linking to follow-ups (for future use)
   const availableInterventions = interventions || [];
   console.log('Available interventions:', availableInterventions.length);
-
   const { addNotification } = useUIStore();
-
   // Local state
   const [activeTab, setActiveTab] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -125,9 +67,8 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
     null
   );
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
-
   // Form state for new/edit follow-up
-  const [formData, setFormData] = useState<Partial<MTRFollowUp>>({
+  const [formData, setFormData] = useState<Partial<MTRFollowUp>>({ 
     type: 'phone_call',
     priority: 'medium',
     description: '',
@@ -136,11 +77,10 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
     estimatedDuration: 30,
     assignedTo: '',
     status: 'scheduled',
-    relatedInterventions: [],
+    relatedInterventions: []}
   });
-
   // Outcome form state
-  const [outcomeData, setOutcomeData] = useState({
+  const [outcomeData, setOutcomeData] = useState({ 
     status: 'successful' as
       | 'successful'
       | 'partially_successful'
@@ -150,15 +90,13 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
     nextFollowUpDate: undefined as string | undefined,
     adherenceImproved: false,
     problemsResolved: [] as string[],
-    newProblemsIdentified: [] as string[],
+    newProblemsIdentified: [] as string[]}
   });
-
   // Reschedule form state
-  const [rescheduleData, setRescheduleData] = useState({
+  const [rescheduleData, setRescheduleData] = useState({ 
     newDate: new Date().toISOString(),
-    reason: '',
+    reason: ''}
   });
-
   // Filter follow-ups by status
   const scheduledFollowUps = followUps.filter((f) => f.status === 'scheduled');
   const completedFollowUps = followUps.filter((f) => f.status === 'completed');
@@ -174,7 +112,6 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
       f.scheduledDate &&
       isAfter(new Date(f.scheduledDate), new Date())
   );
-
   // Handle form changes
   const handleFormChange = (field: keyof MTRFollowUp, value: unknown) => {
     if (field === 'scheduledDate' && value instanceof Date) {
@@ -183,57 +120,50 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
       setFormData((prev) => ({ ...prev, [field]: value }));
     }
   };
-
   // Handle objectives array changes
   const handleObjectiveChange = (index: number, value: string) => {
     const newObjectives = [...(formData.objectives || [])];
     newObjectives[index] = value;
     setFormData((prev) => ({ ...prev, objectives: newObjectives }));
   };
-
   const addObjective = () => {
-    setFormData((prev) => ({
+    setFormData((prev) => ({ 
       ...prev,
-      objectives: [...(prev.objectives || []), ''],
+      objectives: [...(prev.objectives || []), '']}
     }));
   };
-
   const removeObjective = (index: number) => {
     const newObjectives = [...(formData.objectives || [])];
     newObjectives.splice(index, 1);
     setFormData((prev) => ({ ...prev, objectives: newObjectives }));
   };
-
   // Handle form submission
   const handleSubmit = async () => {
     try {
       if (!formData.description?.trim()) {
-        addNotification({
+        addNotification({ 
           title: 'Validation Error',
           message: 'Description is required',
-          type: 'error',
+          type: 'error'}
         });
         return;
       }
-
       if (!formData.scheduledDate) {
-        addNotification({
+        addNotification({ 
           title: 'Validation Error',
           message: 'Scheduled date is required',
-          type: 'error',
+          type: 'error'}
         });
         return;
       }
-
       if (!formData.assignedTo?.trim()) {
-        addNotification({
+        addNotification({ 
           title: 'Validation Error',
           message: 'Assigned pharmacist is required',
-          type: 'error',
+          type: 'error'}
         });
         return;
       }
-
       const followUpData: MTRFollowUp = {
         ...formData,
         reviewId,
@@ -241,109 +171,100 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
         objectives: formData.objectives?.filter((obj) => obj.trim()) || [],
         reminders: [],
       } as MTRFollowUp;
-
       if (editingFollowUp) {
         await updateFollowUp(editingFollowUp._id!, followUpData);
         onFollowUpUpdated?.(editingFollowUp._id!, followUpData);
-        addNotification({
+        addNotification({ 
           title: 'Success',
           message: 'Follow-up updated successfully',
-          type: 'success',
+          type: 'success'}
         });
       } else {
         await scheduleFollowUp(followUpData);
         onFollowUpScheduled?.(followUpData);
-        addNotification({
+        addNotification({ 
           title: 'Success',
           message: 'Follow-up scheduled successfully',
-          type: 'success',
+          type: 'success'}
         });
       }
-
       handleCloseDialog();
     } catch (error) {
-      addNotification({
+      addNotification({ 
         title: 'Error',
         message:
           error instanceof Error ? error.message : 'Failed to save follow-up',
-        type: 'error',
+        type: 'error'}
       });
     }
   };
-
   // Handle outcome submission
   const handleOutcomeSubmit = async () => {
     if (!selectedFollowUp) return;
-
     try {
       if (!outcomeData.notes.trim()) {
-        addNotification({
+        addNotification({ 
           title: 'Validation Error',
           message: 'Outcome notes are required',
-          type: 'error',
+          type: 'error'}
         });
         return;
       }
-
       await completeFollowUp(selectedFollowUp._id!, outcomeData);
       onFollowUpCompleted?.(selectedFollowUp._id!, outcomeData);
-      addNotification({
+      addNotification({ 
         title: 'Success',
         message: 'Follow-up completed successfully',
-        type: 'success',
+        type: 'success'}
       });
       setOutcomeDialogOpen(false);
       setSelectedFollowUp(null);
     } catch (error) {
-      addNotification({
+      addNotification({ 
         title: 'Error',
         message:
           error instanceof Error
             ? error.message
             : 'Failed to complete follow-up',
-        type: 'error',
+        type: 'error'}
       });
     }
   };
-
   // Handle reschedule submission
   const handleRescheduleSubmit = async () => {
     if (!selectedFollowUp) return;
-
     try {
       if (!rescheduleData.reason.trim()) {
-        addNotification({
+        addNotification({ 
           title: 'Validation Error',
           message: 'Reschedule reason is required',
-          type: 'error',
+          type: 'error'}
         });
         return;
       }
-
       await rescheduleFollowUp(
         selectedFollowUp._id!,
         rescheduleData.newDate,
         rescheduleData.reason
       );
-      addNotification({
+      addNotification({ 
         title: 'Success',
         message: 'Follow-up rescheduled successfully',
-        type: 'success',
+        type: 'success'}
       });
       setRescheduleDialogOpen(false);
       setSelectedFollowUp(null);
     } catch (error) {
-      addNotification({
+      addNotification({ 
         title: 'Error',
         message:
           error instanceof Error
             ? error.message
             : 'Failed to reschedule follow-up',
-        type: 'error',
+        type: 'error'}
       });
     }
   };
-
   // Dialog handlers
   const handleOpenDialog = (followUp?: MTRFollowUp) => {
     if (followUp) {
@@ -351,7 +272,7 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
       setFormData(followUp);
     } else {
       setEditingFollowUp(null);
-      setFormData({
+      setFormData({ 
         type: 'phone_call',
         priority: 'medium',
         description: '',
@@ -360,41 +281,37 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
         estimatedDuration: 30,
         assignedTo: '',
         status: 'scheduled',
-        relatedInterventions: [],
+        relatedInterventions: []}
       });
     }
     setDialogOpen(true);
   };
-
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setEditingFollowUp(null);
     setFormData({});
   };
-
   const handleOpenOutcomeDialog = (followUp: MTRFollowUp) => {
     setSelectedFollowUp(followUp);
-    setOutcomeData({
+    setOutcomeData({ 
       status: 'successful',
       notes: '',
       nextActions: [],
       nextFollowUpDate: undefined,
       adherenceImproved: false,
       problemsResolved: [],
-      newProblemsIdentified: [],
+      newProblemsIdentified: []}
     });
     setOutcomeDialogOpen(true);
   };
-
   const handleOpenRescheduleDialog = (followUp: MTRFollowUp) => {
     setSelectedFollowUp(followUp);
-    setRescheduleData({
+    setRescheduleData({ 
       newDate: addDays(new Date(followUp.scheduledDate), 1).toISOString(),
-      reason: '',
+      reason: ''}
     });
     setRescheduleDialogOpen(true);
   };
-
   // Get follow-up type icon
   const getFollowUpTypeIcon = (type: string) => {
     switch (type) {
@@ -412,7 +329,6 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
         return <ScheduleIcon />;
     }
   };
-
   // Get priority color
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -426,7 +342,6 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
         return 'default';
     }
   };
-
   // Get status color
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -442,39 +357,32 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
         return 'primary';
     }
   };
-
   // Render follow-up card
   const renderFollowUpCard = (followUp: MTRFollowUp) => {
     const isOverdue =
       followUp.status === 'scheduled' &&
       followUp.scheduledDate &&
       isBefore(new Date(followUp.scheduledDate), new Date());
-
     const daysUntil = followUp.scheduledDate
       ? differenceInDays(new Date(followUp.scheduledDate), new Date())
       : 0;
-
     return (
       <Card
         key={followUp._id}
-        sx={{
-          mb: 2,
-          border: isOverdue ? '2px solid #f44336' : 'none',
-          backgroundColor: isOverdue ? '#ffebee' : 'inherit',
-        }}
+        className=""
       >
         <CardContent>
-          <Box
+          <div
             display="flex"
             justifyContent="space-between"
             alignItems="flex-start"
             mb={2}
           >
-            <Box display="flex" alignItems="center" gap={1}>
+            <div display="flex" alignItems="center" gap={1}>
               {getFollowUpTypeIcon(followUp.type)}
-              <Typography variant="h6" component="div">
+              <div  component="div">
                 {followUp.description}
-              </Typography>
+              </div>
               <Chip
                 label={followUp.priority}
                 color={
@@ -485,7 +393,7 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
                     | 'error'
                     | 'info'
                     | 'success'
-                    | 'warning'
+                    | 'warning'}
                 }
                 size="small"
               />
@@ -499,12 +407,12 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
                     | 'error'
                     | 'info'
                     | 'success'
-                    | 'warning'
+                    | 'warning'}
                 }
                 size="small"
               />
-            </Box>
-            <Box>
+            </div>
+            <div>
               {followUp.status === 'scheduled' && (
                 <>
                   <Tooltip title="Complete Follow-up">
@@ -536,24 +444,18 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
                   <EditIcon />
                 </IconButton>
               </Tooltip>
-            </Box>
-          </Box>
-
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: 2,
-            }}
-          >
-            <Box sx={{ flex: 1 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
+            </div>
+          </div>
+          <div
+            className="">
+            <div className="">
+              <div display="flex" alignItems="center" gap={1} mb={1}>
                 <CalendarIcon fontSize="small" />
-                <Typography variant="body2">
+                <div >
                   {followUp.scheduledDate
                     ? format(new Date(followUp.scheduledDate), 'PPP p')
                     : 'No date set'}
-                </Typography>
+                </div>
                 {isOverdue && (
                   <Chip label="OVERDUE" color="error" size="small" />
                 )}
@@ -564,69 +466,68 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
                     size="small"
                   />
                 )}
-              </Box>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
+              </div>
+              <div display="flex" alignItems="center" gap={1} mb={1}>
                 <AccessTimeIcon fontSize="small" />
-                <Typography variant="body2">
+                <div >
                   {followUp.estimatedDuration} minutes
-                </Typography>
-              </Box>
-              <Box display="flex" alignItems="center" gap={1}>
+                </div>
+              </div>
+              <div display="flex" alignItems="center" gap={1}>
                 <PersonIcon fontSize="small" />
-                <Typography variant="body2">
+                <div >
                   Assigned to: {followUp.assignedTo}
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ flex: 1 }}>
+                </div>
+              </div>
+            </div>
+            <div className="">
               {followUp.objectives && followUp.objectives.length > 0 && (
-                <Box>
-                  <Typography variant="subtitle2" gutterBottom>
+                <div>
+                  <div  gutterBottom>
                     Objectives:
-                  </Typography>
+                  </div>
                   <List dense>
                     {followUp.objectives.map((objective, index) => (
-                      <ListItem key={index} sx={{ py: 0 }}>
-                        <ListItemText
+                      <div key={index} className="">
+                        <div
                           primary={objective}
-                          primaryTypographyProps={{ variant: 'body2' }}
+                          
                         />
-                      </ListItem>
+                      </div>
                     ))}
                   </List>
-                </Box>
+                </div>
               )}
-            </Box>
-          </Box>
-
+            </div>
+          </div>
           {followUp.outcome && (
-            <Accordion sx={{ mt: 2 }}>
+            <Accordion className="">
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle2">
+                <div >
                   Outcome ({followUp.outcome.status})
-                </Typography>
+                </div>
               </AccordionSummary>
               <AccordionDetails>
-                <Typography variant="body2" paragraph>
+                <div  paragraph>
                   {followUp.outcome.notes}
-                </Typography>
+                </div>
                 {followUp.outcome.nextActions &&
                   followUp.outcome.nextActions.length > 0 && (
-                    <Box>
-                      <Typography variant="subtitle2" gutterBottom>
+                    <div>
+                      <div  gutterBottom>
                         Next Actions:
-                      </Typography>
+                      </div>
                       <List dense>
                         {followUp.outcome.nextActions.map((action, index) => (
-                          <ListItem key={index} sx={{ py: 0 }}>
-                            <ListItemText
+                          <div key={index} className="">
+                            <div
                               primary={action}
-                              primaryTypographyProps={{ variant: 'body2' }}
+                              
                             />
-                          </ListItem>
+                          </div>
                         ))}
                       </List>
-                    </Box>
+                    </div>
                   )}
               </AccordionDetails>
             </Accordion>
@@ -635,99 +536,93 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
       </Card>
     );
   };
-
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
+      <div>
         {/* Header */}
-        <Box
+        <div
           display="flex"
           justifyContent="space-between"
           alignItems="center"
           mb={3}
         >
-          <Typography variant="h5" component="h2">
+          <div  component="h2">
             Follow-Up Scheduler
-          </Typography>
+          </div>
           <Button
-            variant="contained"
+            
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
             disabled={loading.scheduleFollowUp}
           >
             Schedule Follow-Up
           </Button>
-        </Box>
-
+        </div>
         {/* Error Alert */}
         {errors.scheduleFollowUp && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" className="">
             {errors.scheduleFollowUp}
           </Alert>
         )}
-
         {/* Loading */}
-        {loading.scheduleFollowUp && <LinearProgress sx={{ mb: 2 }} />}
-
+        {loading.scheduleFollowUp && <Progress className="" />}
         {/* Summary Cards */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h4" color="primary">
+        <div className="">
+          <div className="">
+            <div className="">
+              <div  color="primary">
                 {scheduledFollowUps.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Scheduled
-              </Typography>
-            </Paper>
-          </Box>
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h4" color="error">
+              </div>
+            </div>
+          </div>
+          <div className="">
+            <div className="">
+              <div  color="error">
                 {overdueFollowUps.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Overdue
-              </Typography>
-            </Paper>
-          </Box>
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h4" color="success">
+              </div>
+            </div>
+          </div>
+          <div className="">
+            <div className="">
+              <div  color="success">
                 {completedFollowUps.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Completed
-              </Typography>
-            </Paper>
-          </Box>
-          <Box sx={{ flex: '1 1 200px', minWidth: '200px' }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h4" color="warning">
+              </div>
+            </div>
+          </div>
+          <div className="">
+            <div className="">
+              <div  color="warning">
                 {upcomingFollowUps.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Upcoming
-              </Typography>
-            </Paper>
-          </Box>
-        </Box>
-
+              </div>
+            </div>
+          </div>
+        </div>
         {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <div className="">
           <Tabs
             value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
           >
             <Tab
-              label={
+              label={}
                 <Badge badgeContent={overdueFollowUps.length} color="error">
                   Overdue
                 </Badge>
               }
             />
             <Tab
-              label={
+              label={}
                 <Badge badgeContent={upcomingFollowUps.length} color="primary">
                   Upcoming
                 </Badge>
@@ -736,8 +631,7 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
             <Tab label="All Scheduled" />
             <Tab label="Completed" />
           </Tabs>
-        </Box>
-
+        </div>
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
           {overdueFollowUps.length === 0 ? (
@@ -746,7 +640,6 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
             overdueFollowUps.map(renderFollowUpCard)
           )}
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
           {upcomingFollowUps.length === 0 ? (
             <Alert severity="info">No upcoming follow-ups scheduled</Alert>
@@ -754,7 +647,6 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
             upcomingFollowUps.map(renderFollowUpCard)
           )}
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
           {scheduledFollowUps.length === 0 ? (
             <Alert severity="info">No scheduled follow-ups</Alert>
@@ -762,7 +654,6 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
             scheduledFollowUps.map(renderFollowUpCard)
           )}
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
           {completedFollowUps.length === 0 ? (
             <Alert severity="info">No completed follow-ups</Alert>
@@ -770,7 +661,6 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
             completedFollowUps.map(renderFollowUpCard)
           )}
         </TabPanel>
-
         {/* Schedule/Edit Follow-Up Dialog */}
         <Dialog
           open={dialogOpen}
@@ -782,10 +672,10 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
             {editingFollowUp ? 'Edit Follow-Up' : 'Schedule New Follow-Up'}
           </DialogTitle>
           <DialogContent>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
-              <Box sx={{ flex: '1 1 300px', minWidth: '300px' }}>
-                <FormControl fullWidth>
-                  <InputLabel>Type</InputLabel>
+            <div className="">
+              <div className="">
+                <div fullWidth>
+                  <Label>Type</Label>
                   <Select
                     value={formData.type || 'phone_call'}
                     onChange={(e) => handleFormChange('type', e.target.value)}
@@ -799,15 +689,15 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
                       Outcome Assessment
                     </MenuItem>
                   </Select>
-                </FormControl>
-              </Box>
-              <Box sx={{ flex: '1 1 300px', minWidth: '300px' }}>
-                <FormControl fullWidth>
-                  <InputLabel>Priority</InputLabel>
+                </div>
+              </div>
+              <div className="">
+                <div fullWidth>
+                  <Label>Priority</Label>
                   <Select
                     value={formData.priority || 'medium'}
                     onChange={(e) =>
-                      handleFormChange('priority', e.target.value)
+                      handleFormChange('priority', e.target.value)}
                     }
                     label="Priority"
                   >
@@ -815,40 +705,35 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
                     <MenuItem value="medium">Medium</MenuItem>
                     <MenuItem value="low">Low</MenuItem>
                   </Select>
-                </FormControl>
-              </Box>
-              <Box sx={{ width: '100%' }}>
-                <TextField
+                </div>
+              </div>
+              <div className="">
+                <Input
                   fullWidth
                   label="Description"
                   value={formData.description || ''}
                   onChange={(e) =>
-                    handleFormChange('description', e.target.value)
+                    handleFormChange('description', e.target.value)}
                   }
                   multiline
                   rows={2}
                   required
                 />
-              </Box>
-              <Box sx={{ flex: '1 1 300px', minWidth: '300px' }}>
+              </div>
+              <div className="">
                 <DateTimePicker
                   label="Scheduled Date & Time"
                   value={
                     formData.scheduledDate
                       ? new Date(formData.scheduledDate)
-                      : new Date()
+                      : new Date()}
                   }
                   onChange={(date) => handleFormChange('scheduledDate', date)}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                    },
-                  }}
+                  required
                 />
-              </Box>
-              <Box sx={{ flex: '1 1 300px', minWidth: '300px' }}>
-                <TextField
+              </div>
+              <div className="">
+                <Input
                   fullWidth
                   label="Estimated Duration (minutes)"
                   type="number"
@@ -857,35 +742,35 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
                     handleFormChange(
                       'estimatedDuration',
                       parseInt(e.target.value)
-                    )
+                    )}
                   }
-                  inputProps={{ min: 5, max: 480 }}
+                  
                 />
-              </Box>
-              <Box sx={{ width: '100%' }}>
-                <TextField
+              </div>
+              <div className="">
+                <Input
                   fullWidth
                   label="Assigned To"
                   value={formData.assignedTo || ''}
                   onChange={(e) =>
-                    handleFormChange('assignedTo', e.target.value)
+                    handleFormChange('assignedTo', e.target.value)}
                   }
                   placeholder="Pharmacist name or ID"
                   required
                 />
-              </Box>
-              <Box sx={{ width: '100%' }}>
-                <Typography variant="subtitle2" gutterBottom>
+              </div>
+              <div className="">
+                <div  gutterBottom>
                   Objectives
-                </Typography>
+                </div>
                 {(formData.objectives || []).map((objective, index) => (
-                  <Box key={index} display="flex" gap={1} mb={1}>
-                    <TextField
+                  <div key={index} display="flex" gap={1} mb={1}>
+                    <Input
                       fullWidth
                       size="small"
                       value={objective}
                       onChange={(e) =>
-                        handleObjectiveChange(index, e.target.value)
+                        handleObjectiveChange(index, e.target.value)}
                       }
                       placeholder={`Objective ${index + 1}`}
                     />
@@ -896,7 +781,7 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
                     >
                       <DeleteIcon />
                     </IconButton>
-                  </Box>
+                  </div>
                 ))}
                 <Button
                   startIcon={<AddIcon />}
@@ -905,21 +790,20 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
                 >
                   Add Objective
                 </Button>
-              </Box>
-            </Box>
+              </div>
+            </div>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog}>Cancel</Button>
             <Button
               onClick={handleSubmit}
-              variant="contained"
+              
               disabled={loading.scheduleFollowUp}
             >
               {editingFollowUp ? 'Update' : 'Schedule'}
             </Button>
           </DialogActions>
         </Dialog>
-
         {/* Complete Follow-Up Dialog */}
         <Dialog
           open={outcomeDialogOpen}
@@ -929,19 +813,19 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
         >
           <DialogTitle>Complete Follow-Up</DialogTitle>
           <DialogContent>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
-              <Box sx={{ width: '100%' }}>
-                <FormControl fullWidth>
-                  <InputLabel>Outcome Status</InputLabel>
+            <div className="">
+              <div className="">
+                <div fullWidth>
+                  <Label>Outcome Status</Label>
                   <Select
                     value={outcomeData.status}
                     onChange={(e) =>
-                      setOutcomeData((prev) => ({
+                      setOutcomeData((prev) => ({ 
                         ...prev,
                         status: e.target.value as
                           | 'successful'
-                          | 'partially_successful'
-                          | 'unsuccessful',
+                          | 'partially_successful' })
+                          | 'unsuccessful',}
                       }))
                     }
                     label="Outcome Status"
@@ -952,59 +836,53 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
                     </MenuItem>
                     <MenuItem value="unsuccessful">Unsuccessful</MenuItem>
                   </Select>
-                </FormControl>
-              </Box>
-              <Box sx={{ width: '100%' }}>
-                <TextField
+                </div>
+              </div>
+              <div className="">
+                <Input
                   fullWidth
                   label="Outcome Notes"
                   value={outcomeData.notes}
                   onChange={(e) =>
-                    setOutcomeData((prev) => ({
-                      ...prev,
-                      notes: e.target.value,
+                    setOutcomeData((prev) => ({ 
+                      ...prev}
+                      notes: e.target.value,}
                     }))
                   }
                   multiline
                   rows={4}
                   required
                 />
-              </Box>
-              <Box sx={{ width: '100%' }}>
+              </div>
+              <div className="">
                 <DateTimePicker
                   label="Next Follow-Up Date (Optional)"
                   value={
                     outcomeData.nextFollowUpDate
                       ? new Date(outcomeData.nextFollowUpDate)
-                      : null
+                      : undefined}
                   }
                   onChange={(date) =>
-                    setOutcomeData((prev) => ({
-                      ...prev,
-                      nextFollowUpDate: date ? date.toISOString() : undefined,
+                    setOutcomeData((prev) => ({ 
+                      ...prev}
+                      nextFollowUpDate: date ? date.toISOString() : undefined,}
                     }))
                   }
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                    },
-                  }}
                 />
-              </Box>
-            </Box>
+              </div>
+            </div>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOutcomeDialogOpen(false)}>Cancel</Button>
             <Button
               onClick={handleOutcomeSubmit}
-              variant="contained"
+              
               disabled={loading.completeFollowUp}
             >
               Complete Follow-Up
             </Button>
           </DialogActions>
         </Dialog>
-
         {/* Reschedule Dialog */}
         <Dialog
           open={rescheduleDialogOpen}
@@ -1014,42 +892,37 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
         >
           <DialogTitle>Reschedule Follow-Up</DialogTitle>
           <DialogContent>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
-              <Box sx={{ width: '100%' }}>
+            <div className="">
+              <div className="">
                 <DateTimePicker
                   label="New Date & Time"
                   value={new Date(rescheduleData.newDate)}
                   onChange={(date) =>
-                    setRescheduleData((prev) => ({
-                      ...prev,
-                      newDate: (date || new Date()).toISOString(),
+                    setRescheduleData((prev) => ({ 
+                      ...prev}
+                      newDate: (date || new Date()).toISOString(),}
                     }))
                   }
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                    },
-                  }}
+                  required
                 />
-              </Box>
-              <Box sx={{ width: '100%' }}>
-                <TextField
+              </div>
+              <div className="">
+                <Input
                   fullWidth
                   label="Reason for Rescheduling"
                   value={rescheduleData.reason}
                   onChange={(e) =>
-                    setRescheduleData((prev) => ({
-                      ...prev,
-                      reason: e.target.value,
+                    setRescheduleData((prev) => ({ 
+                      ...prev}
+                      reason: e.target.value,}
                     }))
                   }
                   multiline
                   rows={2}
                   required
                 />
-              </Box>
-            </Box>
+              </div>
+            </div>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setRescheduleDialogOpen(false)}>
@@ -1057,16 +930,14 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
             </Button>
             <Button
               onClick={handleRescheduleSubmit}
-              variant="contained"
+              
               disabled={loading.rescheduleFollowUp}
             >
               Reschedule
             </Button>
           </DialogActions>
         </Dialog>
-      </Box>
-    </LocalizationProvider>
+      </div>
   );
 };
-
 export default FollowUpScheduler;

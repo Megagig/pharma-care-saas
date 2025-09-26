@@ -1,9 +1,7 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { vi } from 'vitest';
-import MentionInput from '../MentionInput';
 
+import userEvent from '@testing-library/user-event';
+
+import MentionInput from '../MentionInput';
 // Mock fetch
 global.fetch = vi.fn();
 
@@ -34,10 +32,9 @@ describe('MentionInput', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (fetch as any).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ data: mockUsers }),
-    });
+    (fetch as any).mockResolvedValue({ 
+      ok: true}
+      json: () => Promise.resolve({ data: mockUsers })}
   });
 
   afterEach(() => {
@@ -247,10 +244,9 @@ describe('MentionInput', () => {
         new Promise((resolve) =>
           setTimeout(
             () =>
-              resolve({
-                ok: true,
-                json: () => Promise.resolve({ data: mockUsers }),
-              }),
+              resolve({ 
+                ok: true}
+                json: () => Promise.resolve({ data: mockUsers }), },
             100
           )
         )

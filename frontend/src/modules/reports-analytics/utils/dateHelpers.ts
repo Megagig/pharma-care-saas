@@ -1,6 +1,4 @@
 // Date Helper Functions
-import { DatePreset } from '../types/filters';
-
 /**
  * Get date range labels for presets
  */

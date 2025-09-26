@@ -1,6 +1,3 @@
-import { useState, useEffect } from 'react';
-import { dashboardService, DashboardStats, ChartDataPoint } from '../services/dashboardService';
-
 // Types are now imported from dashboardService
 
 interface DashboardData {
@@ -16,13 +13,13 @@ interface DashboardData {
 }
 
 export const useDashboardData = (): DashboardData => {
-    const [data, setData] = useState<DashboardData>({
+    const [data, setData] = useState<DashboardData>({ 
         stats: {
             totalPatients: 0,
             totalClinicalNotes: 0,
             totalMedications: 0,
             totalMTRs: 0,
-            totalDiagnostics: 0,
+            totalDiagnostics: 0}
         },
         patientsByMonth: [],
         medicationsByStatus: [],
@@ -31,8 +28,7 @@ export const useDashboardData = (): DashboardData => {
         patientAgeDistribution: [],
         monthlyActivity: [],
         loading: true,
-        error: null,
-    });
+        error: null}
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -46,10 +42,10 @@ export const useDashboardData = (): DashboardData => {
 
                 console.log('Dashboard analytics received:', analytics);
 
-                setData({
+                setData({ 
                     ...analytics,
                     loading: false,
-                    error: null,
+                    error: null}
                 });
 
             } catch (error) {
@@ -59,17 +55,17 @@ export const useDashboardData = (): DashboardData => {
                 try {
                     console.log('🔄 Attempting to get fallback data...');
                     const fallbackAnalytics = await dashboardService.getDashboardAnalytics();
-                    setData({
+                    setData({ 
                         ...fallbackAnalytics,
                         loading: false,
-                        error: null, // Don't show error if fallback works
+                        error: null, // Don't show error if fallback works })
                     });
                 } catch (fallbackError) {
                     console.error('❌ Fallback data also failed:', fallbackError);
-                    setData(prev => ({
+                    setData(prev => ({ 
                         ...prev,
                         loading: false,
-                        error: error instanceof Error ? error.message : 'Failed to load dashboard data',
+                        error: error instanceof Error ? error.message : 'Failed to load dashboard data'}
                     }));
                 }
             }

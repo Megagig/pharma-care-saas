@@ -1,30 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { PatientOutcomeReport } from '../../../components/reports/PatientOutcomeReport';
-import { mockReportData, mockFilters } from '../../mocks/mockData';
-import { ReportType } from '../../../types';
-
 // Mock the stores
-vi.mock('../../../stores/reportsStore', () => ({
+vi.mock('../../../stores/reportsStore', () => ({ 
   useReportsStore: vi.fn(() => ({
     reportData: mockReportData,
     isLoading: false,
     error: null,
-    fetchReportData: vi.fn(),
-  })),
-}));
+    fetchReportData: vi.fn()}
+  }))}
 
-vi.mock('../../../stores/filtersStore', () => ({
+vi.mock('../../../stores/filtersStore', () => ({ 
   useFiltersStore: vi.fn(() => ({
     filters: mockFilters,
-    setFilters: vi.fn(),
-  })),
-}));
+    setFilters: vi.fn()}
+  }))}
 
 // Mock chart components
-vi.mock('../../../components/shared/ChartComponent', () => ({
-  ChartComponent: ({ config, data, ...props }: any) => (
-    <div
+vi.mock('../../../components/shared/ChartComponent', () => ({ 
+    <div })
       data-testid={`chart-${config.type}`}
       data-chart-title={config.title?.text}
       data-chart-data-length={data?.length}
@@ -32,8 +23,7 @@ vi.mock('../../../components/shared/ChartComponent', () => ({
     >
       Chart: {config.title?.text}
     </div>
-  ),
-}));
+  )}
 
 describe('PatientOutcomeReport', () => {
   const defaultProps = {
@@ -102,11 +92,11 @@ describe('PatientOutcomeReport', () => {
     // Mock loading state
     vi.mocked(
       require('../../../stores/reportsStore').useReportsStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       reportData: null,
       isLoading: true,
       error: null,
-      fetchReportData: vi.fn(),
+      fetchReportData: vi.fn()}
     });
 
     render(<PatientOutcomeReport {...defaultProps} />);
@@ -118,11 +108,11 @@ describe('PatientOutcomeReport', () => {
     // Mock error state
     vi.mocked(
       require('../../../stores/reportsStore').useReportsStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       reportData: null,
       isLoading: false,
       error: 'Failed to load patient outcome data',
-      fetchReportData: vi.fn(),
+      fetchReportData: vi.fn()}
     });
 
     render(<PatientOutcomeReport {...defaultProps} />);
@@ -210,11 +200,11 @@ describe('PatientOutcomeReport', () => {
 
     vi.mocked(
       require('../../../stores/reportsStore').useReportsStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       reportData: emptyReportData,
       isLoading: false,
       error: null,
-      fetchReportData: vi.fn(),
+      fetchReportData: vi.fn()}
     });
 
     render(<PatientOutcomeReport {...defaultProps} />);
@@ -226,11 +216,11 @@ describe('PatientOutcomeReport', () => {
     const mockFetchReportData = vi.fn();
     vi.mocked(
       require('../../../stores/reportsStore').useReportsStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       reportData: mockReportData,
       isLoading: false,
       error: null,
-      fetchReportData: mockFetchReportData,
+      fetchReportData: mockFetchReportData}
     });
 
     const { rerender } = render(<PatientOutcomeReport {...defaultProps} />);

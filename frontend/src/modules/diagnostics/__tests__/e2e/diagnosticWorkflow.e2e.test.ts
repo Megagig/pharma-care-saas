@@ -1,5 +1,3 @@
-import { test, expect, Page } from '@playwright/test';
-
 // Test configuration
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
 const TEST_USER_EMAIL = 'e2e.pharmacist@test.com';

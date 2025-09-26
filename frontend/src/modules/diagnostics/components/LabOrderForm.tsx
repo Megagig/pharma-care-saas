@@ -1,35 +1,4 @@
-import React, { useState, useCallback } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Stack,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
-  Autocomplete,
-  IconButton,
-  Divider,
-  Alert,
-  Tooltip,
-  Chip,
-  Paper,
-  Grid,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import InfoIcon from '@mui/icons-material/Info';
-import SearchIcon from '@mui/icons-material/Search';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import type { LabOrderFormProps, LabTestCatalogItem } from '../types';
-import { useLabStore } from '../store/labStore';
-
+import { Button, Input, Label, Card, CardContent, Select, Alert, Separator } from '@/components/ui/button';
 // Common lab tests for quick selection
 const COMMON_LAB_TESTS = [
   {
@@ -89,7 +58,6 @@ const COMMON_LAB_TESTS = [
     description: 'Inflammation marker',
   },
 ];
-
 const PRIORITY_OPTIONS = [
   {
     value: 'stat',
@@ -110,7 +78,6 @@ const PRIORITY_OPTIONS = [
     description: 'Standard processing time',
   },
 ];
-
 interface LabTest {
   code: string;
   name: string;
@@ -118,60 +85,50 @@ interface LabTest {
   indication: string;
   priority: 'stat' | 'urgent' | 'routine';
 }
-
 interface LabOrderFormData {
   patientId: string;
   tests: LabTest[];
   expectedDate?: string;
   clinicalIndication: string;
 }
-
-const LabOrderForm: React.FC<LabOrderFormProps> = ({
+const LabOrderForm: React.FC<LabOrderFormProps> = ({ 
   patientId,
   onSubmit,
   loading = false,
-  error,
+  error
 }) => {
   const [showTestCatalog, setShowTestCatalog] = useState(false);
   const [testSearch, setTestSearch] = useState('');
-
   const {
     testCatalog,
     fetchTestCatalog,
     searchTestCatalog,
     loading: storeLoading,
   } = useLabStore();
-
   const {
     control,
     handleSubmit,
     watch,
     setValue,
     formState: { errors, isValid },
-  } = useForm<LabOrderFormData>({
+  } = useForm<LabOrderFormData>({ 
     defaultValues: {
       patientId,
       tests: [],
       expectedDate: '',
-      clinicalIndication: '',
+      clinicalIndication: ''}
     },
-    mode: 'onChange',
-  });
-
-  const { fields, append, remove } = useFieldArray({
+    mode: 'onChange'}
+  const { fields, append, remove } = useFieldArray({ 
     control,
-    name: 'tests',
+    name: 'tests'}
   });
-
   const watchedTests = watch('tests');
-
   // Load test catalog on mount
-  React.useEffect(() => {
     if (testCatalog.length === 0) {
       fetchTestCatalog();
     }
   }, [testCatalog.length, fetchTestCatalog]);
-
   const handleAddTest = useCallback(
     (test: LabTestCatalogItem | (typeof COMMON_LAB_TESTS)[0]) => {
       const newTest: LabTest = {
@@ -181,7 +138,6 @@ const LabOrderForm: React.FC<LabOrderFormProps> = ({
         indication: '',
         priority: 'routine',
       };
-
       // Check if test already exists
       const exists = watchedTests.some((t) => t.code === test.code);
       if (!exists) {
@@ -190,14 +146,12 @@ const LabOrderForm: React.FC<LabOrderFormProps> = ({
     },
     [watchedTests, append]
   );
-
   const handleQuickAddTest = useCallback(
     (test: (typeof COMMON_LAB_TESTS)[0]) => {
       handleAddTest(test);
     },
     [handleAddTest]
   );
-
   const handleSearchTests = useCallback(
     (searchTerm: string) => {
       setTestSearch(searchTerm);
@@ -207,59 +161,48 @@ const LabOrderForm: React.FC<LabOrderFormProps> = ({
     },
     [fetchTestCatalog]
   );
-
   const getFilteredCatalog = useCallback(() => {
     return searchTestCatalog(testSearch);
   }, [testSearch, searchTestCatalog]);
-
   const getPriorityColor = (priority: string) => {
     const option = PRIORITY_OPTIONS.find((opt) => opt.value === priority);
     return option?.color || 'default';
   };
-
   const onFormSubmit = (data: LabOrderFormData) => {
     const formattedData = {
       patientId: data.patientId,
-      tests: data.tests.map((test) => ({
+      tests: data.tests.map((test) => ({ 
         ...test,
-        indication: test.indication || data.clinicalIndication,
+        indication: test.indication || data.clinicalIndication}
       })),
       expectedDate: data.expectedDate || undefined,
     };
     onSubmit(formattedData);
   };
-
   return (
     <Card>
       <CardContent>
-        <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 600,
-              mb: 1,
-              display: 'flex',
-              alignItems: 'center',
-            }}
+        <div className="">
+          <div
+            
+            className=""
           >
-            <LocalHospitalIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <LocalHospitalIcon className="" />
             Lab Order Form
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Create a new laboratory test order for the patient
-          </Typography>
-        </Box>
-
+          </div>
+        </div>
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" className="">
             {error}
           </Alert>
         )}
-
         <form onSubmit={handleSubmit(onFormSubmit)}>
-          <Stack spacing={4}>
+          <div spacing={4}>
             {/* Clinical Indication */}
-            <Box>
+            <div>
               <Controller
                 name="clinicalIndication"
                 control={control}
@@ -267,11 +210,10 @@ const LabOrderForm: React.FC<LabOrderFormProps> = ({
                   required: 'Clinical indication is required',
                   minLength: {
                     value: 10,
-                    message: 'Please provide a detailed clinical indication',
+                    message: 'Please provide a detailed clinical indication',}
                   },
-                }}
-                render={({ field }) => (
-                  <TextField
+                render={({  field  }) => (
+                  <Input
                     {...field}
                     fullWidth
                     label="Clinical Indication"
@@ -281,61 +223,57 @@ const LabOrderForm: React.FC<LabOrderFormProps> = ({
                     error={!!errors.clinicalIndication}
                     helperText={
                       errors.clinicalIndication?.message ||
-                      'Provide the clinical reason for ordering these tests'
+                      'Provide the clinical reason for ordering these tests'}
                     }
                     disabled={loading}
                   />
                 )}
               />
-            </Box>
-
-            <Divider />
-
+            </div>
+            <Separator />
             {/* Test Selection */}
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+            <div>
+              <div  className="">
                 Select Laboratory Tests
-              </Typography>
-
+              </div>
               {/* Current Tests */}
               {fields.length > 0 && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ mb: 2, color: 'text.secondary' }}
+                <div className="">
+                  <div
+                    
+                    className=""
                   >
                     Selected Tests ({fields.length})
-                  </Typography>
-                  <Stack spacing={2}>
+                  </div>
+                  <div spacing={2}>
                     {fields.map((field, index) => (
-                      <Paper key={field.id} sx={{ p: 2, bgcolor: 'grey.50' }}>
-                        <Grid container spacing={2} alignItems="center">
-                          <Grid item xs={12} md={4}>
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                sx={{ fontWeight: 600 }}
+                      <div key={field.id} className="">
+                        <div container spacing={2} alignItems="center">
+                          <div item xs={12} md={4}>
+                            <div>
+                              <div
+                                
+                                className=""
                               >
                                 {field.name}
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 Code: {field.code}
                                 {field.loincCode &&
                                   ` • LOINC: ${field.loincCode}`}
-                              </Typography>
-                            </Box>
-                          </Grid>
-
-                          <Grid item xs={12} md={3}>
+                              </div>
+                            </div>
+                          </div>
+                          <div item xs={12} md={3}>
                             <Controller
                               name={`tests.${index}.priority`}
                               control={control}
-                              render={({ field: priorityField }) => (
-                                <FormControl fullWidth size="small">
-                                  <InputLabel>Priority</InputLabel>
+                              render={({  field: priorityField  }) => (
+                                <div fullWidth size="small">
+                                  <Label>Priority</Label>
                                   <Select
                                     {...priorityField}
                                     label="Priority"
@@ -346,34 +284,30 @@ const LabOrderForm: React.FC<LabOrderFormProps> = ({
                                         key={option.value}
                                         value={option.value}
                                       >
-                                        <Box
-                                          sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                          }}
+                                        <div
+                                          className=""
                                         >
                                           <Chip
                                             label={option.label}
                                             size="small"
                                             color={option.color}
-                                            variant="outlined"
-                                            sx={{ mr: 1 }}
+                                            
+                                            className=""
                                           />
-                                        </Box>
+                                        </div>
                                       </MenuItem>
                                     ))}
                                   </Select>
-                                </FormControl>
+                                </div>
                               )}
                             />
-                          </Grid>
-
-                          <Grid item xs={12} md={4}>
+                          </div>
+                          <div item xs={12} md={4}>
                             <Controller
                               name={`tests.${index}.indication`}
                               control={control}
-                              render={({ field: indicationField }) => (
-                                <TextField
+                              render={({  field: indicationField  }) => (
+                                <Input
                                   {...indicationField}
                                   fullWidth
                                   size="small"
@@ -383,9 +317,8 @@ const LabOrderForm: React.FC<LabOrderFormProps> = ({
                                 />
                               )}
                             />
-                          </Grid>
-
-                          <Grid item xs={12} md={1}>
+                          </div>
+                          <div item xs={12} md={1}>
                             <IconButton
                               onClick={() => remove(index)}
                               color="error"
@@ -394,23 +327,22 @@ const LabOrderForm: React.FC<LabOrderFormProps> = ({
                             >
                               <DeleteIcon />
                             </IconButton>
-                          </Grid>
-                        </Grid>
-                      </Paper>
+                          </div>
+                        </div>
+                      </div>
                     ))}
-                  </Stack>
-                </Box>
+                  </div>
+                </div>
               )}
-
               {/* Quick Add Common Tests */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              <div className="">
+                <div  className="">
                   Common Tests
-                </Typography>
-                <Stack
+                </div>
+                <div
                   direction="row"
                   spacing={1}
-                  sx={{ flexWrap: 'wrap', gap: 1 }}
+                  className=""
                 >
                   {COMMON_LAB_TESTS.map((test) => (
                     <Chip
@@ -419,99 +351,85 @@ const LabOrderForm: React.FC<LabOrderFormProps> = ({
                       onClick={() => handleQuickAddTest(test)}
                       disabled={
                         loading ||
-                        watchedTests.some((t) => t.code === test.code)
+                        watchedTests.some((t) => t.code === test.code)}
                       }
-                      sx={{ cursor: 'pointer' }}
-                      variant="outlined"
+                      className=""
+                      
                       color="primary"
                     />
                   ))}
-                </Stack>
-              </Box>
-
+                </div>
+              </div>
               {/* Test Catalog Search */}
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <div>
+                <div className="">
                   <Button
-                    variant="outlined"
+                    
                     onClick={() => setShowTestCatalog(!showTestCatalog)}
                     disabled={loading}
                     startIcon={<SearchIcon />}
                   >
                     {showTestCatalog ? 'Hide' : 'Search'} Test Catalog
                   </Button>
-                </Box>
-
+                </div>
                 {showTestCatalog && (
-                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                    <TextField
+                  <div className="">
+                    <Input
                       fullWidth
                       size="small"
                       placeholder="Search for lab tests..."
                       value={testSearch}
                       onChange={(e) => handleSearchTests(e.target.value)}
                       disabled={loading || storeLoading.fetchCatalog}
-                      sx={{ mb: 2 }}
+                      className=""
                       slotProps={{
                         input: {
                           startAdornment: (
                             <SearchIcon
-                              sx={{ mr: 1, color: 'text.secondary' }}
-                            />
-                          ),
+                              className=""
+                            />),}
                         },
-                      }}
                     />
-
                     {testSearch.length > 2 && (
-                      <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                      <div className="">
                         {getFilteredCatalog().map((test) => (
-                          <Paper
+                          <div
                             key={test.code}
-                            sx={{
-                              p: 2,
-                              mb: 1,
-                              cursor: 'pointer',
-                              '&:hover': { bgcolor: 'action.hover' },
+                            className=""
                               opacity: watchedTests.some(
                                 (t) => t.code === test.code
                               )
                                 ? 0.5
                                 : 1,
-                            }}
                             onClick={() => handleAddTest(test)}
                           >
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'flex-start',
-                              }}
+                            <div
+                              className=""
                             >
-                              <Box sx={{ flex: 1 }}>
-                                <Typography
-                                  variant="body2"
-                                  sx={{ fontWeight: 600 }}
+                              <div className="">
+                                <div
+                                  
+                                  className=""
                                 >
                                   {test.name}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
+                                </div>
+                                <div
+                                  
                                   color="text.secondary"
                                 >
                                   {test.code} • {test.category}
                                   {test.loincCode &&
                                     ` • LOINC: ${test.loincCode}`}
-                                </Typography>
+                                </div>
                                 {test.description && (
-                                  <Typography
-                                    variant="caption"
-                                    sx={{ display: 'block', mt: 0.5 }}
+                                  <div
+                                    
+                                    className=""
                                   >
                                     {test.description}
-                                  </Typography>
+                                  </div>
                                 )}
-                              </Box>
+                              </div>
                               {watchedTests.some(
                                 (t) => t.code === test.code
                               ) && (
@@ -521,60 +439,56 @@ const LabOrderForm: React.FC<LabOrderFormProps> = ({
                                   color="success"
                                 />
                               )}
-                            </Box>
-                          </Paper>
+                            </div>
+                          </div>
                         ))}
-                      </Box>
+                      </div>
                     )}
-                  </Box>
+                  </div>
                 )}
-              </Box>
-            </Box>
-
+              </div>
+            </div>
             {/* Expected Date */}
-            <Box>
+            <div>
               <Controller
                 name="expectedDate"
                 control={control}
-                render={({ field }) => (
-                  <TextField
+                render={({  field  }) => (
+                  <Input
                     {...field}
                     type="date"
                     label="Expected Results Date"
-                    slotProps={{
+                    slotProps={{}
                       inputLabel: { shrink: true },
-                    }}
                     helperText="Optional: When do you expect the results?"
                     disabled={loading}
-                    sx={{ maxWidth: 300 }}
+                    className=""
                   />
                 )}
               />
-            </Box>
-
+            </div>
             {/* Validation Summary */}
             {fields.length === 0 && (
               <Alert severity="warning">
-                <Typography variant="body2">
+                <div >
                   Please select at least one laboratory test to create an order.
-                </Typography>
+                </div>
               </Alert>
             )}
-
             {/* Order Summary */}
             {fields.length > 0 && (
               <Alert severity="info">
-                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                <div  className="">
                   Order Summary:
-                </Typography>
-                <Typography variant="body2">
+                </div>
+                <div >
                   {fields.length} test(s) selected
                   {fields.some((t) => t.priority === 'stat') &&
                     ' • Contains STAT orders'}
                   {fields.some((t) => t.priority === 'urgent') &&
                     ' • Contains urgent orders'}
-                </Typography>
-                <Box sx={{ mt: 1 }}>
+                </div>
+                <div className="">
                   {PRIORITY_OPTIONS.map((priority) => {
                     const count = fields.filter(
                       (t) => t.priority === priority.value
@@ -585,31 +499,29 @@ const LabOrderForm: React.FC<LabOrderFormProps> = ({
                         label={`${count} ${priority.label}`}
                         size="small"
                         color={priority.color}
-                        variant="outlined"
-                        sx={{ mr: 1, mb: 0.5 }}
+                        
+                        className=""
                       />
                     ) : null;
                   })}
-                </Box>
+                </div>
               </Alert>
             )}
-
             {/* Submit Button */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+            <div className="">
               <Button
                 type="submit"
-                variant="contained"
+                
                 disabled={loading || !isValid || fields.length === 0}
-                sx={{ minWidth: 120 }}
+                className=""
               >
                 {loading ? 'Creating Order...' : 'Create Order'}
               </Button>
-            </Box>
-          </Stack>
+            </div>
+          </div>
         </form>
       </CardContent>
     </Card>
   );
 };
-
 export default LabOrderForm;

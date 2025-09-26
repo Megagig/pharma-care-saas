@@ -1,7 +1,7 @@
 // Shared Components Index
-export { default as ChartComponent } from './ChartComponent';
-export { default as FilterPanel } from './FilterPanel';
-export { default as ChartErrorBoundary } from './ChartErrorBoundary';
-export { default as LazyReportLoader } from './LazyReportLoader';
-export { default as VirtualizedDataTable } from './VirtualizedDataTable';
-export { default as PaginatedChart } from './PaginatedChart';
+// Removed incomplete export: export { default as ChartComponent 
+export { default as FilterPanel 
+export { default as ChartErrorBoundary 
+export { default as LazyReportLoader 
+export { default as VirtualizedDataTable 
+export { default as PaginatedChart

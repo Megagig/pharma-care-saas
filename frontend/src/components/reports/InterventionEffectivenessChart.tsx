@@ -1,45 +1,20 @@
-import React from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Grid,
-  Chip,
-  LinearProgress,
-} from '@mui/material';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
-import { TrendingUp as TrendingUpIcon } from '@mui/icons-material';
-import type { InterventionEffectivenessReport } from '../../types/mtr';
+
+import { Card, CardContent, Tooltip, Progress } from '@/components/ui/button';
 
 interface InterventionEffectivenessChartProps {
   data: InterventionEffectivenessReport;
   loading?: boolean;
 }
 
-const InterventionEffectivenessChart: React.FC<
-  InterventionEffectivenessChartProps
-> = ({ data, loading = false }) => {
+const InterventionEffectivenessChart: React.FC = ({ data, loading = false }) => {
   if (loading) {
     return (
       <Card>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <div  gutterBottom>
             Intervention Effectiveness
-          </Typography>
-          <LinearProgress />
+          </div>
+          <Progress />
         </CardContent>
       </Card>
     );
@@ -75,140 +50,120 @@ const InterventionEffectivenessChart: React.FC<
   };
 
   return (
-    <Grid container spacing={3}>
+    <div container spacing={3}>
       {/* Summary Card */}
-      <Grid item xs={12}>
+      <div item xs={12}>
         <Card>
           <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <TrendingUpIcon sx={{ mr: 1, color: 'primary.main' }} />
-              <Typography variant="h6">
+            <div className="">
+              <TrendingUpIcon className="" />
+              <div >
                 Intervention Effectiveness Summary
-              </Typography>
-            </Box>
+              </div>
+            </div>
 
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Box
-                  sx={{
-                    textAlign: 'center',
-                    p: 2,
-                    bgcolor: 'grey.50',
-                    borderRadius: 1,
-                  }}
+            <div container spacing={2}>
+              <div item xs={12} sm={6} md={3}>
+                <div
+                  className=""
                 >
-                  <Typography variant="h4" color="primary.main">
+                  <div  color="primary.main">
                     {data.summary.totalInterventions}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
+                  </div>
+                  <div  color="textSecondary">
                     Total Interventions
-                  </Typography>
-                </Box>
-              </Grid>
+                  </div>
+                </div>
+              </div>
 
-              <Grid item xs={12} sm={6} md={3}>
-                <Box
-                  sx={{
-                    textAlign: 'center',
-                    p: 2,
-                    bgcolor: 'grey.50',
-                    borderRadius: 1,
-                  }}
+              <div item xs={12} sm={6} md={3}>
+                <div
+                  className=""
                 >
-                  <Typography
-                    variant="h4"
+                  <div
+                    
                     color={`${getAcceptanceRateColor(
-                      data.summary.overallAcceptanceRate
+                      data.summary.overallAcceptanceRate}
                     )}.main`}
                   >
                     {data.summary.overallAcceptanceRate.toFixed(1)}%
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
+                  </div>
+                  <div  color="textSecondary">
                     Acceptance Rate
-                  </Typography>
-                </Box>
-              </Grid>
+                  </div>
+                </div>
+              </div>
 
-              <Grid item xs={12} sm={6} md={3}>
-                <Box
-                  sx={{
-                    textAlign: 'center',
-                    p: 2,
-                    bgcolor: 'grey.50',
-                    borderRadius: 1,
-                  }}
+              <div item xs={12} sm={6} md={3}>
+                <div
+                  className=""
                 >
-                  <Typography variant="h4" color="success.main">
+                  <div  color="success.main">
                     {data.summary.acceptedInterventions}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
+                  </div>
+                  <div  color="textSecondary">
                     Accepted
-                  </Typography>
-                </Box>
-              </Grid>
+                  </div>
+                </div>
+              </div>
 
-              <Grid item xs={12} sm={6} md={3}>
-                <Box
-                  sx={{
-                    textAlign: 'center',
-                    p: 2,
-                    bgcolor: 'grey.50',
-                    borderRadius: 1,
-                  }}
+              <div item xs={12} sm={6} md={3}>
+                <div
+                  className=""
                 >
-                  <Typography variant="h4" color="warning.main">
+                  <div  color="warning.main">
                     {data.summary.pendingInterventions}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
+                  </div>
+                  <div  color="textSecondary">
                     Pending
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Outcome Status Chips */}
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
+            <div className="">
+              <div  gutterBottom>
                 Intervention Outcomes
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              </div>
+              <div className="">
                 <Chip
                   label={`Accepted: ${data.summary.acceptedInterventions}`}
                   color="success"
-                  variant="outlined"
+                  
                   size="small"
                 />
                 <Chip
                   label={`Rejected: ${data.summary.rejectedInterventions}`}
                   color="error"
-                  variant="outlined"
+                  
                   size="small"
                 />
                 <Chip
                   label={`Modified: ${data.summary.modifiedInterventions}`}
                   color="warning"
-                  variant="outlined"
+                  
                   size="small"
                 />
                 <Chip
                   label={`Pending: ${data.summary.pendingInterventions}`}
                   color="info"
-                  variant="outlined"
+                  
                   size="small"
                 />
-              </Box>
-            </Box>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      </Grid>
+      </div>
 
       {/* Outcome Distribution Pie Chart */}
-      <Grid item xs={12} md={6}>
+      <div item xs={12} md={6}>
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <div  gutterBottom>
               Intervention Outcome Distribution
-            </Typography>
+            </div>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -232,15 +187,15 @@ const InterventionEffectivenessChart: React.FC<
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </Grid>
+      </div>
 
       {/* Effectiveness by Type */}
-      <Grid item xs={12} md={6}>
+      <div item xs={12} md={6}>
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <div  gutterBottom>
               Effectiveness by Intervention Type
-            </Typography>
+            </div>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.effectiveness.byType}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -256,15 +211,15 @@ const InterventionEffectivenessChart: React.FC<
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </Grid>
+      </div>
 
       {/* Effectiveness by Category */}
-      <Grid item xs={12} md={6}>
+      <div item xs={12} md={6}>
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <div  gutterBottom>
               Effectiveness by Category
-            </Typography>
+            </div>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.effectiveness.byCategory}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -280,15 +235,15 @@ const InterventionEffectivenessChart: React.FC<
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </Grid>
+      </div>
 
       {/* Top Performing Pharmacists */}
-      <Grid item xs={12} md={6}>
+      <div item xs={12} md={6}>
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <div  gutterBottom>
               Top Performing Pharmacists
-            </Typography>
+            </div>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={data.pharmacistPerformance.slice(0, 5)}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -310,8 +265,8 @@ const InterventionEffectivenessChart: React.FC<
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </Grid>
-    </Grid>
+      </div>
+    </div>
   );
 };
 

@@ -1,6 +1,4 @@
-import React, { ReactNode } from 'react';
 import useFeatureFlags from '../hooks/useFeatureFlags';
-
 type ConditionalRenderOptions = {
   /**
    * The key of the feature flag to check
@@ -26,11 +24,11 @@ type ConditionalRenderOptions = {
 /**
  * Component for conditionally rendering based on feature flags
  */
-export const FeatureRender: React.FC<ConditionalRenderOptions> = ({
+export const FeatureRender: React.FC<ConditionalRenderOptions> = ({ 
   featureKey,
   whenEnabled,
   whenDisabled = null,
-  loading = null,
+  loading = null
 }) => {
   const { isFeatureEnabled, isLoading } = useFeatureFlags();
 

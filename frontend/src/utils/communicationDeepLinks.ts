@@ -1,5 +1,3 @@
-import { NavigateFunction } from 'react-router-dom';
-
 export interface DeepLinkParams {
   conversationId?: string;
   messageId?: string;

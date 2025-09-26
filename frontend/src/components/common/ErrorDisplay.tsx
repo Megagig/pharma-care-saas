@@ -1,27 +1,5 @@
-import React from 'react';
-import {
-  Alert,
-  AlertTitle,
-  Button,
-  Box,
-  Typography,
-  Stack,
-  Card,
-  CardContent,
-  Skeleton,
-  CircularProgress,
-  Collapse,
-} from '@mui/material';
-import ErrorIcon from '@mui/icons-material/Error';
-import WarningIcon from '@mui/icons-material/Warning';
-import InfoIcon from '@mui/icons-material/Info';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import OfflineIcon from '@mui/icons-material/WifiOff';
-import ServerErrorIcon from '@mui/icons-material/CloudOff';
-import PermissionIcon from '@mui/icons-material/Lock';
-import NotFoundIcon from '@mui/icons-material/Search';
 
+import { Button, Card, CardContent, Spinner, Alert, AlertTitle, Skeleton } from '@/components/ui/button';
 export interface ErrorDisplayProps {
   error?: Error | string | null;
   title?: string;
@@ -39,11 +17,10 @@ export interface ErrorDisplayProps {
   showDetails?: boolean;
   onClose?: () => void;
 }
-
 /**
  * Enhanced error display component with different error types and retry functionality
  */
-export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
+export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ 
   error,
   title,
   message,
@@ -51,12 +28,10 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   retry,
   retryLabel = 'Try Again',
   showDetails = false,
-  onClose,
+  onClose
 }) => {
   const [showDetailedError, setShowDetailedError] = React.useState(false);
-
   if (!error && !message) return null;
-
   const getErrorIcon = () => {
     switch (type) {
       case 'network':
@@ -75,7 +50,6 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
         return <ErrorIcon />;
     }
   };
-
   const getErrorSeverity = () => {
     switch (type) {
       case 'warning':
@@ -86,7 +60,6 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
         return 'error';
     }
   };
-
   const getDefaultTitle = () => {
     switch (type) {
       case 'network':
@@ -105,13 +78,10 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
         return 'Error';
     }
   };
-
   const getDefaultMessage = () => {
     const errorMessage = typeof error === 'string' ? error : error?.message;
-
     if (message) return message;
     if (errorMessage) return errorMessage;
-
     switch (type) {
       case 'network':
         return 'Please check your internet connection and try again.';
@@ -125,7 +95,6 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
         return 'An unexpected error occurred.';
     }
   };
-
   const errorDetails =
     typeof error === 'object' && error
       ? {
@@ -134,280 +103,250 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
           name: error.name,
         }
       : null;
-
   return (
     <Alert
       severity={getErrorSeverity()}
       icon={getErrorIcon()}
       onClose={onClose}
-      sx={{ mb: 2 }}
+      className=""
     >
       <AlertTitle>{title || getDefaultTitle()}</AlertTitle>
-
-      <Typography variant="body2" sx={{ mb: showDetails || retry ? 2 : 0 }}>
+      <div  className="">
         {getDefaultMessage()}
-      </Typography>
-
-      <Stack direction="row" spacing={2} alignItems="center">
+      </div>
+      <div direction="row" spacing={2} alignItems="center">
         {retry && (
           <Button
             size="small"
-            variant="outlined"
+            
             startIcon={<RefreshIcon />}
             onClick={retry}
           >
             {retryLabel}
           </Button>
         )}
-
         {showDetails && errorDetails && (
           <Button
             size="small"
-            variant="text"
+            
             endIcon={
               <ExpandMoreIcon
-                sx={{
-                  transform: showDetailedError
-                    ? 'rotate(180deg)'
-                    : 'rotate(0deg)',
-                  transition: 'transform 0.2s',
-                }}
-              />
+                className=""
+              />}
             }
             onClick={() => setShowDetailedError(!showDetailedError)}
           >
             Details
           </Button>
         )}
-      </Stack>
-
+      </div>
       {showDetails && errorDetails && (
         <Collapse in={showDetailedError}>
-          <Box
-            sx={{ mt: 2, p: 2, bgcolor: 'rgba(0,0,0,0.1)', borderRadius: 1 }}
+          <div
+            className=""
           >
-            <Typography
-              variant="body2"
+            <div
+              
               component="pre"
-              sx={{
-                fontFamily: 'monospace',
-                fontSize: '0.75rem',
-                overflow: 'auto',
-                maxHeight: 200,
-                whiteSpace: 'pre-wrap',
-              }}
+              className=""
             >
               {errorDetails.name}: {errorDetails.message}
               {errorDetails.stack && `\n\n${errorDetails.stack}`}
-            </Typography>
-          </Box>
+            </div>
+          </div>
         </Collapse>
       )}
     </Alert>
   );
 };
-
 /**
  * Network error component for offline/connection issues
  */
 export const NetworkErrorDisplay: React.FC<Omit<ErrorDisplayProps, 'type'>> = (
   props
 ) => <ErrorDisplay {...props} type="network" />;
-
 /**
  * Permission error component for access denied scenarios
  */
-export const PermissionErrorDisplay: React.FC<
-  Omit<ErrorDisplayProps, 'type'>
-> = (props) => <ErrorDisplay {...props} type="permission" />;
-
+export const PermissionErrorDisplay: React.FC = (props) => <ErrorDisplay {...props} type="permission" />;
 /**
  * Not found error component for missing resources
  */
 export const NotFoundErrorDisplay: React.FC<Omit<ErrorDisplayProps, 'type'>> = (
   props
 ) => <ErrorDisplay {...props} type="notFound" />;
-
 /**
  * Server error component for backend issues
  */
 export const ServerErrorDisplay: React.FC<Omit<ErrorDisplayProps, 'type'>> = (
   props
 ) => <ErrorDisplay {...props} type="server" />;
-
 export interface LoadingSkeletonProps {
   variant?: 'list' | 'card' | 'table' | 'form' | 'detail';
   count?: number;
   height?: number | string;
   animation?: 'pulse' | 'wave' | false;
 }
-
 /**
  * Versatile loading skeleton component for different UI patterns
  */
-export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
+export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({ 
   variant = 'card',
   count = 1,
   height = 100,
-  animation = 'wave',
+  animation = 'wave'
 }) => {
   const renderSkeleton = () => {
     switch (variant) {
       case 'list':
         return (
-          <Stack spacing={2}>
+          <div spacing={2}>
             {Array.from({ length: count }).map((_, index) => (
-              <Box
+              <div
                 key={index}
-                sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
+                className=""
               >
                 <Skeleton
-                  variant="circular"
+                  
                   width={40}
                   height={40}
                   animation={animation}
                 />
-                <Box sx={{ flex: 1 }}>
+                <div className="">
                   <Skeleton
-                    variant="text"
-                    sx={{ fontSize: '1rem' }}
+                    
+                    className=""
                     animation={animation}
                   />
                   <Skeleton
-                    variant="text"
-                    sx={{ fontSize: '0.875rem' }}
+                    
+                    className=""
                     width="60%"
                     animation={animation}
                   />
-                </Box>
-              </Box>
+                </div>
+              </div>
             ))}
-          </Stack>
+          </div>
         );
-
       case 'table':
         return (
-          <Stack spacing={1}>
-            <Skeleton variant="rectangular" height={56} animation={animation} />
+          <div spacing={1}>
+            <Skeleton  height={56} animation={animation} />
             {Array.from({ length: count }).map((_, index) => (
               <Skeleton
                 key={index}
-                variant="rectangular"
+                
                 height={52}
                 animation={animation}
               />
             ))}
-          </Stack>
+          </div>
         );
-
       case 'form':
         return (
-          <Stack spacing={3}>
+          <div spacing={3}>
             {Array.from({ length: count }).map((_, index) => (
-              <Box key={index}>
+              <div key={index}>
                 <Skeleton
-                  variant="text"
-                  sx={{ fontSize: '0.875rem' }}
+                  
+                  className=""
                   width="20%"
                   animation={animation}
                 />
                 <Skeleton
-                  variant="rectangular"
+                  
                   height={56}
                   animation={animation}
                 />
-              </Box>
+              </div>
             ))}
-          </Stack>
+          </div>
         );
-
       case 'detail':
         return (
-          <Stack spacing={3}>
+          <div spacing={3}>
             <Skeleton
-              variant="rectangular"
+              
               height={200}
               animation={animation}
             />
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <div className="">
               <Skeleton
-                variant="circular"
+                
                 width={64}
                 height={64}
                 animation={animation}
               />
-              <Stack flex={1} spacing={1}>
+              <div flex={1} spacing={1}>
                 <Skeleton
-                  variant="text"
-                  sx={{ fontSize: '1.5rem' }}
+                  
+                  className=""
                   width="40%"
                   animation={animation}
                 />
                 <Skeleton
-                  variant="text"
-                  sx={{ fontSize: '1rem' }}
+                  
+                  className=""
                   width="60%"
                   animation={animation}
                 />
                 <Skeleton
-                  variant="text"
-                  sx={{ fontSize: '0.875rem' }}
+                  
+                  className=""
                   width="80%"
                   animation={animation}
                 />
-              </Stack>
-            </Box>
+              </div>
+            </div>
             {Array.from({ length: count }).map((_, index) => (
-              <Box key={index}>
+              <div key={index}>
                 <Skeleton
-                  variant="text"
-                  sx={{ fontSize: '1rem' }}
+                  
+                  className=""
                   width="30%"
                   animation={animation}
                 />
                 <Skeleton
-                  variant="rectangular"
+                  
                   height={80}
                   animation={animation}
                 />
-              </Box>
+              </div>
             ))}
-          </Stack>
+          </div>
         );
-
       default: // 'card'
         return (
-          <Stack spacing={2}>
+          <div spacing={2}>
             {Array.from({ length: count }).map((_, index) => (
               <Card key={index}>
                 <CardContent>
                   <Skeleton
-                    variant="text"
-                    sx={{ fontSize: '1.2rem' }}
+                    
+                    className=""
                     animation={animation}
                   />
                   <Skeleton
-                    variant="text"
-                    sx={{ fontSize: '1rem' }}
+                    
+                    className=""
                     animation={animation}
                   />
                   <Skeleton
-                    variant="rectangular"
+                    
                     height={typeof height === 'number' ? height : 100}
                     animation={animation}
-                    sx={{ mt: 1 }}
+                    className=""
                   />
                 </CardContent>
               </Card>
             ))}
-          </Stack>
+          </div>
         );
     }
   };
-
-  return <Box>{renderSkeleton()}</Box>;
+  return <div>{renderSkeleton()}</div>;
 };
-
 export interface LoadingStateProps {
   loading?: boolean;
   error?: Error | string | null;
@@ -420,11 +359,10 @@ export interface LoadingStateProps {
   errorProps?: Omit<ErrorDisplayProps, 'error'>;
   skeletonProps?: LoadingSkeletonProps;
 }
-
 /**
  * Comprehensive loading state wrapper component
  */
-export const LoadingState: React.FC<LoadingStateProps> = ({
+export const LoadingState: React.FC<LoadingStateProps> = ({ 
   loading = false,
   error,
   children,
@@ -434,12 +372,11 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   isEmpty = false,
   retry,
   errorProps,
-  skeletonProps,
+  skeletonProps
 }) => {
   if (loading) {
     return <>{loadingComponent || <LoadingSkeleton {...skeletonProps} />}</>;
   }
-
   if (error) {
     return (
       <>
@@ -454,14 +391,11 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       </>
     );
   }
-
   if (isEmpty && emptyComponent) {
     return <>{emptyComponent}</>;
   }
-
   return <>{children}</>;
 };
-
 /**
  * Simple loading spinner component
  */
@@ -471,35 +405,26 @@ export const LoadingSpinner: React.FC<{
   fullPage?: boolean;
 }> = ({ size = 40, message = 'Loading...', fullPage = false }) => {
   const content = (
-    <Stack spacing={2} alignItems="center" justifyContent="center">
-      <CircularProgress size={size} />
-      <Typography variant="body2" color="text.secondary">
+    <div spacing={2} alignItems="center" justifyContent="center">
+      <Spinner size={size} />
+      <div  color="text.secondary">
         {message}
-      </Typography>
-    </Stack>
+      </div>
+    </div>
   );
-
   if (fullPage) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '50vh',
-          width: '100%',
-        }}
+      <div
+        className=""
       >
         {content}
-      </Box>
+      </div>
     );
   }
-
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+    <div className="">
       {content}
-    </Box>
+    </div>
   );
 };
-
 export default ErrorDisplay;

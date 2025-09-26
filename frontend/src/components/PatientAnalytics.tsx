@@ -1,31 +1,9 @@
-import React from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  CardHeader,
-  Chip,
-  Stack,
-  Avatar,
-  LinearProgress,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-} from '@mui/material';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import WarningIcon from '@mui/icons-material/Warning';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import PersonIcon from '@mui/icons-material/Person';
+
+import { Card, CardContent, CardHeader, Progress, Avatar } from '@/components/ui/button';
 
 interface PatientAnalyticsProps {
   patientId: string;
 }
-
 const PatientAnalytics: React.FC<PatientAnalyticsProps> = () => {
   // Mock analytics data
   const analytics = {
@@ -58,224 +36,184 @@ const PatientAnalytics: React.FC<PatientAnalyticsProps> = () => {
       },
     ],
   };
-
   return (
-    <Box sx={{ p: 3 }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
-          sx={{
-            fontWeight: 600,
-            mb: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-          }}
+          className=""
         >
           <AssessmentIcon color="primary" />
           Patient Analytics
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Comprehensive health insights and trend analysis
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* Key Metrics */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-        <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
+      <div className="">
+        <div className="">
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
+              <div className="">
+                <Avatar className="">
                   <ScheduleIcon />
                 </Avatar>
-                <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                <div>
+                  <div  className="">
                     {analytics.totalVisits}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Total Visits
-                  </Typography>
-                </Box>
-              </Box>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Box>
-
-        <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
+        </div>
+        <div className="">
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: 'success.main' }}>
+              <div className="">
+                <Avatar className="">
                   <AssessmentIcon />
                 </Avatar>
-                <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                <div>
+                  <div  className="">
                     {analytics.totalAssessments}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Clinical Assessments
-                  </Typography>
-                </Box>
-              </Box>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Box>
-
-        <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
+        </div>
+        <div className="">
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: 'info.main' }}>
+              <div className="">
+                <Avatar className="">
                   <PersonIcon />
                 </Avatar>
-                <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                <div>
+                  <div  className="">
                     {analytics.medicationAdherence}%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Medication Adherence
-                  </Typography>
-                </Box>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={analytics.medicationAdherence}
-                sx={{ mt: 2, height: 6, borderRadius: 3 }}
+                  </div>
+                </div>
+              </div>
+              <Progress
+                
+                className=""
                 color={
                   analytics.medicationAdherence >= 80
                     ? 'success'
                     : analytics.medicationAdherence >= 60
                     ? 'warning'
-                    : 'error'
+                    : 'error'}
                 }
               />
             </CardContent>
           </Card>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Clinical Trends */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-        <Box sx={{ flex: '1 1 400px', minWidth: 0 }}>
+      <div className="">
+        <div className="">
           <Card>
             <CardHeader
               title="Clinical Trends"
-              titleTypographyProps={{ variant: 'h6', fontWeight: 600 }}
+              
               avatar={<TimelineIcon color="primary" />}
             />
             <CardContent>
-              <Stack spacing={3}>
-                <Box>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      mb: 1,
-                    }}
+              <div spacing={3}>
+                <div>
+                  <div
+                    className=""
                   >
-                    <Typography variant="body2" color="text.secondary">
+                    <div  color="text.secondary">
                       Blood Pressure Trend
-                    </Typography>
+                    </div>
                     <Chip
                       label={analytics.trends.bloodPressure}
                       size="small"
                       color="success"
-                      variant="outlined"
+                      
                     />
-                  </Box>
-                  <Typography variant="body1">
+                  </div>
+                  <div >
                     {analytics.averageVitals.bloodPressure.systolic}/
                     {analytics.averageVitals.bloodPressure.diastolic} mmHg avg
-                  </Typography>
-                </Box>
-              </Stack>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Box>
-
-        <Box sx={{ flex: '1 1 400px', minWidth: 0 }}>
+        </div>
+        <div className="">
           <Card>
             <CardHeader
               title="Risk Assessment"
-              titleTypographyProps={{ variant: 'h6', fontWeight: 600 }}
+              
               avatar={<WarningIcon color="warning" />}
             />
             <CardContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                  p: 2,
-                  bgcolor: 'success.50',
-                  borderRadius: 1,
-                  border: '1px solid',
-                  borderColor: 'success.200',
-                }}
+              <div
+                className=""
               >
                 <CheckCircleIcon color="success" />
-                <Box>
-                  <Typography variant="subtitle2" color="success.main">
+                <div>
+                  <div  color="success.main">
                     Low Risk Profile
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     No immediate concerns identified
-                  </Typography>
-                </Box>
-              </Box>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Recent Milestones */}
       <Card>
         <CardHeader
           title="Recent Milestones"
-          titleTypographyProps={{ variant: 'h6', fontWeight: 600 }}
+          
           avatar={<TrendingUpIcon color="primary" />}
         />
         <CardContent>
           <List>
             {analytics.recentMilestones.map((milestone) => (
-              <ListItem
+              <div
                 key={milestone.id}
-                sx={{
-                  px: 0,
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  '&:last-child': { borderBottom: 'none' },
-                }}
-              >
-                <ListItemIcon>
+                className="">
+                <div>
                   <Avatar
-                    sx={{
-                      width: 32,
-                      height: 32,
-                      bgcolor: 'primary.main',
-                      fontSize: '0.75rem',
-                    }}
+                    className=""
                   >
                     {milestone.type[0].toUpperCase()}
                   </Avatar>
-                </ListItemIcon>
-                <ListItemText
+                </div>
+                <div
                   primary={milestone.description}
                   secondary={new Date(milestone.date).toLocaleDateString()}
-                  primaryTypographyProps={{ variant: 'body2' }}
-                  secondaryTypographyProps={{ variant: 'caption' }}
+                  
+                  
                 />
-              </ListItem>
+              </div>
             ))}
           </List>
         </CardContent>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default PatientAnalytics;

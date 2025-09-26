@@ -1,45 +1,3 @@
-import * as React from 'react';
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-  Grid,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
-  FormControl,
-  InputLabel,
-  FormHelperText,
-  FormControlLabel,
-  Switch,
-  Alert,
-  AlertTitle,
-  Avatar,
-  IconButton,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import HistoryIcon from '@mui/icons-material/History';
-import WarningIcon from '@mui/icons-material/Warning';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PersonIcon from '@mui/icons-material/Person';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import {
   useAdherenceLogs,
   useMedicationsByPatient,
@@ -51,27 +9,83 @@ import {
   usePrescriptionPatternAnalytics,
   useInteractionAnalytics,
   usePatientMedicationSummary,
-} from '../../queries/medicationManagementQueries';
-import { usePatient } from '../../queries/usePatients';
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
+} from '@/queries/medicationManagementQueries';
+import { usePatient } from '@/queries/usePatients';
+
+
 import dayjs from 'dayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import MedicationSettingsPanel from './MedicationSettingsPanel';
+
+import MedicationSettingsPanel from './MedicationSettingsPanel_fixed';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertTitle } from '@/components/ui/alert';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+
+// Simple textarea component
+const Textarea = ({ value, onChange, rows = 3, placeholder, id, name }: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  rows?: number;
+  placeholder?: string;
+  id?: string;
+  name?: string;
+}) => (
+  <textarea
+    id={id}
+    name={name}
+    value={value}
+    onChange={onChange}
+    rows={rows}
+    placeholder={placeholder}
+    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+  />
+);
+
+// Simple icons
+const PersonIcon = () => <span>👤</span>;
+const AddIcon = () => <span>+</span>;
+const EditIcon = () => <span>✏️</span>;
+const HistoryIcon = () => <span>📜</span>;
+const DeleteIcon = () => <span>🗑️</span>;
+const WarningIcon = () => <span>⚠️</span>;
+const ScheduleIcon = () => <span>⏰</span>;
+
+// Simple date picker components
+const DatePicker = ({ value, onChange }: { value: any; onChange: (date: any) => void }) => (
+  <input
+    type="date"
+    value={value ? value.format('YYYY-MM-DD') : ''}
+    onChange={(e) => onChange(e.target.value ? dayjs(e.target.value) : null)}
+    className="w-full p-2 border border-gray-300 rounded-md"
+  />
+);
+
+// Simple LocalizationProvider wrapper
+const LocalizationProvider = ({ children }: { children: React.ReactNode; dateAdapter?: any }) => (
+  <>{children}</>
+);
+
+// Chart components
+import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar } from 'recharts';
+
+// React hooks and router
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
+
+// Types
+import {
+  AdherenceLogData,
+  MedicationCreateData,
+  MedicationData as ImportedMedicationData,
+} from '@/services/medicationManagementService_fixed';
 
 interface Medication {
   id: string;
@@ -94,7 +108,7 @@ interface Medication {
   reminders?: MedicationReminder[];
 }
 
-interface MedicationData {
+interface LocalMedicationData {
   id: string;
   name: string;
   dosage: string;
@@ -124,8 +138,8 @@ interface MedicationFormValues {
   endDate: Date | null;
   indication: string;
   prescriber: string;
-  cost: number | string; // Cost price in Naira (string for form handling)
-  sellingPrice: number | string; // Selling price in Naira (string for form handling)
+  cost: number | string;
+  sellingPrice: number | string;
   allergyCheck: {
     status: boolean;
     details: string;
@@ -136,15 +150,15 @@ interface MedicationFormValues {
 
 interface MedicationReminder {
   id?: string;
-  time: string; // format: HH:MM
+  time: string;
   days: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
   enabled: boolean;
   notes?: string;
 }
 
 interface MedicationListProps {
-  medications: (Medication | MedicationData)[];
-  onEdit: (medication: Medication | MedicationData) => void;
+  medications: (Medication | LocalMedicationData)[];
+  onEdit: (medication: Medication | LocalMedicationData) => void;
   onArchive: (medicationId: string) => void;
   onAddAdherence: (medicationId: string) => void;
   onViewHistory: (medicationId: string) => void;
@@ -162,12 +176,6 @@ interface AdherenceRecord {
   createdAt: string | Date;
 }
 
-// Import types from services
-import {
-  AdherenceLogData,
-  MedicationCreateData,
-} from '../../services/medicationManagementService';
-
 const initialFormValues: MedicationFormValues = {
   name: '',
   dosage: '',
@@ -177,8 +185,8 @@ const initialFormValues: MedicationFormValues = {
   endDate: null,
   indication: '',
   prescriber: '',
-  cost: '', // Empty string for optional cost
-  sellingPrice: '', // Empty string for optional selling price
+  cost: '',
+  sellingPrice: '',
   allergyCheck: {
     status: false,
     details: '',
@@ -273,7 +281,7 @@ interface MedicationSummaryData {
 }
 
 const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
-  patientId: propPatientId,
+  patientId: propPatientId
 }) => {
   const { patientId: paramPatientId } = useParams<{ patientId: string }>();
   const patientId = propPatientId || paramPatientId;
@@ -284,8 +292,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
   const [adherenceDialogOpen, setAdherenceDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
-  const [formValues, setFormValues] =
-    useState<MedicationFormValues>(initialFormValues);
+  const [formValues, setFormValues] = useState<MedicationFormValues>(initialFormValues);
   const [adherenceValues, setAdherenceValues] = useState({
     medicationId: '',
     refillDate: new Date(),
@@ -293,12 +300,8 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
     pillCount: 0,
     notes: '',
   });
-  const [currentMedicationId, setCurrentMedicationId] = useState<string | null>(
-    null
-  );
-  const [selectedMedicationHistory, setSelectedMedicationHistory] = useState<
-    AdherenceRecord[]
-  >([]);
+  const [currentMedicationId, setCurrentMedicationId] = useState<string | null>(null);
+  const [selectedMedicationHistory, setSelectedMedicationHistory] = useState<AdherenceRecord[]>([]);
   const [interactionCheckEnabled, setInteractionCheckEnabled] = useState(true);
   const [interactions, setInteractions] = useState<string[]>([]);
 
@@ -310,31 +313,29 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
   } = usePatient(patientId || '');
 
   // Fetch medications
-  const { data: medicationsData, isLoading } = useMedicationsByPatient(
-    patientId || ''
-  );
+  const { data: medicationsData, isLoading } = useMedicationsByPatient(patientId || '');
 
   // Convert medication data to the expected format
-  const medications: (Medication | MedicationData)[] = React.useMemo(() => {
+  const medications: (Medication | LocalMedicationData)[] = React.useMemo(() => {
     if (!medicationsData) return [];
     return medicationsData.map(
-      (med) =>
-        ({
-          id: med._id,
-          name: med.name,
-          dosage: med.dosage,
-          frequency: med.frequency,
-          route: med.route,
-          startDate: med.startDate,
-          endDate: med.endDate,
-          indication: med.indication || '',
-          prescriber: med.prescriber || '',
-          allergyCheck: med.allergyCheck,
-          status: med.status,
-          patientId: med.patientId,
-        } as Medication)
+      (med: any) => ({
+        id: med._id,
+        name: med.name,
+        dosage: med.dosage,
+        frequency: med.frequency,
+        route: med.route,
+        startDate: med.startDate,
+        endDate: med.endDate,
+        indication: med.indication || '',
+        prescriber: med.prescriber || '',
+        allergyCheck: med.allergyCheck,
+        status: med.status,
+        patientId: med.patientId,
+      } as Medication)
     );
   }, [medicationsData]);
+
   const { data: adherenceLogs } = useAdherenceLogs(patientId || '');
 
   // Use real mutations from React Query
@@ -342,9 +343,8 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
   const updateMutation = useUpdateMedication();
   const archiveMutation = useArchiveMedication();
   const createAdherenceMutation = useLogAdherence();
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
+
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -355,92 +355,68 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
           ...formValues,
           allergyCheck: {
             ...formValues.allergyCheck,
-            [child]: value,
-          },
+            [child]: value
+          }
         });
       }
     } else {
       setFormValues({
         ...formValues,
-        [name]: value,
+        [name]: value
       });
     }
   };
 
-  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
+  const handleSwitchChange = (checked: boolean, name: string) => {
     if (name === 'allergyCheck.status') {
       setFormValues({
         ...formValues,
         allergyCheck: {
           ...formValues.allergyCheck,
-          status: checked,
-        },
+          status: checked
+        }
       });
     } else if (name === 'interactionCheck') {
       setInteractionCheckEnabled(checked);
     }
   };
 
-  // Handler for MUI Select components
-  const handleStatusChange = (
-    event:
-      | React.ChangeEvent<HTMLInputElement>
-      | {
-          target: { value: string; name: string };
-        }
-  ) => {
+  const handleStatusChange = (value: string) => {
     setFormValues({
       ...formValues,
-      status: event.target.value as 'active' | 'archived' | 'cancelled',
+      status: value as 'active' | 'archived' | 'cancelled'
     });
   };
 
-  // Handler for MUI Select components
-  const handleRouteChange = (
-    event:
-      | React.ChangeEvent<HTMLInputElement>
-      | {
-          target: { value: string; name: string };
-        }
-  ) => {
+  const handleRouteChange = (value: string) => {
     setFormValues({
       ...formValues,
-      route: event.target.value as string,
+      route: value
     });
   };
 
-  // Handler for MUI Select components
-  const handleFrequencyChange = (
-    event:
-      | React.ChangeEvent<HTMLInputElement>
-      | {
-          target: { value: string; name: string };
-        }
-  ) => {
+  const handleFrequencyChange = (value: string) => {
     setFormValues({
       ...formValues,
-      frequency: event.target.value as string,
+      frequency: value
     });
   };
 
   const handleDateChange = (name: string, date: Date | null) => {
     setFormValues({
       ...formValues,
-      [name]: date,
+      [name]: date
     });
   };
 
-  const handleAdherenceValueChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleAdherenceValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setAdherenceValues({
       ...adherenceValues,
       [name]:
         name === 'adherenceScore' || name === 'pillCount'
           ? parseInt(value, 10) || 0
-          : value,
+          : value
     });
   };
 
@@ -448,12 +424,11 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
     if (date) {
       setAdherenceValues({
         ...adherenceValues,
-        refillDate: date,
+        refillDate: date
       });
     }
   };
 
-  // Handle reminder changes
   const handleAddReminder = () => {
     const newReminder: MedicationReminder = {
       time: '09:00',
@@ -466,26 +441,13 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
   const handleReminderChange = (
     index: number,
     field: keyof MedicationReminder,
-    value:
-      | string
-      | boolean
-      | string[]
-      | ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[]
+    value: string | boolean | string[] | ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[]
   ) => {
     const updatedReminders = [...reminders];
     if (field === 'days') {
-      // Handle special case for days array
       updatedReminders[index] = {
         ...updatedReminders[index],
-        [field]: value as (
-          | 'mon'
-          | 'tue'
-          | 'wed'
-          | 'thu'
-          | 'fri'
-          | 'sat'
-          | 'sun'
-        )[],
+        [field]: value as ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[],
       };
     } else {
       updatedReminders[index] = {
@@ -510,9 +472,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
     setMedicationDialogOpen(true);
   };
 
-  const handleOpenEditMedicationDialog = (
-    medication: Medication | MedicationData
-  ) => {
+  const handleOpenEditMedicationDialog = (medication: Medication | LocalMedicationData) => {
     setCurrentMedicationId(medication.id);
     setFormValues({
       name: medication.name,
@@ -527,12 +487,10 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
       sellingPrice: medication.sellingPrice?.toString() || '',
       allergyCheck: medication.allergyCheck,
       status: medication.status,
-      reminders: medication.reminders || [],
+      reminders: medication.reminders || []
     });
 
-    // Set reminders if they exist
     setReminders(medication.reminders || []);
-
     setMedicationDialogTab(0);
     setMedicationDialogOpen(true);
   };
@@ -540,7 +498,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
   const handleOpenAdherenceDialog = (medicationId: string) => {
     setAdherenceValues({
       ...adherenceValues,
-      medicationId,
+      medicationId
     });
     setAdherenceDialogOpen(true);
   };
@@ -548,18 +506,17 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
   const handleOpenHistoryDialog = (medicationId: string) => {
     if (adherenceLogs) {
       const filteredLogs = adherenceLogs.filter(
-        (log) => log.medicationId === medicationId
+        (log: any) => log.medicationId === medicationId
       );
-      // Convert AdherenceLogData to AdherenceRecord format
       setSelectedMedicationHistory(
         filteredLogs.map((log: AdherenceLogData) => ({
           id: log._id,
           medicationId: log.medicationId,
           refillDate: log.refillDate,
           adherenceScore: log.adherenceScore,
-          pillCount: log.pillCount ?? 0, // Provide default value for optional field
-          notes: log.notes ?? '', // Provide default value for optional field
-          createdAt: log.createdAt,
+          pillCount: log.pillCount ?? 0,
+          notes: log.notes ?? '',
+          createdAt: log.createdAt
         }))
       );
       setHistoryDialogOpen(true);
@@ -573,11 +530,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
 
   const handleSubmitMedication = async () => {
     try {
-      // Check for interactions if enabled
       if (interactionCheckEnabled && medications && medications.length > 0) {
-        // This would be a real API call in production
-        // For demo, we'll just simulate an interaction check
-        // Map medications to their names
         const drugNames = medications.map((med) => med.name);
         if (
           !currentMedicationId &&
@@ -587,32 +540,25 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
           setInteractions([
             'Potential interaction detected: Warfarin + Aspirin may increase bleeding risk',
           ]);
-          return; // Prevent submission if interactions found
+          return;
         }
       }
 
-      // Include reminders in the submission and convert cost/sellingPrice to numbers
       const submissionData = {
         ...formValues,
         startDate: formValues.startDate ? formValues.startDate : undefined,
         endDate: formValues.endDate ? formValues.endDate : undefined,
-        cost: formValues.cost
-          ? parseFloat(formValues.cost as string)
-          : undefined,
-        sellingPrice: formValues.sellingPrice
-          ? parseFloat(formValues.sellingPrice as string)
-          : undefined,
+        cost: formValues.cost ? parseFloat(formValues.cost as string) : undefined,
+        sellingPrice: formValues.sellingPrice ? parseFloat(formValues.sellingPrice as string) : undefined,
         reminders: reminders,
       };
 
       if (currentMedicationId) {
-        // Update existing medication
         await updateMutation.mutateAsync({
           id: currentMedicationId,
-          data: submissionData as Partial<MedicationData>,
+          data: submissionData as Partial<ImportedMedicationData>
         });
       } else {
-        // Create new medication
         const createData = {
           ...submissionData,
           patientId,
@@ -635,7 +581,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
         ...adherenceValues,
         medicationId: adherenceValues.medicationId || '',
         patientId: patientId || '',
-        adherenceScore: adherenceValues.adherenceScore || 100,
+        adherenceScore: adherenceValues.adherenceScore || 100
       });
       setAdherenceDialogOpen(false);
       setAdherenceValues({
@@ -643,7 +589,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
         refillDate: new Date(),
         adherenceScore: 100,
         pillCount: 0,
-        notes: '',
+        notes: ''
       });
     } catch (error) {
       console.error('Error saving adherence record:', error);
@@ -656,7 +602,7 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
     try {
       await archiveMutation.mutateAsync({
         id: currentMedicationId,
-        reason: 'Medication archived by user',
+        reason: 'Medication archived by user'
       });
       setArchiveDialogOpen(false);
       setCurrentMedicationId(null);
@@ -667,847 +613,665 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
 
   if (!patientId) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="warning">
+      <div className="space-y-4">
+        <Alert>
           <AlertTitle>No Patient Selected</AlertTitle>
           Please select a patient to manage medications.
         </Alert>
-      </Box>
+      </div>
     );
   }
 
   if (isLoading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '50vh',
-        }}
-      >
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
     );
   }
 
-  // Filter medications by status
-  const activeMedications =
-    medications?.filter((med) => med.status === 'active') || [];
-  const archivedMedications =
-    medications?.filter((med) => med.status === 'archived') || [];
-  const cancelledMedications =
-    medications?.filter((med) => med.status === 'cancelled') || [];
+  const activeMedications = medications?.filter((med) => med.status === 'active') || [];
+  const archivedMedications = medications?.filter((med) => med.status === 'archived') || [];
+  const cancelledMedications = medications?.filter((med) => med.status === 'cancelled') || [];
 
-  // Overall adherence calculation (simplified for demo)
   const calculateOverallAdherence = (): number => {
     if (!adherenceLogs || adherenceLogs.length === 0) return 0;
-
-    const totalScore = adherenceLogs.reduce(
-      (sum, log) => sum + log.adherenceScore,
-      0
-    );
+    const totalScore = adherenceLogs.reduce((sum: number, log: any) => sum + log.adherenceScore, 0);
     return Math.round(totalScore / adherenceLogs.length);
   };
 
   const overallAdherence = calculateOverallAdherence();
 
   return (
-    <Box sx={{ p: 2 }}>
+    <div className="space-y-6">
       {/* Patient Information Card */}
       {isLoadingPatient ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-          <CircularProgress />
-        </Box>
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900"></div>
+        </div>
       ) : patientError ? (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
           Error loading patient information. Please try refreshing the page.
         </Alert>
       ) : patientData?.data?.patient ? (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            mb: 3,
-            backgroundColor: 'primary.light',
-            color: 'primary.contrastText',
-            borderRadius: 2,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar
-              sx={{
-                bgcolor: 'primary.main',
-                width: 48,
-                height: 48,
-                mr: 2,
-              }}
-            >
-              <PersonIcon />
-            </Avatar>
-            <Box>
-              <Typography variant="h6">
-                {patientData.data.patient.firstName}{' '}
-                {patientData.data.patient.lastName}
-                {patientData.data.patient.otherNames
-                  ? ` ${patientData.data.patient.otherNames}`
-                  : ''}
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 0.5 }}>
-                <Typography variant="body2">
-                  <strong>MRN:</strong>{' '}
-                  {patientData.data.patient.mrn || patientData.data.patient._id}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>DOB:</strong>{' '}
-                  {patientData.data.patient.dob
-                    ? new Date(
-                        patientData.data.patient.dob
-                      ).toLocaleDateString()
-                    : 'N/A'}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Gender:</strong>{' '}
-                  {patientData.data.patient.gender || 'N/A'}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Contact:</strong>{' '}
-                  {patientData.data.patient.phone ||
-                    patientData.data.patient.email ||
-                    'None'}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        </Paper>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-4">
+              <Avatar>
+                <AvatarFallback>
+                  <PersonIcon />
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {patientData.data.patient.firstName}{' '}
+                  {patientData.data.patient.lastName}
+                  {patientData.data.patient.otherNames
+                    ? ` ${patientData.data.patient.otherNames}`
+                    : ''}
+                </h2>
+                <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                  <div>
+                    <strong>MRN:</strong>{' '}
+                    {patientData.data.patient.mrn || patientData.data.patient._id}
+                  </div>
+                  <div>
+                    <strong>DOB:</strong>{' '}
+                    {patientData.data.patient.dob
+                      ? new Date(patientData.data.patient.dob).toLocaleDateString()
+                      : 'N/A'}
+                  </div>
+                  <div>
+                    <strong>Gender:</strong>{' '}
+                    {patientData.data.patient.gender || 'N/A'}
+                  </div>
+                  <div>
+                    <strong>Contact:</strong>{' '}
+                    {patientData.data.patient.phone ||
+                      patientData.data.patient.email ||
+                      'None'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       ) : null}
 
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
-      >
-        <Typography variant="h5" component="h1">
-          Medication Management
-        </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleOpenMedicationDialog}
-        >
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Medication Management</h1>
+        <Button onClick={handleOpenMedicationDialog}>
+          <span className="mr-2 h-4 w-4"><AddIcon /></span>
           Add Medication
         </Button>
-      </Box>
+      </div>
 
-      <Grid container spacing={3}>
-        {/* Adherence Chart */}
-        <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 4' } }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" component="div">
-                Average Adherence Score
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-                <CircularProgress
-                  variant="determinate"
-                  value={overallAdherence}
-                  size={80}
-                  thickness={5}
-                  sx={{
-                    color:
-                      overallAdherence > 80
-                        ? 'success.main'
-                        : overallAdherence > 50
-                        ? 'warning.main'
-                        : 'error.main',
-                  }}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm font-medium text-gray-600">Average Adherence Score</div>
+            <div className="flex items-center space-x-4">
+              <div className="relative w-20 h-20">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={`text-lg font-bold ${overallAdherence > 80
+                    ? 'text-green-600'
+                    : overallAdherence > 50
+                      ? 'text-yellow-600'
+                      : 'text-red-600'
+                    }`}>
+                    {overallAdherence}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm font-medium text-gray-600">Active Medications</div>
+            <div className="text-2xl font-bold">{activeMedications.length}</div>
+            <div className="text-sm text-gray-500">{archivedMedications.length} archived</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm font-medium text-gray-600">Last Adherence Check</div>
+            <div className="text-lg">
+              {adherenceLogs && adherenceLogs.length > 0
+                ? new Date(adherenceLogs[adherenceLogs.length - 1].createdAt).toLocaleDateString()
+                : 'No records'}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content */}
+      <Card>
+        <CardContent className="pt-6">
+          <Tabs value={tabValue.toString()} onValueChange={v => setTabValue(Number(v))}>
+            <TabsList>
+              <TabsTrigger value="0">Active Medications</TabsTrigger>
+              <TabsTrigger value="1">Archived</TabsTrigger>
+              <TabsTrigger value="2">Cancelled</TabsTrigger>
+              <TabsTrigger value="3">Analytics</TabsTrigger>
+              <TabsTrigger value="4">Settings</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="0" className="space-y-4">
+              {activeMedications.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No active medications found. Click "Add Medication" to get started.
+                </div>
+              ) : (
+                <MedicationList
+                  medications={activeMedications}
+                  onEdit={handleOpenEditMedicationDialog}
+                  onArchive={handleOpenArchiveDialog}
+                  onAddAdherence={handleOpenAdherenceDialog}
+                  onViewHistory={handleOpenHistoryDialog}
                 />
-                <Typography
-                  variant="h4"
-                  sx={{ ml: 2 }}
-                  color={
-                    overallAdherence > 80
-                      ? 'success.main'
-                      : overallAdherence > 50
-                      ? 'warning.main'
-                      : 'error.main'
-                  }
-                >
-                  {overallAdherence}%
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+              )}
+            </TabsContent>
 
-        <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 4' } }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" component="div">
-                Active Medications
-              </Typography>
-              <Typography variant="h4">{activeMedications.length}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {archivedMedications.length} archived
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+            <TabsContent value="1" className="space-y-4">
+              {archivedMedications.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No archived medications found.
+                </div>
+              ) : (
+                <MedicationList
+                  medications={archivedMedications}
+                  onEdit={handleOpenEditMedicationDialog}
+                  onArchive={handleOpenArchiveDialog}
+                  onAddAdherence={handleOpenAdherenceDialog}
+                  onViewHistory={handleOpenHistoryDialog}
+                  isArchived={true}
+                />
+              )}
+            </TabsContent>
 
-        <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 4' } }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" component="div">
-                Last Adherence Check
-              </Typography>
-              <Typography variant="h6">
-                {adherenceLogs && adherenceLogs.length > 0
-                  ? new Date(
-                      adherenceLogs[adherenceLogs.length - 1].createdAt
-                    ).toLocaleDateString()
-                  : 'No records'}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+            <TabsContent value="2" className="space-y-4">
+              {cancelledMedications.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No cancelled medications found.
+                </div>
+              ) : (
+                <MedicationList
+                  medications={cancelledMedications}
+                  onEdit={handleOpenEditMedicationDialog}
+                  onArchive={handleOpenArchiveDialog}
+                  onAddAdherence={handleOpenAdherenceDialog}
+                  onViewHistory={handleOpenHistoryDialog}
+                  isArchived={true}
+                />
+              )}
+            </TabsContent>
 
-      <Paper sx={{ mt: 3 }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange}>
-            <Tab label="Active Medications" />
-            <Tab label="Archived" />
-            <Tab label="Cancelled" />
-            <Tab label="Analytics" />
-            <Tab label="Settings" />
+            <TabsContent value="3" className="space-y-4">
+              <MedicationAnalyticsPanel patientId={patientId} />
+            </TabsContent>
+
+            <TabsContent value="4" className="space-y-4">
+              <MedicationSettingsPanel patientId={patientId} />
+            </TabsContent>
           </Tabs>
-        </Box>
-
-        {/* Active Medications */}
-        {tabValue === 0 && (
-          <Box sx={{ p: 2 }}>
-            {activeMedications.length === 0 ? (
-              <Typography variant="body1" sx={{ py: 2 }}>
-                No active medications found. Click "Add Medication" to get
-                started.
-              </Typography>
-            ) : (
-              <MedicationList
-                medications={activeMedications}
-                onEdit={handleOpenEditMedicationDialog}
-                onArchive={handleOpenArchiveDialog}
-                onAddAdherence={handleOpenAdherenceDialog}
-                onViewHistory={handleOpenHistoryDialog}
-              />
-            )}
-          </Box>
-        )}
-
-        {/* Archived Medications */}
-        {tabValue === 1 && (
-          <Box sx={{ p: 2 }}>
-            {archivedMedications.length === 0 ? (
-              <Typography variant="body1" sx={{ py: 2 }}>
-                No archived medications found.
-              </Typography>
-            ) : (
-              <MedicationList
-                medications={archivedMedications}
-                onEdit={handleOpenEditMedicationDialog}
-                onArchive={handleOpenArchiveDialog}
-                onAddAdherence={handleOpenAdherenceDialog}
-                onViewHistory={handleOpenHistoryDialog}
-                isArchived={true}
-              />
-            )}
-          </Box>
-        )}
-
-        {/* Cancelled Medications */}
-        {tabValue === 2 && (
-          <Box sx={{ p: 2 }}>
-            {cancelledMedications.length === 0 ? (
-              <Typography variant="body1" sx={{ py: 2 }}>
-                No cancelled medications found.
-              </Typography>
-            ) : (
-              <MedicationList
-                medications={cancelledMedications}
-                onEdit={handleOpenEditMedicationDialog}
-                onArchive={handleOpenArchiveDialog}
-                onAddAdherence={handleOpenAdherenceDialog}
-                onViewHistory={handleOpenHistoryDialog}
-                isArchived={true}
-              />
-            )}
-          </Box>
-        )}
-
-        {/* Analytics Tab */}
-        {tabValue === 3 && (
-          <Box sx={{ p: 2 }}>
-            <MedicationAnalyticsPanel patientId={patientId} />
-          </Box>
-        )}
-
-        {/* Settings Tab */}
-        {tabValue === 4 && (
-          <Box sx={{ p: 2 }}>
-            <MedicationSettingsPanel patientId={patientId} />
-          </Box>
-        )}
-      </Paper>
+        </CardContent>
+      </Card>
 
       {/* Medication Dialog */}
-      <Dialog
-        open={medicationDialogOpen}
-        onClose={() => setMedicationDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          {currentMedicationId ? 'Edit Medication' : 'Add New Medication'}
-        </DialogTitle>
-        <DialogContent>
-          <Tabs
-            value={medicationDialogTab}
-            onChange={(_, newValue) => setMedicationDialogTab(newValue)}
-            sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
-          >
-            <Tab label="Medication Details" />
-            <Tab label="Reminders & Schedule" />
-          </Tabs>
+      <Dialog open={medicationDialogOpen} onOpenChange={setMedicationDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {currentMedicationId ? 'Edit Medication' : 'Add New Medication'}
+            </DialogTitle>
+          </DialogHeader>
 
-          {medicationDialogTab === 0 && (
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
-                <TextField
-                  name="name"
-                  label="Medication Name"
-                  value={formValues.name}
-                  onChange={handleInputChange}
-                  fullWidth
-                  required
-                />
-              </Grid>
-              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
-                <TextField
-                  name="dosage"
-                  label="Dosage"
-                  value={formValues.dosage}
-                  onChange={handleInputChange}
-                  fullWidth
-                  required
-                />
-              </Grid>
-              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
-                <FormControl fullWidth>
-                  <InputLabel id="frequency-label">Frequency</InputLabel>
-                  <Select
-                    labelId="frequency-label"
-                    id="frequency"
-                    name="frequency"
-                    value={formValues.frequency}
-                    onChange={handleFrequencyChange}
-                    label="Frequency"
-                    required
-                  >
-                    {frequencyOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
-                <FormControl fullWidth>
-                  <InputLabel id="route-label">Route</InputLabel>
-                  <Select
-                    labelId="route-label"
-                    id="route"
-                    name="route"
-                    value={formValues.route}
-                    onChange={handleRouteChange}
-                    label="Route"
-                    required
-                  >
-                    {routeOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DatePicker
-                    label="Start Date"
-                    value={
-                      formValues.startDate ? dayjs(formValues.startDate) : null
-                    }
-                    onChange={(date) =>
-                      handleDateChange(
-                        'startDate',
-                        date ? new Date(date.toString()) : null
-                      )
-                    }
-                    slotProps={{ textField: { fullWidth: true } }}
-                  />
-                </LocalizationProvider>
-              </Grid>
-              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DatePicker
-                    label="End Date (Optional)"
-                    value={
-                      formValues.endDate ? dayjs(formValues.endDate) : null
-                    }
-                    onChange={(date) =>
-                      handleDateChange(
-                        'endDate',
-                        date ? new Date(date.toString()) : null
-                      )
-                    }
-                    slotProps={{ textField: { fullWidth: true } }}
-                  />
-                </LocalizationProvider>
-              </Grid>
-              <Grid sx={{ gridColumn: 'span 12' }}>
-                <TextField
-                  name="indication"
-                  label="Indication"
-                  value={formValues.indication}
-                  onChange={handleInputChange}
-                  fullWidth
-                />
-              </Grid>
-              <Grid sx={{ gridColumn: 'span 12' }}>
-                <TextField
-                  name="prescriber"
-                  label="Prescriber"
-                  value={formValues.prescriber}
-                  onChange={handleInputChange}
-                  fullWidth
-                />
-              </Grid>
-              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
-                <TextField
-                  name="cost"
-                  label="Cost Price (₦)"
-                  value={formValues.cost}
-                  onChange={handleInputChange}
-                  fullWidth
-                  type="number"
-                  inputProps={{ min: 0, step: '0.01' }}
-                  helperText="Optional - Cost price in Naira"
-                />
-              </Grid>
-              <Grid sx={{ gridColumn: { xs: 'span 12', sm: 'span 6' } }}>
-                <TextField
-                  name="sellingPrice"
-                  label="Selling Price (₦)"
-                  value={formValues.sellingPrice}
-                  onChange={handleInputChange}
-                  fullWidth
-                  type="number"
-                  inputProps={{ min: 0, step: '0.01' }}
-                  helperText="Optional - Selling price in Naira"
-                />
-              </Grid>
-              <Grid sx={{ gridColumn: 'span 12' }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formValues.allergyCheck.status}
-                      onChange={handleSwitchChange}
-                      name="allergyCheck.status"
-                      color="primary"
-                    />
-                  }
-                  label="Patient has allergies related to this medication"
-                />
-                {formValues.allergyCheck.status && (
-                  <TextField
-                    name="allergyCheck.details"
-                    label="Allergy Details"
-                    value={formValues.allergyCheck.details}
+          <Tabs value={medicationDialogTab.toString()} onValueChange={v => setMedicationDialogTab(Number(v))}>
+            <TabsList>
+              <TabsTrigger value="0">Medication Details</TabsTrigger>
+              <TabsTrigger value="1">Reminders & Schedule</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="0" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Medication Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formValues.name}
                     onChange={handleInputChange}
-                    fullWidth
-                    margin="normal"
+                    required
                   />
-                )}
-              </Grid>
+                </div>
 
-              {/* Interaction check toggle */}
-              <Grid sx={{ gridColumn: 'span 12' }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={interactionCheckEnabled}
-                      onChange={handleSwitchChange}
-                      name="interactionCheck"
-                      color="primary"
+                <div className="space-y-2">
+                  <Label htmlFor="dosage">Dosage</Label>
+                  <Input
+                    id="dosage"
+                    name="dosage"
+                    value={formValues.dosage}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="frequency">Frequency</Label>
+                  <Select value={formValues.frequency} onValueChange={handleFrequencyChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {frequencyOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="route">Route</Label>
+                  <Select value={formValues.route} onValueChange={handleRouteChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select route" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {routeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  <LocalizationProvider>
+                    <DatePicker
+                      value={formValues.startDate ? dayjs(formValues.startDate) : null}
+                      onChange={(date: any) => handleDateChange('startDate', date ? new Date(date.toString()) : null)}
                     />
-                  }
-                  label="Check for drug interactions before saving"
-                />
-              </Grid>
+                  </LocalizationProvider>
+                </div>
 
-              {/* Status field for edit mode */}
-              {currentMedicationId && (
-                <Grid sx={{ gridColumn: 'span 12' }}>
-                  <FormControl fullWidth>
-                    <InputLabel id="status-label">Status</InputLabel>
-                    <Select
-                      labelId="status-label"
-                      id="status"
-                      name="status"
-                      value={formValues.status}
-                      onChange={handleStatusChange}
-                      label="Status"
-                    >
-                      <MenuItem value="active">Active</MenuItem>
-                      <MenuItem value="archived">Archived</MenuItem>
-                      <MenuItem value="cancelled">Cancelled</MenuItem>
+                <div className="space-y-2">
+                  <Label>End Date (Optional)</Label>
+                  <LocalizationProvider>
+                    <DatePicker
+                      value={formValues.endDate ? dayjs(formValues.endDate) : null}
+                      onChange={(date: any) => handleDateChange('endDate', date ? new Date(date.toString()) : null)}
+                    />
+                  </LocalizationProvider>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="indication">Indication</Label>
+                  <Input
+                    id="indication"
+                    name="indication"
+                    value={formValues.indication}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="prescriber">Prescriber</Label>
+                  <Input
+                    id="prescriber"
+                    name="prescriber"
+                    value={formValues.prescriber}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cost">Cost Price (₦)</Label>
+                  <Input
+                    id="cost"
+                    name="cost"
+                    type="number"
+                    value={formValues.cost}
+                    onChange={handleInputChange}
+                  />
+                  <p className="text-xs text-gray-500">Optional - Cost price in Naira</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sellingPrice">Selling Price (₦)</Label>
+                  <Input
+                    id="sellingPrice"
+                    name="sellingPrice"
+                    type="number"
+                    value={formValues.sellingPrice}
+                    onChange={handleInputChange}
+                  />
+                  <p className="text-xs text-gray-500">Optional - Selling price in Naira</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="allergy-status"
+                    name="allergyCheck.status"
+                    checked={formValues.allergyCheck.status}
+                    onCheckedChange={(checked) => handleSwitchChange(checked, 'allergyCheck.status')}
+                  />
+                  <Label htmlFor="allergy-status">Patient has allergies related to this medication</Label>
+                </div>
+
+                {formValues.allergyCheck.status && (
+                  <div className="space-y-2">
+                    <Label htmlFor="allergy-details">Allergy Details</Label>
+                    <Textarea
+                      id="allergy-details"
+                      name="allergyCheck.details"
+                      value={formValues.allergyCheck.details}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="interaction-check"
+                    name="interactionCheck"
+                    checked={interactionCheckEnabled}
+                    onCheckedChange={(checked) => handleSwitchChange(checked, 'interactionCheck')}
+                  />
+                  <Label htmlFor="interaction-check">Check for drug interactions before saving</Label>
+                </div>
+
+                {currentMedicationId && (
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={formValues.status} onValueChange={handleStatusChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
                     </Select>
-                  </FormControl>
-                </Grid>
-              )}
+                  </div>
+                )}
 
-              {/* Show interactions if any */}
-              {interactions.length > 0 && (
-                <Grid sx={{ gridColumn: 'span 12' }}>
-                  <Alert severity="warning" sx={{ mt: 2 }}>
+                {interactions.length > 0 && (
+                  <Alert>
                     <AlertTitle>Potential Interactions Detected</AlertTitle>
-                    <ul>
+                    <ul className="list-disc list-inside">
                       {interactions.map((interaction, index) => (
                         <li key={index}>{interaction}</li>
                       ))}
                     </ul>
-                    <Box sx={{ mt: 1 }}>
+                    <p className="text-sm mt-2">
                       Override and continue? Check with prescriber first.
-                    </Box>
+                    </p>
                   </Alert>
-                </Grid>
-              )}
-            </Grid>
-          )}
+                )}
+              </div>
+            </TabsContent>
 
-          {medicationDialogTab === 1 && (
-            <Box sx={{ p: 1 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  mb: 2,
-                  alignItems: 'center',
-                }}
-              >
-                <Typography variant="h6">Medication Reminders</Typography>
-                <Button
-                  variant="outlined"
-                  startIcon={<AddIcon />}
-                  onClick={handleAddReminder}
-                >
+            <TabsContent value="1" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Medication Reminders</h3>
+                <Button onClick={handleAddReminder} variant="outline">
+                  <span className="mr-2 h-4 w-4"><AddIcon /></span>
                   Add Reminder
                 </Button>
-              </Box>
+              </div>
 
               {reminders.length === 0 ? (
-                <Alert severity="info" sx={{ my: 2 }}>
-                  No reminders set for this medication. Add a reminder to help
-                  the patient stay on schedule.
+                <Alert>
+                  <AlertTitle>No Reminders</AlertTitle>
+                  No reminders set for this medication. Add a reminder to help the patient stay on schedule.
                 </Alert>
               ) : (
-                reminders.map((reminder, index) => (
-                  <Paper
-                    key={index}
-                    sx={{
-                      p: 2,
-                      mb: 2,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                    }}
-                  >
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid
-                        sx={{ gridColumn: { xs: 'span 12', sm: 'span 3' } }}
-                      >
-                        <TextField
-                          label="Time"
-                          type="time"
-                          fullWidth
-                          value={reminder.time}
-                          onChange={(e) =>
-                            handleReminderChange(index, 'time', e.target.value)
-                          }
-                          InputLabelProps={{ shrink: true }}
-                        />
-                      </Grid>
-                      <Grid
-                        sx={{ gridColumn: { xs: 'span 12', sm: 'span 5' } }}
-                      >
-                        <FormControl fullWidth>
-                          <InputLabel id={`days-label-${index}`}>
-                            Days
-                          </InputLabel>
-                          <Select
-                            labelId={`days-label-${index}`}
-                            multiple
-                            value={reminder.days}
-                            onChange={(e) =>
-                              handleReminderChange(
-                                index,
-                                'days',
-                                e.target.value as (
-                                  | 'mon'
-                                  | 'tue'
-                                  | 'wed'
-                                  | 'thu'
-                                  | 'fri'
-                                  | 'sat'
-                                  | 'sun'
-                                )[]
-                              )
-                            }
-                            renderValue={(selected) =>
-                              selected
-                                .map((day) => day.toUpperCase())
-                                .join(', ')
-                            }
-                          >
-                            <MenuItem value="mon">Monday</MenuItem>
-                            <MenuItem value="tue">Tuesday</MenuItem>
-                            <MenuItem value="wed">Wednesday</MenuItem>
-                            <MenuItem value="thu">Thursday</MenuItem>
-                            <MenuItem value="fri">Friday</MenuItem>
-                            <MenuItem value="sat">Saturday</MenuItem>
-                            <MenuItem value="sun">Sunday</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Grid>
-                      <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 3' } }}>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={reminder.enabled}
-                              onChange={(e) =>
-                                handleReminderChange(
-                                  index,
-                                  'enabled',
-                                  e.target.checked
-                                )
-                              }
+                <div className="space-y-4">
+                  {reminders.map((reminder, index) => (
+                    <Card key={index}>
+                      <CardContent className="pt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="space-y-2">
+                            <Label>Time</Label>
+                            <Input
+                              type="time"
+                              value={reminder.time}
+                              onChange={(e) => handleReminderChange(index, 'time', e.target.value)}
                             />
-                          }
-                          label="Enabled"
-                        />
-                      </Grid>
-                      <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 1' } }}>
-                        <IconButton
-                          color="error"
-                          onClick={() => handleDeleteReminder(index)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Grid>
-                      <Grid sx={{ gridColumn: 'span 12' }}>
-                        <TextField
-                          label="Notes"
-                          fullWidth
-                          placeholder="Additional instructions for this reminder..."
-                          value={reminder.notes || ''}
-                          onChange={(e) =>
-                            handleReminderChange(index, 'notes', e.target.value)
-                          }
-                        />
-                      </Grid>
-                    </Grid>
-                  </Paper>
-                ))
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Days</Label>
+                            <Select
+                              value={reminder.days.join(',')}
+                              onValueChange={(value) => handleReminderChange(index, 'days', value.split(','))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="mon">Monday</SelectItem>
+                                <SelectItem value="tue">Tuesday</SelectItem>
+                                <SelectItem value="wed">Wednesday</SelectItem>
+                                <SelectItem value="thu">Thursday</SelectItem>
+                                <SelectItem value="fri">Friday</SelectItem>
+                                <SelectItem value="sat">Saturday</SelectItem>
+                                <SelectItem value="sun">Sunday</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Status</Label>
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={reminder.enabled}
+                                onCheckedChange={(checked) => handleReminderChange(index, 'enabled', checked)}
+                              />
+                              <span>{reminder.enabled ? 'Enabled' : 'Disabled'}</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Actions</Label>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteReminder(index)}
+                            >
+                              <span className="mr-2 h-4 w-4"><DeleteIcon /></span>
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 space-y-2">
+                          <Label>Notes</Label>
+                          <Textarea
+                            placeholder="Additional instructions for this reminder..."
+                            value={reminder.notes || ''}
+                            onChange={(e) => handleReminderChange(index, 'notes', e.target.value)}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
-            </Box>
-          )}
+            </TabsContent>
+          </Tabs>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMedicationDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitMedication}>
+              Save
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setMedicationDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleSubmitMedication}
-            variant="contained"
-            color="primary"
-          >
-            Save
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Adherence Dialog */}
-      <Dialog
-        open={adherenceDialogOpen}
-        onClose={() => setAdherenceDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Record Medication Adherence</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid sx={{ gridColumn: 'span 12' }}>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Dialog open={adherenceDialogOpen} onOpenChange={setAdherenceDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Record Medication Adherence</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Refill Date</Label>
+              <LocalizationProvider>
                 <DatePicker
-                  label="Refill Date"
                   value={dayjs(adherenceValues.refillDate)}
-                  onChange={(date) =>
-                    handleAdherenceDateChange(
-                      date ? new Date(date.toString()) : null
-                    )
-                  }
-                  slotProps={{ textField: { fullWidth: true } }}
+                  onChange={(date: any) => handleAdherenceDateChange(date ? new Date(date.toString()) : null)}
                 />
               </LocalizationProvider>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="adherenceScore">Adherence Score (%)</Label>
+              <Input
+                id="adherenceScore"
                 name="adherenceScore"
-                label="Adherence Score (%)"
                 type="number"
+                min="0"
+                max="100"
                 value={adherenceValues.adherenceScore}
                 onChange={handleAdherenceValueChange}
-                fullWidth
-                inputProps={{ min: 0, max: 100 }}
               />
-              <FormHelperText>
-                0% = No adherence, 100% = Perfect adherence
-              </FormHelperText>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
+              <p className="text-xs text-gray-500">0% = No adherence, 100% = Perfect adherence</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pillCount">Remaining Pill Count</Label>
+              <Input
+                id="pillCount"
                 name="pillCount"
-                label="Remaining Pill Count"
                 type="number"
+                min="0"
                 value={adherenceValues.pillCount}
                 onChange={handleAdherenceValueChange}
-                fullWidth
-                inputProps={{ min: 0 }}
               />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
                 name="notes"
-                label="Notes"
                 value={adherenceValues.notes}
-                onChange={handleAdherenceValueChange}
-                fullWidth
-                multiline
+                onChange={(e) => setAdherenceValues({
+                  ...adherenceValues,
+                  notes: e.target.value
+                })}
                 rows={3}
               />
-            </Grid>
-          </Grid>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAdherenceDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitAdherence}>
+              Save
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAdherenceDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleSubmitAdherence}
-            variant="contained"
-            color="primary"
-          >
-            Save
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Medication History Dialog */}
-      <Dialog
-        open={historyDialogOpen}
-        onClose={() => setHistoryDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>Medication Adherence History</DialogTitle>
-        <DialogContent>
+      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Medication Adherence History</DialogTitle>
+          </DialogHeader>
+
           {selectedMedicationHistory.length === 0 ? (
-            <Typography>
+            <div className="text-center py-8 text-gray-500">
               No adherence records found for this medication.
-            </Typography>
+            </div>
           ) : (
-            <Box>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
               {selectedMedicationHistory.map((record) => (
-                <Paper key={record.id} sx={{ p: 2, my: 1 }}>
-                  <Typography variant="subtitle1">
-                    {new Date(record.refillDate).toLocaleDateString()}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                    <Typography variant="body2" sx={{ mr: 1 }}>
-                      Adherence Score:
-                    </Typography>
-                    <Chip
-                      icon={
-                        record.adherenceScore > 80 ? (
-                          <CheckCircleIcon />
-                        ) : record.adherenceScore > 50 ? (
-                          <WarningIcon />
-                        ) : (
-                          <WarningIcon color="error" />
-                        )
-                      }
-                      label={`${record.adherenceScore}%`}
-                      color={
-                        record.adherenceScore > 80
-                          ? 'success'
-                          : record.adherenceScore > 50
-                          ? 'warning'
-                          : 'error'
-                      }
-                    />
-                  </Box>
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    Pill Count: {record.pillCount}
-                  </Typography>
-                  {record.notes && (
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      Notes: {record.notes}
-                    </Typography>
-                  )}
-                </Paper>
+                <Card key={record.id}>
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-medium">
+                          {new Date(record.refillDate).toLocaleDateString()}
+                        </div>
+                        <div className="text-sm text-gray-600 mt-2">
+                          <div>Pill Count: {record.pillCount}</div>
+                          {record.notes && (
+                            <div className="mt-1">Notes: {record.notes}</div>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium mb-2">Adherence Score:</div>
+                        <Badge variant={
+                          record.adherenceScore > 80
+                            ? 'default'
+                            : record.adherenceScore > 50
+                              ? 'secondary'
+                              : 'destructive'
+                        }>
+                          {record.adherenceScore}%
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
-            </Box>
+            </div>
           )}
+
+          <DialogFooter>
+            <Button onClick={() => setHistoryDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setHistoryDialogOpen(false)}>Close</Button>
-        </DialogActions>
       </Dialog>
 
       {/* Archive Confirmation Dialog */}
-      <Dialog
-        open={archiveDialogOpen}
-        onClose={() => setArchiveDialogOpen(false)}
-      >
-        <DialogTitle>Archive Medication</DialogTitle>
+      <Dialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
         <DialogContent>
-          <Typography>
+          <DialogHeader>
+            <DialogTitle>Archive Medication</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
             Are you sure you want to archive this medication? This will mark it
             as no longer active, but the record will be preserved for historical
             purposes.
-          </Typography>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setArchiveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleArchiveMedication}>
+              Archive
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setArchiveDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleArchiveMedication}
-            variant="contained"
-            color="primary"
-          >
-            Archive
-          </Button>
-        </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
 
@@ -1519,120 +1283,111 @@ const MedicationList: React.FC<MedicationListProps> = ({
   onAddAdherence,
   onViewHistory,
   isArchived = false,
-  showStatus = false,
+  showStatus = false
 }) => {
   return (
-    <Box>
+    <div className="space-y-4">
       {medications.map((medication) => (
-        <Paper key={medication.id} sx={{ p: 2, mb: 2 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-            }}
-          >
-            <Box>
-              <Typography variant="h6" component="div">
-                {medication.name}
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {medication.dosage} - {medication.frequency} ({medication.route}
-                )
-              </Typography>
-              <Typography variant="body2">
-                Start Date:{' '}
-                {medication.startDate
-                  ? new Date(medication.startDate).toLocaleDateString()
-                  : 'Not specified'}
-              </Typography>
-              {medication.endDate && (
-                <Typography variant="body2">
-                  End Date: {new Date(medication.endDate).toLocaleDateString()}
-                </Typography>
-              )}
+        <Card key={medication.id}>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold">{medication.name}</h3>
+                <p className="text-gray-600">
+                  {medication.dosage} - {medication.frequency} ({medication.route})
+                </p>
+                <div className="mt-2 space-y-1 text-sm">
+                  <div>
+                    <strong>Start Date:</strong>{' '}
+                    {medication.startDate
+                      ? new Date(medication.startDate).toLocaleDateString()
+                      : 'Not specified'}
+                  </div>
+                  {medication.endDate && (
+                    <div>
+                      <strong>End Date:</strong> {new Date(medication.endDate).toLocaleDateString()}
+                    </div>
+                  )}
 
-              {/* Display reminders summary if they exist */}
-              {medication.reminders && medication.reminders.length > 0 && (
-                <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
-                  <ScheduleIcon
-                    color="info"
-                    fontSize="small"
-                    sx={{ mr: 0.5 }}
-                  />
-                  <Typography variant="body2" color="info.main">
-                    {medication.reminders!.length} Reminder
-                    {medication.reminders!.length > 1 ? 's' : ''} set
-                  </Typography>
-                </Box>
-              )}
+                  {medication.reminders && medication.reminders.length > 0 && (
+                    <div className="flex items-center space-x-2 text-blue-600">
+                      <span className="h-4 w-4"><ScheduleIcon /></span>
+                      <span>
+                        {medication.reminders.length} Reminder
+                        {medication.reminders.length > 1 ? 's' : ''} set
+                      </span>
+                    </div>
+                  )}
 
-              {showStatus && (
-                <Chip
-                  label={medication.status.toUpperCase()}
-                  color={
-                    medication.status === 'active'
-                      ? 'success'
-                      : medication.status === 'archived'
-                      ? 'default'
-                      : 'error'
-                  }
-                  size="small"
-                  sx={{ mt: 1 }}
-                />
-              )}
-              {medication.allergyCheck.status && (
-                <Chip
-                  icon={<WarningIcon />}
-                  label="Allergy Alert"
-                  color="warning"
-                  size="small"
-                  sx={{ mt: 1, ml: showStatus ? 1 : 0 }}
-                />
-              )}
-            </Box>
-            <Box>
-              <Button
-                startIcon={<EditIcon />}
-                onClick={() => onEdit(medication)}
-                size="small"
-                sx={{ mr: 1 }}
-              >
-                Edit
-              </Button>
-              {!isArchived && (
-                <>
-                  <Button
-                    startIcon={<HistoryIcon />}
-                    onClick={() => onViewHistory(medication.id)}
-                    size="small"
-                    sx={{ mr: 1 }}
-                  >
-                    History
-                  </Button>
-                  <Button
-                    startIcon={<AddIcon />}
-                    onClick={() => onAddAdherence(medication.id)}
-                    size="small"
-                    sx={{ mr: 1 }}
-                  >
-                    Add Adherence
-                  </Button>
-                  <Button
-                    startIcon={<DeleteIcon />}
-                    onClick={() => onArchive(medication.id)}
-                    size="small"
-                    color="error"
-                  >
-                    Archive
-                  </Button>
-                </>
-              )}
-            </Box>
-          </Box>
-        </Paper>
+                  {showStatus && (
+                    <div className="mt-2">
+                      <Badge variant={
+                        medication.status === 'active'
+                          ? 'default'
+                          : medication.status === 'archived'
+                            ? 'secondary'
+                            : 'destructive'
+                      }>
+                        {medication.status.toUpperCase()}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {medication.allergyCheck.status && (
+                    <div className="mt-2">
+                      <Badge variant="destructive">
+                        <span className="mr-1 h-3 w-3"><WarningIcon /></span>
+                        Allergy Alert
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 ml-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(medication)}
+                >
+                  <span className="mr-2 h-4 w-4"><EditIcon /></span>
+                  Edit
+                </Button>
+
+                {!isArchived && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onViewHistory(medication.id)}
+                    >
+                      <span className="mr-2 h-4 w-4"><HistoryIcon /></span>
+                      History
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onAddAdherence(medication.id)}
+                    >
+                      <span className="mr-2 h-4 w-4"><AddIcon /></span>
+                      Add Adherence
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => onArchive(medication.id)}
+                    >
+                      <span className="mr-2 h-4 w-4"><DeleteIcon /></span>
+                      Archive
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       ))}
-    </Box>
+    </div>
   );
 };
 
@@ -1651,47 +1406,32 @@ const COLORS = [
 ];
 
 const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
-  patientId,
+  patientId
 }) => {
   const [adherencePeriod, setAdherencePeriod] = useState<string>('6months');
   const [activeTab, setActiveTab] = useState<number>(0);
 
   // Fetch analytics data
-  const { data: adherenceData, isLoading: isLoadingAdherence } =
-    useAdherenceAnalytics(patientId, adherencePeriod);
+  const { data: adherenceData, isLoading: isLoadingAdherence } = useAdherenceAnalytics(patientId, adherencePeriod);
+  const { data: prescriptionData, isLoading: isLoadingPrescription } = usePrescriptionPatternAnalytics(patientId);
+  const { data: interactionData, isLoading: isLoadingInteraction } = useInteractionAnalytics(patientId);
+  const { data: summaryData, isLoading: isLoadingSummary } = usePatientMedicationSummary(patientId);
 
-  const { data: prescriptionData, isLoading: isLoadingPrescription } =
-    usePrescriptionPatternAnalytics(patientId);
-
-  const { data: interactionData, isLoading: isLoadingInteraction } =
-    useInteractionAnalytics(patientId);
-
-  const { data: summaryData, isLoading: isLoadingSummary } =
-    usePatientMedicationSummary(patientId);
-
-  const handleAdherencePeriodChange = (event: SelectChangeEvent) => {
-    setAdherencePeriod(event.target.value);
+  const handleAdherencePeriodChange = (value: string) => {
+    setAdherencePeriod(value);
   };
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-  };
 
-  if (
-    isLoadingAdherence ||
-    isLoadingPrescription ||
-    isLoadingInteraction ||
-    isLoadingSummary
-  ) {
+
+  if (isLoadingAdherence || isLoadingPrescription || isLoadingInteraction || isLoadingSummary) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
     );
   }
 
-  // Until real API is implemented, provide mock data for visualization
-  // In a real implementation, this would use the fetched data
+  // Mock data for visualization
   const mockAdherenceData: AdherenceData = adherenceData || {
     monthlyAdherence: [
       { month: 'Jan', adherence: 75 },
@@ -1771,148 +1511,114 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Typography variant="h5" gutterBottom>
-        Medication Analytics Dashboard
-      </Typography>
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold">Medication Analytics Dashboard</h2>
 
       {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 3' } }}>
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle2" color="text.secondary">
-                Active Medications
-              </Typography>
-              <Typography variant="h4">
-                {mockSummaryData.activeCount}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 3' } }}>
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle2" color="text.secondary">
-                Avg. Adherence
-              </Typography>
-              <Typography variant="h4">
-                {mockSummaryData.adherenceRate}%
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 3' } }}>
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle2" color="text.secondary">
-                Potential Interactions
-              </Typography>
-              <Typography variant="h4">
-                {mockSummaryData.interactionCount}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid sx={{ gridColumn: { xs: 'span 6', sm: 'span 3' } }}>
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle2" color="text.secondary">
-                Most Common
-              </Typography>
-              <Typography variant="h6">
-                {mockSummaryData.mostCommonCategory}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm font-medium text-gray-600">Active Medications</div>
+            <div className="text-2xl font-bold">{mockSummaryData.activeCount}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm font-medium text-gray-600">Avg. Adherence</div>
+            <div className="text-2xl font-bold">{mockSummaryData.adherenceRate}%</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm font-medium text-gray-600">Potential Interactions</div>
+            <div className="text-2xl font-bold">{mockSummaryData.interactionCount}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm font-medium text-gray-600">Most Common</div>
+            <div className="text-lg font-semibold">{mockSummaryData.mostCommonCategory}</div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Analytics Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={activeTab} onChange={handleTabChange}>
-          <Tab label="Adherence Trends" />
-          <Tab label="Prescription Patterns" />
-          <Tab label="Interactions" />
-        </Tabs>
-      </Box>
+      <Tabs value={activeTab.toString()} onValueChange={v => setActiveTab(Number(v))}>
+        <TabsList>
+          <TabsTrigger value="0">Adherence Trends</TabsTrigger>
+          <TabsTrigger value="1">Prescription Patterns</TabsTrigger>
+          <TabsTrigger value="2">Interactions</TabsTrigger>
+        </TabsList>
 
-      {/* Adherence Trends Tab */}
-      {activeTab === 0 && (
-        <Box sx={{ p: 2 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 2,
-            }}
-          >
-            <Typography variant="h6">Medication Adherence Over Time</Typography>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel id="adherence-period-label">Period</InputLabel>
-              <Select
-                labelId="adherence-period-label"
-                value={adherencePeriod}
-                label="Period"
-                onChange={handleAdherencePeriodChange}
-              >
-                <MenuItem value="3months">Last 3 Months</MenuItem>
-                <MenuItem value="6months">Last 6 Months</MenuItem>
-                <MenuItem value="1year">Last Year</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
+        <TabsContent value="0" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium">Medication Adherence Over Time</h3>
+            <Select value={adherencePeriod} onValueChange={handleAdherencePeriodChange}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3months">Last 3 Months</SelectItem>
+                <SelectItem value="6months">Last 6 Months</SelectItem>
+                <SelectItem value="1year">Last Year</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Monthly Adherence Rates
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mockAdherenceData.monthlyAdherence}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="adherence"
-                  stroke="#8884d8"
-                  activeDot={{ r: 8 }}
-                  name="Adherence %"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Paper>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Monthly Adherence Rates</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={mockAdherenceData.monthlyAdherence}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis domain={[0, 100]} />
+                    <Tooltip />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="adherence"
+                      stroke="#8884d8"
+                      name="Adherence %"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
 
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Medication Compliance by Day of Week
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={mockAdherenceData.complianceDays}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="count" fill="#82ca9d" name="Compliant Days" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Box>
-      )}
+            <Card>
+              <CardHeader>
+                <CardTitle>Medication Compliance by Day of Week</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={mockAdherenceData.complianceDays}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="day" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="count" fill="#82ca9d" name="Compliant Days" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-      {/* Prescription Patterns Tab */}
-      {activeTab === 1 && (
-        <Box sx={{ p: 2 }}>
-          <Grid container spacing={3}>
-            <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 6' } }}>
-              <Paper sx={{ p: 2, height: '100%' }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Medications by Category
-                </Typography>
+        <TabsContent value="1" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Medications by Category</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -1924,15 +1630,12 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                       fill="#8884d8"
                       dataKey="count"
                       nameKey="category"
-                      label={({ name, percent }) =>
-                        `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`
+                      label={(props: any) => 
+                        `${props.name || ''}: ${props.percent ? (props.percent * 100).toFixed(0) : 0}%`
                       }
                     >
                       {mockPrescriptionData.medicationsByCategory.map(
-                        (
-                          _entry: { category: string; count: number },
-                          index: number
-                        ) => (
+                        (_entry, index) => (
                           <Cell
                             key={`cell-${index}`}
                             fill={COLORS[index % COLORS.length]}
@@ -1944,14 +1647,14 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
-              </Paper>
-            </Grid>
+              </CardContent>
+            </Card>
 
-            <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 6' } }}>
-              <Paper sx={{ p: 2, height: '100%' }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Medications by Route
-                </Typography>
+            <Card>
+              <CardHeader>
+                <CardTitle>Medications by Route</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -1963,15 +1666,12 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                       fill="#8884d8"
                       dataKey="count"
                       nameKey="route"
-                      label={({ name, percent }) =>
-                        `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`
+                      label={(props: any) => 
+                        `${props.name || ''}: ${props.percent ? (props.percent * 100).toFixed(0) : 0}%`
                       }
                     >
                       {mockPrescriptionData.medicationsByRoute.map(
-                        (
-                          _entry: { route: string; count: number },
-                          index: number
-                        ) => (
+                        (_entry, index) => (
                           <Cell
                             key={`cell-${index}`}
                             fill={COLORS[index % COLORS.length]}
@@ -1983,14 +1683,14 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
-              </Paper>
-            </Grid>
+              </CardContent>
+            </Card>
 
-            <Grid sx={{ gridColumn: 'span 12' }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Prescription Frequency Over Time
-                </Typography>
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Prescription Frequency Over Time</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={mockPrescriptionData.prescriptionFrequency}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -2005,21 +1705,18 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                     />
                   </BarChart>
                 </ResponsiveContainer>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
-      )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-      {/* Interactions Tab */}
-      {activeTab === 2 && (
-        <Box sx={{ p: 2 }}>
-          <Grid container spacing={3}>
-            <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 6' } }}>
-              <Paper sx={{ p: 2, height: '100%' }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Interaction Severity Distribution
-                </Typography>
+        <TabsContent value="2" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Interaction Severity Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -2031,23 +1728,18 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                       fill="#8884d8"
                       dataKey="count"
                       nameKey="severity"
-                      label={({ name, percent }) =>
-                        `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`
-                      }
+                      label={(props: any) => `${props.name ?? ''}: ${props.percent ? (Number(props.percent) * 100).toFixed(0) : 0}%`}
                     >
                       {mockInteractionData.severityDistribution.map(
-                        (
-                          entry: { severity: string; count: number },
-                          index: number
-                        ) => (
+                        (entry, index) => (
                           <Cell
                             key={`cell-${index}`}
                             fill={
                               entry.severity === 'Severe'
                                 ? '#ff6b6b'
                                 : entry.severity === 'Moderate'
-                                ? '#feca57'
-                                : '#1dd1a1'
+                                  ? '#feca57'
+                                  : '#1dd1a1'
                             }
                           />
                         )
@@ -2057,14 +1749,14 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
-              </Paper>
-            </Grid>
+              </CardContent>
+            </Card>
 
-            <Grid sx={{ gridColumn: { xs: 'span 12', md: 'span 6' } }}>
-              <Paper sx={{ p: 2, height: '100%' }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Interaction Trends Over Time
-                </Typography>
+            <Card>
+              <CardHeader>
+                <CardTitle>Interaction Trends Over Time</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={mockInteractionData.interactionTrends}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -2076,17 +1768,16 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                       type="monotone"
                       dataKey="count"
                       stroke="#ff6b6b"
-                      activeDot={{ r: 8 }}
                       name="Interactions"
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
-      )}
-    </Box>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

@@ -26,7 +26,7 @@ export declare const createPatientSchema: z.ZodObject<{
     firstName: z.ZodString;
     lastName: z.ZodString;
     otherNames: z.ZodOptional<z.ZodString>;
-    dob: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    dob: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     age: z.ZodOptional<z.ZodNumber>;
     gender: z.ZodOptional<z.ZodEnum<{
         [x: string]: string;
@@ -54,12 +54,12 @@ export declare const createPatientSchema: z.ZodObject<{
         severity: z.ZodOptional<z.ZodEnum<{
             [x: string]: string;
         }>>;
-        notedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+        notedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     }, z.core.$strip>>>;
     conditions: z.ZodOptional<z.ZodArray<z.ZodObject<{
         name: z.ZodString;
         snomedId: z.ZodOptional<z.ZodString>;
-        onsetDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+        onsetDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
         status: z.ZodOptional<z.ZodEnum<{
             active: "active";
             resolved: "resolved";
@@ -78,8 +78,8 @@ export declare const createPatientSchema: z.ZodObject<{
         frequency: z.ZodOptional<z.ZodString>;
         route: z.ZodOptional<z.ZodString>;
         duration: z.ZodOptional<z.ZodString>;
-        startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
-        endDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+        startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
+        endDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
         adherence: z.ZodOptional<z.ZodEnum<{
             unknown: "unknown";
             good: "good";
@@ -116,7 +116,7 @@ export declare const createPatientSchema: z.ZodObject<{
             hba1c: z.ZodOptional<z.ZodNumber>;
             misc: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<readonly [z.ZodString, z.ZodNumber]>>>;
         }, z.core.$strip>>;
-        recordedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string | undefined>>;
+        recordedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     }, z.core.$strip>>;
     dtps: z.ZodOptional<z.ZodArray<z.ZodObject<{
         type: z.ZodEnum<{
@@ -131,7 +131,7 @@ export declare const createPatientSchema: z.ZodObject<{
     carePlan: z.ZodOptional<z.ZodObject<{
         goals: z.ZodArray<z.ZodString>;
         objectives: z.ZodArray<z.ZodString>;
-        followUpDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+        followUpDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
         planQuality: z.ZodDefault<z.ZodEnum<{
             adequate: "adequate";
             needsReview: "needsReview";
@@ -147,7 +147,7 @@ export declare const updatePatientSchema: z.ZodObject<{
     firstName: z.ZodOptional<z.ZodString>;
     lastName: z.ZodOptional<z.ZodString>;
     otherNames: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    dob: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>>;
+    dob: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>>;
     age: z.ZodOptional<z.ZodOptional<z.ZodNumber>>;
     gender: z.ZodOptional<z.ZodOptional<z.ZodEnum<{
         [x: string]: string;
@@ -175,12 +175,12 @@ export declare const updatePatientSchema: z.ZodObject<{
         severity: z.ZodOptional<z.ZodEnum<{
             [x: string]: string;
         }>>;
-        notedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+        notedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     }, z.core.$strip>>>>;
     conditions: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodObject<{
         name: z.ZodString;
         snomedId: z.ZodOptional<z.ZodString>;
-        onsetDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+        onsetDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
         status: z.ZodOptional<z.ZodEnum<{
             active: "active";
             resolved: "resolved";
@@ -199,8 +199,8 @@ export declare const updatePatientSchema: z.ZodObject<{
         frequency: z.ZodOptional<z.ZodString>;
         route: z.ZodOptional<z.ZodString>;
         duration: z.ZodOptional<z.ZodString>;
-        startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
-        endDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+        startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
+        endDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
         adherence: z.ZodOptional<z.ZodEnum<{
             unknown: "unknown";
             good: "good";
@@ -237,7 +237,7 @@ export declare const updatePatientSchema: z.ZodObject<{
             hba1c: z.ZodOptional<z.ZodNumber>;
             misc: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<readonly [z.ZodString, z.ZodNumber]>>>;
         }, z.core.$strip>>;
-        recordedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string | undefined>>;
+        recordedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     }, z.core.$strip>>>;
     dtps: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodObject<{
         type: z.ZodEnum<{
@@ -252,7 +252,7 @@ export declare const updatePatientSchema: z.ZodObject<{
     carePlan: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         goals: z.ZodArray<z.ZodString>;
         objectives: z.ZodArray<z.ZodString>;
-        followUpDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+        followUpDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
         planQuality: z.ZodDefault<z.ZodEnum<{
             adequate: "adequate";
             needsReview: "needsReview";
@@ -273,7 +273,7 @@ export declare const createAllergySchema: z.ZodObject<{
     severity: z.ZodOptional<z.ZodEnum<{
         [x: string]: string;
     }>>;
-    notedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string | undefined>>;
+    notedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
 }, z.core.$strip>;
 export declare const updateAllergySchema: z.ZodObject<{
     substance: z.ZodOptional<z.ZodString>;
@@ -281,7 +281,7 @@ export declare const updateAllergySchema: z.ZodObject<{
     severity: z.ZodOptional<z.ZodOptional<z.ZodEnum<{
         [x: string]: string;
     }>>>;
-    notedAt: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string | undefined>>>;
+    notedAt: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>>;
 }, z.core.$strip>;
 export declare const allergyParamsSchema: z.ZodObject<{
     id: z.ZodString;
@@ -327,8 +327,8 @@ export declare const createMedicationSchema: z.ZodObject<{
     frequency: z.ZodOptional<z.ZodString>;
     route: z.ZodOptional<z.ZodString>;
     duration: z.ZodOptional<z.ZodString>;
-    startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
-    endDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
+    endDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     adherence: z.ZodDefault<z.ZodEnum<{
         unknown: "unknown";
         good: "good";
@@ -347,8 +347,8 @@ export declare const updateMedicationSchema: z.ZodObject<{
     frequency: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     route: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     duration: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    startDate: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>>;
-    endDate: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>>;
+    startDate: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>>;
+    endDate: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>>;
     adherence: z.ZodOptional<z.ZodDefault<z.ZodEnum<{
         unknown: "unknown";
         good: "good";
@@ -399,7 +399,7 @@ export declare const createAssessmentSchema: z.ZodObject<{
         misc: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<readonly [z.ZodString, z.ZodNumber]>>>;
     }, z.core.$strip>>;
     visitId: z.ZodOptional<z.ZodString>;
-    recordedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string | undefined>>;
+    recordedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
 }, z.core.$strip>;
 export declare const updateAssessmentSchema: z.ZodObject<{
     vitals: z.ZodOptional<z.ZodOptional<z.ZodObject<{
@@ -431,7 +431,7 @@ export declare const updateAssessmentSchema: z.ZodObject<{
         misc: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<readonly [z.ZodString, z.ZodNumber]>>>;
     }, z.core.$strip>>>;
     visitId: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    recordedAt: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string | undefined>>>;
+    recordedAt: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>>;
 }, z.core.$strip>;
 export declare const assessmentParamsSchema: z.ZodObject<{
     id: z.ZodString;
@@ -476,7 +476,7 @@ export declare const createCarePlanSchema: z.ZodObject<{
     goals: z.ZodArray<z.ZodString>;
     objectives: z.ZodArray<z.ZodString>;
     visitId: z.ZodOptional<z.ZodString>;
-    followUpDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    followUpDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     planQuality: z.ZodDefault<z.ZodEnum<{
         adequate: "adequate";
         needsReview: "needsReview";
@@ -491,7 +491,7 @@ export declare const updateCarePlanSchema: z.ZodObject<{
     goals: z.ZodOptional<z.ZodArray<z.ZodString>>;
     objectives: z.ZodOptional<z.ZodArray<z.ZodString>>;
     visitId: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    followUpDate: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>>;
+    followUpDate: z.ZodOptional<z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>>;
     planQuality: z.ZodOptional<z.ZodDefault<z.ZodEnum<{
         adequate: "adequate";
         needsReview: "needsReview";

@@ -1,55 +1,32 @@
-import { useState } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Stack,
-  Alert,
-  TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  Paper,
-  CircularProgress,
-  Divider,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import CloseIcon from '@mui/icons-material/Close';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import WarningIcon from '@mui/icons-material/Warning';
-import FlagIcon from '@mui/icons-material/Flag';
-import RemoveIcon from '@mui/icons-material/Remove';
+import React, { useState, useEffect } from 'react';
 
-import { RBACGuard } from '../hooks/useRBAC';
+import { Button } from '@/components/ui/button';
 
-import {
-  usePatientCarePlans,
+import { Input } from '@/components/ui/input';
+
+import { Label } from '@/components/ui/label';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { Dialog } from '@/components/ui/dialog';
+
+import { DialogContent } from '@/components/ui/dialog';
+
+import { DialogTitle } from '@/components/ui/dialog';
+
+import { Select } from '@/components/ui/select';
+
+import { Spinner } from '@/components/ui/spinner';
+
+import { Alert } from '@/components/ui/alert';
+
+import { Separator } from '@/components/ui/separator';
+usePatientCarePlans,
   useCreateCarePlan,
   useUpdateCarePlan,
-} from '../queries/usePatientResources';
-import type {
-  CarePlan,
-  CreateCarePlanData,
-  UpdateCarePlanData,
-} from '../types/patientManagement';
+
 
 interface CarePlanManagementProps {
   patientId: string;
@@ -64,8 +41,8 @@ interface CarePlanFormData {
   notes?: string;
 }
 
-const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
-  patientId,
+const CarePlanManagement: React.FC<CarePlanManagementProps> = ({ 
+  patientId
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCarePlan, setSelectedCarePlan] = useState<CarePlan | null>(
@@ -91,41 +68,40 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<CarePlanFormData>({
-    defaultValues: {
+  } = useForm<CarePlanFormData>({ 
+    defaultValues: { })
       goals: [{ value: '' }],
       objectives: [{ value: '' }],
       followUpDate: undefined,
       planQuality: 'adequate',
       dtpSummary: 'resolved',
       notes: '',
-    },
-  });
+    }
 
   const {
     fields: goalFields,
     append: appendGoal,
     remove: removeGoal,
-  } = useFieldArray({
+  } = useFieldArray({ 
     control,
-    name: 'goals',
+    name: 'goals'}
   });
 
   const {
     fields: objectiveFields,
     append: appendObjective,
     remove: removeObjective,
-  } = useFieldArray({
+  } = useFieldArray({ 
     control,
-    name: 'objectives',
+    name: 'objectives'}
   });
 
   const handleOpenDialog = (carePlan?: CarePlan) => {
     if (carePlan) {
       setSelectedCarePlan(carePlan);
-      reset({
+      reset({ 
         goals:
-          carePlan.goals.length > 0
+          carePlan.goals.length > 0 })
             ? carePlan.goals.map((g) => ({ value: g }))
             : [{ value: '' }],
         objectives:
@@ -137,18 +113,16 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
           : undefined,
         planQuality: carePlan.planQuality,
         dtpSummary: carePlan.dtpSummary,
-        notes: carePlan.notes || '',
-      });
+        notes: carePlan.notes || ''}
     } else {
       setSelectedCarePlan(null);
-      reset({
+      reset({  })
         goals: [{ value: '' }],
         objectives: [{ value: '' }],
         followUpDate: undefined,
         planQuality: 'adequate',
         dtpSummary: 'resolved',
-        notes: '',
-      });
+        notes: ''}
     }
     setIsDialogOpen(true);
   };
@@ -175,14 +149,14 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
       };
 
       if (selectedCarePlan) {
-        await updateCarePlanMutation.mutateAsync({
+        await updateCarePlanMutation.mutateAsync({ 
           carePlanId: selectedCarePlan._id,
-          carePlanData: carePlanData as UpdateCarePlanData,
+          carePlanData: carePlanData as UpdateCarePlanData}
         });
       } else {
-        await createCarePlanMutation.mutateAsync({
+        await createCarePlanMutation.mutateAsync({ 
           patientId,
-          carePlanData: carePlanData as CreateCarePlanData,
+          carePlanData: carePlanData as CreateCarePlanData}
         });
       }
 
@@ -209,90 +183,79 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
-    });
+      day: 'numeric'}
   };
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress />
-      </Box>
+      <div className="">
+        <Spinner />
+      </div>
     );
   }
 
   if (isError) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6">Failed to load care plans</Typography>
-        <Typography variant="body2">
+      <Alert severity="error" className="">
+        <div >Failed to load care plans</div>
+        <div >
           {error instanceof Error
             ? error.message
             : 'Unable to retrieve care plan information.'}
-        </Typography>
+        </div>
       </Alert>
     );
   }
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
+      <div>
         {/* Header */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3,
-          }}
+        <div
+          className=""
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <AssignmentIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <div className="">
+            <AssignmentIcon className="" />
+            <div  className="">
               Care Plan Management
-            </Typography>
+            </div>
             {carePlans.length > 0 && (
               <Chip
                 label={`${carePlans.length} plan${
                   carePlans.length > 1 ? 's' : ''
                 }`}
                 size="small"
-                sx={{ ml: 2 }}
+                className=""
               />
             )}
-          </Box>
+          </div>
           <RBACGuard action="canCreate">
             <Button
-              variant="contained"
+              
               startIcon={<AddIcon />}
               onClick={() => handleOpenDialog()}
             >
               Create Care Plan
             </Button>
           </RBACGuard>
-        </Box>
+        </div>
 
         {/* Current Care Plan */}
         {latestCarePlan ? (
-          <Card sx={{ mb: 3 }}>
+          <Card className="">
             <CardContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  mb: 3,
-                }}
+              <div
+                className=""
               >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                <div  className="">
                   Current Care Plan
-                </Typography>
-                <Stack direction="row" spacing={1}>
+                </div>
+                <div direction="row" spacing={1}>
                   <Chip
                     label={
                       latestCarePlan.planQuality === 'adequate'
                         ? 'Adequate'
-                        : 'Needs Review'
+                        : 'Needs Review'}
                     }
                     size="small"
                     color={getPlanQualityColor(latestCarePlan.planQuality)}
@@ -301,7 +264,7 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
                         <CheckCircleIcon />
                       ) : (
                         <WarningIcon />
-                      )
+                      )}
                     }
                   />
                   {latestCarePlan.dtpSummary && (
@@ -319,108 +282,104 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
                       <EditIcon fontSize="small" />
                     </IconButton>
                   </RBACGuard>
-                </Stack>
-              </Box>
+                </div>
+              </div>
 
-              <Box
-                sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}
+              <div
+                className=""
               >
                 {/* Goals */}
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ mb: 2, display: 'flex', alignItems: 'center' }}
+                <div>
+                  <div
+                    
+                    className=""
                   >
-                    <FlagIcon sx={{ mr: 1, fontSize: 18 }} />
+                    <FlagIcon className="" />
                     Treatment Goals ({latestCarePlan.goals.length})
-                  </Typography>
+                  </div>
                   <List dense>
                     {latestCarePlan.goals.map((goal: string, index: number) => (
-                      <ListItem key={index} sx={{ px: 0 }}>
-                        <ListItemText
+                      <div key={index} className="">
+                        <div
                           primary={goal}
-                          primaryTypographyProps={{ variant: 'body2' }}
+                          
                         />
-                      </ListItem>
+                      </div>
                     ))}
                   </List>
-                </Box>
+                </div>
 
                 {/* Objectives */}
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ mb: 2, display: 'flex', alignItems: 'center' }}
+                <div>
+                  <div
+                    
+                    className=""
                   >
-                    <CheckCircleIcon sx={{ mr: 1, fontSize: 18 }} />
+                    <CheckCircleIcon className="" />
                     Objectives ({latestCarePlan.objectives.length})
-                  </Typography>
+                  </div>
                   <List dense>
                     {latestCarePlan.objectives.map(
                       (objective: string, index: number) => (
-                        <ListItem key={index} sx={{ px: 0 }}>
-                          <ListItemText
+                        <div key={index} className="">
+                          <div
                             primary={objective}
-                            primaryTypographyProps={{ variant: 'body2' }}
+                            
                           />
-                        </ListItem>
+                        </div>
                       )
                     )}
                   </List>
-                </Box>
-              </Box>
+                </div>
+              </div>
 
               {(latestCarePlan.notes || latestCarePlan.followUpDate) && (
                 <>
-                  <Divider sx={{ my: 2 }} />
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: 2,
-                    }}
+                  <Separator className="" />
+                  <div
+                    className=""
                   >
                     {latestCarePlan.followUpDate && (
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
+                      <div>
+                        <div  color="text.secondary">
                           Next Follow-up
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        </div>
+                        <div  className="">
                           {formatDate(latestCarePlan.followUpDate)}
-                        </Typography>
-                      </Box>
+                        </div>
+                      </div>
                     )}
                     {latestCarePlan.notes && (
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
+                      <div>
+                        <div  color="text.secondary">
                           Additional Notes
-                        </Typography>
-                        <Typography variant="body2">
+                        </div>
+                        <div >
                           {latestCarePlan.notes}
-                        </Typography>
-                      </Box>
+                        </div>
+                      </div>
                     )}
-                  </Box>
+                  </div>
                 </>
               )}
             </CardContent>
           </Card>
         ) : (
           <Card>
-            <CardContent sx={{ textAlign: 'center', py: 6 }}>
+            <CardContent className="">
               <AssignmentIcon
-                sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+                className=""
               />
-              <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+              <div  color="text.secondary" className="">
                 No care plan created
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              </div>
+              <div  color="text.secondary" className="">
                 Create a comprehensive care plan to guide patient treatment and
                 track progress
-              </Typography>
+              </div>
               <RBACGuard action="canCreate">
                 <Button
-                  variant="contained"
+                  
                   startIcon={<AddIcon />}
                   onClick={() => handleOpenDialog()}
                 >
@@ -433,36 +392,32 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
 
         {/* Previous Care Plans */}
         {carePlans.length > 1 && (
-          <Card sx={{ mt: 3 }}>
+          <Card className="">
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              <div  className="">
                 Previous Care Plans ({carePlans.length - 1})
-              </Typography>
-              <Stack spacing={2}>
+              </div>
+              <div spacing={2}>
                 {carePlans.slice(1).map((plan: CarePlan) => (
-                  <Paper key={plan._id} sx={{ p: 2 }} variant="outlined">
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
+                  <div key={plan._id} className="" >
+                    <div
+                      className=""
                     >
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      <div>
+                        <div  className="">
                           Care Plan - {formatDate(plan.createdAt)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           {plan.goals.length} goals • {plan.objectives.length}{' '}
                           objectives
-                        </Typography>
-                      </Box>
-                      <Stack direction="row" spacing={1}>
+                        </div>
+                      </div>
+                      <div direction="row" spacing={1}>
                         <Chip
                           label={plan.planQuality}
                           size="small"
                           color={getPlanQualityColor(plan.planQuality)}
-                          variant="outlined"
+                          
                         />
                         <RBACGuard action="canUpdate">
                           <IconButton
@@ -472,11 +427,11 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </RBACGuard>
-                      </Stack>
-                    </Box>
-                  </Paper>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </Stack>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -489,13 +444,13 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
           fullWidth
         >
           <DialogTitle>
-            <Box sx={{ display: 'flex', alignItems: 'center', pr: 6 }}>
-              <AssignmentIcon sx={{ mr: 1 }} />
+            <div className="">
+              <AssignmentIcon className="" />
               {selectedCarePlan ? 'Edit Care Plan' : 'Create Care Plan'}
-            </Box>
+            </div>
             <IconButton
               onClick={handleCloseDialog}
-              sx={{ position: 'absolute', right: 8, top: 8 }}
+              className=""
             >
               <CloseIcon />
             </IconButton>
@@ -503,14 +458,14 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
 
           <DialogContent dividers>
             <form onSubmit={handleSubmit(handleSaveCarePlan)}>
-              <Stack spacing={3}>
+              <div spacing={3}>
                 {/* Goals Section */}
-                <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                <div>
+                  <div  className="">
                     Treatment Goals
-                  </Typography>
+                  </div>
                   {goalFields.map((field, index) => (
-                    <Box key={field.id} sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                    <div key={field.id} className="">
                       <Controller
                         name={`goals.${index}.value`}
                         control={control}
@@ -521,11 +476,10 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
                               : false,
                           maxLength: {
                             value: 200,
-                            message: 'Goal cannot exceed 200 characters',
+                            message: 'Goal cannot exceed 200 characters',}
                           },
-                        }}
-                        render={({ field }) => (
-                          <TextField
+                        render={({  field  }) => (
+                          <Input
                             {...field}
                             placeholder={`Goal ${index + 1}`}
                             fullWidth
@@ -544,26 +498,26 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
                           <RemoveIcon />
                         </IconButton>
                       )}
-                    </Box>
+                    </div>
                   ))}
                   <Button
                     startIcon={<AddIcon />}
                     onClick={() => appendGoal({ value: '' })}
-                    variant="outlined"
+                    
                     size="small"
-                    sx={{ mt: 1 }}
+                    className=""
                   >
                     Add Goal
                   </Button>
-                </Box>
+                </div>
 
                 {/* Objectives Section */}
-                <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                <div>
+                  <div  className="">
                     Treatment Objectives
-                  </Typography>
+                  </div>
                   {objectiveFields.map((field, index) => (
-                    <Box key={field.id} sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                    <div key={field.id} className="">
                       <Controller
                         name={`objectives.${index}.value`}
                         control={control}
@@ -574,18 +528,17 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
                               : false,
                           maxLength: {
                             value: 200,
-                            message: 'Objective cannot exceed 200 characters',
+                            message: 'Objective cannot exceed 200 characters',}
                           },
-                        }}
-                        render={({ field }) => (
-                          <TextField
+                        render={({  field  }) => (
+                          <Input
                             {...field}
                             placeholder={`Objective ${index + 1}`}
                             fullWidth
                             size="small"
                             error={!!errors.objectives?.[index]?.value}
                             helperText={
-                              errors.objectives?.[index]?.value?.message
+                              errors.objectives?.[index]?.value?.message}
                             }
                           />
                         )}
@@ -599,59 +552,55 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
                           <RemoveIcon />
                         </IconButton>
                       )}
-                    </Box>
+                    </div>
                   ))}
                   <Button
                     startIcon={<AddIcon />}
                     onClick={() => appendObjective({ value: '' })}
-                    variant="outlined"
+                    
                     size="small"
-                    sx={{ mt: 1 }}
+                    className=""
                   >
                     Add Objective
                   </Button>
-                </Box>
+                </div>
 
-                <Divider />
+                <Separator />
 
                 {/* Quality and Status */}
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 2,
-                  }}
+                <div
+                  className=""
                 >
                   <Controller
                     name="planQuality"
                     control={control}
-                    render={({ field }) => (
-                      <FormControl fullWidth>
-                        <InputLabel>Plan Quality</InputLabel>
+                    render={({  field  }) => (
+                      <div fullWidth>
+                        <Label>Plan Quality</Label>
                         <Select {...field} label="Plan Quality">
                           <MenuItem value="adequate">
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <CheckCircleIcon color="success" sx={{ mr: 1 }} />
+                            <div className="">
+                              <CheckCircleIcon color="success" className="" />
                               Adequate
-                            </Box>
+                            </div>
                           </MenuItem>
                           <MenuItem value="needsReview">
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <WarningIcon color="warning" sx={{ mr: 1 }} />
+                            <div className="">
+                              <WarningIcon color="warning" className="" />
                               Needs Review
-                            </Box>
+                            </div>
                           </MenuItem>
                         </Select>
-                      </FormControl>
+                      </div>
                     )}
                   />
 
                   <Controller
                     name="dtpSummary"
                     control={control}
-                    render={({ field }) => (
-                      <FormControl fullWidth>
-                        <InputLabel>DTP Status</InputLabel>
+                    render={({  field  }) => (
+                      <div fullWidth>
+                        <Label>DTP Status</Label>
                         <Select {...field} label="DTP Status">
                           <MenuItem value="resolved">
                             All DTPs Resolved
@@ -660,16 +609,16 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
                             DTPs Unresolved
                           </MenuItem>
                         </Select>
-                      </FormControl>
+                      </div>
                     )}
                   />
-                </Box>
+                </div>
 
                 {/* Follow-up Date */}
                 <Controller
                   name="followUpDate"
                   control={control}
-                  render={({ field }) => (
+                  render={({  field  }) => (
                     <DatePicker
                       {...field}
                       label="Next Follow-up Date"
@@ -677,9 +626,8 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
                       slotProps={{
                         textField: {
                           fullWidth: true,
-                          helperText: 'Optional: Schedule next appointment',
+                          helperText: 'Optional: Schedule next appointment',}
                         },
-                      }}
                     />
                   )}
                 />
@@ -691,11 +639,10 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
                   rules={{
                     maxLength: {
                       value: 500,
-                      message: 'Notes cannot exceed 500 characters',
+                      message: 'Notes cannot exceed 500 characters',}
                     },
-                  }}
-                  render={({ field }) => (
-                    <TextField
+                  render={({  field  }) => (
+                    <Input
                       {...field}
                       label="Additional Notes"
                       placeholder="Any additional observations or instructions..."
@@ -704,24 +651,24 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
                       fullWidth
                       error={!!errors.notes}
                       helperText={
-                        errors.notes?.message || 'Optional clinical notes'
+                        errors.notes?.message || 'Optional clinical notes'}
                       }
                     />
                   )}
                 />
-              </Stack>
+              </div>
             </form>
           </DialogContent>
 
-          <DialogActions sx={{ p: 3 }}>
+          <DialogActions className="">
             <Button onClick={handleCloseDialog} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button
               onClick={handleSubmit(handleSaveCarePlan)}
-              variant="contained"
+              
               disabled={isSubmitting}
-              sx={{ minWidth: 120 }}
+              className=""
             >
               {isSubmitting
                 ? 'Saving...'
@@ -731,7 +678,7 @@ const CarePlanManagement: React.FC<CarePlanManagementProps> = ({
             </Button>
           </DialogActions>
         </Dialog>
-      </Box>
+      </div>
     </LocalizationProvider>
   );
 };

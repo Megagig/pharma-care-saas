@@ -1,12 +1,10 @@
 import api from '../../../lib/api';
-import type {
     DiagnosticRequest,
     DiagnosticResult,
     DiagnosticRequestForm,
     ApiResponse,
     PaginatedResponse,
     DiagnosticHistoryParams
-} from '../types';
 
 const API_BASE = '/api/diagnostics';
 

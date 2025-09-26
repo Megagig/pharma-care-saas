@@ -1,5 +1,3 @@
-import { PaginatedResponse } from '../types/patientManagement';
-
 /**
  * Safely extracts results from a resource response that could be either
  * PaginatedResponse<T> or { results: T[] }
@@ -62,8 +60,7 @@ export const apiHelpers = {
         ...options?.headers,
       },
       credentials: 'include',
-      ...options,
-    });
+      ...options}
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -85,8 +82,7 @@ export const apiHelpers = {
       },
       body: data ? JSON.stringify(data) : undefined,
       credentials: 'include',
-      ...options,
-    });
+      ...options}
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -108,8 +104,7 @@ export const apiHelpers = {
       },
       body: data ? JSON.stringify(data) : undefined,
       credentials: 'include',
-      ...options,
-    });
+      ...options}
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -130,8 +125,7 @@ export const apiHelpers = {
         ...options?.headers,
       },
       credentials: 'include',
-      ...options,
-    });
+      ...options}
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

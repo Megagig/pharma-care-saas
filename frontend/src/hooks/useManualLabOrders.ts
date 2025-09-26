@@ -1,12 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
-import {
-    ManualLabOrder,
-    CreateOrderRequest,
-    CreateOrderResponse,
-    OrderTokenResponse
-} from '../types/manualLabOrder';
-
 /**
  * Hook for fetching patient's manual lab order history
  */
@@ -14,9 +6,9 @@ export const usePatientLabOrders = (patientId: string, options?: {
     enabled?: boolean;
     refetchInterval?: number;
 }) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: ['manualLabOrders', 'patient', patientId],
-        queryFn: async (): Promise<ManualLabOrder[]> => {
+        queryFn: async (): Promise<ManualLabOrder[]> => { })
             const response = await api.get(`/manual-lab/patient/${patientId}`);
             return response.data?.data?.orders || response.data?.orders || response.data || [];
         },
@@ -29,8 +21,7 @@ export const usePatientLabOrders = (patientId: string, options?: {
                 return false;
             }
             return failureCount < 2;
-        },
-    });
+        }
 };
 
 /**
@@ -39,9 +30,9 @@ export const usePatientLabOrders = (patientId: string, options?: {
 export const useManualLabOrder = (orderId: string, options?: {
     enabled?: boolean;
 }) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: ['manualLabOrders', orderId],
-        queryFn: async (): Promise<ManualLabOrder> => {
+        queryFn: async (): Promise<ManualLabOrder> => { })
             const response = await api.get(`/manual-lab/${orderId}`);
             return response.data?.data?.order || response.data?.order || response.data;
         },
@@ -56,15 +47,15 @@ export const useManualLabOrder = (orderId: string, options?: {
 export const useCreateManualLabOrder = () => {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: async (orderData: CreateOrderRequest): Promise<CreateOrderResponse> => {
             const response = await api.post('/manual-lab', orderData);
-            return response.data;
+            return response.data; })
         },
         onSuccess: (data, variables) => {
             // Invalidate patient orders list
-            queryClient.invalidateQueries({
-                queryKey: ['manualLabOrders', 'patient', variables.patientId]
+            queryClient.invalidateQueries({ 
+                queryKey: ['manualLabOrders', 'patient', variables.patientId] })
             });
 
             // Add the new order to cache
@@ -72,8 +63,7 @@ export const useCreateManualLabOrder = () => {
                 ['manualLabOrders', data.data.order.orderId],
                 data.data.order
             );
-        },
-    });
+        }
 };
 
 /**
@@ -82,7 +72,7 @@ export const useCreateManualLabOrder = () => {
 export const useUpdateOrderStatus = () => {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useMutation({  })
         mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
             const response = await api.put(`/manual-lab/${orderId}/status`, { status });
             return response.data;
@@ -100,33 +90,31 @@ export const useUpdateOrderStatus = () => {
             );
 
             // Invalidate patient orders list to refresh
-            queryClient.invalidateQueries({
-                queryKey: ['manualLabOrders', 'patient']
+            queryClient.invalidateQueries({ 
+                queryKey: ['manualLabOrders', 'patient'] })
             });
-        },
-    });
+        }
 };
 
 /**
  * Hook for resolving order token (for scanning)
  */
 export const useResolveOrderToken = () => {
-    return useMutation({
-        mutationFn: async (token: string): Promise<OrderTokenResponse> => {
+    return useMutation({ 
+        mutationFn: async (token: string): Promise<OrderTokenResponse> => { })
             const response = await api.get(`/manual-lab/scan?token=${encodeURIComponent(token)}`);
             return response.data;
-        },
-    });
+        }
 };
 
 /**
  * Hook for getting PDF URL for an order
  */
 export const useOrderPdfUrl = (orderId: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: ['manualLabOrders', orderId, 'pdf'],
         queryFn: async (): Promise<string> => {
-            // Return the PDF URL directly - the backend handles authentication
+            // Return the PDF URL directly - the backend handles authentication })
             return `/api/manual-lab-orders/${orderId}/pdf`;
         },
         enabled: !!orderId,
@@ -140,9 +128,9 @@ export const useOrderPdfUrl = (orderId: string) => {
 export const useLabResults = (orderId: string, options?: {
     enabled?: boolean;
 }) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: ['manualLabOrders', orderId, 'results'],
-        queryFn: async () => {
+        queryFn: async () => { })
             const response = await apiHelpers.get(`/manual-lab-orders/${orderId}/results`);
             return response.data;
         },

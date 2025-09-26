@@ -1,17 +1,5 @@
-import React from 'react';
-import {
-  Palette,
-  Monitor,
-  Sun,
-  Moon,
-  User,
-  Bell,
-  Shield,
-  Database,
-} from 'lucide-react';
-import ThemeToggle from '../components/common/ThemeToggle';
-import { useTheme } from '../stores/themeStore';
 
+import ThemeToggle from '../components/common/ThemeToggle';
 /**
  * Settings page with theme configuration section
  */
@@ -108,7 +96,7 @@ const SettingsPage: React.FC = () => {
                             ${
                               section.title === 'Appearance' && index === 0
                                 ? 'bg-primary-100 text-primary-700 dark:bg-accent-900/20 dark:text-accent-300'
-                                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-dark-700'
+                                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-dark-700'}
                             }
                           `}
                         >
@@ -136,7 +124,7 @@ const SettingsPage: React.FC = () => {
                       Customize the appearance of your application
                     </p>
                   </div>
-                  <ThemeToggle variant="dropdown" showLabel />
+                  <ThemeToggle  showLabel />
                 </div>
 
                 {/* Theme Options */}
@@ -154,7 +142,7 @@ const SettingsPage: React.FC = () => {
                           ${
                             theme === option.value
                               ? 'border-primary-500 dark:border-accent-500 bg-primary-50 dark:bg-accent-900/20'
-                              : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500 bg-white dark:bg-dark-700'
+                              : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500 bg-white dark:bg-dark-700'}
                           }
                         `}
                       >
@@ -166,7 +154,7 @@ const SettingsPage: React.FC = () => {
                               ${
                                 theme === option.value
                                   ? 'text-primary-600 dark:text-accent-400'
-                                  : 'text-gray-500 dark:text-gray-400'
+                                  : 'text-gray-500 dark:text-gray-400'}
                               }
                             `}
                           />
@@ -176,7 +164,7 @@ const SettingsPage: React.FC = () => {
                               ${
                                 theme === option.value
                                   ? 'text-primary-900 dark:text-accent-100'
-                                  : 'text-gray-900 dark:text-gray-100'
+                                  : 'text-gray-900 dark:text-gray-100'}
                               }
                             `}
                           >

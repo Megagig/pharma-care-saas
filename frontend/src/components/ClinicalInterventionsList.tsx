@@ -1,77 +1,17 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  IconButton,
-  Tooltip,
-  Alert,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Paper,
-  Grid,
-  Collapse,
-  useTheme,
-  alpha,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  DialogContentText,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Visibility as ViewIcon,
-  FilterList as FilterIcon,
-  Search as SearchIcon,
-  Refresh as RefreshIcon,
-  GetApp as ExportIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Person as PersonIcon,
-  Schedule as ScheduleIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-} from '@mui/icons-material';
-import { format, parseISO } from 'date-fns';
-import {
-  useClinicalInterventions,
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Tooltip, Spinner, Alert } from '@/components/ui/button';
+useClinicalInterventions,
   useDeleteIntervention,
-} from '../queries/useClinicalInterventions';
-import { clinicalInterventionService } from '../services/clinicalInterventionService';
 
-import type {
-  ClinicalIntervention,
-  InterventionFilters,
-} from '../stores/clinicalInterventionStore';
 
 const ClinicalInterventionsList: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
-
   // State for filters and pagination
-  const [filters, setFilters] = useState<InterventionFilters>({
+  const [filters, setFilters] = useState<InterventionFilters>({ 
     page: 1,
     limit: 10,
     sortBy: 'createdAt',
-    sortOrder: 'desc',
+    sortOrder: 'desc'}
   });
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,7 +19,6 @@ const ClinicalInterventionsList: React.FC = () => {
   const [interventionToDelete, setInterventionToDelete] = useState<
     string | null
   >(null);
-
   // API queries
   const {
     data: interventionsResponse,
@@ -88,12 +27,10 @@ const ClinicalInterventionsList: React.FC = () => {
     refetch,
   } = useClinicalInterventions(filters);
   const deleteInterventionMutation = useDeleteIntervention();
-
   // Memoized data
   const interventions = useMemo(() => {
     return interventionsResponse?.data?.data || [];
   }, [interventionsResponse]);
-
   const pagination = useMemo(() => {
     return (
       interventionsResponse?.data?.pagination || {
@@ -106,39 +43,33 @@ const ClinicalInterventionsList: React.FC = () => {
       }
     );
   }, [interventionsResponse]);
-
   // Handlers
   const handleFilterChange = (field: keyof InterventionFilters, value: any) => {
-    setFilters((prev) => ({
+    setFilters((prev) => ({ 
       ...prev,
       [field]: value,
-      page: 1, // Reset to first page when filters change
+      page: 1, // Reset to first page when filters change })
     }));
   };
-
   const handleSearch = () => {
     handleFilterChange('search', searchQuery);
   };
-
   const handlePageChange = (event: unknown, newPage: number) => {
     setFilters((prev) => ({ ...prev, page: newPage + 1 }));
   };
-
   const handleRowsPerPageChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setFilters((prev) => ({
+    setFilters((prev) => ({ 
       ...prev,
       limit: parseInt(event.target.value, 10),
-      page: 1,
+      page: 1}
     }));
   };
-
   const handleDeleteClick = (interventionId: string) => {
     setInterventionToDelete(interventionId);
     setDeleteDialogOpen(true);
   };
-
   const handleDeleteConfirm = async () => {
     if (interventionToDelete) {
       await deleteInterventionMutation.mutateAsync(interventionToDelete);
@@ -147,7 +78,6 @@ const ClinicalInterventionsList: React.FC = () => {
       refetch();
     }
   };
-
   const handleExport = async () => {
     try {
       const response = await clinicalInterventionService.exportInterventions(
@@ -171,7 +101,6 @@ const ClinicalInterventionsList: React.FC = () => {
       console.error('Export failed:', error);
     }
   };
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical':
@@ -186,7 +115,6 @@ const ClinicalInterventionsList: React.FC = () => {
         return 'default';
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -205,7 +133,6 @@ const ClinicalInterventionsList: React.FC = () => {
         return 'default';
     }
   };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -224,25 +151,23 @@ const ClinicalInterventionsList: React.FC = () => {
         return <ScheduleIcon />;
     }
   };
-
   if (isLoading) {
     return (
-      <Box
+      <div
         display="flex"
         justifyContent="center"
         alignItems="center"
         minHeight={400}
       >
-        <CircularProgress />
-      </Box>
+        <Spinner />
+      </div>
     );
   }
-
   if (error) {
     return (
       <Alert
         severity="error"
-        action={
+        action={}
           <Button color="inherit" size="small" onClick={() => refetch()}>
             Retry
           </Button>
@@ -252,75 +177,72 @@ const ClinicalInterventionsList: React.FC = () => {
       </Alert>
     );
   }
-
   return (
-    <Box>
+    <div>
       {/* Header Actions */}
-      <Box
+      <div
         display="flex"
         justifyContent="space-between"
         alignItems="center"
         mb={3}
       >
-        <Typography variant="h5" component="h2">
+        <div  component="h2">
           Clinical Interventions
-        </Typography>
-        <Box display="flex" gap={1}>
+        </div>
+        <div display="flex" gap={1}>
           <Button
-            variant="outlined"
+            
             startIcon={<FilterIcon />}
             onClick={() => setShowFilters(!showFilters)}
           >
             Filters
           </Button>
           <Button
-            variant="outlined"
+            
             startIcon={<RefreshIcon />}
             onClick={() => refetch()}
           >
             Refresh
           </Button>
           <Button
-            variant="outlined"
+            
             startIcon={<ExportIcon />}
             onClick={handleExport}
           >
             Export
           </Button>
           <Button
-            variant="contained"
+            
             startIcon={<AddIcon />}
             onClick={() => navigate('/pharmacy/clinical-interventions/create')}
           >
             Create New
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Filters Panel */}
       <Collapse in={showFilters}>
-        <Card sx={{ mb: 3 }}>
+        <Card className="">
           <CardContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={4}>
-                <TextField
+            <div container spacing={2}>
+              <div item xs={12} md={4}>
+                <Input
                   fullWidth
                   label="Search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   InputProps={{
-                    endAdornment: (
+                    endAdornment: (}
                       <IconButton onClick={handleSearch}>
                         <SearchIcon />
                       </IconButton>
                     ),
-                  }}
                 />
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <FormControl fullWidth>
-                  <InputLabel>Category</InputLabel>
+              </div>
+              <div item xs={12} md={2}>
+                <div fullWidth>
+                  <Label>Category</Label>
                   <Select
                     value={filters.category || ''}
                     label="Category"
@@ -328,7 +250,7 @@ const ClinicalInterventionsList: React.FC = () => {
                       handleFilterChange(
                         'category',
                         e.target.value || undefined
-                      )
+                      )}
                     }
                   >
                     <MenuItem value="">All Categories</MenuItem>
@@ -350,11 +272,11 @@ const ClinicalInterventionsList: React.FC = () => {
                     </MenuItem>
                     <MenuItem value="other">Other</MenuItem>
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <FormControl fullWidth>
-                  <InputLabel>Priority</InputLabel>
+                </div>
+              </div>
+              <div item xs={12} md={2}>
+                <div fullWidth>
+                  <Label>Priority</Label>
                   <Select
                     value={filters.priority || ''}
                     label="Priority"
@@ -362,7 +284,7 @@ const ClinicalInterventionsList: React.FC = () => {
                       handleFilterChange(
                         'priority',
                         e.target.value || undefined
-                      )
+                      )}
                     }
                   >
                     <MenuItem value="">All Priorities</MenuItem>
@@ -371,16 +293,16 @@ const ClinicalInterventionsList: React.FC = () => {
                     <MenuItem value="medium">Medium</MenuItem>
                     <MenuItem value="low">Low</MenuItem>
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <FormControl fullWidth>
-                  <InputLabel>Status</InputLabel>
+                </div>
+              </div>
+              <div item xs={12} md={2}>
+                <div fullWidth>
+                  <Label>Status</Label>
                   <Select
                     value={filters.status || ''}
                     label="Status"
                     onChange={(e) =>
-                      handleFilterChange('status', e.target.value || undefined)
+                      handleFilterChange('status', e.target.value || undefined)}
                     }
                   >
                     <MenuItem value="">All Statuses</MenuItem>
@@ -391,33 +313,30 @@ const ClinicalInterventionsList: React.FC = () => {
                     <MenuItem value="completed">Completed</MenuItem>
                     <MenuItem value="cancelled">Cancelled</MenuItem>
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <Box display="flex" gap={1}>
+                </div>
+              </div>
+              <div item xs={12} md={2}>
+                <div display="flex" gap={1}>
                   <Button
-                    variant="outlined"
+                    
                     onClick={() => {
-                      setFilters({
+                      setFilters({ 
                         page: 1,
                         limit: 10,
-                        sortBy: 'createdAt',
-                        sortOrder: 'desc',
+                        sortBy: 'createdAt'}
+                        sortOrder: 'desc',}
                       });
-                      setSearchQuery('');
-                    }}
-                  >
+                      setSearchQuery('');>
                     Clear
                   </Button>
-                </Box>
-              </Grid>
-            </Grid>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </Collapse>
-
       {/* Interventions Table */}
-      <Paper>
+      <div>
         <TableContainer>
           <Table>
             <TableHead>
@@ -436,22 +355,22 @@ const ClinicalInterventionsList: React.FC = () => {
                 interventions.map((intervention: ClinicalIntervention) => (
                   <TableRow key={intervention._id} hover>
                     <TableCell>
-                      <Typography variant="body2" fontWeight="medium">
+                      <div  fontWeight="medium">
                         {intervention.interventionNumber}
-                      </Typography>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
+                      <div display="flex" alignItems="center" gap={1}>
                         <PersonIcon fontSize="small" color="action" />
-                        <Box>
-                          <Typography variant="body2">
+                        <div>
+                          <div >
                             {intervention.patient
                               ? `${intervention.patient.firstName} ${intervention.patient.lastName}`
                               : 'Unknown Patient'}
-                          </Typography>
+                          </div>
                           {intervention.patient?.dateOfBirth && (
-                            <Typography
-                              variant="caption"
+                            <div
+                              
                               color="text.secondary"
                             >
                               DOB:{' '}
@@ -459,18 +378,18 @@ const ClinicalInterventionsList: React.FC = () => {
                                 parseISO(intervention.patient.dateOfBirth),
                                 'MMM dd, yyyy'
                               )}
-                            </Typography>
+                            </div>
                           )}
-                        </Box>
-                      </Box>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Chip
                         label={intervention.category
-                          .replace(/_/g, ' ')
+                          .replace(/_/g, ' ')}
                           .replace(/\b\w/g, (l) => l.toUpperCase())}
                         size="small"
-                        variant="outlined"
+                        
                       />
                     </TableCell>
                     <TableCell>
@@ -484,30 +403,30 @@ const ClinicalInterventionsList: React.FC = () => {
                       <Chip
                         icon={getStatusIcon(intervention.status)}
                         label={intervention.status
-                          .replace(/_/g, ' ')
+                          .replace(/_/g, ' ')}
                           .replace(/\b\w/g, (l) => l.toUpperCase())}
                         size="small"
                         color={getStatusColor(intervention.status) as unknown}
                       />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">
+                      <div >
                         {format(
                           parseISO(intervention.identifiedDate),
                           'MMM dd, yyyy'
                         )}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {format(parseISO(intervention.identifiedDate), 'HH:mm')}
-                      </Typography>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Box display="flex" gap={0.5}>
+                      <div display="flex" gap={0.5}>
                         <Tooltip title="View Details">
                           <IconButton
                             size="small"
                             onClick={() =>
-                              navigate(
+                              navigate(}
                                 `/pharmacy/clinical-interventions/details/${intervention._id}`
                               )
                             }
@@ -519,7 +438,7 @@ const ClinicalInterventionsList: React.FC = () => {
                           <IconButton
                             size="small"
                             onClick={() =>
-                              navigate(
+                              navigate(}
                                 `/pharmacy/clinical-interventions/edit/${intervention._id}`
                               )
                             }
@@ -536,23 +455,23 @@ const ClinicalInterventionsList: React.FC = () => {
                             <DeleteIcon />
                           </IconButton>
                         </Tooltip>
-                      </Box>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
-                    <Box>
-                      <Typography
-                        variant="h6"
+                  <TableCell colSpan={7} className="">
+                    <div>
+                      <div
+                        
                         color="text.secondary"
                         gutterBottom
                       >
                         No Clinical Interventions Found
-                      </Typography>
-                      <Typography
-                        variant="body2"
+                      </div>
+                      <div
+                        
                         color="text.secondary"
                         paragraph
                       >
@@ -562,24 +481,23 @@ const ClinicalInterventionsList: React.FC = () => {
                         filters.status
                           ? 'No interventions match your current filters. Try adjusting your search criteria.'
                           : 'No clinical interventions have been created yet. Create your first intervention to get started.'}
-                      </Typography>
+                      </div>
                       <Button
-                        variant="contained"
+                        
                         startIcon={<AddIcon />}
                         onClick={() =>
-                          navigate('/pharmacy/clinical-interventions/create')
+                          navigate('/pharmacy/clinical-interventions/create')}
                         }
                       >
                         Create First Intervention
                       </Button>
-                    </Box>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </TableContainer>
-
         {/* Pagination */}
         <TablePagination
           rowsPerPageOptions={[5, 10, 25, 50]}
@@ -590,8 +508,7 @@ const ClinicalInterventionsList: React.FC = () => {
           onPageChange={handlePageChange}
           onRowsPerPageChange={handleRowsPerPageChange}
         />
-      </Paper>
-
+      </div>
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
@@ -609,15 +526,14 @@ const ClinicalInterventionsList: React.FC = () => {
           <Button
             onClick={handleDeleteConfirm}
             color="error"
-            variant="contained"
+            
             disabled={deleteInterventionMutation.isPending}
           >
             {deleteInterventionMutation.isPending ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
-
 export default ClinicalInterventionsList;

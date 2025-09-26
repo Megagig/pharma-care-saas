@@ -3,10 +3,6 @@
  * Provides access to feature flag state and real-time updates
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from './useAuth';
-
 interface FeatureFlag {
   key: string;
   name: string;
@@ -51,8 +47,7 @@ const featureFlagsApi = {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-      },
-    });
+      }
 
     if (!response.ok) {
       throw new Error('Failed to fetch feature flags');
@@ -68,8 +63,7 @@ const featureFlagsApi = {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updates),
-    });
+      body: JSON.stringify(updates)}
 
     if (!response.ok) {
       throw new Error('Failed to update feature flag');
@@ -117,7 +111,7 @@ export const useFeatureFlags = (): UseFeatureFlagsReturn => {
     isLoading,
     error,
     refetch
-  } = useQuery({
+  } = useQuery({ 
     queryKey: ['feature-flags', context.userId, context.workplaceId],
     queryFn: () => featureFlagsApi.getFeatureFlags(context),
     enabled: !!user,
@@ -126,7 +120,7 @@ export const useFeatureFlags = (): UseFeatureFlagsReturn => {
     refetchOnWindowFocus: false,
     retry: 2,
     onSuccess: (data) => {
-      setLocalFlags(data.flags);
+      setLocalFlags(data.flags); })
     },
     onError: (error) => {
       console.warn('Failed to fetch feature flags, using defaults:', error);
@@ -227,10 +221,10 @@ interface FeatureFlagProps {
   fallback?: React.ReactNode;
 }
 
-export const FeatureFlag: React.FC<FeatureFlagProps> = ({
+export const FeatureFlag: React.FC<FeatureFlagProps> = ({ 
   flag,
   children,
-  fallback = null
+  fallback = null })
 }) => {
   const { isFeatureEnabled } = useFeatureFlags();
 
@@ -251,11 +245,11 @@ interface MultipleFeatureFlagsProps {
   mode?: 'all' | 'any'; // 'all' = AND logic, 'any' = OR logic
 }
 
-export const MultipleFeatureFlags: React.FC<MultipleFeatureFlagsProps> = ({
+export const MultipleFeatureFlags: React.FC<MultipleFeatureFlagsProps> = ({ 
   flags,
   children,
   fallback = null,
-  mode = 'all'
+  mode = 'all' })
 }) => {
   const { isFeatureEnabled } = useFeatureFlags();
 

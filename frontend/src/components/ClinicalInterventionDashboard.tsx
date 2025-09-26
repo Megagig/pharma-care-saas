@@ -1,81 +1,16 @@
-import React, { useState } from 'react';
-
+import { Button, Label, Card, CardContent, Select, Tooltip, Spinner, Alert, Separator } from '@/components/ui/button';
 type DateRange = 'week' | 'month' | 'quarter' | 'year';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  IconButton,
-  Tooltip,
-  Alert,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Divider,
-  useTheme,
-  alpha,
-  Collapse,
-  Fab,
-} from '@mui/material';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
-import {
-  Dashboard as DashboardIcon,
-  TrendingUp as TrendingUpIcon,
-  Assessment as AssessmentIcon,
-  Schedule as ScheduleIcon,
-  Warning as WarningIcon,
-  Add as AddIcon,
-} from '@mui/icons-material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import InfoIcon from '@mui/icons-material/Info';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import GetAppIcon from '@mui/icons-material/GetApp';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { formatDistanceToNow } from 'date-fns';
-import { useResponsive } from '../hooks/useResponsive';
-import { useClinicalInterventionDashboard } from '../hooks/useClinicalInterventionDashboard';
 
 interface ClinicalInterventionDashboardProps {
   workplaceId?: string;
 }
-
-const ClinicalInterventionDashboard: React.FC<
-  ClinicalInterventionDashboardProps
-> = () => {
+const ClinicalInterventionDashboard: React.FC = () => {
   const theme = useTheme();
   const { isMobile, getColumns } = useResponsive();
-
   // State for filters and date range
   const [dateRange, setDateRange] = useState<
     'week' | 'month' | 'quarter' | 'year'
   >('month');
-
   // Use custom hook for dashboard data management
   const {
     dashboardMetrics,
@@ -85,29 +20,25 @@ const ClinicalInterventionDashboard: React.FC<
     refresh,
     isAuthenticated,
   } = useClinicalInterventionDashboard(dateRange);
-
   // Mobile-specific state
   const [expandedSections, setExpandedSections] = useState<{
     [key: string]: boolean;
-  }>({
+  }>({ 
     kpis: true,
     charts: false,
-    recent: false,
+    recent: false}
   });
   const [showFilters, setShowFilters] = useState(false);
-
   // Mobile helper functions
   const toggleSection = (section: string) => {
-    setExpandedSections((prev) => ({
+    setExpandedSections((prev) => ({ 
       ...prev,
-      [section]: !prev[section],
+      [section]: !prev[section]}
     }));
   };
-
   const getResponsiveColumns = () => {
     return getColumns(1, 2, 3, 3, 4);
   };
-
   // KPI Card Component
   const KPICard: React.FC<{
     title: string;
@@ -118,127 +49,80 @@ const ClinicalInterventionDashboard: React.FC<
     trend?: { value: number; isPositive: boolean };
   }> = ({ title, value, subtitle, icon, color, trend }) => (
     <Card
-      sx={{
-        height: '100%',
-        position: 'relative',
-        overflow: 'visible',
-        borderRadius: isMobile ? 2 : undefined,
-      }}
+      className=""
     >
-      <CardContent sx={{ p: isMobile ? 2 : 3 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            mb: isMobile ? 1 : 2,
-            flexDirection: isMobile ? 'column' : 'row',
-            textAlign: isMobile ? 'center' : 'left',
-          }}
+      <CardContent className="">
+        <div
+          className=""
         >
-          <Box
-            sx={{
-              p: isMobile ? 0.75 : 1,
-              borderRadius: 2,
-              backgroundColor: alpha(color, 0.1),
-              color: color,
-              mr: isMobile ? 0 : 2,
-              mb: isMobile ? 1 : 0,
-            }}
+          <div
+            className=""
           >
             {React.cloneElement(icon as React.ReactElement, {
-              sx: { fontSize: isMobile ? 20 : 24 },
-            })}
-          </Box>
-          <Typography
+              sx: { fontSize: isMobile ? 20 : 24 }, }}
+          </div>
+          <div
             variant={isMobile ? 'subtitle2' : 'h6'}
             component="div"
-            sx={{
-              flexGrow: 1,
-              fontSize: isMobile ? '0.875rem' : undefined,
-            }}
+            className=""
           >
             {title}
-          </Typography>
-        </Box>
-        <Typography
+          </div>
+        </div>
+        <div
           variant={isMobile ? 'h5' : 'h3'}
           component="div"
-          sx={{
-            mb: 1,
-            fontWeight: 'bold',
-            textAlign: isMobile ? 'center' : 'left',
-          }}
+          className=""
         >
           {value}
-        </Typography>
+        </div>
         {subtitle && (
-          <Typography
+          <div
             variant={isMobile ? 'caption' : 'body2'}
             color="text.secondary"
-            sx={{ textAlign: isMobile ? 'center' : 'left' }}
+            className=""
           >
             {subtitle}
-          </Typography>
+          </div>
         )}
         {trend && (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              mt: 1,
-              justifyContent: isMobile ? 'center' : 'flex-start',
-            }}
+          <div
+            className=""
           >
             <TrendingUpIcon
-              sx={{
-                fontSize: isMobile ? 14 : 16,
-                color: trend.isPositive ? 'success.main' : 'error.main',
-                transform: trend.isPositive ? 'none' : 'rotate(180deg)',
-                mr: 0.5,
-              }}
+              className=""
             />
-            <Typography
-              variant="caption"
-              sx={{
-                color: trend.isPositive ? 'success.main' : 'error.main',
-                fontWeight: 'medium',
-                fontSize: isMobile ? '0.7rem' : undefined,
-              }}
+            <div
+              
+              className=""
             >
               {Math.abs(trend.value)}% vs last period
-            </Typography>
-          </Box>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
   );
-
   // Show loading spinner while loading
   if (loading && !dashboardMetrics) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: 400,
-        }}
+      <div
+        className=""
       >
-        <CircularProgress />
-      </Box>
+        <Spinner />
+      </div>
     );
   }
-
   // Show login prompt if user is not authenticated
   if (!isAuthenticated) {
     return (
       <Alert
         severity="warning"
-        sx={{ m: 2 }}
+        className=""
         action={
           <Button
             color="inherit"
-            size="small"
+            size="small"}
             onClick={() => (window.location.href = '/login')}
           >
             Login
@@ -249,22 +133,20 @@ const ClinicalInterventionDashboard: React.FC<
       </Alert>
     );
   }
-
   if (error) {
     const isAuthError =
       error.includes('Invalid token') ||
       error.includes('Unauthorized') ||
       error.includes('401');
-
     return (
       <Alert
         severity={isAuthError ? 'warning' : 'error'}
-        sx={{ m: 2 }}
+        className=""
         action={
           isAuthError ? (
             <Button
               color="inherit"
-              size="small"
+              size="small"}
               onClick={() => (window.location.href = '/login')}
             >
               Login
@@ -282,57 +164,42 @@ const ClinicalInterventionDashboard: React.FC<
       </Alert>
     );
   }
-
   if (!dashboardMetrics) {
     return (
-      <Alert severity="info" sx={{ m: 2 }}>
+      <Alert severity="info" className="">
         No dashboard data available
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ p: isMobile ? 1 : 3 }}>
+    <div className="">
       {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          justifyContent: 'space-between',
-          alignItems: isMobile ? 'stretch' : 'center',
-          mb: isMobile ? 2 : 3,
-          gap: isMobile ? 2 : 0,
-        }}
+      <div
+        className=""
       >
-        <Typography
+        <div
           variant={isMobile ? 'h5' : 'h4'}
           component="h1"
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            textAlign: isMobile ? 'center' : 'left',
-          }}
+          className=""
         >
-          <DashboardIcon sx={{ fontSize: isMobile ? 24 : 32 }} />
+          <DashboardIcon className="" />
           {isMobile ? 'Interventions' : 'Clinical Interventions Dashboard'}
-        </Typography>
-
+        </div>
         {isMobile ? (
-          <Box>
+          <div>
             <Button
               fullWidth
-              variant="outlined"
+              
               startIcon={<FilterListIcon />}
               onClick={() => setShowFilters(!showFilters)}
-              sx={{ mb: 1 }}
+              className=""
             >
               Filters & Actions
             </Button>
             <Collapse in={showFilters}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <FormControl size="small" fullWidth>
-                  <InputLabel>Time Period</InputLabel>
+              <div className="">
+                <div size="small" fullWidth>
+                  <Label>Time Period</Label>
                   <Select
                     value={dateRange}
                     label="Time Period"
@@ -343,37 +210,35 @@ const ClinicalInterventionDashboard: React.FC<
                     <MenuItem value="quarter">Last Quarter</MenuItem>
                     <MenuItem value="year">Last Year</MenuItem>
                   </Select>
-                </FormControl>
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                </div>
+                <div className="">
                   <Button
-                    variant="outlined"
+                    
                     startIcon={<RefreshIcon />}
                     onClick={refresh}
                     disabled={refreshing}
                     size="small"
-                    sx={{ flex: 1 }}
+                    className=""
                   >
                     Refresh
                   </Button>
                   <Button
-                    variant="outlined"
+                    
                     startIcon={<GetAppIcon />}
-                    onClick={() => {
-                      console.log('Export dashboard data');
-                    }}
+                    
                     size="small"
-                    sx={{ flex: 1 }}
+                    className=""
                   >
                     Export
                   </Button>
-                </Box>
-              </Box>
+                </div>
+              </div>
             </Collapse>
-          </Box>
+          </div>
         ) : (
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Time Period</InputLabel>
+          <div className="">
+            <div size="small" className="">
+              <Label>Time Period</Label>
               <Select
                 value={dateRange}
                 label="Time Period"
@@ -384,57 +249,40 @@ const ClinicalInterventionDashboard: React.FC<
                 <MenuItem value="quarter">Last Quarter</MenuItem>
                 <MenuItem value="year">Last Year</MenuItem>
               </Select>
-            </FormControl>
+            </div>
             <Tooltip title="Refresh Dashboard">
               <IconButton onClick={refresh} disabled={refreshing}>
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
             <Button
-              variant="outlined"
+              
               startIcon={<GetAppIcon />}
-              onClick={() => {
-                console.log('Export dashboard data');
-              }}
-            >
+              >
               Export
             </Button>
-          </Box>
+          </div>
         )}
-      </Box>
-
+      </div>
       {/* KPI Cards */}
       {isMobile ? (
-        <Box sx={{ mb: 3 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              p: 1,
-              borderRadius: 1,
-              bgcolor: 'grey.50',
-              mb: 1,
-            }}
+        <div className="">
+          <div
+            className=""
             onClick={() => toggleSection('kpis')}
           >
-            <Typography
-              variant="h6"
-              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            <div
+              
+              className=""
             >
               <AssessmentIcon color="primary" />
               Key Metrics
-            </Typography>
+            </div>
             {expandedSections.kpis ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-          </Box>
+          </div>
           <Collapse in={expandedSections.kpis}>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 2,
-              }}
+            <div
+              className=""
             >
               <KPICard
                 title="Total"
@@ -460,7 +308,7 @@ const ClinicalInterventionDashboard: React.FC<
               <KPICard
                 title="Avg Time"
                 value={`${Math.round(
-                  dashboardMetrics.averageResolutionTime || 0
+                  dashboardMetrics.averageResolutionTime || 0}
                 )}d`}
                 subtitle="Resolution time"
                 icon={<TrendingUpIcon />}
@@ -469,7 +317,7 @@ const ClinicalInterventionDashboard: React.FC<
               <KPICard
                 title="Savings"
                 value={`${(
-                  (dashboardMetrics.totalCostSavings || 0) / 1000
+                  (dashboardMetrics.totalCostSavings || 0) / 1000}
                 ).toFixed(0)}K`}
                 subtitle="Cost savings"
                 icon={<TrendingUpIcon />}
@@ -482,18 +330,12 @@ const ClinicalInterventionDashboard: React.FC<
                 icon={<WarningIcon />}
                 color={theme.palette.error.main}
               />
-            </Box>
+            </div>
           </Collapse>
-        </Box>
+        </div>
       ) : (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(${getResponsiveColumns()}, 1fr)`,
-            gap: 3,
-            mb: 4,
-          }}
-        >
+        <div
+          className="">
           <KPICard
             title="Total Interventions"
             value={dashboardMetrics.totalInterventions}
@@ -518,7 +360,7 @@ const ClinicalInterventionDashboard: React.FC<
           <KPICard
             title="Avg Resolution Time"
             value={`${Math.round(
-              dashboardMetrics.averageResolutionTime || 0
+              dashboardMetrics.averageResolutionTime || 0}
             )} days`}
             subtitle="Time to completion"
             icon={<TrendingUpIcon />}
@@ -527,7 +369,7 @@ const ClinicalInterventionDashboard: React.FC<
           <KPICard
             title="Cost Savings"
             value={`₦${(
-              dashboardMetrics.totalCostSavings || 0
+              dashboardMetrics.totalCostSavings || 0}
             ).toLocaleString()}`}
             subtitle="Estimated savings"
             icon={<TrendingUpIcon />}
@@ -540,58 +382,48 @@ const ClinicalInterventionDashboard: React.FC<
             icon={<WarningIcon />}
             color={theme.palette.error.main}
           />
-        </Box>
+        </div>
       )}
-
       {/* Charts Section */}
       {isMobile ? (
-        <Box sx={{ mb: 3 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              p: 1,
-              borderRadius: 1,
-              bgcolor: 'grey.50',
-              mb: 1,
-            }}
+        <div className="">
+          <div
+            className=""
             onClick={() => toggleSection('charts')}
           >
-            <Typography
-              variant="h6"
-              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            <div
+              
+              className=""
             >
               <TrendingUpIcon color="primary" />
               Charts & Analytics
-            </Typography>
+            </div>
             {expandedSections.charts ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-          </Box>
+          </div>
           <Collapse in={expandedSections.charts}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div className="">
               {/* Mobile Monthly Trends Chart */}
               <Card>
-                <CardContent sx={{ p: 2 }}>
-                  <Typography
-                    variant="subtitle1"
+                <CardContent className="">
+                  <div
+                    
                     gutterBottom
-                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                    className=""
                   >
                     <TrendingUpIcon />
                     Volume Trends
-                  </Typography>
+                  </div>
                   <ResponsiveContainer width="100%" height={200}>
                     <LineChart data={dashboardMetrics.monthlyTrends || []}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
                         dataKey="month"
-                        tick={{ fontSize: 12 }}
+                        
                         angle={-45}
                         textAnchor="end"
                         height={60}
                       />
-                      <YAxis tick={{ fontSize: 12 }} />
+                      <YAxis  />
                       <RechartsTooltip />
                       <Line
                         type="monotone"
@@ -611,18 +443,17 @@ const ClinicalInterventionDashboard: React.FC<
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-
               {/* Mobile Priority Distribution */}
               <Card>
-                <CardContent sx={{ p: 2 }}>
-                  <Typography
-                    variant="subtitle1"
+                <CardContent className="">
+                  <div
+                    
                     gutterBottom
-                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                    className=""
                   >
                     <AssessmentIcon />
                     Priority Distribution
-                  </Typography>
+                  </div>
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
                       <Pie
@@ -648,29 +479,23 @@ const ClinicalInterventionDashboard: React.FC<
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-            </Box>
+            </div>
           </Collapse>
-        </Box>
+        </div>
       ) : (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' },
-            gap: 3,
-            mb: 4,
-          }}
-        >
+        <div
+          className="">
           {/* Monthly Trends Chart */}
           <Card>
             <CardContent>
-              <Typography
-                variant="h6"
+              <div
+                
                 gutterBottom
-                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                className=""
               >
                 <TrendingUpIcon />
                 Intervention Volume Trends
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={dashboardMetrics.monthlyTrends || []}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -696,18 +521,17 @@ const ClinicalInterventionDashboard: React.FC<
               </ResponsiveContainer>
             </CardContent>
           </Card>
-
           {/* Priority Distribution Pie Chart */}
           <Card>
             <CardContent>
-              <Typography
-                variant="h6"
+              <div
+                
                 gutterBottom
-                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                className=""
               >
                 <AssessmentIcon />
                 Priority Distribution
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -733,30 +557,23 @@ const ClinicalInterventionDashboard: React.FC<
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Box>
+        </div>
       )}
-
       {/* Category Distribution and Success Rate - Desktop Only */}
       {!isMobile && (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' },
-            gap: 3,
-            mb: 4,
-          }}
-        >
+        <div
+          className="">
           {/* Category Distribution Bar Chart */}
           <Card>
             <CardContent>
-              <Typography
-                variant="h6"
+              <div
+                
                 gutterBottom
-                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                className=""
               >
                 <AssessmentIcon />
                 Category Breakdown
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={dashboardMetrics.categoryDistribution || []}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -773,18 +590,17 @@ const ClinicalInterventionDashboard: React.FC<
               </ResponsiveContainer>
             </CardContent>
           </Card>
-
           {/* Success Rate by Category */}
           <Card>
             <CardContent>
-              <Typography
-                variant="h6"
+              <div
+                
                 gutterBottom
-                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                className=""
               >
                 <CheckCircleIcon />
                 Success Rate by Category
-              </Typography>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={dashboardMetrics.categoryDistribution || []}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -807,74 +623,51 @@ const ClinicalInterventionDashboard: React.FC<
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Box>
+        </div>
       )}
-
       {/* Recent Interventions List */}
       {isMobile ? (
-        <Box sx={{ mb: 3 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              p: 1,
-              borderRadius: 1,
-              bgcolor: 'grey.50',
-              mb: 1,
-            }}
+        <div className="">
+          <div
+            className=""
             onClick={() => toggleSection('recent')}
           >
-            <Typography
-              variant="h6"
-              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            <div
+              
+              className=""
             >
               <ScheduleIcon color="primary" />
               Recent Interventions
-            </Typography>
+            </div>
             {expandedSections.recent ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-          </Box>
+          </div>
           <Collapse in={expandedSections.recent}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <div className="">
               {(dashboardMetrics.recentInterventions || [])
                 .slice(0, 5)
                 .map((intervention) => (
-                  <Card key={intervention._id} sx={{ p: 1 }}>
-                    <Box sx={{ p: 1 }}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          mb: 1,
-                        }}
+                  <Card key={intervention._id} className="">
+                    <div className="">
+                      <div
+                        className=""
                       >
-                        <Typography variant="body2" fontWeight="medium">
+                        <div  fontWeight="medium">
                           {intervention.interventionNumber}
-                        </Typography>
+                        </div>
                         <IconButton
                           size="small"
-                          onClick={() => {
-                            console.log('View intervention:', intervention._id);
-                          }}
-                        >
-                          <VisibilityIcon sx={{ fontSize: 16 }} />
+                          >
+                          <VisibilityIcon className="" />
                         </IconButton>
-                      </Box>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: 0.5,
-                          mb: 1,
-                        }}
+                      </div>
+                      <div
+                        className=""
                       >
                         <Chip
                           label={intervention.category.replace('_', ' ')}
                           size="small"
-                          variant="outlined"
-                          sx={{ fontSize: '0.7rem', height: 20 }}
+                          
+                          className=""
                         />
                         <Chip
                           label={intervention.priority}
@@ -886,9 +679,9 @@ const ClinicalInterventionDashboard: React.FC<
                               ? 'warning'
                               : intervention.priority === 'medium'
                               ? 'info'
-                              : 'default'
+                              : 'default'}
                           }
-                          sx={{ fontSize: '0.7rem', height: 20 }}
+                          className=""
                         />
                         <Chip
                           label={intervention.status}
@@ -898,92 +691,77 @@ const ClinicalInterventionDashboard: React.FC<
                               ? 'success'
                               : intervention.status === 'in_progress'
                               ? 'info'
-                              : 'default'
+                              : 'default'}
                           }
-                          sx={{ fontSize: '0.7rem', height: 20 }}
+                          className=""
                         />
-                      </Box>
-                      <Typography
-                        variant="caption"
+                      </div>
+                      <div
+                        
                         color="text.secondary"
-                        sx={{ display: 'block' }}
+                        className=""
                       >
                         Patient: {intervention.patientName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {formatDistanceToNow(
                           new Date(intervention.identifiedDate),
                           { addSuffix: true }
                         )}
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   </Card>
                 ))}
               <Button
-                variant="outlined"
+                
                 size="small"
                 fullWidth
-                onClick={() => {
-                  console.log('View all interventions');
-                }}
-                sx={{ mt: 1 }}
+                
+                className=""
               >
                 View All Interventions
               </Button>
-            </Box>
+            </div>
           </Collapse>
-        </Box>
+        </div>
       ) : (
         <Card>
           <CardContent>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 2,
-              }}
+            <div
+              className=""
             >
-              <Typography
-                variant="h6"
-                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              <div
+                
+                className=""
               >
                 <ScheduleIcon />
                 Recent Interventions
-              </Typography>
+              </div>
               <Button
-                variant="outlined"
+                
                 size="small"
-                onClick={() => {
-                  // TODO: Navigate to full interventions list
-                  console.log('View all interventions');
-                }}
-              >
+                >
                 View All
               </Button>
-            </Box>
+            </div>
             <List>
               {(dashboardMetrics.recentInterventions || [])
                 .slice(0, 10)
                 .map((intervention, index) => (
                   <React.Fragment key={intervention._id}>
-                    <ListItem>
-                      <ListItemText
+                    <div>
+                      <div
                         primary={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography variant="subtitle1" component="span">
+                            <div  component="span">}
                               {intervention.interventionNumber}
-                            </Typography>
+                            </div>
                             <Chip
                               label={intervention.category.replace('_', ' ')}
                               size="small"
-                              variant="outlined"
+                              
                             />
                             <Chip
                               label={intervention.priority}
@@ -995,7 +773,7 @@ const ClinicalInterventionDashboard: React.FC<
                                   ? 'warning'
                                   : intervention.priority === 'medium'
                                   ? 'info'
-                                  : 'default'
+                                  : 'default'}
                               }
                             />
                             <Chip
@@ -1006,18 +784,18 @@ const ClinicalInterventionDashboard: React.FC<
                                   ? 'success'
                                   : intervention.status === 'in_progress'
                                   ? 'info'
-                                  : 'default'
+                                  : 'default'}
                               }
                             />
-                          </Box>
+                          </div>
                         }
                         secondary={
-                          <Box>
-                            <Typography variant="body2" color="text.secondary">
+                          <div>
+                            <div  color="text.secondary">}
                               Patient: {intervention.patientName}
-                            </Typography>
-                            <Typography
-                              variant="caption"
+                            </div>
+                            <div
+                              
                               color="text.secondary"
                             >
                               {formatDistanceToNow(
@@ -1026,67 +804,50 @@ const ClinicalInterventionDashboard: React.FC<
                               )}
                               {intervention.assignedTo &&
                                 ` • Assigned to: ${intervention.assignedTo}`}
-                            </Typography>
-                          </Box>
+                            </div>
+                          </div>
                         }
                       />
-                      <ListItemSecondaryAction>
+                      <divSecondaryAction>
                         <Tooltip title="View Details">
                           <IconButton
                             edge="end"
-                            onClick={() => {
-                              // TODO: Navigate to intervention details
-                              console.log(
-                                'View intervention:',
-                                intervention._id
-                              );
-                            }}
-                          >
+                            >
                             <VisibilityIcon />
                           </IconButton>
                         </Tooltip>
                       </ListItemSecondaryAction>
-                    </ListItem>
+                    </div>
                     {index <
                       (dashboardMetrics.recentInterventions || []).length -
-                        1 && <Divider />}
+                        1 && <Separator />}
                   </React.Fragment>
                 ))}
               {(dashboardMetrics.recentInterventions || []).length === 0 && (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
+                <div className="">
                   <InfoIcon
-                    sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+                    className=""
                   />
-                  <Typography variant="body1" color="text.secondary">
+                  <div  color="text.secondary">
                     No recent interventions found
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               )}
             </List>
           </CardContent>
         </Card>
       )}
-
       {/* Floating Action Button for Mobile */}
       {isMobile && (
         <Fab
           color="primary"
           aria-label="add intervention"
-          sx={{
-            position: 'fixed',
-            bottom: 16,
-            right: 16,
-            zIndex: 1000,
-          }}
-          onClick={() => {
-            console.log('Create new intervention');
-          }}
-        >
+          className=""
+          >
           <AddIcon />
         </Fab>
       )}
-    </Box>
+    </div>
   );
 };
-
 export default ClinicalInterventionDashboard;

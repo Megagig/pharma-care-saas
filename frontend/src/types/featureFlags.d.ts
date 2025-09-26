@@ -104,10 +104,5 @@ interface FeatureFlagService {
   deleteFeatureFlag(id: string): Promise<FeatureFlagResponse>;
 }
 
-export {
-  FeatureFlag,
-  CreateFeatureFlagDto,
-  UpdateFeatureFlagDto,
-  FeatureFlagResponse,
-  FeatureFlagService,
+// Removed broken export
 };

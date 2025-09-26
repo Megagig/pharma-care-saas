@@ -1,14 +1,13 @@
 // MTR Help System Components
-export { default as MTRHelpSystem, MTRTooltip, MTRHelpButton } from './MTRHelpSystem';
-export {
+// Removed incomplete export: export { default as MTRHelpSystem, MTRTooltip, MTRHelpButton 
+// Removed broken export
     MTRContextualHelp,
     QuickReference,
     KeyboardShortcuts,
     StatusIndicators,
     StepHelp
-} from './MTRContextualHelp';
-export { default as MTRDocumentation } from './MTRDocumentation';
 
+export { default as MTRDocumentation 
 // Help system types and interfaces
 export interface HelpSystemProps {
     currentStep?: number;
@@ -62,22 +61,22 @@ export const getHelpContentForStep = (step: number): string => {
     return stepContent[step as keyof typeof stepContent] || 'Complete this step to continue with your MTR.';
 };
 
-export const getKeyboardShortcuts = () => ({
+export const getKeyboardShortcuts = () => ({ 
     'Ctrl + S': 'Save current progress',
     'Ctrl + N': 'Start new MTR session',
     'Ctrl + F': 'Search patients or medications',
     'Tab': 'Navigate between form fields',
     'Enter': 'Submit forms or confirm actions',
     'Esc': 'Close dialogs or cancel actions',
-    'Ctrl + ?': 'Show help system',
+    'Ctrl + ?': 'Show help system'}
 });
 
-export const getProblemSeverityInfo = () => ({
+export const getProblemSeverityInfo = () => ({ 
     critical: {
         color: 'error',
         description: 'Immediate intervention required',
         examples: ['Life-threatening interactions', 'Contraindicated combinations'],
-        action: 'Contact prescriber immediately'
+        action: 'Contact prescriber immediately' })
     },
     major: {
         color: 'warning',

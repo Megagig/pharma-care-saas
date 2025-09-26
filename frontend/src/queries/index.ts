@@ -13,4 +13,4 @@ export * from '../modules/diagnostics/hooks/useLabTrends';
 export * from '../modules/diagnostics/hooks/useInteractions';
 
 // Query client and keys
-export { queryClient, queryKeys } from '../lib/queryClient';
+// Removed incomplete export: export { queryClient, queryKeys

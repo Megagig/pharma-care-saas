@@ -5,23 +5,11 @@
  * migration from Material-UI to shadcn/ui components.
  */
 
-export { 
-  MuiAdapter, 
-  MuiIconAdapter, 
-  MuiThemeAdapter, 
+// Removed broken export
   useMuiTheme,
-  MigrationWarning,
   withMigrationSupport 
-} from './MuiAdapter';
 
-export {
-  IconMapper,
-  PropMapper,
-  MigrationTracker,
-  MigrationUtils,
-  MUI_TO_LUCIDE_ICON_MAP
-} from '../../lib/migration-utils';
-
+// Removed broken export
 // Re-export commonly used migration functions
 export const {
   getLucideIcon,

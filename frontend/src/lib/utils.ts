@@ -9,7 +9,7 @@ export function formatDate(date: Date | string | number): string {
     return new Intl.DateTimeFormat("en-US", {
         month: "long",
         day: "numeric",
-        year: "numeric",
+        year: "numeric"
     }).format(new Date(date))
 }
 
@@ -19,6 +19,6 @@ export function formatDateTime(date: Date | string | number): string {
         day: "numeric",
         year: "numeric",
         hour: "numeric",
-        minute: "2-digit",
+        minute: "2-digit"
     }).format(new Date(date))
 }

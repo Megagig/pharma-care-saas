@@ -1,76 +1,40 @@
 // Cost-Effectiveness Analysis Report Component
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  LinearProgress,
-} from '@mui/material';
-import {
-  AttachMoney,
-  TrendingUp,
-  Assessment,
-  Timeline,
-  CompareArrows,
-  Savings,
-  AccountBalance,
-  Analytics,
-} from '@mui/icons-material';
 import ChartComponent from '../shared/ChartComponent';
-import { ChartData, KPICardData } from '../../types/charts';
-import { CostEffectivenessFilters } from '../../types/filters';
+
+import { Card, CardContent, Progress, Alert, Tabs } from '@/components/ui/button';
 
 interface CostEffectivenessReportProps {
   filters: CostEffectivenessFilters;
   onFilterChange?: (filters: CostEffectivenessFilters) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
-
 // Nigerian Naira formatter
 const formatNaira = (amount: number): string => {
   return new Intl.NumberFormat('en-NG', {
     style: 'currency',
     currency: 'NGN',
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+    maximumFractionDigits: 0, }.format(amount);
 };
-
-const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
+const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({ 
   filters,
-  onFilterChange,
+  onFilterChange
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   // Mock data - in real implementation, this would come from API
   const mockData = useMemo(
-    () => ({
+    () => ({ 
       // KPI Cards Data
       kpiData: [
         {
@@ -80,7 +44,7 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
           trend: {
             direction: 'up' as const,
             value: 23.8,
-            period: 'vs last year',
+            period: 'vs last year'}
           },
           status: 'success' as const,
           sparkline: [
@@ -125,7 +89,6 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
           status: 'info' as const,
         },
       ],
-
       // Cost Savings Waterfall Chart Data
       costSavingsData: {
         id: 'cost-savings-waterfall',
@@ -300,7 +263,6 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
           },
         },
       },
-
       // Revenue Impact Trends
       revenueImpactData: {
         id: 'revenue-impact',
@@ -487,7 +449,6 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
           },
         },
       },
-
       // Budget Planning Insights
       budgetPlanningData: {
         id: 'budget-planning',
@@ -662,7 +623,6 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
           },
         },
       },
-
       // Cost Breakdown by Category
       costBreakdownData: {
         id: 'cost-breakdown',
@@ -802,7 +762,6 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
           },
         },
       },
-
       // ROI Analysis by Intervention
       roiAnalysisData: [
         {
@@ -840,82 +799,73 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
           roi: 278.1,
           paybackMonths: 3.1,
         },
-      ],
-    }),
+      ], },
     []
   );
-
   // Simulate data loading
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [filters]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Alert severity="error" className="">
+        <div  gutterBottom>
           Error Loading Cost-Effectiveness Data
-        </Typography>
-        <Typography variant="body2">{error}</Typography>
+        </div>
+        <div >{error}</div>
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center' }}
+          className=""
         >
-          <AttachMoney sx={{ mr: 2, color: 'primary.main' }} />
+          <AttachMoney className="" />
           Cost-Effectiveness Analysis
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Comprehensive financial analysis of pharmaceutical interventions, ROI
           tracking, and budget planning insights.
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div container spacing={3} className="">
         {mockData.kpiData.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <ChartComponent
-              data={{
+              data={{}
                 id: `kpi-${index}`,
                 title: '',
                 type: 'kpi-card',
                 data: [kpi],
                 config: {} as any,
-              }}
               height={180}
               loading={loading}
             />
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          
           scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          className=""
         >
           <Tab icon={<Savings />} label="Cost Savings" iconPosition="start" />
           <Tab
@@ -935,118 +885,92 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
           />
           <Tab icon={<Analytics />} label="ROI Analysis" iconPosition="start" />
         </Tabs>
-
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.costSavingsData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Cost Savings Summary
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'success.light',
-                          borderRadius: 2,
-                          color: 'success.contrastText',
-                        }}
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Savings sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">
+                        <Savings className="" />
+                        <div >
                           {formatNaira(45200000)}
-                        </Typography>
-                        <Typography variant="caption">Total Savings</Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'primary.light',
-                          borderRadius: 2,
-                          color: 'primary.contrastText',
-                        }}
+                        </div>
+                        <div >Total Savings</div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <TrendingUp sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">23.8%</Typography>
-                        <Typography variant="caption">YoY Growth</Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'warning.light',
-                          borderRadius: 2,
-                          color: 'warning.contrastText',
-                        }}
+                        <TrendingUp className="" />
+                        <div >23.8%</div>
+                        <div >YoY Growth</div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Assessment sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">340%</Typography>
-                        <Typography variant="caption">ROI</Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'info.light',
-                          borderRadius: 2,
-                          color: 'info.contrastText',
-                        }}
+                        <Assessment className="" />
+                        <div >340%</div>
+                        <div >ROI</div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Timeline sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">3.2 months</Typography>
-                        <Typography variant="caption">Avg Payback</Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                  <Alert severity="success" sx={{ mt: 2 }}>
-                    <Typography variant="body2">
+                        <Timeline className="" />
+                        <div >3.2 months</div>
+                        <div >Avg Payback</div>
+                      </div>
+                    </div>
+                  </div>
+                  <Alert severity="success" className="">
+                    <div >
                       Pharmaceutical interventions have generated significant
                       cost savings, with medication optimization and reduced
                       hospitalizations being the primary drivers of financial
                       impact.
-                    </Typography>
+                    </div>
                   </Alert>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.revenueImpactData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Revenue Impact Analysis
-                  </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Chip
                       label="Revenue Growth: 28.4%"
@@ -1068,164 +992,120 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
                       color="warning"
                       size="small"
                     />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Revenue impact shows consistent growth with effective cost
                     management. The net positive impact demonstrates the
                     financial viability of pharmaceutical intervention programs,
                     with strong momentum expected to continue.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.budgetPlanningData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Budget Planning Insights
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle2" gutterBottom>
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} md={6}>
+                      <div  gutterBottom>
                         Forecast Accuracy
-                      </Typography>
-                      <Box sx={{ mb: 2 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            mb: 1,
-                          }}
+                      </div>
+                      <div className="">
+                        <div
+                          className=""
                         >
-                          <Typography variant="body2">Q1 2024</Typography>
-                          <Typography variant="body2" fontWeight="bold">
+                          <div >Q1 2024</div>
+                          <div  fontWeight="bold">
                             97.1%
-                          </Typography>
-                        </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={97.1}
-                          sx={{
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: '#e5e7eb',
-                            '& .MuiLinearProgress-bar': {
-                              backgroundColor: '#10b981',
-                              borderRadius: 4,
-                            },
-                          }}
-                        />
-                      </Box>
-                      <Box sx={{ mb: 2 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            mb: 1,
-                          }}
+                          </div>
+                        </div>
+                        <Progress
+                          
+                          className="" />
+                      </div>
+                      <div className="">
+                        <div
+                          className=""
                         >
-                          <Typography variant="body2">Q2 2024</Typography>
-                          <Typography variant="body2" fontWeight="bold">
+                          <div >Q2 2024</div>
+                          <div  fontWeight="bold">
                             97.2%
-                          </Typography>
-                        </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={97.2}
-                          sx={{
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: '#e5e7eb',
-                            '& .MuiLinearProgress-bar': {
-                              backgroundColor: '#10b981',
-                              borderRadius: 4,
-                            },
-                          }}
-                        />
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle2" gutterBottom>
+                          </div>
+                        </div>
+                        <Progress
+                          
+                          className="" />
+                      </div>
+                    </div>
+                    <div item xs={12} md={6}>
+                      <div  gutterBottom>
                         Budget Variance Analysis
-                      </Typography>
-                      <Typography
-                        variant="body2"
+                      </div>
+                      <div
+                        
                         color="text.secondary"
                         gutterBottom
                       >
                         Average variance: {formatNaira(-2300000)} (2.9% under
                         budget)
-                      </Typography>
-                      <Typography
-                        variant="body2"
+                      </div>
+                      <div
+                        
                         color="text.secondary"
                         gutterBottom
                       >
                         Projected 2025 budget: {formatNaira(378800000)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         Expected ROI: 365% (25% increase from 2024)
-                      </Typography>
-                    </Grid>
-                  </Grid>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
+          <div container spacing={3}>
+            <div item xs={12} md={8}>
               <ChartComponent
                 data={mockData.costBreakdownData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card sx={{ height: 400 }}>
+            </div>
+            <div item xs={12} md={4}>
+              <Card className="">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Cost Category Details
-                  </Typography>
-
+                  </div>
                   {mockData.costBreakdownData.data.map((item, index) => (
-                    <Box
+                    <div
                       key={index}
-                      sx={{
-                        mb: 2,
-                        pb: 2,
-                        borderBottom:
-                          index < mockData.costBreakdownData.data.length - 1
-                            ? 1
-                            : 0,
-                        borderColor: 'divider',
-                      }}
+                      className=""
                     >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          mb: 1,
-                        }}
+                      <div
+                        className=""
                       >
-                        <Typography variant="body2" fontWeight="medium">
+                        <div  fontWeight="medium">
                           {item.name}
-                        </Typography>
+                        </div>
                         <Chip
                           label={`${item.value}%`}
                           color={
@@ -1233,35 +1113,33 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
                               ? 'error'
                               : item.value > 20
                               ? 'warning'
-                              : 'success'
+                              : 'success'}
                           }
                           size="small"
                         />
-                      </Box>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {formatNaira(item.amount)} • {item.value}% of total
                         budget
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   ))}
-
-                  <Alert severity="info" size="small" sx={{ mt: 2 }}>
-                    <Typography variant="caption">
+                  <Alert severity="info" size="small" className="">
+                    <div >
                       Medication costs represent the largest expense category,
                       but generate the highest ROI through improved patient
                       outcomes.
-                    </Typography>
+                    </div>
                   </Alert>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={4}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <TableContainer component={Paper}>
+          <div container spacing={3}>
+            <div item xs={12}>
+              <TableContainer >
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -1289,28 +1167,24 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
                     {mockData.roiAnalysisData.map((row, index) => (
                       <TableRow key={index} hover>
                         <TableCell component="th" scope="row">
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <div className="">
                             <AttachMoney
-                              sx={{
-                                mr: 1,
-                                fontSize: 16,
-                                color: 'primary.main',
-                              }}
+                              className=""
                             />
                             {row.intervention}
-                          </Box>
+                          </div>
                         </TableCell>
                         <TableCell align="right">
                           {formatNaira(row.investment)}
                         </TableCell>
                         <TableCell align="right">
-                          <Typography
-                            variant="body2"
+                          <div
+                            
                             color="success.main"
                             fontWeight="bold"
                           >
                             {formatNaira(row.savings)}
-                          </Typography>
+                          </div>
                         </TableCell>
                         <TableCell align="right">
                           <Chip
@@ -1320,7 +1194,7 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
                                 ? 'success'
                                 : row.roi > 200
                                 ? 'warning'
-                                : 'error'
+                                : 'error'}
                             }
                             size="small"
                           />
@@ -1329,119 +1203,73 @@ const CostEffectivenessReport: React.FC<CostEffectivenessReportProps> = ({
                           {row.paybackMonths} months
                         </TableCell>
                         <TableCell align="center">
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
+                          <div
+                            className=""
                           >
-                            <LinearProgress
-                              variant="determinate"
-                              value={Math.min(row.roi / 3, 100)}
-                              sx={{
-                                width: 60,
-                                mr: 1,
-                                height: 6,
-                                borderRadius: 3,
-                                backgroundColor: '#e5e7eb',
-                                '& .MuiLinearProgress-bar': {
-                                  backgroundColor:
-                                    row.roi > 250
-                                      ? '#10b981'
-                                      : row.roi > 200
-                                      ? '#f59e0b'
-                                      : '#ef4444',
-                                  borderRadius: 3,
-                                },
-                              }}
-                            />
-                          </Box>
+                            <Progress
+                              
+                              className="" />
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     ROI Analysis Summary
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'success.light',
-                          borderRadius: 2,
-                          color: 'success.contrastText',
-                        }}
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6">240.9%</Typography>
-                        <Typography variant="caption">Average ROI</Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'primary.light',
-                          borderRadius: 2,
-                          color: 'primary.contrastText',
-                        }}
+                        <div >240.9%</div>
+                        <div >Average ROI</div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6">3.8 months</Typography>
-                        <Typography variant="caption">Avg Payback</Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'warning.light',
-                          borderRadius: 2,
-                          color: 'warning.contrastText',
-                        }}
+                        <div >3.8 months</div>
+                        <div >Avg Payback</div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6">
+                        <div >
                           {formatNaira(38500000)}
-                        </Typography>
-                        <Typography variant="caption">
+                        </div>
+                        <div >
                           Total Investment
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'info.light',
-                          borderRadius: 2,
-                          color: 'info.contrastText',
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6">
+                        <div >
                           {formatNaira(129300000)}
-                        </Typography>
-                        <Typography variant="caption">Total Returns</Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
+                        </div>
+                        <div >Total Returns</div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default CostEffectivenessReport;

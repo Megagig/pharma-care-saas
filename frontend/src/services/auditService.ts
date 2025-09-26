@@ -139,8 +139,7 @@ class AuditService {
      */
     async exportAuditData(request: ExportAuditDataRequest) {
         const response = await api.post('/audit/export', request, {
-            responseType: request.format === 'pdf' ? 'json' : 'blob',
-        });
+            responseType: request.format === 'pdf' ? 'json' : 'blob'}
 
         if (request.format === 'pdf') {
             // For PDF, return the structured data for frontend processing

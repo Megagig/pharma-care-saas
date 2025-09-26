@@ -1,27 +1,4 @@
-import React, { useState } from 'react';
-import { 
-  Box, 
-  Button, 
-  TextField, 
-  Typography, 
-  Paper, 
-  List, 
-  ListItem, 
-  ListItemText, 
-  ListItemSecondaryAction, 
-  IconButton, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions,
-  Chip,
-  Alert
-} from '@mui/material';
-import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
-import { useTherapyPlans, useCreateTherapyPlan, useDeleteTherapyPlan } from '../queries/drugQueries';
-import { useDrugStore } from '../stores/drugStore';
-import { TherapyPlan } from '../types/drugTypes';
-
+import { Button, Input, Dialog, DialogContent, DialogTitle, Alert } from '@/components/ui/button';
 const TherapyPlanManager: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const [planName, setPlanName] = useState<string>('');
@@ -30,49 +7,42 @@ const TherapyPlanManager: React.FC = () => {
   const { data: savedPlans = [] } = useTherapyPlans();
   const { mutate: createPlan } = useCreateTherapyPlan();
   const { mutate: deletePlan } = useDeleteTherapyPlan();
-
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
     setOpen(false);
     setPlanName('');
     setGuidelines('');
   };
-
   const handleCreatePlan = () => {
     if (!planName.trim()) return;
-    
     const newPlan: Omit<TherapyPlan, '_id' | 'createdAt' | 'updatedAt'> = {
       planName,
       drugs: selectedDrug ? [selectedDrug] : [],
       guidelines
     };
-    
     createPlan(newPlan, {
       onSuccess: () => {
         handleClose();
       }
     });
   };
-
   const handleDeletePlan = (id: string) => {
     deletePlan(id);
   };
-
   return (
-    <Paper elevation={2} className="p-4">
-      <Box display="flex" justifyContent="space-between" alignItems="center" className="mb-4">
-        <Typography variant="h6">
+    <div className="p-4">
+      <div display="flex" justifyContent="space-between" alignItems="center" className="mb-4">
+        <div >
           Therapy Plans
-        </Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />} 
+        </div>
+        <Button
+
+          startIcon={<AddIcon />}
           onClick={handleOpen}
         >
           New Plan
         </Button>
-      </Box>
-      
+      </div>
       {savedPlans.length === 0 ? (
         <Alert severity="info">
           No therapy plans created yet. Create your first plan to save drug information.
@@ -80,40 +50,39 @@ const TherapyPlanManager: React.FC = () => {
       ) : (
         <List>
           {savedPlans.map((plan) => (
-            <ListItem key={plan._id} className="border-b last:border-b-0">
-              <ListItemText
+            <div key={plan._id} className="border-b last:border-b-0">
+              <div
                 primary={plan.planName}
                 secondary={
-                  <Box>
-                    <Typography variant="body2">
+                  <div>
+                    <div>
                       {plan.drugs.length} drug(s) included
-                    </Typography>
+                    </div>
                     {plan.guidelines && (
-                      <Typography variant="body2" className="mt-1">
+                      <div className="mt-1">
                         Guidelines: {plan.guidelines}
-                      </Typography>
+                      </div>
                     )}
-                  </Box>
+                  </div>
                 }
               />
               <ListItemSecondaryAction>
-                <IconButton 
-                  edge="end" 
+                <IconButton
+                  edge="end"
                   aria-label="delete"
                   onClick={() => plan._id && handleDeletePlan(plan._id)}
                 >
                   <DeleteIcon />
                 </IconButton>
               </ListItemSecondaryAction>
-            </ListItem>
+            </div>
           ))}
         </List>
       )}
-      
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>Create New Therapy Plan</DialogTitle>
         <DialogContent>
-          <TextField
+          <Input
             autoFocus
             margin="dense"
             label="Plan Name"
@@ -122,7 +91,7 @@ const TherapyPlanManager: React.FC = () => {
             onChange={(e) => setPlanName(e.target.value)}
             className="mb-4"
           />
-          <TextField
+          <Input
             margin="dense"
             label="Clinical Guidelines (Optional)"
             fullWidth
@@ -132,27 +101,26 @@ const TherapyPlanManager: React.FC = () => {
             onChange={(e) => setGuidelines(e.target.value)}
           />
           {selectedDrug && (
-            <Box className="mt-4">
-              <Typography variant="subtitle1" className="mb-2">
+            <div className="mt-4">
+              <div className="mb-2">
                 Selected Drug:
-              </Typography>
+              </div>
               <Chip label={selectedDrug.name} />
-            </Box>
+            </div>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button 
-            onClick={handleCreatePlan} 
-            variant="contained" 
+          <Button
+            onClick={handleCreatePlan}
+
             disabled={!planName.trim()}
           >
             Create Plan
           </Button>
         </DialogActions>
       </Dialog>
-    </Paper>
+    </div>
   );
 };
-
 export default TherapyPlanManager;

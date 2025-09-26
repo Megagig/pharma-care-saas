@@ -1,10 +1,10 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { LoadingState, ErrorState } from './types';
-
 // ===============================
 // TYPES AND INTERFACES
 // ===============================
+
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { ErrorState, LoadingState } from './types';
 
 export interface ClinicalIntervention {
     _id: string;
@@ -307,7 +307,7 @@ interface ClinicalInterventionStore {
 
 export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
     persist(
-        (set, get) => ({
+        (set, get) => ({ 
             // Initial state
             interventions: [],
             selectedIntervention: null,
@@ -351,7 +351,7 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
                     const response = await clinicalInterventionService.getInterventions(currentFilters);
 
                     if (response.success && response.data) {
-                        set({
+                        set({ 
                             interventions: response.data.data || response.data,
                             pagination: response.data.pagination || {
                                 page: currentFilters.page || 1,
@@ -360,7 +360,7 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
                                 pages: Math.ceil((response.data.length || 0) / (currentFilters.limit || 20)),
                                 hasNext: false,
                                 hasPrev: false,
-                            },
+                            }
                         });
                     } else {
                         setError('fetchInterventions', response.message || 'Failed to fetch interventions');
@@ -368,7 +368,7 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
                         // For super_admin users, provide mock data if API fails
                         if (response.message?.includes('401') || response.message?.includes('Authentication')) {
                             console.log('Using mock data for super_admin access');
-                            set({
+                            set({ 
                                 interventions: [],
                                 pagination: {
                                     page: 1,
@@ -377,7 +377,7 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
                                     pages: 0,
                                     hasNext: false,
                                     hasPrev: false,
-                                },
+                                }
                             });
                         }
                     }
@@ -386,7 +386,7 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
                     setError('fetchInterventions', error instanceof Error ? error.message : 'An unexpected error occurred');
 
                     // Provide empty state for super_admin
-                    set({
+                    set({ 
                         interventions: [],
                         pagination: {
                             page: 1,
@@ -395,7 +395,7 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
                             pages: 0,
                             hasNext: false,
                             hasPrev: false,
-                        },
+                        }
                     });
                 } finally {
                     setLoading('fetchInterventions', false);
@@ -770,18 +770,18 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
 
             setFilters: (newFilters) =>
                 set((state) => ({
-                    filters: { ...state.filters, ...newFilters },
+                    filters: { ...state.filters, ...newFilters }
                 })),
 
             clearFilters: () =>
-                set({
+                set({ 
                     filters: {
                         search: '',
                         sortBy: 'identifiedDate',
                         sortOrder: 'desc',
                         page: 1,
                         limit: 20,
-                    },
+                    }
                 }),
 
             setShowCreateModal: (show) => set({ showCreateModal: show }),
@@ -806,47 +806,46 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
 
             setLoading: (key, loading) =>
                 set((state) => ({
-                    loading: { ...state.loading, [key]: loading },
+                    loading: { ...state.loading, [key]: loading }
                 })),
 
             setError: (key, error) =>
                 set((state) => ({
-                    errors: { ...state.errors, [key]: error },
+                    errors: { ...state.errors, [key]: error }
                 })),
 
             // Local State Management
             addInterventionToState: (intervention) =>
-                set((state) => ({
+                set((state) => ({ 
                     interventions: [intervention, ...state.interventions],
                     pagination: {
                         ...state.pagination,
                         total: state.pagination.total + 1,
-                    },
-                })),
+                    }
+                }),
 
             updateInterventionInState: (id, updates) =>
-                set((state) => ({
+                set((state) => ({ 
                     interventions: state.interventions.map(i =>
                         i._id === id ? { ...i, ...updates } : i
                     ),
                 })),
 
             removeInterventionFromState: (id) =>
-                set((state) => ({
+                set((state) => ({ 
                     interventions: state.interventions.filter(i => i._id !== id),
                     pagination: {
                         ...state.pagination,
                         total: Math.max(0, state.pagination.total - 1),
-                    },
-                })),
-        }),
+                    }
+                }),
         {
             name: 'clinical-intervention-store',
-            partialize: (state) => ({
+            partialize: (state) => ({ 
                 filters: state.filters,
                 selectedIntervention: state.selectedIntervention,
                 selectedPatient: state.selectedPatient,
-                activeStep: state.activeStep,
+                activeStep: state.activeStep}
             }),
         }
     )
@@ -857,51 +856,50 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
 // ===============================
 
 // Hook for interventions list with loading and error states
-export const useInterventions = () => useClinicalInterventionStore((state) => ({
+export const useInterventions = () => useClinicalInterventionStore((state) => ({ 
     interventions: state.interventions,
     loading: state.loading.fetchInterventions || false,
     error: state.errors.fetchInterventions || null,
     pagination: state.pagination,
-    fetchInterventions: state.fetchInterventions,
+    fetchInterventions: state.fetchInterventions}
 }));
 
 // Hook for selected intervention
-export const useSelectedIntervention = () => useClinicalInterventionStore((state) => ({
+export const useSelectedIntervention = () => useClinicalInterventionStore((state) => ({ 
     selectedIntervention: state.selectedIntervention,
     selectIntervention: state.selectIntervention,
     loading: state.loading.getInterventionById || false,
     error: state.errors.getInterventionById || null,
-    getInterventionById: state.getInterventionById,
+    getInterventionById: state.getInterventionById}
 }));
 
 // Hook for intervention filters
-export const useInterventionFilters = () => useClinicalInterventionStore((state) => ({
+export const useInterventionFilters = () => useClinicalInterventionStore((state) => ({ 
     filters: state.filters,
     setFilters: state.setFilters,
     clearFilters: state.clearFilters,
-    searchInterventions: state.searchInterventions,
+    searchInterventions: state.searchInterventions}
 }));
 
 // Hook for intervention actions (CRUD)
-export const useInterventionActions = () => useClinicalInterventionStore((state) => ({
+export const useInterventionActions = () => useClinicalInterventionStore((state) => ({ 
     createIntervention: state.createIntervention,
     updateIntervention: state.updateIntervention,
     deleteIntervention: state.deleteIntervention,
     loading: {
         create: state.loading.createIntervention || false,
         update: state.loading.updateIntervention || false,
-        delete: state.loading.deleteIntervention || false,
+        delete: state.loading.deleteIntervention || false}
     },
     errors: {
         create: state.errors.createIntervention || null,
         update: state.errors.updateIntervention || null,
         delete: state.errors.deleteIntervention || null,
     },
-    clearErrors: state.clearErrors,
-}));
+    clearErrors: state.clearErrors}
 
 // Hook for workflow actions
-export const useInterventionWorkflow = () => useClinicalInterventionStore((state) => ({
+export const useInterventionWorkflow = () => useClinicalInterventionStore((state) => ({ 
     addStrategy: state.addStrategy,
     updateStrategy: state.updateStrategy,
     assignTeamMember: state.assignTeamMember,
@@ -914,7 +912,7 @@ export const useInterventionWorkflow = () => useClinicalInterventionStore((state
         assignTeamMember: state.loading.assignTeamMember || false,
         updateAssignment: state.loading.updateAssignment || false,
         recordOutcome: state.loading.recordOutcome || false,
-        scheduleFollowUp: state.loading.scheduleFollowUp || false,
+        scheduleFollowUp: state.loading.scheduleFollowUp || false}
     },
     errors: {
         addStrategy: state.errors.addStrategy || null,
@@ -923,11 +921,11 @@ export const useInterventionWorkflow = () => useClinicalInterventionStore((state
         updateAssignment: state.errors.updateAssignment || null,
         recordOutcome: state.errors.recordOutcome || null,
         scheduleFollowUp: state.errors.scheduleFollowUp || null,
-    },
-}));
+    };
+});
 
 // Hook for UI state management
-export const useInterventionUI = () => useClinicalInterventionStore((state) => ({
+export const useInterventionUI = () => useClinicalInterventionStore((state) => ({ 
     activeStep: state.activeStep,
     showCreateModal: state.showCreateModal,
     showDetailsModal: state.showDetailsModal,
@@ -935,21 +933,21 @@ export const useInterventionUI = () => useClinicalInterventionStore((state) => (
     setActiveStep: state.setActiveStep,
     setShowCreateModal: state.setShowCreateModal,
     setShowDetailsModal: state.setShowDetailsModal,
-    selectPatient: state.selectPatient,
+    selectPatient: state.selectPatient}
 }));
 
 // Hook for dashboard and analytics
-export const useInterventionAnalytics = () => useClinicalInterventionStore((state) => ({
+export const useInterventionAnalytics = () => useClinicalInterventionStore((state) => ({ 
     dashboardMetrics: state.dashboardMetrics,
     strategyRecommendations: state.strategyRecommendations,
     fetchDashboardMetrics: state.fetchDashboardMetrics,
     getStrategyRecommendations: state.getStrategyRecommendations,
     loading: {
         dashboardMetrics: state.loading.fetchDashboardMetrics || false,
-        strategyRecommendations: state.loading.getStrategyRecommendations || false,
+        strategyRecommendations: state.loading.getStrategyRecommendations || false}
     },
     errors: {
         dashboardMetrics: state.errors.fetchDashboardMetrics || null,
         strategyRecommendations: state.errors.getStrategyRecommendations || null,
-    },
-}));
+    };
+});

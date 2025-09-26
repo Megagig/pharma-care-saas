@@ -1,38 +1,4 @@
-import React, { useState, useCallback } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Stack,
-  IconButton,
-  Alert,
-  Autocomplete,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
-  Tooltip,
-  Divider,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import SearchIcon from '@mui/icons-material/Search';
-import InfoIcon from '@mui/icons-material/Info';
-import MedicationIcon from '@mui/icons-material/Medication';
-import CloseIcon from '@mui/icons-material/Close';
-import type { MedicationHistoryInputProps } from '../types';
-
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Tooltip, Alert, Separator } from '@/components/ui/button';
 // Common medications for quick selection
 const COMMON_MEDICATIONS = [
   'Acetaminophen',
@@ -56,7 +22,6 @@ const COMMON_MEDICATIONS = [
   'Warfarin',
   'Insulin',
 ];
-
 const FREQUENCY_OPTIONS = [
   'Once daily',
   'Twice daily',
@@ -71,7 +36,6 @@ const FREQUENCY_OPTIONS = [
   'Monthly',
   'Other',
 ];
-
 const DOSAGE_UNITS = [
   'mg',
   'g',
@@ -84,7 +48,6 @@ const DOSAGE_UNITS = [
   'units',
   'patches',
 ];
-
 interface MedicationFormData {
   medications: Array<{
     name: string;
@@ -92,7 +55,6 @@ interface MedicationFormData {
     frequency: string;
   }>;
 }
-
 interface MedicationDialogData {
   name: string;
   dosage: string;
@@ -101,35 +63,27 @@ interface MedicationDialogData {
   frequency: string;
   customFrequency: string;
 }
-
-const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
+const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({ 
   value = [],
   onChange,
   error,
-  disabled = false,
+  disabled = false
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-
-  const { control, watch } = useForm<MedicationFormData>({
+  const { control, watch } = useForm<MedicationFormData>({ 
     defaultValues: {
-      medications: value,
-    },
-  });
-
-  const { fields, append, remove, update } = useFieldArray({
+      medications: value}
+    }
+  const { fields, append, remove, update } = useFieldArray({ 
     control,
-    name: 'medications',
+    name: 'medications'}
   });
-
   const watchedMedications = watch('medications');
-
   // Update parent component when medications change
-  React.useEffect(() => {
     onChange(watchedMedications);
   }, [watchedMedications, onChange]);
-
   // Dialog form for adding/editing medications
   const {
     control: dialogControl,
@@ -137,19 +91,16 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
     reset: resetDialog,
     watch: watchDialog,
     formState: { errors: dialogErrors },
-  } = useForm<MedicationDialogData>({
+  } = useForm<MedicationDialogData>({ 
     defaultValues: {
       name: '',
       dosage: '',
       dosageAmount: '',
       dosageUnit: 'mg',
       frequency: 'Once daily',
-      customFrequency: '',
-    },
-  });
-
+      customFrequency: ''}
+    }
   const watchedDialogValues = watchDialog();
-
   const handleOpenDialog = useCallback(
     (medication?: (typeof value)[0], index?: number) => {
       if (medication) {
@@ -159,8 +110,7 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
         );
         const dosageAmount = dosageMatch ? dosageMatch[1] : '';
         const dosageUnit = dosageMatch ? dosageMatch[2] : 'mg';
-
-        resetDialog({
+        resetDialog({ 
           name: medication.name,
           dosage: medication.dosage,
           dosageAmount,
@@ -170,17 +120,17 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
             : 'Other',
           customFrequency: FREQUENCY_OPTIONS.includes(medication.frequency)
             ? ''
-            : medication.frequency,
+            : medication.frequency}
         });
         setEditingIndex(index ?? null);
       } else {
-        resetDialog({
+        resetDialog({ 
           name: '',
           dosage: '',
           dosageAmount: '',
           dosageUnit: 'mg',
           frequency: 'Once daily',
-          customFrequency: '',
+          customFrequency: ''}
         });
         setEditingIndex(null);
       }
@@ -188,29 +138,24 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
     },
     [resetDialog]
   );
-
   const handleCloseDialog = useCallback(() => {
     setIsDialogOpen(false);
     setEditingIndex(null);
     resetDialog();
   }, [resetDialog]);
-
   const handleSaveMedication = useCallback(
     (data: MedicationDialogData) => {
       const dosage =
         data.dosageAmount && data.dosageUnit
           ? `${data.dosageAmount} ${data.dosageUnit}`
           : data.dosage;
-
       const frequency =
         data.frequency === 'Other' ? data.customFrequency : data.frequency;
-
       const medication = {
         name: data.name.trim(),
         dosage: dosage.trim(),
         frequency: frequency.trim(),
       };
-
       if (editingIndex !== null) {
         // Update existing medication
         update(editingIndex, medication);
@@ -218,30 +163,26 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
         // Add new medication
         append(medication);
       }
-
       handleCloseDialog();
     },
     [editingIndex, update, append, handleCloseDialog]
   );
-
   const handleRemoveMedication = useCallback(
     (index: number) => {
       remove(index);
     },
     [remove]
   );
-
   const handleQuickAddMedication = useCallback(
     (medicationName: string) => {
-      append({
+      append({ 
         name: medicationName,
         dosage: '',
-        frequency: 'Once daily',
+        frequency: 'Once daily'}
       });
     },
     [append]
   );
-
   // Filter medications based on search
   const filteredCommonMedications = COMMON_MEDICATIONS.filter(
     (med) =>
@@ -250,7 +191,6 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
         (existing) => existing.name.toLowerCase() === med.toLowerCase()
       )
   );
-
   // Validation
   const validateMedicationName = (name: string): string | true => {
     if (!name.trim()) {
@@ -261,7 +201,6 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
     }
     return true;
   };
-
   const validateDosage = (
     dosageAmount: string,
     dosageUnit: string
@@ -281,7 +220,6 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
     }
     return true;
   };
-
   const validateFrequency = (
     frequency: string,
     customFrequency: string
@@ -291,70 +229,58 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
     }
     return true;
   };
-
   return (
     <Card>
       <CardContent>
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+        <div className="">
+          <div  className="">
             Current Medications
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Document all current medications, supplements, and over-the-counter
             drugs
-          </Typography>
-        </Box>
-
+          </div>
+        </div>
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" className="">
             {error}
           </Alert>
         )}
-
         {/* Current Medications List */}
         {fields.length > 0 ? (
-          <Box sx={{ mb: 3 }}>
-            <Stack spacing={2}>
+          <div className="">
+            <div spacing={2}>
               {fields.map((field, index) => (
-                <Card key={field.id} variant="outlined" sx={{ p: 2 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      justifyContent: 'space-between',
-                    }}
+                <Card key={field.id}  className="">
+                  <div
+                    className=""
                   >
-                    <Box sx={{ flex: 1 }}>
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', mb: 1 }}
+                    <div className="">
+                      <div
+                        className=""
                       >
                         <MedicationIcon
-                          sx={{ mr: 1, color: 'primary.main', fontSize: 20 }}
+                          className=""
                         />
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ fontWeight: 600 }}
+                        <div
+                          
+                          className=""
                         >
                           {field.name}
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                          gap: 2,
-                        }}
-                      >
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                      </div>
+                      <div
+                        className="">
+                        <div  color="text.secondary">
                           <strong>Dosage:</strong>{' '}
                           {field.dosage || 'Not specified'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           <strong>Frequency:</strong> {field.frequency}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="">
                       <Tooltip title="Edit medication">
                         <IconButton
                           size="small"
@@ -374,106 +300,93 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    </Box>
-                  </Box>
+                    </div>
+                  </div>
                 </Card>
               ))}
-            </Stack>
-          </Box>
+            </div>
+          </div>
         ) : (
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="body2">
+          <Alert severity="info" className="">
+            <div >
               No medications recorded. Add current medications to help with drug
               interaction checking and clinical assessment.
-            </Typography>
+            </div>
           </Alert>
         )}
-
         {/* Add Medication Button */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <div className="">
           <Button
-            variant="contained"
+            
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
             disabled={disabled}
           >
             Add Medication
           </Button>
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
+        </div>
+        <Separator className="" />
         {/* Quick Add Common Medications */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+        <div>
+          <div  className="">
             Quick Add Common Medications
-          </Typography>
-
-          <TextField
+          </div>
+          <Input
             size="small"
             placeholder="Search medications..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-              ),
-            }}
-            sx={{ mb: 2, maxWidth: 300 }}
+            
+            className=""
             disabled={disabled}
           />
-
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <div className="">
             {filteredCommonMedications.slice(0, 15).map((medication) => (
               <Chip
                 key={medication}
                 label={medication}
                 onClick={() => handleQuickAddMedication(medication)}
                 disabled={disabled}
-                sx={{ cursor: 'pointer' }}
-                variant="outlined"
+                className=""
+                
                 size="small"
               />
             ))}
-          </Box>
-
+          </div>
           {filteredCommonMedications.length === 0 && searchTerm && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            <div  color="text.secondary" className="">
               No medications found matching "{searchTerm}"
-            </Typography>
+            </div>
           )}
-        </Box>
-
+        </div>
         {/* Medication Dialog */}
         <Dialog
           open={isDialogOpen}
           onClose={handleCloseDialog}
           maxWidth="sm"
           fullWidth
-          slotProps={{ paper: { sx: { borderRadius: 2 } } }}
-        >
+          slotProps={{ paper: { sx: { borderRadius: 2 } } >
           <DialogTitle>
-            <Box sx={{ display: 'flex', alignItems: 'center', pr: 6 }}>
-              <MedicationIcon sx={{ mr: 1 }} />
+            <div className="">
+              <MedicationIcon className="" />
               {editingIndex !== null ? 'Edit Medication' : 'Add Medication'}
-            </Box>
+            </div>
             <IconButton
               onClick={handleCloseDialog}
-              sx={{ position: 'absolute', right: 8, top: 8 }}
+              className=""
             >
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-
           <DialogContent dividers>
             <form onSubmit={handleDialogSubmit(handleSaveMedication)}>
-              <Stack spacing={3}>
+              <div spacing={3}>
                 {/* Medication Name */}
                 <Controller
                   name="name"
                   control={dialogControl}
-                  rules={{ validate: validateMedicationName }}
-                  render={({ field }) => (
+                  
+                  render={({  field  }) => (
                     <Autocomplete
                       {...field}
                       options={COMMON_MEDICATIONS}
@@ -482,7 +395,7 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
                       onChange={(_, value) => field.onChange(value || '')}
                       onInputChange={(_, value) => field.onChange(value)}
                       renderInput={(params) => (
-                        <TextField
+                        <Input}
                           {...params}
                           label="Medication Name"
                           placeholder="Enter or search medication name"
@@ -494,38 +407,29 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
                     />
                   )}
                 />
-
                 {/* Dosage */}
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ mb: 1, fontWeight: 600 }}
+                <div>
+                  <div
+                    
+                    className=""
                   >
                     Dosage (Optional)
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: 2,
-                    }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Controller
                       name="dosageAmount"
                       control={dialogControl}
-                      rules={{
-                        validate: (value) =>
-                          validateDosage(value, watchedDialogValues.dosageUnit),
-                      }}
-                      render={({ field }) => (
-                        <TextField
+                      
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           label="Amount"
                           placeholder="10"
                           type="number"
-                          slotProps={{
+                          slotProps={{}
                             htmlInput: { min: 0, step: 0.1 },
-                          }}
                           error={!!dialogErrors.dosageAmount}
                           helperText={dialogErrors.dosageAmount?.message}
                           fullWidth
@@ -535,9 +439,9 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
                     <Controller
                       name="dosageUnit"
                       control={dialogControl}
-                      render={({ field }) => (
-                        <FormControl fullWidth>
-                          <InputLabel>Unit</InputLabel>
+                      render={({  field  }) => (
+                        <div fullWidth>
+                          <Label>Unit</Label>
                           <Select {...field} label="Unit">
                             {DOSAGE_UNITS.map((unit) => (
                               <MenuItem key={unit} value={unit}>
@@ -545,27 +449,20 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
                               </MenuItem>
                             ))}
                           </Select>
-                        </FormControl>
+                        </div>
                       )}
                     />
-                  </Box>
-                </Box>
-
+                  </div>
+                </div>
                 {/* Frequency */}
-                <Box>
+                <div>
                   <Controller
                     name="frequency"
                     control={dialogControl}
-                    rules={{
-                      validate: (value) =>
-                        validateFrequency(
-                          value,
-                          watchedDialogValues.customFrequency
-                        ),
-                    }}
-                    render={({ field }) => (
-                      <FormControl fullWidth error={!!dialogErrors.frequency}>
-                        <InputLabel>Frequency</InputLabel>
+                    
+                    render={({  field  }) => (
+                      <div fullWidth error={!!dialogErrors.frequency}>
+                        <Label>Frequency</Label>
                         <Select {...field} label="Frequency">
                           {FREQUENCY_OPTIONS.map((freq) => (
                             <MenuItem key={freq} value={freq}>
@@ -574,70 +471,65 @@ const MedicationHistoryInput: React.FC<MedicationHistoryInputProps> = ({
                           ))}
                         </Select>
                         {dialogErrors.frequency && (
-                          <FormHelperText>
+                          <p>
                             {dialogErrors.frequency.message}
-                          </FormHelperText>
+                          </p>
                         )}
-                      </FormControl>
+                      </div>
                     )}
                   />
-
                   {watchedDialogValues.frequency === 'Other' && (
                     <Controller
                       name="customFrequency"
                       control={dialogControl}
-                      render={({ field }) => (
-                        <TextField
+                      render={({  field  }) => (
+                        <Input
                           {...field}
                           label="Custom Frequency"
                           placeholder="e.g., Every other day, Before meals"
                           fullWidth
-                          sx={{ mt: 2 }}
+                          className=""
                           error={!!dialogErrors.customFrequency}
                           helperText={dialogErrors.customFrequency?.message}
                         />
                       )}
                     />
                   )}
-                </Box>
-
+                </div>
                 {/* Information */}
                 <Alert severity="info">
-                  <Typography variant="body2">
+                  <div >
                     <strong>Tip:</strong> Include all medications, supplements,
                     vitamins, and over-the-counter drugs. This information is
                     crucial for checking drug interactions and ensuring patient
                     safety.
-                  </Typography>
+                  </div>
                 </Alert>
-              </Stack>
+              </div>
             </form>
           </DialogContent>
-
-          <DialogActions sx={{ p: 3 }}>
+          <DialogActions className="">
             <Button onClick={handleCloseDialog}>Cancel</Button>
             <Button
               onClick={handleDialogSubmit(handleSaveMedication)}
-              variant="contained"
+              
             >
               {editingIndex !== null ? 'Update' : 'Add'} Medication
             </Button>
           </DialogActions>
         </Dialog>
-
         {/* Summary */}
         {fields.length > 0 && (
-          <Alert severity="success" sx={{ mt: 3 }}>
-            <Typography variant="body2">
+          <Alert severity="success" className="">
+            <div >
               <strong>Medication Summary:</strong> {fields.length} medication
               {fields.length > 1 ? 's' : ''} recorded. This information will be
               used for drug interaction checking during the diagnostic process.
-            </Typography>
+            </div>
           </Alert>
         )}
       </CardContent>
     </Card>
   );
 };
-
 export default MedicationHistoryInput;

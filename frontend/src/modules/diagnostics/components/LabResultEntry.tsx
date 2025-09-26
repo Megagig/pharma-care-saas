@@ -1,35 +1,4 @@
-import React, { useState, useCallback } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Stack,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
-  Autocomplete,
-  Alert,
-  Tooltip,
-  Chip,
-  Paper,
-  Grid,
-  InputAdornment,
-  Divider,
-} from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
-import WarningIcon from '@mui/icons-material/Warning';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import ScienceIcon from '@mui/icons-material/Science';
-import type { LabResultEntryProps } from '../types';
-import { useLabStore } from '../store/labStore';
-
+import { Button, Input, Label, Card, CardContent, Select, Alert, Separator } from '@/components/ui/button';
 const INTERPRETATION_OPTIONS = [
   {
     value: 'normal',
@@ -67,7 +36,6 @@ const INTERPRETATION_OPTIONS = [
     description: 'Abnormal but not critical',
   },
 ];
-
 const COMMON_FLAGS = [
   'H', // High
   'L', // Low
@@ -80,7 +48,6 @@ const COMMON_FLAGS = [
   'I', // Interference
   'N', // Normal
 ];
-
 const COMMON_UNITS = [
   'mg/dL',
   'g/dL',
@@ -103,7 +70,6 @@ const COMMON_UNITS = [
   'hours',
   'days',
 ];
-
 interface LabResultFormData {
   patientId: string;
   orderId?: string;
@@ -122,26 +88,23 @@ interface LabResultFormData {
   loincCode?: string;
   comments?: string;
 }
-
-const LabResultEntry: React.FC<LabResultEntryProps> = ({
+const LabResultEntry: React.FC<LabResultEntryProps> = ({ 
   orderId,
   patientId,
   onSubmit,
   loading = false,
-  error,
+  error
 }) => {
   const [selectedFlags, setSelectedFlags] = useState<string[]>([]);
   const [customFlag, setCustomFlag] = useState('');
-
   const { orders, getOrdersByPatient } = useLabStore();
-
   const {
     control,
     handleSubmit,
     watch,
     setValue,
     formState: { errors, isValid },
-  } = useForm<LabResultFormData>({
+  } = useForm<LabResultFormData>({ 
     defaultValues: {
       patientId,
       orderId: orderId || '',
@@ -152,7 +115,7 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
       referenceRange: {
         low: undefined,
         high: undefined,
-        text: '',
+        text: ''}
       },
       interpretation: undefined,
       flags: [],
@@ -160,22 +123,16 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
       loincCode: '',
       comments: '',
     },
-    mode: 'onChange',
-  });
-
+    mode: 'onChange'}
   const watchedValues = watch();
   const patientOrders = getOrdersByPatient(patientId);
-
   // Auto-interpret result based on reference range
   const autoInterpretResult = useCallback(
     (value: string, referenceRange: any) => {
       if (!value || !referenceRange) return undefined;
-
       const numericValue = parseFloat(value);
       if (isNaN(numericValue)) return undefined;
-
       const { low, high } = referenceRange;
-
       if (low !== undefined && high !== undefined) {
         if (numericValue < low) {
           return numericValue < low * 0.5 ? 'critical' : 'low';
@@ -185,14 +142,11 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
         }
         return 'normal';
       }
-
       return undefined;
     },
     []
   );
-
   // Update interpretation when value or reference range changes
-  React.useEffect(() => {
     const interpretation = autoInterpretResult(
       watchedValues.value,
       watchedValues.referenceRange
@@ -207,11 +161,8 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
     setValue,
     watchedValues.interpretation,
   ]);
-
   // Update flags when interpretation changes
-  React.useEffect(() => {
     const newFlags: string[] = [];
-
     switch (watchedValues.interpretation) {
       case 'low':
         newFlags.push('L');
@@ -241,7 +192,6 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
         newFlags.push('N');
         break;
     }
-
     if (
       newFlags.length > 0 &&
       JSON.stringify(newFlags) !== JSON.stringify(selectedFlags)
@@ -256,7 +206,6 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
     selectedFlags,
     setValue,
   ]);
-
   const handleAddFlag = useCallback(
     (flag: string) => {
       if (!selectedFlags.includes(flag)) {
@@ -267,7 +216,6 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
     },
     [selectedFlags, setValue]
   );
-
   const handleRemoveFlag = useCallback(
     (flag: string) => {
       const newFlags = selectedFlags.filter((f) => f !== flag);
@@ -276,23 +224,19 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
     },
     [selectedFlags, setValue]
   );
-
   const handleAddCustomFlag = useCallback(() => {
     if (customFlag.trim() && !selectedFlags.includes(customFlag.trim())) {
       handleAddFlag(customFlag.trim().toUpperCase());
       setCustomFlag('');
     }
   }, [customFlag, selectedFlags, handleAddFlag]);
-
   const validateNumericValue = (value: string): string | true => {
     if (!value) return 'Result value is required';
-
     // Allow numeric values, ranges, and qualitative results
     const numericRegex = /^[0-9]*\.?[0-9]+$/;
     const rangeRegex = /^[0-9]*\.?[0-9]+\s*-\s*[0-9]*\.?[0-9]+$/;
     const qualitativeRegex =
       /^(positive|negative|detected|not detected|present|absent|reactive|non-reactive)$/i;
-
     if (
       numericRegex.test(value) ||
       rangeRegex.test(value) ||
@@ -300,10 +244,8 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
     ) {
       return true;
     }
-
     return 'Enter a valid numeric value, range, or qualitative result';
   };
-
   const validateReferenceRange = (range: any): string | true => {
     if (range.low !== undefined && range.high !== undefined) {
       if (range.low >= range.high) {
@@ -312,21 +254,18 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
     }
     return true;
   };
-
   const getInterpretationIcon = (interpretation: string) => {
     const option = INTERPRETATION_OPTIONS.find(
       (opt) => opt.value === interpretation
     );
     return option?.icon || InfoIcon;
   };
-
   const getInterpretationColor = (interpretation: string) => {
     const option = INTERPRETATION_OPTIONS.find(
       (opt) => opt.value === interpretation
     );
     return option?.color || 'default';
   };
-
   const onFormSubmit = (data: LabResultFormData) => {
     const formattedData = {
       ...data,
@@ -339,46 +278,38 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
     };
     onSubmit(formattedData);
   };
-
   return (
     <Card>
       <CardContent>
-        <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 600,
-              mb: 1,
-              display: 'flex',
-              alignItems: 'center',
-            }}
+        <div className="">
+          <div
+            
+            className=""
           >
-            <ScienceIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <ScienceIcon className="" />
             Lab Result Entry
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Enter laboratory test results with reference ranges and
             interpretation
-          </Typography>
-        </Box>
-
+          </div>
+        </div>
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" className="">
             {error}
           </Alert>
         )}
-
         <form onSubmit={handleSubmit(onFormSubmit)}>
-          <Stack spacing={4}>
+          <div spacing={4}>
             {/* Order Selection */}
             {patientOrders.length > 0 && (
-              <Box>
+              <div>
                 <Controller
                   name="orderId"
                   control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Associated Lab Order (Optional)</InputLabel>
+                  render={({  field  }) => (
+                    <div fullWidth>
+                      <Label>Associated Lab Order (Optional)</Label>
                       <Select
                         {...field}
                         label="Associated Lab Order (Optional)"
@@ -389,41 +320,39 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                         </MenuItem>
                         {patientOrders.map((order) => (
                           <MenuItem key={order._id} value={order._id}>
-                            <Box>
-                              <Typography variant="body2">
+                            <div>
+                              <div >
                                 Order #{order._id.slice(-6)} -{' '}
                                 {new Date(order.orderDate).toLocaleDateString()}
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 {order.tests.map((t) => t.name).join(', ')}
-                              </Typography>
-                            </Box>
+                              </div>
+                            </div>
                           </MenuItem>
                         ))}
                       </Select>
-                    </FormControl>
+                    </div>
                   )}
                 />
-              </Box>
+              </div>
             )}
-
             {/* Test Information */}
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+            <div>
+              <div  className="">
                 Test Information
-              </Typography>
-
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+              </div>
+              <div container spacing={3}>
+                <div item xs={12} md={6}>
                   <Controller
                     name="testCode"
                     control={control}
-                    rules={{ required: 'Test code is required' }}
-                    render={({ field }) => (
-                      <TextField
+                    
+                    render={({  field  }) => (
+                      <Input
                         {...field}
                         fullWidth
                         label="Test Code"
@@ -434,15 +363,14 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                       />
                     )}
                   />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
+                </div>
+                <div item xs={12} md={6}>
                   <Controller
                     name="testName"
                     control={control}
-                    rules={{ required: 'Test name is required' }}
-                    render={({ field }) => (
-                      <TextField
+                    
+                    render={({  field  }) => (
+                      <Input
                         {...field}
                         fullWidth
                         label="Test Name"
@@ -453,14 +381,13 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                       />
                     )}
                   />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
+                </div>
+                <div item xs={12} md={6}>
                   <Controller
                     name="loincCode"
                     control={control}
-                    render={({ field }) => (
-                      <TextField
+                    render={({  field  }) => (
+                      <Input
                         {...field}
                         fullWidth
                         label="LOINC Code (Optional)"
@@ -470,15 +397,14 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                       />
                     )}
                   />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
+                </div>
+                <div item xs={12} md={6}>
                   <Controller
                     name="performedAt"
                     control={control}
-                    rules={{ required: 'Performed date is required' }}
-                    render={({ field }) => (
-                      <TextField
+                    
+                    render={({  field  }) => (
+                      <Input
                         {...field}
                         fullWidth
                         type="date"
@@ -486,32 +412,28 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                         error={!!errors.performedAt}
                         helperText={errors.performedAt?.message}
                         disabled={loading}
-                        slotProps={{
+                        slotProps={{}
                           inputLabel: { shrink: true },
-                        }}
                       />
                     )}
                   />
-                </Grid>
-              </Grid>
-            </Box>
-
-            <Divider />
-
+                </div>
+              </div>
+            </div>
+            <Separator />
             {/* Result Value and Unit */}
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+            <div>
+              <div  className="">
                 Result Value
-              </Typography>
-
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+              </div>
+              <div container spacing={3}>
+                <div item xs={12} md={6}>
                   <Controller
                     name="value"
                     control={control}
-                    rules={{ validate: validateNumericValue }}
-                    render={({ field }) => (
-                      <TextField
+                    
+                    render={({  field  }) => (
+                      <Input
                         {...field}
                         fullWidth
                         label="Result Value"
@@ -519,19 +441,18 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                         error={!!errors.value}
                         helperText={
                           errors.value?.message ||
-                          'Enter numeric value, range, or qualitative result'
+                          'Enter numeric value, range, or qualitative result'}
                         }
                         disabled={loading}
                       />
                     )}
                   />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
+                </div>
+                <div item xs={12} md={6}>
                   <Controller
                     name="unit"
                     control={control}
-                    render={({ field }) => (
+                    render={({  field  }) => (
                       <Autocomplete
                         {...field}
                         options={COMMON_UNITS}
@@ -539,7 +460,7 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                         disabled={loading}
                         onChange={(_, value) => field.onChange(value || '')}
                         renderInput={(params) => (
-                          <TextField
+                          <Input}
                             {...params}
                             label="Unit"
                             placeholder="e.g., mg/dL, g/dL"
@@ -549,27 +470,22 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                       />
                     )}
                   />
-                </Grid>
-              </Grid>
-            </Box>
-
+                </div>
+              </div>
+            </div>
             {/* Reference Range */}
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+            <div>
+              <div  className="">
                 Reference Range
-              </Typography>
-
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={4}>
+              </div>
+              <div container spacing={3}>
+                <div item xs={12} md={4}>
                   <Controller
                     name="referenceRange.low"
                     control={control}
-                    rules={{
-                      validate: () =>
-                        validateReferenceRange(watchedValues.referenceRange),
-                    }}
-                    render={({ field }) => (
-                      <TextField
+                    
+                    render={({  field  }) => (
+                      <Input
                         {...field}
                         fullWidth
                         type="number"
@@ -580,19 +496,18 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                         onChange={(e) =>
                           field.onChange(
                             e.target.value ? Number(e.target.value) : undefined
-                          )
+                          )}
                         }
                       />
                     )}
                   />
-                </Grid>
-
-                <Grid item xs={12} md={4}>
+                </div>
+                <div item xs={12} md={4}>
                   <Controller
                     name="referenceRange.high"
                     control={control}
-                    render={({ field }) => (
-                      <TextField
+                    render={({  field  }) => (
+                      <Input
                         {...field}
                         fullWidth
                         type="number"
@@ -602,19 +517,18 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                         onChange={(e) =>
                           field.onChange(
                             e.target.value ? Number(e.target.value) : undefined
-                          )
+                          )}
                         }
                       />
                     )}
                   />
-                </Grid>
-
-                <Grid item xs={12} md={4}>
+                </div>
+                <div item xs={12} md={4}>
                   <Controller
                     name="referenceRange.text"
                     control={control}
-                    render={({ field }) => (
-                      <TextField
+                    render={({  field  }) => (
+                      <Input
                         {...field}
                         fullWidth
                         label="Text Range"
@@ -624,28 +538,25 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                       />
                     )}
                   />
-                </Grid>
-              </Grid>
-
+                </div>
+              </div>
               {errors.referenceRange && (
-                <FormHelperText error sx={{ mt: 1 }}>
+                <p error className="">
                   {errors.referenceRange.message}
-                </FormHelperText>
+                </p>
               )}
-            </Box>
-
+            </div>
             {/* Interpretation */}
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+            <div>
+              <div  className="">
                 Interpretation
-              </Typography>
-
+              </div>
               <Controller
                 name="interpretation"
                 control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth>
-                    <InputLabel>Result Interpretation</InputLabel>
+                render={({  field  }) => (
+                  <div fullWidth>
+                    <Label>Result Interpretation</Label>
                     <Select
                       {...field}
                       label="Result Interpretation"
@@ -655,66 +566,59 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                         const Icon = option.icon;
                         return (
                           <MenuItem key={option.value} value={option.value}>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <div className="">
                               <Icon
-                                sx={{
-                                  mr: 1,
-                                  fontSize: 18,
-                                  color: `${option.color}.main`,
-                                }}
+                                className="".main`,
                               />
-                              <Box>
-                                <Typography variant="body2">
+                              <div>
+                                <div >
                                   {option.label}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
+                                </div>
+                                <div
+                                  
                                   color="text.secondary"
                                 >
                                   {option.description}
-                                </Typography>
-                              </Box>
-                            </Box>
+                                </div>
+                              </div>
+                            </div>
                           </MenuItem>
                         );
                       })}
                     </Select>
-                  </FormControl>
+                  </div>
                 )}
               />
-
               {watchedValues.interpretation && (
-                <Box sx={{ mt: 2 }}>
+                <div className="">
                   <Chip
                     icon={React.createElement(
-                      getInterpretationIcon(watchedValues.interpretation),
+                      getInterpretationIcon(watchedValues.interpretation),}
                       { sx: { fontSize: 16 } }
                     )}
                     label={
                       INTERPRETATION_OPTIONS.find(
                         (opt) => opt.value === watchedValues.interpretation
-                      )?.label
+                      )?.label}
                     }
                     color={getInterpretationColor(watchedValues.interpretation)}
-                    variant="outlined"
+                    
                   />
-                </Box>
+                </div>
               )}
-            </Box>
-
+            </div>
             {/* Flags */}
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+            <div>
+              <div  className="">
                 Result Flags
-              </Typography>
-
+              </div>
               {/* Current flags */}
               {selectedFlags.length > 0 && (
-                <Box sx={{ mb: 2 }}>
-                  <Stack
+                <div className="">
+                  <div
                     direction="row"
                     spacing={1}
-                    sx={{ flexWrap: 'wrap', gap: 1 }}
+                    className=""
                   >
                     {selectedFlags.map((flag) => (
                       <Chip
@@ -723,26 +627,25 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                         onDelete={() => handleRemoveFlag(flag)}
                         size="small"
                         color="primary"
-                        variant="outlined"
+                        
                       />
                     ))}
-                  </Stack>
-                </Box>
+                  </div>
+                </div>
               )}
-
               {/* Common flags */}
-              <Box sx={{ mb: 2 }}>
-                <Typography
-                  variant="caption"
+              <div className="">
+                <div
+                  
                   color="text.secondary"
-                  sx={{ mb: 1, display: 'block' }}
+                  className=""
                 >
                   Common flags:
-                </Typography>
-                <Stack
+                </div>
+                <div
                   direction="row"
                   spacing={0.5}
-                  sx={{ flexWrap: 'wrap', gap: 0.5 }}
+                  className=""
                 >
                   {COMMON_FLAGS.map((flag) => (
                     <Chip
@@ -751,16 +654,15 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                       size="small"
                       onClick={() => handleAddFlag(flag)}
                       disabled={loading || selectedFlags.includes(flag)}
-                      sx={{ cursor: 'pointer' }}
-                      variant="outlined"
+                      className=""
+                      
                     />
                   ))}
-                </Stack>
-              </Box>
-
+                </div>
+              </div>
               {/* Custom flag input */}
-              <Box sx={{ display: 'flex', gap: 1, maxWidth: 300 }}>
-                <TextField
+              <div className="">
+                <Input
                   size="small"
                   placeholder="Custom flag..."
                   value={customFlag}
@@ -769,28 +671,26 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      handleAddCustomFlag();
+                      handleAddCustomFlag();}
                     }
-                  }}
                 />
                 <Button
-                  variant="outlined"
+                  
                   size="small"
                   onClick={handleAddCustomFlag}
                   disabled={loading || !customFlag.trim()}
                 >
                   Add
                 </Button>
-              </Box>
-            </Box>
-
+              </div>
+            </div>
             {/* Comments */}
-            <Box>
+            <div>
               <Controller
                 name="comments"
                 control={control}
-                render={({ field }) => (
-                  <TextField
+                render={({  field  }) => (
+                  <Input
                     {...field}
                     fullWidth
                     label="Comments (Optional)"
@@ -801,35 +701,32 @@ const LabResultEntry: React.FC<LabResultEntryProps> = ({
                   />
                 )}
               />
-            </Box>
-
+            </div>
             {/* Critical Value Warning */}
             {watchedValues.interpretation === 'critical' && (
               <Alert severity="error">
-                <Typography variant="body2">
+                <div >
                   <strong>Critical Value Alert:</strong> This result is
                   critically abnormal and may require immediate clinical
                   attention.
-                </Typography>
+                </div>
               </Alert>
             )}
-
             {/* Submit Button */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+            <div className="">
               <Button
                 type="submit"
-                variant="contained"
+                
                 disabled={loading || !isValid}
-                sx={{ minWidth: 120 }}
+                className=""
               >
                 {loading ? 'Saving Result...' : 'Save Result'}
               </Button>
-            </Box>
-          </Stack>
+            </div>
+          </div>
         </form>
       </CardContent>
     </Card>
   );
 };
-
 export default LabResultEntry;

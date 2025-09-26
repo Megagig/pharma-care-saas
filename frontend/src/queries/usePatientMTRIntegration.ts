@@ -1,10 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { patientMTRIntegrationService } from '../services/patientMTRIntegrationService';
-import { queryKeys } from '../lib/queryClient';
-import { useUIStore } from '../stores';
-import type {
     MTRMedicationEntry,
-} from '../types/patientManagement';
 
 // Error type for API calls
 type ApiError = {
@@ -19,7 +13,7 @@ type ApiError = {
  * Hook to fetch MTR summary for a patient
  */
 export const usePatientMTRSummary = (patientId: string, enabled: boolean = true) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: ['patients', patientId, 'mtr', 'summary'],
         queryFn: () => patientMTRIntegrationService.getPatientMTRSummary(patientId),
         enabled: !!patientId && enabled,
@@ -28,7 +22,7 @@ export const usePatientMTRSummary = (patientId: string, enabled: boolean = true)
         retry: (failureCount, error: ApiError) => {
             // Don't retry on 404 or 403 errors
             if (error?.response?.status === 404 || error?.response?.status === 403) {
-                return false;
+                return false; })
             }
             // Don't retry on 429 (rate limit) errors
             if (error?.response?.status === 429) {
@@ -36,19 +30,18 @@ export const usePatientMTRSummary = (patientId: string, enabled: boolean = true)
             }
             return failureCount < 2;
         },
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    });
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)}
 };
 
 /**
  * Hook to fetch comprehensive patient data for MTR
  */
 export const usePatientDataForMTR = (patientId: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: ['patients', patientId, 'mtr', 'data'],
         queryFn: () => patientMTRIntegrationService.getPatientDataForMTR(patientId),
         enabled: !!patientId,
-        staleTime: 1 * 60 * 1000, // 1 minute
+        staleTime: 1 * 60 * 1000, // 1 minute })
     });
 };
 
@@ -56,7 +49,7 @@ export const usePatientDataForMTR = (patientId: string) => {
  * Hook to fetch MTR dashboard data for patient
  */
 export const usePatientDashboardMTRData = (patientId: string, enabled: boolean = true) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: ['patients', patientId, 'dashboard', 'mtr'],
         queryFn: () => patientMTRIntegrationService.getPatientDashboardMTRData(patientId),
         enabled: !!patientId && enabled,
@@ -65,7 +58,7 @@ export const usePatientDashboardMTRData = (patientId: string, enabled: boolean =
         retry: (failureCount, error: ApiError) => {
             // Don't retry on 404 or 403 errors
             if (error?.response?.status === 404 || error?.response?.status === 403) {
-                return false;
+                return false; })
             }
             // Don't retry on 429 (rate limit) errors
             if (error?.response?.status === 429) {
@@ -73,19 +66,18 @@ export const usePatientDashboardMTRData = (patientId: string, enabled: boolean =
             }
             return failureCount < 2;
         },
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    });
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)}
 };
 
 /**
  * Hook to fetch MTR status for multiple patients
  */
 export const useBulkPatientMTRStatus = (patientIds: string[]) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: ['patients', 'bulk', 'mtr-status', patientIds.sort().join(',')],
         queryFn: () => patientMTRIntegrationService.getBulkPatientMTRStatus(patientIds),
         enabled: patientIds.length > 0,
-        staleTime: 2 * 60 * 1000,
+        staleTime: 2 * 60 * 1000}
     });
 };
 
@@ -101,10 +93,10 @@ export const useSearchPatientsWithMTR = (params: {
     page?: number;
     limit?: number;
 }) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: ['patients', 'search', 'with-mtr', params],
         queryFn: () => patientMTRIntegrationService.searchPatientsWithMTR(params),
-        staleTime: 2 * 60 * 1000,
+        staleTime: 2 * 60 * 1000}
     });
 };
 
@@ -119,48 +111,46 @@ export const useSyncMedicationsWithMTR = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({  })
         mutationFn: ({ patientId, mtrId }: { patientId: string; mtrId: string }) =>
             patientMTRIntegrationService.syncMedicationsWithMTR(patientId, mtrId),
         onSuccess: (data, variables) => {
             // Invalidate related queries
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'medications']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'medications'] })
             });
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.mtr.detail(variables.mtrId)
+            queryClient.invalidateQueries({ 
+                queryKey: queryKeys.mtr.detail(variables.mtrId) })
             });
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'mtr']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'mtr'] })
             });
 
             const { syncStatus, conflicts } = data;
 
             if (syncStatus === 'synced') {
-                addNotification({
+                addNotification({ 
                     type: 'success',
                     title: 'Medications Synchronized',
                     message: 'Patient medications have been successfully synchronized with MTR.',
-                    duration: 4000,
+                    duration: 4000}
                 });
             } else if (syncStatus === 'conflicts' && conflicts) {
-                addNotification({
+                addNotification({ 
                     type: 'warning',
-                    title: 'Synchronization Conflicts',
+                    title: 'Synchronization Conflicts'}
                     message: `Found ${conflicts.length} conflicts that need manual resolution.`,
-                    duration: 6000,
-                });
+                    duration: 6000}
             }
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Synchronization Failed',
                 message: error.message || 'Failed to synchronize medications. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -170,11 +160,11 @@ export const useImportPatientMedicationsToMTR = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             patientId,
             mtrId,
-            medicationIds
+            medicationIds })
         }: {
             patientId: string;
             mtrId: string;
@@ -187,29 +177,27 @@ export const useImportPatientMedicationsToMTR = () => {
             ),
         onSuccess: (data, variables) => {
             // Invalidate MTR session to refresh medications
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.mtr.detail(variables.mtrId)
+            queryClient.invalidateQueries({ 
+                queryKey: queryKeys.mtr.detail(variables.mtrId) })
             });
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'mtr']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'mtr'] })
             });
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
-                title: 'Medications Imported',
+                title: 'Medications Imported'}
                 message: `Successfully imported ${data.length} medications into MTR session.`,
-                duration: 4000,
-            });
+                duration: 4000}
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Import Failed',
                 message: error.message || 'Failed to import medications. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -219,11 +207,11 @@ export const useExportMTRMedicationsToPatient = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             patientId,
             mtrId,
-            medications
+            medications })
         }: {
             patientId: string;
             mtrId: string;
@@ -236,29 +224,27 @@ export const useExportMTRMedicationsToPatient = () => {
             ),
         onSuccess: (data, variables) => {
             // Invalidate patient medications to refresh
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'medications']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'medications'] })
             });
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'mtr']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'mtr'] })
             });
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
-                title: 'Medications Exported',
+                title: 'Medications Exported'}
                 message: `Successfully exported ${data.length} medications to patient records.`,
-                duration: 4000,
-            });
+                duration: 4000}
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Export Failed',
                 message: error.message || 'Failed to export medications. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 // ===============================
@@ -272,48 +258,47 @@ export const useSyncDTPsWithMTR = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({  })
         mutationFn: ({ patientId, mtrId }: { patientId: string; mtrId: string }) =>
             patientMTRIntegrationService.syncDTPsWithMTR(patientId, mtrId),
         onSuccess: (data, variables) => {
             // Invalidate related queries
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'dtps']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'dtps'] })
             });
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.drugTherapyProblems.byReview(variables.mtrId)
+            queryClient.invalidateQueries({ 
+                queryKey: queryKeys.drugTherapyProblems.byReview(variables.mtrId) })
             });
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'mtr']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'mtr'] })
             });
 
             const { syncStatus } = data;
 
             if (syncStatus === 'synced') {
-                addNotification({
+                addNotification({ 
                     type: 'success',
                     title: 'DTPs Synchronized',
                     message: 'Drug therapy problems have been successfully synchronized.',
-                    duration: 4000,
+                    duration: 4000}
                 });
             } else {
-                addNotification({
+                addNotification({ 
                     type: 'info',
                     title: 'DTPs Need Update',
                     message: 'Some drug therapy problems need manual review and update.',
-                    duration: 5000,
+                    duration: 5000}
                 });
             }
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'DTP Sync Failed',
                 message: error.message || 'Failed to synchronize DTPs. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -323,34 +308,33 @@ export const useCreatePatientDTPFromMTR = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({  })
         mutationFn: ({ patientId, mtrDTPId }: { patientId: string; mtrDTPId: string }) =>
             patientMTRIntegrationService.createPatientDTPFromMTR(patientId, mtrDTPId),
         onSuccess: (data, variables) => {
             // Invalidate patient DTPs
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'dtps']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'dtps'] })
             });
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'mtr']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'mtr'] })
             });
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'DTP Created',
                 message: 'Drug therapy problem has been added to patient records.',
-                duration: 4000,
+                duration: 4000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'DTP Creation Failed',
                 message: error.message || 'Failed to create patient DTP. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 // ===============================
@@ -364,10 +348,10 @@ export const useUpdatePatientMTRStatus = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             patientId,
-            status
+            status })
         }: {
             patientId: string;
             status: {
@@ -380,38 +364,36 @@ export const useUpdatePatientMTRStatus = () => {
             patientMTRIntegrationService.updatePatientMTRStatus(patientId, status),
         onSuccess: (data, variables) => {
             // Update patient in cache
-            queryClient.setQueryData(['patients', variables.patientId], (old: Record<string, unknown>) => ({
+            queryClient.setQueryData(['patients', variables.patientId], (old: Record<string, unknown>) => ({ 
                 ...old,
                 data: {
                     ...old?.data,
-                    patient: data,
-                },
-            }));
+                    patient: data}
+                }
 
             // Invalidate related queries
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'mtr']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'mtr'] })
             });
-            queryClient.invalidateQueries({
-                queryKey: ['patients', 'list']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', 'list'] })
             });
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'MTR Status Updated',
                 message: 'Patient MTR status has been successfully updated.',
-                duration: 3000,
+                duration: 3000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Status Update Failed',
                 message: error.message || 'Failed to update MTR status. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -421,12 +403,12 @@ export const useUpdateBulkPatientMTRStatus = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (updates: Array<{
             patientId: string;
             hasActiveMTR: boolean;
             mtrStatus: 'none' | 'active' | 'overdue' | 'scheduled';
-            lastMTRDate?: string;
+            lastMTRDate?: string; })
         }>) =>
             patientMTRIntegrationService.updateBulkPatientMTRStatus(updates),
         onSuccess: (_, variables) => {
@@ -435,27 +417,25 @@ export const useUpdateBulkPatientMTRStatus = () => {
             queryClient.invalidateQueries({ queryKey: ['patients', 'search'] });
 
             variables.forEach(update => {
-                queryClient.invalidateQueries({
-                    queryKey: ['patients', update.patientId, 'mtr']
+                queryClient.invalidateQueries({ 
+                    queryKey: ['patients', update.patientId, 'mtr'] })
                 });
             });
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
-                title: 'Bulk Update Complete',
+                title: 'Bulk Update Complete'}
                 message: `Successfully updated MTR status for ${variables.length} patients.`,
-                duration: 4000,
-            });
+                duration: 4000}
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Bulk Update Failed',
                 message: error.message || 'Failed to update patient MTR statuses. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 // ===============================
@@ -469,11 +449,11 @@ export const useAddMTRSummaryToNotes = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: ({
             patientId,
             mtrId,
-            summary
+            summary })
         }: {
             patientId: string;
             mtrId: string;
@@ -489,27 +469,26 @@ export const useAddMTRSummaryToNotes = () => {
             patientMTRIntegrationService.addMTRSummaryToNotes(patientId, mtrId, summary),
         onSuccess: (_, variables) => {
             // Invalidate clinical notes
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'clinical-notes']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'clinical-notes'] })
             });
-            queryClient.invalidateQueries({
-                queryKey: ['patients', variables.patientId, 'visits']
+            queryClient.invalidateQueries({ 
+                queryKey: ['patients', variables.patientId, 'visits'] })
             });
 
-            addNotification({
+            addNotification({ 
                 type: 'success',
                 title: 'MTR Summary Added',
                 message: 'MTR summary has been added to patient clinical notes.',
-                duration: 4000,
+                duration: 4000}
             });
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Failed to Add Summary',
                 message: error.message || 'Failed to add MTR summary to notes. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };

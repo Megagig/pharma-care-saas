@@ -1,28 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Button,
-  IconButton,
-  Alert,
-  CircularProgress,
-  Card,
-  CardContent,
-  Breadcrumbs,
-  Link,
-} from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ErrorBoundary } from '../../../components/common/ErrorBoundary';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
 import AIAnalysisResults from '../components/AIAnalysisResults';
-import {
-  aiDiagnosticService,
-  DiagnosticCase,
-  AIAnalysisResult,
-} from '../../../services/aiDiagnosticService';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
+import { Spinner } from '@/components/ui/spinner';
+import aiDiagnosticService from '../../../services/aiDiagnosticService';
 
 const CaseResultsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -35,15 +19,12 @@ const CaseResultsPage: React.FC = () => {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isLoadingRef = useRef(false);
-
   const pollForAnalysis = useCallback(async () => {
     if (!caseId) return;
-
     try {
       setAnalysisLoading(true);
       const analysisResult = await aiDiagnosticService.pollAnalysis(caseId);
       setAnalysis(analysisResult);
-
       // Update case status
       setDiagnosticCase((prevCase) => {
         if (prevCase) {
@@ -64,27 +45,22 @@ const CaseResultsPage: React.FC = () => {
       setAnalysisLoading(false);
     }
   }, [caseId]);
-
   const loadCase = useCallback(async () => {
     if (!caseId) {
       setError('Case ID is required');
       setLoading(false);
       return;
     }
-
     // Prevent multiple simultaneous calls using ref
     if (isLoadingRef.current) {
       return;
     }
-
     try {
       isLoadingRef.current = true;
       setLoading(true);
       setError(null);
-
       const caseData = await aiDiagnosticService.getCase(caseId);
       setDiagnosticCase(caseData);
-
       // If case is completed and has analysis, load it
       if (caseData.status === 'completed' && caseData.aiAnalysis) {
         setAnalysis(caseData.aiAnalysis);
@@ -100,211 +76,189 @@ const CaseResultsPage: React.FC = () => {
       isLoadingRef.current = false;
     }
   }, [caseId, pollForAnalysis]);
-
   const handleRefresh = () => {
     loadCase();
   };
-
   const handleBack = () => {
     navigate('/pharmacy/diagnostics');
   };
-
   useEffect(() => {
     loadCase();
   }, [loadCase]);
-
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: 400,
-          }}
+      <div maxWidth="lg" className="">
+        <div
+          className=""
         >
-          <Box sx={{ textAlign: 'center' }}>
-            <CircularProgress sx={{ mb: 2 }} />
-            <Typography variant="body1" color="text.secondary">
+          <div className="">
+            <Spinner className="" />
+            <div color="text.secondary">
               Loading diagnostic case...
-            </Typography>
-          </Box>
-        </Box>
-      </Container>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
-
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <div maxWidth="lg" className="">
         <Alert
           severity="error"
           action={
-            <Button color="inherit" size="small" onClick={handleRefresh}>
+            <Button color="inherit" size="sm" onClick={handleRefresh}>
               Retry
             </Button>
           }
         >
           {error}
         </Alert>
-      </Container>
+      </div>
     );
   }
-
   if (!diagnosticCase) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <div maxWidth="lg" className="">
         <Alert severity="warning">Diagnostic case not found.</Alert>
-      </Container>
+      </div>
     );
   }
-
   return (
     <ErrorBoundary>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <div maxWidth="lg" className="">
         {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <IconButton onClick={handleBack} sx={{ mr: 1 }}>
+        <div className="">
+          <div className="">
+            <IconButton onClick={handleBack} className="">
               <ArrowBackIcon />
             </IconButton>
-            <Box sx={{ flexGrow: 1 }}>
-              <Breadcrumbs sx={{ mb: 1 }}>
+            <div className="">
+              <Breadcrumbs className="">
                 <Link
                   component="button"
-                  variant="body2"
+
                   onClick={handleBack}
-                  sx={{ textDecoration: 'none' }}
+                  className=""
                 >
                   Diagnostics
                 </Link>
-                <Typography variant="body2" color="text.primary">
+                <div color="text.primary">
                   Case Results
-                </Typography>
+                </div>
               </Breadcrumbs>
-              <Typography variant="h4" sx={{ fontWeight: 600 }}>
+              <div className="">
                 Diagnostic Case Results
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
+              </div>
+              <div color="text.secondary">
                 Case ID: {diagnosticCase.id} • Status: {diagnosticCase.status}
-              </Typography>
-            </Box>
+              </div>
+            </div>
             <IconButton
               onClick={handleRefresh}
               disabled={loading || analysisLoading}
             >
               <RefreshIcon />
             </IconButton>
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {/* Case Information */}
-        <Card sx={{ mb: 3 }}>
+        <Card className="">
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2 }}>
+            <div className="">
               Case Information
-            </Typography>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: 2,
-              }}
+            </div>
+            <div
+              className=""
             >
-              <Box>
-                <Typography variant="caption" color="text.secondary">
+              <div>
+                <div color="text.secondary">
                   Patient
-                </Typography>
-                <Typography variant="body2">
+                </div>
+                <div >
                   {typeof diagnosticCase.patientId === 'object' &&
-                  diagnosticCase.patientId &&
-                  'firstName' in diagnosticCase.patientId
-                    ? `${diagnosticCase.patientId.firstName || ''} ${
-                        diagnosticCase.patientId.lastName || ''
+                    diagnosticCase.patientId &&
+                    'firstName' in diagnosticCase.patientId
+                    ? `${diagnosticCase.patientId.firstName || ''} ${diagnosticCase.patientId.lastName || ''
                       }`.trim()
                     : diagnosticCase.patientId}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+              </div>
+              <div>
+                <div color="text.secondary">
                   Created
-                </Typography>
-                <Typography variant="body2">
+                </div>
+                <div >
                   {new Date(diagnosticCase.createdAt).toLocaleString()}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+              </div>
+              <div>
+                <div color="text.secondary">
                   Last Updated
-                </Typography>
-                <Typography variant="body2">
+                </div>
+                <div >
                   {new Date(diagnosticCase.updatedAt).toLocaleString()}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+              </div>
+              <div>
+                <div color="text.secondary">
                   Primary Symptoms
-                </Typography>
-                <Typography variant="body2">
+                </div>
+                <div >
                   {diagnosticCase.caseData.symptoms.subjective.join(', ') ||
                     'None specified'}
-                </Typography>
-              </Box>
-            </Box>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
         {/* Analysis Results */}
         {diagnosticCase.status === 'analyzing' || analysisLoading ? (
           <AIAnalysisResults analysis={{} as AIAnalysisResult} loading={true} />
         ) : diagnosticCase.status === 'completed' && analysis ? (
           <AIAnalysisResults analysis={analysis} />
         ) : diagnosticCase.status === 'failed' ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
+          <Alert severity="error" className="">
+            <div className="">
               Analysis Failed
-            </Typography>
-            <Typography variant="body2">
+            </div>
+            <div >
               The AI analysis could not be completed. This may be due to
               insufficient data or a system error. Please try submitting the
               case again or contact support if the issue persists.
-            </Typography>
+            </div>
           </Alert>
         ) : (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
+          <Alert severity="info" className="">
+            <div className="">
               Analysis Pending
-            </Typography>
-            <Typography variant="body2">
+            </div>
+            <div >
               The AI analysis has not been completed yet. Please check back
               later or refresh the page.
-            </Typography>
+            </div>
           </Alert>
         )}
-
         {/* Actions */}
-        <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
-          <Button variant="outlined" onClick={handleBack}>
+        <div className="">
+          <Button onClick={handleBack}>
             Back to Diagnostics
           </Button>
           <Button
-            variant="contained"
+
             onClick={() => navigate('/pharmacy/diagnostics/case/new')}
           >
             New Case
           </Button>
-        </Box>
-      </Container>
+        </div>
+      </div>
     </ErrorBoundary>
   );
 };
-
 // Wrap with feature guard
 const CaseResultsPageWithGuard: React.FC = () => (
   <DiagnosticFeatureGuard>
     <CaseResultsPage />
   </DiagnosticFeatureGuard>
 );
-
 export default CaseResultsPageWithGuard;

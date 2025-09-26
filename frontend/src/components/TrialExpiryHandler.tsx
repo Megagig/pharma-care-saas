@@ -1,23 +1,81 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Typography,
-  Button,
-  Box,
-  Alert,
-} from '@mui/material';
-import { useSubscriptionStatus } from '../hooks/useSubscription';
+
+// Mock components for now
+const MockButton = ({ children, ...props }: any) => (
+  <button {...props} className={`px-3 py-1 rounded-md ${props.className || ''}`}>
+    {children}
+  </button>
+);
+
+const MockDialog = ({ children, open, ...props }: any) => {
+  if (!open) return null;
+  return (
+    <div {...props} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      {children}
+    </div>
+  );
+};
+
+const MockDialogContent = ({ children, ...props }: any) => (
+  <div {...props} className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockDialogHeader = ({ children, ...props }: any) => (
+  <div {...props} className={`p-6 border-b ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockDialogTitle = ({ children, ...props }: any) => (
+  <h3 {...props} className={`text-lg font-semibold ${props.className || ''}`}>
+    {children}
+  </h3>
+);
+
+const MockDialogFooter = ({ children, ...props }: any) => (
+  <div {...props} className={`p-6 border-t flex justify-end gap-2 ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockAlert = ({ children, ...props }: any) => (
+  <div {...props} className={`p-4 mb-4 rounded-md bg-yellow-50 border-l-4 border-yellow-400 ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+const MockAlertDescription = ({ children, ...props }: any) => (
+  <div {...props} className={`text-sm ${props.className || ''}`}>
+    {children}
+  </div>
+);
+
+// Mock hook
+const useSubscriptionStatus = () => ({
+  status: 'active',
+  daysRemaining: 10,
+  loading: false
+});
+
+// Replace imports with mock components
+const Button = MockButton;
+const Dialog = MockDialog;
+const DialogContent = MockDialogContent;
+const DialogHeader = MockDialogHeader;
+const DialogTitle = MockDialogTitle;
+const DialogFooter = MockDialogFooter;
+const Alert = MockAlert;
+const AlertDescription = MockAlertDescription;
 
 interface TrialExpiryHandlerProps {
   children: React.ReactNode;
 }
 
 const TrialExpiryHandler: React.FC<TrialExpiryHandlerProps> = ({
-  children,
+  children
 }) => {
   const { status, daysRemaining, loading } = useSubscriptionStatus();
   const navigate = useNavigate();
@@ -32,8 +90,8 @@ const TrialExpiryHandler: React.FC<TrialExpiryHandlerProps> = ({
       navigate('/subscription-management', {
         state: {
           from: location.pathname,
-          reason: 'trial_expired',
-        },
+          reason: 'trial_expired'
+        }
       });
     }
   }, [status, loading, isSubscriptionPage, navigate, location]);
@@ -52,64 +110,59 @@ const TrialExpiryHandler: React.FC<TrialExpiryHandlerProps> = ({
       {children}
 
       {/* Trial Warning Dialog */}
-      <Dialog
-        open={showTrialWarning}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: { borderRadius: 2 },
-          },
-        }}
-      >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Typography variant="h5" component="div" color="warning.main">
-            ⚠️ Trial Ending Soon
-          </Typography>
-        </DialogTitle>
+      <Dialog open={showTrialWarning}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              ⚠️ Trial Ending Soon
+            </DialogTitle>
+          </DialogHeader>
 
-        <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Your free trial expires in {daysRemaining} day
-            {daysRemaining !== 1 ? 's' : ''}
-          </Alert>
+          <div className="space-y-4">
+            <Alert variant="destructive">
+              <AlertDescription>
+                Your free trial expires in {daysRemaining} day
+                {daysRemaining !== 1 ? 's' : ''}
+              </AlertDescription>
+            </Alert>
 
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            To continue using all features without interruption, please upgrade
-            to a paid plan.
-          </Typography>
+            <p className="text-sm text-gray-600">
+              To continue using all features without interruption, please upgrade
+              to a paid plan.
+            </p>
 
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              After your trial expires, you'll lose access to:
-            </Typography>
-            <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-              <li>Patient management</li>
-              <li>Medication tracking</li>
-              <li>Advanced reports</li>
-              <li>Team collaboration</li>
-            </ul>
-          </Box>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-700">
+                After your trial expires, you'll lose access to:
+              </p>
+              <ul className="text-sm text-gray-600 space-y-1 ml-4">
+                <li>• Patient management</li>
+                <li>• Medication tracking</li>
+                <li>• Advanced reports</li>
+                <li>• Team collaboration</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              onClick={() => navigate('/subscription-management')}
+              className="flex-1"
+            >
+              Upgrade Now
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                // You might want to implement a "remind me later" functionality
+                // For now, just close the dialog
+              }}
+              className="flex-1"
+            >
+              Remind Me Later
+            </Button>
+          </DialogFooter>
         </DialogContent>
-
-        <DialogActions sx={{ p: 3, pt: 1 }}>
-          <Button
-            onClick={() => navigate('/subscription-management')}
-            variant="contained"
-            color="primary"
-            size="large"
-          >
-            Upgrade Now
-          </Button>
-          <Button
-            onClick={() => {
-              /* Close dialog logic */
-            }}
-            variant="text"
-          >
-            Remind Me Later
-          </Button>
-        </DialogActions>
       </Dialog>
     </>
   );

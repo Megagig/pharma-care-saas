@@ -1,0 +1,58 @@
+# Prometheus configuration for migration monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "migration-alert-rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Application metrics
+  - job_name: 'migration-app'
+    static_configs:
+      - targets: ['app.pharmacare.com:443']
+    metrics_path: '/api/metrics'
+    scheme: https
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Frontend performance metrics
+  - job_name: 'migration-frontend'
+    static_configs:
+      - targets: ['migration-metrics:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # System metrics
+  - job_name: 'migration-system'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+  # Custom migration metrics
+  - job_name: 'migration-custom'
+    static_configs:
+      - targets: ['migration-metrics:8080']
+    metrics_path: '/migration-metrics'
+    scrape_interval: 60s
+
+  # Bundle size monitoring
+  - job_name: 'bundle-size'
+    static_configs:
+      - targets: ['migration-metrics:8080']
+    metrics_path: '/bundle-metrics'
+    scrape_interval: 300s  # Every 5 minutes
+
+  # Theme performance monitoring
+  - job_name: 'theme-performance'
+    static_configs:
+      - targets: ['migration-metrics:8080']
+    metrics_path: '/theme-metrics'
+    scrape_interval: 30s

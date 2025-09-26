@@ -1,33 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  LinearProgress,
-  Alert,
-  Chip,
-  useTheme,
-  alpha,
-  Avatar,
-  Tooltip,
-  IconButton,
-} from '@mui/material';
-import {
-  Storage as StorageIcon,
-  People as PeopleIcon,
-  Api as ApiIcon,
-  LocationOn as LocationIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  Info as InfoIcon,
-  Refresh as RefreshIcon,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
-import { useAuth } from '../../hooks/useAuth';
-import { usageMonitoringService } from '../../services/usageMonitoringService';
 import DashboardChart from './DashboardChart';
+
+import { Card, CardContent, Tooltip, Progress, Alert, Avatar } from '@/components/ui/button';
 
 interface UsageData {
   patients: {
@@ -57,7 +30,6 @@ interface UsageData {
     percentage: number;
   };
 }
-
 interface UsageCardProps {
   title: string;
   current: number;
@@ -68,8 +40,7 @@ interface UsageCardProps {
   unit?: string;
   formatValue?: (value: number) => string;
 }
-
-const UsageCard: React.FC<UsageCardProps> = ({
+const UsageCard: React.FC<UsageCardProps> = ({ 
   title,
   current,
   limit,
@@ -77,52 +48,36 @@ const UsageCard: React.FC<UsageCardProps> = ({
   icon,
   color,
   unit = '',
-  formatValue,
+  formatValue
 }) => {
   const theme = useTheme();
-
   const getStatusColor = () => {
     if (percentage >= 90) return theme.palette.error.main;
     if (percentage >= 75) return theme.palette.warning.main;
     return theme.palette.success.main;
   };
-
   const getStatusIcon = () => {
     if (percentage >= 90) return <WarningIcon />;
     if (percentage >= 75) return <InfoIcon />;
     return <CheckCircleIcon />;
   };
-
   const formatDisplayValue = (value: number) => {
     if (formatValue) return formatValue(value);
     return `${value}${unit}`;
   };
-
   return (
     <motion.div
-      whileHover={{ y: -2, scale: 1.01 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-    >
-      <Card
-        sx={{
-          height: '100%',
-          background: `linear-gradient(135deg, ${alpha(color, 0.1)} 0%, ${alpha(
-            color,
-            0.05
-          )} 100%)`,
-          border: `1px solid ${alpha(color, 0.2)}`,
-          position: 'relative',
-          overflow: 'visible',
-        }}
       >
-        <CardContent sx={{ p: 3 }}>
-          <Box
+      <Card
+        className="">
+        <CardContent className="">
+          <div
             display="flex"
             alignItems="center"
             justifyContent="space-between"
             mb={2}
           >
-            <Avatar sx={{ bgcolor: alpha(color, 0.15), color: color }}>
+            <Avatar className="">
               {icon}
             </Avatar>
             <Chip
@@ -133,47 +88,33 @@ const UsageCard: React.FC<UsageCardProps> = ({
                   ? 'error'
                   : percentage >= 75
                   ? 'warning'
-                  : 'success'
+                  : 'success'}
               }
               size="small"
             />
-          </Box>
-
-          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+          </div>
+          <div  className="">
             {title}
-          </Typography>
-
-          <Box display="flex" alignItems="baseline" mb={2}>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 'bold', color: color, mr: 1 }}
+          </div>
+          <div display="flex" alignItems="baseline" mb={2}>
+            <div
+              
+              className=""
             >
               {formatDisplayValue(current)}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            </div>
+            <div  color="text.secondary">
               / {formatDisplayValue(limit)}
-            </Typography>
-          </Box>
-
-          <LinearProgress
-            variant="determinate"
-            value={Math.min(percentage, 100)}
-            sx={{
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: alpha(getStatusColor(), 0.2),
-              '& .MuiLinearProgress-bar': {
-                backgroundColor: getStatusColor(),
-                borderRadius: 4,
-              },
-            }}
-          />
-
+            </div>
+          </div>
+          <Progress
+            
+            className="" />
           {percentage >= 90 && (
-            <Alert severity="error" sx={{ mt: 2, py: 0.5 }}>
-              <Typography variant="caption">
+            <Alert severity="error" className="">
+              <div >
                 Usage limit almost reached!
-              </Typography>
+              </div>
             </Alert>
           )}
         </CardContent>
@@ -181,7 +122,6 @@ const UsageCard: React.FC<UsageCardProps> = ({
     </motion.div>
   );
 };
-
 const UsageDashboard: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
@@ -189,11 +129,9 @@ const UsageDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-
   useEffect(() => {
     fetchUsageData();
   }, []);
-
   const fetchUsageData = async () => {
     try {
       setLoading(true);
@@ -208,7 +146,6 @@ const UsageDashboard: React.FC = () => {
       setLoading(false);
     }
   };
-
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -217,14 +154,12 @@ const UsageDashboard: React.FC = () => {
       setRefreshing(false);
     }
   };
-
   const formatStorage = (mb: number) => {
     if (mb >= 1024) {
       return `${(mb / 1024).toFixed(1)} GB`;
     }
     return `${mb} MB`;
   };
-
   const formatApiCalls = (calls: number) => {
     if (calls >= 1000000) {
       return `${(calls / 1000000).toFixed(1)}M`;
@@ -234,82 +169,46 @@ const UsageDashboard: React.FC = () => {
     }
     return calls.toString();
   };
-
   if (loading && !usageData) {
     return (
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
+      <div className="">
+        <div  className="">
           Usage & Limits
-        </Typography>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: '1fr 1fr',
-              md: 'repeat(3, 1fr)',
-              lg: 'repeat(5, 1fr)',
-            },
-            gap: 3,
-            width: '100%',
-          }}
-        >
+        </div>
+        <div
+          className="">
           {[...Array(5)].map((_, index) => (
-            <Box key={index} sx={{ width: '100%' }}>
-              <Card sx={{ height: 200 }}>
+            <div key={index} className="">
+              <Card className="">
                 <CardContent>
-                  <Box sx={{ animation: 'pulse 1.5s ease-in-out infinite' }}>
-                    <Box
-                      sx={{
-                        bgcolor: 'grey.200',
-                        height: 40,
-                        width: 40,
-                        borderRadius: '50%',
-                        mb: 2,
-                      }}
+                  <div className="">
+                    <div
+                      className=""
                     />
-                    <Box
-                      sx={{
-                        bgcolor: 'grey.200',
-                        height: 20,
-                        width: '80%',
-                        borderRadius: 1,
-                        mb: 1,
-                      }}
+                    <div
+                      className=""
                     />
-                    <Box
-                      sx={{
-                        bgcolor: 'grey.200',
-                        height: 32,
-                        width: '60%',
-                        borderRadius: 1,
-                        mb: 2,
-                      }}
+                    <div
+                      className=""
                     />
-                    <Box
-                      sx={{
-                        bgcolor: 'grey.200',
-                        height: 8,
-                        width: '100%',
-                        borderRadius: 1,
-                      }}
+                    <div
+                      className=""
                     />
-                  </Box>
+                  </div>
                 </CardContent>
               </Card>
-            </Box>
+            </div>
           ))}
-        </Box>
-      </Box>
+        </div>
+      </div>
     );
   }
-
   if (error) {
     return (
       <Alert
         severity="error"
-        sx={{ mb: 4 }}
-        action={
+        className=""
+        action={}
           <IconButton color="inherit" size="small" onClick={handleRefresh}>
             <RefreshIcon />
           </IconButton>
@@ -319,75 +218,47 @@ const UsageDashboard: React.FC = () => {
       </Alert>
     );
   }
-
   if (!usageData) {
     return null;
   }
-
   // Prepare API usage chart data
-  const apiUsageChartData = usageData.apiCalls.dailyUsage.map((day) => ({
+  const apiUsageChartData = usageData.apiCalls.dailyUsage.map((day) => ({ 
     name: new Date(day.date).toLocaleDateString('en-US', {
       month: 'short',
-      day: 'numeric',
+      day: 'numeric'}
     }),
-    value: day.calls,
-  }));
-
+    value: day.calls}
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Box sx={{ mb: 4 }}>
-        <Box
+      
+      >
+      <div className="">
+        <div
           display="flex"
           alignItems="center"
           justifyContent="space-between"
           mb={3}
         >
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+          <div  className="">
             Usage & Limits
-          </Typography>
+          </div>
           <Tooltip title="Refresh Usage Data">
             <IconButton
               onClick={handleRefresh}
               disabled={refreshing}
-              sx={{
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) },
-              }}
-            >
+              className="">
               <RefreshIcon
-                sx={{
-                  animation: refreshing ? 'spin 1s linear infinite' : 'none',
-                  '@keyframes spin': {
-                    '0%': { transform: 'rotate(0deg)' },
+                className=""
                     '100%': { transform: 'rotate(360deg)' },
                   },
-                }}
               />
             </IconButton>
           </Tooltip>
-        </Box>
-
+        </div>
         {/* Usage Cards */}
-        <Box
-          className="usage-cards-grid"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: '1fr 1fr',
-              md: 'repeat(3, 1fr)',
-              lg: 'repeat(5, 1fr)',
-            },
-            gap: 3,
-            mb: 4,
-            width: '100%',
-          }}
-        >
-          <Box sx={{ width: '100%' }}>
+        <div
+          className="">
+          <div className="">
             <UsageCard
               title="Patients"
               current={usageData.patients.current}
@@ -396,9 +267,8 @@ const UsageDashboard: React.FC = () => {
               icon={<PeopleIcon />}
               color={theme.palette.primary.main}
             />
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <UsageCard
               title="Team Members"
               current={usageData.users.current}
@@ -407,9 +277,8 @@ const UsageDashboard: React.FC = () => {
               icon={<PeopleIcon />}
               color={theme.palette.success.main}
             />
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <UsageCard
               title="Storage"
               current={usageData.storage.current}
@@ -419,9 +288,8 @@ const UsageDashboard: React.FC = () => {
               color={theme.palette.info.main}
               formatValue={formatStorage}
             />
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <UsageCard
               title="API Calls"
               current={usageData.apiCalls.current}
@@ -431,9 +299,8 @@ const UsageDashboard: React.FC = () => {
               color={theme.palette.warning.main}
               formatValue={formatApiCalls}
             />
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
+          </div>
+          <div className="">
             <UsageCard
               title="Locations"
               current={usageData.locations.current}
@@ -442,21 +309,13 @@ const UsageDashboard: React.FC = () => {
               icon={<LocationIcon />}
               color={theme.palette.secondary.main}
             />
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {/* API Usage Chart */}
         {apiUsageChartData.length > 0 && (
-          <Box
-            className="usage-chart-grid"
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' },
-              gap: 3,
-              width: '100%',
-            }}
-          >
-            <Box sx={{ width: '100%' }}>
+          <div
+            className="">
+            <div className="">
               <DashboardChart
                 title="API Usage (Last 7 Days)"
                 data={apiUsageChartData}
@@ -467,24 +326,22 @@ const UsageDashboard: React.FC = () => {
                 showLegend={false}
                 interactive={true}
               />
-            </Box>
-
-            <Box sx={{ width: '100%' }}>
-              <Card sx={{ height: 350 }}>
+            </div>
+            <div className="">
+              <Card className="">
                 <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
+                  <div  className="">
                     Usage Summary
-                  </Typography>
-
-                  <Box mb={3}>
-                    <Typography
-                      variant="body2"
+                  </div>
+                  <div mb={3}>
+                    <div
+                      
                       color="text.secondary"
                       gutterBottom
                     >
                       Most Used Resource
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                    </div>
+                    <div  className="">
                       {Math.max(
                         usageData.patients.percentage,
                         usageData.users.percentage,
@@ -512,18 +369,17 @@ const UsageDashboard: React.FC = () => {
                           ) === usageData.apiCalls.percentage
                         ? 'API Calls'
                         : 'Locations'}
-                    </Typography>
-                  </Box>
-
-                  <Box mb={3}>
-                    <Typography
-                      variant="body2"
+                    </div>
+                  </div>
+                  <div mb={3}>
+                    <div
+                      
                       color="text.secondary"
                       gutterBottom
                     >
                       Resources at Risk
-                    </Typography>
-                    <Box display="flex" flexDirection="column" gap={1}>
+                    </div>
+                    <div display="flex" flexDirection="column" gap={1}>
                       {[
                         {
                           name: 'Patients',
@@ -564,22 +420,21 @@ const UsageDashboard: React.FC = () => {
                         usageData.apiCalls.percentage,
                         usageData.locations.percentage,
                       ].every((p) => p < 75) && (
-                        <Typography variant="body2" color="success.main">
+                        <div  color="success.main">
                           All resources within safe limits
-                        </Typography>
+                        </div>
                       )}
-                    </Box>
-                  </Box>
-
-                  <Box>
-                    <Typography
-                      variant="body2"
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      
                       color="text.secondary"
                       gutterBottom
                     >
                       Recommendation
-                    </Typography>
-                    <Typography variant="body2">
+                    </div>
+                    <div >
                       {Math.max(
                         usageData.patients.percentage,
                         usageData.users.percentage,
@@ -597,16 +452,15 @@ const UsageDashboard: React.FC = () => {
                           ) >= 75
                         ? 'Monitor usage closely and plan for potential upgrade.'
                         : 'Usage is within normal limits.'}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Box>
-          </Box>
+            </div>
+          </div>
         )}
-      </Box>
+      </div>
     </motion.div>
   );
 };
-
 export default UsageDashboard;

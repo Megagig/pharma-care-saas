@@ -1,8 +1,5 @@
-import React from 'react';
-import ModulePage from '../components/ModulePage';
-import ScienceIcon from '@mui/icons-material/Science';
-import type { ModuleInfo } from '../types/moduleTypes';
 
+import ModulePage from '../components/ModulePage';
 const LabResultIntegration: React.FC = () => {
   const moduleInfo: ModuleInfo = {
     title: 'Lab Result Integration',
@@ -32,7 +29,6 @@ const LabResultIntegration: React.FC = () => {
     status: 'placeholder',
     estimatedRelease: 'Q3 2025',
   };
-
   return (
     <ModulePage
       moduleInfo={moduleInfo}
@@ -41,5 +37,4 @@ const LabResultIntegration: React.FC = () => {
     />
   );
 };
-
 export default LabResultIntegration;

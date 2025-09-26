@@ -1,60 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  InputAdornment,
-  Button,
-  Chip,
-  Card,
-  CardContent,
-  Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Autocomplete,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  IconButton,
-  Tooltip,
-  Alert,
-  CircularProgress,
-  Divider,
-  Badge,
-  Collapse,
-  FormControlLabel,
-  Switch,
-  Tabs,
-  Tab,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Clear as ClearIcon,
-  FilterList as FilterIcon,
-  History as HistoryIcon,
-  Bookmark as BookmarkIcon,
-  BookmarkBorder as BookmarkBorderIcon,
-  Visibility as ViewIcon,
-  Download as DownloadIcon,
-  TrendingUp as TrendingIcon,
-  Person as PersonIcon,
-  Message as MessageIcon,
-  AttachFile as AttachFileIcon,
-  Mention as MentionIcon,
-  Schedule as ScheduleIcon,
-  Save as SaveIcon,
-  Share as ShareIcon,
-} from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, parseISO, subDays } from 'date-fns';
-import { debounce } from 'lodash';
+import { Button, Input, Label, Card, CardContent, Badge, Select, Spinner, Alert, Avatar, Switch, Separator } from '@/components/ui/button';
 
 interface SearchFilters {
   query: string;
@@ -78,7 +22,6 @@ interface SearchFilters {
   sortBy?: 'relevance' | 'date' | 'sender';
   sortOrder?: 'asc' | 'desc';
 }
-
 interface SearchResult {
   message: {
     _id: string;
@@ -110,7 +53,6 @@ interface SearchResult {
   };
   score?: number;
 }
-
 interface SearchStats {
   totalResults: number;
   searchTime: number;
@@ -120,7 +62,6 @@ interface SearchStats {
     conversations: { conversationId: string; title: string; count: number }[];
   };
 }
-
 interface SavedSearch {
   _id: string;
   name: string;
@@ -133,7 +74,6 @@ interface SavedSearch {
   useCount: number;
   createdAt: string;
 }
-
 interface MessageSearchProps {
   height?: string;
   onResultSelect?: (result: SearchResult) => void;
@@ -142,22 +82,21 @@ interface MessageSearchProps {
   showSuggestions?: boolean;
   defaultFilters?: Partial<SearchFilters>;
 }
-
-const MessageSearch: React.FC<MessageSearchProps> = ({
+const MessageSearch: React.FC<MessageSearchProps> = ({ 
   height = '600px',
   onResultSelect,
   onConversationSelect,
   showSavedSearches = true,
-  showSuggestions = true,
-  defaultFilters = {},
+  showSuggestions = true}
+  defaultFilters = {}
 }) => {
-  const [filters, setFilters] = useState<SearchFilters>({
+  const [filters, setFilters] = useState<SearchFilters>({ 
     query: '',
     startDate: subDays(new Date(), 30),
     endDate: new Date(),
     sortBy: 'relevance',
     sortOrder: 'desc',
-    ...defaultFilters,
+    ...defaultFilters}
   });
   const [results, setResults] = useState<SearchResult[]>([]);
   const [stats, setStats] = useState<SearchStats | null>(null);
@@ -172,7 +111,6 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
   const [saveSearchDescription, setSaveSearchDescription] = useState('');
   const [saveAsPublic, setSaveAsPublic] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
-
   // Debounced search function
   const debouncedSearch = useCallback(
     debounce(async (searchFilters: SearchFilters) => {
@@ -181,17 +119,13 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
         setStats(null);
         return;
       }
-
       setLoading(true);
       setError(null);
-
       try {
         const queryParams = new URLSearchParams();
-
         if (searchFilters.query.trim()) {
           queryParams.append('q', searchFilters.query.trim());
         }
-
         // Add other filters
         Object.entries(searchFilters).forEach(([key, value]) => {
           if (
@@ -209,7 +143,6 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
             }
           }
         });
-
         const response = await fetch(
           `/api/communication/search/messages?${queryParams}`,
           {
@@ -218,15 +151,12 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
             },
           }
         );
-
         if (!response.ok) {
           throw new Error('Search failed');
         }
-
         const data = await response.json();
         setResults(data.data || []);
         setStats(data.stats);
-
         // Add to search history
         if (searchFilters.query.trim()) {
           addToSearchHistory(searchFilters.query.trim());
@@ -239,7 +169,6 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
     }, 500),
     []
   );
-
   // Check if advanced filters are set
   const hasAdvancedFilters = (filters: SearchFilters) => {
     return !!(
@@ -256,7 +185,6 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
       (filters.tags && filters.tags.length > 0)
     );
   };
-
   // Add to search history
   const addToSearchHistory = (query: string) => {
     setSearchHistory((prev) => {
@@ -264,16 +192,13 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
       return [query, ...filtered].slice(0, 10);
     });
   };
-
   // Load search suggestions
   const loadSuggestions = async () => {
     try {
       const response = await fetch('/api/communication/search/suggestions', {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
+        }
       if (response.ok) {
         const data = await response.json();
         setSuggestions(data.data.suggestions || []);
@@ -282,7 +207,6 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
       console.error('Failed to load suggestions:', err);
     }
   };
-
   // Load saved searches
   const loadSavedSearches = async () => {
     try {
@@ -294,7 +218,6 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
           },
         }
       );
-
       if (response.ok) {
         const data = await response.json();
         setSavedSearches(data.data.userSearches || []);
@@ -303,11 +226,9 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
       console.error('Failed to load saved searches:', err);
     }
   };
-
   // Save current search
   const saveCurrentSearch = async () => {
     if (!saveSearchName.trim()) return;
-
     try {
       const response = await fetch('/api/communication/search/save', {
         method: 'POST',
@@ -315,7 +236,7 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({
+        body: JSON.stringify({ 
           name: saveSearchName.trim(),
           description: saveSearchDescription.trim() || undefined,
           query: filters.query,
@@ -326,13 +247,10 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
             priority: filters.priority,
             dateFrom: filters.startDate,
             dateTo: filters.endDate,
-            tags: filters.tags,
+            tags: filters.tags}
           },
           searchType: 'message',
-          isPublic: saveAsPublic,
-        }),
-      });
-
+          isPublic: saveAsPublic}
       if (response.ok) {
         setShowSaveDialog(false);
         setSaveSearchName('');
@@ -346,7 +264,6 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
       setError(err instanceof Error ? err.message : 'Failed to save search');
     }
   };
-
   // Load saved search
   const loadSavedSearch = async (savedSearch: SavedSearch) => {
     try {
@@ -355,69 +272,63 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
+        }
       // Apply the filters
-      setFilters({
+      setFilters({ 
         ...savedSearch.filters,
-        query: savedSearch.query,
+        query: savedSearch.query}
       });
     } catch (err) {
       console.error('Failed to load saved search:', err);
     }
   };
-
   // Handle filter changes
   const handleFilterChange = (key: keyof SearchFilters, value: any) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
   };
-
   // Clear all filters
   const clearFilters = () => {
-    setFilters({
+    setFilters({ 
       query: '',
       startDate: subDays(new Date(), 30),
       endDate: new Date(),
       sortBy: 'relevance',
-      sortOrder: 'desc',
+      sortOrder: 'desc'}
     });
     setResults([]);
     setStats(null);
   };
-
   // Render search result item
   const renderSearchResult = (result: SearchResult, index: number) => {
     const { message, conversation, highlights } = result;
     const sender = message.sender;
-
     return (
-      <ListItem
+      <div
         key={message._id}
         button
         onClick={() => onResultSelect?.(result)}
-        sx={{ alignItems: 'flex-start', py: 2 }}
+        className=""
       >
-        <ListItemAvatar>
-          <Avatar sx={{ bgcolor: 'primary.main' }}>
+        <divAvatar>
+          <Avatar className="">
             {sender.firstName[0]}
             {sender.lastName[0]}
           </Avatar>
         </ListItemAvatar>
-        <ListItemText
+        <div
           primary={
-            <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
+            <div
+              className=""
             >
-              <Typography variant="subtitle2">
+              <div >}
                 {sender.firstName} {sender.lastName}
-              </Typography>
+              </div>
               <Chip
                 size="small"
                 label={sender.role}
-                variant="outlined"
-                sx={{ fontSize: '0.7rem' }}
+                
+                className=""
               />
               <Chip
                 size="small"
@@ -427,66 +338,49 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
                     ? 'error'
                     : message.priority === 'high'
                     ? 'warning'
-                    : 'default'
+                    : 'default'}
                 }
-                variant="outlined"
+                
               />
               {message.content.attachments &&
                 message.content.attachments.length > 0 && (
                   <AttachFileIcon
-                    sx={{ fontSize: 16, color: 'text.secondary' }}
+                    className=""
                   />
                 )}
               {message.mentions.length > 0 && (
-                <MentionIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                <MentionIcon className="" />
               )}
-            </Box>
+            </div>
           }
-          secondary={
-            <Box>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 0.5 }}
-                dangerouslySetInnerHTML={{
-                  __html:
-                    highlights?.content ||
-                    message.content.text ||
-                    'No text content',
-                }}
+          
               />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="caption" color="text.secondary">
+              <div className="">
+                <div  color="text.secondary">
                   in {conversation.title}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   • {format(parseISO(message.createdAt), 'MMM dd, yyyy HH:mm')}
-                </Typography>
+                </div>
                 {result.score && (
-                  <Typography variant="caption" color="text.secondary">
+                  <div  color="text.secondary">
                     • Score: {result.score.toFixed(2)}
-                  </Typography>
+                  </div>
                 )}
-              </Box>
-            </Box>
+              </div>
+            </div>
           }
         />
         <IconButton
-          onClick={(e) => {
-            e.stopPropagation();
-            onConversationSelect?.(conversation._id);
-          }}
-        >
+          >
           <ViewIcon />
         </IconButton>
-      </ListItem>
+      </div>
     );
   };
-
   useEffect(() => {
     debouncedSearch(filters);
   }, [filters, debouncedSearch]);
-
   useEffect(() => {
     if (showSuggestions) {
       loadSuggestions();
@@ -495,15 +389,14 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
       loadSavedSearches();
     }
   }, [showSuggestions, showSavedSearches]);
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ height, display: 'flex', flexDirection: 'column' }}>
+      <div className="">
         {/* Search Header */}
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography
-            variant="h6"
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}
+        <div className="">
+          <div
+            
+            className=""
           >
             <SearchIcon />
             Message Search
@@ -514,10 +407,9 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
                 max={999}
               />
             )}
-          </Typography>
-
+          </div>
           {/* Main Search Bar */}
-          <TextField
+          <Input
             fullWidth
             placeholder="Search messages... (e.g., 'medication dosage', 'patient symptoms', 'prescription changes')"
             value={filters.query}
@@ -531,19 +423,17 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
               endAdornment: filters.query && (
                 <InputAdornment position="end">
                   <IconButton
-                    size="small"
-                    onClick={() => handleFilterChange('query', '')}
+                    size="small"}
+                    onClick={() =>handleFilterChange('query', '')}
                   >
                     <ClearIcon />
                   </IconButton>
                 </InputAdornment>
               ),
-            }}
-            sx={{ mb: 2 }}
+            className=""
           />
-
           {/* Quick Actions */}
-          <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+          <div className="">
             <Button
               startIcon={<FilterIcon />}
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -557,7 +447,7 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
                 startIcon={<ClearIcon />}
                 onClick={clearFilters}
                 size="small"
-                variant="outlined"
+                
               >
                 Clear All
               </Button>
@@ -568,26 +458,25 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
                   startIcon={<SaveIcon />}
                   onClick={() => setShowSaveDialog(true)}
                   size="small"
-                  variant="outlined"
+                  
                 >
                   Save Search
                 </Button>
               </>
             )}
-          </Box>
-
+          </div>
           {/* Advanced Filters */}
           <Collapse in={showAdvancedFilters}>
-            <Card variant="outlined" sx={{ mb: 2 }}>
+            <Card  className="">
               <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Message Type</InputLabel>
+                <div container spacing={2}>
+                  <div item xs={12} sm={6} md={3}>
+                    <div fullWidth size="small">
+                      <Label>Message Type</Label>
                       <Select
                         value={filters.messageType || ''}
                         onChange={(e) =>
-                          handleFilterChange('messageType', e.target.value)
+                          handleFilterChange('messageType', e.target.value)}
                         }
                         label="Message Type"
                       >
@@ -598,15 +487,15 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
                         <MenuItem value="clinical_note">Clinical Note</MenuItem>
                         <MenuItem value="voice_note">Voice Note</MenuItem>
                       </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Priority</InputLabel>
+                    </div>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
+                    <div fullWidth size="small">
+                      <Label>Priority</Label>
                       <Select
                         value={filters.priority || ''}
                         onChange={(e) =>
-                          handleFilterChange('priority', e.target.value)
+                          handleFilterChange('priority', e.target.value)}
                         }
                         label="Priority"
                       >
@@ -615,64 +504,62 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
                         <MenuItem value="high">High</MenuItem>
                         <MenuItem value="urgent">Urgent</MenuItem>
                       </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                    </div>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
                     <DatePicker
                       label="Start Date"
                       value={filters.startDate}
                       onChange={(date) => handleFilterChange('startDate', date)}
-                      slotProps={{
+                      slotProps={{}
                         textField: { size: 'small', fullWidth: true },
-                      }}
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
                     <DatePicker
                       label="End Date"
                       value={filters.endDate}
                       onChange={(date) => handleFilterChange('endDate', date)}
-                      slotProps={{
+                      slotProps={{}
                         textField: { size: 'small', fullWidth: true },
-                      }}
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
                     <FormControlLabel
                       control={
-                        <Switch
+                        <Switch}
                           checked={filters.hasAttachments || false}
                           onChange={(e) =>
                             handleFilterChange(
                               'hasAttachments',
                               e.target.checked
-                            )
+                            )}
                           }
                         />
                       }
                       label="Has Attachments"
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
                     <FormControlLabel
                       control={
-                        <Switch
+                        <Switch}
                           checked={filters.hasMentions || false}
                           onChange={(e) =>
-                            handleFilterChange('hasMentions', e.target.checked)
+                            handleFilterChange('hasMentions', e.target.checked)}
                           }
                         />
                       }
                       label="Has Mentions"
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Sort By</InputLabel>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
+                    <div fullWidth size="small">
+                      <Label>Sort By</Label>
                       <Select
                         value={filters.sortBy || 'relevance'}
                         onChange={(e) =>
-                          handleFilterChange('sortBy', e.target.value)
+                          handleFilterChange('sortBy', e.target.value)}
                         }
                         label="Sort By"
                       >
@@ -680,219 +567,204 @@ const MessageSearch: React.FC<MessageSearchProps> = ({
                         <MenuItem value="date">Date</MenuItem>
                         <MenuItem value="sender">Sender</MenuItem>
                       </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Sort Order</InputLabel>
+                    </div>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
+                    <div fullWidth size="small">
+                      <Label>Sort Order</Label>
                       <Select
                         value={filters.sortOrder || 'desc'}
                         onChange={(e) =>
-                          handleFilterChange('sortOrder', e.target.value)
+                          handleFilterChange('sortOrder', e.target.value)}
                         }
                         label="Sort Order"
                       >
                         <MenuItem value="desc">Descending</MenuItem>
                         <MenuItem value="asc">Ascending</MenuItem>
                       </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </Collapse>
-
           {/* Search History */}
           {searchHistory.length > 0 && !filters.query && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
+            <div className="">
+              <div  gutterBottom>
                 Recent Searches
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              </div>
+              <div className="">
                 {searchHistory.slice(0, 5).map((query, index) => (
                   <Chip
                     key={index}
                     label={query}
                     onClick={() => handleFilterChange('query', query)}
-                    variant="outlined"
+                    
                     size="small"
                     icon={<HistoryIcon />}
                   />
                 ))}
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
-        </Box>
-
+        </div>
         {/* Content Area */}
-        <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div className="">
           {/* Saved Searches Sidebar */}
           {showSavedSearches && savedSearches.length > 0 && (
-            <Box
-              sx={{
-                width: 250,
-                borderRight: 1,
-                borderColor: 'divider',
-                overflow: 'auto',
-              }}
+            <div
+              className=""
             >
-              <Box sx={{ p: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
+              <div className="">
+                <div  gutterBottom>
                   Saved Searches
-                </Typography>
+                </div>
                 <List dense>
                   {savedSearches.map((savedSearch) => (
-                    <ListItem
+                    <div
                       key={savedSearch._id}
                       button
                       onClick={() => loadSavedSearch(savedSearch)}
                     >
-                      <ListItemText
+                      <div
                         primary={savedSearch.name}
                         secondary={`${savedSearch.useCount} uses • ${format(
                           parseISO(savedSearch.createdAt),
                           'MMM dd'
                         )}`}
                       />
-                    </ListItem>
+                    </div>
                   ))}
                 </List>
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
-
           {/* Results Area */}
-          <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <div className="">
             {/* Error Alert */}
             {error && (
               <Alert
                 severity="error"
-                sx={{ m: 2 }}
+                className=""
                 onClose={() => setError(null)}
               >
                 {error}
               </Alert>
             )}
-
             {/* Loading State */}
             {loading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress />
-              </Box>
+              <div className="">
+                <Spinner />
+              </div>
             )}
-
             {/* Search Stats */}
             {!loading && stats && (
-              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                <Typography variant="body2" color="text.secondary">
+              <div className="">
+                <div  color="text.secondary">
                   {stats.totalResults.toLocaleString()} results found in{' '}
                   {stats.searchTime}ms
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
-
             {/* Results */}
             {!loading && results.length > 0 && (
               <List>
                 {results.map((result, index) => (
                   <React.Fragment key={result.message._id}>
                     {renderSearchResult(result, index)}
-                    {index < results.length - 1 && <Divider />}
+                    {index < results.length - 1 && <Separator />}
                   </React.Fragment>
                 ))}
               </List>
             )}
-
             {/* No Results */}
             {!loading &&
               results.length === 0 &&
               (filters.query || hasAdvancedFilters(filters)) && (
-                <Box sx={{ textAlign: 'center', p: 4 }}>
-                  <Typography color="text.secondary" gutterBottom>
+                <div className="">
+                  <div color="text.secondary" gutterBottom>
                     No messages found matching your search criteria
-                  </Typography>
+                  </div>
                   <Button
                     onClick={clearFilters}
-                    variant="outlined"
+                    
                     size="small"
                   >
                     Clear Search
                   </Button>
-                </Box>
+                </div>
               )}
-
             {/* Initial State */}
             {!loading &&
               results.length === 0 &&
               !filters.query &&
               !hasAdvancedFilters(filters) && (
-                <Box sx={{ textAlign: 'center', p: 4 }}>
+                <div className="">
                   <SearchIcon
-                    sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }}
+                    className=""
                   />
-                  <Typography color="text.secondary" gutterBottom>
+                  <div color="text.secondary" gutterBottom>
                     Enter a search query to find messages
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Try searching for medications, symptoms, or patient names
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               )}
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {/* Save Search Dialog */}
         <Collapse in={showSaveDialog}>
-          <Paper sx={{ p: 2, m: 2, border: 1, borderColor: 'divider' }}>
-            <Typography variant="h6" gutterBottom>
+          <div className="">
+            <div  gutterBottom>
               Save Search
-            </Typography>
-            <TextField
+            </div>
+            <Input
               fullWidth
               label="Search Name"
               value={saveSearchName}
               onChange={(e) => setSaveSearchName(e.target.value)}
-              sx={{ mb: 2 }}
+              className=""
             />
-            <TextField
+            <Input
               fullWidth
               label="Description (optional)"
               value={saveSearchDescription}
               onChange={(e) => setSaveSearchDescription(e.target.value)}
               multiline
               rows={2}
-              sx={{ mb: 2 }}
+              className=""
             />
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={saveAsPublic}
                   onChange={(e) => setSaveAsPublic(e.target.checked)}
                 />
               }
               label="Share with team"
-              sx={{ mb: 2 }}
+              className=""
             />
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <div className="">
               <Button
-                variant="contained"
+                
                 onClick={saveCurrentSearch}
                 disabled={!saveSearchName.trim()}
               >
                 Save
               </Button>
               <Button
-                variant="outlined"
+                
                 onClick={() => setShowSaveDialog(false)}
               >
                 Cancel
               </Button>
-            </Box>
-          </Paper>
+            </div>
+          </div>
         </Collapse>
-      </Box>
+      </div>
     </LocalizationProvider>
   );
 };
-
 export default MessageSearch;

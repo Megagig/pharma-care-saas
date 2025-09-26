@@ -1,11 +1,5 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { MTRStatusIndicator } from '../MTRStatusIndicator';
-import * as patientMTRIntegrationHooks from '../../queries/usePatientMTRIntegration';
 
+import * as patientMTRIntegrationHooks from '../../queries/usePatientMTRIntegration';
 // Mock the hooks
 vi.mock('../../queries/usePatientMTRIntegration');
 
@@ -15,12 +9,11 @@ const mockUsePatientMTRSummary = vi.mocked(
 
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -38,11 +31,11 @@ describe('MTRStatusIndicator', () => {
 
   describe('Loading State', () => {
     it('should show loading indicator when data is loading', () => {
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: undefined,
         isLoading: true,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
@@ -57,12 +50,11 @@ describe('MTRStatusIndicator', () => {
 
   describe('Error State', () => {
     it('should show error chip when there is an error', () => {
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: undefined,
         isLoading: false,
-        isError: true,
-        error: { message: 'Failed to load' },
-      });
+        isError: true}
+        error: { message: 'Failed to load' }
 
       render(
         <TestWrapper>
@@ -86,16 +78,16 @@ describe('MTRStatusIndicator', () => {
         recentMTRs: [{ _id: 'mtr-123' }],
       };
 
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: mockSummary,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
         <TestWrapper>
-          <MTRStatusIndicator patientId={mockPatientId} variant="chip" />
+          <MTRStatusIndicator patientId={mockPatientId}  />
         </TestWrapper>
       );
 
@@ -113,16 +105,16 @@ describe('MTRStatusIndicator', () => {
         recentMTRs: [{ _id: 'mtr-123' }],
       };
 
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: mockSummary,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
         <TestWrapper>
-          <MTRStatusIndicator patientId={mockPatientId} variant="chip" />
+          <MTRStatusIndicator patientId={mockPatientId}  />
         </TestWrapper>
       );
 
@@ -140,16 +132,16 @@ describe('MTRStatusIndicator', () => {
         recentMTRs: [],
       };
 
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: mockSummary,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
         <TestWrapper>
-          <MTRStatusIndicator patientId={mockPatientId} variant="chip" />
+          <MTRStatusIndicator patientId={mockPatientId}  />
         </TestWrapper>
       );
 
@@ -169,18 +161,18 @@ describe('MTRStatusIndicator', () => {
         recentMTRs: [{ _id: 'mtr-123' }],
       };
 
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: mockSummary,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
         <TestWrapper>
           <MTRStatusIndicator
             patientId={mockPatientId}
-            variant="compact"
+            
             showActions={true}
           />
         </TestWrapper>
@@ -203,18 +195,18 @@ describe('MTRStatusIndicator', () => {
         recentMTRs: [{ _id: 'mtr-123' }],
       };
 
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: mockSummary,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
         <TestWrapper>
           <MTRStatusIndicator
             patientId={mockPatientId}
-            variant="detailed"
+            
             showActions={true}
           />
         </TestWrapper>
@@ -238,18 +230,18 @@ describe('MTRStatusIndicator', () => {
         recentMTRs: [],
       };
 
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: mockSummary,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
         <TestWrapper>
           <MTRStatusIndicator
             patientId={mockPatientId}
-            variant="detailed"
+            
             showActions={true}
           />
         </TestWrapper>
@@ -272,18 +264,18 @@ describe('MTRStatusIndicator', () => {
         recentMTRs: [{ _id: 'mtr-123' }],
       };
 
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: mockSummary,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
         <TestWrapper>
           <MTRStatusIndicator
             patientId={mockPatientId}
-            variant="chip"
+            
             onViewMTR={mockOnViewMTR}
           />
         </TestWrapper>
@@ -309,18 +301,18 @@ describe('MTRStatusIndicator', () => {
         recentMTRs: [],
       };
 
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: mockSummary,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(
         <TestWrapper>
           <MTRStatusIndicator
             patientId={mockPatientId}
-            variant="detailed"
+            
             showActions={true}
             onStartMTR={mockOnStartMTR}
           />
@@ -338,11 +330,11 @@ describe('MTRStatusIndicator', () => {
 
   describe('Edge Cases', () => {
     it('should handle null data gracefully', () => {
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: null,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       const { container } = render(
@@ -355,11 +347,11 @@ describe('MTRStatusIndicator', () => {
     });
 
     it('should handle empty patient ID', () => {
-      mockUsePatientMTRSummary.mockReturnValue({
+      mockUsePatientMTRSummary.mockReturnValue({ 
         data: undefined,
         isLoading: false,
         isError: false,
-        error: null,
+        error: null}
       });
 
       render(

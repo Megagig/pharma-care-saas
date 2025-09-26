@@ -1,26 +1,9 @@
-import {
-  Typography,
-  Box,
-  Button,
-  Paper,
-  Grid,
-  Card,
-  CardContent,
-  CircularProgress,
-  Alert,
-  AlertTitle,
-  Tooltip,
-  Menu,
-  MenuItem,
-} from '@mui/material';
-import { Link } from 'react-router-dom';
-import { People as PeopleIcon } from '@mui/icons-material';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { useQuery } from '@tanstack/react-query';
-import React from 'react';
+
 import MedicationChart from './MedicationChart';
+
 import medicationManagementService from '../../services/medicationManagementService';
+
+import { Button, Card, CardContent, Tooltip, Spinner, Alert, AlertTitle } from '@/components/ui/button';
 
 interface DashboardStats {
   activeMedications: number;
@@ -80,7 +63,7 @@ const MedicationsManagementDashboard = () => {
     data: statsData,
     isLoading: statsLoading,
     error: statsError,
-  } = useQuery({
+  } = useQuery({ 
     queryKey: ['medicationDashboardStats'],
     queryFn: async (): Promise<DashboardStats> => {
       try {
@@ -102,7 +85,7 @@ const MedicationsManagementDashboard = () => {
     data: patientsData,
     isLoading: patientsLoading,
     error: patientsError,
-  } = useQuery({
+  } = useQuery({ 
     queryKey: ['recentPatientsWithMedications'],
     queryFn: async (): Promise<RecentPatient[]> => {
       try {
@@ -120,7 +103,7 @@ const MedicationsManagementDashboard = () => {
     data: trendsData,
     isLoading: trendsLoading,
     error: trendsError,
-  } = useQuery({
+  } = useQuery({ 
     queryKey: ['medicationAdherenceTrends', trendsPeriod],
     queryFn: async (): Promise<AdherenceTrend[]> => {
       try {
@@ -136,23 +119,18 @@ const MedicationsManagementDashboard = () => {
   });
 
   return (
-    <Box>
+    <div>
       {/* Page header with export button */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
+      <div
+        className=""
       >
-        <Typography variant="h5" component="h1">
+        <div  component="h1">
           Medication Management Dashboard
-        </Typography>
-        <Box>
+        </div>
+        <div>
           <Tooltip title="Export Data">
             <Button
-              variant="outlined"
+              
               startIcon={<FileDownloadIcon />}
               onClick={handleExportMenuOpen}
               size="small"
@@ -168,115 +146,110 @@ const MedicationsManagementDashboard = () => {
             <MenuItem onClick={handleExportCSV}>Export as CSV</MenuItem>
             <MenuItem onClick={handleExportPDF}>Export as PDF</MenuItem>
           </Menu>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {/* Show error alert if any API call fails */}
       {(statsError || patientsError || trendsError) && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" className="">
           There was an error loading the dashboard data. Please try refreshing
           the page.
         </Alert>
       )}
 
-      <Grid container spacing={3}>
+      <div container spacing={3}>
         {/* Stats Cards */}
-        <Grid size={{ xs: 12, md: 4 }}>
+        <div >
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Active Medications
-              </Typography>
+              </div>
               {statsLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-                  <CircularProgress size={40} />
-                </Box>
+                <div className="">
+                  <Spinner size={40} />
+                </div>
               ) : (
                 <>
-                  <Typography variant="h3">
+                  <div >
                     {statsData?.activeMedications || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Across all patients
-                  </Typography>
+                  </div>
                 </>
               )}
             </CardContent>
           </Card>
-        </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
+        </div>
+        <div >
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Average Adherence
-              </Typography>
+              </div>
               {statsLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-                  <CircularProgress size={40} />
-                </Box>
+                <div className="">
+                  <Spinner size={40} />
+                </div>
               ) : (
                 <>
-                  <Typography variant="h3">
+                  <div >
                     {statsData?.averageAdherence || 0}%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Based on refill patterns
-                  </Typography>
+                  </div>
                 </>
               )}
             </CardContent>
           </Card>
-        </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
+        </div>
+        <div >
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Interaction Alerts
-              </Typography>
+              </div>
               {statsLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-                  <CircularProgress size={40} />
-                </Box>
+                <div className="">
+                  <Spinner size={40} />
+                </div>
               ) : (
                 <>
-                  <Typography variant="h3">
+                  <div >
                     {statsData?.interactionAlerts || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Requiring attention
-                  </Typography>
+                  </div>
                 </>
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </div>
 
         {/* Medication Interaction Alerts Summary */}
-        <Grid size={{ xs: 12, md: 12 }}>
-          <Card sx={{ mb: 3 }}>
+        <div >
+          <Card className="">
             <CardContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 2,
-                }}
+              <div
+                className=""
               >
-                <Typography variant="h6">Recent Interaction Alerts</Typography>
+                <div >Recent Interaction Alerts</div>
                 <Button
-                  component={Link}
+                  
                   to="/medication-interactions"
                   size="small"
                 >
                   View All
                 </Button>
-              </Box>
+              </div>
 
               {statsLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress />
-                </Box>
+                <div className="">
+                  <Spinner />
+                </div>
               ) : statsData?.interactionAlerts === 0 ? (
                 <Alert severity="success" icon={<CheckCircleIcon />}>
                   No medication interaction alerts detected
@@ -284,11 +257,7 @@ const MedicationsManagementDashboard = () => {
               ) : (
                 <Alert
                   severity="warning"
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
+                  className=""
                 >
                   <div>
                     <AlertTitle>Attention Required</AlertTitle>
@@ -299,9 +268,9 @@ const MedicationsManagementDashboard = () => {
                     detected
                   </div>
                   <Button
-                    variant="contained"
+                    
                     color="warning"
-                    component={Link}
+                    
                     to="/medication-interactions"
                     size="small"
                   >
@@ -311,25 +280,20 @@ const MedicationsManagementDashboard = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </div>
 
         {/* Charts */}
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Paper sx={{ p: 3 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 2,
-              }}
+        <div >
+          <div className="">
+            <div
+              className=""
             >
-              <Typography variant="h6">Medication Adherence Trends</Typography>
-              <Box>
+              <div >Medication Adherence Trends</div>
+              <div>
                 <Button
                   size="small"
                   variant={trendsPeriod === 'week' ? 'contained' : 'outlined'}
-                  sx={{ mr: 1 }}
+                  className=""
                   onClick={() => setTrendsPeriod('week')}
                 >
                   Week
@@ -337,7 +301,7 @@ const MedicationsManagementDashboard = () => {
                 <Button
                   size="small"
                   variant={trendsPeriod === 'month' ? 'contained' : 'outlined'}
-                  sx={{ mr: 1 }}
+                  className=""
                   onClick={() => setTrendsPeriod('month')}
                 >
                   Month
@@ -349,107 +313,80 @@ const MedicationsManagementDashboard = () => {
                 >
                   Year
                 </Button>
-              </Box>
-            </Box>
-            <Box sx={{ height: 300 }}>
+              </div>
+            </div>
+            <div className="">
               {trendsLoading ? (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100%',
-                  }}
+                <div
+                  className=""
                 >
-                  <CircularProgress />
-                </Box>
+                  <Spinner />
+                </div>
               ) : trendsError ? (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100%',
-                    border: '1px dashed',
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                  }}
+                <div
+                  className=""
                 >
-                  <Typography color="error">
+                  <div color="error">
                     Failed to load chart data
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               ) : (
                 <MedicationChart data={trendsData || []} />
               )}
-            </Box>
-          </Paper>
-        </Grid>
+            </div>
+          </div>
+        </div>
 
         {/* Recent Patients */}
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Paper sx={{ p: 3 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 2,
-              }}
+        <div >
+          <div className="">
+            <div
+              className=""
             >
-              <Typography variant="h6">Recent Patients</Typography>
-              <Button component={Link} to="/patients" size="small">
+              <div >Recent Patients</div>
+              <Button  to="/patients" size="small">
                 View All
               </Button>
-            </Box>
+            </div>
 
             {patientsLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                <CircularProgress />
-              </Box>
+              <div className="">
+                <Spinner />
+              </div>
             ) : patientsError ? (
               <Alert severity="error">Failed to load recent patients</Alert>
             ) : patientsData && patientsData.length > 0 ? (
               patientsData.map((patient) => (
-                <Card key={patient.id} sx={{ mb: 2 }}>
-                  <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
-                    <Box
-                      sx={{ display: 'flex', justifyContent: 'space-between' }}
+                <Card key={patient.id} className="">
+                  <CardContent className="">
+                    <div
+                      className=""
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Box
-                          sx={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: '50%',
-                            bgcolor: 'primary.light',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            mr: 2,
-                          }}
+                      <div className="">
+                        <div
+                          className=""
                         >
-                          <PeopleIcon sx={{ color: 'primary.main' }} />
-                        </Box>
-                        <Box>
-                          <Typography variant="body1" fontWeight="bold">
+                          <PeopleIcon className="" />
+                        </div>
+                        <div>
+                          <div  fontWeight="bold">
                             {patient.name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          </div>
+                          <div  color="text.secondary">
                             {patient.medicationCount} medications •{' '}
                             {patient.lastUpdate}
-                          </Typography>
-                        </Box>
-                      </Box>
+                          </div>
+                        </div>
+                      </div>
                       <Button
-                        component={Link}
+                        
                         to={`/patients/${patient.id}/medications`}
                         size="small"
-                        variant="outlined"
+                        
                       >
                         View
                       </Button>
-                    </Box>
+                    </div>
                   </CardContent>
                 </Card>
               ))
@@ -457,19 +394,19 @@ const MedicationsManagementDashboard = () => {
               <Alert severity="info">No recent patients with medications</Alert>
             )}
 
-            <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <div className="">
               <Button
-                variant="contained"
-                component={Link}
+                
+                
                 to="/patients?for=medications"
               >
                 Select Patient
               </Button>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-    </Box>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -1,8 +1,4 @@
 // Templates Store - State management for report templates
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
-import { ReportTemplate, TemplateBuilder, TemplateCategory } from '../types/templates';
-
 interface TemplatesState {
     // Templates
     templates: Record<string, ReportTemplate>;
@@ -40,8 +36,8 @@ interface TemplatesState {
 export const useTemplatesStore = create<TemplatesState>()(
     devtools(
         persist(
-            (set, get) => ({
-                // Initial state
+            (set, get) => ({ 
+                // Initial state })
                 templates: {},
                 categories: [],
                 builder: null,
@@ -52,12 +48,11 @@ export const useTemplatesStore = create<TemplatesState>()(
                 // Actions
                 addTemplate: (template: ReportTemplate) => {
                     set(
-                        (state) => ({
+                        (state) => ({ 
                             templates: {
                                 ...state.templates,
-                                [template.id]: template,
-                            },
-                        }),
+                                [template.id]: template}
+                            }, },
                         false,
                         'addTemplate'
                     );
@@ -170,15 +165,14 @@ export const useTemplatesStore = create<TemplatesState>()(
                     return Object.values(state.templates).filter(
                         template => template.metadata.tags.includes('featured')
                     );
-                },
-            }),
+                }, },
             {
                 name: 'templates-store',
-                partialize: (state) => ({
+                partialize: (state) => ({ 
                     // Only persist templates and categories
                     templates: state.templates,
                     categories: state.categories,
-                    selectedTemplate: state.selectedTemplate,
+                    selectedTemplate: state.selectedTemplate}
                 }),
             }
         ),

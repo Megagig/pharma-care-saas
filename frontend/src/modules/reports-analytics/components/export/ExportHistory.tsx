@@ -1,55 +1,13 @@
-import React, { useState, useMemo } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  IconButton,
-  Chip,
-  TextField,
-  InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Tooltip,
-  Menu,
-  MenuList,
-  MenuItem as MenuItemComponent,
-  ListItemIcon,
-  ListItemText,
-} from '@mui/material';
-import {
-  Download as DownloadIcon,
-  Delete as DeleteIcon,
-  Search as SearchIcon,
-  FilterList as FilterIcon,
-  MoreVert as MoreVertIcon,
-  Refresh as RefreshIcon,
-  GetApp as GetAppIcon,
-  Info as InfoIcon,
-} from '@mui/icons-material';
-import { useExportsStore } from '../../stores/exportsStore';
-import { ExportJob, ExportResult, ExportFormat } from '../../types/exports';
+import { Button, Input, Label, Card, CardContent, Select, Tooltip } from '@/components/ui/button';
 
 interface ExportHistoryProps {
   maxHeight?: number;
 }
-
-export const ExportHistory: React.FC<ExportHistoryProps> = ({
-  maxHeight = 600,
+export const ExportHistory: React.FC<ExportHistoryProps> = ({ 
+  maxHeight = 600
 }) => {
   const { exportJobs, exportResults, removeExportJob, removeExportResult } =
     useExportsStore();
-
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,17 +15,15 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
   const [formatFilter, setFormatFilter] = useState<string>('all');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-
   // Combine jobs and results for display
   const allExports = useMemo(() => {
     return Object.values(exportJobs)
-      .map((job) => ({
+      .map((job) => ({ 
         ...job,
-        result: exportResults[job.id],
+        result: exportResults[job.id]}
       }))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }, [exportJobs, exportResults]);
-
   // Filter exports based on search and filters
   const filteredExports = useMemo(() => {
     return allExports.filter((exportItem) => {
@@ -79,33 +35,27 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
         exportItem.config.format
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
-
       const matchesStatus =
         statusFilter === 'all' || exportItem.status === statusFilter;
       const matchesFormat =
         formatFilter === 'all' || exportItem.config.format === formatFilter;
-
       return matchesSearch && matchesStatus && matchesFormat;
     });
   }, [allExports, searchTerm, statusFilter, formatFilter]);
-
   // Paginated exports
   const paginatedExports = useMemo(() => {
     const startIndex = page * rowsPerPage;
     return filteredExports.slice(startIndex, startIndex + rowsPerPage);
   }, [filteredExports, page, rowsPerPage]);
-
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
-
   const handleChangeRowsPerPage = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-
   const handleMenuOpen = (
     event: React.MouseEvent<HTMLElement>,
     jobId: string
@@ -113,12 +63,10 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
     setAnchorEl(event.currentTarget);
     setSelectedJobId(jobId);
   };
-
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedJobId(null);
   };
-
   const handleDownload = (result: ExportResult) => {
     if (result.downloadUrl) {
       const link = document.createElement('a');
@@ -130,7 +78,6 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
     }
     handleMenuClose();
   };
-
   const handleDelete = (jobId: string) => {
     removeExportJob(jobId);
     const result = Object.values(exportResults).find((r) => r.id === jobId);
@@ -139,13 +86,11 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
     }
     handleMenuClose();
   };
-
   const handleRetry = (jobId: string) => {
     // TODO: Implement retry logic
     console.log('Retry export:', jobId);
     handleMenuClose();
   };
-
   const getStatusColor = (
     status: string
   ):
@@ -170,70 +115,53 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
         return 'default';
     }
   };
-
   const formatFileSize = (bytes?: number): string => {
     if (!bytes) return 'Unknown';
-
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
-
   const formatDuration = (startTime: Date, endTime?: Date): string => {
     const end = endTime || new Date();
     const duration = end.getTime() - startTime.getTime();
     const seconds = Math.floor(duration / 1000);
     const minutes = Math.floor(seconds / 60);
-
     if (minutes > 0) {
       return `${minutes}m ${seconds % 60}s`;
     }
     return `${seconds}s`;
   };
-
   const uniqueFormats = Array.from(
     new Set(allExports.map((e) => e.config.format))
   );
   const uniqueStatuses = Array.from(new Set(allExports.map((e) => e.status)));
-
   return (
     <Card>
       <CardContent>
-        <Box display="flex" alignItems="center" justifyContent="between" mb={2}>
-          <Typography variant="h6" component="div">
+        <div display="flex" alignItems="center" justifyContent="between" mb={2}>
+          <div  component="div">
             Export History
-          </Typography>
+          </div>
           <Button
             startIcon={<RefreshIcon />}
-            onClick={() => {
-              // TODO: Refresh export history
-              console.log('Refresh export history');
-            }}
+            
             size="small"
           >
             Refresh
           </Button>
-        </Box>
-
+        </div>
         {/* Filters */}
-        <Box display="flex" gap={2} mb={2} flexWrap="wrap">
-          <TextField
+        <div display="flex" gap={2} mb={2} flexWrap="wrap">
+          <Input
             size="small"
             placeholder="Search exports..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ minWidth: 200 }}
+            
+            className=""
           />
-
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Status</InputLabel>
+          <div size="small" className="">
+            <Label>Status</Label>
             <Select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -246,10 +174,9 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
-
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Format</InputLabel>
+          </div>
+          <div size="small" className="">
+            <Label>Format</Label>
             <Select
               value={formatFilter}
               onChange={(e) => setFormatFilter(e.target.value)}
@@ -262,11 +189,10 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
-        </Box>
-
+          </div>
+        </div>
         {/* Export Table */}
-        <TableContainer sx={{ maxHeight }}>
+        <TableContainer className="">
           <Table stickyHeader>
             <TableHead>
               <TableRow>
@@ -283,20 +209,20 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
               {paginatedExports.map((exportItem) => (
                 <TableRow key={exportItem.id} hover>
                   <TableCell>
-                    <Typography variant="body2">
+                    <div >
                       {exportItem.reportType
                         .replace(/-/g, ' ')
                         .replace(/\b\w/g, (l) => l.toUpperCase())}
-                    </Typography>
+                    </div>
                     {exportItem.error && (
                       <Tooltip title={exportItem.error}>
-                        <Typography
-                          variant="caption"
+                        <div
+                          
                           color="error"
                           display="block"
                         >
                           Error: {exportItem.error.substring(0, 50)}...
-                        </Typography>
+                        </div>
                       </Tooltip>
                     )}
                   </TableCell>
@@ -304,39 +230,39 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
                     <Chip
                       label={exportItem.config.format.toUpperCase()}
                       size="small"
-                      variant="outlined"
+                      
                     />
                   </TableCell>
                   <TableCell>
                     <Chip
                       label={
                         exportItem.status.charAt(0).toUpperCase() +
-                        exportItem.status.slice(1)
+                        exportItem.status.slice(1)}
                       }
                       size="small"
                       color={getStatusColor(exportItem.status)}
                     />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">
+                    <div >
                       {formatFileSize(exportItem.result?.fileSize)}
-                    </Typography>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">
+                    <div >
                       {formatDuration(
                         exportItem.createdAt,
                         exportItem.completedAt
                       )}
-                    </Typography>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">
+                    <div >
                       {exportItem.createdAt.toLocaleDateString()}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       {exportItem.createdAt.toLocaleTimeString()}
-                    </Typography>
+                    </div>
                   </TableCell>
                   <TableCell align="right">
                     <IconButton
@@ -351,7 +277,6 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
             </TableBody>
           </Table>
         </TableContainer>
-
         {/* Pagination */}
         <TablePagination
           rowsPerPageOptions={[5, 10, 25, 50]}
@@ -362,7 +287,6 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
-
         {/* Context Menu */}
         <Menu
           anchorEl={anchorEl}
@@ -376,30 +300,28 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
                 <MenuItemComponent
                   onClick={() => handleDownload(exportResults[selectedJobId])}
                 >
-                  <ListItemIcon>
+                  <div>
                     <DownloadIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Download</ListItemText>
+                  </div>
+                  <div>Download</ListItemText>
                 </MenuItemComponent>
               )}
-
             {selectedJobId &&
               exportJobs[selectedJobId]?.status === 'failed' && (
                 <MenuItemComponent onClick={() => handleRetry(selectedJobId)}>
-                  <ListItemIcon>
+                  <div>
                     <RefreshIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Retry</ListItemText>
+                  </div>
+                  <div>Retry</ListItemText>
                 </MenuItemComponent>
               )}
-
             <MenuItemComponent
               onClick={() => selectedJobId && handleDelete(selectedJobId)}
             >
-              <ListItemIcon>
+              <div>
                 <DeleteIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Delete</ListItemText>
+              </div>
+              <div>Delete</ListItemText>
             </MenuItemComponent>
           </MenuList>
         </Menu>

@@ -1,81 +1,11 @@
+import { Label, Card, CardContent, Dialog, DialogContent, Select, Tooltip, Progress, Alert, Skeleton, Switch } from '@/components/ui/button';
 // Template Preview Component - Real-time template preview with live updates
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-  IconButton,
-  Toolbar,
-  AppBar,
-  Dialog,
-  DialogContent,
-  DialogActions,
-  Grid,
-  Card,
-  CardContent,
-  Skeleton,
-  Alert,
-  Chip,
-  Stack,
-  Divider,
-  Tooltip,
-  CircularProgress,
-  LinearProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  Slider,
-} from '@mui/material';
-import {
-  Close,
-  Refresh,
-  Fullscreen,
-  FullscreenExit,
-  ZoomIn,
-  ZoomOut,
-  Devices,
-  Phone,
-  Tablet,
-  Computer,
-  Tv,
-  Visibility,
-  VisibilityOff,
-  Settings,
-  BugReport,
-  Speed,
-  Accessibility,
-  Print,
-  Share,
-  Download,
-} from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
-import { ReportTemplate, RenderedSection } from '../../types/templates';
-import { ReportFilters } from '../../types/filters';
-import { ReportData } from '../../types/reports';
-import { ChartComponent } from '../shared/ChartComponent';
-import {
+// Removed MUI styles import - using Tailwind CSS
   templateRenderingEngine,
-  RenderContext,
-  RenderResult,
-  RenderedChart,
-  RenderedTable,
-  RenderedKPI,
-  RenderedMetric,
-} from '../../services/templateRenderingService';
-import {
-  templateValidationService,
-  ValidationResult,
-} from '../../services/templateValidationService';
-import { useReportsStore } from '../../stores/reportsStore';
-import { useFiltersStore } from '../../stores/filtersStore';
 
 interface TemplatePreviewProps {
   template: ReportTemplate;
-  open: boolean;
+open: boolean;
   onClose: () => void;
   data?: ReportData;
   filters?: ReportFilters;
@@ -83,10 +13,8 @@ interface TemplatePreviewProps {
   onSave?: (template: ReportTemplate) => void;
   onExport?: (format: 'pdf' | 'png' | 'html') => void;
 }
-
 type PreviewMode = 'desktop' | 'tablet' | 'mobile' | 'fullscreen';
 type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-
 const BREAKPOINT_WIDTHS = {
   xs: 360,
   sm: 600,
@@ -94,28 +22,25 @@ const BREAKPOINT_WIDTHS = {
   lg: 1280,
   xl: 1920,
 };
-
 const PREVIEW_MODE_BREAKPOINTS: Record<PreviewMode, Breakpoint> = {
   mobile: 'xs',
   tablet: 'sm',
   desktop: 'lg',
   fullscreen: 'xl',
 };
-
-export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
+export const TemplatePreview: React.FC<TemplatePreviewProps> = ({ 
   template,
   open,
   onClose,
   data,
-  filters,
+  filters}
   variables = {},
   onSave,
-  onExport,
+  onExport
 }) => {
   const theme = useTheme();
   const { sampleData } = useReportsStore();
   const { currentFilters } = useFiltersStore();
-
   // Preview state
   const [previewMode, setPreviewMode] = useState<PreviewMode>('desktop');
   const [zoom, setZoom] = useState(100);
@@ -124,20 +49,17 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   const [showPerformance, setShowPerformance] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(5000);
-
   // Rendering state
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [validationResult, setValidationResult] =
     useState<ValidationResult | null>(null);
   const [isRendering, setIsRendering] = useState(false);
   const [renderError, setRenderError] = useState<string | null>(null);
-
   // Auto-refresh timer
   const [refreshTimer, setRefreshTimer] = useState<NodeJS.Timeout | null>(null);
-
   // Memoized render context
   const renderContext = useMemo<RenderContext>(
-    () => ({
+    () => ({ 
       template,
       data: data || sampleData,
       filters: filters || currentFilters,
@@ -146,7 +68,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       variables,
       theme: theme.palette.mode,
       responsive: true,
-      breakpoint: PREVIEW_MODE_BREAKPOINTS[previewMode],
+      breakpoint: PREVIEW_MODE_BREAKPOINTS[previewMode]}
     }),
     [
       template,
@@ -159,16 +81,13 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       previewMode,
     ]
   );
-
   // Render template
   const renderTemplate = useCallback(async () => {
     setIsRendering(true);
     setRenderError(null);
-
     try {
       const result = await templateRenderingEngine.render(renderContext);
       setRenderResult(result);
-
       if (result.errors.length > 0) {
         setRenderError(
           `Rendering errors: ${result.errors.map((e) => e.message).join(', ')}`
@@ -181,24 +100,21 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       setIsRendering(false);
     }
   }, [renderContext]);
-
   // Validate template
   const validateTemplate = useCallback(async () => {
     try {
-      const result = await templateValidationService.validate({
-        template,
+      const result = await templateValidationService.validate({ 
+        template}
         availableCharts: Object.keys(renderContext.data.charts || {}),
         availableTables: Object.keys(renderContext.data.tables || {}),
         availableFilters: [],
         userPermissions: renderContext.userPermissions,
-        userRoles: renderContext.userRoles,
-      });
+        userRoles: renderContext.userRoles}
       setValidationResult(result);
     } catch (error) {
       console.error('Validation failed:', error);
     }
   }, [template, renderContext]);
-
   // Initial render and validation
   useEffect(() => {
     if (open) {
@@ -206,7 +122,6 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       validateTemplate();
     }
   }, [open, renderTemplate, validateTemplate]);
-
   // Auto-refresh setup
   useEffect(() => {
     if (autoRefresh && open) {
@@ -220,7 +135,6 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       setRefreshTimer(null);
     }
   }, [autoRefresh, open, refreshInterval, renderTemplate]);
-
   // Handle preview mode change
   const handlePreviewModeChange = useCallback((mode: PreviewMode) => {
     setPreviewMode(mode);
@@ -230,12 +144,10 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       setIsFullscreen(false);
     }
   }, []);
-
   // Handle zoom change
   const handleZoomChange = useCallback((newZoom: number) => {
     setZoom(Math.max(25, Math.min(200, newZoom)));
   }, []);
-
   // Handle export
   const handleExport = useCallback(
     (format: 'pdf' | 'png' | 'html') => {
@@ -243,74 +155,71 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
     },
     [onExport]
   );
-
   // Get preview width based on mode
   const getPreviewWidth = useCallback(() => {
     const baseWidth = BREAKPOINT_WIDTHS[PREVIEW_MODE_BREAKPOINTS[previewMode]];
     return (baseWidth * zoom) / 100;
   }, [previewMode, zoom]);
-
   // Render section content
   const renderSectionContent = useCallback(
     (section: RenderedSection) => {
       switch (section.type) {
         case 'header':
           return (
-            <Box sx={{ textAlign: 'center', py: 2 }}>
+            <div className="">
               {section.content.logo && (
                 <img
                   src={section.content.logo}
                   alt="Logo"
-                  style={{ maxHeight: 60, marginBottom: 16 }}
+                  
                 />
               )}
               {section.content.title && (
-                <Typography variant="h4" gutterBottom>
+                <div  gutterBottom>
                   {section.content.title}
-                </Typography>
+                </div>
               )}
               {section.content.subtitle && (
-                <Typography variant="subtitle1" color="text.secondary">
+                <div  color="text.secondary">
                   {section.content.subtitle}
-                </Typography>
+                </div>
               )}
               {section.content.metadata && (
-                <Box sx={{ mt: 2 }}>
+                <div className="">
                   {Object.entries(section.content.metadata).map(
                     ([key, value]) => (
                       <Chip
                         key={key}
                         label={`${key}: ${value}`}
                         size="small"
-                        sx={{ mr: 1, mb: 1 }}
+                        className=""
                       />
                     )
                   )}
-                </Box>
+                </div>
               )}
-            </Box>
+            </div>
           );
-
         case 'summary':
           return (
-            <Box>
+            <div>
               {section.content.kpis && section.content.kpis.length > 0 && (
-                <Grid container spacing={2} sx={{ mb: 3 }}>
+                <div container spacing={2} className="">
                   {section.content.kpis.map((kpi: RenderedKPI) => (
-                    <Grid item xs={12} sm={6} md={3} key={kpi.id}>
+                    <div item xs={12} sm={6} md={3} key={kpi.id}>
                       <Card>
                         <CardContent>
-                          <Typography variant="h6" gutterBottom>
+                          <div  gutterBottom>
                             {kpi.title}
-                          </Typography>
-                          <Typography variant="h4" color={kpi.color}>
+                          </div>
+                          <div  color={kpi.color}>
                             {kpi.value} {kpi.unit}
-                          </Typography>
+                          </div>
                           {kpi.trend && (
-                            <Typography
-                              variant="body2"
+                            <div
+                              
                               color={kpi.trend.color}
-                              sx={{ mt: 1 }}
+                              className=""
                             >
                               {kpi.trend.direction === 'up'
                                 ? '↑'
@@ -318,31 +227,30 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                                 ? '↓'
                                 : '→'}
                               {kpi.trend.value}% {kpi.trend.period}
-                            </Typography>
+                            </div>
                           )}
                         </CardContent>
                       </Card>
-                    </Grid>
+                    </div>
                   ))}
-                </Grid>
+                </div>
               )}
-
               {section.content.metrics &&
                 section.content.metrics.length > 0 && (
-                  <Grid container spacing={2}>
+                  <div container spacing={2}>
                     {section.content.metrics.map((metric: RenderedMetric) => (
-                      <Grid item xs={12} sm={6} md={4} key={metric.id}>
-                        <Card variant="outlined">
+                      <div item xs={12} sm={6} md={4} key={metric.id}>
+                        <Card >
                           <CardContent>
-                            <Typography variant="body2" color="text.secondary">
+                            <div  color="text.secondary">
                               {metric.label}
-                            </Typography>
-                            <Typography variant="h6">
+                            </div>
+                            <div >
                               {metric.value} {metric.unit}
-                            </Typography>
+                            </div>
                             {metric.trend && (
-                              <Typography
-                                variant="caption"
+                              <div
+                                
                                 color={metric.trend.color}
                               >
                                 {metric.trend.direction === 'up'
@@ -351,24 +259,23 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                                   ? '↓'
                                   : '→'}
                                 {metric.trend.value}%
-                              </Typography>
+                              </div>
                             )}
                           </CardContent>
                         </Card>
-                      </Grid>
+                      </div>
                     ))}
-                  </Grid>
+                  </div>
                 )}
-            </Box>
+            </div>
           );
-
         case 'charts':
           return (
-            <Box>
+            <div>
               {section.content.charts && section.content.charts.length > 0 ? (
-                <Grid container spacing={2}>
+                <div container spacing={2}>
                   {section.content.charts.map((chart: RenderedChart) => (
-                    <Grid
+                    <div
                       item
                       xs={12}
                       md={section.content.arrangement === 'grid' ? 6 : 12}
@@ -376,20 +283,20 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                     >
                       <Card>
                         <CardContent>
-                          <Typography variant="h6" gutterBottom>
+                          <div  gutterBottom>
                             {chart.title}
-                          </Typography>
+                          </div>
                           {chart.subtitle && (
-                            <Typography
-                              variant="body2"
+                            <div
+                              
                               color="text.secondary"
                               gutterBottom
                             >
                               {chart.subtitle}
-                            </Typography>
+                            </div>
                           )}
                           {chart.loading ? (
-                            <Skeleton variant="rectangular" height={300} />
+                            <Skeleton  height={300} />
                           ) : chart.error ? (
                             <Alert severity="error">{chart.error}</Alert>
                           ) : chart.isEmpty ? (
@@ -415,7 +322,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                                     small: 12,
                                     medium: 14,
                                     large: 16,
-                                    xlarge: 18,
+                                    xlarge: 18,}
                                   },
                                   fontWeight: {
                                     light: 300,
@@ -438,98 +345,81 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                                   large: '0 10px 20px rgba(0,0,0,0.12)',
                                 },
                                 mode: theme.palette.mode,
-                              }}
-                              animations={{
-                                duration: 300,
-                                easing: 'ease-in-out',
-                                stagger: false,
-                                entrance: 'fade',
-                              }}
                               responsive
                             />
                           )}
                         </CardContent>
                       </Card>
-                    </Grid>
+                    </div>
                   ))}
-                </Grid>
+                </div>
               ) : (
                 <Alert severity="info">No charts configured</Alert>
               )}
-            </Box>
+            </div>
           );
-
         case 'tables':
           return (
-            <Box>
+            <div>
               {section.content.tables && section.content.tables.length > 0 ? (
-                <Stack spacing={2}>
+                <div spacing={2}>
                   {section.content.tables.map((table: RenderedTable) => (
                     <Card key={table.id}>
                       <CardContent>
-                        <Typography variant="h6" gutterBottom>
+                        <div  gutterBottom>
                           {table.title}
-                        </Typography>
+                        </div>
                         {table.loading ? (
-                          <Skeleton variant="rectangular" height={200} />
+                          <Skeleton  height={200} />
                         ) : table.error ? (
                           <Alert severity="error">{table.error}</Alert>
                         ) : table.isEmpty ? (
                           <Alert severity="info">No data available</Alert>
                         ) : (
-                          <Box sx={{ overflow: 'auto' }}>
+                          <div className="">
                             {/* Simple table rendering - in real implementation, use a proper table component */}
-                            <Typography variant="body2">
+                            <div >
                               Table: {table.data.length} rows,{' '}
                               {table.columns.length} columns
-                            </Typography>
-                          </Box>
+                            </div>
+                          </div>
                         )}
                       </CardContent>
                     </Card>
                   ))}
-                </Stack>
+                </div>
               ) : (
                 <Alert severity="info">No tables configured</Alert>
               )}
-            </Box>
+            </div>
           );
-
         case 'text':
           return (
-            <Box>
+            <div>
               {section.content.html ? (
                 <div
-                  dangerouslySetInnerHTML={{ __html: section.content.html }}
+                  
                 />
               ) : (
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                <div  className="">
                   {section.content.text || 'No text content'}
-                </Typography>
+                </div>
               )}
-            </Box>
+            </div>
           );
-
         case 'spacer':
-          return <Box sx={{ height: 32 }} />;
-
+          return <div className="" />;
         case 'footer':
           return (
-            <Box
-              sx={{
-                textAlign: 'center',
-                py: 2,
-                borderTop: 1,
-                borderColor: 'divider',
-              }}
+            <div
+              className=""
             >
-              <Typography variant="body2" color="text.secondary">
+              <div  color="text.secondary">
                 {section.content.text ||
                   `Generated on ${new Date().toLocaleString()}`}
-              </Typography>
-            </Box>
+              </div>
+            </div>
           );
-
         default:
           return (
             <Alert severity="warning">
@@ -540,9 +430,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
     },
     [theme]
   );
-
   if (!open) return null;
-
   return (
     <Dialog
       open={open}
@@ -555,19 +443,17 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
           width: isFullscreen ? '100%' : '90vw',
           height: isFullscreen ? '100%' : '90vh',
           maxWidth: 'none',
-          maxHeight: 'none',
+          maxHeight: 'none',}
         },
-      }}
-    >
+      >
       {/* Toolbar */}
-      <AppBar position="static" color="default" elevation={1}>
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+      <header position="static" color="default" >
+        <div>
+          <div  className="">
             Preview: {template.name}
-          </Typography>
-
+          </div>
           {/* Preview mode controls */}
-          <Stack direction="row" spacing={1} sx={{ mr: 2 }}>
+          <div direction="row" spacing={1} className="">
             <Tooltip title="Mobile">
               <IconButton
                 onClick={() => handlePreviewModeChange('mobile')}
@@ -600,51 +486,46 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                 <Tv />
               </IconButton>
             </Tooltip>
-          </Stack>
-
+          </div>
           {/* Zoom controls */}
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mr: 2 }}>
+          <div direction="row" spacing={1} alignItems="center" className="">
             <IconButton onClick={() => handleZoomChange(zoom - 25)}>
               <ZoomOut />
             </IconButton>
-            <Typography
-              variant="body2"
-              sx={{ minWidth: 50, textAlign: 'center' }}
+            <div
+              
+              className=""
             >
               {zoom}%
-            </Typography>
+            </div>
             <IconButton onClick={() => handleZoomChange(zoom + 25)}>
               <ZoomIn />
             </IconButton>
-          </Stack>
-
+          </div>
           {/* Action buttons */}
-          <Stack direction="row" spacing={1}>
+          <div direction="row" spacing={1}>
             <Tooltip title="Refresh">
               <IconButton onClick={renderTemplate} disabled={isRendering}>
                 <Refresh />
               </IconButton>
             </Tooltip>
-
             <Tooltip title="Validation">
               <IconButton
                 onClick={() => setShowValidation(!showValidation)}
                 color={
                   validationResult && !validationResult.isValid
                     ? 'error'
-                    : 'default'
+                    : 'default'}
                 }
               >
                 <BugReport />
               </IconButton>
             </Tooltip>
-
             <Tooltip title="Performance">
               <IconButton onClick={() => setShowPerformance(!showPerformance)}>
                 <Speed />
               </IconButton>
             </Tooltip>
-
             {onExport && (
               <Tooltip title="Export">
                 <IconButton onClick={() => handleExport('pdf')}>
@@ -652,237 +533,191 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-
             <IconButton onClick={onClose}>
               <Close />
             </IconButton>
-          </Stack>
-        </Toolbar>
-      </AppBar>
-
+          </div>
+        </div>
+      </header>
       {/* Content */}
-      <DialogContent sx={{ p: 0, overflow: 'hidden' }}>
-        <Box sx={{ display: 'flex', height: '100%' }}>
+      <DialogContent className="">
+        <div className="">
           {/* Main preview area */}
-          <Box
-            sx={{
-              flexGrow: 1,
-              overflow: 'auto',
-              backgroundColor: 'grey.50',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'flex-start',
-              p: 2,
-            }}
+          <div
+            className=""
           >
-            <Paper
-              sx={{
-                width: getPreviewWidth(),
-                minHeight: '100%',
-                transform: `scale(${zoom / 100})`,
-                transformOrigin: 'top center',
-                transition: 'all 0.3s ease',
-              }}
-            >
+            <div
+              className="">
               {isRendering ? (
-                <Box sx={{ p: 4 }}>
-                  <LinearProgress sx={{ mb: 2 }} />
-                  <Typography
-                    variant="body2"
+                <div className="">
+                  <Progress className="" />
+                  <div
+                    
                     color="text.secondary"
                     textAlign="center"
                   >
                     Rendering template...
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               ) : renderError ? (
-                <Box sx={{ p: 4 }}>
+                <div className="">
                   <Alert severity="error">{renderError}</Alert>
-                </Box>
+                </div>
               ) : renderResult ? (
-                <Box sx={{ p: 2 }}>
+                <div className="">
                   {renderResult.sections.map((section) => (
-                    <Box
+                    <div
                       key={section.id}
-                      sx={{
-                        mb: 2,
-                        p: section.layout.padding
-                          ? {
-                              pt: section.layout.padding.top / 8,
-                              pr: section.layout.padding.right / 8,
-                              pb: section.layout.padding.bottom / 8,
-                              pl: section.layout.padding.left / 8,
-                            }
-                          : 2,
-                        backgroundColor: section.layout.background,
-                        border: section.layout.border
-                          ? `${section.layout.border.width}px ${section.layout.border.style} ${section.layout.border.color}`
-                          : 'none',
-                        borderRadius: section.layout.border?.radius || 0,
-                      }}
-                    >
+                      className="">
                       {renderSectionContent(section)}
-                    </Box>
+                    </div>
                   ))}
-                </Box>
+                </div>
               ) : (
-                <Box sx={{ p: 4 }}>
+                <div className="">
                   <Alert severity="info">No preview available</Alert>
-                </Box>
+                </div>
               )}
-            </Paper>
-          </Box>
-
+            </div>
+          </div>
           {/* Side panels */}
           {(showValidation || showPerformance) && (
-            <Box sx={{ width: 300, borderLeft: 1, borderColor: 'divider' }}>
+            <div className="">
               {showValidation && validationResult && (
-                <Box sx={{ p: 2 }}>
-                  <Typography variant="h6" gutterBottom>
+                <div className="">
+                  <div  gutterBottom>
                     Validation Results
-                  </Typography>
-
-                  <Stack spacing={1}>
+                  </div>
+                  <div spacing={1}>
                     <Chip
                       label={validationResult.isValid ? 'Valid' : 'Invalid'}
                       color={validationResult.isValid ? 'success' : 'error'}
                       size="small"
                     />
-
                     {validationResult.errors.length > 0 && (
-                      <Box>
-                        <Typography variant="subtitle2" color="error">
+                      <div>
+                        <div  color="error">
                           Errors ({validationResult.errors.length})
-                        </Typography>
+                        </div>
                         {validationResult.errors
                           .slice(0, 5)
                           .map((error, index) => (
-                            <Alert key={index} severity="error" sx={{ mt: 1 }}>
-                              <Typography variant="caption">
+                            <Alert key={index} severity="error" className="">
+                              <div >
                                 {error.field}: {error.message}
-                              </Typography>
+                              </div>
                             </Alert>
                           ))}
-                      </Box>
+                      </div>
                     )}
-
                     {validationResult.warnings.length > 0 && (
-                      <Box>
-                        <Typography variant="subtitle2" color="warning.main">
+                      <div>
+                        <div  color="warning.main">
                           Warnings ({validationResult.warnings.length})
-                        </Typography>
+                        </div>
                         {validationResult.warnings
                           .slice(0, 3)
                           .map((warning, index) => (
                             <Alert
                               key={index}
                               severity="warning"
-                              sx={{ mt: 1 }}
+                              className=""
                             >
-                              <Typography variant="caption">
+                              <div >
                                 {warning.field}: {warning.message}
-                              </Typography>
+                              </div>
                             </Alert>
                           ))}
-                      </Box>
+                      </div>
                     )}
-
                     {validationResult.suggestions.length > 0 && (
-                      <Box>
-                        <Typography variant="subtitle2" color="info.main">
+                      <div>
+                        <div  color="info.main">
                           Suggestions ({validationResult.suggestions.length})
-                        </Typography>
+                        </div>
                         {validationResult.suggestions
                           .slice(0, 3)
                           .map((suggestion, index) => (
-                            <Alert key={index} severity="info" sx={{ mt: 1 }}>
-                              <Typography variant="caption">
+                            <Alert key={index} severity="info" className="">
+                              <div >
                                 {suggestion.message}
-                              </Typography>
+                              </div>
                             </Alert>
                           ))}
-                      </Box>
+                      </div>
                     )}
-                  </Stack>
-                </Box>
+                  </div>
+                </div>
               )}
-
               {showPerformance && renderResult && (
-                <Box sx={{ p: 2 }}>
-                  <Typography variant="h6" gutterBottom>
+                <div className="">
+                  <div  gutterBottom>
                     Performance Metrics
-                  </Typography>
-
-                  <Stack spacing={2}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div spacing={2}>
+                    <div>
+                      <div  color="text.secondary">
                         Total Render Time
-                      </Typography>
-                      <Typography variant="h6">
+                      </div>
+                      <div >
                         {renderResult.performance.totalRenderTime.toFixed(2)}ms
-                      </Typography>
-                    </Box>
-
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                    </div>
+                    <div>
+                      <div  color="text.secondary">
                         Sections Rendered
-                      </Typography>
-                      <Typography variant="h6">
+                      </div>
+                      <div >
                         {renderResult.metadata.sectionsRendered}
-                      </Typography>
-                    </Box>
-
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                    </div>
+                    <div>
+                      <div  color="text.secondary">
                         Charts Rendered
-                      </Typography>
-                      <Typography variant="h6">
+                      </div>
+                      <div >
                         {renderResult.metadata.chartsRendered}
-                      </Typography>
-                    </Box>
-
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                    </div>
+                    <div>
+                      <div  color="text.secondary">
                         Data Processing Time
-                      </Typography>
-                      <Typography variant="h6">
+                      </div>
+                      <div >
                         {renderResult.performance.dataProcessingTime.toFixed(2)}
                         ms
-                      </Typography>
-                    </Box>
-
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                    </div>
+                    <div>
+                      <div  color="text.secondary">
                         Validation Time
-                      </Typography>
-                      <Typography variant="h6">
+                      </div>
+                      <div >
                         {renderResult.performance.validationTime.toFixed(2)}ms
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Box>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
-            </Box>
+            </div>
           )}
-        </Box>
+        </div>
       </DialogContent>
-
       {/* Settings panel */}
-      <Box sx={{ borderTop: 1, borderColor: 'divider', p: 2 }}>
-        <Stack direction="row" spacing={2} alignItems="center">
+      <div className="">
+        <div direction="row" spacing={2} alignItems="center">
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={autoRefresh}
                 onChange={(e) => setAutoRefresh(e.target.checked)}
               />
             }
             label="Auto Refresh"
           />
-
           {autoRefresh && (
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Interval</InputLabel>
+            <div size="small" className="">
+              <Label>Interval</Label>
               <Select
                 value={refreshInterval}
                 onChange={(e) => setRefreshInterval(Number(e.target.value))}
@@ -893,19 +728,17 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                 <MenuItem value={10000}>10 seconds</MenuItem>
                 <MenuItem value={30000}>30 seconds</MenuItem>
               </Select>
-            </FormControl>
+            </div>
           )}
-
-          <Box sx={{ flexGrow: 1 }} />
-
+          <div className="" />
           {renderResult && (
-            <Typography variant="caption" color="text.secondary">
+            <div  color="text.secondary">
               Last updated:{' '}
               {renderResult.metadata.renderedAt.toLocaleTimeString()}
-            </Typography>
+            </div>
           )}
-        </Stack>
-      </Box>
+        </div>
+      </div>
     </Dialog>
   );
 };

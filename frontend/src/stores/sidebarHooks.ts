@@ -1,7 +1,4 @@
 // Sidebar specific UI hooks
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
 // Define the sidebar state interface
 interface SidebarState {
   sidebarOpen: boolean;
@@ -12,11 +9,10 @@ interface SidebarState {
 // Create a dedicated store for sidebar controls
 export const useSidebarStore = create<SidebarState>()(
   persist(
-    (set) => ({
-      sidebarOpen: false,
+    (set) => ({ 
+      sidebarOpen: false}
       setSidebarOpen: (isOpen: boolean) => set({ sidebarOpen: isOpen }),
-      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-    }),
+      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })), },
     {
       name: 'sidebar-storage',
     }

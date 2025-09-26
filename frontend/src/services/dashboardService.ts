@@ -1,5 +1,3 @@
-import { api } from '../lib/api';
-
 export interface DashboardStats {
     totalPatients: number;
     totalClinicalNotes: number;
@@ -281,7 +279,7 @@ class DashboardService {
                 statuses.forEach((status, index) => {
                     const count = Math.round(stats.activeMedicationsCount * distribution[index]);
                     for (let i = 0; i < count; i++) {
-                        mockMedications.push({
+                        mockMedications.push({  })
                             id: `${status}-${i}`,
                             status: status,
                             createdAt: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString()
@@ -439,10 +437,10 @@ class DashboardService {
 
         const colors = ['#9c27b0', '#3f51b5', '#009688', '#f44336', '#607d8b', '#795548', '#ff5722'];
         return Object.entries(typeCounts)
-            .map(([name, value], index) => ({
+            .map(([name, value], index) => ({ 
                 name,
                 value,
-                color: colors[index % colors.length]
+                color: colors[index % colors.length] })
             }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 7); // Top 7 types
@@ -636,9 +634,9 @@ class DashboardService {
         for (let i = 5; i >= 0; i--) {
             const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
             const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-            months.push({
+            months.push({ 
                 name: monthKey,
-                value: Math.floor(Math.random() * 50) + 20 // Random between 20-70
+                value: Math.floor(Math.random() * 50) + 20 // Random between 20-70 })
             });
         }
 
@@ -691,9 +689,9 @@ class DashboardService {
         for (let i = 5; i >= 0; i--) {
             const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
             const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-            months.push({
+            months.push({ 
                 name: monthKey,
-                value: Math.floor(Math.random() * 200) + 100 // Random between 100-300
+                value: Math.floor(Math.random() * 200) + 100 // Random between 100-300 })
             });
         }
 
@@ -714,9 +712,9 @@ class DashboardService {
             // Distribute patients across months with some variation
             const variation = Math.floor(Math.random() * (avgPerMonth * 0.5));
             const value = Math.max(0, avgPerMonth + (Math.random() > 0.5 ? variation : -variation));
-            months.push({
+            months.push({ 
                 name: monthKey,
-                value: value
+                value: value })
             });
         }
 
@@ -737,9 +735,9 @@ class DashboardService {
             '75+': 0.05      // 5%
         };
 
-        return Object.entries(distribution).map(([name, percentage]) => ({
+        return Object.entries(distribution).map(([name, percentage]) => ({ 
             name,
-            value: Math.floor(totalPatients * percentage)
+            value: Math.floor(totalPatients * percentage) })
         }));
     }
 }

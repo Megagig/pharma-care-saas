@@ -1,15 +1,9 @@
-import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import VirtualizedMessageList from '../../components/communication/VirtualizedMessageList';
-import VirtualizedConversationList from '../../components/communication/VirtualizedConversationList';
-import LazyImage from '../../components/communication/LazyImage';
-import { performanceMonitor } from '../../utils/performanceMonitor';
-import { communicationCache } from '../../services/cacheService';
-import { offlineStorage } from '../../services/offlineStorageService';
-import { Message, Conversation } from '../../stores/types';
 
+import VirtualizedMessageList from '../../components/communication/VirtualizedMessageList';
+
+import VirtualizedConversationList from '../../components/communication/VirtualizedConversationList';
+
+import LazyImage from '../../components/communication/LazyImage';
 // Mock performance API
 const mockPerformance = {
   now: vi.fn(() => Date.now()),
@@ -21,53 +15,47 @@ const mockPerformance = {
 
 Object.defineProperty(window, 'performance', {
   value: mockPerformance,
-  writable: true,
-});
+  writable: true}
 
 // Mock IntersectionObserver
 const mockIntersectionObserver = vi.fn();
-mockIntersectionObserver.mockReturnValue({
+mockIntersectionObserver.mockReturnValue({ 
   observe: vi.fn(),
   unobserve: vi.fn(),
-  disconnect: vi.fn(),
+  disconnect: vi.fn()}
 });
 window.IntersectionObserver = mockIntersectionObserver;
 
 // Mock IndexedDB
 const mockIndexedDB = {
-  open: vi.fn(() => ({
+  open: vi.fn(() => ({ 
     onsuccess: null,
     onerror: null,
     onupgradeneeded: null,
-    result: {
+    result: { })
       objectStoreNames: { contains: vi.fn(() => false) },
-      createObjectStore: vi.fn(() => ({
-        createIndex: vi.fn(),
+      createObjectStore: vi.fn(() => ({ 
+        createIndex: vi.fn()}
       })),
-      transaction: vi.fn(() => ({
-        objectStore: vi.fn(() => ({
+      transaction: vi.fn(() => ({ 
+        objectStore: vi.fn(() => ({ })
           put: vi.fn(() => ({ onsuccess: null, onerror: null })),
           get: vi.fn(() => ({ onsuccess: null, onerror: null })),
           getAll: vi.fn(() => ({ onsuccess: null, onerror: null })),
           delete: vi.fn(() => ({ onsuccess: null, onerror: null })),
           count: vi.fn(() => ({ onsuccess: null, onerror: null })),
-          index: vi.fn(() => ({
+          index: vi.fn(() => ({  })
             getAll: vi.fn(() => ({ onsuccess: null, onerror: null })),
-            openCursor: vi.fn(() => ({ onsuccess: null, onerror: null })),
-          })),
-        })),
-      })),
-    },
-  })),
+            openCursor: vi.fn(() => ({ onsuccess: null, onerror: null })), }, }, },
+    }, },
 };
 Object.defineProperty(window, 'indexedDB', {
   value: mockIndexedDB,
-  writable: true,
-});
+  writable: true}
 
 // Generate test data
 const generateMessages = (count: number): Message[] => {
-  return Array.from({ length: count }, (_, index) => ({
+  return Array.from({ length: count }, (_, index) => ({  })
     _id: `message-${index}`,
     conversationId: 'test-conversation',
     senderId: `user-${index % 3}`,
@@ -83,12 +71,11 @@ const generateMessages = (count: number): Message[] => {
     editHistory: [],
     isDeleted: false,
     createdAt: new Date(Date.now() - (count - index) * 60000).toISOString(),
-    updatedAt: new Date(Date.now() - (count - index) * 60000).toISOString(),
-  }));
+    updatedAt: new Date(Date.now() - (count - index) * 60000).toISOString()}
 };
 
 const generateConversations = (count: number): Conversation[] => {
-  return Array.from({ length: count }, (_, index) => ({
+  return Array.from({ length: count }, (_, index) => ({  })
     _id: `conversation-${index}`,
     title: `Test Conversation ${index}`,
     type: 'group' as const,
@@ -111,17 +98,15 @@ const generateConversations = (count: number): Conversation[] => {
     },
     unreadCount: Math.floor(Math.random() * 10),
     createdAt: new Date(Date.now() - index * 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - index * 60000).toISOString(),
-  }));
+    updatedAt: new Date(Date.now() - index * 60000).toISOString()}
 };
 
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -387,8 +372,8 @@ describe('Communication Performance Tests', () => {
       const conversationId = 'test-conversation';
 
       // Cache conversation and messages
-      communicationCache.cacheConversation({
-        _id: conversationId,
+      communicationCache.cacheConversation({ 
+        _id: conversationId}
       } as Conversation);
 
       communicationCache.cacheMessageList(conversationId, generateMessages(10));

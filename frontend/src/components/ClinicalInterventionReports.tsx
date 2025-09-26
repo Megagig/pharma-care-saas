@@ -1,76 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Paper,
-  IconButton,
-  Tooltip,
-  Alert,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Chip,
-  Tabs,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  useTheme,
-  alpha,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Grid,
-} from '@mui/material';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  Legend,
-  ResponsiveContainer,
-  ComposedChart,
-  Area,
-  AreaChart,
-} from 'recharts';
-import {
-  Assessment as AssessmentIcon,
-  TrendingUp as TrendingUpIcon,
-  GetApp as ExportIcon,
-  FilterList as FilterIcon,
-  DateRange as DateRangeIcon,
-  AttachMoney as MoneyIcon,
-  Timeline as TimelineIcon,
-  PieChart as PieChartIcon,
-  BarChart as BarChartIcon,
-  ShowChart as ShowChartIcon,
-  Refresh as RefreshIcon,
-  Print as PrintIcon,
-  Share as ShareIcon,
-} from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, subDays, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import { useClinicalInterventionStore } from '../stores/clinicalInterventionStore';
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Tooltip, Spinner, Alert, Tabs } from '@/components/ui/button';
 
 interface OutcomeReport {
   summary: {
@@ -127,7 +55,6 @@ interface OutcomeReport {
     completedDate: string;
   }>;
 }
-
 interface ReportFilters {
   dateFrom: Date | null;
   dateTo: Date | null;
@@ -138,11 +65,9 @@ interface ReportFilters {
   costSavingsMin: number | null;
   costSavingsMax: number | null;
 }
-
 const ClinicalInterventionReports: React.FC = () => {
   const theme = useTheme();
   const { loading, error } = useClinicalInterventionStore();
-
   // State management
   const [activeTab, setActiveTab] = useState(0);
   const [reportData, setReportData] = useState<OutcomeReport | null>(null);
@@ -152,9 +77,8 @@ const ClinicalInterventionReports: React.FC = () => {
   const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'csv'>(
     'pdf'
   );
-
   // Filter state
-  const [filters, setFilters] = useState<ReportFilters>({
+  const [filters, setFilters] = useState<ReportFilters>({ 
     dateFrom: startOfMonth(subMonths(new Date(), 1)),
     dateTo: endOfMonth(new Date()),
     category: 'all',
@@ -162,24 +86,20 @@ const ClinicalInterventionReports: React.FC = () => {
     outcome: 'all',
     pharmacist: 'all',
     costSavingsMin: null,
-    costSavingsMax: null,
+    costSavingsMax: null}
   });
-
   // Pagination state
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-
   // Load report data
   const loadReportData = useCallback(async () => {
     setLoadingReport(true);
     setReportError(null);
-
     try {
       // Import the service dynamically to avoid circular dependencies
       const { clinicalInterventionService } = await import(
         '../services/clinicalInterventionService'
       );
-
       // Convert filters to the format expected by the API
       const apiFilters = {
         dateFrom: filters.dateFrom,
@@ -190,11 +110,9 @@ const ClinicalInterventionReports: React.FC = () => {
         pharmacist:
           filters.pharmacist !== 'all' ? filters.pharmacist : undefined,
       };
-
       const response = await clinicalInterventionService.generateOutcomeReport(
         apiFilters
       );
-
       if (response.success && response.data) {
         setReportData(response.data);
       } else {
@@ -230,7 +148,6 @@ const ClinicalInterventionReports: React.FC = () => {
           },
           detailedOutcomes: [],
         };
-
         setReportData(mockReportData);
         setReportError(
           response.message ||
@@ -242,7 +159,6 @@ const ClinicalInterventionReports: React.FC = () => {
       setReportError(
         error instanceof Error ? error.message : 'Failed to load report data'
       );
-
       // Provide empty structure even on error so UI doesn't break
       const emptyReportData: OutcomeReport = {
         summary: {
@@ -272,23 +188,19 @@ const ClinicalInterventionReports: React.FC = () => {
       setLoadingReport(false);
     }
   }, [filters]);
-
   // Load data on component mount and filter changes
   useEffect(() => {
     loadReportData();
   }, [loadReportData]);
-
   // Handle filter changes
   const handleFilterChange = (field: keyof ReportFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
-
   // Handle export
   const handleExport = async () => {
     try {
       // Mock export functionality - replace with actual API call
       console.log(`Exporting report as ${exportFormat}`);
-
       // Create mock file download
       const filename = `clinical-interventions-report-${format(
         new Date(),
@@ -297,7 +209,6 @@ const ClinicalInterventionReports: React.FC = () => {
       const content = JSON.stringify(reportData, null, 2);
       const blob = new Blob([content], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
@@ -305,13 +216,11 @@ const ClinicalInterventionReports: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
       setExportDialogOpen(false);
     } catch (error) {
       console.error('Export failed:', error);
     }
   };
-
   // Chart colors
   const chartColors = [
     theme.palette.primary.main,
@@ -321,146 +230,131 @@ const ClinicalInterventionReports: React.FC = () => {
     theme.palette.error.main,
     theme.palette.info.main,
   ];
-
   if (loadingReport && !reportData) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: 400,
-        }}
+      <div
+        className=""
       >
-        <CircularProgress />
-      </Box>
+        <Spinner />
+      </div>
     );
   }
-
   if (reportError) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
+      <Alert severity="error" className="">
         Error loading report: {reportError}
       </Alert>
     );
   }
-
   if (!reportData) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          className=""
         >
           <AssessmentIcon />
           Outcome Reports & Analytics
-        </Typography>
-        <Alert severity="info" sx={{ mt: 2 }}>
-          <Typography variant="h6" gutterBottom>
+        </div>
+        <Alert severity="info" className="">
+          <div  gutterBottom>
             No Report Data Available
-          </Typography>
-          <Typography variant="body2">
+          </div>
+          <div >
             No clinical interventions have been completed yet. Once clinical
             interventions are created and processed, comprehensive reports will
             be available including:
-          </Typography>
-          <Box component="ul" sx={{ mt: 1, mb: 0 }}>
+          </div>
+          <div component="ul" className="">
             <li>Success rates by category</li>
             <li>Cost savings analysis</li>
             <li>Trend analysis over time</li>
             <li>Comparative performance metrics</li>
             <li>Detailed outcome tracking</li>
-          </Box>
+          </div>
         </Alert>
-      </Box>
+      </div>
     );
   }
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: 3 }}>
+      <div className="">
         {/* Header */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3,
-          }}
+        <div
+          className=""
         >
-          <Typography
-            variant="h4"
+          <div
+            
             component="h1"
-            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            className=""
           >
             <AssessmentIcon />
             Outcome Reports & Analytics
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          </div>
+          <div className="">
             <Tooltip title="Refresh Data">
               <IconButton onClick={loadReportData} disabled={loadingReport}>
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
             <Button
-              variant="outlined"
+              
               startIcon={<ExportIcon />}
               onClick={() => setExportDialogOpen(true)}
             >
               Export Report
             </Button>
             <Button
-              variant="outlined"
+              
               startIcon={<PrintIcon />}
               onClick={() => window.print()}
             >
               Print
             </Button>
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {/* Filters */}
-        <Card sx={{ mb: 3 }}>
+        <Card className="">
           <CardContent>
-            <Typography
-              variant="h6"
+            <div
+              
               gutterBottom
-              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              className=""
             >
               <FilterIcon />
               Report Filters
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
+            </div>
+            <div container spacing={2}>
+              <div item xs={12} sm={6} md={3}>
                 <DatePicker
                   label="From Date"
                   value={filters.dateFrom}
                   onChange={(date) => handleFilterChange('dateFrom', date)}
-                  renderInput={(params) => (
-                    <TextField {...params} fullWidth size="small" />
+                  renderInput={(params) => (}
+                    <Input {...params} fullWidth size="small" />
                   )}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              </div>
+              <div item xs={12} sm={6} md={3}>
                 <DatePicker
                   label="To Date"
                   value={filters.dateTo}
                   onChange={(date) => handleFilterChange('dateTo', date)}
-                  renderInput={(params) => (
-                    <TextField {...params} fullWidth size="small" />
+                  renderInput={(params) => (}
+                    <Input {...params} fullWidth size="small" />
                   )}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Category</InputLabel>
+              </div>
+              <div item xs={12} sm={6} md={3}>
+                <div fullWidth size="small">
+                  <Label>Category</Label>
                   <Select
                     value={filters.category}
                     label="Category"
                     onChange={(e) =>
-                      handleFilterChange('category', e.target.value)
+                      handleFilterChange('category', e.target.value)}
                     }
                   >
                     <MenuItem value="all">All Categories</MenuItem>
@@ -481,16 +375,16 @@ const ClinicalInterventionReports: React.FC = () => {
                       Contraindication
                     </MenuItem>
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Priority</InputLabel>
+                </div>
+              </div>
+              <div item xs={12} sm={6} md={3}>
+                <div fullWidth size="small">
+                  <Label>Priority</Label>
                   <Select
                     value={filters.priority}
                     label="Priority"
                     onChange={(e) =>
-                      handleFilterChange('priority', e.target.value)
+                      handleFilterChange('priority', e.target.value)}
                     }
                   >
                     <MenuItem value="all">All Priorities</MenuItem>
@@ -499,14 +393,13 @@ const ClinicalInterventionReports: React.FC = () => {
                     <MenuItem value="medium">Medium</MenuItem>
                     <MenuItem value="low">Low</MenuItem>
                   </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
         {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <div className="">
           <Tabs
             value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
@@ -517,144 +410,142 @@ const ClinicalInterventionReports: React.FC = () => {
             <Tab label="Comparative Analysis" />
             <Tab label="Detailed Outcomes" />
           </Tabs>
-        </Box>
-
+        </div>
         {/* Tab Content */}
         {activeTab === 0 && (
-          <Box>
+          <div>
             {/* Summary KPIs */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} sm={6} md={4}>
+            <div container spacing={3} className="">
+              <div item xs={12} sm={6} md={4}>
                 <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
+                  <CardContent className="">
                     <AssessmentIcon
-                      sx={{ fontSize: 40, color: 'primary.main', mb: 1 }}
+                      className=""
                     />
-                    <Typography
-                      variant="h4"
+                    <div
+                      
                       component="div"
-                      sx={{ fontWeight: 'bold' }}
+                      className=""
                     >
                       {reportData?.summary?.totalInterventions || 0}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Total Interventions
-                    </Typography>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              </div>
+              <div item xs={12} sm={6} md={4}>
                 <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
+                  <CardContent className="">
                     <TrendingUpIcon
-                      sx={{ fontSize: 40, color: 'success.main', mb: 1 }}
+                      className=""
                     />
-                    <Typography
-                      variant="h4"
+                    <div
+                      
                       component="div"
-                      sx={{ fontWeight: 'bold' }}
+                      className=""
                     >
                       {(reportData?.summary?.successRate || 0).toFixed(1)}%
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Success Rate
-                    </Typography>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              </div>
+              <div item xs={12} sm={6} md={4}>
                 <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
+                  <CardContent className="">
                     <MoneyIcon
-                      sx={{ fontSize: 40, color: 'warning.main', mb: 1 }}
+                      className=""
                     />
-                    <Typography
-                      variant="h4"
+                    <div
+                      
                       component="div"
-                      sx={{ fontWeight: 'bold' }}
+                      className=""
                     >
                       ₦
                       {(
                         reportData?.summary?.totalCostSavings || 0
                       ).toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Total Cost Savings
-                    </Typography>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              </div>
+              <div item xs={12} sm={6} md={4}>
                 <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
+                  <CardContent className="">
                     <TimelineIcon
-                      sx={{ fontSize: 40, color: 'info.main', mb: 1 }}
+                      className=""
                     />
-                    <Typography
-                      variant="h4"
+                    <div
+                      
                       component="div"
-                      sx={{ fontWeight: 'bold' }}
+                      className=""
                     >
                       {(
                         reportData?.summary?.averageResolutionTime || 0
                       ).toFixed(1)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Avg Resolution Time (days)
-                    </Typography>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              </div>
+              <div item xs={12} sm={6} md={4}>
                 <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
+                  <CardContent className="">
                     <AssessmentIcon
-                      sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }}
+                      className=""
                     />
-                    <Typography
-                      variant="h4"
+                    <div
+                      
                       component="div"
-                      sx={{ fontWeight: 'bold' }}
+                      className=""
                     >
                       {reportData?.summary?.completedInterventions || 0}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Completed Interventions
-                    </Typography>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              </div>
+              <div item xs={12} sm={6} md={4}>
                 <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
+                  <CardContent className="">
                     <TrendingUpIcon
-                      sx={{ fontSize: 40, color: 'success.main', mb: 1 }}
+                      className=""
                     />
-                    <Typography
-                      variant="h4"
+                    <div
+                      
                       component="div"
-                      sx={{ fontWeight: 'bold' }}
+                      className=""
                     >
                       {(
                         reportData?.summary?.patientSatisfactionScore || 0
                       ).toFixed(1)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Patient Satisfaction (5.0)
-                    </Typography>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
-
+              </div>
+            </div>
             {/* Summary Charts */}
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
+            <div container spacing={3}>
+              <div item xs={12} md={6}>
                 <Card>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom>
+                    <div  gutterBottom>
                       Success Rate by Category
-                    </Typography>
+                    </div>
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={reportData?.categoryAnalysis || []}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -676,13 +567,13 @@ const ClinicalInterventionReports: React.FC = () => {
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} md={6}>
+              </div>
+              <div item xs={12} md={6}>
                 <Card>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom>
+                    <div  gutterBottom>
                       Cost Savings by Category
-                    </Typography>
+                    </div>
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={reportData?.categoryAnalysis || []}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -694,7 +585,7 @@ const ClinicalInterventionReports: React.FC = () => {
                         />
                         <YAxis />
                         <RechartsTooltip
-                          formatter={(value) => [
+                          formatter={(value) => [}
                             `₦${value}`,
                             'Avg Cost Savings',
                           ]}
@@ -707,19 +598,18 @@ const ClinicalInterventionReports: React.FC = () => {
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
-          </Box>
+              </div>
+            </div>
+          </div>
         )}
-
         {activeTab === 1 && (
-          <Box>
+          <div>
             {/* Category Analysis Table */}
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
+                <div  gutterBottom>
                   Category Performance Analysis
-                </Typography>
+                </div>
                 <TableContainer>
                   <Table>
                     <TableHead>
@@ -750,7 +640,7 @@ const ClinicalInterventionReports: React.FC = () => {
                                   ? 'success'
                                   : category.successRate >= 80
                                   ? 'warning'
-                                  : 'error'
+                                  : 'error'}
                               }
                               size="small"
                             />
@@ -768,19 +658,18 @@ const ClinicalInterventionReports: React.FC = () => {
                 </TableContainer>
               </CardContent>
             </Card>
-          </Box>
+          </div>
         )}
-
         {activeTab === 2 && (
-          <Box>
+          <div>
             {/* Trend Analysis Charts */}
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
+            <div container spacing={3}>
+              <div item xs={12}>
                 <Card>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom>
+                    <div  gutterBottom>
                       Monthly Trends
-                    </Typography>
+                    </div>
                     <ResponsiveContainer width="100%" height={400}>
                       <ComposedChart data={reportData?.trendAnalysis || []}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -814,177 +703,121 @@ const ClinicalInterventionReports: React.FC = () => {
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
-          </Box>
+              </div>
+            </div>
+          </div>
         )}
-
         {activeTab === 3 && (
-          <Box>
+          <div>
             {/* Comparative Analysis */}
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={4}>
+            <div container spacing={3}>
+              <div item xs={12} md={4}>
                 <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" gutterBottom>
+                  <CardContent className="">
+                    <div  gutterBottom>
                       Interventions
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    </div>
+                    <div  className="">
                       {reportData?.comparativeAnalysis?.currentPeriod
                         ?.interventions || 0}
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
+                    </div>
+                    <div
+                      className=""
                     >
                       <TrendingUpIcon
-                        sx={{
-                          color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.interventions || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
-                          mr: 0.5,
-                        }}
+                        className=""
                       />
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.interventions || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
-                          fontWeight: 'medium',
-                        }}
+                      <div
+                        
+                        className=""
                       >
                         {Math.abs(
                           reportData?.comparativeAnalysis?.percentageChange
                             ?.interventions || 0
                         ).toFixed(1)}
                         % vs previous period
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </div>
+              <div item xs={12} md={4}>
                 <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" gutterBottom>
+                  <CardContent className="">
+                    <div  gutterBottom>
                       Success Rate
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    </div>
+                    <div  className="">
                       {(
                         reportData?.comparativeAnalysis?.currentPeriod
                           ?.successRate || 0
                       ).toFixed(1)}
                       %
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
+                    </div>
+                    <div
+                      className=""
                     >
                       <TrendingUpIcon
-                        sx={{
-                          color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.successRate || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
-                          mr: 0.5,
-                        }}
+                        className=""
                       />
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.successRate || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
-                          fontWeight: 'medium',
-                        }}
+                      <div
+                        
+                        className=""
                       >
                         {Math.abs(
                           reportData?.comparativeAnalysis?.percentageChange
                             ?.successRate || 0
                         ).toFixed(1)}
                         % vs previous period
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
+              </div>
+              <div item xs={12} md={4}>
                 <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" gutterBottom>
+                  <CardContent className="">
+                    <div  gutterBottom>
                       Cost Savings
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    </div>
+                    <div  className="">
                       $
                       {(
                         reportData?.comparativeAnalysis?.currentPeriod
                           ?.costSavings || 0
                       ).toLocaleString()}
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
+                    </div>
+                    <div
+                      className=""
                     >
                       <TrendingUpIcon
-                        sx={{
-                          color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.costSavings || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
-                          mr: 0.5,
-                        }}
+                        className=""
                       />
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.costSavings || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
-                          fontWeight: 'medium',
-                        }}
+                      <div
+                        
+                        className=""
                       >
                         {Math.abs(
                           reportData?.comparativeAnalysis?.percentageChange
                             ?.costSavings || 0
                         ).toFixed(1)}
                         % vs previous period
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
-          </Box>
+              </div>
+            </div>
+          </div>
         )}
-
         {activeTab === 4 && (
-          <Box>
+          <div>
             {/* Detailed Outcomes Table */}
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
+                <div  gutterBottom>
                   Detailed Intervention Outcomes
-                </Typography>
+                </div>
                 <TableContainer>
                   <Table>
                     <TableHead>
@@ -1018,7 +851,7 @@ const ClinicalInterventionReports: React.FC = () => {
                                     ? 'error'
                                     : outcome.priority === 'medium'
                                     ? 'warning'
-                                    : 'default'
+                                    : 'default'}
                                 }
                                 size="small"
                               />
@@ -1031,7 +864,7 @@ const ClinicalInterventionReports: React.FC = () => {
                                     ? 'success'
                                     : outcome.patientResponse === 'no_change'
                                     ? 'warning'
-                                    : 'error'
+                                    : 'error'}
                                 }
                                 size="small"
                               />
@@ -1060,16 +893,12 @@ const ClinicalInterventionReports: React.FC = () => {
                   rowsPerPage={rowsPerPage}
                   page={page}
                   onPageChange={(_, newPage) => setPage(newPage)}
-                  onRowsPerPageChange={(event) => {
-                    setRowsPerPage(parseInt(event.target.value, 10));
-                    setPage(0);
-                  }}
+                  
                 />
               </CardContent>
             </Card>
-          </Box>
+          </div>
         )}
-
         {/* Export Dialog */}
         <Dialog
           open={exportDialogOpen}
@@ -1077,11 +906,11 @@ const ClinicalInterventionReports: React.FC = () => {
         >
           <DialogTitle>Export Report</DialogTitle>
           <DialogContent>
-            <Typography variant="body2" sx={{ mb: 2 }}>
+            <div  className="">
               Choose the format for exporting the report:
-            </Typography>
-            <FormControl fullWidth>
-              <InputLabel>Export Format</InputLabel>
+            </div>
+            <div fullWidth>
+              <Label>Export Format</Label>
               <Select
                 value={exportFormat}
                 label="Export Format"
@@ -1091,18 +920,17 @@ const ClinicalInterventionReports: React.FC = () => {
                 <MenuItem value="excel">Excel Spreadsheet</MenuItem>
                 <MenuItem value="csv">CSV Data</MenuItem>
               </Select>
-            </FormControl>
+            </div>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setExportDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleExport} variant="contained">
+            <Button onClick={handleExport} >
               Export
             </Button>
           </DialogActions>
         </Dialog>
-      </Box>
+      </div>
     </LocalizationProvider>
   );
 };
-
 export default ClinicalInterventionReports;

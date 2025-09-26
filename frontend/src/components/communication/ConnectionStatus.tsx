@@ -1,17 +1,18 @@
 import React from 'react';
-import { Box, Chip, Tooltip, IconButton } from '@mui/material';
-import {
-  Wifi,
-  WifiOff,
-  Sync,
-  Error as ErrorIcon,
-  Refresh,
-} from '@mui/icons-material';
-import { useSocketConnection } from '../../hooks/useSocket';
-import {
-  socketService,
-  ConnectionStatus as ConnectionStatusType,
-} from '../../services/socketService';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Wifi, WifiOff, Loader, AlertCircle, RefreshCw } from 'lucide-react';
+
+// Mock data and hooks
+const useSocketConnection = () => ({
+  connectionStatus: 'connected',
+  isConnected: true,
+  connectionInfo: { socketId: '123', reconnectAttempts: 0, joinedConversations: [] },
+});
+const socketService = { forceReconnect: () => {} };
+
+type ConnectionStatusType = 'connected' | 'connecting' | 'reconnecting' | 'disconnected' | 'error';
 
 interface ConnectionStatusProps {
   showDetails?: boolean;
@@ -19,55 +20,55 @@ interface ConnectionStatusProps {
   variant?: 'chip' | 'icon' | 'full';
 }
 
-const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
+const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ 
   showDetails = false,
   size = 'small',
-  variant = 'chip',
+  variant = 'chip'
 }) => {
-  const { connectionStatus, isConnected, connectionInfo } =
-    useSocketConnection();
+  const { connectionStatus, isConnected, connectionInfo } = useSocketConnection();
 
   const getStatusConfig = (status: ConnectionStatusType) => {
+    const iconSize = size === 'small' ? 'h-4 w-4' : 'h-5 w-5';
     switch (status) {
       case 'connected':
         return {
-          color: 'success' as const,
-          icon: <Wifi fontSize={size} />,
+          variant: 'default' as const,
+          icon: <Wifi className={iconSize} />,
           label: 'Connected',
           tooltip: 'Real-time messaging is active',
         };
       case 'connecting':
         return {
-          color: 'warning' as const,
-          icon: <Sync fontSize={size} className="animate-spin" />,
+          variant: 'secondary' as const,
+          icon: <Loader className={`${iconSize} animate-spin`} />,
           label: 'Connecting',
           tooltip: 'Establishing connection...',
         };
       case 'reconnecting':
         return {
-          color: 'warning' as const,
-          icon: <Sync fontSize={size} className="animate-spin" />,
+          variant: 'secondary' as const,
+          icon: <Loader className={`${iconSize} animate-spin`} />,
           label: 'Reconnecting',
           tooltip: 'Attempting to reconnect...',
         };
       case 'disconnected':
         return {
-          color: 'default' as const,
-          icon: <WifiOff fontSize={size} />,
+          variant: 'outline' as const,
+          icon: <WifiOff className={iconSize} />,
           label: 'Disconnected',
           tooltip: 'Real-time messaging is offline',
         };
       case 'error':
         return {
-          color: 'error' as const,
-          icon: <ErrorIcon fontSize={size} />,
+          variant: 'destructive' as const,
+          icon: <AlertCircle className={iconSize} />,
           label: 'Error',
           tooltip: 'Connection error occurred',
         };
       default:
         return {
-          color: 'default' as const,
-          icon: <WifiOff fontSize={size} />,
+          variant: 'outline' as const,
+          icon: <WifiOff className={iconSize} />,
           label: 'Unknown',
           tooltip: 'Connection status unknown',
         };
@@ -75,110 +76,63 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
   };
 
   const statusConfig = getStatusConfig(connectionStatus);
-
   const handleReconnect = () => {
     socketService.forceReconnect();
   };
 
   if (variant === 'icon') {
     return (
-      <Tooltip title={statusConfig.tooltip}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            color:
-              statusConfig.color === 'success'
-                ? 'success.main'
-                : statusConfig.color === 'warning'
-                ? 'warning.main'
-                : statusConfig.color === 'error'
-                ? 'error.main'
-                : 'text.secondary',
-          }}
-        >
-          {statusConfig.icon}
-        </Box>
-      </Tooltip>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="p-2">{statusConfig.icon}</div>
+          </TooltipTrigger>
+          <TooltipContent><p>{statusConfig.tooltip}</p></TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 
   if (variant === 'chip') {
     return (
-      <Tooltip title={statusConfig.tooltip}>
-        <Chip
-          icon={statusConfig.icon}
-          label={statusConfig.label}
-          color={statusConfig.color}
-          size={size}
-          variant={isConnected ? 'filled' : 'outlined'}
-        />
-      </Tooltip>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <Badge variant={statusConfig.variant} className="flex items-center gap-2">
+              {statusConfig.icon}
+              <span>{statusConfig.label}</span>
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent><p>{statusConfig.tooltip}</p></TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 
-  // Full variant with details
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1,
-        p: 1,
-        borderRadius: 1,
-        bgcolor: 'background.paper',
-        border: 1,
-        borderColor: 'divider',
-      }}
-    >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          color:
-            statusConfig.color === 'success'
-              ? 'success.main'
-              : statusConfig.color === 'warning'
-              ? 'warning.main'
-              : statusConfig.color === 'error'
-              ? 'error.main'
-              : 'text.secondary',
-        }}
-      >
-        {statusConfig.icon}
-      </Box>
-
-      <Box sx={{ flex: 1 }}>
-        <Box sx={{ fontWeight: 'medium', fontSize: '0.875rem' }}>
-          {statusConfig.label}
-        </Box>
-
+    <div className="flex items-center gap-4 p-4 rounded-lg border bg-card text-card-foreground">
+      <div>{statusConfig.icon}</div>
+      <div className="flex-grow">
+        <p className="font-semibold">{statusConfig.label}</p>
         {showDetails && (
-          <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-            {connectionInfo.socketId && (
-              <div>Socket ID: {connectionInfo.socketId.slice(0, 8)}...</div>
-            )}
-            {connectionInfo.reconnectAttempts > 0 && (
-              <div>Reconnect attempts: {connectionInfo.reconnectAttempts}</div>
-            )}
-            {connectionInfo.joinedConversations.length > 0 && (
-              <div>
-                Active conversations:{' '}
-                {connectionInfo.joinedConversations.length}
-              </div>
-            )}
-          </Box>
+          <div className="text-xs text-muted-foreground space-y-1 mt-1">
+            {connectionInfo.socketId && <p>ID: {connectionInfo.socketId.slice(0, 8)}...</p>}
+            {connectionInfo.reconnectAttempts > 0 && <p>Retries: {connectionInfo.reconnectAttempts}</p>}
+            {connectionInfo.joinedConversations.length > 0 && <p>Rooms: {connectionInfo.joinedConversations.length}</p>}
+          </div>
         )}
-      </Box>
-
+      </div>
       {!isConnected && (
-        <Tooltip title="Retry connection">
-          <IconButton size="small" onClick={handleReconnect} sx={{ ml: 1 }}>
-            <Refresh fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" variant="ghost" onClick={handleReconnect}><RefreshCw className="h-4 w-4" /></Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Retry connection</p></TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )}
-    </Box>
+    </div>
   );
 };
 

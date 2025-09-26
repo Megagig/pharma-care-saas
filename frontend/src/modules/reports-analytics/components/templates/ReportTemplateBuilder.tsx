@@ -1,208 +1,73 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-  IconButton,
-  Drawer,
-  AppBar,
-  Toolbar,
-  Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ListItemButton,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  Tooltip,
-  Alert,
-  Snackbar,
-  LinearProgress,
-  Tabs,
-  Tab,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Switch,
-  FormControlLabel,
-  Slider,
-  Stack,
-} from '@mui/material';
-import {
-  DragIndicator,
-  Add,
-  Delete,
-  Edit,
-  Save,
-  Preview,
-  Undo,
-  Redo,
-  ContentCopy,
-  ContentPaste,
-  Settings,
-  Palette,
-  ViewModule,
-  BarChart,
-  TableChart,
-  Assessment,
-  TextFields,
-  Image,
-  ExpandMore,
-  Close,
-  Visibility,
-  VisibilityOff,
-  GridOn,
-  FormatPaint,
-  Code,
-  Share,
-  Download,
-  Upload,
-  Help,
-} from '@mui/icons-material';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import { useTemplatesStore } from '../../stores/templatesStore';
-import { useChartsStore } from '../../stores/chartsStore';
-import { useFiltersStore } from '../../stores/filtersStore';
-import {
-  ReportTemplate,
-  TemplateBuilder,
-  TemplateSection,
-  SectionContent,
-  LayoutConfig,
-  DraggedItem,
-  ValidationError,
-  HistoryEntry,
-} from '../../types/templates';
-import { ChartType, ChartConfig } from '../../types/charts';
-import { FilterDefinition } from '../../types/filters';
-import { generateId } from '../../utils/chartHelpers';
-import { maxWidth } from '@mui/system';
-
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Tooltip, Progress, Alert, Switch, Accordion, Tabs, Separator } from '@/components/ui/button';
+// Removed MUI system import - using Tailwind CSS
 interface ReportTemplateBuilderProps {
   templateId?: string;
-  onSave?: (template: ReportTemplate) => void;
+onSave?: (template: ReportTemplate) => void;
   onCancel?: () => void;
   onPreview?: (template: ReportTemplate) => void;
 }
-
 interface DraggableItemProps {
   type: 'section' | 'chart' | 'table' | 'metric';
   data: any;
   children: React.ReactNode;
 }
-
 interface DropZoneProps {
   onDrop: (item: DraggedItem, position: number) => void;
   children: React.ReactNode;
   position: number;
 }
-
 const ITEM_TYPES = {
-  SECTION: 'section',
-  CHART: 'chart',
-  TABLE: 'table',
-  METRIC: 'metric',
 };
-
-const DraggableItem: React.FC<DraggableItemProps> = ({
+const DraggableItem: React.FC<DraggableItemProps> = ({ 
   type,
   data,
-  children,
+  children
 }) => {
-  const [{ isDragging }, drag] = useDrag({
-    type: ITEM_TYPES.SECTION,
+  const [{ isDragging }, drag] = useDrag({ 
+    type: ITEM_TYPES.SECTION}
     item: { type, data, source: 'palette' },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
+    collect: (monitor) => ({ 
+      isDragging: monitor.isDragging()}
+    })}
   return (
-    <Box
+    <div
       ref={drag}
-      sx={{
-        opacity: isDragging ? 0.5 : 1,
-        cursor: 'grab',
-        '&:active': {
-          cursor: 'grabbing',
-        },
-      }}
-    >
+      className="">
       {children}
-    </Box>
+    </div>
   );
 };
-
 const DropZone: React.FC<DropZoneProps> = ({ onDrop, children, position }) => {
-  const [{ isOver, canDrop }, drop] = useDrop({
+  const [{ isOver, canDrop }, drop] = useDrop({ 
     accept: ITEM_TYPES.SECTION,
     drop: (item: DraggedItem) => {
-      onDrop(item, position);
+      onDrop(item, position); })
     },
-    collect: (monitor) => ({
+    collect: (monitor) => ({ 
       isOver: monitor.isOver(),
-      canDrop: monitor.canDrop(),
-    }),
-  });
-
+      canDrop: monitor.canDrop()}
+    })}
   return (
-    <Box
+    <div
       ref={drop}
-      sx={{
-        minHeight: 100,
-        border:
-          isOver && canDrop ? '2px dashed #1976d2' : '2px dashed transparent',
-        borderRadius: 1,
-        backgroundColor:
-          isOver && canDrop ? 'rgba(25, 118, 210, 0.1)' : 'transparent',
-        transition: 'all 0.2s ease',
-        position: 'relative',
-      }}
+      className=""
     >
       {children}
       {isOver && canDrop && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: 'primary.main',
-            color: 'white',
-            px: 2,
-            py: 1,
-            borderRadius: 1,
-            typography: 'body2',
-            fontWeight: 'bold',
-          }}
+        <div
+          className=""
         >
           Drop here
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
-
-export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
+export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({ 
   templateId,
   onSave,
   onCancel,
-  onPreview,
+  onPreview
 }) => {
   const {
     builder,
@@ -212,10 +77,8 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
     updateTemplate,
     getTemplate,
   } = useTemplatesStore();
-
   const { charts } = useChartsStore();
   const { filterDefinitions } = useFiltersStore();
-
   // UI State
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
@@ -227,17 +90,15 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
     open: boolean;
     message: string;
     severity: 'success' | 'error' | 'warning' | 'info';
-  }>({
+  }>({ 
     open: false,
     message: '',
-    severity: 'info',
+    severity: 'info'}
   });
-
   // Template state
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
   const [templateCategory, setTemplateCategory] = useState('');
-
   // Initialize builder
   useEffect(() => {
     if (templateId) {
@@ -318,7 +179,6 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-
       const newBuilder: TemplateBuilder = {
         template: newTemplate,
         currentSection: null,
@@ -333,12 +193,10 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
       setBuilder(newBuilder);
     }
   }, [templateId, getTemplate, setBuilder]);
-
   // Handle drag and drop
   const handleDrop = useCallback(
     (item: DraggedItem, position: number) => {
       if (!builder) return;
-
       const newSection: TemplateSection = {
         id: generateId(),
         type: item.type as any,
@@ -357,15 +215,12 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
         },
         order: position,
       };
-
       const updatedSections = [...builder.template.sections];
       updatedSections.splice(position, 0, newSection);
-
       // Update order for subsequent sections
       updatedSections.forEach((section, index) => {
         section.order = index;
       });
-
       const historyEntry: HistoryEntry = {
         action: 'add',
         target: newSection.id,
@@ -373,55 +228,45 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
         after: newSection,
         timestamp: new Date(),
       };
-
-      updateBuilder({
+      updateBuilder({ 
         template: {
           ...builder.template,
-          sections: updatedSections,
+          sections: updatedSections}
         },
         history: [
           ...builder.history.slice(0, builder.historyIndex + 1),
           historyEntry,
         ],
         historyIndex: builder.historyIndex + 1,
-        isDirty: true,
-      });
-
-      setSnackbar({
-        open: true,
+        isDirty: true}
+      setSnackbar({ 
+        open: true}
         message: `${item.type} section added successfully`,
-        severity: 'success',
-      });
+        severity: 'success'}
     },
     [builder, updateBuilder]
   );
-
   // Handle section selection
   const handleSectionSelect = useCallback((sectionId: string) => {
     setSelectedSection(sectionId);
     setPropertiesOpen(true);
   }, []);
-
   // Handle section deletion
   const handleSectionDelete = useCallback(
     (sectionId: string) => {
       if (!builder) return;
-
       const sectionIndex = builder.template.sections.findIndex(
         (s) => s.id === sectionId
       );
       if (sectionIndex === -1) return;
-
       const section = builder.template.sections[sectionIndex];
       const updatedSections = builder.template.sections.filter(
         (s) => s.id !== sectionId
       );
-
       // Update order for subsequent sections
       updatedSections.forEach((section, index) => {
         section.order = index;
       });
-
       const historyEntry: HistoryEntry = {
         action: 'remove',
         target: sectionId,
@@ -429,41 +274,34 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
         after: null,
         timestamp: new Date(),
       };
-
-      updateBuilder({
+      updateBuilder({ 
         template: {
           ...builder.template,
-          sections: updatedSections,
+          sections: updatedSections}
         },
         history: [
           ...builder.history.slice(0, builder.historyIndex + 1),
           historyEntry,
         ],
         historyIndex: builder.historyIndex + 1,
-        isDirty: true,
-      });
-
+        isDirty: true}
       if (selectedSection === sectionId) {
         setSelectedSection(null);
         setPropertiesOpen(false);
       }
-
-      setSnackbar({
+      setSnackbar({ 
         open: true,
         message: 'Section deleted successfully',
-        severity: 'success',
+        severity: 'success'}
       });
     },
     [builder, updateBuilder, selectedSection]
   );
-
   // Handle undo/redo
   const handleUndo = useCallback(() => {
     if (!builder || builder.historyIndex < 0) return;
-
     const historyEntry = builder.history[builder.historyIndex];
     let updatedTemplate = { ...builder.template };
-
     switch (historyEntry.action) {
       case 'add':
         updatedTemplate.sections = updatedTemplate.sections.filter(
@@ -486,20 +324,16 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
         }
         break;
     }
-
-    updateBuilder({
+    updateBuilder({ 
       template: updatedTemplate,
       historyIndex: builder.historyIndex - 1,
-      isDirty: true,
+      isDirty: true}
     });
   }, [builder, updateBuilder]);
-
   const handleRedo = useCallback(() => {
     if (!builder || builder.historyIndex >= builder.history.length - 1) return;
-
     const historyEntry = builder.history[builder.historyIndex + 1];
     let updatedTemplate = { ...builder.template };
-
     switch (historyEntry.action) {
       case 'add':
         if (historyEntry.after) {
@@ -522,18 +356,15 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
         }
         break;
     }
-
-    updateBuilder({
+    updateBuilder({ 
       template: updatedTemplate,
       historyIndex: builder.historyIndex + 1,
-      isDirty: true,
+      isDirty: true}
     });
   }, [builder, updateBuilder]);
-
   // Handle save
   const handleSave = useCallback(() => {
     if (!builder) return;
-
     const updatedTemplate: ReportTemplate = {
       ...builder.template,
       name: templateName,
@@ -544,25 +375,21 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
       },
       updatedAt: new Date(),
     };
-
     if (templateId) {
       updateTemplate(templateId, updatedTemplate);
     } else {
       addTemplate(updatedTemplate);
     }
-
-    updateBuilder({
+    updateBuilder({ 
       template: updatedTemplate,
-      isDirty: false,
+      isDirty: false}
     });
-
     setSaveDialogOpen(false);
     onSave?.(updatedTemplate);
-
-    setSnackbar({
+    setSnackbar({ 
       open: true,
       message: 'Template saved successfully',
-      severity: 'success',
+      severity: 'success'}
     });
   }, [
     builder,
@@ -575,11 +402,9 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
     updateBuilder,
     onSave,
   ]);
-
   // Handle preview
   const handlePreview = useCallback(() => {
     if (!builder) return;
-
     const previewTemplate: ReportTemplate = {
       ...builder.template,
       name: templateName,
@@ -589,47 +414,31 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
         category: templateCategory,
       },
     };
-
     onPreview?.(previewTemplate);
     setPreviewMode(true);
   }, [builder, templateName, templateDescription, templateCategory, onPreview]);
-
   if (!builder) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-        }}
+      <div
+        className=""
       >
-        <LinearProgress sx={{ width: 300 }} />
-      </Box>
+        <Progress className="" />
+      </div>
     );
   }
-
   return (
     <DndProvider backend={HTML5Backend}>
-      <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      <div className="">
         {/* Sidebar */}
         <Drawer
-          variant="persistent"
+          
           anchor="left"
           open={drawerOpen}
-          sx={{
-            width: 320,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
-              width: 320,
-              boxSizing: 'border-box',
-            },
-          }}
-        >
-          <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
+          className="">
+          <div className="">
+            <div  gutterBottom>
               Template Builder
-            </Typography>
+            </div>
             <Tabs
               value={activeTab}
               onChange={(_, value) => setActiveTab(value)}
@@ -637,82 +446,69 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
               <Tab label="Components" />
               <Tab label="Settings" />
             </Tabs>
-          </Box>
-
-          <Divider />
-
+          </div>
+          <Separator />
           {activeTab === 0 && (
-            <Box sx={{ p: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
+            <div className="">
+              <div  gutterBottom>
                 Sections
-              </Typography>
+              </div>
               <List dense>
                 <DraggableItem
                   type="section"
-                  data={{ type: 'header', title: 'Header Section' }}
-                >
-                  <ListItemButton>
-                    <ListItemIcon>
-                      <TextFields />
-                    </ListItemIcon>
-                    <ListItemText primary="Header" />
+                  >
+                  <Button>
+                    <div>
+                      <Inputs />
+                    </div>
+                    <div primary="Header" />
                   </ListItemButton>
                 </DraggableItem>
-
                 <DraggableItem
                   type="section"
-                  data={{ type: 'summary', title: 'Summary Section' }}
-                >
-                  <ListItemButton>
-                    <ListItemIcon>
+                  >
+                  <Button>
+                    <div>
                       <Assessment />
-                    </ListItemIcon>
-                    <ListItemText primary="Summary" />
+                    </div>
+                    <div primary="Summary" />
                   </ListItemButton>
                 </DraggableItem>
-
                 <DraggableItem
                   type="section"
-                  data={{ type: 'charts', title: 'Charts Section' }}
-                >
-                  <ListItemButton>
-                    <ListItemIcon>
+                  >
+                  <Button>
+                    <div>
                       <BarChart />
-                    </ListItemIcon>
-                    <ListItemText primary="Charts" />
+                    </div>
+                    <div primary="Charts" />
                   </ListItemButton>
                 </DraggableItem>
-
                 <DraggableItem
                   type="section"
-                  data={{ type: 'tables', title: 'Tables Section' }}
-                >
-                  <ListItemButton>
-                    <ListItemIcon>
+                  >
+                  <Button>
+                    <div>
                       <TableChart />
-                    </ListItemIcon>
-                    <ListItemText primary="Tables" />
+                    </div>
+                    <div primary="Tables" />
                   </ListItemButton>
                 </DraggableItem>
-
                 <DraggableItem
                   type="section"
-                  data={{ type: 'text', title: 'Text Section' }}
-                >
-                  <ListItemButton>
-                    <ListItemIcon>
-                      <TextFields />
-                    </ListItemIcon>
-                    <ListItemText primary="Text" />
+                  >
+                  <Button>
+                    <div>
+                      <Inputs />
+                    </div>
+                    <div primary="Text" />
                   </ListItemButton>
                 </DraggableItem>
               </List>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Typography variant="subtitle2" gutterBottom>
+              <Separator className="" />
+              <div  gutterBottom>
                 Charts
-              </Typography>
+              </div>
               <List dense>
                 {Object.entries(charts)
                   .slice(0, 5)
@@ -720,13 +516,12 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
                     <DraggableItem
                       key={id}
                       type="chart"
-                      data={{ chartId: id, title: chart.title }}
-                    >
-                      <ListItemButton>
-                        <ListItemIcon>
+                      >
+                      <Button>
+                        <div>
                           <BarChart />
-                        </ListItemIcon>
-                        <ListItemText
+                        </div>
+                        <div
                           primary={chart.title}
                           secondary={chart.type}
                         />
@@ -734,19 +529,18 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
                     </DraggableItem>
                   ))}
               </List>
-            </Box>
+            </div>
           )}
-
           {activeTab === 1 && (
-            <Box sx={{ p: 2 }}>
-              <TextField
+            <div className="">
+              <Input
                 fullWidth
                 label="Template Name"
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
                 margin="normal"
               />
-              <TextField
+              <Input
                 fullWidth
                 label="Description"
                 value={templateDescription}
@@ -755,8 +549,8 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
                 rows={3}
                 margin="normal"
               />
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Category</InputLabel>
+              <div fullWidth margin="normal">
+                <Label>Category</Label>
                 <Select
                   value={templateCategory}
                   onChange={(e) => setTemplateCategory(e.target.value)}
@@ -782,78 +576,70 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
                   </MenuItem>
                   <MenuItem value="custom">Custom</MenuItem>
                 </Select>
-              </FormControl>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Typography variant="subtitle2" gutterBottom>
+              </div>
+              <Separator className="" />
+              <div  gutterBottom>
                 Layout Settings
-              </Typography>
+              </div>
               <FormControlLabel
                 control={
-                  <Switch
+                  <Switch}
                     checked={builder.template.layout.responsive}
                     onChange={(e) =>
-                      updateBuilder({
+                      updateBuilder({ 
                         template: {
                           ...builder.template,
                           layout: {
-                            ...builder.template.layout,
-                            responsive: e.target.checked,
+                            ...builder.template.layout}
+                            responsive: e.target.checked,}
                           },
-                        },
-                      })
+                        }}
                     }
                   />
                 }
                 label="Responsive Layout"
               />
-
-              <Typography variant="body2" gutterBottom sx={{ mt: 2 }}>
+              <div  gutterBottom className="">
                 Grid Columns: {builder.template.layout.grid.columns}
-              </Typography>
+              </div>
               <Slider
                 value={builder.template.layout.grid.columns}
                 onChange={(_, value) =>
-                  updateBuilder({
+                  updateBuilder({ 
                     template: {
                       ...builder.template,
                       layout: {
                         ...builder.template.layout,
                         grid: {
-                          ...builder.template.layout.grid,
-                          columns: value as number,
+                          ...builder.template.layout.grid}
+                          columns: value as number,}
                         },
                       },
-                    },
-                  })
+                    }}
                 }
                 min={1}
                 max={24}
                 step={1}
                 marks
               />
-            </Box>
+            </div>
           )}
         </Drawer>
-
         {/* Main Content */}
-        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <div className="">
           {/* Toolbar */}
-          <AppBar position="static" color="default" elevation={1}>
-            <Toolbar>
+          <header position="static" color="default" >
+            <div>
               <IconButton
                 edge="start"
                 onClick={() => setDrawerOpen(!drawerOpen)}
               >
                 <ViewModule />
               </IconButton>
-
-              <Typography variant="h6" sx={{ flexGrow: 1, ml: 2 }}>
+              <div  className="">
                 {templateName || 'New Template'}
-              </Typography>
-
-              <Stack direction="row" spacing={1}>
+              </div>
+              <div direction="row" spacing={1}>
                 <Tooltip title="Undo">
                   <span>
                     <IconButton
@@ -864,89 +650,68 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
                     </IconButton>
                   </span>
                 </Tooltip>
-
                 <Tooltip title="Redo">
                   <span>
                     <IconButton
                       onClick={handleRedo}
                       disabled={
-                        builder.historyIndex >= builder.history.length - 1
+                        builder.historyIndex >= builder.history.length - 1}
                       }
                     >
                       <Redo />
                     </IconButton>
                   </span>
                 </Tooltip>
-
-                <Divider orientation="vertical" flexItem />
-
+                <Separator orientation="vertical" flexItem />
                 <Button
                   startIcon={<Preview />}
                   onClick={handlePreview}
-                  variant="outlined"
+                  
                 >
                   Preview
                 </Button>
-
                 <Button
                   startIcon={<Save />}
                   onClick={() => setSaveDialogOpen(true)}
-                  variant="contained"
+                  
                   disabled={!builder.isDirty}
                 >
                   Save
                 </Button>
-
                 <IconButton onClick={onCancel}>
                   <Close />
                 </IconButton>
-              </Stack>
-            </Toolbar>
-          </AppBar>
-
+              </div>
+            </div>
+          </header>
           {/* Canvas */}
-          <Box
-            sx={{
-              flexGrow: 1,
-              p: 2,
-              overflow: 'auto',
-              backgroundColor: 'grey.50',
-            }}
+          <div
+            className=""
           >
-            <Paper sx={{ minHeight: '100%', p: 2 }}>
-              <Grid container spacing={2}>
+            <div className="">
+              <div container spacing={2}>
                 {builder.template.sections.length === 0 ? (
-                  <Grid item xs={12}>
+                  <div item xs={12}>
                     <DropZone onDrop={handleDrop} position={0}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          minHeight: 400,
-                          border: '2px dashed',
-                          borderColor: 'grey.300',
-                          borderRadius: 1,
-                          color: 'grey.500',
-                        }}
+                      <div
+                        className=""
                       >
-                        <ViewModule sx={{ fontSize: 48, mb: 2 }} />
-                        <Typography variant="h6" gutterBottom>
+                        <ViewModule className="" />
+                        <div  gutterBottom>
                           Start Building Your Template
-                        </Typography>
-                        <Typography variant="body2" textAlign="center">
+                        </div>
+                        <div  textAlign="center">
                           Drag components from the sidebar to create your custom
                           report template
-                        </Typography>
-                      </Box>
+                        </div>
+                      </div>
                     </DropZone>
-                  </Grid>
+                  </div>
                 ) : (
                   builder.template.sections
                     .sort((a, b) => a.order - b.order)
                     .map((section, index) => (
-                      <Grid
+                      <div
                         key={section.id}
                         item
                         xs={12}
@@ -954,44 +719,27 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
                       >
                         <DropZone onDrop={handleDrop} position={index}>
                           <Card
-                            sx={{
-                              minHeight: section.layout.span.rows * 50,
-                              cursor: 'pointer',
-                              border: selectedSection === section.id ? 2 : 1,
-                              borderColor:
-                                selectedSection === section.id
-                                  ? 'primary.main'
-                                  : 'grey.300',
-                              '&:hover': {
-                                borderColor: 'primary.main',
-                                boxShadow: 2,
-                              },
-                            }}
-                            onClick={() => handleSectionSelect(section.id)}
+                            className="" onClick={() => handleSectionSelect(section.id)}
                           >
                             <CardContent>
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  mb: 1,
-                                }}
+                              <div
+                                className=""
                               >
                                 <DragIndicator
-                                  sx={{ mr: 1, color: 'grey.400' }}
+                                  className=""
                                 />
-                                <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                                <div  className="">
                                   {section.title}
-                                </Typography>
+                                </div>
                                 <Chip
                                   label={section.type}
                                   size="small"
                                   color="primary"
-                                  variant="outlined"
+                                  
                                 />
-                              </Box>
-                              <Typography
-                                variant="body2"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 {section.type === 'header' &&
@@ -1004,25 +752,17 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
                                   'Tabular data display'}
                                 {section.type === 'text' &&
                                   'Custom text content'}
-                              </Typography>
+                              </div>
                             </CardContent>
                             <CardActions>
                               <IconButton
                                 size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSectionSelect(section.id);
-                                }}
-                              >
+                                >
                                 <Edit />
                               </IconButton>
                               <IconButton
                                 size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSectionDelete(section.id);
-                                }}
-                              >
+                                >
                                 <Delete />
                               </IconButton>
                             </CardActions>
@@ -1030,57 +770,43 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
                         </DropZone>
                         {index < builder.template.sections.length - 1 && (
                           <DropZone onDrop={handleDrop} position={index + 1}>
-                            <Box sx={{ height: 20 }} />
+                            <div className="" />
                           </DropZone>
                         )}
-                      </Grid>
+                      </div>
                     ))
                 )}
-              </Grid>
-            </Paper>
-          </Box>
-        </Box>
-
+              </div>
+            </div>
+          </div>
+        </div>
         {/* Properties Panel */}
         <Drawer
-          variant="temporary"
+          
           anchor="right"
           open={propertiesOpen}
           onClose={() => setPropertiesOpen(false)}
-          sx={{
-            '& .MuiDrawer-paper': {
-              width: 400,
-              boxSizing: 'border-box',
-            },
-          }}
-        >
-          <Box sx={{ p: 2 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                mb: 2,
-              }}
+          className="">
+          <div className="">
+            <div
+              className=""
             >
-              <Typography variant="h6">Section Properties</Typography>
+              <div >Section Properties</div>
               <IconButton onClick={() => setPropertiesOpen(false)}>
                 <Close />
               </IconButton>
-            </Box>
-
+            </div>
             {selectedSection && (
               <SectionPropertiesPanel
                 section={
                   builder.template.sections.find(
                     (s) => s.id === selectedSection
-                  )!
+                  )!}
                 }
                 onUpdate={(updatedSection) => {
                   const updatedSections = builder.template.sections.map((s) =>
                     s.id === selectedSection ? updatedSection : s
                   );
-
                   const historyEntry: HistoryEntry = {
                     action: 'modify',
                     target: selectedSection,
@@ -1088,27 +814,23 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
                       (s) => s.id === selectedSection
                     )!,
                     after: updatedSection,
-                    timestamp: new Date(),
+                    timestamp: new Date(),}
                   };
-
-                  updateBuilder({
+                  updateBuilder({ 
                     template: {
                       ...builder.template,
-                      sections: updatedSections,
+                      sections: updatedSections}
                     },
                     history: [
                       ...builder.history.slice(0, builder.historyIndex + 1),
                       historyEntry,
                     ],
                     historyIndex: builder.historyIndex + 1,
-                    isDirty: true,
-                  });
-                }}
+                    isDirty: true}
               />
             )}
-          </Box>
+          </div>
         </Drawer>
-
         {/* Save Dialog */}
         <Dialog
           open={saveDialogOpen}
@@ -1118,7 +840,7 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
         >
           <DialogTitle>Save Template</DialogTitle>
           <DialogContent>
-            <TextField
+            <Input
               fullWidth
               label="Template Name"
               value={templateName}
@@ -1126,7 +848,7 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
               margin="normal"
               required
             />
-            <TextField
+            <Input
               fullWidth
               label="Description"
               value={templateDescription}
@@ -1135,8 +857,8 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
               rows={3}
               margin="normal"
             />
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Category</InputLabel>
+            <div fullWidth margin="normal">
+              <Label>Category</Label>
               <Select
                 value={templateCategory}
                 onChange={(e) => setTemplateCategory(e.target.value)}
@@ -1162,32 +884,30 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
                 </MenuItem>
                 <MenuItem value="custom">Custom</MenuItem>
               </Select>
-            </FormControl>
-
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
+            </div>
+            <div className="">
+              <div  gutterBottom>
                 Template Summary
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Sections: {builder.template.sections.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Charts: {builder.template.charts.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Tables: {builder.template.tables.length}
-              </Typography>
-            </Box>
-
+              </div>
+            </div>
             {builder.errors.length > 0 && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
+              <Alert severity="error" className="">
+                <div  gutterBottom>
                   Validation Errors:
-                </Typography>
+                </div>
                 {builder.errors.map((error, index) => (
-                  <Typography key={index} variant="body2">
+                  <div key={index} >
                     • {error.message}
-                  </Typography>
+                  </div>
                 ))}
               </Alert>
             )}
@@ -1196,14 +916,13 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
             <Button onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
             <Button
               onClick={handleSave}
-              variant="contained"
+              
               disabled={!templateName.trim() || builder.errors.length > 0}
             >
               Save Template
             </Button>
           </DialogActions>
         </Dialog>
-
         {/* Snackbar */}
         <Snackbar
           open={snackbar.open}
@@ -1213,53 +932,47 @@ export const ReportTemplateBuilder: React.FC<ReportTemplateBuilderProps> = ({
           <Alert
             onClose={() => setSnackbar({ ...snackbar, open: false })}
             severity={snackbar.severity}
-            sx={{ width: '100%' }}
+            className=""
           >
             {snackbar.message}
           </Alert>
         </Snackbar>
-      </Box>
+      </div>
     </DndProvider>
   );
 };
-
 // Section Properties Panel Component
 interface SectionPropertiesPanelProps {
   section: TemplateSection;
   onUpdate: (section: TemplateSection) => void;
 }
-
-const SectionPropertiesPanel: React.FC<SectionPropertiesPanelProps> = ({
+const SectionPropertiesPanel: React.FC<SectionPropertiesPanelProps> = ({ 
   section,
-  onUpdate,
+  onUpdate
 }) => {
   const [localSection, setLocalSection] = useState(section);
-
   useEffect(() => {
     setLocalSection(section);
   }, [section]);
-
   const handleUpdate = (updates: Partial<TemplateSection>) => {
     const updatedSection = { ...localSection, ...updates };
     setLocalSection(updatedSection);
     onUpdate(updatedSection);
   };
-
   return (
-    <Box>
-      <TextField
+    <div>
+      <Input
         fullWidth
         label="Section Title"
         value={localSection.title}
         onChange={(e) => handleUpdate({ title: e.target.value })}
         margin="normal"
       />
-
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Section Type</InputLabel>
+      <div fullWidth margin="normal">
+        <Label>Section Type</Label>
         <Select
           value={localSection.type}
-          onChange={(e) =>
+          onChange={(e) =>}
             handleUpdate({ type: e.target.value as TemplateSection['type'] })
           }
         >
@@ -1269,71 +982,65 @@ const SectionPropertiesPanel: React.FC<SectionPropertiesPanelProps> = ({
           <MenuItem value="tables">Tables</MenuItem>
           <MenuItem value="text">Text</MenuItem>
         </Select>
-      </FormControl>
-
-      <Accordion sx={{ mt: 2 }}>
+      </div>
+      <Accordion className="">
         <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography>Layout Settings</Typography>
+          <div>Layout Settings</div>
         </AccordionSummary>
         <AccordionDetails>
-          <Typography variant="body2" gutterBottom>
+          <div  gutterBottom>
             Column Span: {localSection.layout.span.columns}
-          </Typography>
+          </div>
           <Slider
             value={localSection.layout.span.columns}
             onChange={(_, value) =>
-              handleUpdate({
+              handleUpdate({ 
                 layout: {
                   ...localSection.layout,
                   span: {
-                    ...localSection.layout.span,
-                    columns: value as number,
+                    ...localSection.layout.span}
+                    columns: value as number,}
                   },
-                },
-              })
+                }}
             }
             min={1}
             max={12}
             step={1}
             marks
           />
-
-          <Typography variant="body2" gutterBottom sx={{ mt: 2 }}>
+          <div  gutterBottom className="">
             Row Span: {localSection.layout.span.rows}
-          </Typography>
+          </div>
           <Slider
             value={localSection.layout.span.rows}
             onChange={(_, value) =>
-              handleUpdate({
+              handleUpdate({ 
                 layout: {
                   ...localSection.layout,
                   span: {
-                    ...localSection.layout.span,
-                    rows: value as number,
+                    ...localSection.layout.span}
+                    rows: value as number,}
                   },
-                },
-              })
+                }}
             }
             min={1}
             max={10}
             step={1}
             marks
           />
-
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Horizontal Alignment</InputLabel>
+          <div fullWidth margin="normal">
+            <Label>Horizontal Alignment</Label>
             <Select
               value={localSection.layout.alignment.horizontal}
               onChange={(e) =>
-                handleUpdate({
+                handleUpdate({ 
                   layout: {
                     ...localSection.layout,
                     alignment: {
-                      ...localSection.layout.alignment,
-                      horizontal: e.target.value as any,
+                      ...localSection.layout.alignment}
+                      horizontal: e.target.value as any,}
                     },
-                  },
-                })
+                  }}
               }
             >
               <MenuItem value="left">Left</MenuItem>
@@ -1341,22 +1048,20 @@ const SectionPropertiesPanel: React.FC<SectionPropertiesPanelProps> = ({
               <MenuItem value="right">Right</MenuItem>
               <MenuItem value="stretch">Stretch</MenuItem>
             </Select>
-          </FormControl>
-
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Vertical Alignment</InputLabel>
+          </div>
+          <div fullWidth margin="normal">
+            <Label>Vertical Alignment</Label>
             <Select
               value={localSection.layout.alignment.vertical}
               onChange={(e) =>
-                handleUpdate({
+                handleUpdate({ 
                   layout: {
                     ...localSection.layout,
                     alignment: {
-                      ...localSection.layout.alignment,
-                      vertical: e.target.value as any,
+                      ...localSection.layout.alignment}
+                      vertical: e.target.value as any,}
                     },
-                  },
-                })
+                  }}
               }
             >
               <MenuItem value="top">Top</MenuItem>
@@ -1364,52 +1069,47 @@ const SectionPropertiesPanel: React.FC<SectionPropertiesPanelProps> = ({
               <MenuItem value="bottom">Bottom</MenuItem>
               <MenuItem value="stretch">Stretch</MenuItem>
             </Select>
-          </FormControl>
+          </div>
         </AccordionDetails>
       </Accordion>
-
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography>Visibility Settings</Typography>
+          <div>Visibility Settings</div>
         </AccordionSummary>
         <AccordionDetails>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
+          <div  color="text.secondary" gutterBottom>
             Configure when this section should be visible based on user roles,
             permissions, or data conditions.
-          </Typography>
-          
+          </div>
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={localSection.visibility.conditions.length === 0}
                 onChange={(e) =>
-                  handleUpdate({
+                  handleUpdate({ 
                     visibility: {
-                      ...localSection.visibility,
-                      conditions: e.target.checked ? [] : ['always-visible'],
-                    },
-                  })
+                      ...localSection.visibility}
+                      conditions: e.target.checked ? [] : ['always-visible'],}
+                    }}
                 }
               />
             }
             label="Always Visible"
           />
-
           {localSection.visibility.conditions.length > 0 && (
-            <TextField
+            <Input
               fullWidth
               label="Visibility Conditions"
               value={localSection.visibility.conditions.join(', ')}
               onChange={(e) =>
-                handleUpdate({
+                handleUpdate({ 
                   visibility: {
                     ...localSection.visibility,
                     conditions: e.target.value
                       .split(',')
-                      .map((c) => c.trim())
-                      .filter(Boolean),
-                  },
-                })
+                      .map((c) => c.trim()) })
+                      .filter(Boolean),}
+                  }}
               }
               margin="normal"
               helperText="Enter conditions separated by commas"
@@ -1417,47 +1117,43 @@ const SectionPropertiesPanel: React.FC<SectionPropertiesPanelProps> = ({
           )}
         </AccordionDetails>
       </Accordion>
-
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography>Content Settings</Typography>
+          <div>Content Settings</div>
         </AccordionSummary>
         <AccordionDetails>
           {localSection.type === 'text' && (
-            <TextField
+            <Input
               fullWidth
               label="Text Content"
               value={(localSection.content as any)?.text || ''}
               onChange={(e) =>
-                handleUpdate({
+                handleUpdate({ 
                   content: {
-                    ...localSection.content,
-                    text: e.target.value,
-                  },
-                })
+                    ...localSection.content}
+                    text: e.target.value,}
+                  }}
               }
               multiline
               rows={4}
               margin="normal"
             />
           )}
-
           {localSection.type === 'charts' && (
-            <Box>
-              <Typography variant="body2" gutterBottom>
+            <div>
+              <div  gutterBottom>
                 Chart Configuration
-              </Typography>
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Chart Type</InputLabel>
+              </div>
+              <div fullWidth margin="normal">
+                <Label>Chart Type</Label>
                 <Select
                   value={(localSection.content as any)?.chartType || 'bar'}
                   onChange={(e) =>
-                    handleUpdate({
+                    handleUpdate({ 
                       content: {
-                        ...localSection.content,
-                        chartType: e.target.value,
-                      },
-                    })
+                        ...localSection.content}
+                        chartType: e.target.value,}
+                      }}
                   }
                 >
                   <MenuItem value="bar">Bar Chart</MenuItem>
@@ -1466,68 +1162,59 @@ const SectionPropertiesPanel: React.FC<SectionPropertiesPanelProps> = ({
                   <MenuItem value="area">Area Chart</MenuItem>
                   <MenuItem value="scatter">Scatter Plot</MenuItem>
                 </Select>
-              </FormControl>
-            </Box>
+              </div>
+            </div>
           )}
-
           {localSection.type === 'summary' && (
-            <Box>
-              <Typography variant="body2" gutterBottom>
+            <div>
+              <div  gutterBottom>
                 Summary Metrics
-              </Typography>
-              <TextField
+              </div>
+              <Input
                 fullWidth
                 label="Metric Keys"
                 value={(localSection.content as any)?.metrics?.join(', ') || ''}
                 onChange={(e) =>
-                  handleUpdate({
+                  handleUpdate({ 
                     content: {
                       ...localSection.content,
                       metrics: e.target.value
                         .split(',')
-                        .map((m) => m.trim())
-                        .filter(Boolean),
-                    },
-                  })
+                        .map((m) => m.trim()) })
+                        .filter(Boolean),}
+                    }}
                 }
                 margin="normal"
                 helperText="Enter metric keys separated by commas"
               />
-            </Box>
+            </div>
           )}
         </AccordionDetails>
       </Accordion>
-    </Box>
+    </div>
   );
 };
-
 // Properties Panel Component
 const PropertiesPanel: React.FC<{ selectedSection: string | null }> = ({ selectedSection }) => (
   <Drawer
     anchor="right"
     open={!!selectedSection}
-    variant="persistent"
-    sx={{
-      '& .MuiDrawer-paper': {
-        width: 400,
-      },
-    }}
-  >
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h6" gutterBottom>
+    
+    className="">
+    <div className="">
+      <div  gutterBottom>
         Section Properties
-      </Typography>
+      </div>
             {selectedSection && (
-              <Box>
+              <div>
                 {/* Section properties form would go here */}
-                <Typography variant="body2">
+                <div >
                   Properties for section: {selectedSection}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
-          </Box>
+          </div>
         </Drawer>
-
         {/* Save Dialog */}
         <Dialog
           open={saveDialogOpen}
@@ -1537,14 +1224,14 @@ const PropertiesPanel: React.FC<{ selectedSection: string | null }> = ({ selecte
         >
           <DialogTitle>Save Template</DialogTitle>
           <DialogContent>
-            <TextField
+            <Input
               fullWidth
               label="Template Name"
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
               margin="normal"
             />
-            <TextField
+            <Input
               fullWidth
               label="Description"
               value={templateDescription}
@@ -1553,8 +1240,8 @@ const PropertiesPanel: React.FC<{ selectedSection: string | null }> = ({ selecte
               rows={3}
               margin="normal"
             />
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Category</InputLabel>
+            <div fullWidth margin="normal">
+              <Label>Category</Label>
               <Select
                 value={templateCategory}
                 onChange={(e) => setTemplateCategory(e.target.value)}
@@ -1580,16 +1267,15 @@ const PropertiesPanel: React.FC<{ selectedSection: string | null }> = ({ selecte
                 </MenuItem>
                 <MenuItem value="custom">Custom</MenuItem>
               </Select>
-            </FormControl>
+            </div>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} variant="contained">
+            <Button onClick={handleSave} >
               Save
             </Button>
           </DialogActions>
         </Dialog>
-
         {/* Snackbar */}
         <Snackbar
           open={snackbar.open}
@@ -1599,14 +1285,13 @@ const PropertiesPanel: React.FC<{ selectedSection: string | null }> = ({ selecte
           <Alert
             onClose={() => setSnackbar({ ...snackbar, open: false })}
             severity={snackbar.severity}
-            sx={{ width: '100%' }}
+            className=""
           >
             {snackbar.message}
           </Alert>
         </Snackbar>
-      </Box>
+      </div>
     </DndProvider>
   );
 };
-
 export default ReportTemplateBuilder;

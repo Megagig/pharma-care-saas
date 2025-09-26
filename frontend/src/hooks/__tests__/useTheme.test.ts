@@ -1,7 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useTheme, themeStore } from '../useTheme';
-
 // Mock localStorage
 const localStorageMock = {
     getItem: vi.fn(),
@@ -23,33 +19,30 @@ const mockClassList = {
 const mockSetAttribute = vi.fn();
 
 Object.defineProperty(window, 'localStorage', {
-    value: localStorageMock,
-});
+    value: localStorageMock}
 
 Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: matchMediaMock,
-});
+    value: matchMediaMock}
 
 Object.defineProperty(document, 'documentElement', {
     value: {
         classList: mockClassList,
         setAttribute: mockSetAttribute,
     },
-    writable: true,
-});
+    writable: true}
 
 describe('useTheme', () => {
     beforeEach(() => {
         vi.clearAllMocks();
 
         // Setup default matchMedia mock
-        matchMediaMock.mockReturnValue({
+        matchMediaMock.mockReturnValue({ 
             matches: false,
             addEventListener: vi.fn(),
             removeEventListener: vi.fn(),
             addListener: vi.fn(),
-            removeListener: vi.fn(),
+            removeListener: vi.fn()}
         });
 
         localStorageMock.getItem.mockReturnValue(null);
@@ -71,12 +64,12 @@ describe('useTheme', () => {
     });
 
     it('should detect dark system theme', () => {
-        matchMediaMock.mockReturnValue({
+        matchMediaMock.mockReturnValue({ 
             matches: true,
             addEventListener: vi.fn(),
             removeEventListener: vi.fn(),
             addListener: vi.fn(),
-            removeListener: vi.fn(),
+            removeListener: vi.fn()}
         });
 
         const { result } = renderHook(() => useTheme());
@@ -151,12 +144,12 @@ describe('useTheme', () => {
 
     it('should resolve system theme correctly', () => {
         // Mock system dark theme
-        matchMediaMock.mockReturnValue({
+        matchMediaMock.mockReturnValue({ 
             matches: true,
             addEventListener: vi.fn(),
             removeEventListener: vi.fn(),
             addListener: vi.fn(),
-            removeListener: vi.fn(),
+            removeListener: vi.fn()}
         });
 
         const { result } = renderHook(() => useTheme());
@@ -196,10 +189,10 @@ describe('useTheme', () => {
     it('should provide server snapshot for SSR', () => {
         const serverSnapshot = themeStore.getServerSnapshot();
 
-        expect(serverSnapshot).toEqual({
+        expect(serverSnapshot).toEqual({ 
             mode: 'system',
             resolvedMode: 'light',
-            systemTheme: 'light',
+            systemTheme: 'light'}
         });
     });
 });

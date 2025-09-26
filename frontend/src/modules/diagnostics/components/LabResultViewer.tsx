@@ -1,51 +1,4 @@
-import React, { useState, useMemo } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Tooltip,
-  Button,
-  Stack,
-  Alert,
-  Divider,
-  Collapse,
-  Grid,
-  LinearProgress,
-} from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  TrendingFlat as TrendingFlatIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-  CheckCircle as CheckCircleIcon,
-  Timeline as TimelineIcon,
-  Visibility as VisibilityIcon,
-} from '@mui/icons-material';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from 'recharts';
-import type { LabResultViewerProps, LabResult } from '../types';
-import { useLabStore } from '../store/labStore';
+import { Card, CardContent, Tooltip, Progress, Alert, Separator } from '@/components/ui/button';
 
 interface GroupedResults {
   [testCode: string]: {
@@ -56,7 +9,6 @@ interface GroupedResults {
     abnormalCount: number;
   };
 }
-
 const INTERPRETATION_CONFIG = {
   normal: { color: 'success', icon: CheckCircleIcon, label: 'Normal' },
   low: { color: 'warning', icon: WarningIcon, label: 'Low' },
@@ -64,7 +16,6 @@ const INTERPRETATION_CONFIG = {
   critical: { color: 'error', icon: ErrorIcon, label: 'Critical' },
   abnormal: { color: 'warning', icon: WarningIcon, label: 'Abnormal' },
 } as const;
-
 const TREND_CONFIG = {
   improving: { color: 'success', icon: TrendingUpIcon, label: 'Improving' },
   stable: { color: 'info', icon: TrendingFlatIcon, label: 'Stable' },
@@ -75,26 +26,21 @@ const TREND_CONFIG = {
     label: 'Insufficient Data',
   },
 } as const;
-
-const LabResultViewer: React.FC<LabResultViewerProps> = ({
+const LabResultViewer: React.FC<LabResultViewerProps> = ({ 
   results,
   showTrends = true,
-  onResultClick,
+  onResultClick
 }) => {
   const [expandedTests, setExpandedTests] = useState<Set<string>>(new Set());
   const [selectedTestForTrend, setSelectedTestForTrend] = useState<
     string | null
   >(null);
-
   const { getTrendData, fetchTrends, loading } = useLabStore();
-
   // Group results by test code
   const groupedResults: GroupedResults = useMemo(() => {
     const grouped: GroupedResults = {};
-
     results.forEach((result) => {
       const key = result.testCode;
-
       if (!grouped[key]) {
         grouped[key] = {
           testName: result.testName,
@@ -104,9 +50,7 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
           abnormalCount: 0,
         };
       }
-
       grouped[key].results.push(result);
-
       // Update latest result if this one is more recent
       if (
         new Date(result.performedAt) >
@@ -115,22 +59,18 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
         grouped[key].latestResult = result;
       }
     });
-
     // Calculate trends and abnormal counts for each test
     Object.keys(grouped).forEach((testCode) => {
       const group = grouped[testCode];
-
       // Sort results by date
       group.results.sort(
         (a, b) =>
           new Date(a.performedAt).getTime() - new Date(b.performedAt).getTime()
       );
-
       // Count abnormal results
       group.abnormalCount = group.results.filter(
         (r) => r.interpretation !== 'normal'
       ).length;
-
       // Calculate trend (simplified)
       if (group.results.length >= 2) {
         const recent = group.results.slice(-3); // Last 3 results
@@ -138,7 +78,6 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
           (r) => r.interpretation !== 'normal'
         ).length;
         const totalRecent = recent.length;
-
         if (abnormalRecent === 0) {
           group.trend = 'improving';
         } else if (abnormalRecent === totalRecent) {
@@ -148,10 +87,8 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
         }
       }
     });
-
     return grouped;
   }, [results]);
-
   const handleToggleExpand = (testCode: string) => {
     const newExpanded = new Set(expandedTests);
     if (newExpanded.has(testCode)) {
@@ -161,12 +98,10 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
     }
     setExpandedTests(newExpanded);
   };
-
   const handleShowTrend = async (testCode: string, patientId: string) => {
     setSelectedTestForTrend(testCode);
     await fetchTrends(patientId, testCode);
   };
-
   const formatValue = (result: LabResult) => {
     let formattedValue = result.value;
     if (result.unit) {
@@ -174,7 +109,6 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
     }
     return formattedValue;
   };
-
   const formatReferenceRange = (result: LabResult) => {
     const { referenceRange } = result;
     if (referenceRange.text) {
@@ -191,72 +125,64 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
     }
     return 'Not specified';
   };
-
   const getInterpretationChip = (interpretation: string) => {
     const config =
       INTERPRETATION_CONFIG[
         interpretation as keyof typeof INTERPRETATION_CONFIG
       ];
     if (!config) return null;
-
     const Icon = config.icon;
     return (
       <Chip
-        icon={<Icon sx={{ fontSize: 16 }} />}
+        icon={<Icon className="" />}
         label={config.label}
         size="small"
         color={config.color}
-        variant="outlined"
+        
       />
     );
   };
-
   const getTrendChip = (trend: string) => {
     const config = TREND_CONFIG[trend as keyof typeof TREND_CONFIG];
     if (!config) return null;
-
     const Icon = config.icon;
     return (
       <Chip
-        icon={<Icon sx={{ fontSize: 16 }} />}
+        icon={<Icon className="" />}
         label={config.label}
         size="small"
         color={config.color}
-        variant="outlined"
+        
       />
     );
   };
-
   const renderTrendChart = (testCode: string, patientId: string) => {
     const trendData = getTrendData(patientId, testCode);
-
     if (!trendData || trendData.results.length < 2) {
       return (
-        <Alert severity="info" sx={{ mt: 2 }}>
+        <Alert severity="info" className="">
           Insufficient data for trend analysis. At least 2 results are needed.
         </Alert>
       );
     }
-
-    const chartData = trendData.results.map((result, index) => ({
+    const chartData = trendData.results.map((result, index) => ({ 
       date: new Date(result.performedAt).toLocaleDateString(),
       value: result.numericValue || 0,
       interpretation: result.interpretation,
-      originalValue: result.value,
+      originalValue: result.value}
     }));
-
     return (
-      <Box sx={{ mt: 2, height: 300 }}>
-        <Typography variant="subtitle2" sx={{ mb: 2 }}>
+      <div className="">
+        <div  className="">
           Trend Analysis - {trendData.testName}
-        </Typography>
+        </div>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
             <RechartsTooltip
-              formatter={(value, name, props) => [
+              formatter={(value, name, props) => [}
                 `${props.payload.originalValue} ${trendData.unit || ''}`,
                 'Value',
               ]}
@@ -283,50 +209,48 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
               dataKey="value"
               stroke="#2196f3"
               strokeWidth={2}
-              dot={{ fill: '#2196f3', strokeWidth: 2, r: 4 }}
+              
             />
           </LineChart>
         </ResponsiveContainer>
-
-        <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={6} md={3}>
-              <Typography variant="caption" color="text.secondary">
+        <div className="">
+          <div container spacing={2}>
+            <div item xs={6} md={3}>
+              <div  color="text.secondary">
                 Latest Value
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              </div>
+              <div  className="">
                 {trendData.summary.latestValue} {trendData.unit}
-              </Typography>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Typography variant="caption" color="text.secondary">
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div  color="text.secondary">
                 Interpretation
-              </Typography>
-              <Box sx={{ mt: 0.5 }}>
+              </div>
+              <div className="">
                 {getInterpretationChip(trendData.summary.latestInterpretation)}
-              </Box>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Typography variant="caption" color="text.secondary">
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div  color="text.secondary">
                 Abnormal Results
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              </div>
+              <div  className="">
                 {trendData.summary.abnormalCount} /{' '}
                 {trendData.summary.totalCount}
-              </Typography>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Typography variant="caption" color="text.secondary">
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div  color="text.secondary">
                 Trend
-              </Typography>
-              <Box sx={{ mt: 0.5 }}>{getTrendChip(trendData.trend)}</Box>
-            </Grid>
-          </Grid>
-        </Box>
-      </Box>
+              </div>
+              <div className="">{getTrendChip(trendData.trend)}</div>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   };
-
   if (results.length === 0) {
     return (
       <Card>
@@ -338,143 +262,125 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
       </Card>
     );
   }
-
   return (
     <Card>
       <CardContent>
-        <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 600,
-              mb: 1,
-              display: 'flex',
-              alignItems: 'center',
-            }}
+        <div className="">
+          <div
+            
+            className=""
           >
-            <TimelineIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <TimelineIcon className="" />
             Laboratory Results ({results.length})
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             View and analyze laboratory test results with trend analysis
-          </Typography>
-        </Box>
-
+          </div>
+        </div>
         {/* Summary Statistics */}
-        <Box sx={{ mb: 3 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={6} md={3}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography
-                  variant="h4"
+        <div className="">
+          <div container spacing={2}>
+            <div item xs={6} md={3}>
+              <div className="">
+                <div
+                  
                   color="primary.main"
-                  sx={{ fontWeight: 600 }}
+                  className=""
                 >
                   {Object.keys(groupedResults).length}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Different Tests
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography
-                  variant="h4"
+                </div>
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div className="">
+                <div
+                  
                   color="error.main"
-                  sx={{ fontWeight: 600 }}
+                  className=""
                 >
                   {
                     results.filter((r) => r.interpretation === 'critical')
                       .length
                   }
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Critical Results
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography
-                  variant="h4"
+                </div>
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div className="">
+                <div
+                  
                   color="warning.main"
-                  sx={{ fontWeight: 600 }}
+                  className=""
                 >
                   {results.filter((r) => r.interpretation !== 'normal').length}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Abnormal Results
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography
-                  variant="h4"
+                </div>
+              </div>
+            </div>
+            <div item xs={6} md={3}>
+              <div className="">
+                <div
+                  
                   color="success.main"
-                  sx={{ fontWeight: 600 }}
+                  className=""
                 >
                   {results.filter((r) => r.interpretation === 'normal').length}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Normal Results
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
-
-        <Divider sx={{ mb: 3 }} />
-
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Separator className="" />
         {/* Grouped Results */}
-        <Stack spacing={2}>
+        <div spacing={2}>
           {Object.entries(groupedResults).map(([testCode, group]) => (
-            <Card key={testCode} variant="outlined">
-              <CardContent sx={{ pb: 2 }}>
+            <Card key={testCode} >
+              <CardContent className="">
                 {/* Test Header */}
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    mb: 2,
-                  }}
+                <div
+                  className=""
                 >
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  <div className="">
+                    <div  className="">
                       {group.testName}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Code: {testCode} • {group.results.length} result(s)
                       {group.abnormalCount > 0 &&
                         ` • ${group.abnormalCount} abnormal`}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    </div>
+                  </div>
+                  <div className="">
                     {/* Latest Result */}
-                    <Box sx={{ textAlign: 'right', mr: 2 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    <div className="">
+                      <div  className="">
                         {formatValue(group.latestResult)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {new Date(
                           group.latestResult.performedAt
                         ).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-
+                      </div>
+                    </div>
                     {/* Interpretation */}
                     {getInterpretationChip(group.latestResult.interpretation)}
-
                     {/* Trend */}
                     {showTrends &&
                       group.results.length > 1 &&
                       getTrendChip(group.trend)}
-
                     {/* Actions */}
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <div className="">
                       {showTrends && group.results.length > 1 && (
                         <Tooltip title="Show trend analysis">
                           <IconButton
@@ -483,7 +389,7 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
                               handleShowTrend(
                                 testCode,
                                 group.latestResult.patientId
-                              )
+                              )}
                             }
                             disabled={loading.fetchTrends}
                           >
@@ -491,12 +397,11 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
                           </IconButton>
                         </Tooltip>
                       )}
-
                       <Tooltip
                         title={
                           expandedTests.has(testCode)
                             ? 'Hide details'
-                            : 'Show details'
+                            : 'Show details'}
                         }
                       >
                         <IconButton
@@ -510,15 +415,14 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
                           )}
                         </IconButton>
                       </Tooltip>
-                    </Box>
-                  </Box>
-                </Box>
-
+                    </div>
+                  </div>
+                </div>
                 {/* Expanded Details */}
                 <Collapse in={expandedTests.has(testCode)}>
-                  <Box sx={{ mt: 2 }}>
+                  <div className="">
                     {/* Results Table */}
-                    <TableContainer component={Paper} variant="outlined">
+                    <TableContainer  >
                       <Table size="small">
                         <TableHead>
                           <TableRow>
@@ -534,47 +438,47 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
                           {group.results.map((result) => (
                             <TableRow key={result._id} hover>
                               <TableCell>
-                                <Typography variant="body2">
+                                <div >
                                   {new Date(
                                     result.performedAt
                                   ).toLocaleDateString()}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
+                                </div>
+                                <div
+                                  
                                   color="text.secondary"
                                 >
                                   {new Date(
                                     result.performedAt
                                   ).toLocaleTimeString()}
-                                </Typography>
+                                </div>
                               </TableCell>
                               <TableCell>
-                                <Typography
-                                  variant="body2"
-                                  sx={{ fontWeight: 600 }}
+                                <div
+                                  
+                                  className=""
                                 >
                                   {formatValue(result)}
-                                </Typography>
+                                </div>
                               </TableCell>
                               <TableCell>
-                                <Typography variant="body2">
+                                <div >
                                   {formatReferenceRange(result)}
-                                </Typography>
+                                </div>
                               </TableCell>
                               <TableCell>
                                 {getInterpretationChip(result.interpretation)}
                               </TableCell>
                               <TableCell>
-                                <Stack direction="row" spacing={0.5}>
+                                <div direction="row" spacing={0.5}>
                                   {result.flags.map((flag) => (
                                     <Chip
                                       key={flag}
                                       label={flag}
                                       size="small"
-                                      variant="outlined"
+                                      
                                     />
                                   ))}
-                                </Stack>
+                                </div>
                               </TableCell>
                               <TableCell>
                                 {onResultClick && (
@@ -593,21 +497,20 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
                         </TableBody>
                       </Table>
                     </TableContainer>
-
                     {/* Trend Chart */}
                     {showTrends && selectedTestForTrend === testCode && (
                       <>
                         {loading.fetchTrends && (
-                          <Box sx={{ mt: 2 }}>
-                            <LinearProgress />
-                            <Typography
-                              variant="caption"
+                          <div className="">
+                            <Progress />
+                            <div
+                              
                               color="text.secondary"
-                              sx={{ mt: 1, display: 'block' }}
+                              className=""
                             >
                               Loading trend data...
-                            </Typography>
-                          </Box>
+                            </div>
+                          </div>
                         )}
                         {!loading.fetchTrends &&
                           renderTrendChart(
@@ -616,28 +519,26 @@ const LabResultViewer: React.FC<LabResultViewerProps> = ({
                           )}
                       </>
                     )}
-                  </Box>
+                  </div>
                 </Collapse>
               </CardContent>
             </Card>
           ))}
-        </Stack>
-
+        </div>
         {/* Critical Results Alert */}
         {results.some((r) => r.interpretation === 'critical') && (
-          <Alert severity="error" sx={{ mt: 3 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          <Alert severity="error" className="">
+            <div  className="">
               Critical Results Detected
-            </Typography>
-            <Typography variant="body2">
+            </div>
+            <div >
               {results.filter((r) => r.interpretation === 'critical').length}{' '}
               result(s) require immediate clinical attention.
-            </Typography>
+            </div>
           </Alert>
         )}
       </CardContent>
     </Card>
   );
 };
-
 export default LabResultViewer;

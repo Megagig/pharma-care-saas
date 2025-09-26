@@ -1,5 +1,3 @@
-import { Message, Conversation, CommunicationNotification } from '../stores/types';
-
 interface CacheEntry<T> {
     data: T;
     timestamp: number;
@@ -175,9 +173,9 @@ export class CacheService {
  */
 export class CommunicationCacheService extends CacheService {
     constructor() {
-        super({
+        super({ 
             maxSize: 2000,
-            defaultTTL: 10 * 60 * 1000, // 10 minutes for communication data
+            defaultTTL: 10 * 60 * 1000, // 10 minutes for communication data })
         });
     }
 

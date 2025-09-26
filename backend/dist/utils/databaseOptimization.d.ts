@@ -34,7 +34,7 @@ export declare class OptimizedQueryBuilder {
         $facet: {
             overallStats: {
                 $group: {
-                    _id: null;
+                    _id: any;
                     total: {
                         $sum: number;
                     };
@@ -98,7 +98,7 @@ export declare class OptimizedQueryBuilder {
                                     $gt: (string | number)[];
                                     $eq?: undefined;
                                 })[];
-                            } | null)[];
+                            })[];
                         };
                     };
                     totalCostSavings: {

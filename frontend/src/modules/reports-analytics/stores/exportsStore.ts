@@ -1,8 +1,4 @@
 // Exports Store - State management for report exports and scheduling
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import { ExportJob, ExportResult, ReportSchedule, ExportFormat } from '../types/exports';
-
 interface ExportsState {
     // Export jobs
     exportJobs: Record<string, ExportJob>;
@@ -40,8 +36,8 @@ interface ExportsState {
 
 export const useExportsStore = create<ExportsState>()(
     devtools(
-        (set, get) => ({
-            // Initial state
+        (set, get) => ({ 
+            // Initial state })
             exportJobs: {},
             exportResults: {},
             schedules: {},
@@ -52,12 +48,11 @@ export const useExportsStore = create<ExportsState>()(
             // Actions
             addExportJob: (job: ExportJob) => {
                 set(
-                    (state) => ({
+                    (state) => ({ 
                         exportJobs: {
                             ...state.exportJobs,
-                            [job.id]: job,
-                        },
-                    }),
+                            [job.id]: job}
+                        }, },
                     false,
                     'addExportJob'
                 );
@@ -98,12 +93,11 @@ export const useExportsStore = create<ExportsState>()(
 
             addExportResult: (result: ExportResult) => {
                 set(
-                    (state) => ({
+                    (state) => ({ 
                         exportResults: {
                             ...state.exportResults,
-                            [result.id]: result,
-                        },
-                    }),
+                            [result.id]: result}
+                        }, },
                     false,
                     'addExportResult'
                 );
@@ -123,12 +117,11 @@ export const useExportsStore = create<ExportsState>()(
 
             addSchedule: (schedule: ReportSchedule) => {
                 set(
-                    (state) => ({
+                    (state) => ({ 
                         schedules: {
                             ...state.schedules,
-                            [schedule.id]: schedule,
-                        },
-                    }),
+                            [schedule.id]: schedule}
+                        }, },
                     false,
                     'addSchedule'
                 );
@@ -204,8 +197,7 @@ export const useExportsStore = create<ExportsState>()(
                 return Object.values(state.exportResults)
                     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
                     .slice(0, limit);
-            },
-        }),
+            }, },
         { name: 'ExportsStore' }
     )
 );

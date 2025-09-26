@@ -31,7 +31,7 @@ declare module 'jspdf' {
         constructor(options?: jsPDFOptions);
     }
 
-    export = jsPDF;
+export = jsPDF;
 }
 
 declare module 'jspdf-autotable' {

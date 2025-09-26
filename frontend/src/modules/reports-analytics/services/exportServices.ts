@@ -1,9 +1,5 @@
 // Export Services - Handle different export formats
 import '../types/external';
-import { ExportConfig, ExportResult, ExportJob } from '../types/exports';
-import { ReportData } from '../types/reports';
-import { generateExportFilename, getMimeType } from '../utils/exportHelpers';
-
 // Extend jsPDF type to include autoTable
 declare module 'jspdf' {
     interface jsPDF {
@@ -117,10 +113,10 @@ export class ExportService {
             throw new Error('PDF export requires jsPDF library. Please install: npm install jspdf jspdf-autotable');
         }
 
-        const pdf = new jsPDF({
+        const pdf = new jsPDF({ 
             orientation: config.options.orientation || 'portrait',
             unit: 'mm',
-            format: config.options.pageSize || 'a4',
+            format: config.options.pageSize || 'a4'}
         });
 
         const pageWidth = pdf.internal.pageSize.getWidth();
@@ -184,14 +180,13 @@ export class ExportService {
                 typeof value === 'number' ? value.toLocaleString() : String(value)
             ]);
 
-            pdf.autoTable({
+            pdf.autoTable({ 
                 startY: yPosition,
                 head: [['Metric', 'Value']],
-                body: summaryData,
+                body: summaryData}
                 margin: { left: margins.left, right: margins.right },
                 styles: { fontSize: 10 },
-                headStyles: { fillColor: [66, 139, 202] },
-            });
+                headStyles: { fillColor: [66, 139, 202] }
 
             yPosition = (pdf as any).lastAutoTable.finalY + 10;
         }
@@ -229,8 +224,7 @@ export class ExportService {
                     if (chartElement) {
                         const canvas = await html2canvas(chartElement, {
                             backgroundColor: '#ffffff',
-                            scale: 2,
-                        });
+                            scale: 2}
 
                         const imgData = canvas.toDataURL('image/png');
                         const imgWidth = pageWidth - margins.left - margins.right;
@@ -270,14 +264,13 @@ export class ExportService {
                     const headers = Object.keys(table.data[0]);
                     const rows = table.data.map(row => headers.map(header => String(row[header] || '')));
 
-                    pdf.autoTable({
+                    pdf.autoTable({ 
                         startY: yPosition,
                         head: [headers],
-                        body: rows,
+                        body: rows}
                         margin: { left: margins.left, right: margins.right },
                         styles: { fontSize: 8 },
-                        headStyles: { fillColor: [66, 139, 202] },
-                    });
+                        headStyles: { fillColor: [66, 139, 202] }
 
                     yPosition = (pdf as any).lastAutoTable.finalY + 10;
                 }
@@ -327,9 +320,9 @@ export class ExportService {
 
         // Summary sheet
         if (reportData.summary) {
-            const summaryData = Object.entries(reportData.summary).map(([key, value]) => ({
+            const summaryData = Object.entries(reportData.summary).map(([key, value]) => ({ 
                 Metric: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-                Value: value,
+                Value: value}
             }));
 
             const summarySheet = XLSX.utils.json_to_sheet(summaryData);
@@ -340,12 +333,11 @@ export class ExportService {
 
         // Charts sheet (metadata only, as Excel charts require different approach)
         if (reportData.charts && config.options.includeCharts) {
-            const chartsData = reportData.charts.map((chart, index) => ({
+            const chartsData = reportData.charts.map((chart, index) => ({  })
                 'Chart ID': chart.id || `chart_${index}`,
                 'Title': chart.title || `Chart ${index + 1}`,
                 'Type': chart.type || 'unknown',
-                'Data Points': Array.isArray(chart.data) ? chart.data.length : 0,
-            }));
+                'Data Points': Array.isArray(chart.data) ? chart.data.length : 0}
 
             const chartsSheet = XLSX.utils.json_to_sheet(chartsData);
             XLSX.utils.book_append_sheet(workbook, chartsSheet, 'Charts');
@@ -379,10 +371,9 @@ export class ExportService {
 
             if (config.options.includeFilters) {
                 Object.entries(config.metadata.filters).forEach(([key, value]) => {
-                    metadataData.push({
+                    metadataData.push({  })
                         Property: `Filter: ${key}`,
-                        Value: JSON.stringify(value),
-                    });
+                        Value: JSON.stringify(value)}
                 });
             }
 
@@ -442,10 +433,10 @@ export class ExportService {
         // Add summary data
         if (reportData.summary) {
             Object.entries(reportData.summary).forEach(([key, value]) => {
-                allData.push({
+                allData.push({ 
                     Category: 'Summary',
                     Metric: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-                    Value: value,
+                    Value: value}
                 });
             });
         }
@@ -455,9 +446,9 @@ export class ExportService {
             reportData.tables.forEach((table) => {
                 if (table.data && table.data.length > 0) {
                     table.data.forEach((row) => {
-                        allData.push({
+                        allData.push({ 
                             Category: table.title || 'Data',
-                            ...row,
+                            ...row}
                         });
                     });
                 }
@@ -561,8 +552,7 @@ export class ExportService {
             height: config.options.height || 800,
             scale: (config.options.dpi || 150) / 96, // Convert DPI to scale factor
             useCORS: true,
-            allowTaint: false,
-        });
+            allowTaint: false}
 
         onProgress?.(80);
 

@@ -1,26 +1,8 @@
-import * as React from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Button,
-  FormControl,
-  FormControlLabel,
-  FormHelperText,
-  InputLabel,
-  MenuItem,
-  Select,
-  Switch,
-  TextField,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
-import { 
-  usePatientMedicationSettings, 
+
+import { Button, Input, Label, Select, Spinner, Alert, Switch } from '@/components/ui/button';
+usePatientMedicationSettings, 
   useUpdatePatientMedicationSettings,
   useTestNotification
-} from '../../queries/medicationManagementQueries';
 
 interface MedicationSettingsPanelProps {
   patientId: string;
@@ -44,34 +26,33 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({ patie
   const testNotificationMutation = useTestNotification();
 
   // State for settings form
-  const [reminderSettings, setReminderSettings] = React.useState({
+  const [reminderSettings, setReminderSettings] = React.useState({ 
     enabled: false,
     defaultReminderTimes: ['09:00', '13:00', '19:00'],
     reminderMethod: 'email' as 'email' | 'sms' | 'both',
-    defaultNotificationLeadTime: 15,
+    defaultNotificationLeadTime: 15}
   });
 
   // State for monitoring settings form
-  const [monitoringSettings, setMonitoringSettings] = React.useState({
+  const [monitoringSettings, setMonitoringSettings] = React.useState({ 
     adherenceMonitoring: false,
     refillReminders: false,
-    interactionChecking: true,
+    interactionChecking: true}
   });
 
   // Initialize form with data when it loads
-  React.useEffect(() => {
     if (settings) {
-      setReminderSettings({
+      setReminderSettings({ 
         enabled: settings.reminderSettings.enabled,
         defaultReminderTimes: settings.reminderSettings.defaultReminderTimes,
         reminderMethod: settings.reminderSettings.reminderMethod,
-        defaultNotificationLeadTime: settings.reminderSettings.defaultNotificationLeadTime,
+        defaultNotificationLeadTime: settings.reminderSettings.defaultNotificationLeadTime}
       });
 
-      setMonitoringSettings({
+      setMonitoringSettings({ 
         adherenceMonitoring: settings.monitoringSettings.adherenceMonitoring,
         refillReminders: settings.monitoringSettings.refillReminders,
-        interactionChecking: settings.monitoringSettings.interactionChecking,
+        interactionChecking: settings.monitoringSettings.interactionChecking}
       });
     }
   }, [settings]);
@@ -79,13 +60,12 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({ patie
   // Handle form submission
   const handleSaveSettings = async () => {
     try {
-      await updateSettingsMutation.mutateAsync({
+      await updateSettingsMutation.mutateAsync({ 
         patientId,
         settings: {
           reminderSettings,
-          monitoringSettings,
-        },
-      });
+          monitoringSettings}
+        }
     } catch (error) {
       console.error('Failed to update settings:', error);
     }
@@ -95,17 +75,17 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({ patie
   const handleReminderTimeChange = (index: number, value: string) => {
     const newTimes = [...reminderSettings.defaultReminderTimes];
     newTimes[index] = value;
-    setReminderSettings({
+    setReminderSettings({ 
       ...reminderSettings,
-      defaultReminderTimes: newTimes,
+      defaultReminderTimes: newTimes}
     });
   };
 
   // Add a reminder time
   const handleAddReminderTime = () => {
-    setReminderSettings({
+    setReminderSettings({ 
       ...reminderSettings,
-      defaultReminderTimes: [...reminderSettings.defaultReminderTimes, '12:00'],
+      defaultReminderTimes: [...reminderSettings.defaultReminderTimes, '12:00']}
     });
   };
 
@@ -113,19 +93,19 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({ patie
   const handleRemoveReminderTime = (index: number) => {
     const newTimes = [...reminderSettings.defaultReminderTimes];
     newTimes.splice(index, 1);
-    setReminderSettings({
+    setReminderSettings({ 
       ...reminderSettings,
-      defaultReminderTimes: newTimes,
+      defaultReminderTimes: newTimes}
     });
   };
 
   // Handle notification test
   const handleTestNotification = async () => {
     try {
-      await testNotificationMutation.mutateAsync({
+      await testNotificationMutation.mutateAsync({ 
         patientId,
         type: testNotificationType,
-        contact: testContactInfo,
+        contact: testContactInfo}
       });
     } catch (error) {
       console.error('Failed to send test notification:', error);
@@ -134,37 +114,37 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({ patie
 
   if (isLoadingSettings) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
+      <div className="">
+        <Spinner />
+      </div>
     );
   }
 
   if (settingsError) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
+      <Alert severity="error" className="">
         Error loading medication settings: {(settingsError as Error).message || 'Unknown error'}
       </Alert>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h6" component="h2" gutterBottom>
+    <div className="">
+      <div  component="h2" gutterBottom>
         Medication Reminder Settings
-      </Typography>
+      </div>
       
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} component="div">
+      <div className="">
+        <div container spacing={3}>
+          <div item xs={12} component="div">
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={reminderSettings.enabled}
                   onChange={(e) =>
-                    setReminderSettings({
-                      ...reminderSettings,
-                      enabled: e.target.checked,
+                    setReminderSettings({ 
+                      ...reminderSettings}
+                      enabled: e.target.checked,}
                     })
                   }
                   name="enabled"
@@ -172,23 +152,23 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({ patie
               }
               label="Enable Medication Reminders"
             />
-            <FormHelperText>
+            <p>
               When enabled, reminders will be sent based on the schedule below
-            </FormHelperText>
-          </Grid>
+            </p>
+          </div>
 
-          <Grid item xs={12} sm={6} component="div">
-            <FormControl fullWidth>
-              <InputLabel id="reminder-method-label">Reminder Method</InputLabel>
+          <div item xs={12} sm={6} component="div">
+            <div fullWidth>
+              <Label id="reminder-method-label">Reminder Method</Label>
               <Select
                 labelId="reminder-method-label"
                 id="reminder-method"
                 value={reminderSettings.reminderMethod}
                 label="Reminder Method"
                 onChange={(e) =>
-                  setReminderSettings({
-                    ...reminderSettings,
-                    reminderMethod: e.target.value as 'email' | 'sms' | 'both',
+                  setReminderSettings({ 
+                    ...reminderSettings}
+                    reminderMethod: e.target.value as 'email' | 'sms' | 'both',}
                   })
                 }
                 disabled={!reminderSettings.enabled}
@@ -197,54 +177,54 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({ patie
                 <MenuItem value="sms">SMS</MenuItem>
                 <MenuItem value="both">Both Email and SMS</MenuItem>
               </Select>
-              <FormHelperText>
+              <p>
                 Choose how you want to receive medication reminders
-              </FormHelperText>
-            </FormControl>
-          </Grid>
+              </p>
+            </div>
+          </div>
 
-          <Grid item xs={12} sm={6} component="div">
-            <TextField
+          <div item xs={12} sm={6} component="div">
+            <Input
               fullWidth
               type="number"
               label="Default Notification Lead Time (minutes)"
               value={reminderSettings.defaultNotificationLeadTime}
               onChange={(e) =>
-                setReminderSettings({
-                  ...reminderSettings,
-                  defaultNotificationLeadTime: parseInt(e.target.value) || 0,
+                setReminderSettings({ 
+                  ...reminderSettings}
+                  defaultNotificationLeadTime: parseInt(e.target.value) || 0,}
                 })
               }
               disabled={!reminderSettings.enabled}
-              InputProps={{ inputProps: { min: 0, max: 120 } }}
+              InputProps={{ inputProps: { min: 0, max: 120 }
               helperText="How many minutes before the scheduled time to send reminders"
             />
-          </Grid>
+          </div>
 
-          <Grid item xs={12} component="div">
-            <Typography variant="subtitle1" gutterBottom>
+          <div item xs={12} component="div">
+            <div  gutterBottom>
               Default Reminder Times
-            </Typography>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
+            </div>
+            <div className="">
+              <div  color="text.secondary">
                 These times will be used as defaults when setting up medication schedules
-              </Typography>
-            </Box>
+              </div>
+            </div>
 
             {reminderSettings.defaultReminderTimes.map((time, index) => (
-              <Box
+              <div
                 key={index}
-                sx={{ display: 'flex', alignItems: 'center', mb: 2 }}
+                className=""
               >
-                <TextField
+                <Input
                   type="time"
                   value={time}
                   onChange={(e) => handleReminderTimeChange(index, e.target.value)}
                   disabled={!reminderSettings.enabled}
-                  sx={{ mr: 2 }}
+                  className=""
                 />
                 <Button
-                  variant="outlined"
+                  
                   color="error"
                   size="small"
                   onClick={() => handleRemoveReminderTime(index)}
@@ -252,98 +232,98 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({ patie
                 >
                   Remove
                 </Button>
-              </Box>
+              </div>
             ))}
 
             <Button
-              variant="outlined"
+              
               onClick={handleAddReminderTime}
               disabled={!reminderSettings.enabled}
-              sx={{ mt: 1 }}
+              className=""
             >
               Add Reminder Time
             </Button>
-          </Grid>
-        </Grid>
-      </Paper>
+          </div>
+        </div>
+      </div>
 
-      <Typography variant="h6" component="h2" gutterBottom>
+      <div  component="h2" gutterBottom>
         Monitoring Settings
-      </Typography>
+      </div>
 
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} component="div">
+      <div className="">
+        <div container spacing={3}>
+          <div item xs={12} component="div">
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={monitoringSettings.adherenceMonitoring}
                   onChange={(e) =>
-                    setMonitoringSettings({
-                      ...monitoringSettings,
-                      adherenceMonitoring: e.target.checked,
+                    setMonitoringSettings({ 
+                      ...monitoringSettings}
+                      adherenceMonitoring: e.target.checked,}
                     })
                   }
                 />
               }
               label="Enable Adherence Monitoring"
             />
-            <FormHelperText>
+            <p>
               Track and analyze medication adherence patterns
-            </FormHelperText>
-          </Grid>
+            </p>
+          </div>
 
-          <Grid item xs={12} component="div">
+          <div item xs={12} component="div">
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={monitoringSettings.refillReminders}
                   onChange={(e) =>
-                    setMonitoringSettings({
-                      ...monitoringSettings,
-                      refillReminders: e.target.checked,
+                    setMonitoringSettings({ 
+                      ...monitoringSettings}
+                      refillReminders: e.target.checked,}
                     })
                   }
                 />
               }
               label="Enable Refill Reminders"
             />
-            <FormHelperText>
+            <p>
               Send reminders when medications need to be refilled
-            </FormHelperText>
-          </Grid>
+            </p>
+          </div>
 
-          <Grid item xs={12} component="div">
+          <div item xs={12} component="div">
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={monitoringSettings.interactionChecking}
                   onChange={(e) =>
-                    setMonitoringSettings({
-                      ...monitoringSettings,
-                      interactionChecking: e.target.checked,
+                    setMonitoringSettings({ 
+                      ...monitoringSettings}
+                      interactionChecking: e.target.checked,}
                     })
                   }
                 />
               }
               label="Enable Medication Interaction Checking"
             />
-            <FormHelperText>
+            <p>
               Check for potential interactions between medications
-            </FormHelperText>
-          </Grid>
-        </Grid>
-      </Paper>
+            </p>
+          </div>
+        </div>
+      </div>
 
-      <Typography variant="h6" component="h2" gutterBottom>
+      <div  component="h2" gutterBottom>
         Test Notifications
-      </Typography>
+      </div>
 
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={4} component="div">
-            <FormControl fullWidth>
-              <InputLabel id="test-notification-type-label">Notification Type</InputLabel>
+      <div className="">
+        <div container spacing={3}>
+          <div item xs={12} sm={4} component="div">
+            <div fullWidth>
+              <Label id="test-notification-type-label">Notification Type</Label>
               <Select
                 labelId="test-notification-type-label"
                 id="test-notification-type"
@@ -354,11 +334,11 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({ patie
                 <MenuItem value="email">Email</MenuItem>
                 <MenuItem value="sms">SMS</MenuItem>
               </Select>
-            </FormControl>
-          </Grid>
+            </div>
+          </div>
 
-          <Grid item xs={12} sm={8} component="div">
-            <TextField
+          <div item xs={12} sm={8} component="div">
+            <Input
               fullWidth
               label={testNotificationType === 'email' ? 'Email Address' : 'Phone Number'}
               value={testContactInfo}
@@ -366,62 +346,62 @@ const MedicationSettingsPanel: React.FC<MedicationSettingsPanelProps> = ({ patie
               placeholder={
                 testNotificationType === 'email'
                   ? 'patient@example.com'
-                  : '+1234567890'
+                  : '+1234567890'}
               }
             />
-          </Grid>
+          </div>
 
-          <Grid item xs={12} component="div">
+          <div item xs={12} component="div">
             <Button
-              variant="contained"
+              
               onClick={handleTestNotification}
               disabled={!testContactInfo || testNotificationMutation.isPending}
             >
               Send Test Notification
               {testNotificationMutation.isPending && (
-                <CircularProgress size={20} sx={{ ml: 1 }} />
+                <Spinner size={20} className="" />
               )}
             </Button>
             {testNotificationMutation.isSuccess && (
-              <Alert severity="success" sx={{ mt: 2 }}>
+              <Alert severity="success" className="">
                 Test notification sent successfully!
               </Alert>
             )}
             {testNotificationMutation.isError && (
-              <Alert severity="error" sx={{ mt: 2 }}>
+              <Alert severity="error" className="">
                 Failed to send test notification: {(testNotificationMutation.error as Error)?.message || 'Unknown error'}
               </Alert>
             )}
-          </Grid>
-        </Grid>
-      </Paper>
+          </div>
+        </div>
+      </div>
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
+      <div className="">
         <Button
-          variant="contained"
+          
           color="primary"
           onClick={handleSaveSettings}
           disabled={updateSettingsMutation.isPending}
         >
           Save Settings
           {updateSettingsMutation.isPending && (
-            <CircularProgress size={20} sx={{ ml: 1 }} />
+            <Spinner size={20} className="" />
           )}
         </Button>
-      </Box>
+      </div>
       
       {updateSettingsMutation.isSuccess && (
-        <Alert severity="success" sx={{ mt: 2 }}>
+        <Alert severity="success" className="">
           Settings saved successfully!
         </Alert>
       )}
       
       {updateSettingsMutation.isError && (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert severity="error" className="">
           Failed to save settings: {(updateSettingsMutation.error as Error)?.message || 'Unknown error'}
         </Alert>
       )}
-    </Box>
+    </div>
   );
 };
 

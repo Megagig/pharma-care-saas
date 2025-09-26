@@ -130,13 +130,23 @@
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
   }
 
-  /* Ensure smooth theme transitions for all elements */
+  /* Optimized theme transitions - only for essential properties */
   *,
   *::before,
   *::after {
-    transition-property: background-color, border-color, color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
+    transition-property: background-color, border-color, color;
+    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition-duration: 100ms;
+  }
+
+  /* Faster transitions for interactive elements */
+  button,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [tabindex] {
+    transition-duration: 75ms;
   }
 
   /* Remove transitions for reduced motion preference */
@@ -281,19 +291,30 @@
     border-color: hsl(var(--input));
   }
 
-  /* Animation utilities for theme transitions */
+  /* Optimized animation utilities for theme transitions */
   .theme-transition {
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out,
-      border-color 0.2s ease-in-out;
+    transition: background-color 100ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                color 100ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                border-color 100ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   .theme-transition-fast {
-    transition: background-color 0.1s ease-in-out, color 0.1s ease-in-out,
-      border-color 0.1s ease-in-out;
+    transition: background-color 50ms ease-out,
+                color 50ms ease-out,
+                border-color 50ms ease-out;
   }
 
-  .theme-transition-slow {
-    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out,
-      border-color 0.3s ease-in-out;
+  .theme-transition-instant {
+    transition: none !important;
+  }
+
+  /* Performance-optimized theme switching */
+  .theme-switching {
+    /* Temporarily disable transitions during theme switch for performance */
+    transition: none !important;
+  }
+
+  .theme-switching * {
+    transition: none !important;
   }
 }

@@ -1,16 +1,12 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { vi } from 'vitest';
-import NoteFileUpload from '../NoteFileUpload';
 
+import NoteFileUpload from '../NoteFileUpload';
 // Mock the clinical note service
-vi.mock('../../services/clinicalNoteService', () => ({
+vi.mock('../../services/clinicalNoteService', () => ({ 
   default: {
     uploadAttachment: vi.fn(),
     deleteAttachment: vi.fn(),
-    downloadAttachment: vi.fn(),
-  },
-}));
+    downloadAttachment: vi.fn()}
+  }
 
 // Mock URL.createObjectURL
 global.URL.createObjectURL = vi.fn(() => 'mock-url');

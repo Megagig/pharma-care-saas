@@ -1,13 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { diagnosticApi } from '../api/diagnosticApi';
-import { useUIStore } from '../../../stores';
-import type {
     DiagnosticRequest,
     DiagnosticResult,
     DiagnosticRequestForm,
     DiagnosticHistoryParams,
     ApiResponse
-} from '../types';
 
 // Error type for API calls
 type ApiError = {
@@ -35,12 +30,12 @@ export const diagnosticQueryKeys = {
  * Hook to fetch diagnostic request by ID
  */
 export const useDiagnosticRequest = (requestId: string) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: diagnosticQueryKeys.request(requestId),
         queryFn: () => diagnosticApi.getRequest(requestId),
         enabled: !!requestId,
         staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -53,7 +48,7 @@ export const useDiagnosticResult = (requestId: string, options?: {
 }) => {
     const { enablePolling = false, pollingInterval = 5000 } = options || {};
 
-    return useQuery({
+    return useQuery({ 
         queryKey: diagnosticQueryKeys.result(requestId),
         queryFn: () => diagnosticApi.getResult(requestId),
         enabled: !!requestId,
@@ -64,23 +59,22 @@ export const useDiagnosticResult = (requestId: string, options?: {
         retry: (failureCount, error: any) => {
             // Don't retry if result is not found (404) - it might not be ready yet
             if (error?.response?.status === 404) {
-                return failureCount < 10; // Keep trying for up to 10 attempts
+                return failureCount < 10; // Keep trying for up to 10 attempts })
             }
             return failureCount < 3;
         },
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    });
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)}
 };
 
 /**
  * Hook to fetch diagnostic history with pagination and filtering
  */
 export const useDiagnosticHistory = (params: DiagnosticHistoryParams = {}) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: diagnosticQueryKeys.history(params),
         queryFn: () => diagnosticApi.getHistory(params),
         staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -92,11 +86,11 @@ export const useDiagnosticAnalytics = (params?: {
     dateTo?: string;
     patientId?: string;
 }) => {
-    return useQuery({
+    return useQuery({ 
         queryKey: diagnosticQueryKeys.analytics(params),
         queryFn: () => diagnosticApi.getAnalytics(params),
         staleTime: 5 * 60 * 1000, // 5 minutes for analytics
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -109,14 +103,14 @@ export const useDiagnosticStatus = (requestId: string, options?: {
 }) => {
     const { enablePolling = false, pollingInterval = 3000 } = options || {};
 
-    return useQuery({
+    return useQuery({ 
         queryKey: diagnosticQueryKeys.status(requestId),
         queryFn: () => diagnosticApi.getStatus(requestId),
         enabled: !!requestId,
         staleTime: 10 * 1000, // 10 seconds for status
         refetchInterval: enablePolling ? pollingInterval : false,
         refetchIntervalInBackground: enablePolling,
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: false}
     });
 };
 
@@ -131,11 +125,11 @@ export const useCreateDiagnosticRequest = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (data: DiagnosticRequestForm) => diagnosticApi.createRequest(data),
         onMutate: async (variables) => {
             // Cancel outgoing refetches for history
-            await queryClient.cancelQueries({
+            await queryClient.cancelQueries({ })
                 queryKey: diagnosticQueryKeys.history({ patientId: variables.patientId })
             });
 
@@ -179,19 +173,18 @@ export const useCreateDiagnosticRequest = () => {
                 queryClient.setQueryData(diagnosticQueryKeys.request(request._id), response);
 
                 // Invalidate and refetch history to get accurate data
-                queryClient.invalidateQueries({
+                queryClient.invalidateQueries({  })
                     queryKey: diagnosticQueryKeys.history({ patientId: variables.patientId })
                 });
 
                 // Invalidate analytics
                 queryClient.invalidateQueries({ queryKey: diagnosticQueryKeys.analytics() });
 
-                addNotification({
+                addNotification({ 
                     type: 'success',
-                    title: 'Diagnostic Request Created',
+                    title: 'Diagnostic Request Created'}
                     message: `Diagnostic analysis has been initiated. Request ID: ${request._id}`,
-                    duration: 5000,
-                });
+                    duration: 5000}
             }
         },
         onError: (error: ApiError, variables, context) => {
@@ -203,14 +196,13 @@ export const useCreateDiagnosticRequest = () => {
                 );
             }
 
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Request Failed',
                 message: error.message || 'Failed to create diagnostic request. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -220,7 +212,7 @@ export const useApproveDiagnostic = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (resultId: string) => diagnosticApi.approveResult(resultId),
         onSuccess: (response, resultId) => {
             const result = response?.data;
@@ -229,26 +221,25 @@ export const useApproveDiagnostic = () => {
                 // Update the result in cache
                 queryClient.setQueryData(diagnosticQueryKeys.result(result.requestId), response);
 
-                // Invalidate related queries
+                // Invalidate related queries })
                 queryClient.invalidateQueries({ queryKey: diagnosticQueryKeys.analytics() });
 
-                addNotification({
+                addNotification({ 
                     type: 'success',
                     title: 'Diagnostic Approved',
                     message: 'Diagnostic result has been approved successfully.',
-                    duration: 4000,
+                    duration: 4000}
                 });
             }
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Approval Failed',
                 message: error.message || 'Failed to approve diagnostic result. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -258,7 +249,7 @@ export const useModifyDiagnostic = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({  })
         mutationFn: ({ resultId, modifications }: { resultId: string; modifications: string }) =>
             diagnosticApi.modifyResult(resultId, modifications),
         onSuccess: (response, { resultId }) => {
@@ -271,23 +262,22 @@ export const useModifyDiagnostic = () => {
                 // Invalidate analytics
                 queryClient.invalidateQueries({ queryKey: diagnosticQueryKeys.analytics() });
 
-                addNotification({
+                addNotification({ 
                     type: 'success',
                     title: 'Diagnostic Modified',
                     message: 'Diagnostic result has been modified successfully.',
-                    duration: 4000,
+                    duration: 4000}
                 });
             }
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Modification Failed',
                 message: error.message || 'Failed to modify diagnostic result. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -297,7 +287,7 @@ export const useRejectDiagnostic = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({  })
         mutationFn: ({ resultId, rejectionReason }: { resultId: string; rejectionReason: string }) =>
             diagnosticApi.rejectResult(resultId, rejectionReason),
         onSuccess: (response, { resultId }) => {
@@ -310,23 +300,22 @@ export const useRejectDiagnostic = () => {
                 // Invalidate analytics
                 queryClient.invalidateQueries({ queryKey: diagnosticQueryKeys.analytics() });
 
-                addNotification({
+                addNotification({ 
                     type: 'success',
                     title: 'Diagnostic Rejected',
                     message: 'Diagnostic result has been rejected.',
-                    duration: 4000,
+                    duration: 4000}
                 });
             }
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Rejection Failed',
                 message: error.message || 'Failed to reject diagnostic result. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 /**
@@ -336,7 +325,7 @@ export const useCancelDiagnosticRequest = () => {
     const queryClient = useQueryClient();
     const addNotification = useUIStore((state) => state.addNotification);
 
-    return useMutation({
+    return useMutation({ 
         mutationFn: (requestId: string) => diagnosticApi.cancelRequest(requestId),
         onSuccess: (response, requestId) => {
             const request = response?.data;
@@ -346,28 +335,27 @@ export const useCancelDiagnosticRequest = () => {
                 queryClient.setQueryData(diagnosticQueryKeys.request(requestId), response);
 
                 // Invalidate history and analytics
-                queryClient.invalidateQueries({
+                queryClient.invalidateQueries({ })
                     queryKey: diagnosticQueryKeys.history({ patientId: request.patientId })
                 });
                 queryClient.invalidateQueries({ queryKey: diagnosticQueryKeys.analytics() });
 
-                addNotification({
+                addNotification({ 
                     type: 'success',
                     title: 'Request Cancelled',
                     message: 'Diagnostic request has been cancelled.',
-                    duration: 4000,
+                    duration: 4000}
                 });
             }
         },
         onError: (error: ApiError) => {
-            addNotification({
+            addNotification({ 
                 type: 'error',
                 title: 'Cancellation Failed',
                 message: error.message || 'Failed to cancel diagnostic request. Please try again.',
-                duration: 5000,
+                duration: 5000}
             });
-        },
-    });
+        }
 };
 
 // ===============================
@@ -437,10 +425,10 @@ export const usePrefetchDiagnosticResult = () => {
     const queryClient = useQueryClient();
 
     return (requestId: string) => {
-        queryClient.prefetchQuery({
+        queryClient.prefetchQuery({ 
             queryKey: diagnosticQueryKeys.result(requestId),
             queryFn: () => diagnosticApi.getResult(requestId),
-            staleTime: 30 * 1000, // 30 seconds
+            staleTime: 30 * 1000, // 30 seconds })
         });
     };
 };

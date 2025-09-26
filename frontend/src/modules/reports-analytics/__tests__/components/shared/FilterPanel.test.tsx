@@ -1,31 +1,22 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { FilterPanel } from '../../../components/shared/FilterPanel';
-import { mockFilters } from '../../mocks/mockData';
-import { ReportType } from '../../../types';
-
 // Mock the filter store
-vi.mock('../../../stores/filtersStore', () => ({
+vi.mock('../../../stores/filtersStore', () => ({ 
   useFiltersStore: vi.fn(() => ({
     filters: mockFilters,
     setFilters: vi.fn(),
     resetFilters: vi.fn(),
-    isLoading: false,
-  })),
-}));
+    isLoading: false}
+  }))}
 
 // Mock date picker component
-vi.mock('@mui/x-date-pickers', () => ({
-  DatePicker: ({ value, onChange, label }: any) => (
-    <input
+vi.mock('@mui/x-date-pickers', () => ({ 
+    <input })
       data-testid={`date-picker-${label?.toLowerCase().replace(' ', '-')}`}
       value={value?.toISOString().split('T')[0] || ''}
       onChange={(e) => onChange?.(new Date(e.target.value))}
       placeholder={label}
     />
-  ),
-}));
+  )}
 
 describe('FilterPanel', () => {
   const mockOnFiltersChange = vi.fn();
@@ -162,11 +153,11 @@ describe('FilterPanel', () => {
     // Mock loading state
     vi.mocked(
       require('../../../stores/filtersStore').useFiltersStore
-    ).mockReturnValue({
+    ).mockReturnValue({ 
       filters: mockFilters,
       setFilters: vi.fn(),
       resetFilters: vi.fn(),
-      isLoading: true,
+      isLoading: true}
     });
 
     render(<FilterPanel {...defaultProps} />);

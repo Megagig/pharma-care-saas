@@ -1,43 +1,38 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import InterventionForm from '../InterventionForm';
-import * as clinicalInterventionService from '../../services/clinicalInterventionService';
-import * as patientService from '../../services/patientService';
 
+import InterventionForm from '../InterventionForm';
+
+import * as clinicalInterventionService from '../../services/clinicalInterventionService';
+
+import * as patientService from '../../services/patientService';
 // Mock the services
 vi.mock('../../services/clinicalInterventionService');
 vi.mock('../../services/patientService');
 
 // Mock the hooks
-vi.mock('../../hooks/useAuth', () => ({
+vi.mock('../../hooks/useAuth', () => ({ 
   useAuth: () => ({
     user: {
       id: 'user-1',
       firstName: 'Test',
       lastName: 'User',
-      role: 'pharmacist',
+      role: 'pharmacist'}
     },
-    isAuthenticated: true,
-  }),
-}));
+    isAuthenticated: true}
 
-vi.mock('../../hooks/useErrorHandling', () => ({
+vi.mock('../../hooks/useErrorHandling', () => ({ 
   useErrorHandling: () => ({
     handleError: vi.fn(),
     clearError: vi.fn(),
-    error: null,
-  }),
-}));
+    error: null}
+  })}
 
 // Mock react-hook-form
 vi.mock('react-hook-form', async () => {
   const actual = await vi.importActual('react-hook-form');
   return {
     ...actual,
-    useForm: () => ({
+    useForm: () => ({ 
       register: vi.fn(),
       handleSubmit: vi.fn((fn) => (e) => {
         e.preventDefault();
@@ -46,25 +41,23 @@ vi.mock('react-hook-form', async () => {
           category: 'drug_therapy_problem',
           priority: 'high',
           issueDescription: 'Test issue description',
-          strategies: [],
+          strategies: []}
         });
       }),
       formState: { errors: {}, isSubmitting: false },
       setValue: vi.fn(),
       watch: vi.fn(),
-      reset: vi.fn(),
-    }),
+      reset: vi.fn(), },
   };
 });
 
 // Test wrapper component
 const TestWrapper = ({ children }: { children: React.ReactNode }) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return (
     <QueryProvider client={queryClient}>
@@ -100,7 +93,7 @@ describe('InterventionForm', () => {
     vi.clearAllMocks();
 
     // Mock service methods
-    vi.mocked(patientService.getPatients).mockResolvedValue({
+    vi.mocked(patientService.getPatients).mockResolvedValue({ 
       data: mockPatients,
       pagination: {
         page: 1,
@@ -108,9 +101,8 @@ describe('InterventionForm', () => {
         total: 2,
         pages: 1,
         hasNext: false,
-        hasPrev: false,
-      },
-    });
+        hasPrev: false}
+      }
 
     vi.mocked(clinicalInterventionService.createIntervention).mockResolvedValue(
       {
@@ -185,8 +177,7 @@ describe('InterventionForm', () => {
 
     // Try to submit without filling required fields
     const submitButton = screen.getByRole('button', {
-      name: /create intervention/i,
-    });
+      name: /create intervention/i}
     await user.click(submitButton);
 
     // Check for validation errors
@@ -215,8 +206,7 @@ describe('InterventionForm', () => {
 
     // Try to submit
     const submitButton = screen.getByRole('button', {
-      name: /create intervention/i,
-    });
+      name: /create intervention/i}
     await user.click(submitButton);
 
     // Check for validation error
@@ -280,8 +270,7 @@ describe('InterventionForm', () => {
 
     // Click add strategy button
     const addStrategyButton = screen.getByRole('button', {
-      name: /add strategy/i,
-    });
+      name: /add strategy/i}
     await user.click(addStrategyButton);
 
     // Check that strategy form appears
@@ -310,8 +299,7 @@ describe('InterventionForm', () => {
 
     // Save strategy
     const saveStrategyButton = screen.getByRole('button', {
-      name: /save strategy/i,
-    });
+      name: /save strategy/i}
     await user.click(saveStrategyButton);
 
     // Check that strategy is added to list
@@ -320,8 +308,7 @@ describe('InterventionForm', () => {
 
     // Remove strategy
     const removeStrategyButton = screen.getByRole('button', {
-      name: /remove strategy/i,
-    });
+      name: /remove strategy/i}
     await user.click(removeStrategyButton);
 
     // Check that strategy is removed
@@ -356,21 +343,20 @@ describe('InterventionForm', () => {
 
     // Submit form
     const submitButton = screen.getByRole('button', {
-      name: /create intervention/i,
-    });
+      name: /create intervention/i}
     await user.click(submitButton);
 
     // Check that service was called
     await waitFor(() => {
       expect(
         clinicalInterventionService.createIntervention
-      ).toHaveBeenCalledWith({
+      ).toHaveBeenCalledWith({ 
         patientId: 'patient-1',
         category: 'drug_therapy_problem',
         priority: 'high',
         issueDescription:
           'Patient experiencing significant side effects from current medication regimen',
-        strategies: [],
+        strategies: []}
       });
     });
 
@@ -401,8 +387,7 @@ describe('InterventionForm', () => {
 
     // Add strategy
     const addStrategyButton = screen.getByRole('button', {
-      name: /add strategy/i,
-    });
+      name: /add strategy/i}
     await user.click(addStrategyButton);
 
     // Fill strategy fields
@@ -425,14 +410,12 @@ describe('InterventionForm', () => {
 
     // Save strategy
     const saveStrategyButton = screen.getByRole('button', {
-      name: /save strategy/i,
-    });
+      name: /save strategy/i}
     await user.click(saveStrategyButton);
 
     // Submit form
     const submitButton = screen.getByRole('button', {
-      name: /create intervention/i,
-    });
+      name: /create intervention/i}
     await user.click(submitButton);
 
     // Check that service was called with strategy
@@ -440,17 +423,16 @@ describe('InterventionForm', () => {
       expect(
         clinicalInterventionService.createIntervention
       ).toHaveBeenCalledWith(
-        expect.objectContaining({
+        expect.objectContaining({ 
           strategies: expect.arrayContaining([
             expect.objectContaining({
               type: 'dose_adjustment',
               description: 'Reduce dose by 50%',
               rationale: 'Patient experiencing side effects',
               expectedOutcome:
-                'Reduced side effects while maintaining therapeutic efficacy',
+                'Reduced side effects while maintaining therapeutic efficacy'}
             }),
-          ]),
-        })
+          ])}
       );
     });
   });
@@ -482,8 +464,7 @@ describe('InterventionForm', () => {
     );
 
     const submitButton = screen.getByRole('button', {
-      name: /create intervention/i,
-    });
+      name: /create intervention/i}
     await user.click(submitButton);
 
     // Check for error message
@@ -542,14 +523,12 @@ describe('InterventionForm', () => {
 
     // Click add strategy button
     const addStrategyButton = screen.getByRole('button', {
-      name: /add strategy/i,
-    });
+      name: /add strategy/i}
     await user.click(addStrategyButton);
 
     // Try to save strategy without filling required fields
     const saveStrategyButton = screen.getByRole('button', {
-      name: /save strategy/i,
-    });
+      name: /save strategy/i}
     await user.click(saveStrategyButton);
 
     // Check for validation errors

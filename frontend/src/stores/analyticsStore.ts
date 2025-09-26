@@ -1,5 +1,3 @@
-import { create } from 'zustand';
-
 // Define more detailed interfaces for each data type
 export interface PatientDemographic {
   name: string;
@@ -96,11 +94,11 @@ interface AnalyticsStore {
   ) => void;
 }
 
-export const useAnalyticsStore = create<AnalyticsStore>((set) => ({
+export const useAnalyticsStore = create<AnalyticsStore>((set) => ({ 
   // Initial loading state
   loading: true,
 
-  // Initial metrics data
+  // Initial metrics data })
   patientMetrics: { value: 0, change: 0, changeType: 'stable' },
   notesMetrics: { value: 0, change: 0, changeType: 'stable' },
   medicationMetrics: { value: 0, change: 0, changeType: 'stable' },
@@ -137,24 +135,20 @@ export const useAnalyticsStore = create<AnalyticsStore>((set) => ({
   setDateFilter: (dateFilter) => set({ dateFilter }),
 
   setPatientMetrics: (data) =>
-    set((state) => ({
-      patientMetrics: { ...state.patientMetrics, ...data },
-    })),
+    set((state) => ({  })
+      patientMetrics: { ...state.patientMetrics, ...data }, },
 
   setNotesMetrics: (data) =>
-    set((state) => ({
-      notesMetrics: { ...state.notesMetrics, ...data },
-    })),
+    set((state) => ({  })
+      notesMetrics: { ...state.notesMetrics, ...data }, },
 
   setMedicationMetrics: (data) =>
-    set((state) => ({
-      medicationMetrics: { ...state.medicationMetrics, ...data },
-    })),
+    set((state) => ({  })
+      medicationMetrics: { ...state.medicationMetrics, ...data }, },
 
   setRevenueMetrics: (data) =>
-    set((state) => ({
-      revenueMetrics: { ...state.revenueMetrics, ...data },
-    })),
+    set((state) => ({  })
+      revenueMetrics: { ...state.revenueMetrics, ...data }, },
 
   setPatientDemographics: (data) => set({ patientDemographics: data }),
 
@@ -167,9 +161,8 @@ export const useAnalyticsStore = create<AnalyticsStore>((set) => ({
   setUpcomingAppointments: (data) => set({ upcomingAppointments: data }),
 
   setDashboardConfig: (config) =>
-    set((state) => ({
-      dashboardConfig: { ...state.dashboardConfig, ...config },
-    })),
+    set((state) => ({  })
+      dashboardConfig: { ...state.dashboardConfig, ...config }, },
 
   // Real-time update simulation
   simulateRealtimeUpdate: () =>
@@ -205,8 +198,7 @@ export const useAnalyticsStore = create<AnalyticsStore>((set) => ({
           changeType: 'increase',
         },
       };
-    }),
-}));
+    })}
 
 // Initialize with sample data
 export const initializeAnalyticsData = (theme: {
@@ -225,28 +217,28 @@ export const initializeAnalyticsData = (theme: {
   // Simulate API loading delay
   setTimeout(() => {
     // Set metrics data
-    store.setPatientMetrics({
+    store.setPatientMetrics({ 
       value: 1250,
       change: 12.5,
-      changeType: 'increase',
+      changeType: 'increase'}
     });
 
-    store.setNotesMetrics({
+    store.setNotesMetrics({ 
       value: 5430,
       change: 8.3,
-      changeType: 'increase',
+      changeType: 'increase'}
     });
 
-    store.setMedicationMetrics({
+    store.setMedicationMetrics({ 
       value: 2780,
       change: 5.2,
-      changeType: 'increase',
+      changeType: 'increase'}
     });
 
-    store.setRevenueMetrics({
+    store.setRevenueMetrics({ 
       value: 142500,
       change: 9.7,
-      changeType: 'increase',
+      changeType: 'increase'}
     });
 
     // Set patient demographics

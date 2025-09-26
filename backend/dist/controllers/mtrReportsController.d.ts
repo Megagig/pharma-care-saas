@@ -5,4 +5,9 @@ export declare const getInterventionEffectivenessReport: (req: AuthRequest, res:
 export declare const getPharmacistPerformanceReport: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const getQualityAssuranceReport: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const getOutcomeMetricsReport: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getPatientOutcomeAnalytics: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getCostEffectivenessAnalysis: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getOperationalEfficiencyMetrics: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getTrendForecastingAnalytics: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getEnhancedOutcomeMetricsReport: (req: AuthRequest, res: Response) => Promise<void>;
 //# sourceMappingURL=mtrReportsController.d.ts.map

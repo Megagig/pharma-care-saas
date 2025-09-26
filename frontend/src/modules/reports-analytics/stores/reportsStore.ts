@@ -1,9 +1,4 @@
 // Reports Store - Main state management for reports
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
-import { ReportType, ReportData } from '../types/reports';
-import { ReportFilters } from '../types/filters';
-
 interface ReportsState {
   // Current report state
   activeReport: ReportType | null;
@@ -74,7 +69,7 @@ export const useReportsStore = create<ReportsState>()(
             (state) => ({
               reportData: {
                 ...state.reportData,
-                [reportType]: data,
+                [reportType]: data
               },
               loading: {
                 ...state.loading,
@@ -83,7 +78,7 @@ export const useReportsStore = create<ReportsState>()(
               errors: {
                 ...state.errors,
                 [reportType]: null,
-              },
+              }
             }),
             false,
             'setReportData'
@@ -95,12 +90,12 @@ export const useReportsStore = create<ReportsState>()(
             (state) => ({
               loading: {
                 ...state.loading,
-                [reportType]: loading,
+                [reportType]: loading
               },
               // Clear error when starting to load
               errors: loading
                 ? { ...state.errors, [reportType]: null }
-                : state.errors,
+                : state.errors
             }),
             false,
             'setLoading'
@@ -112,12 +107,12 @@ export const useReportsStore = create<ReportsState>()(
             (state) => ({
               errors: {
                 ...state.errors,
-                [reportType]: error,
+                [reportType]: error
               },
               loading: {
                 ...state.loading,
                 [reportType]: false,
-              },
+              }
             }),
             false,
             'setError'
@@ -214,7 +209,7 @@ export const useReportsStore = create<ReportsState>()(
         getRecentReports: (limit: number = 10) => {
           const state = get();
           return state.reportHistory.slice(0, limit);
-        },
+        }
       }),
       {
         name: 'reports-store',
@@ -222,7 +217,7 @@ export const useReportsStore = create<ReportsState>()(
           // Only persist certain parts of the state
           reportHistory: state.reportHistory,
           sidebarCollapsed: state.sidebarCollapsed,
-          activeReport: state.activeReport,
+          activeReport: state.activeReport
         }),
       }
     ),

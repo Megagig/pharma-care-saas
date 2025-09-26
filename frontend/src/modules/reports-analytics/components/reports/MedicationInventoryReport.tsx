@@ -1,78 +1,32 @@
 // Medication Usage & Inventory Report Module Component
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-  LinearProgress,
-} from '@mui/material';
-import {
-  Inventory,
-  TrendingUp,
-  TrendingDown,
-  Assessment,
-  Timeline,
-  BarChart,
-  PieChart,
-  ShowChart,
-  Warning,
-  CheckCircle,
-  Schedule,
-  LocalPharmacy,
-  AttachMoney,
-} from '@mui/icons-material';
 import ChartComponent from '../shared/ChartComponent';
-import { ChartData } from '../../types/charts';
-import { MedicationInventoryFilters } from '../../types/filters';
-import { useCurrentFilters } from '../../stores/filtersStore';
-import { ReportType } from '../../types/reports';
+
+import { Card, CardContent, Progress, Alert, Tabs, Separator } from '@/components/ui/button';
 
 interface MedicationInventoryReportProps {
   filters: MedicationInventoryFilters;
   onFilterChange?: (filters: MedicationInventoryFilters) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
-
-const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
+const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({ 
   filters,
-  onFilterChange,
+  onFilterChange
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   // Mock data - in real implementation, this would come from API
   const mockData = useMemo(
-    () => ({
+    () => ({ 
       // KPI Cards Data
       kpiData: [
         {
@@ -82,7 +36,7 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
           trend: {
             direction: 'up' as const,
             value: 12.3,
-            period: 'vs last year',
+            period: 'vs last year'}
           },
           status: 'success' as const,
           target: { value: 8, label: 'times/year' },
@@ -121,7 +75,6 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
           status: 'warning' as const,
         },
       ],
-
       // Usage Patterns Analysis
       usagePatternsData: {
         id: 'usage-patterns',
@@ -354,7 +307,6 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
           },
         },
       },
-
       // Inventory Turnover Visualization
       inventoryTurnoverData: {
         id: 'inventory-turnover',
@@ -510,7 +462,6 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
           },
         },
       },
-
       // Demand Forecasting Data
       demandForecastingData: [
         {
@@ -559,7 +510,6 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
           category: 'Gastric',
         },
       ],
-
       // Expiration Tracking Data
       expirationTrackingData: {
         title: 'Expiration Tracking Overview',
@@ -577,7 +527,6 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
           secondary: 'Items Expiring Soon',
         },
       },
-
       // Cost Analysis Data
       costAnalysisData: {
         id: 'cost-analysis',
@@ -769,25 +718,20 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
             rules: [],
           },
         },
-      },
-    }),
+      }, },
     []
   );
-
   // Simulate data loading
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [filters]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   const getTrendColor = (trend: 'increasing' | 'stable' | 'decreasing') => {
     switch (trend) {
       case 'increasing':
@@ -800,72 +744,66 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
         return 'default';
     }
   };
-
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 90) return 'success';
     if (confidence >= 80) return 'info';
     if (confidence >= 70) return 'warning';
     return 'error';
   };
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Alert severity="error" className="">
+        <div  gutterBottom>
           Error Loading Medication Inventory Data
-        </Typography>
-        <Typography variant="body2">{error}</Typography>
+        </div>
+        <div >{error}</div>
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center' }}
+          className=""
         >
-          <Inventory sx={{ mr: 2, color: 'primary.main' }} />
+          <Inventory className="" />
           Medication Usage & Inventory Dashboard
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Comprehensive analysis of usage patterns, inventory turnover, demand
           forecasting, expiration tracking, and cost optimization with waste
           reduction metrics.
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div container spacing={3} className="">
         {mockData.kpiData.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <ChartComponent
-              data={{
+              data={{}
                 id: `kpi-${index}`,
                 title: '',
                 type: 'kpi-card',
                 data: [kpi],
                 config: {} as any,
-              }}
               height={180}
               loading={loading}
             />
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          
           scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          className=""
         >
           <Tab
             icon={<ShowChart />}
@@ -893,25 +831,24 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
             iconPosition="start"
           />
         </Tabs>
-
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.usagePatternsData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Usage Pattern Insights
-                  </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Chip
                       label="Antibiotics: Seasonal Peak"
@@ -928,99 +865,82 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
                       color="info"
                       size="small"
                     />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Antibiotic usage shows strong seasonal patterns with peaks
                     in winter months. Diabetes medications maintain stable
                     demand throughout the year. Pain reliever usage is
                     declining, possibly due to alternative therapies.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.inventoryTurnoverData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Inventory Turnover Analysis
-                  </Typography>
-                  <Grid container spacing={2}>
+                  </div>
+                  <div container spacing={2}>
                     {mockData.inventoryTurnoverData.data.map(
                       (item: any, index: number) => (
-                        <Grid item xs={12} sm={6} md={3} key={index}>
-                          <Paper sx={{ p: 2, textAlign: 'center' }}>
-                            <Typography variant="h6" gutterBottom>
+                        <div item xs={12} sm={6} md={3} key={index}>
+                          <div className="">
+                            <div  gutterBottom>
                               {item.category}
-                            </Typography>
-                            <Typography
-                              variant="h4"
+                            </div>
+                            <div
+                              
                               color="primary.main"
                               gutterBottom
                             >
                               {item['Turnover Rate']}x
-                            </Typography>
-                            <Typography
-                              variant="body2"
+                            </div>
+                            <div
+                              
                               color="text.secondary"
                               gutterBottom
                             >
                               {item.count} items
-                            </Typography>
-                            <LinearProgress
-                              variant="determinate"
-                              value={item['Optimization Score']}
-                              sx={{
-                                height: 6,
-                                borderRadius: 3,
-                                backgroundColor: 'grey.200',
-                                '& .MuiLinearProgress-bar': {
-                                  backgroundColor:
-                                    item['Optimization Score'] >= 80
-                                      ? '#22c55e'
-                                      : item['Optimization Score'] >= 60
-                                      ? '#f59e0b'
-                                      : '#ef4444',
-                                  borderRadius: 3,
-                                },
-                              }}
-                            />
-                            <Typography
-                              variant="caption"
+                            </div>
+                            <Progress
+                              
+                              className="" />
+                            <div
+                              
                               color="text.secondary"
                             >
                               Optimization: {item['Optimization Score']}%
-                            </Typography>
-                          </Paper>
-                        </Grid>
+                            </div>
+                          </div>
+                        </div>
                       )
                     )}
-                  </Grid>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Demand Forecasting with Seasonal Adjustments
-                  </Typography>
+                  </div>
                   <TableContainer>
                     <Table>
                       <TableHead>
@@ -1037,20 +957,20 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
                         {mockData.demandForecastingData.map((item, index) => (
                           <TableRow key={index}>
                             <TableCell>
-                              <Box>
-                                <Typography
-                                  variant="body2"
-                                  sx={{ fontWeight: 500 }}
+                              <div>
+                                <div
+                                  
+                                  className=""
                                 >
                                   {item.medication}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
+                                </div>
+                                <div
+                                  
                                   color="text.secondary"
                                 >
                                   {item.category}
-                                </Typography>
-                              </Box>
+                                </div>
+                              </div>
                             </TableCell>
                             <TableCell align="right">
                               {item.currentStock}
@@ -1059,24 +979,18 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
                               {item.predictedDemand}
                             </TableCell>
                             <TableCell align="right">
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontWeight: 600,
-                                  color:
-                                    item.recommendedOrder > item.currentStock
-                                      ? 'error.main'
-                                      : 'success.main',
-                                }}
+                              <div
+                                
+                                className=""
                               >
                                 {item.recommendedOrder}
-                              </Typography>
+                              </div>
                             </TableCell>
                             <TableCell align="center">
                               <Chip
                                 label={`${item.confidence}%`}
                                 color={
-                                  getConfidenceColor(item.confidence) as any
+                                  getConfidenceColor(item.confidence) as any}
                                 }
                                 size="small"
                               />
@@ -1086,7 +1000,7 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
                                 label={item.trend}
                                 color={getTrendColor(item.trend) as any}
                                 size="small"
-                                variant="outlined"
+                                
                               />
                             </TableCell>
                           </TableRow>
@@ -1096,170 +1010,145 @@ const MedicationInventoryReport: React.FC<MedicationInventoryReportProps> = ({
                   </TableContainer>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+          <div container spacing={3}>
+            <div item xs={12} md={6}>
               <ChartComponent
                 data={{
                   id: 'expiration-tracking',
                   title: '',
                   type: 'progress-ring',
-                  data: [mockData.expirationTrackingData],
+                  data: [mockData.expirationTrackingData],}
                   config: {} as any,
-                }}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: 400 }}>
+            </div>
+            <div item xs={12} md={6}>
+              <Card className="">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Expiration Alert System
-                  </Typography>
-
+                  </div>
                   {mockData.expirationTrackingData.segments?.map(
                     (segment, index) => (
-                      <Box key={index} sx={{ mb: 2 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            mb: 1,
-                          }}
+                      <div key={index} className="">
+                        <div
+                          className=""
                         >
-                          <Typography variant="body2">
+                          <div >
                             {segment.label}
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          </div>
+                          <div  className="">
                             {segment.value} items
-                          </Typography>
-                        </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={(segment.value / 100) * 100}
-                          sx={{
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: 'grey.200',
-                            '& .MuiLinearProgress-bar': {
-                              backgroundColor: segment.color,
-                              borderRadius: 4,
-                            },
-                          }}
-                        />
-                      </Box>
+                          </div>
+                        </div>
+                        <Progress
+                          
+                          className="" />
+                      </div>
                     )
                   )}
-
-                  <Box
-                    sx={{
-                      mt: 3,
-                      p: 2,
-                      backgroundColor: 'warning.light',
-                      borderRadius: 1,
-                    }}
+                  <div
+                    className=""
                   >
-                    <Typography variant="body2" color="warning.contrastText">
+                    <div  color="warning.contrastText">
                       <strong>Action Required:</strong> 8 items expire within 7
                       days. Consider promotional pricing or alternative
                       distribution channels to minimize waste.
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={4}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.costAnalysisData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Cost Analysis Summary
-                  </Typography>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} md={3}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography
-                          variant="h3"
+                  </div>
+                  <div container spacing={3}>
+                    <div item xs={12} md={3}>
+                      <div className="">
+                        <div
+                          
                           color="success.main"
                           gutterBottom
                         >
                           ₦21,500
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Monthly Profit Margin
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography
-                          variant="h3"
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={3}>
+                      <div className="">
+                        <div
+                          
                           color="error.main"
                           gutterBottom
                         >
                           ₦2,000
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Waste Cost (37% reduction)
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography variant="h3" color="info.main" gutterBottom>
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={3}>
+                      <div className="">
+                        <div  color="info.main" gutterBottom>
                           ₦3,200
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Cost Savings Achieved
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography
-                          variant="h3"
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={3}>
+                      <div className="">
+                        <div
+                          
                           color="primary.main"
                           gutterBottom
                         >
                           42.9%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Profit Margin Ratio
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="body2" color="text.secondary">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <Separator className="" />
+                  <div  color="text.secondary">
                     Cost optimization efforts have resulted in significant waste
                     reduction and improved profit margins. Continued focus on
                     expiration management and demand forecasting accuracy will
                     further enhance profitability.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default MedicationInventoryReport;

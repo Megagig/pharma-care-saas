@@ -7,9 +7,6 @@
  * unit tests, integration tests, accessibility tests, and e2e tests.
  */
 
-import { execSync } from 'child_process';
-import { performance } from 'perf_hooks';
-
 interface TestResult {
     name: string;
     passed: boolean;
@@ -143,12 +140,12 @@ class FrontendClinicalInterventionTestRunner {
             console.log('   Make sure the application is running and Playwright is installed');
 
             // Add a placeholder result
-            tests.push({
+            tests.push({ 
                 name: 'E2E Tests',
                 passed: false,
                 duration: 0,
                 output: 'E2E tests could not be executed',
-                error: error.message
+                error: error.message })
             });
         }
 
@@ -178,11 +175,11 @@ class FrontendClinicalInterventionTestRunner {
             // Match Vitest test results
             if (line.includes('✓') || line.includes('✗') || line.includes('PASS') || line.includes('FAIL')) {
                 if (currentTest) {
-                    tests.push({
+                    tests.push({ 
                         name: currentTest,
                         passed: testPassed,
                         duration: 0,
-                        output: testOutput
+                        output: testOutput })
                     });
                 }
 
@@ -196,11 +193,11 @@ class FrontendClinicalInterventionTestRunner {
 
         // Add the last test
         if (currentTest) {
-            tests.push({
+            tests.push({ 
                 name: currentTest,
                 passed: testPassed,
                 duration: 0,
-                output: testOutput
+                output: testOutput })
             });
         }
 
@@ -216,11 +213,11 @@ class FrontendClinicalInterventionTestRunner {
                 const testName = line.trim();
                 const passed = line.includes('✓');
 
-                tests.push({
+                tests.push({ 
                     name: testName,
                     passed,
                     duration: 0,
-                    output: line
+                    output: line })
                 });
             }
         }

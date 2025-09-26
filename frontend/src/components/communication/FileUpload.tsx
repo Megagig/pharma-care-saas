@@ -1,29 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
-import {
-  Box,
-  Button,
-  Typography,
-  LinearProgress,
-  IconButton,
-  Alert,
-  Chip,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-} from '@mui/material';
-import {
-  CloudUpload as CloudUploadIcon,
-  AttachFile as AttachFileIcon,
-  Delete as DeleteIcon,
-  InsertDriveFile as FileIcon,
-  Image as ImageIcon,
-  PictureAsPdf as PdfIcon,
-  Description as DocIcon,
-} from '@mui/icons-material';
-import { useDropzone } from 'react-dropzone';
-import { useCommunicationStore } from '../../stores/communicationStore';
+import { Button, Progress, Alert } from '@/components/ui/button';
 
 interface FileUploadProps {
   conversationId: string;
@@ -33,7 +8,6 @@ interface FileUploadProps {
   allowedTypes?: string[];
   disabled?: boolean;
 }
-
 interface UploadedFile {
   id: string;
   fileName: string;
@@ -43,7 +17,6 @@ interface UploadedFile {
   url: string;
   uploadedAt: string;
 }
-
 interface FileUploadProgress {
   file: File;
   progress: number;
@@ -51,7 +24,6 @@ interface FileUploadProgress {
   error?: string;
   uploadedFile?: UploadedFile;
 }
-
 const ALLOWED_FILE_TYPES = [
   'image/jpeg',
   'image/png',
@@ -65,10 +37,8 @@ const ALLOWED_FILE_TYPES = [
   'text/plain',
   'text/csv',
 ];
-
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_FILES = 5;
-
 const getFileIcon = (mimeType: string) => {
   if (mimeType.startsWith('image/')) return <ImageIcon />;
   if (mimeType === 'application/pdf') return <PdfIcon />;
@@ -76,7 +46,6 @@ const getFileIcon = (mimeType: string) => {
     return <DocIcon />;
   return <FileIcon />;
 };
-
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -84,32 +53,27 @@ const formatFileSize = (bytes: number): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
-
-export const FileUpload: React.FC<FileUploadProps> = ({
+export const FileUpload: React.FC<FileUploadProps> = ({ 
   conversationId,
   onFileUploaded,
   maxFiles = MAX_FILES,
   maxSize = MAX_FILE_SIZE,
   allowedTypes = ALLOWED_FILE_TYPES,
-  disabled = false,
+  disabled = false
 }) => {
   const [uploadQueue, setUploadQueue] = useState<FileUploadProgress[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const { sendMessage } = useCommunicationStore();
-
   const validateFile = useCallback(
     (file: File): string | null => {
       if (file.size > maxSize) {
         return `File size exceeds maximum limit of ${formatFileSize(maxSize)}`;
       }
-
       if (!allowedTypes.includes(file.type)) {
         return `File type ${file.type} is not allowed`;
       }
-
       // Check for dangerous file extensions
       const dangerousExtensions = [
         '.exe',
@@ -126,7 +90,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       if (dangerousExtensions.some((ext) => fileName.endsWith(ext))) {
         return `File extension is not allowed for security reasons`;
       }
-
       // Check for invalid characters in filename
       if (
         file.name.includes('..') ||
@@ -135,47 +98,38 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       ) {
         return 'Invalid characters in filename';
       }
-
       return null;
     },
     [maxSize, allowedTypes]
   );
-
   const uploadFile = useCallback(
     async (file: File): Promise<UploadedFile> => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('conversationId', conversationId);
-
       const response = await fetch('/api/communication/upload', {
         method: 'POST',
         body: formData,
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
+        }
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Upload failed');
       }
-
       const data = await response.json();
       return data.file;
     },
     [conversationId]
   );
-
   const handleFileUpload = useCallback(
     async (files: File[]) => {
       setError(null);
-
       // Validate total file count
       if (uploadQueue.length + uploadedFiles.length + files.length > maxFiles) {
         setError(`Maximum ${maxFiles} files allowed`);
         return;
       }
-
       // Validate each file
       const validFiles: File[] = [];
       for (const file of files) {
@@ -186,16 +140,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         }
         validFiles.push(file);
       }
-
       // Add files to upload queue
-      const newUploads: FileUploadProgress[] = validFiles.map((file) => ({
+      const newUploads: FileUploadProgress[] = validFiles.map((file) => ({ 
         file,
         progress: 0,
-        status: 'uploading' as const,
+        status: 'uploading' as const}
       }));
-
       setUploadQueue((prev) => [...prev, ...newUploads]);
-
       // Upload files
       for (let i = 0; i < newUploads.length; i++) {
         const uploadItem = newUploads[i];
@@ -210,11 +161,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               )
             );
           }, 200);
-
           const uploadedFile = await uploadFile(uploadItem.file);
-
           clearInterval(progressInterval);
-
           // Update upload queue with completed status
           setUploadQueue((prev) =>
             prev.map((item) =>
@@ -223,22 +171,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 : item
             )
           );
-
           // Add to uploaded files
           setUploadedFiles((prev) => [...prev, uploadedFile]);
-
           // Notify parent component
           onFileUploaded?.(uploadedFile);
-
           // Send message with file attachment
-          await sendMessage({
+          await sendMessage({ 
             conversationId,
             content: {
-              type: 'file',
+              type: 'file'}
               text: `Shared file: ${uploadedFile.originalName}`,
               attachments: [uploadedFile],
-            },
-          });
+            }
         } catch (error: unknown) {
           setUploadQueue((prev) =>
             prev.map((item) =>
@@ -249,7 +193,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           );
         }
       }
-
       // Clear completed uploads after a delay
       setTimeout(() => {
         setUploadQueue((prev) =>
@@ -268,15 +211,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       conversationId,
     ]
   );
-
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       handleFileUpload(acceptedFiles);
     },
     [handleFileUpload]
   );
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
     disabled,
     multiple: true,
@@ -284,10 +225,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     maxSize,
     accept: allowedTypes.reduce((acc, type) => {
       acc[type] = [];
-      return acc;
-    }, {} as Record<string, string[]>),
-  });
-
+      return acc; })
+    }, {} as Record<string, string[]>)}
   const handleFileInputChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -296,45 +235,29 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       handleFileUpload(files);
     }
   };
-
   const removeUploadedFile = (fileId: string) => {
     setUploadedFiles((prev) => prev.filter((file) => file.id !== fileId));
   };
-
   const removeFromQueue = (file: File) => {
     setUploadQueue((prev) => prev.filter((item) => item.file !== file));
   };
-
   return (
-    <Box>
+    <div>
       {/* Drag and Drop Area */}
-      <Paper
+      <div
         {...getRootProps()}
-        sx={{
-          p: 3,
-          border: '2px dashed',
-          borderColor: isDragActive ? 'primary.main' : 'grey.300',
-          backgroundColor: isDragActive ? 'action.hover' : 'background.paper',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          opacity: disabled ? 0.6 : 1,
-          transition: 'all 0.2s ease-in-out',
-          '&:hover': {
-            borderColor: disabled ? 'grey.300' : 'primary.main',
-            backgroundColor: disabled ? 'background.paper' : 'action.hover',
-          },
-        }}
-      >
+        className="">
         <input {...getInputProps()} />
-        <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
-          <CloudUploadIcon sx={{ fontSize: 48, color: 'text.secondary' }} />
-          <Typography variant="h6" color="text.secondary">
+        <div display="flex" flexDirection="column" alignItems="center" gap={2}>
+          <CloudUploadIcon className="" />
+          <div  color="text.secondary">
             {isDragActive ? 'Drop files here' : 'Drag and drop files here'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             or
-          </Typography>
+          </div>
           <Button
-            variant="outlined"
+            
             startIcon={<AttachFileIcon />}
             disabled={disabled}
             onClick={() => fileInputRef.current?.click()}
@@ -347,48 +270,45 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             multiple
             accept={allowedTypes.join(',')}
             onChange={handleFileInputChange}
-            style={{ display: 'none' }}
+            
           />
-        </Box>
-      </Paper>
-
+        </div>
+      </div>
       {/* File Type and Size Info */}
-      <Box mt={2}>
-        <Typography variant="caption" color="text.secondary">
+      <div mt={2}>
+        <div  color="text.secondary">
           Allowed types: Images, PDF, Word, Excel, Text files
-        </Typography>
+        </div>
         <br />
-        <Typography variant="caption" color="text.secondary">
+        <div  color="text.secondary">
           Maximum file size: {formatFileSize(maxSize)} | Maximum files:{' '}
           {maxFiles}
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* Error Display */}
       {error && (
-        <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" className="" onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
-
       {/* Upload Progress */}
       {uploadQueue.length > 0 && (
-        <Box mt={2}>
-          <Typography variant="subtitle2" gutterBottom>
+        <div mt={2}>
+          <div  gutterBottom>
             Uploading Files
-          </Typography>
+          </div>
           <List dense>
             {uploadQueue.map((item, index) => (
-              <ListItem key={index}>
-                <Box sx={{ width: '100%' }}>
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+              <div key={index}>
+                <div className="">
+                  <div display="flex" alignItems="center" gap={1} mb={1}>
                     {getFileIcon(item.file.type)}
-                    <Typography variant="body2" noWrap sx={{ flex: 1 }}>
+                    <div  noWrap className="">
                       {item.file.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       {formatFileSize(item.file.size)}
-                    </Typography>
+                    </div>
                     {item.status === 'uploading' && (
                       <IconButton
                         size="small"
@@ -397,52 +317,49 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     )}
-                  </Box>
+                  </div>
                   {item.status === 'uploading' && (
-                    <LinearProgress
-                      variant="determinate"
-                      value={item.progress}
-                      sx={{ mb: 1 }}
+                    <Progress
+                      
+                      className=""
                     />
                   )}
                   {item.status === 'error' && (
-                    <Alert severity="error" sx={{ mt: 1 }}>
+                    <Alert severity="error" className="">
                       {item.error}
                     </Alert>
                   )}
                   {item.status === 'completed' && (
-                    <Alert severity="success" sx={{ mt: 1 }}>
+                    <Alert severity="success" className="">
                       Upload completed successfully
                     </Alert>
                   )}
-                </Box>
-              </ListItem>
+                </div>
+              </div>
             ))}
           </List>
-        </Box>
+        </div>
       )}
-
       {/* Uploaded Files */}
       {uploadedFiles.length > 0 && (
-        <Box mt={2}>
-          <Typography variant="subtitle2" gutterBottom>
+        <div mt={2}>
+          <div  gutterBottom>
             Uploaded Files
-          </Typography>
-          <Box display="flex" flexWrap="wrap" gap={1}>
+          </div>
+          <div display="flex" flexWrap="wrap" gap={1}>
             {uploadedFiles.map((file) => (
               <Chip
                 key={file.id}
                 icon={getFileIcon(file.mimeType)}
                 label={`${file.originalName} (${formatFileSize(file.size)})`}
                 onDelete={() => removeUploadedFile(file.id)}
-                variant="outlined"
+                
               />
             ))}
-          </Box>
-        </Box>
+          </div>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
-
 export default FileUpload;

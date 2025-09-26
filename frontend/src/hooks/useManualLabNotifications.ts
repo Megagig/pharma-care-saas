@@ -1,8 +1,3 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiHelpers } from '../services/api';
-import { useAuth } from './useAuth';
-
 // Types
 interface CriticalAlert {
     id: string;
@@ -53,85 +48,79 @@ export const useManualLabNotifications = () => {
         isLoading: alertsLoading,
         error: alertsError,
         refetch: refetchAlerts,
-    } = useQuery({
+    } = useQuery({ 
         queryKey: ['manualLabAlerts', user?.workplaceId],
         queryFn: async () => {
             const response = await apiHelpers.get('/manual-lab-notifications/alerts');
-            return response.data;
+            return response.data; })
         },
         enabled: !!user?.workplaceId,
         refetchInterval: pollingEnabled ? 30000 : false, // Poll every 30 seconds
-        refetchIntervalInBackground: true,
-    });
+        refetchIntervalInBackground: true}
 
     // Fetch notification preferences
     const {
         data: preferencesData,
         isLoading: preferencesLoading,
         error: preferencesError,
-    } = useQuery({
+    } = useQuery({ 
         queryKey: ['notificationPreferences', user?._id],
         queryFn: async () => {
             const response = await apiHelpers.get('/manual-lab-notifications/preferences');
-            return response.data;
+            return response.data; })
         },
-        enabled: !!user?._id,
-    });
+        enabled: !!user?._id}
 
     // Fetch notification statistics
     const {
         data: statsData,
         isLoading: statsLoading,
-    } = useQuery({
+    } = useQuery({ 
         queryKey: ['notificationStats', user?.workplaceId],
         queryFn: async () => {
             const response = await apiHelpers.get('/manual-lab-notifications/stats');
-            return response.data;
+            return response.data; })
         },
         enabled: !!user?.workplaceId,
         refetchInterval: 60000, // Refresh stats every minute
     });
 
     // Acknowledge alert mutation
-    const acknowledgeAlertMutation = useMutation({
-        mutationFn: async (alertId: string) => {
+    const acknowledgeAlertMutation = useMutation({ 
+        mutationFn: async (alertId: string) => { })
             const response = await apiHelpers.post(`/manual-lab-notifications/alerts/${alertId}/acknowledge`);
             return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['manualLabAlerts'] });
-        },
-    });
+        }
 
     // Dismiss alert mutation
-    const dismissAlertMutation = useMutation({
-        mutationFn: async (alertId: string) => {
+    const dismissAlertMutation = useMutation({ 
+        mutationFn: async (alertId: string) => { })
             const response = await apiHelpers.post(`/manual-lab-notifications/alerts/${alertId}/dismiss`);
             return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['manualLabAlerts'] });
-        },
-    });
+        }
 
     // Update preferences mutation
-    const updatePreferencesMutation = useMutation({
+    const updatePreferencesMutation = useMutation({ 
         mutationFn: async (preferences: Partial<NotificationPreferences>) => {
             const response = await apiHelpers.put('/manual-lab-notifications/preferences', preferences);
-            return response.data;
+            return response.data; })
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notificationPreferences'] });
-        },
-    });
+        }
 
     // Send test notification mutation
-    const sendTestNotificationMutation = useMutation({
-        mutationFn: async (type: 'email' | 'sms') => {
+    const sendTestNotificationMutation = useMutation({ 
+        mutationFn: async (type: 'email' | 'sms') => { })
             const response = await apiHelpers.post('/manual-lab-notifications/test', { type });
             return response.data;
-        },
-    });
+        }
 
     // Callback functions
     const acknowledgeAlert = useCallback(async (alertId: string) => {
@@ -248,7 +237,7 @@ export const useManualLabNotificationTriggers = () => {
     const queryClient = useQueryClient();
 
     // Trigger critical alert
-    const triggerCriticalAlert = useMutation({
+    const triggerCriticalAlert = useMutation({ 
         mutationFn: async (alertData: {
             type: string;
             severity: string;
@@ -257,7 +246,7 @@ export const useManualLabNotificationTriggers = () => {
             message: string;
             details: any;
             requiresImmediate: boolean;
-            aiInterpretation?: any;
+            aiInterpretation?: any; })
         }) => {
             const response = await apiHelpers.post('/manual-lab-notifications/trigger-alert', alertData);
             return response.data;
@@ -265,36 +254,33 @@ export const useManualLabNotificationTriggers = () => {
         onSuccess: () => {
             // Refresh alerts after triggering
             queryClient.invalidateQueries({ queryKey: ['manualLabAlerts'] });
-        },
-    });
+        }
 
     // Trigger AI interpretation complete notification
-    const triggerAIInterpretationComplete = useMutation({
+    const triggerAIInterpretationComplete = useMutation({ 
         mutationFn: async (data: {
             orderId: string;
             patientId: string;
             pharmacistId: string;
-            interpretation: any;
+            interpretation: any; })
         }) => {
             const response = await apiHelpers.post('/manual-lab-notifications/ai-complete', data);
             return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['manualLabAlerts'] });
-        },
-    });
+        }
 
     // Trigger patient result notification
-    const triggerPatientResultNotification = useMutation({
+    const triggerPatientResultNotification = useMutation({ 
         mutationFn: async (data: {
             orderId: string;
             patientId: string;
-            includeInterpretation?: boolean;
+            includeInterpretation?: boolean; })
         }) => {
             const response = await apiHelpers.post('/manual-lab-notifications/patient-result', data);
             return response.data;
-        },
-    });
+        }
 
     return {
         triggerCriticalAlert: triggerCriticalAlert.mutateAsync,
@@ -310,9 +296,9 @@ export const useManualLabNotificationTriggers = () => {
 
 // Hook for notification delivery tracking
 export const useNotificationDeliveryTracking = (orderId?: string) => {
-    const { data, isLoading, error } = useQuery({
+    const { data, isLoading, error } = useQuery({ 
         queryKey: ['notificationDelivery', orderId],
-        queryFn: async () => {
+        queryFn: async () => { })
             const response = await apiHelpers.get(`/manual-lab-notifications/delivery/${orderId}`);
             return response.data;
         },

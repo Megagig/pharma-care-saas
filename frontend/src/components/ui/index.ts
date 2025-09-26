@@ -1,4 +1,4 @@
-// shadcn/ui component exports - only export components that exist
+// shadcn/ui component exports
 export { Button } from './button';
 export { Input } from './input';
 export { Label } from './label';
@@ -8,11 +8,18 @@ export { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 export { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from './table';
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
-
-// New components for MUI migration
+export { Checkbox } from './checkbox';
 export { Spinner } from './spinner';
 export { DatePicker } from './date-picker';
+export { DateTimePicker } from './date-time-picker';
+export { TimePicker } from './time-picker';
 export { Calendar } from './calendar';
 export { Popover, PopoverContent, PopoverTrigger } from './popover';
-export { Toast, ToastAction, ToastClose, ToastDescription, ToastProvider, ToastTitle, ToastViewport } from './toast';
-export { Toaster } from './toaster';
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
+export { Alert, AlertTitle, AlertDescription } from './alert';
+export { Skeleton } from './skeleton';
+export { Avatar, AvatarImage, AvatarFallback } from './avatar';
+export { Switch } from './switch';
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './accordion';
+export { Progress } from './progress';
+export { Separator } from './separator';

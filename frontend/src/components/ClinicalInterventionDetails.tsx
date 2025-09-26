@@ -1,45 +1,6 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Chip,
-  Alert,
-  CircularProgress,
-  Tabs,
-  Tab,
-  Paper,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-} from '@mui/material';
-import {
-  Timeline,
-  TimelineItem,
-  TimelineOppositeContent,
-  TimelineSeparator,
-  TimelineDot,
-  TimelineConnector,
-  TimelineContent,
-} from '@mui/lab';
-import EditIcon from '@mui/icons-material/Edit';
-import PersonIcon from '@mui/icons-material/Person';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import AddIcon from '@mui/icons-material/Add';
-import InfoIcon from '@mui/icons-material/Info';
-import PhoneIcon from '@mui/icons-material/Phone';
-import EmailIcon from '@mui/icons-material/Email';
-import { format, parseISO } from 'date-fns';
-import {
-  useClinicalIntervention,
+import { Button, Label, Card, CardContent, Select, Spinner, Alert, Tabs } from '@/components/ui/button';
+useClinicalIntervention,
   useUpdateIntervention,
-} from '../queries/useClinicalInterventions';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -49,7 +10,7 @@ interface TabPanelProps {
 
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
 
@@ -81,10 +42,9 @@ const ClinicalInterventionDetails: React.FC = () => {
       | 'cancelled'
   ) => {
     if (id) {
-      await updateMutation.mutateAsync({
-        interventionId: id,
-        updates: { status: newStatus },
-      });
+      await updateMutation.mutateAsync({ 
+        interventionId: id}
+        updates: { status: newStatus }
       refetch();
     }
   };
@@ -129,56 +89,56 @@ const ClinicalInterventionDetails: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
-      </Box>
+      <div display="flex" justifyContent="center" p={4}>
+        <Spinner />
+      </div>
     );
   }
 
   if (error || !intervention) {
     return (
-      <Alert severity="error" sx={{ m: 3 }}>
+      <Alert severity="error" className="">
         {error?.message || 'Failed to load intervention details'}
       </Alert>
     );
   }
 
   return (
-    <Box p={3}>
+    <div p={3}>
       {/* Header */}
-      <Box
+      <div
         display="flex"
         justifyContent="space-between"
         alignItems="center"
         mb={3}
       >
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
+        <div>
+          <div  component="h1" gutterBottom>
             Clinical Intervention Details
-          </Typography>
-          <Box display="flex" gap={1}>
+          </div>
+          <div display="flex" gap={1}>
             <Chip
               label={intervention.priority.toUpperCase()}
               color={getPriorityColor(intervention.priority)}
             />
             <Chip
               label={intervention.status
-                .replace(/_/g, ' ')
+                .replace(/_/g, ' ')}
                 .replace(/\b\w/g, (l) => l.toUpperCase())}
               color={getStatusColor(intervention.status)}
             />
-          </Box>
-        </Box>
-        <Box display="flex" gap={2}>
+          </div>
+        </div>
+        <div display="flex" gap={2}>
           <Button
-            variant="contained"
+            
             startIcon={<EditIcon />}
             onClick={() => navigate(`/interventions/${id}/edit`)}
           >
             Edit
           </Button>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Status</InputLabel>
+          <div size="small" className="">
+            <Label>Status</Label>
             <Select
               value={intervention.status}
               label="Status"
@@ -191,7 +151,7 @@ const ClinicalInterventionDetails: React.FC = () => {
                     | 'implemented'
                     | 'completed'
                     | 'cancelled'
-                )
+                )}
               }
             >
               <MenuItem value="identified">Identified</MenuItem>
@@ -201,70 +161,70 @@ const ClinicalInterventionDetails: React.FC = () => {
               <MenuItem value="completed">Completed</MenuItem>
               <MenuItem value="cancelled">Cancelled</MenuItem>
             </Select>
-          </FormControl>
-        </Box>
-      </Box>
+          </div>
+        </div>
+      </div>
 
       {/* Patient Information */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <div  gutterBottom>
             Patient Information
-          </Typography>
-          <Box display="flex" flexWrap="wrap" gap={2}>
-            <Box sx={{ width: { xs: '100%', md: '50%' } }}>
-              <Box display="flex" alignItems="center" gap={2}>
+          </div>
+          <div display="flex" flexWrap="wrap" gap={2}>
+            <div className="">
+              <div display="flex" alignItems="center" gap={2}>
                 <PersonIcon color="action" />
-                <Box>
-                  <Typography variant="body1" fontWeight="medium">
+                <div>
+                  <div  fontWeight="medium">
                     {intervention.patient
                       ? `${intervention.patient.firstName} ${intervention.patient.lastName}`
                       : 'Unknown Patient'}
-                  </Typography>
+                  </div>
                   {intervention.patient?.dateOfBirth && (
-                    <Typography variant="body2" color="text.secondary">
+                    <div  color="text.secondary">
                       DOB:{' '}
                       {format(
                         parseISO(intervention.patient.dateOfBirth),
                         'MMM dd, yyyy'
                       )}
-                    </Typography>
+                    </div>
                   )}
-                </Box>
-              </Box>
-            </Box>
-            <Box sx={{ width: { xs: '100%', md: '50%' } }}>
-              <Box display="flex" gap={2}>
+                </div>
+              </div>
+            </div>
+            <div className="">
+              <div display="flex" gap={2}>
                 {intervention.patient?.phoneNumber && (
-                  <Box display="flex" alignItems="center" gap={1}>
+                  <div display="flex" alignItems="center" gap={1}>
                     <PhoneIcon fontSize="small" color="action" />
-                    <Typography variant="body2">
+                    <div >
                       {intervention.patient.phoneNumber}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 )}
                 {intervention.patient?.email && (
-                  <Box display="flex" alignItems="center" gap={1}>
+                  <div display="flex" alignItems="center" gap={1}>
                     <EmailIcon fontSize="small" color="action" />
-                    <Typography variant="body2">
+                    <div >
                       {intervention.patient.email}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 )}
-              </Box>
-            </Box>
-          </Box>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       {/* Main Content */}
-      <Box display="flex" flexWrap="wrap" gap={2}>
-        <Box sx={{ width: { xs: '100%', md: '66%' } }}>
-          <Paper sx={{ mb: 3 }}>
+      <div display="flex" flexWrap="wrap" gap={2}>
+        <div className="">
+          <div className="">
             <Tabs
               value={activeTab}
               onChange={(_, newValue) => setActiveTab(newValue)}
-              sx={{ borderBottom: 1, borderColor: 'divider' }}
+              className=""
             >
               <Tab label="Overview" />
               <Tab label="Strategies" />
@@ -275,31 +235,31 @@ const ClinicalInterventionDetails: React.FC = () => {
             <TabPanel value={activeTab} index={0}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Issue Description
-                  </Typography>
-                  <Typography variant="body1" paragraph>
+                  </div>
+                  <div  paragraph>
                     {intervention.issueDescription}
-                  </Typography>
+                  </div>
 
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Intervention Details
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Category:{' '}
                     {intervention.category
                       .replace(/_/g, ' ')
                       .replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Priority: {intervention.priority.toUpperCase()}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Status:{' '}
                     {intervention.status
                       .replace(/_/g, ' ')
                       .replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </TabPanel>
@@ -307,24 +267,24 @@ const ClinicalInterventionDetails: React.FC = () => {
             <TabPanel value={activeTab} index={1}>
               <Card>
                 <CardContent>
-                  <Box
+                  <div
                     display="flex"
                     justifyContent="space-between"
                     alignItems="center"
                     mb={2}
                   >
-                    <Typography variant="h6">Strategies</Typography>
+                    <div >Strategies</div>
                     <Button
-                      variant="outlined"
+                      
                       startIcon={<AddIcon />}
                       onClick={() => console.log('Add Strategy')}
                     >
                       Add Strategy
                     </Button>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     No strategies have been added yet.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </TabPanel>
@@ -332,24 +292,24 @@ const ClinicalInterventionDetails: React.FC = () => {
             <TabPanel value={activeTab} index={2}>
               <Card>
                 <CardContent>
-                  <Box
+                  <div
                     display="flex"
                     justifyContent="space-between"
                     alignItems="center"
                     mb={2}
                   >
-                    <Typography variant="h6">Outcomes</Typography>
+                    <div >Outcomes</div>
                     <Button
-                      variant="outlined"
+                      
                       startIcon={<TrendingUpIcon />}
                       onClick={() => console.log('Record Outcome')}
                     >
                       Record Outcome
                     </Button>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     No outcomes have been recorded yet.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
             </TabPanel>
@@ -357,9 +317,9 @@ const ClinicalInterventionDetails: React.FC = () => {
             <TabPanel value={activeTab} index={3}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Intervention Timeline
-                  </Typography>
+                  </div>
                   <Timeline>
                     <TimelineItem>
                       <TimelineOppositeContent color="text.secondary">
@@ -375,10 +335,10 @@ const ClinicalInterventionDetails: React.FC = () => {
                         <TimelineConnector />
                       </TimelineSeparator>
                       <TimelineContent>
-                        <Typography variant="h6" component="span">
+                        <div  component="span">
                           Intervention Created
-                        </Typography>
-                        <Typography>Issue identified and recorded</Typography>
+                        </div>
+                        <div>Issue identified and recorded</div>
                       </TimelineContent>
                     </TimelineItem>
 
@@ -397,10 +357,10 @@ const ClinicalInterventionDetails: React.FC = () => {
                             </TimelineDot>
                           </TimelineSeparator>
                           <TimelineContent>
-                            <Typography variant="h6" component="span">
+                            <div  component="span">
                               Intervention Updated
-                            </Typography>
-                            <Typography>Last modification made</Typography>
+                            </div>
+                            <div>Last modification made</div>
                           </TimelineContent>
                         </TimelineItem>
                       )}
@@ -408,18 +368,18 @@ const ClinicalInterventionDetails: React.FC = () => {
                 </CardContent>
               </Card>
             </TabPanel>
-          </Paper>
-        </Box>
+          </div>
+        </div>
 
-        <Box sx={{ width: { xs: '100%', md: '33%' } }}>
+        <div className="">
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Quick Actions
-              </Typography>
-              <Box display="flex" flexDirection="column" gap={1}>
+              </div>
+              <div display="flex" flexDirection="column" gap={1}>
                 <Button
-                  variant="outlined"
+                  
                   startIcon={<AssignmentIcon />}
                   onClick={() => console.log('Assign Team Member')}
                   fullWidth
@@ -427,7 +387,7 @@ const ClinicalInterventionDetails: React.FC = () => {
                   Assign Team Member
                 </Button>
                 <Button
-                  variant="outlined"
+                  
                   startIcon={<TrendingUpIcon />}
                   onClick={() => console.log('Record Outcome')}
                   fullWidth
@@ -435,19 +395,19 @@ const ClinicalInterventionDetails: React.FC = () => {
                   Record Outcome
                 </Button>
                 <Button
-                  variant="outlined"
+                  
                   startIcon={<ScheduleIcon />}
                   onClick={() => console.log('Schedule Follow-up')}
                   fullWidth
                 >
                   Schedule Follow-up
                 </Button>
-              </Box>
+              </div>
             </CardContent>
           </Card>
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 };
 

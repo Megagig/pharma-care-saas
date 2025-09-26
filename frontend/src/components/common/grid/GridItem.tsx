@@ -1,6 +1,3 @@
-import React from 'react';
-import { Grid, SxProps, Theme } from '@mui/material';
-
 // Define a simplified version of props that matches what we actually need
 export interface GridItemProps {
   xs?: number | boolean;
@@ -16,19 +13,16 @@ export interface GridItemProps {
   onMouseEnter?: React.MouseEventHandler<HTMLDivElement>;
   onMouseLeave?: React.MouseEventHandler<HTMLDivElement>;
 }
-
 /**
  * GridItem - A wrapper around Material UI Grid item with proper typing
  * This component uses type assertion to handle the type mismatch between
  * our props and MUI's props
  */
-const GridItem: React.FC<GridItemProps> = ({ children, ...props }) => {
+const GridItem: React.FC<divItemProps> = ({ children, ...props }) => {
   // Cast the props to avoid MUI type errors
   const gridProps = { item: true, ...props } as React.ComponentProps<
     typeof Grid
   >;
-
-  return <Grid {...gridProps}>{children}</Grid>;
+  return <div {...gridProps}>{children}</div>;
 };
-
 export default GridItem;

@@ -1,15 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { socketService } from '../socketService';
-import { useSocket } from '../../hooks/useSocket';
-import { authService } from '../authService';
-import { useCommunicationStore } from '../../stores/communicationStore';
-
 // Mock dependencies
 vi.mock('../authService');
 vi.mock('../../stores/communicationStore');
-vi.mock('socket.io-client', () => ({
-    io: vi.fn(),
+vi.mock('socket.io-client', () => ({ 
+    io: vi.fn()}
 }));
 
 describe('Socket.IO Client Integration', () => {
@@ -44,10 +37,9 @@ describe('Socket.IO Client Integration', () => {
         (useCommunicationStore as any).mockReturnValue(mockStoreActions);
 
         // Mock auth service
-        (authService.getCurrentUser as any).mockResolvedValue({
-            success: true,
-            user: { id: 'test-user', email: 'test@example.com' },
-        });
+        (authService.getCurrentUser as any).mockResolvedValue({ 
+            success: true}
+            user: { id: 'test-user', email: 'test@example.com' }
 
         // Mock io function
         const { io } = require('socket.io-client');
@@ -237,10 +229,10 @@ describe('Socket.IO Client Integration', () => {
             )[1];
 
             act(() => {
-                errorHandler({
+                errorHandler({ 
                     type: 'connection_error',
                     message: 'Network error',
-                    retry: false
+                    retry: false })
                 });
             });
 
@@ -381,13 +373,12 @@ describe('Socket.IO Client Integration', () => {
             )[1];
 
             // Send multiple messages rapidly
-            const messages = Array.from({ length: 10 }, (_, i) => ({
+            const messages = Array.from({ length: 10 }, (_, i) => ({  })
                 _id: `msg-${i}`,
                 conversationId: 'conv-1',
                 senderId: 'user-1',
                 content: { text: `Message ${i}`, type: 'text' as const },
-                createdAt: new Date().toISOString(),
-            }));
+                createdAt: new Date().toISOString()}
 
             act(() => {
                 messages.forEach(message => {

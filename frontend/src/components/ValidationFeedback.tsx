@@ -1,40 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Alert,
-  AlertTitle,
-  Collapse,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Chip,
-  LinearProgress,
-  IconButton,
-  Tooltip,
-  Stack,
-  Card,
-  CardContent,
-  useTheme,
-  alpha,
-} from '@mui/material';
-import {
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  CheckCircle as CheckCircleIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Lightbulb as LightbulbIcon,
-  Security as SecurityIcon,
-} from '@mui/icons-material';
-import {
-  ValidationResult,
-  ValidationError,
-  ValidationWarning,
-  useDebouncedValidation,
-} from '../utils/clinicalInterventionValidation';
+import { Card, CardContent, Tooltip, Progress, Alert } from '@/components/ui/button';
+useDebouncedValidation,
 
 // Props interfaces
 interface ValidationFeedbackProps {
@@ -48,7 +13,6 @@ interface ValidationFeedbackProps {
   compact?: boolean;
   severity?: 'error' | 'warning' | 'info' | 'success';
 }
-
 interface ValidationSummaryProps {
   validationResults: ValidationResult[];
   fieldNames: string[];
@@ -56,16 +20,14 @@ interface ValidationSummaryProps {
   showDetails?: boolean;
   compact?: boolean;
 }
-
 interface ValidationProgressProps {
   totalFields: number;
   validFields: number;
   showPercentage?: boolean;
   showLabels?: boolean;
 }
-
 // Individual field validation feedback
-export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
+export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({ 
   fieldName,
   value,
   formData,
@@ -74,28 +36,23 @@ export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
   realTime = true,
   debounceDelay = 300,
   compact = false,
-  severity,
+  severity
 }) => {
   const theme = useTheme();
   const [showDetails, setShowDetails] = useState(false);
-
   // Use debounced validation for real-time feedback
   const validationResult = realTime
     ? useDebouncedValidation(fieldName, value, formData, debounceDelay)
     : { isValid: true, errors: [], warnings: [] };
-
   // Don't render if no validation issues and field is valid
   if (validationResult.isValid && validationResult.warnings.length === 0) {
     return null;
   }
-
   const hasErrors = validationResult.errors.length > 0;
   const hasWarnings = validationResult.warnings.length > 0;
-
   // Determine alert severity
   const alertSeverity =
     severity || (hasErrors ? 'error' : hasWarnings ? 'warning' : 'info');
-
   // Get appropriate icon
   const getIcon = () => {
     switch (alertSeverity) {
@@ -109,151 +66,128 @@ export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
         return <InfoIcon />;
     }
   };
-
   if (compact) {
     return (
-      <Box sx={{ mt: 0.5 }}>
+      <div className="">
         {hasErrors && (
-          <Typography
-            variant="caption"
+          <div
+            
             color="error"
-            sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+            className=""
           >
             <ErrorIcon fontSize="small" />
             {validationResult.errors[0].message}
-          </Typography>
+          </div>
         )}
         {!hasErrors && hasWarnings && showWarnings && (
-          <Typography
-            variant="caption"
+          <div
+            
             color="warning.main"
-            sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+            className=""
           >
             <WarningIcon fontSize="small" />
             {validationResult.warnings[0].message}
-          </Typography>
+          </div>
         )}
-      </Box>
+      </div>
     );
   }
-
   return (
-    <Box sx={{ mt: 1 }}>
+    <div className="">
       <Alert
         severity={alertSeverity}
-        sx={{
-          '& .MuiAlert-message': { width: '100%' },
-          bgcolor: alpha(theme.palette[alertSeverity].main, 0.1),
-        }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-          }}
+        className="">
+        <div
+          className=""
         >
-          <Box sx={{ flex: 1 }}>
+          <div className="">
             {/* Primary error/warning message */}
             {hasErrors && (
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: 'medium', mb: 0.5 }}
+              <div
+                
+                className=""
               >
                 {validationResult.errors[0].message}
-              </Typography>
+              </div>
             )}
             {!hasErrors && hasWarnings && showWarnings && (
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: 'medium', mb: 0.5 }}
+              <div
+                
+                className=""
               >
                 {validationResult.warnings[0].message}
-              </Typography>
+              </div>
             )}
-
             {/* Additional errors/warnings */}
             {(validationResult.errors.length > 1 ||
               validationResult.warnings.length > 1) && (
-              <Box>
+              <div>
                 <IconButton
                   size="small"
                   onClick={() => setShowDetails(!showDetails)}
-                  sx={{ p: 0, ml: -0.5 }}
+                  className=""
                 >
                   {showDetails ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                  <Typography variant="caption" sx={{ ml: 0.5 }}>
+                  <div  className="">
                     {showDetails ? 'Hide' : 'Show'} details
-                  </Typography>
+                  </div>
                 </IconButton>
-
                 <Collapse in={showDetails}>
-                  <List dense sx={{ mt: 1 }}>
+                  <List dense className="">
                     {/* Additional errors */}
                     {validationResult.errors.slice(1).map((error, index) => (
-                      <ListItem key={`error-${index}`} sx={{ py: 0.25, pl: 0 }}>
-                        <ListItemIcon sx={{ minWidth: 24 }}>
+                      <div key={`error-${index}`} className="">
+                        <div className="">
                           <ErrorIcon fontSize="small" color="error" />
-                        </ListItemIcon>
-                        <ListItemText
+                        </div>
+                        <div
                           primary={error.message}
-                          primaryTypographyProps={{ variant: 'caption' }}
+                          
                         />
-                      </ListItem>
+                      </div>
                     ))}
-
                     {/* Warnings */}
                     {showWarnings &&
                       validationResult.warnings.map((warning, index) => (
-                        <ListItem
+                        <div
                           key={`warning-${index}`}
-                          sx={{ py: 0.25, pl: 0 }}
+                          className=""
                         >
-                          <ListItemIcon sx={{ minWidth: 24 }}>
+                          <div className="">
                             <WarningIcon fontSize="small" color="warning" />
-                          </ListItemIcon>
-                          <ListItemText
+                          </div>
+                          <div
                             primary={warning.message}
                             secondary={
                               showSuggestions && warning.suggestion
                                 ? warning.suggestion
-                                : undefined
+                                : undefined}
                             }
-                            primaryTypographyProps={{ variant: 'caption' }}
-                            secondaryTypographyProps={{
-                              variant: 'caption',
-                              color: 'text.secondary',
-                            }}
+                            
+                            
                           />
-                        </ListItem>
+                        </div>
                       ))}
                   </List>
                 </Collapse>
-              </Box>
+              </div>
             )}
-
             {/* Suggestions for single items */}
             {showSuggestions &&
               validationResult.warnings.length === 1 &&
               validationResult.warnings[0].suggestion && (
-                <Box
-                  sx={{
-                    mt: 0.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                  }}
+                <div
+                  className=""
                 >
                   <LightbulbIcon fontSize="small" color="action" />
-                  <Typography variant="caption" color="text.secondary">
+                  <div  color="text.secondary">
                     {validationResult.warnings[0].suggestion}
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               )}
-          </Box>
-
+          </div>
           {/* Error codes as chips */}
-          <Stack direction="row" spacing={0.5} sx={{ ml: 1 }}>
+          <div direction="row" spacing={0.5} className="">
             {validationResult.errors.map((error, index) => (
               <Tooltip
                 key={`error-code-${index}`}
@@ -263,8 +197,8 @@ export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
                   label={error.code}
                   size="small"
                   color="error"
-                  variant="outlined"
-                  sx={{ fontSize: '0.6rem', height: 20 }}
+                  
+                  className=""
                 />
               </Tooltip>
             ))}
@@ -277,84 +211,72 @@ export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
                   label={warning.code}
                   size="small"
                   color="warning"
-                  variant="outlined"
-                  sx={{ fontSize: '0.6rem', height: 20 }}
+                  
+                  className=""
                 />
               </Tooltip>
             ))}
-          </Stack>
-        </Box>
+          </div>
+        </div>
       </Alert>
-    </Box>
+    </div>
   );
 };
-
 // Validation progress indicator
-export const ValidationProgress: React.FC<ValidationProgressProps> = ({
+export const ValidationProgress: React.FC<ValidationProgressProps> = ({ 
   totalFields,
   validFields,
   showPercentage = true,
-  showLabels = true,
+  showLabels = true
 }) => {
   const percentage = totalFields > 0 ? (validFields / totalFields) * 100 : 0;
   const theme = useTheme();
-
   const getProgressColor = () => {
     if (percentage === 100) return 'success';
     if (percentage >= 75) return 'info';
     if (percentage >= 50) return 'warning';
     return 'error';
   };
-
   return (
-    <Box sx={{ width: '100%', mb: 2 }}>
+    <div className="">
       {showLabels && (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="body2" color="text.secondary">
+        <div className="">
+          <div  color="text.secondary">
             Form Validation Progress
-          </Typography>
+          </div>
           {showPercentage && (
-            <Typography variant="body2" color="text.secondary">
+            <div  color="text.secondary">
               {Math.round(percentage)}%
-            </Typography>
+            </div>
           )}
-        </Box>
+        </div>
       )}
-
-      <LinearProgress
-        variant="determinate"
-        value={percentage}
+      <Progress
+        
         color={getProgressColor()}
-        sx={{
-          height: 8,
-          borderRadius: 4,
-          bgcolor: alpha(theme.palette.grey[300], 0.3),
-        }}
+        className=""
       />
-
       {showLabels && (
-        <Typography
-          variant="caption"
+        <div
+          
           color="text.secondary"
-          sx={{ mt: 0.5, display: 'block' }}
+          className=""
         >
           {validFields} of {totalFields} fields valid
-        </Typography>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
-
 // Comprehensive validation summary
-export const ValidationSummary: React.FC<ValidationSummaryProps> = ({
+export const ValidationSummary: React.FC<ValidationSummaryProps> = ({ 
   validationResults,
   fieldNames,
   showProgress = true,
   showDetails = false,
-  compact = false,
+  compact = false
 }) => {
   const [expanded, setExpanded] = useState(showDetails);
-
   // Calculate summary statistics
   const totalFields = validationResults.length;
   const validFields = validationResults.filter(
@@ -368,34 +290,24 @@ export const ValidationSummary: React.FC<ValidationSummaryProps> = ({
     (sum, result) => sum + result.warnings.length,
     0
   );
-
   const hasErrors = totalErrors > 0;
   const hasWarnings = totalWarnings > 0;
   const isFormValid = validFields === totalFields && !hasErrors;
-
   if (compact && isFormValid) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          p: 1,
-          bgcolor: 'success.50',
-          borderRadius: 1,
-        }}
+      <div
+        className=""
       >
         <CheckCircleIcon color="success" fontSize="small" />
-        <Typography variant="body2" color="success.main">
+        <div  color="success.main">
           All fields are valid
-        </Typography>
-      </Box>
+        </div>
+      </div>
     );
   }
-
   return (
-    <Card sx={{ mb: 2 }}>
-      <CardContent sx={{ pb: compact ? 1 : 2 }}>
+    <Card className="">
+      <CardContent className="">
         {/* Progress indicator */}
         {showProgress && !compact && (
           <ValidationProgress
@@ -405,172 +317,137 @@ export const ValidationSummary: React.FC<ValidationSummaryProps> = ({
             showLabels={true}
           />
         )}
-
         {/* Summary statistics */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            mb: compact ? 0 : 1,
-          }}
+        <div
+          className=""
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <div className="">
             <CheckCircleIcon
               color={isFormValid ? 'success' : 'disabled'}
               fontSize="small"
             />
-            <Typography variant="body2">
+            <div >
               {validFields}/{totalFields} Valid
-            </Typography>
-          </Box>
-
+            </div>
+          </div>
           {hasErrors && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <div className="">
               <ErrorIcon color="error" fontSize="small" />
-              <Typography variant="body2" color="error">
+              <div  color="error">
                 {totalErrors} Error{totalErrors !== 1 ? 's' : ''}
-              </Typography>
-            </Box>
+              </div>
+            </div>
           )}
-
           {hasWarnings && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <div className="">
               <WarningIcon color="warning" fontSize="small" />
-              <Typography variant="body2" color="warning.main">
+              <div  color="warning.main">
                 {totalWarnings} Warning{totalWarnings !== 1 ? 's' : ''}
-              </Typography>
-            </Box>
+              </div>
+            </div>
           )}
-
           {!compact && (hasErrors || hasWarnings) && (
             <IconButton
               size="small"
               onClick={() => setExpanded(!expanded)}
-              sx={{ ml: 'auto' }}
+              className=""
             >
               {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
           )}
-        </Box>
-
+        </div>
         {/* Detailed validation results */}
         {!compact && (
           <Collapse in={expanded}>
-            <Box sx={{ mt: 2 }}>
+            <div className="">
               {validationResults.map((result, index) => {
                 const fieldName = fieldNames[index] || `Field ${index + 1}`;
-
                 if (result.isValid && result.warnings.length === 0) {
                   return null;
                 }
-
                 return (
-                  <Box key={index} sx={{ mb: 2 }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ mb: 1, fontWeight: 'medium' }}
+                  <div key={index} className="">
+                    <div
+                      
+                      className=""
                     >
                       {fieldName}
-                    </Typography>
-
+                    </div>
                     {/* Field errors */}
                     {result.errors.map((error, errorIndex) => (
                       <Alert
                         key={`error-${errorIndex}`}
                         severity="error"
-                        sx={{ mb: 1 }}
+                        className=""
                       >
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
+                        <div
+                          className=""
                         >
-                          <Typography variant="body2">
+                          <div >
                             {error.message}
-                          </Typography>
+                          </div>
                           <Chip
                             label={error.code}
                             size="small"
                             color="error"
-                            variant="outlined"
+                            
                           />
-                        </Box>
+                        </div>
                       </Alert>
                     ))}
-
                     {/* Field warnings */}
                     {result.warnings.map((warning, warningIndex) => (
                       <Alert
                         key={`warning-${warningIndex}`}
                         severity="warning"
-                        sx={{ mb: 1 }}
+                        className=""
                       >
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'flex-start',
-                          }}
+                        <div
+                          className=""
                         >
-                          <Box>
-                            <Typography variant="body2">
+                          <div>
+                            <div >
                               {warning.message}
-                            </Typography>
+                            </div>
                             {warning.suggestion && (
-                              <Typography
-                                variant="caption"
+                              <div
+                                
                                 color="text.secondary"
-                                sx={{ mt: 0.5, display: 'block' }}
+                                className=""
                               >
                                 💡 {warning.suggestion}
-                              </Typography>
+                              </div>
                             )}
-                          </Box>
+                          </div>
                           <Chip
                             label={warning.code}
                             size="small"
                             color="warning"
-                            variant="outlined"
+                            
                           />
-                        </Box>
+                        </div>
                       </Alert>
                     ))}
-                  </Box>
+                  </div>
                 );
               })}
-            </Box>
+            </div>
           </Collapse>
         )}
-
         {/* Security notice for sanitization */}
         {!compact && (hasErrors || hasWarnings) && (
-          <Box
-            sx={{
-              mt: 2,
-              p: 1,
-              bgcolor: 'info.50',
-              borderRadius: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-            }}
+          <div
+            className=""
           >
             <SecurityIcon color="info" fontSize="small" />
-            <Typography variant="caption" color="info.main">
+            <div  color="info.main">
               All input is automatically sanitized for security
-            </Typography>
-          </Box>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
   );
 };
-
 export default {
-  ValidationFeedback,
-  ValidationProgress,
-  ValidationSummary,
 };

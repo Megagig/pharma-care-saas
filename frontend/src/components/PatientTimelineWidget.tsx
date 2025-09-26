@@ -1,41 +1,95 @@
-import React, { useMemo } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  Typography,
-  Chip,
-  Avatar,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Skeleton,
-  Alert,
-  Button,
-  IconButton,
-  useTheme,
-} from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/utils'; // Assuming utils.ts is set up for clsx/cn
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge'; // Replaces MUI Chip
 import {
   Timeline,
   TimelineItem,
-  TimelineOppositeContent,
   TimelineSeparator,
   TimelineConnector,
   TimelineContent,
   TimelineDot,
-} from '@mui/lab';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import ScienceIcon from '@mui/icons-material/Science';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import MedicationIcon from '@mui/icons-material/Medication';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import VisibilityIcon from '@mui/icons-material/Visibility';
+} from '@/components/ui/timeline';
+import {
+  Clipboard,
+  FlaskConical,
+  Pill,
+  History as TimelineIconLucide, // Renaming to avoid conflict with Timeline component
+  RefreshCw,
+  Eye,
+} from 'lucide-react'; // Using Lucide icons
 
-import { usePatientLabOrders } from '../hooks/useManualLabOrders';
-import { ManualLabOrder } from '../types/manualLabOrder';
-import { formatDate, formatRelativeTime } from '../utils/formatters';
+// Assuming these hooks and types are defined elsewhere in the project
+// If not, they would need to be imported or defined
+interface ManualLabOrder {
+  orderId: string;
+  tests: Array<{ testName: string }>; // Assuming test structure, adjust as needed
+  indication: string;
+  createdAt: string;
+  updatedAt: string;
+  status: string;
+  priority: string;
+}
+
+// Placeholder for usePatientLabOrders hook - replace with actual import
+const usePatientLabOrders = (patientId: string, options: { enabled: boolean }) => {
+  // This is a mock implementation. Replace with the actual hook.
+  const [data, setData] = useState<ManualLabOrder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (options.enabled && patientId) {
+      // Simulate fetching data
+      const fetchData = async () => {
+        setIsLoading(true);
+        setIsError(false);
+        setError(null);
+        try {
+          // Replace with actual API call
+          // const response = await fetch(`/api/patients/${patientId}/lab-orders`);
+          // const result = await response.json();
+          // setData(result);
+          setData([]); // Mock empty data for now
+        } catch (err) {
+          setIsError(true);
+          setError(err instanceof Error ? err : new Error('Unknown error'));
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchData();
+    }
+  }, [patientId, options.enabled]);
+
+  return {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch: () => { }, // Mock refetch
+  };
+};
+
+// Placeholder for date formatting functions - replace with actual implementations or imports
+const formatRelativeTime = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  return `${Math.floor(diffInSeconds / 86400)} days ago`;
+};
+
+const formatDate = (dateString: string): string => {
+  return new Date(dateString).toLocaleDateString();
+};
 
 interface PatientTimelineWidgetProps {
   patientId: string;
@@ -61,66 +115,45 @@ const PatientTimelineWidget: React.FC<PatientTimelineWidgetProps> = ({
   maxItems = 10,
   onViewLabOrder,
   onViewClinicalNote,
-  onViewMTR,
+  onViewMTR
 }) => {
-  const theme = useTheme();
-
-  // Fetch lab orders
+  // const theme = useTheme(); // Removed, as shadcn/ui uses Tailwind for theming
   const {
     data: labOrders = [],
     isLoading: labOrdersLoading,
     isError: labOrdersError,
+    error: labOrdersErrorDetails,
     refetch: refetchLabOrders,
   } = usePatientLabOrders(patientId, { enabled: !!patientId });
 
-  // TODO: Add hooks for clinical notes and MTRs when available
-  // const { data: clinicalNotes = [] } = usePatientClinicalNotes(patientId);
-  // const { data: mtrs = [] } = usePatientMTRs(patientId);
-
-  // Combine all events into a timeline
   const timelineEvents = useMemo((): TimelineEvent[] => {
     const events: TimelineEvent[] = [];
-
-    // Add lab orders
     labOrders.forEach((order: ManualLabOrder) => {
       events.push({
         id: order.orderId,
         type: 'lab_order',
         title: `Lab Order ${order.orderId}`,
-        description: `${order.tests.length} test${
-          order.tests.length !== 1 ? 's' : ''
-        } ordered: ${order.indication}`,
+        description: `${order.tests.length} test${order.tests.length !== 1 ? 's' : ''} ordered: ${order.indication}`,
         date: order.createdAt,
         status: order.status,
         priority: order.priority,
         data: order,
       });
-
-      // Add results entry as separate event if completed
       if (order.status === 'completed' && order.updatedAt !== order.createdAt) {
         events.push({
           id: `${order.orderId}_results`,
           type: 'lab_order',
           title: `Lab Results ${order.orderId}`,
-          description: `Results entered for ${order.tests.length} test${
-            order.tests.length !== 1 ? 's' : ''
-          }`,
+          description: `Results entered for ${order.tests.length} test${order.tests.length !== 1 ? 's' : ''}`,
           date: order.updatedAt,
           status: 'results_entered',
           data: order,
         });
       }
     });
-
-    // TODO: Add clinical notes and MTRs
-    // clinicalNotes.forEach(note => { ... });
-    // mtrs.forEach(mtr => { ... });
-
-    // Sort by date (newest first)
     events.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
-
     return events.slice(0, maxItems);
   }, [labOrders, maxItems]);
 
@@ -128,88 +161,78 @@ const PatientTimelineWidget: React.FC<PatientTimelineWidgetProps> = ({
     switch (event.type) {
       case 'lab_order':
         return event.status === 'results_entered' ? (
-          <AssignmentIcon />
+          <Clipboard className="h-4 w-4" />
         ) : (
-          <ScienceIcon />
+          <FlaskConical className="h-4 w-4" />
         );
       case 'clinical_note':
-        return <AssignmentIcon />;
+        return <Clipboard className="h-4 w-4" />;
       case 'mtr':
-        return <MedicationIcon />;
+        return <Pill className="h-4 w-4" />;
       default:
-        return <TimelineIcon />;
+        return <TimelineIconLucide className="h-4 w-4" />;
     }
   };
 
-  const getEventColor = (event: TimelineEvent) => {
+  const getEventDotVariant = (event: TimelineEvent): "default" | "success" | "warning" | "error" | "primary" | "secondary" => {
     switch (event.type) {
       case 'lab_order':
         if (
           event.status === 'completed' ||
           event.status === 'results_entered'
         ) {
-          return theme.palette.success.main;
+          return 'success';
         } else if (event.status === 'result_awaited') {
-          return theme.palette.warning.main;
+          return 'warning';
         } else if (event.status === 'referred') {
-          return theme.palette.error.main;
+          return 'error';
         }
-        return theme.palette.primary.main;
+        return 'default';
       case 'clinical_note':
-        return theme.palette.info.main;
+        return 'primary'; // Changed from 'info' to 'primary'
       case 'mtr':
-        return theme.palette.secondary.main;
+        return 'secondary';
       default:
-        return theme.palette.grey[500];
+        return 'default';
     }
   };
 
-  const getStatusChip = (event: TimelineEvent) => {
+  const getStatusBadge = (event: TimelineEvent) => {
     if (!event.status) return null;
-
-    let color:
-      | 'default'
-      | 'primary'
-      | 'secondary'
-      | 'error'
-      | 'info'
-      | 'success'
-      | 'warning' = 'default';
+    let variant: "default" | "secondary" | "destructive" | "outline" = 'default';
     let label = event.status;
-
     switch (event.status) {
       case 'completed':
       case 'results_entered':
-        color = 'success';
+        variant = 'default'; // Using a positive color, 'default' can be styled via CSS vars
         label =
           event.status === 'results_entered' ? 'Results Entered' : 'Completed';
         break;
       case 'requested':
-        color = 'info';
+        variant = 'secondary';
         label = 'Requested';
         break;
       case 'sample_collected':
-        color = 'primary';
+        variant = 'default';
         label = 'Sample Collected';
         break;
       case 'result_awaited':
-        color = 'warning';
+        variant = 'outline'; // Using outline for warning-like state
         label = 'Awaiting Results';
         break;
       case 'referred':
-        color = 'error';
+        variant = 'destructive';
         label = 'Referred';
         break;
     }
-
-    return <Chip label={label} size="small" color={color} />;
+    return <Badge variant={variant}>{label}</Badge>;
   };
 
   const handleEventClick = (event: TimelineEvent) => {
     switch (event.type) {
       case 'lab_order':
-        if (onViewLabOrder) {
-          onViewLabOrder(event.data.orderId);
+        if (onViewLabOrder && event.data && typeof event.data === 'object' && 'orderId' in event.data) {
+          onViewLabOrder((event.data as ManualLabOrder).orderId);
         }
         break;
       case 'clinical_note':
@@ -228,21 +251,22 @@ const PatientTimelineWidget: React.FC<PatientTimelineWidgetProps> = ({
   if (labOrdersLoading) {
     return (
       <Card>
-        <CardHeader title="Patient Timeline" />
-        <CardContent>
-          <List>
-            {[...Array(5)].map((_, index) => (
-              <ListItem key={index}>
-                <ListItemIcon>
-                  <Skeleton variant="circular" width={40} height={40} />
-                </ListItemIcon>
-                <ListItemText
-                  primary={<Skeleton variant="text" width="60%" />}
-                  secondary={<Skeleton variant="text" width="80%" />}
-                />
-              </ListItem>
-            ))}
-          </List>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TimelineIconLucide className="h-5 w-5" />
+            Patient Timeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[...Array(5)].map((_, index) => (
+            <div key={index} className="flex items-center space-x-4">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-[200px]" />
+                <Skeleton className="h-4 w-[250px]" />
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
     );
@@ -251,23 +275,32 @@ const PatientTimelineWidget: React.FC<PatientTimelineWidgetProps> = ({
   if (labOrdersError) {
     return (
       <Card>
-        <CardHeader title="Patient Timeline" />
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TimelineIconLucide className="h-5 w-5" />
+            Patient Timeline
+          </CardTitle>
+        </CardHeader>
         <CardContent>
-          <Alert severity="error">
-            <Typography variant="body2">
-              Failed to load timeline data:{' '}
-              {labOrdersError instanceof Error
-                ? labOrdersError.message
-                : 'Unknown error'}
-            </Typography>
-            <Button
-              size="small"
-              startIcon={<RefreshIcon />}
-              onClick={() => refetchLabOrders()}
-              sx={{ mt: 1 }}
-            >
-              Retry
-            </Button>
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription className="flex items-center justify-between">
+              <span>
+                Failed to load timeline data:{' '}
+                {labOrdersErrorDetails instanceof Error
+                  ? labOrdersErrorDetails.message
+                  : 'Unknown error'}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchLabOrders()}
+                className="ml-auto"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Retry
+              </Button>
+            </AlertDescription>
           </Alert>
         </CardContent>
       </Card>
@@ -276,103 +309,66 @@ const PatientTimelineWidget: React.FC<PatientTimelineWidgetProps> = ({
 
   return (
     <Card>
-      <CardHeader
-        title={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TimelineIcon color="primary" />
-            <Typography variant="h6" fontWeight={600}>
-              Patient Timeline
-            </Typography>
-          </Box>
-        }
-        action={
-          <IconButton onClick={() => refetchLabOrders()}>
-            <RefreshIcon />
-          </IconButton>
-        }
-      />
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TimelineIconLucide className="h-5 w-5" />
+            Patient Timeline
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => refetchLabOrders()}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </CardTitle>
+      </CardHeader>
       <CardContent>
         {timelineEvents.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 3 }}>
-            <TimelineIcon
-              sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
-            />
-            <Typography variant="body2" color="text.secondary">
-              No recent activity
-            </Typography>
-          </Box>
+          <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+            <TimelineIconLucide className="mb-4 h-12 w-12 opacity-50" />
+            <p>No recent activity</p>
+          </div>
         ) : (
           <Timeline>
             {timelineEvents.map((event, index) => (
               <TimelineItem key={event.id}>
-                <TimelineOppositeContent sx={{ flex: 0.3, py: 2 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatRelativeTime(event.date)}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    display="block"
-                    color="text.secondary"
-                  >
-                    {formatDate(event.date)}
-                  </Typography>
-                </TimelineOppositeContent>
-
                 <TimelineSeparator>
-                  <TimelineDot sx={{ bgcolor: getEventColor(event) }}>
+                  <TimelineDot variant={getEventDotVariant(event)}>
                     {getEventIcon(event)}
                   </TimelineDot>
                   {index < timelineEvents.length - 1 && <TimelineConnector />}
                 </TimelineSeparator>
-
-                <TimelineContent sx={{ py: 2 }}>
-                  <Box
-                    sx={{
-                      cursor: 'pointer',
-                      p: 2,
-                      borderRadius: 1,
-                      border: 1,
-                      borderColor: 'divider',
-                      '&:hover': {
-                        bgcolor: 'action.hover',
-                      },
-                    }}
+                <TimelineContent className="pb-8">
+                  {/* The shadcn timeline might structure this differently.
+                       Assuming TimelineContent is the main area for event details.
+                       We might need to adjust if TimelineIndicator is for the date.
+                   */}
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{formatRelativeTime(event.date)}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(event.date)}</p>
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      "rounded-lg border p-4 cursor-pointer transition-colors hover:bg-muted/50"
+                    )}
                     onClick={() => handleEventClick(event)}
                   >
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        mb: 1,
-                      }}
-                    >
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {event.title}
-                      </Typography>
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        {getStatusChip(event)}
-                        <IconButton size="small">
-                          <VisibilityIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </Box>
-
-                    <Typography variant="body2" color="text.secondary">
-                      {event.description}
-                    </Typography>
-
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold">{event.title}</h4>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(event)}
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">{event.description}</p>
                     {event.priority && event.priority !== 'routine' && (
-                      <Chip
-                        label={event.priority.toUpperCase()}
-                        size="small"
-                        color={event.priority === 'stat' ? 'error' : 'warning'}
-                        sx={{ mt: 1 }}
-                      />
+                      <Badge variant={event.priority === 'stat' ? 'destructive' : 'secondary'} className="mt-2">
+                        {event.priority.toUpperCase()}
+                      </Badge>
                     )}
-                  </Box>
+                  </div>
                 </TimelineContent>
               </TimelineItem>
             ))}

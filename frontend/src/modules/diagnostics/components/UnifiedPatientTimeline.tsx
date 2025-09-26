@@ -1,42 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-  Chip,
-  IconButton,
-  Collapse,
-  Alert,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Button,
-  Divider,
-} from '@mui/material';
-import {
-  ExpandMore,
-  ExpandLess,
-  Assignment,
-  NoteAdd,
-  Science,
-  FilterList,
-  DateRange,
-} from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { useUnifiedPatientTimeline } from '../hooks/useIntegration';
-import { format, parseISO } from 'date-fns';
+import { Button, Label, Card, CardContent, Select, Spinner, Alert, Separator } from '@/components/ui/button';
 
 interface UnifiedPatientTimelineProps {
   patientId: string;
@@ -44,7 +6,6 @@ interface UnifiedPatientTimelineProps {
   showFilters?: boolean;
   onEventClick?: (event: TimelineEvent) => void;
 }
-
 interface TimelineEvent {
   type: 'diagnostic' | 'clinical_note' | 'mtr';
   id: string;
@@ -55,14 +16,12 @@ interface TimelineEvent {
   status?: string;
   data: any;
 }
-
 interface TimelineFilters {
   eventType: 'all' | 'diagnostic' | 'clinical_note' | 'mtr';
   startDate: Date | null;
   endDate: Date | null;
   priority: 'all' | 'low' | 'medium' | 'high';
 }
-
 const getEventIcon = (type: string) => {
   switch (type) {
     case 'diagnostic':
@@ -75,11 +34,9 @@ const getEventIcon = (type: string) => {
       return <Science />;
   }
 };
-
 const getEventColor = (type: string, priority?: string, status?: string) => {
   if (priority === 'high' || status === 'critical') return 'error';
   if (priority === 'medium' || status === 'urgent') return 'warning';
-
   switch (type) {
     case 'diagnostic':
       return 'primary';
@@ -91,7 +48,6 @@ const getEventColor = (type: string, priority?: string, status?: string) => {
       return 'default';
   }
 };
-
 const getPriorityColor = (priority?: string) => {
   switch (priority) {
     case 'high':
@@ -104,7 +60,6 @@ const getPriorityColor = (priority?: string) => {
       return 'default';
   }
 };
-
 const getStatusColor = (status?: string) => {
   switch (status) {
     case 'completed':
@@ -121,22 +76,18 @@ const getStatusColor = (status?: string) => {
       return 'default';
   }
 };
-
 const TimelineEventItem: React.FC<{
   event: TimelineEvent;
   isLast: boolean;
   onEventClick?: (event: TimelineEvent) => void;
 }> = ({ event, isLast, onEventClick }) => {
   const [expanded, setExpanded] = useState(false);
-
   const handleToggleExpanded = () => {
     setExpanded(!expanded);
   };
-
   const handleEventClick = () => {
     onEventClick?.(event);
   };
-
   return (
     <TimelineItem>
       <TimelineSeparator>
@@ -148,39 +99,35 @@ const TimelineEventItem: React.FC<{
         {!isLast && <TimelineConnector />}
       </TimelineSeparator>
       <TimelineContent>
-        <Card variant="outlined" sx={{ mb: 2 }}>
-          <CardContent sx={{ pb: 1 }}>
-            <Box
+        <Card  className="">
+          <CardContent className="">
+            <div
               display="flex"
               justifyContent="between"
               alignItems="flex-start"
               mb={1}
             >
-              <Box flex={1}>
-                <Typography
-                  variant="h6"
+              <div flex={1}>
+                <div
+                  
                   component="div"
-                  sx={{
-                    cursor: onEventClick ? 'pointer' : 'default',
-                    '&:hover': onEventClick
-                      ? { textDecoration: 'underline' }
+                  className=""
                       : {},
-                  }}
                   onClick={handleEventClick}
                 >
                   {event.title}
-                </Typography>
-                <Typography variant="body2" color="textSecondary" gutterBottom>
+                </div>
+                <div  color="textSecondary" gutterBottom>
                   {format(parseISO(event.date), 'PPp')}
-                </Typography>
-              </Box>
-              <Box display="flex" alignItems="center" gap={1}>
+                </div>
+              </div>
+              <div display="flex" alignItems="center" gap={1}>
                 {event.priority && (
                   <Chip
                     label={event.priority}
                     size="small"
                     color={getPriorityColor(event.priority)}
-                    variant="outlined"
+                    
                   />
                 )}
                 {event.status && (
@@ -188,7 +135,7 @@ const TimelineEventItem: React.FC<{
                     label={event.status}
                     size="small"
                     color={getStatusColor(event.status)}
-                    variant="filled"
+                    
                   />
                 )}
                 <IconButton
@@ -198,89 +145,84 @@ const TimelineEventItem: React.FC<{
                 >
                   {expanded ? <ExpandLess /> : <ExpandMore />}
                 </IconButton>
-              </Box>
-            </Box>
-
-            <Typography variant="body2" color="textSecondary">
+              </div>
+            </div>
+            <div  color="textSecondary">
               {event.summary}
-            </Typography>
-
+            </div>
             <Collapse in={expanded}>
-              <Box mt={2}>
-                <Divider sx={{ mb: 2 }} />
-                <Typography variant="subtitle2" gutterBottom>
+              <div mt={2}>
+                <Separator className="" />
+                <div  gutterBottom>
                   Event Details
-                </Typography>
-
+                </div>
                 {/* Event-specific details */}
                 {event.type === 'diagnostic' && (
-                  <Box>
-                    <Typography variant="body2" gutterBottom>
+                  <div>
+                    <div  gutterBottom>
                       <strong>Type:</strong> Diagnostic Assessment
-                    </Typography>
+                    </div>
                     {event.data?.clinicalContext?.chiefComplaint && (
-                      <Typography variant="body2" gutterBottom>
+                      <div  gutterBottom>
                         <strong>Chief Complaint:</strong>{' '}
                         {event.data.clinicalContext.chiefComplaint}
-                      </Typography>
+                      </div>
                     )}
                     {event.data?.inputSnapshot?.symptoms?.subjective && (
-                      <Typography variant="body2" gutterBottom>
+                      <div  gutterBottom>
                         <strong>Symptoms:</strong>{' '}
                         {event.data.inputSnapshot.symptoms.subjective.join(
                           ', '
                         )}
-                      </Typography>
+                      </div>
                     )}
-                  </Box>
+                  </div>
                 )}
-
                 {event.type === 'clinical_note' && (
-                  <Box>
-                    <Typography variant="body2" gutterBottom>
+                  <div>
+                    <div  gutterBottom>
                       <strong>Type:</strong>{' '}
                       {event.data?.type || 'Clinical Note'}
-                    </Typography>
+                    </div>
                     {event.data?.content?.assessment && (
-                      <Typography variant="body2" gutterBottom>
+                      <div  gutterBottom>
                         <strong>Assessment:</strong>{' '}
                         {event.data.content.assessment.substring(0, 200)}
                         {event.data.content.assessment.length > 200 && '...'}
-                      </Typography>
+                      </div>
                     )}
                     {event.data?.followUpRequired && (
-                      <Typography variant="body2" gutterBottom>
+                      <div  gutterBottom>
                         <strong>Follow-up Required:</strong> Yes
                         {event.data.followUpDate &&
                           ` (${format(parseISO(event.data.followUpDate), 'PP')})`}
-                      </Typography>
+                      </div>
                     )}
-                  </Box>
+                  </div>
                 )}
-
                 {event.type === 'mtr' && (
-                  <Box>
-                    <Typography variant="body2" gutterBottom>
+                  <div>
+                    <div  gutterBottom>
                       <strong>Review Number:</strong> {event.data?.reviewNumber}
-                    </Typography>
-                    <Typography variant="body2" gutterBottom>
+                    </div>
+                    <div  gutterBottom>
                       <strong>Review Type:</strong> {event.data?.reviewType}
-                    </Typography>
+                    </div>
                     {event.data?.medications?.length > 0 && (
-                      <Typography variant="body2" gutterBottom>
+                      <div  gutterBottom>
                         <strong>Medications:</strong>{' '}
                         {event.data.medications.length} reviewed
-                      </Typography>
+                      </div>
                     )}
                     {event.data?.completionPercentage !== undefined && (
-                      <Typography variant="body2" gutterBottom>
+                      <div  gutterBottom>
                         <strong>Progress:</strong>{' '}
                         {event.data.completionPercentage}% complete
-                      </Typography>
+                      </div>
                     )}
-                  </Box>
+                  </div>
                 )}
-              </Box>
+              </div>
             </Collapse>
           </CardContent>
         </Card>
@@ -288,21 +230,19 @@ const TimelineEventItem: React.FC<{
     </TimelineItem>
   );
 };
-
-export const UnifiedPatientTimeline: React.FC<UnifiedPatientTimelineProps> = ({
+export const UnifiedPatientTimeline: React.FC<UnifiedPatientTimelineProps> = ({ 
   patientId,
   maxItems = 20,
   showFilters = true,
-  onEventClick,
+  onEventClick
 }) => {
-  const [filters, setFilters] = useState<TimelineFilters>({
+  const [filters, setFilters] = useState<TimelineFilters>({ 
     eventType: 'all',
     startDate: null,
     endDate: null,
-    priority: 'all',
+    priority: 'all'}
   });
   const [showFilterPanel, setShowFilterPanel] = useState(false);
-
   const {
     data: timelineData,
     isLoading,
@@ -311,30 +251,25 @@ export const UnifiedPatientTimeline: React.FC<UnifiedPatientTimelineProps> = ({
   } = useUnifiedPatientTimeline(patientId, {
     startDate: filters.startDate || undefined,
     endDate: filters.endDate || undefined,
-    limit: maxItems,
-  });
-
+    limit: maxItems}
   const handleFilterChange = (field: keyof TimelineFilters, value: any) => {
-    setFilters((prev) => ({
+    setFilters((prev) => ({ 
       ...prev,
-      [field]: value,
+      [field]: value}
     }));
   };
-
   const clearFilters = () => {
-    setFilters({
+    setFilters({ 
       eventType: 'all',
       startDate: null,
       endDate: null,
-      priority: 'all',
+      priority: 'all'}
     });
   };
-
   const applyFilters = () => {
     refetch();
     setShowFilterPanel(false);
   };
-
   // Filter events based on client-side filters
   const filteredEvents =
     timelineData?.data?.timeline?.filter((event: TimelineEvent) => {
@@ -346,22 +281,20 @@ export const UnifiedPatientTimeline: React.FC<UnifiedPatientTimelineProps> = ({
       }
       return true;
     }) || [];
-
   if (isLoading) {
     return (
       <Card>
         <CardContent>
-          <Box display="flex" alignItems="center" justifyContent="center" p={3}>
-            <CircularProgress />
-            <Typography variant="body2" ml={2}>
+          <div display="flex" alignItems="center" justifyContent="center" p={3}>
+            <Spinner />
+            <div  ml={2}>
               Loading patient timeline...
-            </Typography>
-          </Box>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   }
-
   if (error) {
     return (
       <Card>
@@ -373,38 +306,36 @@ export const UnifiedPatientTimeline: React.FC<UnifiedPatientTimelineProps> = ({
       </Card>
     );
   }
-
   return (
     <Card>
       <CardContent>
-        <Box display="flex" justifyContent="between" alignItems="center" mb={2}>
-          <Typography variant="h6">Patient Timeline</Typography>
+        <div display="flex" justifyContent="between" alignItems="center" mb={2}>
+          <div >Patient Timeline</div>
           {showFilters && (
             <Button
               startIcon={<FilterList />}
               onClick={() => setShowFilterPanel(!showFilterPanel)}
-              variant="outlined"
+              
               size="small"
             >
               Filters
             </Button>
           )}
-        </Box>
-
+        </div>
         {/* Filter Panel */}
         <Collapse in={showFilterPanel}>
-          <Card variant="outlined" sx={{ mb: 2 }}>
+          <Card  className="">
             <CardContent>
-              <Typography variant="subtitle2" gutterBottom>
+              <div  gutterBottom>
                 Filter Timeline Events
-              </Typography>
-              <Box display="flex" flexWrap="wrap" gap={2} mb={2}>
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>Event Type</InputLabel>
+              </div>
+              <div display="flex" flexWrap="wrap" gap={2} mb={2}>
+                <div size="small" className="">
+                  <Label>Event Type</Label>
                   <Select
                     value={filters.eventType}
                     onChange={(e) =>
-                      handleFilterChange('eventType', e.target.value)
+                      handleFilterChange('eventType', e.target.value)}
                     }
                   >
                     <MenuItem value="all">All</MenuItem>
@@ -412,14 +343,13 @@ export const UnifiedPatientTimeline: React.FC<UnifiedPatientTimelineProps> = ({
                     <MenuItem value="clinical_note">Clinical Notes</MenuItem>
                     <MenuItem value="mtr">MTR</MenuItem>
                   </Select>
-                </FormControl>
-
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>Priority</InputLabel>
+                </div>
+                <div size="small" className="">
+                  <Label>Priority</Label>
                   <Select
                     value={filters.priority}
                     onChange={(e) =>
-                      handleFilterChange('priority', e.target.value)
+                      handleFilterChange('priority', e.target.value)}
                     }
                   >
                     <MenuItem value="all">All</MenuItem>
@@ -427,35 +357,33 @@ export const UnifiedPatientTimeline: React.FC<UnifiedPatientTimelineProps> = ({
                     <MenuItem value="medium">Medium</MenuItem>
                     <MenuItem value="high">High</MenuItem>
                   </Select>
-                </FormControl>
-
+                </div>
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                   <DatePicker
                     label="Start Date"
                     value={filters.startDate}
                     onChange={(date) => handleFilterChange('startDate', date)}
-                    slotProps={{ textField: { size: 'small' } }}
+                    slotProps={{ textField: { size: 'small' }
                   />
                   <DatePicker
                     label="End Date"
                     value={filters.endDate}
                     onChange={(date) => handleFilterChange('endDate', date)}
-                    slotProps={{ textField: { size: 'small' } }}
+                    slotProps={{ textField: { size: 'small' }
                   />
                 </LocalizationProvider>
-              </Box>
-              <Box display="flex" gap={1}>
-                <Button onClick={applyFilters} variant="contained" size="small">
+              </div>
+              <div display="flex" gap={1}>
+                <Button onClick={applyFilters}  size="small">
                   Apply Filters
                 </Button>
-                <Button onClick={clearFilters} variant="outlined" size="small">
+                <Button onClick={clearFilters}  size="small">
                   Clear
                 </Button>
-              </Box>
+              </div>
             </CardContent>
           </Card>
         </Collapse>
-
         {/* Timeline */}
         {filteredEvents.length === 0 ? (
           <Alert severity="info">
@@ -473,14 +401,13 @@ export const UnifiedPatientTimeline: React.FC<UnifiedPatientTimelineProps> = ({
             ))}
           </Timeline>
         )}
-
         {filteredEvents.length > 0 && (
-          <Box mt={2} textAlign="center">
-            <Typography variant="body2" color="textSecondary">
+          <div mt={2} textAlign="center">
+            <div  color="textSecondary">
               Showing {filteredEvents.length} of{' '}
               {timelineData?.data?.count || 0} events
-            </Typography>
-          </Box>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -1,6 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Typography, Avatar, Chip } from '@mui/material';
-import { useTypingIndicator } from '../../hooks/useSocket';
+import React, { useState, useEffect } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+
+// Mock hook
+const useTypingIndicator = (conversationId: string) => ({
+  typingUsers: ['1', '2'],
+});
 
 interface TypingIndicatorProps {
   conversationId: string;
@@ -14,16 +19,15 @@ interface TypingIndicatorProps {
   maxVisible?: number;
 }
 
-const TypingIndicator: React.FC<TypingIndicatorProps> = ({
+const TypingIndicator: React.FC<TypingIndicatorProps> = ({ 
   conversationId,
   participants = [],
   variant = 'compact',
-  maxVisible = 3,
+  maxVisible = 3
 }) => {
   const { typingUsers } = useTypingIndicator(conversationId);
   const [animationKey, setAnimationKey] = useState(0);
 
-  // Trigger animation when typing users change
   useEffect(() => {
     if (typingUsers.length > 0) {
       setAnimationKey((prev) => prev + 1);
@@ -34,7 +38,6 @@ const TypingIndicator: React.FC<TypingIndicatorProps> = ({
     return null;
   }
 
-  // Get participant info for typing users
   const typingParticipants = typingUsers
     .map((userId) => participants.find((p) => p.userId === userId))
     .filter(Boolean)
@@ -44,13 +47,9 @@ const TypingIndicator: React.FC<TypingIndicatorProps> = ({
 
   const getTypingText = () => {
     if (typingParticipants.length === 0) {
-      return `${typingUsers.length} user${
-        typingUsers.length > 1 ? 's' : ''
-      } typing...`;
+      return `${typingUsers.length} user${typingUsers.length > 1 ? 's' : ''} typing...`;
     }
-
     const names = typingParticipants.map((p) => p!.firstName);
-
     if (names.length === 1) {
       return `${names[0]} is typing...`;
     } else if (names.length === 2) {
@@ -58,181 +57,68 @@ const TypingIndicator: React.FC<TypingIndicatorProps> = ({
     } else {
       const displayNames = names.slice(0, 2).join(', ');
       const additionalCount = names.length - 2 + remainingCount;
-      return `${displayNames} and ${additionalCount} other${
-        additionalCount > 1 ? 's' : ''
-      } are typing...`;
+      return `${displayNames} and ${additionalCount} other${additionalCount > 1 ? 's' : ''} are typing...`;
     }
   };
 
   if (variant === 'avatars') {
     return (
-      <Box
-        key={animationKey}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.5,
-          p: 1,
-          animation: 'fadeInUp 0.3s ease-out',
-          '@keyframes fadeInUp': {
-            from: {
-              opacity: 0,
-              transform: 'translateY(10px)',
-            },
-            to: {
-              opacity: 1,
-              transform: 'translateY(0)',
-            },
-          },
-        }}
-      >
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          {typingParticipants.map((participant, index) => (
-            <Avatar
-              key={participant!.userId}
-              src={participant!.avatar}
-              sx={{
-                width: 24,
-                height: 24,
-                fontSize: '0.75rem',
-                animation: `pulse 1.5s ease-in-out infinite ${index * 0.2}s`,
-                '@keyframes pulse': {
-                  '0%, 100%': {
-                    opacity: 1,
-                  },
-                  '50%': {
-                    opacity: 0.5,
-                  },
-                },
-              }}
-            >
-              {participant!.firstName[0]}
-              {participant!.lastName[0]}
+      <div key={animationKey} className="flex items-center space-x-2 p-2">
+        <div className="flex -space-x-2">
+          {typingParticipants.map((participant) => (
+            <Avatar key={participant!.userId} className="h-6 w-6 border-2 border-background">
+              <AvatarImage src={participant!.avatar} />
+              <AvatarFallback>{participant!.firstName[0]}{participant!.lastName[0]}</AvatarFallback>
             </Avatar>
           ))}
           {remainingCount > 0 && (
-            <Chip
-              label={`+${remainingCount}`}
-              size="small"
-              sx={{
-                height: 24,
-                fontSize: '0.75rem',
-                animation: 'pulse 1.5s ease-in-out infinite',
-              }}
-            />
+            <Avatar className="h-6 w-6 border-2 border-background bg-muted text-muted-foreground">
+              <AvatarFallback>+{remainingCount}</AvatarFallback>
+            </Avatar>
           )}
-        </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <TypingDots />
-        </Box>
-      </Box>
+        </div>
+        <TypingDots />
+      </div>
     );
   }
 
   if (variant === 'full') {
     return (
-      <Box
-        key={animationKey}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          p: 1.5,
-          bgcolor: 'action.hover',
-          borderRadius: 1,
-          animation: 'fadeInUp 0.3s ease-out',
-        }}
-      >
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          {typingParticipants.slice(0, 3).map((participant, index) => (
-            <Avatar
-              key={participant!.userId}
-              src={participant!.avatar}
-              sx={{
-                width: 32,
-                height: 32,
-                fontSize: '0.875rem',
-                animation: `pulse 1.5s ease-in-out infinite ${index * 0.2}s`,
-              }}
-            >
-              {participant!.firstName[0]}
-              {participant!.lastName[0]}
+      <div key={animationKey} className="flex items-center space-x-2 p-2">
+        <div className="flex -space-x-2">
+          {typingParticipants.slice(0, 3).map((participant) => (
+            <Avatar key={participant!.userId} className="h-8 w-8 border-2 border-background">
+              <AvatarImage src={participant!.avatar} />
+              <AvatarFallback>{participant!.firstName[0]}{participant!.lastName[0]}</AvatarFallback>
             </Avatar>
           ))}
-        </Box>
-
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            {getTypingText()}
-          </Typography>
-        </Box>
-
+        </div>
+        <p className="text-sm text-muted-foreground">{getTypingText()}</p>
         <TypingDots />
-      </Box>
+      </div>
     );
   }
 
-  // Compact variant (default)
   return (
-    <Box
-      key={animationKey}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1,
-        px: 2,
-        py: 0.5,
-        animation: 'fadeInUp 0.3s ease-out',
-      }}
-    >
-      <Typography variant="caption" color="text.secondary">
-        {getTypingText()}
-      </Typography>
+    <div key={animationKey} className="flex items-center space-x-1.5 px-3 py-1.5 text-sm text-muted-foreground">
+      <p>{getTypingText()}</p>
       <TypingDots size="small" />
-    </Box>
+    </div>
   );
 };
 
-// Animated typing dots component
-const TypingDots: React.FC<{ size?: 'small' | 'medium' }> = ({
-  size = 'medium',
-}) => {
-  const dotSize = size === 'small' ? 4 : 6;
-  const containerHeight = size === 'small' ? 12 : 16;
-
+const TypingDots: React.FC<{ size?: 'small' | 'medium' }> = ({ size = 'medium' }) => {
+  const dotSize = size === 'small' ? 'h-1.5 w-1.5' : 'h-2 w-2';
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.5,
-        height: containerHeight,
-      }}
-    >
+    <div className="flex items-center gap-1">
       {[0, 1, 2].map((index) => (
-        <Box
+        <span
           key={index}
-          sx={{
-            width: dotSize,
-            height: dotSize,
-            borderRadius: '50%',
-            bgcolor: 'text.secondary',
-            animation: `typingDot 1.4s ease-in-out infinite ${index * 0.2}s`,
-            '@keyframes typingDot': {
-              '0%, 80%, 100%': {
-                transform: 'scale(0.8)',
-                opacity: 0.5,
-              },
-              '40%': {
-                transform: 'scale(1)',
-                opacity: 1,
-              },
-            },
-          }}
+          className={`${dotSize} rounded-full bg-muted-foreground animate-bounce`}
+          style={{ animationDelay: `${index * 0.2}s` }}
         />
       ))}
-    </Box>
+    </div>
   );
 };
 

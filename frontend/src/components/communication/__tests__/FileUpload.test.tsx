@@ -1,10 +1,5 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { FileUpload } from '../FileUpload';
-import { useCommunicationStore } from '../../../stores/communicationStore';
 
+import userEvent from '@testing-library/user-event';
 // Mock the communication store
 vi.mock('../../../stores/communicationStore');
 
@@ -19,8 +14,7 @@ const mockLocalStorage = {
   removeItem: vi.fn(),
 };
 Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage,
-});
+  value: mockLocalStorage}
 
 // Mock file upload response
 const mockUploadResponse = {
@@ -43,14 +37,14 @@ describe('FileUpload Component', () => {
     vi.clearAllMocks();
 
     // Mock the communication store
-    (useCommunicationStore as any).mockReturnValue({
-      sendMessage: mockSendMessage,
+    (useCommunicationStore as any).mockReturnValue({ 
+      sendMessage: mockSendMessage}
     });
 
     // Mock successful fetch response
-    mockFetch.mockResolvedValue({
+    mockFetch.mockResolvedValue({ 
       ok: true,
-      json: () => Promise.resolve(mockUploadResponse),
+      json: () => Promise.resolve(mockUploadResponse)}
     });
   });
 
@@ -72,8 +66,7 @@ describe('FileUpload Component', () => {
     render(<FileUpload conversationId="conv-123" />);
 
     const file = new File(['test content'], 'test.pdf', {
-      type: 'application/pdf',
-    });
+      type: 'application/pdf'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');
@@ -84,12 +77,11 @@ describe('FileUpload Component', () => {
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
           '/api/communication/upload',
-          expect.objectContaining({
+          expect.objectContaining({ 
             method: 'POST',
             headers: {
-              Authorization: 'Bearer mock-token',
-            },
-          })
+              Authorization: 'Bearer mock-token'}
+            }}
         );
       });
     }
@@ -101,8 +93,7 @@ describe('FileUpload Component', () => {
 
     // Create a file larger than the limit
     const largeFile = new File(['x'.repeat(2048)], 'large.pdf', {
-      type: 'application/pdf',
-    });
+      type: 'application/pdf'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');
@@ -124,8 +115,7 @@ describe('FileUpload Component', () => {
 
     // Create a file with disallowed type
     const execFile = new File(['malicious content'], 'virus.exe', {
-      type: 'application/x-executable',
-    });
+      type: 'application/x-executable'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');
@@ -147,8 +137,7 @@ describe('FileUpload Component', () => {
 
     // Create a file with dangerous extension
     const dangerousFile = new File(['script content'], 'script.js', {
-      type: 'text/javascript',
-    });
+      type: 'text/javascript'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');
@@ -170,8 +159,7 @@ describe('FileUpload Component', () => {
 
     // Create a file with invalid characters
     const invalidFile = new File(['content'], '../../../etc/passwd', {
-      type: 'text/plain',
-    });
+      type: 'text/plain'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');
@@ -215,8 +203,7 @@ describe('FileUpload Component', () => {
     render(<FileUpload conversationId="conv-123" />);
 
     const file = new File(['test content'], 'test.pdf', {
-      type: 'application/pdf',
-    });
+      type: 'application/pdf'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');
@@ -235,16 +222,14 @@ describe('FileUpload Component', () => {
     const user = userEvent.setup();
 
     // Mock failed fetch response
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ error: 'Upload failed' }),
-    });
+    mockFetch.mockResolvedValueOnce({ 
+      ok: false}
+      json: () => Promise.resolve({ error: 'Upload failed' })}
 
     render(<FileUpload conversationId="conv-123" />);
 
     const file = new File(['test content'], 'test.pdf', {
-      type: 'application/pdf',
-    });
+      type: 'application/pdf'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');
@@ -263,8 +248,7 @@ describe('FileUpload Component', () => {
     render(<FileUpload conversationId="conv-123" />);
 
     const file = new File(['test content'], 'test.pdf', {
-      type: 'application/pdf',
-    });
+      type: 'application/pdf'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');
@@ -273,14 +257,13 @@ describe('FileUpload Component', () => {
       await user.upload(input, file);
 
       await waitFor(() => {
-        expect(mockSendMessage).toHaveBeenCalledWith({
+        expect(mockSendMessage).toHaveBeenCalledWith({ 
           conversationId: 'conv-123',
           content: {
             type: 'file',
             text: 'Shared file: test-file.pdf',
-            attachments: [mockUploadResponse.file],
-          },
-        });
+            attachments: [mockUploadResponse.file]}
+          }
       });
     }
   });
@@ -294,8 +277,7 @@ describe('FileUpload Component', () => {
     );
 
     const file = new File(['test content'], 'test.pdf', {
-      type: 'application/pdf',
-    });
+      type: 'application/pdf'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');
@@ -320,8 +302,7 @@ describe('FileUpload Component', () => {
     render(<FileUpload conversationId="conv-123" />);
 
     const file = new File(['test content'], 'test.pdf', {
-      type: 'application/pdf',
-    });
+      type: 'application/pdf'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');
@@ -345,8 +326,7 @@ describe('FileUpload Component', () => {
     render(<FileUpload conversationId="conv-123" />);
 
     const file = new File(['test content'], 'test.pdf', {
-      type: 'application/pdf',
-    });
+      type: 'application/pdf'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');
@@ -384,8 +364,7 @@ describe('FileUpload Component', () => {
     render(<FileUpload conversationId="conv-123" />);
 
     const pdfFile = new File(['pdf content'], 'test.pdf', {
-      type: 'application/pdf',
-    });
+      type: 'application/pdf'}
     const input = screen
       .getByRole('button', { name: /browse files/i })
       .parentElement?.querySelector('input[type="file"]');

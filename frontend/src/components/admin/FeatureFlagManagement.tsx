@@ -1,53 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Card,
-  CardHeader,
-  CardContent,
-  CircularProgress,
-  Chip,
-  Switch,
-  FormControl,
-  FormControlLabel,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Divider,
-  Alert,
-  Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Tooltip,
-  SelectChangeEvent,
-} from '@mui/material';
+import { Button, Input, Label, Card, CardContent, CardHeader, Dialog, DialogContent, DialogTitle, Select, Tooltip, Spinner, Alert, Switch, Separator } from '@/components/ui/button';
 // Import custom Grid components that fix Material UI v7 Grid typing issues
-import GridItem, { GridContainer } from '../common/GridItem';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { useRBAC } from '../../hooks/useRBAC';
 // Import the feature flag types from service
-import featureFlagService, {
-  FeatureFlag as FeatureFlagType,
-} from '../../services/featureFlagService';
-import type {
-  CreateFeatureFlagDto,
-  UpdateFeatureFlagDto,
-  FeatureFlagResponse,
-} from '../../types/featureFlags';
+
 
 // Temporary mock if the real service doesn't exist
 if (!featureFlagService) {
@@ -57,7 +11,7 @@ if (!featureFlagService) {
       // Mock API call
       return new Promise((resolve) => {
         setTimeout(() => {
-          resolve({
+          resolve({ 
             success: true,
             data: [
               {
@@ -76,7 +30,7 @@ if (!featureFlagService) {
                 metadata: {
                   category: 'analytics',
                   priority: 'medium',
-                  tags: ['analytics', 'dashboard'],
+                  tags: ['analytics', 'dashboard']}
                 },
                 customRules: {},
               },
@@ -112,80 +66,68 @@ if (!featureFlagService) {
                 },
                 customRules: {},
               },
-            ],
-          });
+            ]}
         }, 500);
       });
     },
-
     updateFeatureFlag: async (id: string, data: UpdateFeatureFlagDto) => {
       // Mock API call
       return new Promise((resolve) => {
         setTimeout(() => {
-          resolve({
+          resolve({ 
             success: true,
             message: 'Feature flag updated successfully',
             data: {
               ...data,
-              _id: id,
-            },
-          });
+              _id: id}
+            }
         }, 500);
       });
     },
-
     createFeatureFlag: async (data: CreateFeatureFlagDto) => {
       // Mock API call
       return new Promise((resolve) => {
         setTimeout(() => {
-          resolve({
+          resolve({ 
             success: true,
             message: 'Feature flag created successfully',
             data: {
               ...data,
-              _id: Date.now().toString(),
-            },
-          });
+              _id: Date.now().toString()}
+            }
         }, 500);
       });
     },
-
     deleteFeatureFlag: async (id: string) => {
       // Mock API call
       return new Promise((resolve) => {
         setTimeout(() => {
-          resolve({
-            success: true,
+          resolve({ 
+            success: true}
             message: `Feature flag with id ${id} deleted successfully`,
-            deletedId: id,
-          });
+            deletedId: id}
         }, 500);
       });
     },
   };
-
   // Use the mock service if the real one doesn't exist
   // Modify the window object to make the mock service available
   // Using any here is intentional and safe - we're extending Window with a custom property
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).mockFeatureFlagService = mockService; // Use the global mock as a fallback in the component
 }
-
 // Create a local service reference that uses either the real service or the mock
 const localFeatureFlagService =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   featureFlagService || (window as any).mockFeatureFlagService;
-
 // Types - using imported type
 type FeatureFlag = FeatureFlagType;
-
 const SUBSCRIPTION_TIERS = [
   { value: 'free_trial', label: 'Free Trial' },
   { value: 'basic', label: 'Basic' },
   { value: 'pro', label: 'Pro' },
   { value: 'enterprise', label: 'Enterprise' },
 ];
-
 const USER_ROLES = [
   { value: 'pharmacist', label: 'Pharmacist' },
   { value: 'pharmacy_team', label: 'Pharmacy Team' },
@@ -193,7 +135,6 @@ const USER_ROLES = [
   { value: 'intern_pharmacist', label: 'Intern Pharmacist' },
   { value: 'super_admin', label: 'Super Admin' },
 ];
-
 const CATEGORIES = [
   { value: 'core', label: 'Core Features' },
   { value: 'analytics', label: 'Analytics & Reporting' },
@@ -203,7 +144,6 @@ const CATEGORIES = [
   { value: 'reporting', label: 'Reporting' },
   { value: 'administration', label: 'Administration' },
 ];
-
 const FeatureFlagManagement: React.FC = () => {
   const { isSuperAdmin } = useRBAC();
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
@@ -214,30 +154,27 @@ const FeatureFlagManagement: React.FC = () => {
     null
   );
   const [isEditing, setIsEditing] = useState(false);
-  const [snackbar, setSnackbar] = useState({
+  const [snackbar, setSnackbar] = useState({ 
     open: false,
     message: '',
-    severity: 'success' as 'success' | 'error',
+    severity: 'success' as 'success' | 'error'}
   });
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterTier, setFilterTier] = useState<string>('all');
-
   // Form state for new/edit feature flag
-  const [formData, setFormData] = useState<Partial<FeatureFlag>>({
+  const [formData, setFormData] = useState<Partial<FeatureFlag>>({ 
     name: '',
     key: '',
     description: '',
     isActive: true,
     allowedTiers: [],
-    allowedRoles: [],
+    allowedRoles: []}
     customRules: {},
     metadata: {
       category: 'core',
       priority: 'medium',
       tags: [],
-    },
-  });
-
+    }
   // Load feature flags
   useEffect(() => {
     const fetchFeatureFlags = async () => {
@@ -253,19 +190,17 @@ const FeatureFlagManagement: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching feature flags:', error);
-        setSnackbar({
+        setSnackbar({ 
           open: true,
           message: 'Failed to load feature flags',
-          severity: 'error',
+          severity: 'error'}
         });
       } finally {
         setLoading(false);
       }
     };
-
     fetchFeatureFlags();
   }, []);
-
   // Filter feature flags based on selected filters
   const filteredFeatureFlags = featureFlags.filter((flag) => {
     const matchesCategory =
@@ -274,50 +209,44 @@ const FeatureFlagManagement: React.FC = () => {
       filterTier === 'all' || flag.allowedTiers.includes(filterTier);
     return matchesCategory && matchesTier;
   });
-
   // Handle dialog open for creating new feature flag
   const handleCreateNew = () => {
     setIsEditing(false);
     setSelectedFeature(null);
-    setFormData({
+    setFormData({ 
       name: '',
       key: '',
       description: '',
       isActive: true,
       allowedTiers: [],
-      allowedRoles: [],
+      allowedRoles: []}
       customRules: {},
       metadata: {
         category: 'core',
         priority: 'medium',
         tags: [],
-      },
-    });
+      }
     setDialogOpen(true);
   };
-
   // Handle dialog open for editing feature flag
   const handleEdit = (feature: FeatureFlag) => {
     setIsEditing(true);
     setSelectedFeature(feature);
-    setFormData({
-      ...feature,
+    setFormData({ 
+      ...feature}
     });
     setDialogOpen(true);
   };
-
   // Handle dialog open for deleting feature flag
   const handleDeleteDialogOpen = (feature: FeatureFlag) => {
     setSelectedFeature(feature);
     setDeleteDialogOpen(true);
   };
-
   // Handle form field changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-
     if (name.includes('.')) {
       const [parent, childField] = name.split('.');
       setFormData((prev) => {
@@ -332,17 +261,15 @@ const FeatureFlagManagement: React.FC = () => {
         };
       });
     } else {
-      setFormData((prev) => ({
+      setFormData((prev) => ({ 
         ...prev,
-        [name]: value,
+        [name]: value}
       }));
     }
   };
-
   // Handle switch changes
   const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-
     if (name.includes('.')) {
       const [parent, childField] = name.split('.');
       setFormData((prev) => {
@@ -357,102 +284,87 @@ const FeatureFlagManagement: React.FC = () => {
         };
       });
     } else {
-      setFormData((prev) => ({
+      setFormData((prev) => ({ 
         ...prev,
-        [name]: checked,
+        [name]: checked}
       }));
     }
   };
-
   // Handle select changes
   const handleSelectChange = (e: SelectChangeEvent<string[]>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev) => ({ 
       ...prev,
-      [name]: value,
+      [name]: value}
     }));
   };
-
   // Handle category select change
   const handleCategoryChange = (e: SelectChangeEvent<string>) => {
-    setFormData((prev) => ({
+    setFormData((prev) => ({ 
       ...prev,
       metadata: {
         ...prev.metadata!,
-        category: e.target.value,
-      },
-    }));
+        category: e.target.value}
+      }
   };
-
   // Handle priority select change
   const handlePriorityChange = (e: SelectChangeEvent<string>) => {
-    setFormData((prev) => ({
+    setFormData((prev) => ({ 
       ...prev,
       metadata: {
         ...prev.metadata!,
-        priority: e.target.value as 'low' | 'medium' | 'high' | 'critical',
-      },
-    }));
+        priority: e.target.value as 'low' | 'medium' | 'high' | 'critical'}
+      }
   };
-
   // Handle tag input
   const handleTagsChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && e.currentTarget.value) {
       e.preventDefault();
       const newTag = e.currentTarget.value.trim();
-
       if (newTag && !formData.metadata?.tags?.includes(newTag)) {
-        setFormData((prev) => ({
+        setFormData((prev) => ({ 
           ...prev,
           metadata: {
             ...prev.metadata!,
-            tags: [...(prev.metadata?.tags || []), newTag],
-          },
-        }));
+            tags: [...(prev.metadata?.tags || []), newTag]}
+          }
         e.currentTarget.value = '';
       }
     }
   };
-
   // Remove tag
   const handleRemoveTag = (tagToRemove: string) => {
-    setFormData((prev) => ({
+    setFormData((prev) => ({ 
       ...prev,
       metadata: {
         ...prev.metadata!,
-        tags: prev.metadata?.tags?.filter((tag) => tag !== tagToRemove) || [],
-      },
-    }));
+        tags: prev.metadata?.tags?.filter((tag) => tag !== tagToRemove) || []}
+      }
   };
-
   // Submit form
   const handleSubmit = async () => {
     try {
       // Validate form data
       if (!formData.name || !formData.key || !formData.description) {
-        setSnackbar({
+        setSnackbar({ 
           open: true,
           message: 'Please fill all required fields',
-          severity: 'error',
+          severity: 'error'}
         });
         return;
       }
-
       // Clean up key format
       const cleanKey = formData.key.toLowerCase().replace(/[^a-z0-9_]/g, '_');
       const dataToSubmit = {
         ...formData,
         key: cleanKey,
       };
-
       let response: FeatureFlagResponse;
-
       if (isEditing && selectedFeature) {
         response = await localFeatureFlagService.updateFeatureFlag(
           selectedFeature._id,
           dataToSubmit
         );
-
         // Update local state
         setFeatureFlags((prev) =>
           prev.map((flag) =>
@@ -473,73 +385,61 @@ const FeatureFlagManagement: React.FC = () => {
           customRules: dataToSubmit.customRules,
           metadata: dataToSubmit.metadata,
         };
-
         response = await localFeatureFlagService.createFeatureFlag(
           createFlagData
         );
-
         // Add to local state
         setFeatureFlags((prev) => [...prev, response.data as FeatureFlag]);
       }
-
-      setSnackbar({
+      setSnackbar({ 
         open: true,
         message: response.message || 'Operation completed successfully',
-        severity: 'success',
+        severity: 'success'}
       });
-
       setDialogOpen(false);
     } catch (error) {
       console.error('Error saving feature flag:', error);
-      setSnackbar({
+      setSnackbar({ 
         open: true,
         message: 'Error saving feature flag',
-        severity: 'error',
+        severity: 'error'}
       });
     }
   };
-
   // Delete feature flag
   const handleDelete = async () => {
     if (!selectedFeature) return;
-
     try {
       const response = await localFeatureFlagService.deleteFeatureFlag(
         selectedFeature._id
       );
-
       // Update local state
       setFeatureFlags((prev) =>
         prev.filter((flag) => flag._id !== selectedFeature._id)
       );
-
-      setSnackbar({
+      setSnackbar({ 
         open: true,
         message: response.message || 'Feature flag deleted successfully',
-        severity: 'success',
+        severity: 'success'}
       });
-
       setDeleteDialogOpen(false);
     } catch (error) {
       console.error('Error deleting feature flag:', error);
-      setSnackbar({
+      setSnackbar({ 
         open: true,
         message: 'Error deleting feature flag',
-        severity: 'error',
+        severity: 'error'}
       });
     }
   };
-
   // Toggle feature flag active status
   const handleToggleActive = async (feature: FeatureFlag) => {
     try {
       const updatedFeature = { ...feature, isActive: !feature.isActive };
-
       await localFeatureFlagService.updateFeatureFlag(
         feature._id,
         updatedFeature
       );
-
       // Update local state
       setFeatureFlags((prev) =>
         prev.map((flag) =>
@@ -548,73 +448,62 @@ const FeatureFlagManagement: React.FC = () => {
             : flag
         )
       );
-
-      setSnackbar({
-        open: true,
+      setSnackbar({ 
+        open: true}
         message: `Feature '${feature.name}' ${
           feature.isActive ? 'disabled' : 'enabled'
         }`,
-        severity: 'success',
-      });
+        severity: 'success'}
     } catch (error) {
       console.error('Error toggling feature flag:', error);
-      setSnackbar({
+      setSnackbar({ 
         open: true,
         message: 'Error updating feature flag',
-        severity: 'error',
+        severity: 'error'}
       });
     }
   };
-
   // Close snackbar
   const handleSnackbarClose = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
-
   // If not admin, show access denied
   if (!isSuperAdmin) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography variant="h4" color="error" gutterBottom>
+      <div className="">
+        <div  color="error" gutterBottom>
           Access Denied
-        </Typography>
-        <Typography variant="body1">
+        </div>
+        <div >
           You need super admin permissions to access feature flag management.
-        </Typography>
-      </Box>
+        </div>
+      </div>
     );
   }
-
   return (
-    <Box sx={{ p: 3 }}>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
+    <div className="">
+      <div
+        className=""
       >
-        <Typography variant="h4" component="h1">
+        <div  component="h1">
           Feature Flag Management
-        </Typography>
+        </div>
         <Button
-          variant="contained"
+          
           color="primary"
           startIcon={<AddIcon />}
           onClick={handleCreateNew}
         >
           Create Feature Flag
         </Button>
-      </Box>
-
-      <Card sx={{ mb: 4 }}>
+      </div>
+      <Card className="">
         <CardHeader title="Filter Feature Flags" />
         <CardContent>
-          <GridContainer spacing={2}>
-            <GridItem xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
+          <divContainer spacing={2}>
+            <divItem xs={12} md={6}>
+              <div fullWidth>
+                <Label>Category</Label>
                 <Select
                   value={filterCategory}
                   label="Category"
@@ -627,11 +516,11 @@ const FeatureFlagManagement: React.FC = () => {
                     </MenuItem>
                   ))}
                 </Select>
-              </FormControl>
+              </div>
             </GridItem>
-            <GridItem xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Subscription Tier</InputLabel>
+            <divItem xs={12} md={6}>
+              <div fullWidth>
+                <Label>Subscription Tier</Label>
                 <Select
                   value={filterTier}
                   label="Subscription Tier"
@@ -644,18 +533,17 @@ const FeatureFlagManagement: React.FC = () => {
                     </MenuItem>
                   ))}
                 </Select>
-              </FormControl>
+              </div>
             </GridItem>
           </GridContainer>
         </CardContent>
       </Card>
-
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div className="">
+          <Spinner />
+        </div>
       ) : (
-        <TableContainer component={Paper}>
+        <TableContainer >
           <Table>
             <TableHead>
               <TableRow>
@@ -681,7 +569,7 @@ const FeatureFlagManagement: React.FC = () => {
                     <TableCell>
                       <FormControlLabel
                         control={
-                          <Switch
+                          <Switch}
                             checked={feature.isActive}
                             onChange={() => handleToggleActive(feature)}
                             color="primary"
@@ -707,7 +595,7 @@ const FeatureFlagManagement: React.FC = () => {
                             ? 'success'
                             : feature.metadata.category === 'integration'
                             ? 'info'
-                            : 'default'
+                            : 'default'}
                         }
                       />
                     </TableCell>
@@ -717,7 +605,7 @@ const FeatureFlagManagement: React.FC = () => {
                           key={tier}
                           label={tier}
                           size="small"
-                          sx={{ mr: 0.5, mb: 0.5 }}
+                          className=""
                         />
                       ))}
                     </TableCell>
@@ -727,7 +615,7 @@ const FeatureFlagManagement: React.FC = () => {
                           key={role}
                           label={role}
                           size="small"
-                          sx={{ mr: 0.5, mb: 0.5 }}
+                          className=""
                         />
                       ))}
                     </TableCell>
@@ -753,7 +641,6 @@ const FeatureFlagManagement: React.FC = () => {
           </Table>
         </TableContainer>
       )}
-
       {/* Feature Flag Dialog */}
       <Dialog
         open={dialogOpen}
@@ -765,15 +652,14 @@ const FeatureFlagManagement: React.FC = () => {
           {isEditing ? 'Edit Feature Flag' : 'Create Feature Flag'}
         </DialogTitle>
         <DialogContent>
-          <GridContainer spacing={3} sx={{ mt: 0 }}>
-            <GridItem xs={12}>
-              <Typography variant="h6" gutterBottom>
+          <divContainer spacing={3} className="">
+            <divItem xs={12}>
+              <div  gutterBottom>
                 Basic Information
-              </Typography>
+              </div>
             </GridItem>
-
-            <GridItem xs={12} md={6}>
-              <TextField
+            <divItem xs={12} md={6}>
+              <Input
                 name="name"
                 label="Feature Name"
                 fullWidth
@@ -783,9 +669,8 @@ const FeatureFlagManagement: React.FC = () => {
                 helperText="Human-readable name for the feature"
               />
             </GridItem>
-
-            <GridItem xs={12} md={6}>
-              <TextField
+            <divItem xs={12} md={6}>
+              <Input
                 name="key"
                 label="Feature Key"
                 fullWidth
@@ -796,9 +681,8 @@ const FeatureFlagManagement: React.FC = () => {
                 disabled={isEditing} // Don't allow key changes for existing features
               />
             </GridItem>
-
-            <GridItem xs={12}>
-              <TextField
+            <divItem xs={12}>
+              <Input
                 name="description"
                 label="Description"
                 fullWidth
@@ -810,12 +694,11 @@ const FeatureFlagManagement: React.FC = () => {
                 helperText="Detailed description of what this feature does"
               />
             </GridItem>
-
-            <GridItem xs={12}>
+            <divItem xs={12}>
               <FormControlLabel
                 control={
                   <Switch
-                    name="isActive"
+                    name="isActive"}
                     checked={formData.isActive || false}
                     onChange={handleSwitchChange}
                     color="primary"
@@ -824,22 +707,19 @@ const FeatureFlagManagement: React.FC = () => {
                 label="Feature Active"
               />
             </GridItem>
-
-            <GridItem xs={12}>
-              <Divider />
+            <divItem xs={12}>
+              <Separator />
             </GridItem>
-
-            <GridItem xs={12}>
-              <Typography variant="h6" gutterBottom>
+            <divItem xs={12}>
+              <div  gutterBottom>
                 Access Control
-              </Typography>
+              </div>
             </GridItem>
-
-            <GridItem xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel id="allowed-tiers-label">
+            <divItem xs={12} md={6}>
+              <div fullWidth required>
+                <Label id="allowed-tiers-label">
                   Allowed Subscription Tiers
-                </InputLabel>
+                </Label>
                 <Select
                   labelId="allowed-tiers-label"
                   name="allowedTiers"
@@ -847,11 +727,11 @@ const FeatureFlagManagement: React.FC = () => {
                   value={formData.allowedTiers || []}
                   onChange={handleSelectChange}
                   renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {(selected as string[]).map((value) => (
+                    <div className="">
+                      {(selected as string[]).map((value) => (}
                         <Chip key={value} label={value} size="small" />
                       ))}
-                    </Box>
+                    </div>
                   )}
                 >
                   {SUBSCRIPTION_TIERS.map((tier) => (
@@ -860,12 +740,11 @@ const FeatureFlagManagement: React.FC = () => {
                     </MenuItem>
                   ))}
                 </Select>
-              </FormControl>
+              </div>
             </GridItem>
-
-            <GridItem xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel id="allowed-roles-label">Allowed Roles</InputLabel>
+            <divItem xs={12} md={6}>
+              <div fullWidth>
+                <Label id="allowed-roles-label">Allowed Roles</Label>
                 <Select
                   labelId="allowed-roles-label"
                   name="allowedRoles"
@@ -873,11 +752,11 @@ const FeatureFlagManagement: React.FC = () => {
                   value={formData.allowedRoles || []}
                   onChange={handleSelectChange}
                   renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {(selected as string[]).map((value) => (
+                    <div className="">
+                      {(selected as string[]).map((value) => (}
                         <Chip key={value} label={value} size="small" />
                       ))}
-                    </Box>
+                    </div>
                   )}
                 >
                   {USER_ROLES.map((role) => (
@@ -886,21 +765,18 @@ const FeatureFlagManagement: React.FC = () => {
                     </MenuItem>
                   ))}
                 </Select>
-              </FormControl>
+              </div>
             </GridItem>
-
-            <GridItem xs={12}>
-              <Divider />
+            <divItem xs={12}>
+              <Separator />
             </GridItem>
-
-            <GridItem xs={12}>
-              <Typography variant="h6" gutterBottom>
+            <divItem xs={12}>
+              <div  gutterBottom>
                 Custom Rules
-              </Typography>
+              </div>
             </GridItem>
-
-            <GridItem xs={12} md={6}>
-              <TextField
+            <divItem xs={12} md={6}>
+              <Input
                 name="customRules.maxUsers"
                 label="Max Users"
                 type="number"
@@ -910,12 +786,11 @@ const FeatureFlagManagement: React.FC = () => {
                 helperText="Maximum users allowed (blank for unlimited)"
               />
             </GridItem>
-
-            <GridItem xs={12} md={6}>
+            <divItem xs={12} md={6}>
               <FormControlLabel
                 control={
                   <Switch
-                    name="customRules.requiredLicense"
+                    name="customRules.requiredLicense"}
                     checked={formData.customRules?.requiredLicense || false}
                     onChange={handleSwitchChange}
                     color="primary"
@@ -924,20 +799,17 @@ const FeatureFlagManagement: React.FC = () => {
                 label="Requires License Verification"
               />
             </GridItem>
-
-            <GridItem xs={12}>
-              <Divider />
+            <divItem xs={12}>
+              <Separator />
             </GridItem>
-
-            <GridItem xs={12}>
-              <Typography variant="h6" gutterBottom>
+            <divItem xs={12}>
+              <div  gutterBottom>
                 Metadata
-              </Typography>
+              </div>
             </GridItem>
-
-            <GridItem xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Category</InputLabel>
+            <divItem xs={12} md={6}>
+              <div fullWidth required>
+                <Label>Category</Label>
                 <Select
                   value={formData.metadata?.category || 'core'}
                   label="Category"
@@ -949,12 +821,11 @@ const FeatureFlagManagement: React.FC = () => {
                     </MenuItem>
                   ))}
                 </Select>
-              </FormControl>
+              </div>
             </GridItem>
-
-            <GridItem xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Priority</InputLabel>
+            <divItem xs={12} md={6}>
+              <div fullWidth required>
+                <Label>Priority</Label>
                 <Select
                   value={formData.metadata?.priority || 'medium'}
                   label="Priority"
@@ -965,37 +836,35 @@ const FeatureFlagManagement: React.FC = () => {
                   <MenuItem value="high">High</MenuItem>
                   <MenuItem value="critical">Critical</MenuItem>
                 </Select>
-              </FormControl>
+              </div>
             </GridItem>
-
-            <GridItem xs={12}>
-              <TextField
+            <divItem xs={12}>
+              <Input
                 label="Tags (press Enter to add)"
                 fullWidth
                 onKeyDown={handleTagsChange}
                 helperText="Add search tags separated by Enter"
               />
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', mt: 1 }}>
+              <div className="">
                 {formData.metadata?.tags?.map((tag) => (
                   <Chip
                     key={tag}
                     label={tag}
                     onDelete={() => handleRemoveTag(tag)}
-                    sx={{ m: 0.5 }}
+                    className=""
                   />
                 ))}
-              </Box>
+              </div>
             </GridItem>
           </GridContainer>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
+          <Button onClick={handleSubmit}  color="primary">
             {isEditing ? 'Save Changes' : 'Create Feature Flag'}
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
@@ -1003,40 +872,37 @@ const FeatureFlagManagement: React.FC = () => {
       >
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
-          <Typography>
+          <div>
             Are you sure you want to delete the feature flag "
             {selectedFeature?.name}"?
-          </Typography>
-          <Alert severity="warning" sx={{ mt: 2 }}>
+          </div>
+          <Alert severity="warning" className="">
             This action cannot be undone. Any code depending on this feature
             flag may break.
           </Alert>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error" variant="contained">
+          <Button onClick={handleDelete} color="error" >
             Delete
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
+        >
         <Alert
           onClose={handleSnackbarClose}
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          className=""
         >
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </div>
   );
 };
-
 export default FeatureFlagManagement;

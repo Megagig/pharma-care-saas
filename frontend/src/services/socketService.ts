@@ -1,6 +1,3 @@
-import { io, Socket } from 'socket.io-client';
-import { Message, Conversation, CommunicationNotification } from '../stores/types';
-
 // Socket event types for type safety
 interface ServerToClientEvents {
     message_received: (message: Message) => void;
@@ -95,8 +92,7 @@ class SocketService {
                     reconnectionAttempts: this.maxReconnectAttempts,
                     reconnectionDelay: this.reconnectDelay,
                     timeout: this.config.timeout || 20000,
-                    transports: ['websocket', 'polling'],
-                });
+                    transports: ['websocket', 'polling']}
 
                 this.setupEventListeners();
                 this.isManualDisconnect = false;

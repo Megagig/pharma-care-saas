@@ -1,19 +1,3 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import {
-  Patient,
-  PatientFormData,
-  PatientFilters,
-  LoadingState,
-  ErrorState,
-} from './types';
-import { patientService } from '../services/patientService';
-import {
-  apiToStorePatients,
-  apiResponseToStorePatient,
-  storeFormToApiCreateData,
-} from '../utils/patientAdapter';
-
 interface PatientStore {
   // State
   patients: Patient[];
@@ -114,8 +98,8 @@ export const usePatientStore = create<PatientStore>()(
                 total: response.meta?.total || apiPatients.length,
                 pages:
                   response.meta?.totalPages ||
-                  Math.ceil(apiPatients.length / (currentFilters.limit || 10)),
-              },
+                  Math.ceil(apiPatients.length / (currentFilters.limit || 10))
+              }
             });
           } else {
             setError(
@@ -293,6 +277,7 @@ export const usePatientStore = create<PatientStore>()(
       // Filter and search actions
       setFilters: (newFilters) =>
         set((state) => ({
+          ...state,
           filters: { ...state.filters, ...newFilters },
         })),
 
@@ -337,87 +322,89 @@ export const usePatientStore = create<PatientStore>()(
 
       setLoading: (key, loading) =>
         set((state) => ({
-          loading: { ...state.loading, [key]: loading },
+          ...state,
+          loading: { ...state.loading, [key]: loading }
         })),
 
       setError: (key, error) =>
         set((state) => ({
-          errors: { ...state.errors, [key]: error },
+          ...state,
+          errors: { ...state.errors, [key]: error }
         })),
 
-      // Bulk operations
-      deleteMultiplePatients: async (ids) => {
-        const { setLoading, setError } = get();
-        setLoading('deleteMultiple', true);
-        setError('deleteMultiple', null);
+// Bulk operations
+deleteMultiplePatients: async (ids) => {
+  const { setLoading, setError } = get();
+  setLoading('deleteMultiple', true);
+  setError('deleteMultiple', null);
 
-        try {
-          const promises = ids.map((id) => patientService.deletePatient(id));
-          const results = await Promise.all(promises);
+  try {
+    const promises = ids.map((id) => patientService.deletePatient(id));
+    const results = await Promise.all(promises);
 
-          const successful = results.filter((r) => r.success);
+    const successful = results.filter((r) => r.success);
 
-          if (successful.length === ids.length) {
-            // Remove all successfully deleted patients from state
-            set((state) => ({
-              patients: state.patients.filter((p) => !ids.includes(p._id)),
-              selectedPatient:
-                state.selectedPatient && ids.includes(state.selectedPatient._id)
-                  ? null
-                  : state.selectedPatient,
+    if (successful.length === ids.length) {
+      // Remove all successfully deleted patients from state
+      set((state) => ({
+        patients: state.patients.filter((p) => !ids.includes(p._id)),
+        selectedPatient:
+          state.selectedPatient && ids.includes(state.selectedPatient._id)
+            ? null
+            : state.selectedPatient
+      }
             }));
-            return true;
-          } else {
-            setError(
-              'deleteMultiple',
-              `Only ${successful.length} of ${ids.length} patients were deleted`
-            );
-            return false;
-          }
-        } catch (error) {
-          setError(
-            'deleteMultiple',
-            error instanceof Error
-              ? error.message
-              : 'An unexpected error occurred'
-          );
-          return false;
-        } finally {
-          setLoading('deleteMultiple', false);
-        }
+    return true;
+  } else {
+    setError(
+      'deleteMultiple',
+      `Only ${successful.length} of ${ids.length} patients were deleted`
+    );
+    return false;
+  }
+} catch (error) {
+  setError(
+    'deleteMultiple',
+    error instanceof Error
+      ? error.message
+      : 'An unexpected error occurred'
+  );
+  return false;
+} finally {
+  setLoading('deleteMultiple', false);
+}
       },
 
-      // Local state management
-      addPatientToState: (patient) =>
-        set((state) => ({
-          patients: [patient, ...state.patients],
-          pagination: {
-            ...state.pagination,
-            total: state.pagination.total + 1,
-          },
-        })),
+// Local state management
+addPatientToState: (patient) =>
+  set((state) => ({
+    patients: [patient, ...state.patients],
+    pagination: {
+      ...state.pagination,
+      total: state.pagination.total + 1
+    }
+  }, },
 
-      updatePatientInState: (id, updates) =>
-        set((state) => ({
-          patients: state.patients.map((p) =>
+    updatePatientInState: (id, updates) =>
+    set((state) => ({
+      patients: state.patients.map((p) => })
             p._id === id ? { ...p, ...updates } : p
-          ),
-        })),
+    ), },
 
-      removePatientFromState: (id) =>
-        set((state) => ({
-          patients: state.patients.filter((p) => p._id !== id),
-          pagination: {
-            ...state.pagination,
-            total: Math.max(0, state.pagination.total - 1),
-          },
-        })),
-    }),
-    {
-      name: 'patient-store',
-      partialize: (state) => ({
-        filters: state.filters,
-        selectedPatient: state.selectedPatient,
+    removePatientFromState: (id) =>
+    set((state) => ({
+      patients: state.patients.filter((p) => p._id !== id),
+      pagination: {
+        ...state.pagination,
+        total: Math.max(0, state.pagination.total - 1)
+      }
+    }, }, },
+      {
+        name: 'patient-store',
+        partialize: (state) => ({
+          filters: state.filters,
+          selectedPatient: state.selectedPatient
+        }
       }),
     }
   )
@@ -430,7 +417,8 @@ export const usePatients = () =>
     loading: state.loading.fetchPatients || false,
     error: state.errors.fetchPatients || null,
     pagination: state.pagination,
-    fetchPatients: state.fetchPatients,
+    fetchPatients: state.fetchPatients
+  }
   }));
 
 export const useSelectedPatient = () =>
@@ -439,7 +427,8 @@ export const useSelectedPatient = () =>
     selectPatient: state.selectPatient,
     loading: state.loading.getPatientById || false,
     error: state.errors.getPatientById || null,
-    getPatientById: state.getPatientById,
+    getPatientById: state.getPatientById
+  }
   }));
 
 export const usePatientFilters = () =>
@@ -448,7 +437,8 @@ export const usePatientFilters = () =>
     setFilters: state.setFilters,
     clearFilters: state.clearFilters,
     searchPatients: state.searchPatients,
-    sortPatients: state.sortPatients,
+    sortPatients: state.sortPatients
+  }
   }));
 
 export const usePatientActions = () =>
@@ -461,13 +451,13 @@ export const usePatientActions = () =>
       create: state.loading.createPatient || false,
       update: state.loading.updatePatient || false,
       delete: state.loading.deletePatient || false,
-      deleteMultiple: state.loading.deleteMultiple || false,
-    },
+      deleteMultiple: state.loading.deleteMultiple || false
+    }
+  },
     errors: {
-      create: state.errors.createPatient || null,
-      update: state.errors.updatePatient || null,
-      delete: state.errors.deletePatient || null,
-      deleteMultiple: state.errors.deleteMultiple || null,
-    },
-    clearErrors: state.clearErrors,
-  }));
+    create: state.errors.createPatient || null,
+    update: state.errors.updatePatient || null,
+    delete: state.errors.deletePatient || null,
+    deleteMultiple: state.errors.deleteMultiple || null,
+  },
+    clearErrors: state.clearErrors}

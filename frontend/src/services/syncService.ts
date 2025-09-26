@@ -3,10 +3,6 @@
  * Handles queuing offline changes and syncing when connection is restored
  */
 
-import { offlineStorage } from '../utils/offlineStorage';
-import { mtrService } from './mtrService';
-import { patientService } from './patientService';
-
 interface SyncResult {
     success: boolean;
     synced: number;
@@ -73,27 +69,26 @@ class SyncService {
 
     // Queue operations for offline sync
     async queueCreate(entity: string, data: unknown): Promise<void> {
-        await offlineStorage.addToSyncQueue({
+        await offlineStorage.addToSyncQueue({ 
             type: 'create',
             entity: entity as string,
-            data,
+            data}
         });
     }
 
     async queueUpdate(entity: string, data: unknown): Promise<void> {
-        await offlineStorage.addToSyncQueue({
+        await offlineStorage.addToSyncQueue({ 
             type: 'update',
             entity: entity as string,
-            data,
+            data}
         });
     }
 
     async queueDelete(entity: string, id: string): Promise<void> {
-        await offlineStorage.addToSyncQueue({
+        await offlineStorage.addToSyncQueue({ 
             type: 'delete',
-            entity: entity as string,
-            data: { id },
-        });
+            entity: entity as string}
+            data: { id }
     }
 
     // Main sync function

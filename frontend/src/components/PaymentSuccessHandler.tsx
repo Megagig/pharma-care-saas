@@ -1,9 +1,3 @@
-import React, { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { subscriptionService } from '../services/subscriptionService';
-import { useUIStore } from '../stores';
-
 /**
  * This component handles the payment success flow globally
  * It checks for payment success indicators in URL or sessionStorage
@@ -63,12 +57,12 @@ const PaymentSuccessHandler: React.FC = () => {
           await refreshUser();
 
           // Show success notification
-          addNotification({
+          addNotification({ 
             type: 'success',
             title: 'Subscription Active',
             message:
               'Your subscription is now active and all features are available.',
-            duration: 8000,
+            duration: 8000}
           });
 
           // IMPORTANT: Instead of removing, let's keep the payment indicators
@@ -81,8 +75,7 @@ const PaymentSuccessHandler: React.FC = () => {
           // Log the bypass status
           console.log('⚠️ TEMPORARY SUBSCRIPTION CHECK BYPASS ACTIVATED:', {
             paymentRef,
-            timestamp: new Date().toLocaleString(),
-          });
+            timestamp: new Date().toLocaleString()}
 
           console.log('Payment success flow completed successfully');
         } catch (error) {

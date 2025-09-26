@@ -1,5 +1,3 @@
-import { apiClient } from './apiClient';
-
 export interface DiagnosticCaseData {
     patientId: string;
     symptoms: {
@@ -365,11 +363,11 @@ class AIdiagnosticService {
                         : diagnosticCase.patientId,
                     symptoms: diagnosticCase.symptoms,
                     vitals: diagnosticCase.vitalSigns || {},
-                    currentMedications: diagnosticCase.currentMedications || [],
-                    allergies: [], // Not stored in this format
-                    medicalHistory: [], // Not stored in this format
-                    labResults: diagnosticCase.labResults || []
-                },
+                currentMedications: diagnosticCase.currentMedications || [],
+                allergies: [], // Not stored in this format
+                medicalHistory: [], // Not stored in this format
+                labResults: diagnosticCase.labResults || []
+            },
                 aiAnalysis: diagnosticCase.aiAnalysis ? {
                     id: diagnosticCase._id,
                     caseId: diagnosticCase.caseId,
@@ -380,48 +378,48 @@ class AIdiagnosticService {
                     status: 'completed' as const
                 } : undefined,
                 status: diagnosticCase.status === 'pending' ? 'analyzing' as const :
-                    diagnosticCase.status === 'processing' ? 'analyzing' as const :
-                        diagnosticCase.status === 'completed' ? 'completed' as const :
-                            diagnosticCase.status === 'failed' ? 'failed' as const : 'analyzing' as const,
+                diagnosticCase.status === 'processing' ? 'analyzing' as const :
+                    diagnosticCase.status === 'completed' ? 'completed' as const :
+                        diagnosticCase.status === 'failed' ? 'failed' as const : 'analyzing' as const,
                 createdAt: diagnosticCase.createdAt,
                 updatedAt: diagnosticCase.updatedAt
             }));
-        } catch (error) {
-            console.error('Failed to get patient cases:', error);
-            throw error;
-        }
+    } catch(error) {
+        console.error('Failed to get patient cases:', error);
+        throw error;
     }
+}
 
     /**
      * Poll for analysis completion
      */
-    async pollAnalysis(caseId: string, maxAttempts: number = 30): Promise<AIAnalysisResult> {
-        let attempts = 0;
+    async pollAnalysis(caseId: string, maxAttempts: number = 30): Promise < AIAnalysisResult > {
+    let attempts = 0;
 
-        while (attempts < maxAttempts) {
-            try {
-                const analysis = await this.getAnalysis(caseId);
+    while(attempts <maxAttempts) {
+        try {
+            const analysis = await this.getAnalysis(caseId);
 
-                if (analysis.status === 'completed') {
-                    return analysis;
-                } else if (analysis.status === 'failed') {
-                    throw new Error('AI analysis failed');
-                }
-
-                // Wait 2 seconds before next attempt
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                attempts++;
-            } catch (error) {
-                if (attempts === maxAttempts - 1) {
-                    throw error;
-                }
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                attempts++;
+            if (analysis.status === 'completed') {
+                return analysis;
+            } else if (analysis.status === 'failed') {
+                throw new Error('AI analysis failed');
             }
+
+            // Wait 2 seconds before next attempt
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            attempts++;
+        } catch (error) {
+            if (attempts === maxAttempts - 1) {
+                throw error;
+            }
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            attempts++;
         }
+    }
 
         throw new Error('Analysis timeout - please check back later');
-    }
+}
 }
 
 export const aiDiagnosticService = new AIdiagnosticService();

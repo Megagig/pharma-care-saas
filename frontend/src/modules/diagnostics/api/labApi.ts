@@ -1,5 +1,4 @@
 import api from '../../../lib/api';
-import type {
     LabOrder,
     LabResult,
     LabOrderForm,
@@ -8,7 +7,6 @@ import type {
     PaginatedResponse,
     LabOrderParams,
     LabResultParams
-} from '../types';
 
 const API_BASE = '/api/lab';
 
@@ -149,7 +147,7 @@ export const labApi = {
         return response.data;
     },
 
-    exportOrder: async (orderId: string): Promise<ApiResponse<{
+exportOrder: async (orderId: string): Promise<ApiResponse<{
         fhirResource: any;
         exportedAt: string;
     }>> => {

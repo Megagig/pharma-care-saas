@@ -1,28 +1,20 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import FollowUpScheduler from '../FollowUpScheduler';
-import { useMTRStore } from '../../stores/mtrStore';
-import { useUIStore } from '../../stores';
-import type { MTRFollowUp, MTRIntervention } from '../../types/mtr';
 
+import userEvent from '@testing-library/user-event';
+// Date picker components are now handled by shadcn/ui
+import FollowUpScheduler from '../FollowUpScheduler';
 // Mock the stores
 vi.mock('../../stores/mtrStore');
 vi.mock('../../stores');
 
 // Mock date-fns functions
-vi.mock('date-fns', () => ({
+vi.mock('date-fns', () => ({ 
   format: vi.fn(() => 'January 1, 2024 at 10:00 AM'),
   isAfter: vi.fn(() => false),
   isBefore: vi.fn(() => false),
   addDays: vi.fn(
     (date, days) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000)
   ),
-  differenceInDays: vi.fn(() => 5),
+  differenceInDays: vi.fn(() => 5)}
 }));
 
 const mockMTRStore = {
@@ -119,18 +111,15 @@ const mockInterventions: MTRIntervention[] = [
 ];
 
 const renderWithProviders = (component: React.ReactElement) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        {component}
-      </LocalizationProvider>
+      {component}
     </QueryClientProvider>
   );
 };
@@ -221,9 +210,9 @@ describe('FollowUpScheduler', () => {
 
       await waitFor(() => {
         expect(mockUIStore.addNotification).toHaveBeenCalledWith(
-          expect.objectContaining({
+          expect.objectContaining({ 
             message: 'Description is required',
-            type: 'error',
+            type: 'error'}
           })
         );
       });
@@ -246,9 +235,9 @@ describe('FollowUpScheduler', () => {
 
       await waitFor(() => {
         expect(mockMTRStore.scheduleFollowUp).toHaveBeenCalledWith(
-          expect.objectContaining({
+          expect.objectContaining({ 
             description: 'Test follow-up',
-            assignedTo: 'Dr. Test',
+            assignedTo: 'Dr. Test'}
           })
         );
       });
@@ -352,9 +341,9 @@ describe('FollowUpScheduler', () => {
 
       await waitFor(() => {
         expect(mockUIStore.addNotification).toHaveBeenCalledWith(
-          expect.objectContaining({
+          expect.objectContaining({ 
             message: 'Network error',
-            type: 'error',
+            type: 'error'}
           })
         );
       });
@@ -376,8 +365,7 @@ describe('FollowUpScheduler', () => {
       renderWithProviders(<FollowUpScheduler {...defaultProps} />);
 
       const scheduleButton = screen.getByRole('button', {
-        name: /schedule follow-up/i,
-      });
+        name: /schedule follow-up/i}
       expect(scheduleButton).toBeDisabled();
     });
   });
@@ -406,9 +394,9 @@ describe('FollowUpScheduler', () => {
 
       await waitFor(() => {
         expect(onFollowUpScheduled).toHaveBeenCalledWith(
-          expect.objectContaining({
+          expect.objectContaining({ 
             description: 'Test follow-up',
-            assignedTo: 'Dr. Test',
+            assignedTo: 'Dr. Test'}
           })
         );
       });

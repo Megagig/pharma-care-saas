@@ -168,8 +168,7 @@ const medicationManagementService = {
     reason?: string
   ): Promise<MedicationData> => {
     const response = await api.patch(`/medication-management/${id}/archive`, {
-      reason,
-    });
+      reason}
     return response.data.data;
   },
 

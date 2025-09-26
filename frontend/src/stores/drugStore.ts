@@ -1,14 +1,3 @@
-import { create } from 'zustand';
-import { 
-  DrugSearchResult, 
-  DrugMonograph, 
-  DrugInteraction, 
-  AdverseEffect, 
-  FormularyInfo,
-  TherapyPlan,
-  Drug
-} from '../types/drugTypes';
-
 interface DrugState {
   // Search state
   searchQuery: string;
@@ -70,7 +59,7 @@ interface DrugState {
   resetAll: () => void;
 }
 
-export const useDrugStore = create<DrugState>()((set) => ({
+export const useDrugStore = create<DrugState>()((set) => ({ 
   // Search state
   searchQuery: '',
   searchResults: null,
@@ -101,7 +90,7 @@ export const useDrugStore = create<DrugState>()((set) => ({
   adverseEffectsError: null,
   formularyError: null,
   
-  // Actions
+  // Actions })
   setSearchQuery: (query) => set({ searchQuery: query }),
   setSearchResults: (results) => set({ searchResults: results }),
   setIsSearching: (isSearching) => set({ isSearching }),
@@ -127,16 +116,16 @@ export const useDrugStore = create<DrugState>()((set) => ({
   setAdverseEffectsError: (error) => set({ adverseEffectsError: error }),
   setFormularyError: (error) => set({ formularyError: error }),
   
-  resetDrugData: () => set({
+  resetDrugData: () => set({ 
     selectedDrug: null,
     drugMonograph: null,
     drugInteractions: null,
     adverseEffects: null,
     formularyInfo: null,
-    searchResults: null
+    searchResults: null })
   }),
   
-  resetAll: () => set({
+  resetAll: () => set({ 
     searchQuery: '',
     searchResults: null,
     isSearching: false,
@@ -156,6 +145,6 @@ export const useDrugStore = create<DrugState>()((set) => ({
     monographError: null,
     interactionError: null,
     adverseEffectsError: null,
-    formularyError: null
+    formularyError: null })
   })
 }));

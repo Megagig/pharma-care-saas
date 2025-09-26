@@ -1,38 +1,23 @@
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-
-import {
-    useCreateDiagnosticRequest,
-    useDiagnosticResult,
-    useDiagnosticHistory,
-    useApproveDiagnostic,
-} from '../useDiagnostics';
-import { diagnosticApi } from '../../api/diagnosticApi';
-
 // Mock the API
 vi.mock('../../api/diagnosticApi');
-vi.mock('../../../../stores', () => ({
+vi.mock('../../../../stores', () => ({ 
     useUIStore: () => ({
-        addNotification: vi.fn(),
-    }),
-}));
+        addNotification: vi.fn()}
+    })}
 
 const mockedDiagnosticApi = vi.mocked(diagnosticApi);
 
 // Test wrapper with QueryClient
 const createWrapper = () => {
-    const queryClient = new QueryClient({
+    const queryClient = new QueryClient({ 
         defaultOptions: {
             queries: {
-                retry: false,
+                retry: false}
             },
             mutations: {
                 retry: false,
             },
-        },
-    });
+        }
 
     return ({ children }: { children: ReactNode }) => (
         <QueryClientProvider client= { queryClient } > { children } </QueryClientProvider>
@@ -64,9 +49,9 @@ describe('useDiagnostics hooks', () => {
                 updatedAt: '2023-01-01T00:00:00Z',
             };
 
-            mockedDiagnosticApi.createRequest.mockResolvedValue({
+            mockedDiagnosticApi.createRequest.mockResolvedValue({ 
                 success: true,
-                data: mockRequest,
+                data: mockRequest}
             });
 
             const wrapper = createWrapper();
@@ -155,9 +140,9 @@ describe('useDiagnostics hooks', () => {
                 createdAt: '2023-01-01T00:00:00Z',
             };
 
-            mockedDiagnosticApi.getResult.mockResolvedValue({
+            mockedDiagnosticApi.getResult.mockResolvedValue({ 
                 success: true,
-                data: mockResult,
+                data: mockResult}
             });
 
             const wrapper = createWrapper();
@@ -175,9 +160,8 @@ describe('useDiagnostics hooks', () => {
         });
 
         it('should handle 404 errors gracefully', async () => {
-            mockedDiagnosticApi.getResult.mockRejectedValue({
-                response: { status: 404 },
-            });
+            mockedDiagnosticApi.getResult.mockRejectedValue({  })
+                response: { status: 404 }
 
             const wrapper = createWrapper();
             const { result } = renderHook(
@@ -231,10 +215,10 @@ describe('useDiagnostics hooks', () => {
             });
 
             expect(result.current.data).toEqual(mockHistory);
-            expect(mockedDiagnosticApi.getHistory).toHaveBeenCalledWith({
+            expect(mockedDiagnosticApi.getHistory).toHaveBeenCalledWith({ 
                 patientId: 'patient-1',
                 page: 1,
-                limit: 10,
+                limit: 10}
             });
         });
     });
@@ -251,9 +235,9 @@ describe('useDiagnostics hooks', () => {
                 },
             };
 
-            mockedDiagnosticApi.approveResult.mockResolvedValue({
+            mockedDiagnosticApi.approveResult.mockResolvedValue({ 
                 success: true,
-                data: mockApprovedResult,
+                data: mockApprovedResult}
             });
 
             const wrapper = createWrapper();

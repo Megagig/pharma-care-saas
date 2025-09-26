@@ -1,53 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Alert,
-  CircularProgress,
-  Chip,
-  IconButton,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Autocomplete,
-} from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Cancel';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import PersonIcon from '@mui/icons-material/Person';
-import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import {
-  useClinicalIntervention,
+
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Spinner, Alert, Accordion } from '@/components/ui/button';
+useClinicalIntervention,
   useCreateIntervention,
   useUpdateIntervention,
   useStrategyRecommendations,
-} from '../queries/useClinicalInterventions';
-import { useSearchPatients } from '../queries/usePatients';
-import type {
-  CreateInterventionData,
-  UpdateInterventionData,
-  InterventionStrategy,
-} from '../stores/clinicalInterventionStore';
+
 
 interface StrategyRecommendation {
   type: string;
@@ -57,7 +15,6 @@ interface StrategyRecommendation {
   expectedOutcome: string;
   priority: 'primary' | 'secondary';
 }
-
 // Patient search interface for consistent typing
 interface PatientSearchResult {
   _id: string;
@@ -66,8 +23,7 @@ interface PatientSearchResult {
   dateOfBirth?: string;
   mrn?: string;
 }
-
-const validationSchema = Yup.object({
+const validationSchema = Yup.object({ 
   patientId: Yup.string().required('Patient is required'),
   category: Yup.string().required('Category is required'),
   priority: Yup.string().required('Priority is required'),
@@ -76,14 +32,12 @@ const validationSchema = Yup.object({
     .min(10, 'Description must be at least 10 characters'),
   estimatedDuration: Yup.number()
     .min(1, 'Duration must be at least 1 day')
-    .max(365, 'Duration cannot exceed 365 days'),
+    .max(365, 'Duration cannot exceed 365 days')}
 });
-
 const ClinicalInterventionForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id);
-
   // State
   const [strategies, setStrategies] = useState<
     Omit<InterventionStrategy, '_id'>[]
@@ -95,7 +49,6 @@ const ClinicalInterventionForm: React.FC = () => {
     'drug_therapy_problem'
   );
   const [patientSearchQuery, setPatientSearchQuery] = useState<string>('');
-
   // API queries
   const { data: interventionResponse, isLoading: loadingIntervention } =
     useClinicalIntervention(id || '');
@@ -105,29 +58,26 @@ const ClinicalInterventionForm: React.FC = () => {
     useSearchPatients(patientSearchQuery);
   const createMutation = useCreateIntervention();
   const updateMutation = useUpdateIntervention();
-
   const intervention = interventionResponse?.data;
   const recommendations = recommendationsResponse?.data || [];
-
   // Extract patients from search results with proper error handling
   const patients: PatientSearchResult[] = React.useMemo(() => {
     try {
       const results = patientSearchResults?.data?.results || [];
-      return results.map((patient: any) => ({
+      return results.map((patient: any) => ({ 
         _id: patient._id,
         firstName: patient.firstName || '',
         lastName: patient.lastName || '',
         dateOfBirth: patient.dateOfBirth || patient.dob || '',
-        mrn: patient.mrn || '',
+        mrn: patient.mrn || ''}
       }));
     } catch (error) {
       console.error('Error processing patient search results:', error);
       return [];
     }
   }, [patientSearchResults]);
-
   // Form handling
-  const formik = useFormik<CreateInterventionData>({
+  const formik = useFormik<CreateInterventionData>({ 
     initialValues: {
       patientId: '',
       category: 'drug_therapy_problem',
@@ -135,7 +85,7 @@ const ClinicalInterventionForm: React.FC = () => {
       issueDescription: '',
       estimatedDuration: 7,
       strategies: [],
-      relatedDTPIds: [],
+      relatedDTPIds: []}
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -144,34 +94,30 @@ const ClinicalInterventionForm: React.FC = () => {
           ...values,
           strategies: strategies,
         };
-
         if (isEditing && id) {
-          await updateMutation.mutateAsync({
+          await updateMutation.mutateAsync({ 
             interventionId: id,
-            updates: formData as UpdateInterventionData,
+            updates: formData as UpdateInterventionData}
           });
         } else {
           await createMutation.mutateAsync(formData);
         }
-
         navigate('/pharmacy/clinical-interventions/list');
       } catch (error) {
         console.error('Form submission error:', error);
       }
-    },
-  });
-
+    }
   // Load intervention data for editing
   useEffect(() => {
     if (isEditing && intervention) {
-      formik.setValues({
+      formik.setValues({ 
         patientId: intervention.patientId,
         category: intervention.category,
         priority: intervention.priority,
         issueDescription: intervention.issueDescription,
         estimatedDuration: intervention.estimatedDuration || 7,
         strategies: intervention.strategies || [],
-        relatedDTPIds: intervention.relatedDTPIds || [],
+        relatedDTPIds: intervention.relatedDTPIds || []}
       });
       setStrategies(intervention.strategies || []);
       setCurrentCategory(intervention.category);
@@ -180,17 +126,14 @@ const ClinicalInterventionForm: React.FC = () => {
       }
     }
   }, [intervention, isEditing, formik]);
-
   // Strategy management
   const addStrategy = (strategy: Omit<InterventionStrategy, '_id'>) => {
     setStrategies((prev) => [...prev, strategy]);
     setStrategyDialogOpen(false);
   };
-
   const removeStrategy = (index: number) => {
     setStrategies((prev) => prev.filter((_, i) => i !== index));
   };
-
   const addRecommendedStrategy = (recommendation: StrategyRecommendation) => {
     const strategy: Omit<InterventionStrategy, '_id'> = {
       type: recommendation.type as InterventionStrategy['type'],
@@ -201,50 +144,48 @@ const ClinicalInterventionForm: React.FC = () => {
     };
     addStrategy(strategy);
   };
-
   if (isEditing && loadingIntervention) {
     return (
-      <Box
+      <div
         display="flex"
         justifyContent="center"
         alignItems="center"
         minHeight={400}
       >
-        <CircularProgress />
-      </Box>
+        <Spinner />
+      </div>
     );
   }
-
   return (
-    <Box>
+    <div>
       {/* Header */}
-      <Box
+      <div
         display="flex"
         justifyContent="space-between"
         alignItems="center"
         mb={3}
       >
-        <Typography variant="h5" component="h2">
+        <div  component="h2">
           {isEditing
             ? 'Edit Clinical Intervention'
             : 'Create New Clinical Intervention'}
-        </Typography>
-        <Box display="flex" gap={1}>
+        </div>
+        <div display="flex" gap={1}>
           <Button
-            variant="outlined"
+            
             startIcon={<CancelIcon />}
             onClick={() => navigate('/pharmacy/clinical-interventions/list')}
           >
             Cancel
           </Button>
           <Button
-            variant="contained"
+            
             startIcon={<SaveIcon />}
             onClick={() => formik.handleSubmit()}
             disabled={
               formik.isSubmitting ||
               createMutation.isPending ||
-              updateMutation.isPending
+              updateMutation.isPending}
             }
           >
             {formik.isSubmitting ||
@@ -255,27 +196,26 @@ const ClinicalInterventionForm: React.FC = () => {
               ? 'Update'
               : 'Create'}
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       <form onSubmit={formik.handleSubmit}>
-        <Box display="flex" flexDirection="column" gap={3}>
+        <div display="flex" flexDirection="column" gap={3}>
           {/* Basic Information */}
-          <Box>
+          <div>
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
+                <div  gutterBottom>
                   Basic Information
-                </Typography>
-                <Box display="flex" flexWrap="wrap" gap={2}>
+                </div>
+                <div display="flex" flexWrap="wrap" gap={2}>
                   {/* Patient Selection */}
-                  <Box sx={{ width: { xs: '100%', md: '50%' } }}>
-                    <Box>
-                      <Typography variant="subtitle2" gutterBottom>
+                  <div className="">
+                    <div>
+                      <div  gutterBottom>
                         Patient *
-                      </Typography>
+                      </div>
                       {selectedPatient ? (
-                        <Box
+                        <div
                           display="flex"
                           alignItems="center"
                           gap={1}
@@ -285,13 +225,13 @@ const ClinicalInterventionForm: React.FC = () => {
                           borderRadius={1}
                         >
                           <PersonIcon color="action" />
-                          <Box flex={1}>
-                            <Typography variant="body2">
+                          <div flex={1}>
+                            <div >
                               {selectedPatient.firstName}{' '}
                               {selectedPatient.lastName}
-                            </Typography>
-                            <Typography
-                              variant="caption"
+                            </div>
+                            <div
+                              
                               color="text.secondary"
                             >
                               {selectedPatient.mrn &&
@@ -301,24 +241,20 @@ const ClinicalInterventionForm: React.FC = () => {
                                 ' • '}
                               {selectedPatient.dateOfBirth &&
                                 `DOB: ${selectedPatient.dateOfBirth}`}
-                            </Typography>
-                          </Box>
+                            </div>
+                          </div>
                           <Button
                             size="small"
-                            onClick={() => {
-                              setSelectedPatient(null);
-                              formik.setFieldValue('patientId', '');
-                            }}
-                          >
+                            >
                             Change
                           </Button>
-                        </Box>
+                        </div>
                       ) : (
                         <Autocomplete
                           options={patients}
                           loading={searchingPatients}
                           getOptionLabel={(option) => {
-                            const name =
+                            const name =}
                               `${option.firstName} ${option.lastName}`.trim();
                             const mrn = option.mrn
                               ? ` (MRN: ${option.mrn})`
@@ -327,98 +263,79 @@ const ClinicalInterventionForm: React.FC = () => {
                               ? ` - DOB: ${option.dateOfBirth}`
                               : '';
                             return `${name}${mrn}${dob}`;
-                          }}
-                          onChange={(_, value) => {
-                            setSelectedPatient(value);
-                            formik.setFieldValue('patientId', value?._id || '');
-                          }}
-                          onInputChange={(_, newInputValue) => {
-                            setPatientSearchQuery(newInputValue);
-                          }}
                           renderInput={(params) => (
-                            <TextField
+                            <Input}
                               {...params}
                               placeholder="Search patients by name or MRN..."
                               error={
                                 formik.touched.patientId &&
-                                Boolean(formik.errors.patientId)
+                                Boolean(formik.errors.patientId)}
                               }
                               helperText={
                                 formik.touched.patientId &&
-                                formik.errors.patientId
+                                formik.errors.patientId}
                               }
                               InputProps={{
                                 ...params.InputProps,
                                 endAdornment: (
-                                  <>
-                                    {searchingPatients ? (
-                                      <CircularProgress
-                                        color="inherit"
+                                  <>{searchingPatients ? (
+                                      <Spinner
+                                        color="inherit"}
                                         size={20}
                                       />
                                     ) : null}
                                     {params.InputProps.endAdornment}
                                   </>
                                 ),
-                              }}
                             />
                           )}
-                          renderOption={(props, option) => (
-                            <Box component="li" {...props}>
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  width: '100%',
-                                }}
+                          renderOption={(props, option) => (}
+                            <div component="li" {...props}>
+                              <div
+                                className=""
                               >
-                                <Typography variant="body2" fontWeight={500}>
+                                <div  fontWeight={500}>
                                   {option.firstName} {option.lastName}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
+                                </div>
+                                <div
+                                  
                                   color="text.secondary"
                                 >
                                   {option.mrn && `MRN: ${option.mrn}`}
                                   {option.mrn && option.dateOfBirth && ' • '}
                                   {option.dateOfBirth &&
                                     `DOB: ${option.dateOfBirth}`}
-                                </Typography>
-                              </Box>
-                            </Box>
+                                </div>
+                              </div>
+                            </div>
                           )}
                           noOptionsText={
                             patientSearchQuery.length < 2
                               ? 'Type at least 2 characters to search patients'
                               : searchingPatients
                               ? 'Searching patients...'
-                              : 'No patients found'
+                              : 'No patients found'}
                           }
                           filterOptions={(x) => x} // Disable client-side filtering since we're using server-side search
                         />
                       )}
-                    </Box>
-                  </Box>
-
+                    </div>
+                  </div>
                   {/* Category */}
-                  <Box sx={{ width: { xs: '100%', md: '50%' } }}>
-                    <FormControl
+                  <div className="">
+                    <div
                       fullWidth
                       error={
                         formik.touched.category &&
-                        Boolean(formik.errors.category)
+                        Boolean(formik.errors.category)}
                       }
                     >
-                      <InputLabel>Category *</InputLabel>
+                      <Label>Category *</Label>
                       <Select
                         name="category"
                         value={formik.values.category}
                         label="Category *"
-                        onChange={(e) => {
-                          formik.handleChange(e);
-                          setCurrentCategory(e.target.value);
-                        }}
-                      >
+                        >
                         <MenuItem value="drug_therapy_problem">
                           Drug Therapy Problem
                         </MenuItem>
@@ -437,19 +354,18 @@ const ClinicalInterventionForm: React.FC = () => {
                         </MenuItem>
                         <MenuItem value="other">Other</MenuItem>
                       </Select>
-                    </FormControl>
-                  </Box>
-
+                    </div>
+                  </div>
                   {/* Priority */}
-                  <Box sx={{ width: { xs: '100%', md: '50%' } }}>
-                    <FormControl
+                  <div className="">
+                    <div
                       fullWidth
                       error={
                         formik.touched.priority &&
-                        Boolean(formik.errors.priority)
+                        Boolean(formik.errors.priority)}
                       }
                     >
-                      <InputLabel>Priority *</InputLabel>
+                      <Label>Priority *</Label>
                       <Select
                         name="priority"
                         value={formik.values.priority}
@@ -461,12 +377,11 @@ const ClinicalInterventionForm: React.FC = () => {
                         <MenuItem value="high">High</MenuItem>
                         <MenuItem value="critical">Critical</MenuItem>
                       </Select>
-                    </FormControl>
-                  </Box>
-
+                    </div>
+                  </div>
                   {/* Estimated Duration */}
-                  <Box sx={{ width: { xs: '100%', md: '50%' } }}>
-                    <TextField
+                  <div className="">
+                    <Input
                       fullWidth
                       name="estimatedDuration"
                       label="Estimated Duration (days)"
@@ -475,18 +390,17 @@ const ClinicalInterventionForm: React.FC = () => {
                       onChange={formik.handleChange}
                       error={
                         formik.touched.estimatedDuration &&
-                        Boolean(formik.errors.estimatedDuration)
+                        Boolean(formik.errors.estimatedDuration)}
                       }
                       helperText={
                         formik.touched.estimatedDuration &&
-                        formik.errors.estimatedDuration
+                        formik.errors.estimatedDuration}
                       }
                     />
-                  </Box>
-
+                  </div>
                   {/* Issue Description */}
-                  <Box>
-                    <TextField
+                  <div>
+                    <Input
                       fullWidth
                       multiline
                       rows={4}
@@ -496,57 +410,55 @@ const ClinicalInterventionForm: React.FC = () => {
                       onChange={formik.handleChange}
                       error={
                         formik.touched.issueDescription &&
-                        Boolean(formik.errors.issueDescription)
+                        Boolean(formik.errors.issueDescription)}
                       }
                       helperText={
                         formik.touched.issueDescription &&
-                        formik.errors.issueDescription
+                        formik.errors.issueDescription}
                       }
                       placeholder="Describe the clinical issue or problem that requires intervention..."
                     />
-                  </Box>
-                </Box>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          </Box>
-
+          </div>
           {/* Strategies */}
-          <Box>
+          <div>
             <Card>
               <CardContent>
-                <Box
+                <div
                   display="flex"
                   justifyContent="space-between"
                   alignItems="center"
                   mb={2}
                 >
-                  <Typography variant="h6">Intervention Strategies</Typography>
+                  <div >Intervention Strategies</div>
                   <Button
-                    variant="outlined"
+                    
                     startIcon={<AddIcon />}
                     onClick={() => setStrategyDialogOpen(true)}
                   >
                     Add Strategy
                   </Button>
-                </Box>
-
+                </div>
                 {/* Recommended Strategies */}
                 {recommendations.length > 0 && (
-                  <Accordion sx={{ mb: 2 }}>
+                  <Accordion className="">
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="subtitle1">
+                      <div >
                         Recommended Strategies ({recommendations.length})
-                      </Typography>
+                      </div>
                     </AccordionSummary>
                     <AccordionDetails>
                       <List>
                         {recommendations.map((rec, index) => (
-                          <ListItem key={index} divider>
-                            <ListItemText
+                          <div key={index} divider>
+                            <div
                               primary={rec.label}
                               secondary={rec.description}
                             />
-                            <ListItemSecondaryAction>
+                            <divSecondaryAction>
                               <Button
                                 size="small"
                                 onClick={() => addRecommendedStrategy(rec)}
@@ -554,54 +466,53 @@ const ClinicalInterventionForm: React.FC = () => {
                                 Add
                               </Button>
                             </ListItemSecondaryAction>
-                          </ListItem>
+                          </div>
                         ))}
                       </List>
                     </AccordionDetails>
                   </Accordion>
                 )}
-
                 {/* Current Strategies */}
                 {strategies.length > 0 ? (
                   <List>
                     {strategies.map((strategy, index) => (
-                      <ListItem key={index} divider>
-                        <ListItemText
-                          primary={
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Typography variant="body1">
+                      <div key={index} divider>
+                        <div
+                          primary={}
+                            <div display="flex" alignItems="center" gap={1}>
+                              <div >
                                 {strategy.description}
-                              </Typography>
+                              </div>
                               <Chip
                                 label={strategy.priority}
                                 size="small"
                                 color={
                                   strategy.priority === 'primary'
                                     ? 'primary'
-                                    : 'default'
+                                    : 'default'}
                                 }
                               />
-                            </Box>
+                            </div>
                           }
                           secondary={
-                            <Box>
-                              <Typography
-                                variant="body2"
+                            <div>
+                              <div
+                                
                                 color="text.secondary"
-                              >
+                              >}
                                 <strong>Rationale:</strong> {strategy.rationale}
-                              </Typography>
-                              <Typography
-                                variant="body2"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 <strong>Expected Outcome:</strong>{' '}
                                 {strategy.expectedOutcome}
-                              </Typography>
-                            </Box>
+                              </div>
+                            </div>
                           }
                         />
-                        <ListItemSecondaryAction>
+                        <divSecondaryAction>
                           <IconButton
                             edge="end"
                             color="error"
@@ -610,7 +521,7 @@ const ClinicalInterventionForm: React.FC = () => {
                             <DeleteIcon />
                           </IconButton>
                         </ListItemSecondaryAction>
-                      </ListItem>
+                      </div>
                     ))}
                   </List>
                 ) : (
@@ -621,40 +532,36 @@ const ClinicalInterventionForm: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-          </Box>
-        </Box>
+          </div>
+        </div>
       </form>
-
       {/* Strategy Dialog */}
       <StrategyDialog
         open={strategyDialogOpen}
         onClose={() => setStrategyDialogOpen(false)}
         onAdd={addStrategy}
       />
-    </Box>
+    </div>
   );
 };
-
 // Strategy Dialog Component
 interface StrategyDialogProps {
   open: boolean;
   onClose: () => void;
   onAdd: (strategy: Omit<InterventionStrategy, '_id'>) => void;
 }
-
-const StrategyDialog: React.FC<StrategyDialogProps> = ({
+const StrategyDialog: React.FC<StrategyDialogProps> = ({ 
   open,
   onClose,
-  onAdd,
+  onAdd
 }) => {
-  const [strategy, setStrategy] = useState<Omit<InterventionStrategy, '_id'>>({
+  const [strategy, setStrategy] = useState<Omit<InterventionStrategy, '_id'>>({ 
     type: 'medication_review',
     description: '',
     rationale: '',
     expectedOutcome: '',
-    priority: 'primary',
+    priority: 'primary'}
   });
-
   const handleAdd = () => {
     if (
       strategy.description &&
@@ -662,31 +569,30 @@ const StrategyDialog: React.FC<StrategyDialogProps> = ({
       strategy.expectedOutcome
     ) {
       onAdd(strategy);
-      setStrategy({
+      setStrategy({ 
         type: 'medication_review',
         description: '',
         rationale: '',
         expectedOutcome: '',
-        priority: 'primary',
+        priority: 'primary'}
       });
     }
   };
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Add Intervention Strategy</DialogTitle>
       <DialogContent>
-        <Box display="flex" flexWrap="wrap" gap={2} sx={{ mt: 1 }}>
-          <Box sx={{ width: { xs: '100%', md: '50%' } }}>
-            <FormControl fullWidth>
-              <InputLabel>Strategy Type</InputLabel>
+        <div display="flex" flexWrap="wrap" gap={2} className="">
+          <div className="">
+            <div fullWidth>
+              <Label>Strategy Type</Label>
               <Select
                 value={strategy.type}
                 label="Strategy Type"
                 onChange={(e) =>
-                  setStrategy((prev) => ({
-                    ...prev,
-                    type: e.target.value as InterventionStrategy['type'],
+                  setStrategy((prev) => ({ 
+                    ...prev}
+                    type: e.target.value as InterventionStrategy['type'],}
                   }))
                 }
               >
@@ -707,81 +613,81 @@ const StrategyDialog: React.FC<StrategyDialogProps> = ({
                 </MenuItem>
                 <MenuItem value="custom">Custom</MenuItem>
               </Select>
-            </FormControl>
-          </Box>
-          <Box sx={{ width: { xs: '100%', md: '50%' } }}>
-            <FormControl fullWidth>
-              <InputLabel>Priority</InputLabel>
+            </div>
+          </div>
+          <div className="">
+            <div fullWidth>
+              <Label>Priority</Label>
               <Select
                 value={strategy.priority}
                 label="Priority"
                 onChange={(e) =>
-                  setStrategy((prev) => ({
+                  setStrategy((prev) => ({ 
                     ...prev,
-                    priority: e.target
-                      .value as InterventionStrategy['priority'],
+                    priority: e.target })
+                      .value as InterventionStrategy['priority'],}
                   }))
                 }
               >
                 <MenuItem value="primary">Primary</MenuItem>
                 <MenuItem value="secondary">Secondary</MenuItem>
               </Select>
-            </FormControl>
-          </Box>
-          <Box>
-            <TextField
+            </div>
+          </div>
+          <div>
+            <Input
               fullWidth
               label="Description"
               value={strategy.description}
               onChange={(e) =>
-                setStrategy((prev) => ({
-                  ...prev,
-                  description: e.target.value,
+                setStrategy((prev) => ({ 
+                  ...prev}
+                  description: e.target.value,}
                 }))
               }
               placeholder="Describe the intervention strategy..."
             />
-          </Box>
-          <Box>
-            <TextField
+          </div>
+          <div>
+            <Input
               fullWidth
               multiline
               rows={3}
               label="Rationale"
               value={strategy.rationale}
-              onChange={(e) =>
+              onChange={(e) =>}
                 setStrategy((prev) => ({ ...prev, rationale: e.target.value }))
               }
               placeholder="Explain the reasoning behind this strategy..."
             />
-          </Box>
-          <Box>
-            <TextField
+          </div>
+          <div>
+            <Input
               fullWidth
               multiline
               rows={2}
               label="Expected Outcome"
               value={strategy.expectedOutcome}
               onChange={(e) =>
-                setStrategy((prev) => ({
-                  ...prev,
-                  expectedOutcome: e.target.value,
+                setStrategy((prev) => ({ 
+                  ...prev}
+                  expectedOutcome: e.target.value,}
                 }))
               }
               placeholder="Describe the expected outcome of this strategy..."
             />
-          </Box>
-        </Box>
+          </div>
+        </div>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
         <Button
           onClick={handleAdd}
-          variant="contained"
+          
           disabled={
             !strategy.description ||
             !strategy.rationale ||
-            !strategy.expectedOutcome
+            !strategy.expectedOutcome}
           }
         >
           Add Strategy
@@ -790,5 +696,4 @@ const StrategyDialog: React.FC<StrategyDialogProps> = ({
     </Dialog>
   );
 };
-
 export default ClinicalInterventionForm;

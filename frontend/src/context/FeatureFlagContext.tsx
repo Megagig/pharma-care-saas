@@ -1,7 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
-import featureFlagService, {
-  FeatureFlag,
-} from '../services/featureFlagService';
+
 import FeatureFlagUtil from '../utils/featureFlagUtil';
 
 interface FeatureFlagContextType {
@@ -21,8 +18,8 @@ interface FeatureFlagProviderProps {
   children: ReactNode;
 }
 
-export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({
-  children,
+export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({ 
+  children
 }) => {
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -69,15 +66,7 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({
 
   return (
     <FeatureFlagContext.Provider
-      value={{
-        featureFlags,
-        isLoading,
-        error,
-        refreshFlags,
-        isFeatureEnabled,
-        hasFeature: isFeatureEnabled, // Alias for consistency
-      }}
-    >
+      >
       {children}
     </FeatureFlagContext.Provider>
   );

@@ -1,30 +1,7 @@
-import React from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Stack,
-  Chip,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-} from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { useResponsive } from '../../hooks/useResponsive';
 
+import { Card, CardContent } from '@/components/ui/button';
 // Generic type for table row data
 type TableRowData = Record<string, unknown>;
-
 export interface ResponsiveTableColumn<T = TableRowData> {
   key: string;
   label: string;
@@ -36,7 +13,6 @@ export interface ResponsiveTableColumn<T = TableRowData> {
   hideOnMobile?: boolean;
   priority?: number; // Lower numbers have higher priority on mobile
 }
-
 export interface ResponsiveTableAction<T = TableRowData> {
   label: string;
   icon?: React.ReactNode;
@@ -45,7 +21,6 @@ export interface ResponsiveTableAction<T = TableRowData> {
   disabled?: (row: T) => boolean;
   hidden?: (row: T) => boolean;
 }
-
 interface ResponsiveTableProps<T = TableRowData> {
   data: T[];
   columns: ResponsiveTableColumn<T>[];
@@ -70,8 +45,7 @@ interface ResponsiveTableProps<T = TableRowData> {
       | 'warning';
   }>;
 }
-
-export const ResponsiveTable = <T extends TableRowData = TableRowData>({
+export const ResponsiveTable = <T extends TableRowData = TableRowData>({ 
   data,
   columns,
   actions = [],
@@ -81,12 +55,11 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
   onRowClick,
   cardTitle,
   cardSubtitle,
-  cardChips,
+  cardChips}
 }: ResponsiveTableProps<T>) => {
   const { isMobile } = useResponsive();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [selectedRow, setSelectedRow] = React.useState<T | null>(null);
-
   const handleActionMenuOpen = (
     event: React.MouseEvent<HTMLElement>,
     row: T
@@ -95,19 +68,16 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
     setAnchorEl(event.currentTarget);
     setSelectedRow(row);
   };
-
   const handleActionMenuClose = () => {
     setAnchorEl(null);
     setSelectedRow(null);
   };
-
   const handleActionClick = (action: ResponsiveTableAction<T>) => {
     if (selectedRow) {
       action.onClick(selectedRow);
       handleActionMenuClose();
     }
   };
-
   // Filter and sort columns for mobile display
   const getMobileColumns = () => {
     return columns
@@ -115,7 +85,6 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
       .sort((a, b) => (a.priority || 999) - (b.priority || 999))
       .slice(0, 3); // Show only top 3 columns on mobile
   };
-
   const getCellValue = (
     row: T,
     column: ResponsiveTableColumn<T>,
@@ -124,75 +93,61 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
     const value = (row as Record<string, unknown>)[column.key];
     return column.render ? column.render(value, row, index) : value;
   };
-
   const getVisibleActions = (row: T) => {
     return actions.filter((action) => !action.hidden || !action.hidden(row));
   };
-
   if (loading) {
     return (
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography>Loading...</Typography>
-      </Box>
+      <div className="">
+        <div>Loading...</div>
+      </div>
     );
   }
-
   if (data.length === 0) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography color="text.secondary">{emptyMessage}</Typography>
-      </Box>
+      <div className="">
+        <div color="text.secondary">{emptyMessage}</div>
+      </div>
     );
   }
-
   // Mobile card layout
   if (isMobile) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <div className="">
         {data.map((row, index) => {
           const visibleActions = getVisibleActions(row);
           const mobileColumns = getMobileColumns();
-
           return (
             <Card
               key={keyExtractor(row, index)}
               onClick={() => onRowClick && onRowClick(row)}
-              sx={{
-                cursor: onRowClick ? 'pointer' : 'default',
-                '&:hover': onRowClick ? { elevation: 3 } : {},
-              }}
-            >
-              <CardContent sx={{ py: 2 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                  }}
+              className="">
+              <CardContent className="">
+                <div
+                  className=""
                 >
-                  <Box sx={{ flex: 1 }}>
+                  <div className="">
                     {/* Card title and subtitle */}
                     {cardTitle && (
-                      <Typography
-                        variant="subtitle1"
+                      <div
+                        
                         component="div"
-                        sx={{ fontWeight: 600 }}
+                        className=""
                       >
                         {cardTitle(row)}
-                      </Typography>
+                      </div>
                     )}
                     {cardSubtitle && (
-                      <Typography
-                        variant="body2"
+                      <div
+                        
                         color="text.secondary"
-                        sx={{ mb: 1 }}
+                        className=""
                       >
                         {cardSubtitle(row)}
-                      </Typography>
+                      </div>
                     )}
-
                     {/* Mobile columns */}
-                    <Stack spacing={0.5}>
+                    <div spacing={0.5}>
                       {mobileColumns.map((column) => {
                         const value = getCellValue(row, column, index);
                         if (
@@ -201,40 +156,29 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
                           value === ''
                         )
                           return null;
-
                         return (
-                          <Box
+                          <div
                             key={column.key}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
+                            className=""
                           >
-                            <Typography
-                              variant="caption"
+                            <div
+                              
                               color="text.secondary"
-                              sx={{ minWidth: 60 }}
+                              className=""
                             >
                               {column.label}:
-                            </Typography>
-                            <Typography variant="body2">
+                            </div>
+                            <div >
                               {value as React.ReactNode}
-                            </Typography>
-                          </Box>
+                            </div>
+                          </div>
                         );
                       })}
-                    </Stack>
-
+                    </div>
                     {/* Card chips */}
                     {cardChips && (
-                      <Box
-                        sx={{
-                          mt: 1,
-                          display: 'flex',
-                          gap: 0.5,
-                          flexWrap: 'wrap',
-                        }}
+                      <div
+                        className=""
                       >
                         {cardChips(row).map((chip, chipIndex) => (
                           <Chip
@@ -242,13 +186,12 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
                             label={chip.label}
                             size="small"
                             color={chip.color}
-                            variant="outlined"
+                            
                           />
                         ))}
-                      </Box>
+                      </div>
                     )}
-                  </Box>
-
+                  </div>
                   {/* Actions menu */}
                   {visibleActions.length > 0 && (
                     <IconButton
@@ -258,20 +201,17 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
                       <MoreVertIcon />
                     </IconButton>
                   )}
-                </Box>
+                </div>
               </CardContent>
             </Card>
           );
         })}
-
         {/* Actions menu */}
         <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleActionMenuClose}
-          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        >
+          >
           {selectedRow &&
             getVisibleActions(selectedRow).map((action, index) => (
               <MenuItem
@@ -279,18 +219,17 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
                 onClick={() => handleActionClick(action)}
                 disabled={action.disabled && action.disabled(selectedRow)}
               >
-                {action.icon && <ListItemIcon>{action.icon}</ListItemIcon>}
-                <ListItemText>{action.label}</ListItemText>
+                {action.icon && <div>{action.icon}</div>}
+                <div>{action.label}</ListItemText>
               </MenuItem>
             ))}
         </Menu>
-      </Box>
+      </div>
     );
   }
-
   // Desktop table layout
   return (
-    <TableContainer component={Paper}>
+    <TableContainer >
       <Table>
         <TableHead>
           <TableRow>
@@ -298,17 +237,12 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
               <TableCell
                 key={column.key}
                 align={column.align || 'left'}
-                sx={{
-                  fontWeight: 600,
-                  ...(column.width && { width: column.width }),
-                  ...(column.minWidth && { minWidth: column.minWidth }),
-                }}
-              >
+                className="">
                 {column.label}
               </TableCell>
             ))}
             {actions.length > 0 && (
-              <TableCell align="right" sx={{ fontWeight: 600 }}>
+              <TableCell align="right" className="">
                 Actions
               </TableCell>
             )}
@@ -317,13 +251,12 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
         <TableBody>
           {data.map((row, index) => {
             const visibleActions = getVisibleActions(row);
-
             return (
               <TableRow
                 key={keyExtractor(row, index)}
                 hover={!!onRowClick}
                 onClick={() => onRowClick && onRowClick(row)}
-                sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                className=""
               >
                 {columns.map((column) => (
                   <TableCell key={column.key} align={column.align || 'left'}>
@@ -332,7 +265,7 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
                 ))}
                 {actions.length > 0 && (
                   <TableCell align="right">
-                    <Stack
+                    <div
                       direction="row"
                       spacing={1}
                       justifyContent="flex-end"
@@ -342,16 +275,13 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
                           key={actionIndex}
                           size="small"
                           color={action.color || 'default'}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            action.onClick(row);
-                          }}
+                          
                           disabled={action.disabled && action.disabled(row)}
                         >
                           {action.icon}
                         </IconButton>
                       ))}
-                    </Stack>
+                    </div>
                   </TableCell>
                 )}
               </TableRow>
@@ -362,5 +292,4 @@ export const ResponsiveTable = <T extends TableRowData = TableRowData>({
     </TableContainer>
   );
 };
-
 export default ResponsiveTable;

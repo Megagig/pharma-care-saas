@@ -1,31 +1,4 @@
-import React, { useState, useCallback } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Stack,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
-  Autocomplete,
-  IconButton,
-  Divider,
-  Alert,
-  Tooltip,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import InfoIcon from '@mui/icons-material/Info';
-import WarningIcon from '@mui/icons-material/Warning';
-import type { SymptomInputProps } from '../types';
-
+import { Button, Input, Label, Card, CardContent, Select, Tooltip, Alert, Separator } from '@/components/ui/button';
 // Common symptoms for quick selection
 const COMMON_SYMPTOMS = {
   subjective: [
@@ -82,7 +55,6 @@ const COMMON_SYMPTOMS = {
     'Decreased mobility',
   ],
 };
-
 const DURATION_OPTIONS = [
   'Less than 1 hour',
   '1-6 hours',
@@ -95,13 +67,11 @@ const DURATION_OPTIONS = [
   '3-6 months',
   'More than 6 months',
 ];
-
 const SEVERITY_OPTIONS = [
   { value: 'mild', label: 'Mild', color: 'success' as const },
   { value: 'moderate', label: 'Moderate', color: 'warning' as const },
   { value: 'severe', label: 'Severe', color: 'error' as const },
 ];
-
 const ONSET_OPTIONS = [
   {
     value: 'acute',
@@ -119,7 +89,6 @@ const ONSET_OPTIONS = [
     description: 'Long-standing symptoms',
   },
 ];
-
 interface SymptomFormData {
   subjective: string[];
   objective: string[];
@@ -129,21 +98,19 @@ interface SymptomFormData {
   newSubjective: string;
   newObjective: string;
 }
-
-const SymptomInput: React.FC<SymptomInputProps> = ({
+const SymptomInput: React.FC<SymptomInputProps> = ({ 
   value,
   onChange,
   error,
-  disabled = false,
+  disabled = false
 }) => {
   const [showCommonSymptoms, setShowCommonSymptoms] = useState(false);
-
   const {
     control,
     watch,
     setValue,
     formState: { errors },
-  } = useForm<SymptomFormData>({
+  } = useForm<SymptomFormData>({ 
     defaultValues: {
       subjective: value?.subjective || [],
       objective: value?.objective || [],
@@ -151,18 +118,13 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
       severity: value?.severity || 'mild',
       onset: value?.onset || 'acute',
       newSubjective: '',
-      newObjective: '',
-    },
-  });
-
+      newObjective: ''}
+    }
   const watchedValues = watch();
-
   // Update parent component when form values change
-  React.useEffect(() => {
     const { newSubjective, newObjective, ...symptomData } = watchedValues;
     onChange(symptomData);
   }, [watchedValues, onChange]);
-
   const handleAddSubjective = useCallback(() => {
     const newSymptom = watchedValues.newSubjective.trim();
     if (newSymptom && !watchedValues.subjective.includes(newSymptom)) {
@@ -171,7 +133,6 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
       setValue('newSubjective', '');
     }
   }, [watchedValues.newSubjective, watchedValues.subjective, setValue]);
-
   const handleAddObjective = useCallback(() => {
     const newSymptom = watchedValues.newObjective.trim();
     if (newSymptom && !watchedValues.objective.includes(newSymptom)) {
@@ -180,7 +141,6 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
       setValue('newObjective', '');
     }
   }, [watchedValues.newObjective, watchedValues.objective, setValue]);
-
   const handleRemoveSubjective = useCallback(
     (symptom: string) => {
       const updated = watchedValues.subjective.filter((s) => s !== symptom);
@@ -188,7 +148,6 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
     },
     [watchedValues.subjective, setValue]
   );
-
   const handleRemoveObjective = useCallback(
     (symptom: string) => {
       const updated = watchedValues.objective.filter((s) => s !== symptom);
@@ -196,7 +155,6 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
     },
     [watchedValues.objective, setValue]
   );
-
   const handleQuickAddSymptom = useCallback(
     (symptom: string, type: 'subjective' | 'objective') => {
       const currentSymptoms = watchedValues[type];
@@ -207,51 +165,46 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
     },
     [watchedValues, setValue]
   );
-
   const getSeverityColor = (severity: string) => {
     const option = SEVERITY_OPTIONS.find((opt) => opt.value === severity);
     return option?.color || 'default';
   };
-
   return (
     <Card>
       <CardContent>
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+        <div className="">
+          <div  className="">
             Symptom Assessment
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Document patient-reported symptoms and clinical observations
-          </Typography>
-        </Box>
-
+          </div>
+        </div>
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" className="">
             {error}
           </Alert>
         )}
-
-        <Stack spacing={4}>
+        <div spacing={4}>
           {/* Subjective Symptoms */}
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          <div>
+            <div className="">
+              <div  className="">
                 Subjective Symptoms
-              </Typography>
+              </div>
               <Tooltip title="Symptoms reported by the patient">
                 <InfoIcon
-                  sx={{ ml: 1, fontSize: 16, color: 'text.secondary' }}
+                  className=""
                 />
               </Tooltip>
-            </Box>
-
+            </div>
             {/* Current subjective symptoms */}
             {watchedValues.subjective.length > 0 && (
-              <Box sx={{ mb: 2 }}>
-                <Stack
+              <div className="">
+                <div
                   direction="row"
                   spacing={1}
-                  sx={{ flexWrap: 'wrap', gap: 1 }}
+                  className=""
                 >
                   {watchedValues.subjective.map((symptom) => (
                     <Chip
@@ -260,24 +213,23 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
                       onDelete={
                         disabled
                           ? undefined
-                          : () => handleRemoveSubjective(symptom)
+                          : () => handleRemoveSubjective(symptom)}
                       }
                       color="primary"
-                      variant="outlined"
+                      
                       size="small"
                     />
                   ))}
-                </Stack>
-              </Box>
+                </div>
+              </div>
             )}
-
             {/* Add new subjective symptom */}
-            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <div className="">
               <Controller
                 name="newSubjective"
                 control={control}
-                render={({ field }) => (
-                  <TextField
+                render={({  field  }) => (
+                  <Input
                     {...field}
                     size="small"
                     placeholder="Add subjective symptom..."
@@ -285,15 +237,14 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        handleAddSubjective();
+                        handleAddSubjective();}
                       }
-                    }}
-                    sx={{ flex: 1 }}
+                    className=""
                   />
                 )}
               />
               <Button
-                variant="outlined"
+                
                 size="small"
                 onClick={handleAddSubjective}
                 disabled={disabled || !watchedValues.newSubjective.trim()}
@@ -301,12 +252,11 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
               >
                 Add
               </Button>
-            </Box>
-
+            </div>
             {/* Common subjective symptoms */}
-            <Box>
+            <div>
               <Button
-                variant="text"
+                
                 size="small"
                 onClick={() => setShowCommonSymptoms(!showCommonSymptoms)}
                 disabled={disabled}
@@ -314,18 +264,18 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
                 {showCommonSymptoms ? 'Hide' : 'Show'} Common Symptoms
               </Button>
               {showCommonSymptoms && (
-                <Box sx={{ mt: 1, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                  <Typography
-                    variant="caption"
+                <div className="">
+                  <div
+                    
                     color="text.secondary"
-                    sx={{ mb: 1, display: 'block' }}
+                    className=""
                   >
                     Click to add common subjective symptoms:
-                  </Typography>
-                  <Stack
+                  </div>
+                  <div
                     direction="row"
                     spacing={0.5}
-                    sx={{ flexWrap: 'wrap', gap: 0.5 }}
+                    className=""
                   >
                     {COMMON_SYMPTOMS.subjective.map((symptom) => (
                       <Chip
@@ -333,43 +283,40 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
                         label={symptom}
                         size="small"
                         onClick={() =>
-                          handleQuickAddSymptom(symptom, 'subjective')
+                          handleQuickAddSymptom(symptom, 'subjective')}
                         }
                         disabled={
-                          disabled || watchedValues.subjective.includes(symptom)
+                          disabled || watchedValues.subjective.includes(symptom)}
                         }
-                        sx={{ cursor: 'pointer' }}
-                        variant="outlined"
+                        className=""
+                        
                       />
                     ))}
-                  </Stack>
-                </Box>
+                  </div>
+                </div>
               )}
-            </Box>
-          </Box>
-
-          <Divider />
-
+            </div>
+          </div>
+          <Separator />
           {/* Objective Findings */}
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          <div>
+            <div className="">
+              <div  className="">
                 Objective Findings
-              </Typography>
+              </div>
               <Tooltip title="Clinical observations and examination findings">
                 <InfoIcon
-                  sx={{ ml: 1, fontSize: 16, color: 'text.secondary' }}
+                  className=""
                 />
               </Tooltip>
-            </Box>
-
+            </div>
             {/* Current objective findings */}
             {watchedValues.objective.length > 0 && (
-              <Box sx={{ mb: 2 }}>
-                <Stack
+              <div className="">
+                <div
                   direction="row"
                   spacing={1}
-                  sx={{ flexWrap: 'wrap', gap: 1 }}
+                  className=""
                 >
                   {watchedValues.objective.map((finding) => (
                     <Chip
@@ -378,24 +325,23 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
                       onDelete={
                         disabled
                           ? undefined
-                          : () => handleRemoveObjective(finding)
+                          : () => handleRemoveObjective(finding)}
                       }
                       color="secondary"
-                      variant="outlined"
+                      
                       size="small"
                     />
                   ))}
-                </Stack>
-              </Box>
+                </div>
+              </div>
             )}
-
             {/* Add new objective finding */}
-            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <div className="">
               <Controller
                 name="newObjective"
                 control={control}
-                render={({ field }) => (
-                  <TextField
+                render={({  field  }) => (
+                  <Input
                     {...field}
                     size="small"
                     placeholder="Add objective finding..."
@@ -403,15 +349,14 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        handleAddObjective();
+                        handleAddObjective();}
                       }
-                    }}
-                    sx={{ flex: 1 }}
+                    className=""
                   />
                 )}
               />
               <Button
-                variant="outlined"
+                
                 size="small"
                 onClick={handleAddObjective}
                 disabled={disabled || !watchedValues.newObjective.trim()}
@@ -419,21 +364,20 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
               >
                 Add
               </Button>
-            </Box>
-
+            </div>
             {/* Common objective findings */}
-            <Box sx={{ mt: 1, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-              <Typography
-                variant="caption"
+            <div className="">
+              <div
+                
                 color="text.secondary"
-                sx={{ mb: 1, display: 'block' }}
+                className=""
               >
                 Click to add common objective findings:
-              </Typography>
-              <Stack
+              </div>
+              <div
                 direction="row"
                 spacing={0.5}
-                sx={{ flexWrap: 'wrap', gap: 0.5 }}
+                className=""
               >
                 {COMMON_SYMPTOMS.objective.map((finding) => (
                   <Chip
@@ -442,40 +386,32 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
                     size="small"
                     onClick={() => handleQuickAddSymptom(finding, 'objective')}
                     disabled={
-                      disabled || watchedValues.objective.includes(finding)
+                      disabled || watchedValues.objective.includes(finding)}
                     }
-                    sx={{ cursor: 'pointer' }}
-                    variant="outlined"
+                    className=""
+                    
                   />
                 ))}
-              </Stack>
-            </Box>
-          </Box>
-
-          <Divider />
-
+              </div>
+            </div>
+          </div>
+          <Separator />
           {/* Symptom Characteristics */}
-          <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+          <div>
+            <div  className="">
               Symptom Characteristics
-            </Typography>
-
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-                gap: 3,
-              }}
-            >
+            </div>
+            <div
+              className="">
               {/* Duration */}
-              <Box>
+              <div>
                 <Controller
                   name="duration"
                   control={control}
-                  rules={{ required: 'Duration is required' }}
-                  render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.duration}>
-                      <InputLabel>Duration</InputLabel>
+                  
+                  render={({  field  }) => (
+                    <div fullWidth error={!!errors.duration}>
+                      <Label>Duration</Label>
                       <Select {...field} label="Duration" disabled={disabled}>
                         {DURATION_OPTIONS.map((duration) => (
                           <MenuItem key={duration} value={duration}>
@@ -484,94 +420,90 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
                         ))}
                       </Select>
                       {errors.duration && (
-                        <FormHelperText>
+                        <p>
                           {errors.duration.message}
-                        </FormHelperText>
+                        </p>
                       )}
-                    </FormControl>
+                    </div>
                   )}
                 />
-              </Box>
-
+              </div>
               {/* Severity */}
-              <Box>
+              <div>
                 <Controller
                   name="severity"
                   control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Severity</InputLabel>
+                  render={({  field  }) => (
+                    <div fullWidth>
+                      <Label>Severity</Label>
                       <Select {...field} label="Severity" disabled={disabled}>
                         {SEVERITY_OPTIONS.map((option) => (
                           <MenuItem key={option.value} value={option.value}>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <div className="">
                               <Chip
                                 label={option.label}
                                 size="small"
                                 color={option.color}
-                                variant="outlined"
-                                sx={{ mr: 1 }}
+                                
+                                className=""
                               />
-                            </Box>
+                            </div>
                           </MenuItem>
                         ))}
                       </Select>
-                    </FormControl>
+                    </div>
                   )}
                 />
-              </Box>
-
+              </div>
               {/* Onset */}
-              <Box>
+              <div>
                 <Controller
                   name="onset"
                   control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Onset</InputLabel>
+                  render={({  field  }) => (
+                    <div fullWidth>
+                      <Label>Onset</Label>
                       <Select {...field} label="Onset" disabled={disabled}>
                         {ONSET_OPTIONS.map((option) => (
                           <MenuItem key={option.value} value={option.value}>
-                            <Box>
-                              <Typography variant="body2">
+                            <div>
+                              <div >
                                 {option.label}
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 {option.description}
-                              </Typography>
-                            </Box>
+                              </div>
+                            </div>
                           </MenuItem>
                         ))}
                       </Select>
-                    </FormControl>
+                    </div>
                   )}
                 />
-              </Box>
-            </Box>
-          </Box>
-
+              </div>
+            </div>
+          </div>
           {/* Validation Summary */}
           {watchedValues.subjective.length === 0 &&
             watchedValues.objective.length === 0 && (
               <Alert severity="warning" icon={<WarningIcon />}>
-                <Typography variant="body2">
+                <div >
                   Please add at least one subjective symptom or objective
                   finding to proceed with the assessment.
-                </Typography>
+                </div>
               </Alert>
             )}
-
           {/* Summary */}
           {(watchedValues.subjective.length > 0 ||
             watchedValues.objective.length > 0) && (
             <Alert severity="info">
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+              <div  className="">
                 Assessment Summary:
-              </Typography>
-              <Typography variant="body2">
+              </div>
+              <div >
                 {watchedValues.subjective.length} subjective symptom(s),{' '}
                 {watchedValues.objective.length} objective finding(s)
                 {watchedValues.duration &&
@@ -583,24 +515,23 @@ const SymptomInput: React.FC<SymptomInputProps> = ({
                       label={
                         SEVERITY_OPTIONS.find(
                           (opt) => opt.value === watchedValues.severity
-                        )?.label
+                        )?.label}
                       }
                       size="small"
                       color={getSeverityColor(watchedValues.severity)}
-                      variant="outlined"
-                      sx={{ ml: 0.5, height: 20 }}
+                      
+                      className=""
                     />
                   </>
                 )}
                 {watchedValues.onset &&
                   ` • Onset: ${ONSET_OPTIONS.find((opt) => opt.value === watchedValues.onset)?.label}`}
-              </Typography>
+              </div>
             </Alert>
           )}
-        </Stack>
+        </div>
       </CardContent>
     </Card>
   );
 };
-
 export default SymptomInput;

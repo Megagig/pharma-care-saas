@@ -1,10 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { useDiagnosticStore } from '../diagnosticStore';
-import { diagnosticApi } from '../../api/diagnosticApi';
-import type { DiagnosticRequest, DiagnosticResult, DiagnosticRequestForm } from '../../types';
-
 // Mock the API
-vi.mock('../../api/diagnosticApi', () => ({
+vi.mock('../../api/diagnosticApi', () => ({ 
     diagnosticApi: {
         createRequest: vi.fn(),
         getResult: vi.fn(),
@@ -14,9 +9,8 @@ vi.mock('../../api/diagnosticApi', () => ({
         rejectResult: vi.fn(),
         cancelRequest: vi.fn(),
         getStatus: vi.fn(),
-        getAnalytics: vi.fn(),
-    },
-}));
+        getAnalytics: vi.fn()}
+    }
 
 const mockDiagnosticRequest: DiagnosticRequest = {
     _id: 'req-1',
@@ -89,7 +83,7 @@ const mockRequestForm: DiagnosticRequestForm = {
 describe('DiagnosticStore', () => {
     beforeEach(() => {
         // Reset store state
-        useDiagnosticStore.setState({
+        useDiagnosticStore.setState({ 
             requests: [],
             results: [],
             selectedRequest: null,
@@ -103,7 +97,7 @@ describe('DiagnosticStore', () => {
                 page: 1,
                 limit: 20,
                 sortBy: 'createdAt',
-                sortOrder: 'desc',
+                sortOrder: 'desc'}
             },
             pagination: {
                 page: 1,
@@ -136,8 +130,7 @@ describe('DiagnosticStore', () => {
                 approveResult: null,
                 fetchAnalytics: null,
                 polling: null,
-            },
-        });
+            }
 
         // Clear all mocks
         vi.clearAllMocks();
@@ -262,8 +255,8 @@ describe('DiagnosticStore', () => {
             vi.mocked(diagnosticApi.approveResult).mockResolvedValue(mockResponse);
 
             // Add result to state first
-            useDiagnosticStore.setState({
-                results: [mockDiagnosticResult],
+            useDiagnosticStore.setState({ 
+                results: [mockDiagnosticResult]}
             });
 
             const { approveResult } = useDiagnosticStore.getState();
@@ -316,14 +309,14 @@ describe('DiagnosticStore', () => {
     describe('selectors', () => {
         beforeEach(() => {
             // Set up test data
-            useDiagnosticStore.setState({
+            useDiagnosticStore.setState({ 
                 requests: [
                     mockDiagnosticRequest,
                     {
                         ...mockDiagnosticRequest,
                         _id: 'req-2',
                         status: 'completed',
-                        patientId: 'patient-2',
+                        patientId: 'patient-2'}
                     },
                 ],
                 results: [
@@ -333,8 +326,7 @@ describe('DiagnosticStore', () => {
                         _id: 'result-2',
                         requestId: 'req-2',
                     },
-                ],
-            });
+                ]}
         });
 
         it('should get requests by patient', () => {
@@ -443,16 +435,15 @@ describe('DiagnosticStore', () => {
 
         it('should clear errors', () => {
             // Set some errors
-            useDiagnosticStore.setState({
+            useDiagnosticStore.setState({ 
                 errors: {
                     createRequest: 'Some error',
                     fetchRequests: 'Another error',
                     fetchResult: null,
                     approveResult: null,
                     fetchAnalytics: null,
-                    polling: null,
-                },
-            });
+                    polling: null}
+                }
 
             const { clearErrors } = useDiagnosticStore.getState();
             clearErrors();

@@ -3,8 +3,6 @@
  * Matches backend models and API structures for type safety
  */
 
-import { ObjectId, AuditFields, Patient } from './patientManagement';
-
 // Lab Order Status
 export type LabOrderStatus =
     | 'requested'

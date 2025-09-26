@@ -1,484 +1,231 @@
-import { Link } from 'react-router-dom';
-import {
-  Box,
-  Container,
-  Typography,
-  Button,
-  Divider,
-  IconButton,
-  Stack,
-} from '@mui/material';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import TwitterIcon from '@mui/icons-material/Twitter';
-import LinkedInIcon from '@mui/icons-material/LinkedIn';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import EmailIcon from '@mui/icons-material/Email';
-
+import { Button, Separator } from '@/components/ui/button';
 const Footer = () => {
   return (
-    <Box
+    <div
       component="footer"
-      sx={{
-        bgcolor: 'background.paper',
-        borderTop: 1,
-        borderColor: 'grey.200',
-        py: 6,
-      }}
+      className=""
     >
-      <Container maxWidth="lg">
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            gap: 4,
-          }}
-        >
+      <div maxWidth="lg">
+        <div
+          className="">
           {/* Brand Section */}
-          <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 33%' } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: 'primary.main',
-                  borderRadius: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mr: 2,
-                }}
+          <div className="">
+            <div className="">
+              <div
+                className=""
               >
-                <Typography
-                  variant="h6"
-                  sx={{ color: 'white', fontWeight: 'bold' }}
+                <div
+                  
+                  className=""
                 >
                   PC
-                </Typography>
-              </Box>
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 'bold', color: 'primary.main' }}
+                </div>
+              </div>
+              <div
+                
+                className=""
               >
                 PharmaCare
-              </Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              </div>
+            </div>
+            <div  color="text.secondary" className="">
               Empowering pharmacists and healthcare professionals with advanced
               patient management, medication tracking, and clinical
               documentation tools.
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography variant="caption" color="text.secondary">
+            </div>
+            <div className="">
+              <div  color="text.secondary">
                 Made with
-              </Typography>
+              </div>
               <FavoriteIcon
-                sx={{ fontSize: 16, mx: 0.5, color: 'error.main' }}
+                className=""
               />
-              <Typography variant="caption" color="text.secondary">
+              <div  color="text.secondary">
                 for pharmacists
-              </Typography>
-            </Box>
-          </Box>
-
+              </div>
+            </div>
+          </div>
           {/* Links Sections */}
-          <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 67%' } }}>
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', sm: 'row' },
-                gap: 4,
-              }}
-            >
+          <div className="">
+            <div
+              className="">
               {/* Product Links */}
-              <Box sx={{ minWidth: 150 }}>
-                <Typography
-                  variant="overline"
-                  sx={{
-                    color: 'text.primary',
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                    letterSpacing: '0.08333em',
-                    display: 'block',
-                    mb: 2,
-                  }}
+              <div className="">
+                <div
+                  
+                  className=""
                 >
                   Product
-                </Typography>
-                <Stack spacing={1}>
+                </div>
+                <div spacing={1}>
                   <Button
-                    component={Link}
+                    
                     to="/dashboard"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Dashboard
                   </Button>
                   <Button
-                    component={Link}
+                    
                     to="/patients"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Patient Management
                   </Button>
                   <Button
-                    component={Link}
+                    
                     to="/medications"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Medications
                   </Button>
                   <Button
-                    component={Link}
+                    
                     to="/clinical-notes"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Clinical Notes
                   </Button>
-                </Stack>
-              </Box>
-
+                </div>
+              </div>
               {/* Company Links */}
-              <Box sx={{ minWidth: 150 }}>
-                <Typography
-                  variant="overline"
-                  sx={{
-                    color: 'text.primary',
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                    letterSpacing: '0.08333em',
-                    display: 'block',
-                    mb: 2,
-                  }}
+              <div className="">
+                <div
+                  
+                  className=""
                 >
                   Company
-                </Typography>
-                <Stack spacing={1}>
+                </div>
+                <div spacing={1}>
                   <Button
-                    component={Link}
+                    
                     to="/about"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     About Us
                   </Button>
                   <Button
-                    component={Link}
+                    
                     to="/pricing"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Pricing
                   </Button>
                   <Button
-                    component={Link}
+                    
                     to="/contact"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Contact
                   </Button>
-                </Stack>
-              </Box>
-
+                </div>
+              </div>
               {/* Resources Links */}
-              <Box sx={{ minWidth: 150 }}>
-                <Typography
-                  variant="overline"
-                  sx={{
-                    color: 'text.primary',
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                    letterSpacing: '0.08333em',
-                    display: 'block',
-                    mb: 2,
-                  }}
+              <div className="">
+                <div
+                  
+                  className=""
                 >
                   Resources
-                </Typography>
-                <Stack spacing={1}>
+                </div>
+                <div spacing={1}>
                   <Button
                     href="#"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Documentation
                   </Button>
                   <Button
                     href="#"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     API Reference
                   </Button>
                   <Button
                     href="#"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Help Center
                   </Button>
                   <Button
                     href="#"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Community
                   </Button>
-                </Stack>
-              </Box>
-
+                </div>
+              </div>
               {/* Legal Links */}
-              <Box sx={{ minWidth: 150 }}>
-                <Typography
-                  variant="overline"
-                  sx={{
-                    color: 'text.primary',
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                    letterSpacing: '0.08333em',
-                    display: 'block',
-                    mb: 2,
-                  }}
+              <div className="">
+                <div
+                  
+                  className=""
                 >
                   Legal
-                </Typography>
-                <Stack spacing={1}>
+                </div>
+                <div spacing={1}>
                   <Button
                     href="#"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Privacy Policy
                   </Button>
                   <Button
                     href="#"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Terms of Service
                   </Button>
                   <Button
                     href="#"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     HIPAA Compliance
                   </Button>
                   <Button
                     href="#"
-                    variant="text"
+                    
                     size="small"
-                    sx={{
-                      justifyContent: 'flex-start',
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 400,
-                      fontSize: '0.875rem',
-                      '&:hover': {
-                        color: 'primary.main',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
+                    className="">
                     Security
                   </Button>
-                </Stack>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-
-        <Divider sx={{ my: 4 }} />
-
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Separator className="" />
         {/* Bottom Section */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            justifyContent: 'space-between',
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            gap: 2,
-          }}
-        >
-          <Typography variant="body2" color="text.secondary">
+        <div
+          className="">
+          <div  color="text.secondary">
             © {new Date().getFullYear()} PharmaCare. All rights reserved.
-          </Typography>
-
+          </div>
           {/* Social Media Links */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+          <div className="">
+            <div  color="text.secondary" className="">
               Follow us:
-            </Typography>
+            </div>
             <IconButton
               href="https://twitter.com"
               target="_blank"
               rel="noopener noreferrer"
               size="small"
-              sx={{
-                color: 'text.secondary',
-                '&:hover': {
-                  color: 'primary.main',
-                  backgroundColor: 'primary.light',
-                },
-              }}
-            >
+              className="">
               <TwitterIcon fontSize="small" />
             </IconButton>
             <IconButton
@@ -486,14 +233,7 @@ const Footer = () => {
               target="_blank"
               rel="noopener noreferrer"
               size="small"
-              sx={{
-                color: 'text.secondary',
-                '&:hover': {
-                  color: 'primary.main',
-                  backgroundColor: 'primary.light',
-                },
-              }}
-            >
+              className="">
               <LinkedInIcon fontSize="small" />
             </IconButton>
             <IconButton
@@ -501,34 +241,19 @@ const Footer = () => {
               target="_blank"
               rel="noopener noreferrer"
               size="small"
-              sx={{
-                color: 'text.secondary',
-                '&:hover': {
-                  color: 'primary.main',
-                  backgroundColor: 'primary.light',
-                },
-              }}
-            >
+              className="">
               <GitHubIcon fontSize="small" />
             </IconButton>
             <IconButton
               href="mailto:support@pharmacare.com"
               size="small"
-              sx={{
-                color: 'text.secondary',
-                '&:hover': {
-                  color: 'primary.main',
-                  backgroundColor: 'primary.light',
-                },
-              }}
-            >
+              className="">
               <EmailIcon fontSize="small" />
             </IconButton>
-          </Box>
-        </Box>
-      </Container>
-    </Box>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
-
 export default Footer;

@@ -1,10 +1,3 @@
-import React, { createContext, useContext, useEffect, ReactNode } from 'react';
-import {
-  useTheme as useThemeHook,
-  ThemeMode,
-  ResolvedTheme,
-} from '../hooks/useTheme';
-
 interface ThemeContextValue {
   theme: ThemeMode;
   resolvedTheme: ResolvedTheme;
@@ -34,10 +27,10 @@ interface ThemeProviderProps {
  * - Minimal re-renders
  * - SSR-safe
  */
-export function ThemeProvider({
+export function ThemeProvider({ 
   children,
   defaultTheme = 'system',
-  storageKey = 'theme-preference',
+  storageKey = 'theme-preference'}
 }: ThemeProviderProps) {
   const themeHook = useThemeHook();
 
@@ -92,14 +85,12 @@ export function useTheme(): ThemeContextValue {
  * HOC for components that need theme context
  */
 export function withTheme<P extends object>(
-  Component: React.ComponentType<P & { theme: ThemeContextValue }>
 ) {
   const WrappedComponent = (props: P) => {
     const theme = useThemeContext();
     return <Component {...props} theme={theme} />;
   };
 
-  WrappedComponent.displayName = `withTheme(${
     Component.displayName || Component.name
   })`;
 
@@ -109,9 +100,9 @@ export function withTheme<P extends object>(
 /**
  * Theme toggle button component for easy integration
  */
-export function ThemeToggle({
+export function ThemeToggle({ 
   className = '',
-  showLabel = false,
+  showLabel = false}
 }: {
   className?: string;
   showLabel?: boolean;
@@ -127,11 +118,11 @@ export function ThemeToggle({
         focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 
         disabled:pointer-events-none ring-offset-background
         hover:bg-accent hover:text-accent-foreground
-        h-10 w-10
+        h-10 w-10}
         ${className}
       `}
       title={`Switch to ${
-        theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
+        theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'}
       } mode`}
     >
       {isDark ? (

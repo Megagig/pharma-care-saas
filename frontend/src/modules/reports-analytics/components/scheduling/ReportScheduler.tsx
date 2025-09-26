@@ -1,53 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Box,
-  Typography,
-  Grid,
-  Chip,
-  IconButton,
-  Switch,
-  FormControlLabel,
-  Stepper,
-  Step,
-  StepLabel,
-  Alert,
-  Autocomplete,
-  Card,
-  CardContent,
-  Divider,
-} from '@mui/material';
-import {
-  Schedule as ScheduleIcon,
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  Email as EmailIcon,
-  Close as CloseIcon,
-  AccessTime as AccessTimeIcon,
-  CalendarToday as CalendarIcon,
-} from '@mui/icons-material';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { useExportsStore } from '../../stores/exportsStore';
-import {
-  ReportSchedule,
-  ScheduleFrequency,
-  ScheduleRecipient,
-  ExportFormat,
-  ExportConfig,
-} from '../../types/exports';
-import { getDefaultExportOptions } from '../../utils/exportHelpers';
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Alert, Switch, Separator } from '@/components/ui/button';
 
 interface ReportSchedulerProps {
   open: boolean;
@@ -56,13 +7,11 @@ interface ReportSchedulerProps {
   filters: Record<string, any>;
   initialSchedule?: ReportSchedule;
 }
-
 const steps = [
   'Basic Settings',
   'Schedule Configuration',
   'Recipients & Delivery',
 ];
-
 const frequencyOptions: {
   value: ScheduleFrequency;
   label: string;
@@ -87,7 +36,6 @@ const frequencyOptions: {
   { value: 'yearly', label: 'Yearly', description: 'Once per year' },
   { value: 'custom', label: 'Custom', description: 'Custom interval' },
 ];
-
 const daysOfWeek = [
   { value: 0, label: 'Sunday', short: 'Sun' },
   { value: 1, label: 'Monday', short: 'Mon' },
@@ -97,16 +45,14 @@ const daysOfWeek = [
   { value: 5, label: 'Friday', short: 'Fri' },
   { value: 6, label: 'Saturday', short: 'Sat' },
 ];
-
-export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
+export const ReportScheduler: React.FC<ReportSchedulerProps> = ({ 
   open,
   onClose,
   reportType,
   filters,
-  initialSchedule,
+  initialSchedule
 }) => {
   const { addSchedule, updateSchedule } = useExportsStore();
-
   const [activeStep, setActiveStep] = useState(0);
   const [scheduleName, setScheduleName] = useState(initialSchedule?.name || '');
   const [scheduleDescription, setScheduleDescription] = useState(
@@ -147,39 +93,31 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
   );
   const [isActive, setIsActive] = useState(initialSchedule?.isActive ?? true);
   const [errors, setErrors] = useState<string[]>([]);
-
   // Email suggestions (in real app, this would come from API)
   const emailSuggestions = [
     'admin@pharmacy.com',
     'reports@pharmacy.com',
     'manager@pharmacy.com',
   ];
-
   const validateSchedule = (): string[] => {
     const validationErrors: string[] = [];
-
     if (!scheduleName.trim()) {
       validationErrors.push('Schedule name is required');
     }
-
     if (frequency === 'weekly' && selectedDays.length === 0) {
       validationErrors.push(
         'At least one day must be selected for weekly schedule'
       );
     }
-
     if (frequency === 'monthly' && (dayOfMonth < 1 || dayOfMonth > 31)) {
       validationErrors.push('Day of month must be between 1 and 31');
     }
-
     if (frequency === 'custom' && customInterval < 1) {
       validationErrors.push('Custom interval must be at least 1');
     }
-
     if (recipients.length === 0) {
       validationErrors.push('At least one recipient is required');
     }
-
     recipients.forEach((recipient, index) => {
       if (!recipient.address.trim()) {
         validationErrors.push(`Recipient ${index + 1} address is required`);
@@ -190,15 +128,12 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
         );
       }
     });
-
     return validationErrors;
   };
-
   const isValidEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
-
   useEffect(() => {
     setErrors(validateSchedule());
   }, [
@@ -209,19 +144,16 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
     customInterval,
     recipients,
   ]);
-
   const handleNext = () => {
     if (activeStep < steps.length - 1) {
       setActiveStep((prev) => prev + 1);
     }
   };
-
   const handleBack = () => {
     if (activeStep > 0) {
       setActiveStep((prev) => prev - 1);
     }
   };
-
   const handleAddRecipient = () => {
     setRecipients((prev) => [
       ...prev,
@@ -238,11 +170,9 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
       },
     ]);
   };
-
   const handleRemoveRecipient = (index: number) => {
     setRecipients((prev) => prev.filter((_, i) => i !== index));
   };
-
   const handleRecipientChange = (
     index: number,
     field: keyof ScheduleRecipient,
@@ -254,7 +184,6 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
       )
     );
   };
-
   const handleRecipientOptionChange = (
     index: number,
     option: string,
@@ -271,27 +200,22 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
       )
     );
   };
-
   const handleDayToggle = (day: number) => {
     setSelectedDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
     );
   };
-
   const calculateNextRun = (): Date => {
     const now = new Date();
     const time = selectedTime;
     const nextRun = new Date();
-
     nextRun.setHours(time.getHours(), time.getMinutes(), 0, 0);
-
     switch (frequency) {
       case 'daily':
         if (nextRun <= now) {
           nextRun.setDate(nextRun.getDate() + 1);
         }
         break;
-
       case 'weekly':
         const currentDay = now.getDay();
         const nextDay =
@@ -305,14 +229,12 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
           nextRun.setDate(nextRun.getDate() + 7);
         }
         break;
-
       case 'monthly':
         nextRun.setDate(dayOfMonth);
         if (nextRun <= now) {
           nextRun.setMonth(nextRun.getMonth() + 1);
         }
         break;
-
       case 'quarterly':
         const currentMonth = now.getMonth();
         const nextQuarter = Math.ceil((currentMonth + 1) / 3) * 3;
@@ -321,29 +243,24 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
           nextRun.setMonth(nextQuarter + 3, dayOfMonth);
         }
         break;
-
       case 'yearly':
         nextRun.setMonth(0, dayOfMonth); // January
         if (nextRun <= now) {
           nextRun.setFullYear(nextRun.getFullYear() + 1);
         }
         break;
-
       case 'custom':
         nextRun.setDate(nextRun.getDate() + customInterval);
         break;
     }
-
     return nextRun;
   };
-
   const handleSave = () => {
     const validationErrors = validateSchedule();
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
       return;
     }
-
     const exportConfig: ExportConfig = {
       format: exportFormat,
       options: getDefaultExportOptions(exportFormat),
@@ -361,7 +278,6 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
         version: '1.0',
       },
     };
-
     const schedule: ReportSchedule = {
       id:
         initialSchedule?.id ||
@@ -401,21 +317,18 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
       createdAt: initialSchedule?.createdAt || new Date(),
       updatedAt: new Date(),
     };
-
     if (initialSchedule) {
       updateSchedule(initialSchedule.id, schedule);
     } else {
       addSchedule(schedule);
     }
-
     onClose();
   };
-
   const renderBasicSettings = () => (
-    <Box>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <TextField
+    <div>
+      <div container spacing={3}>
+        <div item xs={12}>
+          <Input
             fullWidth
             label="Schedule Name"
             value={scheduleName}
@@ -423,9 +336,9 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
             placeholder="e.g., Weekly Patient Outcomes Report"
             required
           />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
+        </div>
+        <div item xs={12}>
+          <Input
             fullWidth
             label="Description"
             value={scheduleDescription}
@@ -434,10 +347,10 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
             multiline
             rows={2}
           />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <FormControl fullWidth>
-            <InputLabel>Export Format</InputLabel>
+        </div>
+        <div item xs={12} sm={6}>
+          <div fullWidth>
+            <Label>Export Format</Label>
             <Select
               value={exportFormat}
               onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
@@ -447,78 +360,69 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
               <MenuItem value="csv">CSV File</MenuItem>
               <MenuItem value="json">JSON Data</MenuItem>
             </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} sm={6}>
+          </div>
+        </div>
+        <div item xs={12} sm={6}>
           <FormControlLabel
             control={
-              <Switch
+              <Switch}
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
               />
             }
             label="Active Schedule"
           />
-        </Grid>
-      </Grid>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
-
   const renderScheduleConfiguration = () => (
-    <Box>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Typography variant="h6" gutterBottom>
+    <div>
+      <div container spacing={3}>
+        <div item xs={12}>
+          <div  gutterBottom>
             Frequency
-          </Typography>
-          <Grid container spacing={2}>
+          </div>
+          <div container spacing={2}>
             {frequencyOptions.map((option) => (
-              <Grid item xs={12} sm={6} md={4} key={option.value}>
+              <div item xs={12} sm={6} md={4} key={option.value}>
                 <Card
                   variant={
-                    frequency === option.value ? 'outlined' : 'elevation'
+                    frequency === option.value ? 'outlined' : 'elevation'}
                   }
-                  sx={{
-                    cursor: 'pointer',
-                    border: frequency === option.value ? 2 : 1,
-                    borderColor:
-                      frequency === option.value ? 'primary.main' : 'divider',
-                  }}
+                  className=""
                   onClick={() => setFrequency(option.value)}
                 >
-                  <CardContent sx={{ p: 2 }}>
-                    <Typography variant="subtitle1" gutterBottom>
+                  <CardContent className="">
+                    <div  gutterBottom>
                       {option.label}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       {option.description}
-                    </Typography>
+                    </div>
                   </CardContent>
                 </Card>
-              </Grid>
+              </div>
             ))}
-          </Grid>
-        </Grid>
-
-        <Grid item xs={12}>
-          <Divider sx={{ my: 2 }} />
-        </Grid>
-
+          </div>
+        </div>
+        <div item xs={12}>
+          <Separator className="" />
+        </div>
         {/* Time Selection */}
-        <Grid item xs={12} sm={6}>
+        <div item xs={12} sm={6}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <TimePicker
               label="Time"
               value={selectedTime}
               onChange={(newValue) => newValue && setSelectedTime(newValue)}
-              slotProps={{ textField: { fullWidth: true } }}
+              slotProps={{ textField: { fullWidth: true }
             />
           </LocalizationProvider>
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <FormControl fullWidth>
-            <InputLabel>Timezone</InputLabel>
+        </div>
+        <div item xs={12} sm={6}>
+          <div fullWidth>
+            <Label>Timezone</Label>
             <Select
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
@@ -530,126 +434,119 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
               <MenuItem value="America/Los_Angeles">Pacific Time</MenuItem>
               <MenuItem value="Africa/Lagos">West Africa Time</MenuItem>
             </Select>
-          </FormControl>
-        </Grid>
-
+          </div>
+        </div>
         {/* Weekly Days Selection */}
         {frequency === 'weekly' && (
-          <Grid item xs={12}>
-            <Typography variant="subtitle1" gutterBottom>
+          <div item xs={12}>
+            <div  gutterBottom>
               Days of Week
-            </Typography>
-            <Box display="flex" flexWrap="wrap" gap={1}>
+            </div>
+            <div display="flex" flexWrap="wrap" gap={1}>
               {daysOfWeek.map((day) => (
                 <Chip
                   key={day.value}
                   label={day.short}
                   clickable
                   color={
-                    selectedDays.includes(day.value) ? 'primary' : 'default'
+                    selectedDays.includes(day.value) ? 'primary' : 'default'}
                   }
                   onClick={() => handleDayToggle(day.value)}
                 />
               ))}
-            </Box>
-          </Grid>
+            </div>
+          </div>
         )}
-
         {/* Monthly/Quarterly/Yearly Day Selection */}
         {['monthly', 'quarterly', 'yearly'].includes(frequency) && (
-          <Grid item xs={12} sm={6}>
-            <TextField
+          <div item xs={12} sm={6}>
+            <Input
               fullWidth
               label="Day of Month"
               type="number"
               value={dayOfMonth}
               onChange={(e) => setDayOfMonth(parseInt(e.target.value))}
-              inputProps={{ min: 1, max: 31 }}
+              
             />
-          </Grid>
+          </div>
         )}
-
         {/* Custom Interval */}
         {frequency === 'custom' && (
-          <Grid item xs={12} sm={6}>
-            <TextField
+          <div item xs={12} sm={6}>
+            <Input
               fullWidth
               label="Interval (days)"
               type="number"
               value={customInterval}
               onChange={(e) => setCustomInterval(parseInt(e.target.value))}
-              inputProps={{ min: 1 }}
+              
             />
-          </Grid>
+          </div>
         )}
-
         {/* End Conditions */}
-        <Grid item xs={12}>
-          <Typography variant="subtitle1" gutterBottom>
+        <div item xs={12}>
+          <div  gutterBottom>
             End Conditions (Optional)
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+          </div>
+          <div container spacing={2}>
+            <div item xs={12} sm={6}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker
                   label="End Date"
                   value={endDate}
                   onChange={(newValue) => setEndDate(newValue)}
-                  slotProps={{ textField: { fullWidth: true } }}
+                  slotProps={{ textField: { fullWidth: true }
                 />
               </LocalizationProvider>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
+            </div>
+            <div item xs={12} sm={6}>
+              <Input
                 fullWidth
                 label="Maximum Runs"
                 type="number"
                 value={maxRuns || ''}
                 onChange={(e) =>
-                  setMaxRuns(e.target.value ? parseInt(e.target.value) : null)
+                  setMaxRuns(e.target.value ? parseInt(e.target.value) : null)}
                 }
-                inputProps={{ min: 1 }}
+                
               />
-            </Grid>
-          </Grid>
-        </Grid>
-
+            </div>
+          </div>
+        </div>
         {/* Next Run Preview */}
-        <Grid item xs={12}>
+        <div item xs={12}>
           <Alert severity="info">
-            <Typography variant="body2">
+            <div >
               <strong>Next run:</strong> {calculateNextRun().toLocaleString()}
-            </Typography>
+            </div>
           </Alert>
-        </Grid>
-      </Grid>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
-
   const renderRecipientsDelivery = () => (
-    <Box>
-      <Box display="flex" alignItems="center" justifyContent="between" mb={2}>
-        <Typography variant="h6">Recipients</Typography>
+    <div>
+      <div display="flex" alignItems="center" justifyContent="between" mb={2}>
+        <div >Recipients</div>
         <Button
           startIcon={<AddIcon />}
           onClick={handleAddRecipient}
-          variant="outlined"
+          
           size="small"
         >
           Add Recipient
         </Button>
-      </Box>
-
+      </div>
       {recipients.map((recipient, index) => (
-        <Card key={index} variant="outlined" sx={{ mb: 2 }}>
+        <Card key={index}  className="">
           <CardContent>
-            <Box
+            <div
               display="flex"
               alignItems="center"
               justifyContent="between"
               mb={2}
             >
-              <Typography variant="subtitle1">Recipient {index + 1}</Typography>
+              <div >Recipient {index + 1}</div>
               <IconButton
                 onClick={() => handleRemoveRecipient(index)}
                 color="error"
@@ -657,45 +554,44 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
               >
                 <DeleteIcon />
               </IconButton>
-            </Box>
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Type</InputLabel>
+            </div>
+            <div container spacing={2}>
+              <div item xs={12} sm={6}>
+                <div fullWidth>
+                  <Label>Type</Label>
                   <Select
                     value={recipient.type}
                     onChange={(e) =>
-                      handleRecipientChange(index, 'type', e.target.value)
+                      handleRecipientChange(index, 'type', e.target.value)}
                     }
                   >
                     <MenuItem value="email">Email</MenuItem>
                     <MenuItem value="webhook">Webhook</MenuItem>
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
+                </div>
+              </div>
+              <div item xs={12} sm={6}>
+                <Input
                   fullWidth
                   label="Name"
                   value={recipient.name || ''}
                   onChange={(e) =>
-                    handleRecipientChange(index, 'name', e.target.value)
+                    handleRecipientChange(index, 'name', e.target.value)}
                   }
                   placeholder="Optional display name"
                 />
-              </Grid>
-              <Grid item xs={12}>
+              </div>
+              <div item xs={12}>
                 {recipient.type === 'email' ? (
                   <Autocomplete
                     freeSolo
                     options={emailSuggestions}
                     value={recipient.address}
                     onChange={(_, newValue) =>
-                      handleRecipientChange(index, 'address', newValue || '')
+                      handleRecipientChange(index, 'address', newValue || '')}
                     }
                     renderInput={(params) => (
-                      <TextField
+                      <Input}
                         {...params}
                         label="Email Address"
                         placeholder="user@example.com"
@@ -704,23 +600,22 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                     )}
                   />
                 ) : (
-                  <TextField
+                  <Input
                     fullWidth
                     label="Webhook URL"
                     value={recipient.address}
                     onChange={(e) =>
-                      handleRecipientChange(index, 'address', e.target.value)
+                      handleRecipientChange(index, 'address', e.target.value)}
                     }
                     placeholder="https://example.com/webhook"
                     required
                   />
                 )}
-              </Grid>
-
+              </div>
               {recipient.type === 'email' && (
                 <>
-                  <Grid item xs={12}>
-                    <TextField
+                  <div item xs={12}>
+                    <Input
                       fullWidth
                       label="Subject"
                       value={recipient.options?.subject || ''}
@@ -729,13 +624,13 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                           index,
                           'subject',
                           e.target.value
-                        )
+                        )}
                       }
                       placeholder="Email subject line"
                     />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
+                  </div>
+                  <div item xs={12}>
+                    <Input
                       fullWidth
                       label="Message"
                       value={recipient.options?.body || ''}
@@ -744,29 +639,27 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
                           index,
                           'body',
                           e.target.value
-                        )
+                        )}
                       }
                       placeholder="Email message body"
                       multiline
                       rows={3}
                     />
-                  </Grid>
+                  </div>
                 </>
               )}
-            </Grid>
+            </div>
           </CardContent>
         </Card>
       ))}
-
       {recipients.length === 0 && (
         <Alert severity="warning">
           No recipients configured. Add at least one recipient to receive
           scheduled reports.
         </Alert>
       )}
-    </Box>
+    </div>
   );
-
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
@@ -779,69 +672,61 @@ export const ReportScheduler: React.FC<ReportSchedulerProps> = ({
         return null;
     }
   };
-
   return (
     <Dialog
       open={open}
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{ sx: { minHeight: '600px' } }}
-    >
+      PaperProps={{ sx: { minHeight: '600px' } >
       <DialogTitle>
-        <Box display="flex" alignItems="center" justifyContent="between">
-          <Box display="flex" alignItems="center">
-            <ScheduleIcon sx={{ mr: 1 }} />
+        <div display="flex" alignItems="center" justifyContent="between">
+          <div display="flex" alignItems="center">
+            <ScheduleIcon className="" />
             {initialSchedule ? 'Edit Schedule' : 'Schedule Report'}
-          </Box>
+          </div>
           <Button
             onClick={onClose}
             size="small"
-            sx={{ minWidth: 'auto', p: 1 }}
+            className=""
           >
             <CloseIcon />
           </Button>
-        </Box>
+        </div>
       </DialogTitle>
-
       <DialogContent>
-        <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
+        <Stepper activeStep={activeStep} className="">
           {steps.map((label) => (
             <Step key={label}>
               <StepLabel>{label}</StepLabel>
             </Step>
           ))}
         </Stepper>
-
         {errors.length > 0 && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
+          <Alert severity="error" className="">
+            <div  gutterBottom>
               Please fix the following errors:
-            </Typography>
-            <ul style={{ margin: 0, paddingLeft: 20 }}>
+            </div>
+            <ul >
               {errors.map((error, index) => (
                 <li key={index}>{error}</li>
               ))}
             </ul>
           </Alert>
         )}
-
         {renderStepContent()}
       </DialogContent>
-
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-
         {activeStep > 0 && <Button onClick={handleBack}>Back</Button>}
-
         {activeStep < steps.length - 1 ? (
-          <Button onClick={handleNext} variant="contained">
+          <Button onClick={handleNext} >
             Next
           </Button>
         ) : (
           <Button
             onClick={handleSave}
-            variant="contained"
+            
             disabled={errors.length > 0}
             startIcon={<ScheduleIcon />}
           >

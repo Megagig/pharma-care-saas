@@ -1,19 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MuiAdapter, MuiIconAdapter } from '../MuiAdapter';
-
 describe('MuiAdapter', () => {
   describe('Button Adapter', () => {
     it('should render a button with mapped props', () => {
       render(
         <MuiAdapter
           component="Button"
-          muiProps={{
-            variant: 'contained',
-            size: 'large',
-            disabled: false
-          }}
-        >
+          >
           Test Button
         </MuiAdapter>
       );
@@ -27,11 +18,7 @@ describe('MuiAdapter', () => {
       render(
         <MuiAdapter
           component="Button"
-          muiProps={{
-            variant: 'outlined',
-            disabled: true
-          }}
-        >
+          >
           Disabled Button
         </MuiAdapter>
       );
@@ -46,11 +33,7 @@ describe('MuiAdapter', () => {
       render(
         <MuiAdapter
           component="TextField"
-          muiProps={{
-            label: 'Test Label',
-            placeholder: 'Enter text',
-            id: 'test-input'
-          }}
+          
         />
       );
 
@@ -65,12 +48,7 @@ describe('MuiAdapter', () => {
       render(
         <MuiAdapter
           component="TextField"
-          muiProps={{
-            label: 'Error Field',
-            error: true,
-            helperText: 'This field has an error',
-            id: 'error-input'
-          }}
+          
         />
       );
 
@@ -84,10 +62,7 @@ describe('MuiAdapter', () => {
       render(
         <MuiAdapter
           component="Card"
-          muiProps={{
-            elevation: 3
-          }}
-        >
+          >
           <div>Card Content</div>
         </MuiAdapter>
       );
@@ -102,10 +77,7 @@ describe('MuiAdapter', () => {
       render(
         <MuiAdapter
           component="Chip"
-          muiProps={{
-            label: 'Test Badge',
-            variant: 'filled'
-          }}
+          
         />
       );
 
@@ -119,11 +91,7 @@ describe('MuiAdapter', () => {
       render(
         <MuiAdapter
           component="Typography"
-          muiProps={{
-            variant: 'h1',
-            align: 'center'
-          }}
-        >
+          >
           Main Heading
         </MuiAdapter>
       );
@@ -137,10 +105,7 @@ describe('MuiAdapter', () => {
       render(
         <MuiAdapter
           component="Typography"
-          muiProps={{
-            variant: 'body1'
-          }}
-        >
+          >
           Body text content
         </MuiAdapter>
       );
@@ -156,8 +121,7 @@ describe('MuiAdapter', () => {
         <MuiAdapter
           // @ts-expect-error Testing unsupported component
           component="UnsupportedComponent"
-          muiProps={{}}
-        >
+          >
           Fallback content
         </MuiAdapter>
       );

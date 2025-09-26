@@ -36,7 +36,7 @@ export const useUIStore = create<UIStore>()(
       sidebarOpen: true,
 
       // Notification actions
-      addNotification: (notification) => {
+      addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
         const id =
           Date.now().toString() + Math.random().toString(36).substr(2, 9);
         const newNotification: Notification = {
@@ -47,7 +47,7 @@ export const useUIStore = create<UIStore>()(
         };
 
         set((state) => ({
-          notifications: [newNotification, ...state.notifications],
+          notifications: [newNotification, ...state.notifications]
         }));
 
         // Auto-remove notification if duration is specified
@@ -58,12 +58,12 @@ export const useUIStore = create<UIStore>()(
         }
       },
 
-      removeNotification: (id) =>
+      removeNotification: (id: string) =>
         set((state) => ({
           notifications: state.notifications.filter((n) => n.id !== id),
         })),
 
-      markNotificationAsRead: (id) =>
+      markNotificationAsRead: (id: string) =>
         set((state) => ({
           notifications: state.notifications.map((n) =>
             n.id === id ? { ...n, read: true } : n
@@ -73,17 +73,18 @@ export const useUIStore = create<UIStore>()(
       clearAllNotifications: () => set({ notifications: [] }),
 
       // Modal actions
-      openModal: (modalKey) =>
+      openModal: (modalKey: string) =>
         set((state) => ({
+          ...state,
           modals: { ...state.modals, [modalKey]: true },
         })),
 
-      closeModal: (modalKey) =>
+      closeModal: (modalKey: string) =>
         set((state) => ({
           modals: { ...state.modals, [modalKey]: false },
         })),
 
-      toggleModal: (modalKey) =>
+      toggleModal: (modalKey: string) =>
         set((state) => ({
           modals: { ...state.modals, [modalKey]: !state.modals[modalKey] },
         })),
@@ -91,22 +92,22 @@ export const useUIStore = create<UIStore>()(
       closeAllModals: () => set({ modals: {} }),
 
       // Loading state actions
-      setLoading: (loading) => set({ loading }),
+      setLoading: (loading: boolean) => set({ loading }),
 
       // Sidebar actions
       toggleSidebar: () =>
         set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 
-      setSidebarOpen: (open) => set({ sidebarOpen: open }),
-    }),
+      setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
+    },
     {
       name: 'ui-store',
-      partialize: (state) => ({
-        sidebarOpen: state.sidebarOpen,
-      }),
+      partialize: (state: UIState) => ({
+        sidebarOpen: state.sidebarOpen
+      })
     }
-  )
-);
+    )
+  );
 
 // Utility hooks for easier access to specific UI states
 export const useNotifications = () =>
@@ -115,7 +116,7 @@ export const useNotifications = () =>
     addNotification: state.addNotification,
     removeNotification: state.removeNotification,
     markNotificationAsRead: state.markNotificationAsRead,
-    clearAllNotifications: state.clearAllNotifications,
+    clearAllNotifications: state.clearAllNotifications
   }));
 
 export const useModals = () =>
@@ -124,18 +125,18 @@ export const useModals = () =>
     openModal: state.openModal,
     closeModal: state.closeModal,
     toggleModal: state.toggleModal,
-    closeAllModals: state.closeAllModals,
+    closeAllModals: state.closeAllModals
   }));
 
 export const useLoading = () =>
   useUIStore((state) => ({
     loading: state.loading,
-    setLoading: state.setLoading,
+    setLoading: state.setLoading
   }));
 
 export const useSidebar = () =>
   useUIStore((state) => ({
     sidebarOpen: state.sidebarOpen,
     toggleSidebar: state.toggleSidebar,
-    setSidebarOpen: state.setSidebarOpen,
+    setSidebarOpen: state.setSidebarOpen
   }));

@@ -3,10 +3,11 @@ import React, {
   useContext,
   useState,
   useEffect,
-  ReactNode,
+  ReactNode
 } from 'react';
-import { useAuth } from '../hooks/useAuth';
+
 import axios from 'axios';
+import { useAuth } from '../hooks/useAuth';
 
 interface SubscriptionStatus {
   hasWorkspace: boolean;
@@ -46,7 +47,7 @@ interface SubscriptionProviderProps {
 }
 
 export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
-  children,
+  children
 }) => {
   const { user } = useAuth();
   const [subscriptionStatus, setSubscriptionStatus] =
@@ -75,7 +76,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
         status: response.status,
         statusText: response.statusText,
         url: response.config.url,
-        headers: response.headers,
+        headers: response.headers
       });
 
       if (response.data.success) {
@@ -87,7 +88,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
           hasSubscription: false,
           status: 'no_subscription',
           accessLevel: 'basic',
-          message: 'No subscription data available',
+          message: 'No subscription data available'
         });
       }
     } catch (error: any) {
@@ -100,7 +101,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
           hasSubscription: false,
           status: 'unauthorized',
           accessLevel: 'basic',
-          message: 'Please log in to access subscription features',
+          message: 'Please log in to access subscription features'
         });
         return;
       }
@@ -112,7 +113,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
         status: 'error',
         accessLevel:
           (user?.role as string) === 'super_admin' ? 'full' : 'basic',
-        message: 'Failed to load subscription data',
+        message: 'Failed to load subscription data'
       });
     } finally {
       setLoading(false);

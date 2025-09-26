@@ -1,19 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { io } from 'socket.io-client';
-import { socketService, ConnectionStatus } from '../socketService';
-import { authService } from '../authService';
-
 // Mock socket.io-client
-vi.mock('socket.io-client', () => ({
-    io: vi.fn(),
+vi.mock('socket.io-client', () => ({ 
+    io: vi.fn()}
 }));
 
 // Mock auth service
-vi.mock('../authService', () => ({
+vi.mock('../authService', () => ({ 
     authService: {
-        getCurrentUser: vi.fn(),
-    },
-}));
+        getCurrentUser: vi.fn()}
+    }
 
 describe('SocketService', () => {
     let mockSocket: any;
@@ -40,10 +34,9 @@ describe('SocketService', () => {
         (io as any).mockReturnValue(mockSocket);
 
         // Mock auth service
-        (authService.getCurrentUser as any).mockResolvedValue({
-            success: true,
-            user: { id: 'test-user', email: 'test@example.com' },
-        });
+        (authService.getCurrentUser as any).mockResolvedValue({ 
+            success: true}
+            user: { id: 'test-user', email: 'test@example.com' }
     });
 
     afterEach(() => {
@@ -56,11 +49,11 @@ describe('SocketService', () => {
 
             expect(io).toHaveBeenCalledWith(
                 expect.any(String),
-                expect.objectContaining({
+                expect.objectContaining({ 
                     withCredentials: true,
                     autoConnect: true,
                     reconnection: true,
-                    transports: ['websocket', 'polling'],
+                    transports: ['websocket', 'polling']}
                 })
             );
         });
@@ -110,9 +103,9 @@ describe('SocketService', () => {
         });
 
         it('should check authentication before connecting', async () => {
-            (authService.getCurrentUser as any).mockResolvedValue({
+            (authService.getCurrentUser as any).mockResolvedValue({ 
                 success: false,
-                user: null,
+                user: null}
             });
 
             await expect(socketService.connect()).rejects.toThrow();
@@ -352,11 +345,11 @@ describe('SocketService', () => {
 
             const info = socketService.getConnectionInfo();
 
-            expect(info).toEqual({
+            expect(info).toEqual({ 
                 status: expect.any(String),
                 reconnectAttempts: expect.any(Number),
                 joinedConversations: expect.any(Array),
-                socketId: 'test-socket-id',
+                socketId: 'test-socket-id'}
             });
         });
     });

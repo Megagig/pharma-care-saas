@@ -1,20 +1,5 @@
-import React from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Box,
-  Chip,
-  LinearProgress,
-  Alert,
-} from '@mui/material';
-import UpgradeIcon from '@mui/icons-material/Upgrade';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import WarningIcon from '@mui/icons-material/Warning';
-import { useNavigate } from 'react-router-dom';
-import { useSubscriptionStatus } from '../hooks/useSubscription';
 
+import { Button, Card, CardContent, Progress, Alert } from '@/components/ui/button';
 const SubscriptionStatusCard: React.FC = () => {
   const navigate = useNavigate();
   const subscriptionData = useSubscriptionStatus();
@@ -27,20 +12,18 @@ const SubscriptionStatusCard: React.FC = () => {
     daysRemaining,
     loading,
   } = subscriptionData || {};
-
   if (loading) {
     return (
       <Card>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <div  gutterBottom>
             Subscription Status
-          </Typography>
-          <LinearProgress />
+          </div>
+          <Progress />
         </CardContent>
       </Card>
     );
   }
-
   const getStatusColor = () => {
     if (!hasWorkspace) return 'warning';
     if (!hasSubscription) return 'error';
@@ -49,7 +32,6 @@ const SubscriptionStatusCard: React.FC = () => {
     if (status === 'active') return 'success';
     return 'error';
   };
-
   const getStatusText = () => {
     if (!hasWorkspace) return 'No Workplace';
     if (!hasSubscription) return 'No Subscription';
@@ -57,60 +39,50 @@ const SubscriptionStatusCard: React.FC = () => {
     if (status === 'active') return 'Active Subscription';
     return 'Subscription Expired';
   };
-
   const getStatusIcon = () => {
     const color = getStatusColor();
     if (color === 'success') return <CheckCircleIcon color="success" />;
     if (color === 'warning') return <WarningIcon color="warning" />;
     return <WarningIcon color="error" />;
   };
-
   return (
     <Card>
       <CardContent>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            mb: 2,
-          }}
+        <div
+          className=""
         >
-          <Typography variant="h6">Subscription Status</Typography>
+          <div >Subscription Status</div>
           {getStatusIcon()}
-        </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+        </div>
+        <div className="">
           <Chip
             label={getStatusText()}
             color={getStatusColor() as 'success' | 'warning' | 'error' | 'info'}
-            variant="filled"
+            
           />
           {tier && (
             <Chip
               label={tier.charAt(0).toUpperCase() + tier.slice(1)}
-              variant="outlined"
+              
             />
           )}
-        </Box>
-
+        </div>
         {/* No Workspace Alert */}
         {!hasWorkspace && (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            <Typography variant="body2" gutterBottom>
+          <Alert severity="info" className="">
+            <div  gutterBottom>
               Create or join a workplace to access full features.
-            </Typography>
+            </div>
             <Button
               size="small"
-              variant="contained"
+              
               onClick={() => navigate('/dashboard')}
-              sx={{ mt: 1 }}
+              className=""
             >
               Set Up Workplace
             </Button>
           </Alert>
         )}
-
         {/* Trial Warning */}
         {hasWorkspace &&
           isTrialActive &&
@@ -118,76 +90,71 @@ const SubscriptionStatusCard: React.FC = () => {
           daysRemaining <= 7 && (
             <Alert
               severity={daysRemaining <= 3 ? 'warning' : 'info'}
-              sx={{ mb: 2 }}
+              className=""
             >
-              <Typography variant="body2" gutterBottom>
+              <div  gutterBottom>
                 Your free trial expires in {daysRemaining} day
                 {daysRemaining !== 1 ? 's' : ''}.
-              </Typography>
+              </div>
               <Button
                 size="small"
-                variant="contained"
+                
                 startIcon={<UpgradeIcon />}
                 onClick={() => navigate('/subscription-management')}
-                sx={{ mt: 1 }}
+                className=""
               >
                 Upgrade Now
               </Button>
             </Alert>
           )}
-
         {/* Trial Progress Bar */}
         {hasWorkspace && isTrialActive && daysRemaining !== undefined && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+          <div className="">
+            <div  color="text.secondary" gutterBottom>
               Trial Progress
-            </Typography>
-            <LinearProgress
-              variant="determinate"
-              value={((14 - daysRemaining) / 14) * 100}
-              sx={{ height: 8, borderRadius: 4 }}
+            </div>
+            <Progress
+              
+              className=""
             />
-          </Box>
+          </div>
         )}
-
         {/* Expired Subscription */}
         {hasWorkspace && !hasSubscription && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            <Typography variant="body2" gutterBottom>
+          <Alert severity="error" className="">
+            <div  gutterBottom>
               Your subscription has expired. Upgrade to continue using all
               features.
-            </Typography>
+            </div>
             <Button
               size="small"
-              variant="contained"
+              
               startIcon={<UpgradeIcon />}
               onClick={() => navigate('/subscription-management')}
-              sx={{ mt: 1 }}
+              className=""
             >
               Renew Subscription
             </Button>
           </Alert>
         )}
-
         {/* Active Subscription */}
         {hasWorkspace && status === 'active' && (
-          <Box>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+          <div>
+            <div  color="text.secondary" gutterBottom>
               You have full access to all features.
-            </Typography>
+            </div>
             <Button
               size="small"
-              variant="outlined"
+              
               onClick={() => navigate('/subscription-management')}
-              sx={{ mt: 1 }}
+              className=""
             >
               Manage Subscription
             </Button>
-          </Box>
+          </div>
         )}
       </CardContent>
     </Card>
   );
 };
-
 export default SubscriptionStatusCard;

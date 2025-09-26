@@ -1,46 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  Chip,
-  Stack,
-  Divider,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  IconButton,
-  Tooltip,
-} from '@mui/material';
-import {
-  CheckCircle as CheckCircleIcon,
-  Edit as EditIcon,
-  Cancel as CancelIcon,
-  ExpandMore as ExpandMoreIcon,
-  Person as PersonIcon,
-  Schedule as ScheduleIcon,
-  Assignment as AssignmentIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-} from '@mui/icons-material';
-import type { DiagnosticResult } from '../types';
+import { Button, Input, Card, CardContent, Dialog, DialogContent, DialogTitle, Tooltip, Alert, Accordion, Separator } from '@/components/ui/button';
 
 interface PharmacistReviewPanelProps {
   result: DiagnosticResult;
@@ -55,34 +13,30 @@ interface PharmacistReviewPanelProps {
     role: string;
   };
 }
-
 interface ReviewDialogState {
   open: boolean;
   type: 'approve' | 'modify' | 'reject' | null;
   text: string;
   confirmationRequired: boolean;
 }
-
-const PharmacistReviewPanel: React.FC<PharmacistReviewPanelProps> = ({
+const PharmacistReviewPanel: React.FC<PharmacistReviewPanelProps> = ({ 
   result,
   onApprove,
   onModify,
   onReject,
   loading = false,
   error,
-  currentUser,
+  currentUser
 }) => {
-  const [dialogState, setDialogState] = useState<ReviewDialogState>({
+  const [dialogState, setDialogState] = useState<ReviewDialogState>({ 
     open: false,
     type: null,
     text: '',
-    confirmationRequired: false,
+    confirmationRequired: false}
   });
-
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set()
   );
-
   const handleToggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(section)) {
@@ -92,7 +46,6 @@ const PharmacistReviewPanel: React.FC<PharmacistReviewPanelProps> = ({
     }
     setExpandedSections(newExpanded);
   };
-
   const handleOpenDialog = (type: 'approve' | 'modify' | 'reject') => {
     const requiresConfirmation =
       type === 'approve' &&
@@ -100,27 +53,23 @@ const PharmacistReviewPanel: React.FC<PharmacistReviewPanelProps> = ({
         (flag) => flag.severity === 'critical' || flag.severity === 'high'
       ) ||
         result.referralRecommendation?.recommended);
-
-    setDialogState({
+    setDialogState({ 
       open: true,
       type,
       text: '',
-      confirmationRequired: requiresConfirmation,
+      confirmationRequired: requiresConfirmation}
     });
   };
-
   const handleCloseDialog = () => {
-    setDialogState({
+    setDialogState({ 
       open: false,
       type: null,
       text: '',
-      confirmationRequired: false,
+      confirmationRequired: false}
     });
   };
-
   const handleSubmitReview = () => {
     const { type, text } = dialogState;
-
     switch (type) {
       case 'approve':
         onApprove?.();
@@ -136,22 +85,19 @@ const PharmacistReviewPanel: React.FC<PharmacistReviewPanelProps> = ({
         }
         break;
     }
-
     handleCloseDialog();
   };
-
   const getReviewStatusChip = () => {
     if (!result.pharmacistReview) {
       return (
         <Chip
           label="Pending Review"
           color="warning"
-          variant="outlined"
+          
           icon={<ScheduleIcon />}
         />
       );
     }
-
     const { status } = result.pharmacistReview;
     const config = {
       approved: {
@@ -170,219 +116,197 @@ const PharmacistReviewPanel: React.FC<PharmacistReviewPanelProps> = ({
         label: 'Rejected',
       },
     };
-
     const statusConfig = config[status];
     const Icon = statusConfig.icon;
-
     return (
       <Chip
         label={statusConfig.label}
         color={statusConfig.color}
-        variant="filled"
+        
         icon={<Icon />}
       />
     );
   };
-
   const isReviewed = !!result.pharmacistReview;
   const hasHighRiskFlags = result.redFlags.some(
     (flag) => flag.severity === 'critical' || flag.severity === 'high'
   );
   const hasReferralRecommendation = result.referralRecommendation?.recommended;
-
   return (
     <Card>
       <CardContent>
         {/* Header */}
-        <Box sx={{ mb: 3 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 2,
-            }}
+        <div className="">
+          <div
+            className=""
           >
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}
+            <div
+              
+              className=""
             >
-              <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+              <PersonIcon className="" />
               Pharmacist Review
-            </Typography>
+            </div>
             {getReviewStatusChip()}
-          </Box>
-
+          </div>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" className="">
               {error}
             </Alert>
           )}
-
           {/* Review Warnings */}
           {!isReviewed && (hasHighRiskFlags || hasReferralRecommendation) && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+            <Alert severity="warning" className="">
+              <div  className="">
                 Special Attention Required
-              </Typography>
-              <Stack spacing={0.5}>
+              </div>
+              <div spacing={0.5}>
                 {hasHighRiskFlags && (
-                  <Typography variant="body2">
+                  <div >
                     • Critical or high-risk red flags detected
-                  </Typography>
+                  </div>
                 )}
                 {hasReferralRecommendation && (
-                  <Typography variant="body2">
+                  <div >
                     • AI recommends referral to{' '}
                     {result.referralRecommendation?.specialty}
-                  </Typography>
+                  </div>
                 )}
-              </Stack>
+              </div>
             </Alert>
           )}
-        </Box>
-
+        </div>
         {/* Review History */}
         {isReviewed && (
-          <Box sx={{ mb: 3 }}>
+          <div className="">
             <Accordion
               expanded={expandedSections.has('history')}
               onChange={() => handleToggleSection('history')}
             >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                <div  className="">
                   Review History
-                </Typography>
+                </div>
               </AccordionSummary>
               <AccordionDetails>
-                <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                  <Stack spacing={2}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
+                <div className="">
+                  <div spacing={2}>
+                    <div>
+                      <div  color="text.secondary">
                         Reviewed By
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      </div>
+                      <div  className="">
                         {result.pharmacistReview.reviewedBy}
-                      </Typography>
-                    </Box>
-
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                    </div>
+                    <div>
+                      <div  color="text.secondary">
                         Review Date
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      </div>
+                      <div  className="">
                         {new Date(
                           result.pharmacistReview.reviewedAt
                         ).toLocaleString()}
-                      </Typography>
-                    </Box>
-
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                    </div>
+                    <div>
+                      <div  color="text.secondary">
                         Decision
-                      </Typography>
-                      <Box sx={{ mt: 0.5 }}>{getReviewStatusChip()}</Box>
-                    </Box>
-
+                      </div>
+                      <div className="">{getReviewStatusChip()}</div>
+                    </div>
                     {result.pharmacistReview.modifications && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
+                      <div>
+                        <div  color="text.secondary">
                           Modifications Made
-                        </Typography>
-                        <Alert severity="info" sx={{ mt: 1 }}>
-                          <Typography variant="body2">
+                        </div>
+                        <Alert severity="info" className="">
+                          <div >
                             {result.pharmacistReview.modifications}
-                          </Typography>
+                          </div>
                         </Alert>
-                      </Box>
+                      </div>
                     )}
-
                     {result.pharmacistReview.rejectionReason && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
+                      <div>
+                        <div  color="text.secondary">
                           Rejection Reason
-                        </Typography>
-                        <Alert severity="error" sx={{ mt: 1 }}>
-                          <Typography variant="body2">
+                        </div>
+                        <Alert severity="error" className="">
+                          <div >
                             {result.pharmacistReview.rejectionReason}
-                          </Typography>
+                          </div>
                         </Alert>
-                      </Box>
+                      </div>
                     )}
-                  </Stack>
-                </Box>
+                  </div>
+                </div>
               </AccordionDetails>
             </Accordion>
-          </Box>
+          </div>
         )}
-
         {/* Review Checklist */}
         {!isReviewed && (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+          <div className="">
+            <div  className="">
               Review Checklist
-            </Typography>
-
+            </div>
             <List>
-              <ListItem>
-                <ListItemIcon>
+              <div>
+                <div>
                   <Tooltip title="Verify diagnostic accuracy">
                     <InfoIcon color="primary" />
                   </Tooltip>
-                </ListItemIcon>
-                <ListItemText
+                </div>
+                <div
                   primary="Diagnostic Assessment"
                   secondary="Review differential diagnoses for clinical accuracy and relevance"
                 />
-              </ListItem>
-
-              <ListItem>
-                <ListItemIcon>
+              </div>
+              <div>
+                <div>
                   <Tooltip title="Check medication safety">
                     <InfoIcon color="primary" />
                   </Tooltip>
-                </ListItemIcon>
-                <ListItemText
+                </div>
+                <div
                   primary="Medication Safety"
                   secondary="Verify drug selections, dosages, and interaction checks"
                 />
-              </ListItem>
-
-              <ListItem>
-                <ListItemIcon>
+              </div>
+              <div>
+                <div>
                   <Tooltip title="Assess red flags">
                     <WarningIcon color="warning" />
                   </Tooltip>
-                </ListItemIcon>
-                <ListItemText
+                </div>
+                <div
                   primary="Red Flag Assessment"
                   secondary="Evaluate critical findings and recommended actions"
                 />
-              </ListItem>
-
-              <ListItem>
-                <ListItemIcon>
+              </div>
+              <div>
+                <div>
                   <Tooltip title="Review referral needs">
                     <InfoIcon color="primary" />
                   </Tooltip>
-                </ListItemIcon>
-                <ListItemText
+                </div>
+                <div
                   primary="Referral Appropriateness"
                   secondary="Assess need for physician referral and urgency level"
                 />
-              </ListItem>
+              </div>
             </List>
-          </Box>
+          </div>
         )}
-
         {/* Action Buttons */}
         {!isReviewed && (onApprove || onModify || onReject) && (
           <>
-            <Divider sx={{ mb: 3 }} />
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Separator className="" />
+            <div className="">
               {onReject && (
                 <Button
-                  variant="outlined"
+                  
                   color="error"
                   onClick={() => handleOpenDialog('reject')}
                   disabled={loading}
@@ -391,10 +315,9 @@ const PharmacistReviewPanel: React.FC<PharmacistReviewPanelProps> = ({
                   Reject
                 </Button>
               )}
-
               {onModify && (
                 <Button
-                  variant="outlined"
+                  
                   color="warning"
                   onClick={() => handleOpenDialog('modify')}
                   disabled={loading}
@@ -403,10 +326,9 @@ const PharmacistReviewPanel: React.FC<PharmacistReviewPanelProps> = ({
                   Modify
                 </Button>
               )}
-
               {onApprove && (
                 <Button
-                  variant="contained"
+                  
                   color="success"
                   onClick={() => handleOpenDialog('approve')}
                   disabled={loading}
@@ -415,20 +337,18 @@ const PharmacistReviewPanel: React.FC<PharmacistReviewPanelProps> = ({
                   {loading ? 'Processing...' : 'Approve'}
                 </Button>
               )}
-            </Box>
+            </div>
           </>
         )}
-
         {/* Current User Info */}
         {currentUser && !isReviewed && (
-          <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-            <Typography variant="caption" color="text.secondary">
+          <div className="">
+            <div  color="text.secondary">
               Reviewing as: {currentUser.name} ({currentUser.role})
-            </Typography>
-          </Box>
+            </div>
+          </div>
         )}
       </CardContent>
-
       {/* Review Dialog */}
       <Dialog
         open={dialogState.open}
@@ -441,106 +361,101 @@ const PharmacistReviewPanel: React.FC<PharmacistReviewPanelProps> = ({
           {dialogState.type === 'modify' && 'Modify Diagnostic Result'}
           {dialogState.type === 'reject' && 'Reject Diagnostic Result'}
         </DialogTitle>
-
         <DialogContent>
           {dialogState.confirmationRequired && (
-            <Alert severity="warning" sx={{ mb: 3 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+            <Alert severity="warning" className="">
+              <div  className="">
                 High-Risk Case Detected
-              </Typography>
-              <Typography variant="body2">
+              </div>
+              <div >
                 This case contains critical findings or referral
                 recommendations. Please confirm you have thoroughly reviewed all
                 aspects before approving.
-              </Typography>
+              </div>
             </Alert>
           )}
-
           {dialogState.type === 'approve' && (
-            <Box>
-              <Typography variant="body1" sx={{ mb: 2 }}>
+            <div>
+              <div  className="">
                 By approving this diagnostic result, you confirm that:
-              </Typography>
+              </div>
               <List>
-                <ListItem>
-                  <ListItemText primary="• The diagnostic assessment is clinically appropriate" />
-                </ListItem>
-                <ListItem>
-                  <ListItemText primary="• Medication recommendations are safe and appropriate" />
-                </ListItem>
-                <ListItem>
-                  <ListItemText primary="• Red flags have been properly addressed" />
-                </ListItem>
-                <ListItem>
-                  <ListItemText primary="• Referral recommendations are appropriate" />
-                </ListItem>
+                <div>
+                  <div primary="• The diagnostic assessment is clinically appropriate" />
+                </div>
+                <div>
+                  <div primary="• Medication recommendations are safe and appropriate" />
+                </div>
+                <div>
+                  <div primary="• Red flags have been properly addressed" />
+                </div>
+                <div>
+                  <div primary="• Referral recommendations are appropriate" />
+                </div>
               </List>
-            </Box>
+            </div>
           )}
-
           {dialogState.type === 'modify' && (
-            <Box>
-              <Typography variant="body1" sx={{ mb: 2 }}>
+            <div>
+              <div  className="">
                 Please describe the modifications you are making to the AI
                 recommendations:
-              </Typography>
-              <TextField
+              </div>
+              <Input
                 fullWidth
                 multiline
                 rows={4}
                 label="Modifications"
                 placeholder="Describe your modifications to the diagnostic recommendations..."
                 value={dialogState.text}
-                onChange={(e) =>
+                onChange={(e) =>}
                   setDialogState((prev) => ({ ...prev, text: e.target.value }))
                 }
                 required
                 helperText="Be specific about what changes you are making and why"
               />
-            </Box>
+            </div>
           )}
-
           {dialogState.type === 'reject' && (
-            <Box>
-              <Typography variant="body1" sx={{ mb: 2 }}>
+            <div>
+              <div  className="">
                 Please provide a reason for rejecting this diagnostic result:
-              </Typography>
-              <TextField
+              </div>
+              <Input
                 fullWidth
                 multiline
                 rows={4}
                 label="Rejection Reason"
                 placeholder="Explain why you are rejecting these recommendations..."
                 value={dialogState.text}
-                onChange={(e) =>
+                onChange={(e) =>}
                   setDialogState((prev) => ({ ...prev, text: e.target.value }))
                 }
                 required
                 helperText="This will help improve future AI recommendations"
               />
-            </Box>
+            </div>
           )}
         </DialogContent>
-
         <DialogActions>
           <Button onClick={handleCloseDialog} disabled={loading}>
             Cancel
           </Button>
           <Button
             onClick={handleSubmitReview}
-            variant="contained"
+            
             disabled={
               loading ||
               ((dialogState.type === 'modify' ||
                 dialogState.type === 'reject') &&
-                !dialogState.text.trim())
+                !dialogState.text.trim())}
             }
             color={
               dialogState.type === 'approve'
                 ? 'success'
                 : dialogState.type === 'modify'
                   ? 'warning'
-                  : 'error'
+                  : 'error'}
             }
           >
             {loading
@@ -556,5 +471,4 @@ const PharmacistReviewPanel: React.FC<PharmacistReviewPanelProps> = ({
     </Card>
   );
 };
-
 export default PharmacistReviewPanel;

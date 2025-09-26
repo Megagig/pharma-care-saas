@@ -1,8 +1,3 @@
-import React from 'react';
-import { useRBAC } from '../hooks/useRBAC';
-import { useFeatureAccess } from '../hooks/useFeatureAccess';
-import type { RBACPermissions } from '../types/patientManagement';
-
 // Component for conditional rendering based on permissions
 interface ConditionalRenderProps {
   children: React.ReactNode;
@@ -12,12 +7,12 @@ interface ConditionalRenderProps {
   fallback?: React.ReactNode;
 }
 
-export const ConditionalRender: React.FC<ConditionalRenderProps> = ({
+export const ConditionalRender: React.FC<ConditionalRenderProps> = ({ 
   children,
   requiredRole,
   requiredPermission,
   requiredFeature,
-  fallback = null,
+  fallback = null
 }) => {
   const { role, canAccess } = useRBAC();
   const { isFeatureEnabled } = useFeatureAccess();

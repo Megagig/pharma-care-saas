@@ -1,50 +1,6 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Chip,
-  Divider,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormControlLabel,
-  Switch,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-} from '@mui/material';
-import {
-  IntegrationInstructions,
-  NoteAdd,
-  Assignment,
-  Timeline,
-  ExpandMore,
-  CheckCircle,
-  Warning,
-  Info,
-  Link as LinkIcon,
-} from '@mui/icons-material';
-import {
-  useIntegrationRecommendations,
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Spinner, Alert, Switch, Accordion, Separator } from '@/components/ui/button';
+useIntegrationRecommendations,
   useBatchIntegration,
-  CreateClinicalNoteFromDiagnosticData,
-  CreateMTRFromDiagnosticData,
-} from '../hooks/useIntegration';
 
 interface DiagnosticIntegrationPanelProps {
   diagnosticRequestId: string;
@@ -52,7 +8,6 @@ interface DiagnosticIntegrationPanelProps {
   patientId: string;
   onIntegrationComplete?: () => void;
 }
-
 interface IntegrationDialogProps {
   open: boolean;
   onClose: () => void;
@@ -60,7 +15,6 @@ interface IntegrationDialogProps {
   recommendations: any;
   isLoading: boolean;
 }
-
 interface IntegrationOperations {
   createClinicalNote: boolean;
   createMTR: boolean;
@@ -68,15 +22,14 @@ interface IntegrationOperations {
   noteData?: CreateClinicalNoteFromDiagnosticData['noteData'];
   mtrData?: CreateMTRFromDiagnosticData['mtrData'];
 }
-
-const IntegrationDialog: React.FC<IntegrationDialogProps> = ({
+const IntegrationDialog: React.FC<IntegrationDialogProps> = ({ 
   open,
   onClose,
   onConfirm,
   recommendations,
-  isLoading,
+  isLoading
 }) => {
-  const [operations, setOperations] = useState<IntegrationOperations>({
+  const [operations, setOperations] = useState<IntegrationOperations>({ 
     createClinicalNote: recommendations?.shouldCreateClinicalNote || false,
     createMTR: recommendations?.shouldCreateMTR || false,
     enrichMTRId: undefined,
@@ -84,69 +37,61 @@ const IntegrationDialog: React.FC<IntegrationDialogProps> = ({
       type: 'consultation',
       priority: 'medium',
       followUpRequired: false,
-      tags: ['diagnostic', 'ai-assisted'],
+      tags: ['diagnostic', 'ai-assisted']}
     },
     mtrData: {
       priority: 'routine',
-    },
-  });
-
+    }
   const handleOperationChange = (
     field: keyof IntegrationOperations,
     value: any
   ) => {
-    setOperations((prev) => ({
+    setOperations((prev) => ({ 
       ...prev,
-      [field]: value,
+      [field]: value}
     }));
   };
-
   const handleNoteDataChange = (field: string, value: any) => {
-    setOperations((prev) => ({
+    setOperations((prev) => ({ 
       ...prev,
       noteData: {
         ...prev.noteData,
-        [field]: value,
-      },
-    }));
+        [field]: value}
+      }
   };
-
   const handleMTRDataChange = (field: string, value: any) => {
-    setOperations((prev) => ({
+    setOperations((prev) => ({ 
       ...prev,
       mtrData: {
         ...prev.mtrData,
-        [field]: value,
-      },
-    }));
+        [field]: value}
+      }
   };
-
   const handleConfirm = () => {
     onConfirm(operations);
   };
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        <Box display="flex" alignItems="center" gap={1}>
+        <div display="flex" alignItems="center" gap={1}>
           <IntegrationInstructions />
           Configure Integration Options
-        </Box>
+        </div>
       </DialogTitle>
       <DialogContent>
-        <Box display="flex" flexDirection="column" gap={3} mt={2}>
+        <div display="flex" flexDirection="column" gap={3} mt={2}>
           {/* Clinical Note Options */}
           <Accordion expanded={operations.createClinicalNote}>
             <AccordionSummary expandIcon={<ExpandMore />}>
               <FormControlLabel
                 control={
-                  <Switch
+                  <Switch}
                     checked={operations.createClinicalNote}
                     onChange={(e) =>
                       handleOperationChange(
                         'createClinicalNote',
                         e.target.checked
-                      )
+                      )}
                     }
                   />
                 }
@@ -155,21 +100,21 @@ const IntegrationDialog: React.FC<IntegrationDialogProps> = ({
               />
             </AccordionSummary>
             <AccordionDetails>
-              <Box display="flex" flexDirection="column" gap={2}>
-                <TextField
+              <div display="flex" flexDirection="column" gap={2}>
+                <Input
                   label="Note Title"
                   value={operations.noteData?.title || ''}
                   onChange={(e) =>
-                    handleNoteDataChange('title', e.target.value)
+                    handleNoteDataChange('title', e.target.value)}
                   }
                   fullWidth
                 />
-                <FormControl fullWidth>
-                  <InputLabel>Note Type</InputLabel>
+                <div fullWidth>
+                  <Label>Note Type</Label>
                   <Select
                     value={operations.noteData?.type || 'consultation'}
                     onChange={(e) =>
-                      handleNoteDataChange('type', e.target.value)
+                      handleNoteDataChange('type', e.target.value)}
                     }
                   >
                     <MenuItem value="consultation">Consultation</MenuItem>
@@ -180,47 +125,46 @@ const IntegrationDialog: React.FC<IntegrationDialogProps> = ({
                     <MenuItem value="adverse_event">Adverse Event</MenuItem>
                     <MenuItem value="other">Other</MenuItem>
                   </Select>
-                </FormControl>
-                <FormControl fullWidth>
-                  <InputLabel>Priority</InputLabel>
+                </div>
+                <div fullWidth>
+                  <Label>Priority</Label>
                   <Select
                     value={operations.noteData?.priority || 'medium'}
                     onChange={(e) =>
-                      handleNoteDataChange('priority', e.target.value)
+                      handleNoteDataChange('priority', e.target.value)}
                     }
                   >
                     <MenuItem value="low">Low</MenuItem>
                     <MenuItem value="medium">Medium</MenuItem>
                     <MenuItem value="high">High</MenuItem>
                   </Select>
-                </FormControl>
+                </div>
                 <FormControlLabel
                   control={
-                    <Switch
+                    <Switch}
                       checked={operations.noteData?.followUpRequired || false}
                       onChange={(e) =>
                         handleNoteDataChange(
                           'followUpRequired',
                           e.target.checked
-                        )
+                        )}
                       }
                     />
                   }
                   label="Follow-up Required"
                 />
-              </Box>
+              </div>
             </AccordionDetails>
           </Accordion>
-
           {/* MTR Options */}
           <Accordion expanded={operations.createMTR}>
             <AccordionSummary expandIcon={<ExpandMore />}>
               <FormControlLabel
                 control={
-                  <Switch
+                  <Switch}
                     checked={operations.createMTR}
                     onChange={(e) =>
-                      handleOperationChange('createMTR', e.target.checked)
+                      handleOperationChange('createMTR', e.target.checked)}
                     }
                   />
                 }
@@ -229,52 +173,49 @@ const IntegrationDialog: React.FC<IntegrationDialogProps> = ({
               />
             </AccordionSummary>
             <AccordionDetails>
-              <Box display="flex" flexDirection="column" gap={2}>
-                <FormControl fullWidth>
-                  <InputLabel>Priority</InputLabel>
+              <div display="flex" flexDirection="column" gap={2}>
+                <div fullWidth>
+                  <Label>Priority</Label>
                   <Select
                     value={operations.mtrData?.priority || 'routine'}
                     onChange={(e) =>
-                      handleMTRDataChange('priority', e.target.value)
+                      handleMTRDataChange('priority', e.target.value)}
                     }
                   >
                     <MenuItem value="routine">Routine</MenuItem>
                     <MenuItem value="urgent">Urgent</MenuItem>
                     <MenuItem value="high_risk">High Risk</MenuItem>
                   </Select>
-                </FormControl>
-                <TextField
+                </div>
+                <Input
                   label="Review Reason"
                   value={operations.mtrData?.reviewReason || ''}
                   onChange={(e) =>
-                    handleMTRDataChange('reviewReason', e.target.value)
+                    handleMTRDataChange('reviewReason', e.target.value)}
                   }
                   multiline
                   rows={3}
                   fullWidth
                 />
-              </Box>
+              </div>
             </AccordionDetails>
           </Accordion>
-
           {/* Existing MTR Enrichment */}
           {recommendations?.existingMTRs?.length > 0 && (
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMore />}>
-                <Typography variant="h6">Enrich Existing MTR</Typography>
+                <div >Enrich Existing MTR</div>
               </AccordionSummary>
               <AccordionDetails>
-                <FormControl fullWidth>
-                  <InputLabel>Select MTR to Enrich</InputLabel>
+                <div fullWidth>
+                  <Label>Select MTR to Enrich</Label>
                   <Select
                     value={operations.enrichMTRId || ''}
                     onChange={(e) => {
                       handleOperationChange('enrichMTRId', e.target.value);
                       if (e.target.value) {
-                        handleOperationChange('createMTR', false);
-                      }
-                    }}
-                  >
+                        handleOperationChange('createMTR', false);}
+                      }>
                     <MenuItem value="">None</MenuItem>
                     {recommendations.existingMTRs
                       .filter((mtr: any) => mtr.canEnrich)
@@ -284,35 +225,34 @@ const IntegrationDialog: React.FC<IntegrationDialogProps> = ({
                         </MenuItem>
                       ))}
                   </Select>
-                </FormControl>
+                </div>
               </AccordionDetails>
             </Accordion>
           )}
-
           {/* Correlations Display */}
           {recommendations?.correlations?.length > 0 && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
+            <div>
+              <div  gutterBottom>
                 Found Correlations
-              </Typography>
+              </div>
               <List dense>
                 {recommendations.correlations.map(
                   (correlation: any, index: number) => (
-                    <ListItem key={index}>
-                      <ListItemIcon>
+                    <div key={index}>
+                      <div>
                         <LinkIcon color="primary" />
-                      </ListItemIcon>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={correlation.correlation}
                         secondary={`${correlation.type} - Confidence: ${Math.round(correlation.confidence * 100)}%`}
                       />
-                    </ListItem>
+                    </div>
                   )
                 )}
               </List>
-            </Box>
+            </div>
           )}
-        </Box>
+        </div>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={isLoading}>
@@ -320,15 +260,15 @@ const IntegrationDialog: React.FC<IntegrationDialogProps> = ({
         </Button>
         <Button
           onClick={handleConfirm}
-          variant="contained"
+          
           disabled={
             isLoading ||
             (!operations.createClinicalNote &&
               !operations.createMTR &&
-              !operations.enrichMTRId)
+              !operations.enrichMTRId)}
           }
-          startIcon={
-            isLoading ? <CircularProgress size={20} /> : <CheckCircle />
+          startIcon={}
+            isLoading ? <Spinner size={20} /> : <CheckCircle />
           }
         >
           {isLoading ? 'Processing...' : 'Execute Integration'}
@@ -337,31 +277,24 @@ const IntegrationDialog: React.FC<IntegrationDialogProps> = ({
     </Dialog>
   );
 };
-
-export const DiagnosticIntegrationPanel: React.FC<
-  DiagnosticIntegrationPanelProps
-> = ({
+export const DiagnosticIntegrationPanel: React.FC = ({ 
   diagnosticRequestId,
   diagnosticResultId,
   patientId,
-  onIntegrationComplete,
+  onIntegrationComplete
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-
   const {
     recommendations,
     isLoading: recommendationsLoading,
     crossReference,
     integrationOptions,
   } = useIntegrationRecommendations(diagnosticRequestId, patientId);
-
   const { executeBatchIntegration, isLoading: integrationLoading } =
     useBatchIntegration();
-
   const handleIntegrationClick = () => {
     setDialogOpen(true);
   };
-
   const handleIntegrationConfirm = async (
     operations: IntegrationOperations
   ) => {
@@ -378,43 +311,40 @@ export const DiagnosticIntegrationPanel: React.FC<
       console.error('Integration failed:', error);
     }
   };
-
   if (recommendationsLoading) {
     return (
       <Card>
         <CardContent>
-          <Box display="flex" alignItems="center" justifyContent="center" p={3}>
-            <CircularProgress />
-            <Typography variant="body2" ml={2}>
+          <div display="flex" alignItems="center" justifyContent="center" p={3}>
+            <Spinner />
+            <div  ml={2}>
               Analyzing integration options...
-            </Typography>
-          </Box>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   }
-
   return (
     <>
       <Card>
         <CardContent>
-          <Box display="flex" alignItems="center" gap={1} mb={2}>
+          <div display="flex" alignItems="center" gap={1} mb={2}>
             <IntegrationInstructions color="primary" />
-            <Typography variant="h6">Integration Options</Typography>
-          </Box>
-
+            <div >Integration Options</div>
+          </div>
           {/* Recommendations */}
-          <Box mb={3}>
-            <Typography variant="subtitle2" gutterBottom>
+          <div mb={3}>
+            <div  gutterBottom>
               Recommendations
-            </Typography>
-            <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+            </div>
+            <div display="flex" flexWrap="wrap" gap={1} mb={2}>
               {recommendations?.shouldCreateClinicalNote && (
                 <Chip
                   icon={<NoteAdd />}
                   label="Create Clinical Note"
                   color="primary"
-                  variant="outlined"
+                  
                 />
               )}
               {recommendations?.shouldCreateMTR && (
@@ -422,7 +352,7 @@ export const DiagnosticIntegrationPanel: React.FC<
                   icon={<Assignment />}
                   label="Create MTR"
                   color="secondary"
-                  variant="outlined"
+                  
                 />
               )}
               {recommendations?.shouldEnrichExistingMTR && (
@@ -430,72 +360,67 @@ export const DiagnosticIntegrationPanel: React.FC<
                   icon={<Timeline />}
                   label="Enrich Existing MTR"
                   color="info"
-                  variant="outlined"
+                  
                 />
               )}
-            </Box>
-
+            </div>
             {integrationOptions?.recommendations && (
               <List dense>
                 {integrationOptions.recommendations.map(
                   (rec: string, index: number) => (
-                    <ListItem key={index}>
-                      <ListItemIcon>
+                    <div key={index}>
+                      <div>
                         <Info color="primary" />
-                      </ListItemIcon>
-                      <ListItemText primary={rec} />
-                    </ListItem>
+                      </div>
+                      <div primary={rec} />
+                    </div>
                   )
                 )}
               </List>
             )}
-          </Box>
-
-          <Divider />
-
+          </div>
+          <Separator />
           {/* Existing Records */}
           {(crossReference?.relatedClinicalNotes?.length > 0 ||
             crossReference?.relatedMTRs?.length > 0) && (
-            <Box mt={3} mb={3}>
-              <Typography variant="subtitle2" gutterBottom>
+            <div mt={3} mb={3}>
+              <div  gutterBottom>
                 Related Records
-              </Typography>
-
+              </div>
               {crossReference.relatedMTRs?.length > 0 && (
-                <Box mb={2}>
-                  <Typography
-                    variant="body2"
+                <div mb={2}>
+                  <div
+                    
                     color="textSecondary"
                     gutterBottom
                   >
                     Recent MTRs ({crossReference.relatedMTRs.length})
-                  </Typography>
-                  <Box display="flex" flexWrap="wrap" gap={1}>
+                  </div>
+                  <div display="flex" flexWrap="wrap" gap={1}>
                     {crossReference.relatedMTRs.slice(0, 3).map((mtr: any) => (
                       <Chip
                         key={mtr._id}
                         label={`${mtr.reviewNumber} (${mtr.status})`}
                         size="small"
                         color={
-                          mtr.status === 'in_progress' ? 'primary' : 'default'
+                          mtr.status === 'in_progress' ? 'primary' : 'default'}
                         }
                       />
                     ))}
-                  </Box>
-                </Box>
+                  </div>
+                </div>
               )}
-
               {crossReference.relatedClinicalNotes?.length > 0 && (
-                <Box mb={2}>
-                  <Typography
-                    variant="body2"
+                <div mb={2}>
+                  <div
+                    
                     color="textSecondary"
                     gutterBottom
                   >
                     Recent Clinical Notes (
                     {crossReference.relatedClinicalNotes.length})
-                  </Typography>
-                  <Box display="flex" flexWrap="wrap" gap={1}>
+                  </div>
+                  <div display="flex" flexWrap="wrap" gap={1}>
                     {crossReference.relatedClinicalNotes
                       .slice(0, 3)
                       .map((note: any) => (
@@ -506,30 +431,27 @@ export const DiagnosticIntegrationPanel: React.FC<
                           color="default"
                         />
                       ))}
-                  </Box>
-                </Box>
+                  </div>
+                </div>
               )}
-            </Box>
+            </div>
           )}
-
           {/* Correlations */}
           {recommendations?.correlations?.length > 0 && (
-            <Box mb={3}>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                <Typography variant="body2">
+            <div mb={3}>
+              <Alert severity="info" className="">
+                <div >
                   Found {recommendations.correlations.length} correlation(s)
                   with existing records
-                </Typography>
+                </div>
               </Alert>
-            </Box>
+            </div>
           )}
-
-          <Divider />
-
+          <Separator />
           {/* Action Button */}
-          <Box mt={3} display="flex" justifyContent="center">
+          <div mt={3} display="flex" justifyContent="center">
             <Button
-              variant="contained"
+              
               size="large"
               onClick={handleIntegrationClick}
               startIcon={<IntegrationInstructions />}
@@ -537,10 +459,9 @@ export const DiagnosticIntegrationPanel: React.FC<
             >
               Configure Integration
             </Button>
-          </Box>
+          </div>
         </CardContent>
       </Card>
-
       <IntegrationDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}

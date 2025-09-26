@@ -1,60 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Stack,
-  Alert,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  FormHelperText,
-  Grid,
-  Paper,
-  Chip,
-  IconButton,
-  Tooltip,
-  Collapse,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Checkbox,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  DragIndicator as DragIcon,
-  Lightbulb as LightbulbIcon,
-  CheckCircle as CheckCircleIcon,
-  Info as InfoIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Preview as PreviewIcon,
-} from '@mui/icons-material';
-
-import { useStrategyRecommendations } from '../../queries/useClinicalInterventions';
-import type {
-  ClinicalIntervention,
-  InterventionStrategy,
-  StrategyRecommendation,
-} from '../../stores/clinicalInterventionStore';
-
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Spinner } from '@/components/ui/button';
 // ===============================
 // TYPES AND INTERFACES
 // ===============================
-
 interface StrategyFormData {
   type: InterventionStrategy['type'];
   description: string;
@@ -62,11 +9,9 @@ interface StrategyFormData {
   expectedOutcome: string;
   priority: InterventionStrategy['priority'];
 }
-
 interface StrategyRecommendationData {
   strategies: StrategyFormData[];
 }
-
 interface StrategyRecommendationStepProps {
   onNext: (data: StrategyRecommendationData) => void;
   onBack?: () => void;
@@ -77,11 +22,9 @@ interface StrategyRecommendationStepProps {
   };
   isLoading?: boolean;
 }
-
 // ===============================
 // CONSTANTS
 // ===============================
-
 const STRATEGY_TYPES = {
   medication_review: {
     label: 'Medication Review',
@@ -158,7 +101,6 @@ const STRATEGY_TYPES = {
       'Customized solution addressing specific patient requirements',
   },
 } as const;
-
 const CATEGORY_STRATEGY_MAPPING = {
   drug_therapy_problem: [
     'medication_review',
@@ -206,17 +148,15 @@ const CATEGORY_STRATEGY_MAPPING = {
     'physician_consultation',
   ],
 };
-
 // ===============================
 // MAIN COMPONENT
 // ===============================
-
-const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
+const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({ 
   onNext,
   onBack,
   onCancel,
   initialData,
-  isLoading = false,
+  isLoading = false
 }) => {
   // State
   const [showRecommendations, setShowRecommendations] = useState(true);
@@ -225,33 +165,28 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
   >([]);
   const [showPreview, setShowPreview] = useState(false);
   const [expandedStrategy, setExpandedStrategy] = useState<number | null>(null);
-
   // Queries
   const { data: recommendationsData, isLoading: loadingRecommendations } =
     useStrategyRecommendations(initialData?.category || '');
-
   // Get recommended strategies for the category
   const recommendedStrategies = useMemo(() => {
     if (!initialData?.category) return [];
     return CATEGORY_STRATEGY_MAPPING[initialData.category] || [];
   }, [initialData?.category]);
-
   // Form setup
   const defaultValues: StrategyRecommendationData = useMemo(
-    () => ({
+    () => ({ 
       strategies: initialData?.strategies || [
         {
           type: 'medication_review',
           description: '',
           rationale: '',
           expectedOutcome: '',
-          priority: 'primary',
+          priority: 'primary'}
         },
-      ],
-    }),
+      ], },
     [initialData?.strategies]
   );
-
   const {
     control,
     handleSubmit,
@@ -259,48 +194,40 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
     setValue,
     formState: { errors, isValid },
     reset,
-  } = useForm<StrategyRecommendationData>({
+  } = useForm<StrategyRecommendationData>({ 
     defaultValues,
-    mode: 'onChange',
+    mode: 'onChange'}
   });
-
-  const { fields, append, remove, move } = useFieldArray({
+  const { fields, append, remove, move } = useFieldArray({ 
     control,
-    name: 'strategies',
+    name: 'strategies'}
   });
-
   const watchedStrategies = watch('strategies');
-
   // ===============================
   // HANDLERS
   // ===============================
-
   const handleAddRecommendedStrategy = (strategyType: string) => {
     const strategyConfig =
       STRATEGY_TYPES[strategyType as keyof typeof STRATEGY_TYPES];
     if (!strategyConfig) return;
-
-    append({
+    append({ 
       type: strategyType as InterventionStrategy['type'],
       description: '',
       rationale: strategyConfig.defaultRationale,
       expectedOutcome: strategyConfig.defaultOutcome,
-      priority: 'primary',
+      priority: 'primary'}
     });
-
     setSelectedRecommendations((prev) => [...prev, strategyType]);
   };
-
   const handleAddCustomStrategy = () => {
-    append({
+    append({ 
       type: 'custom',
       description: '',
       rationale: '',
       expectedOutcome: '',
-      priority: 'secondary',
+      priority: 'secondary'}
     });
   };
-
   const handleRemoveStrategy = (index: number) => {
     const strategy = watchedStrategies[index];
     if (strategy) {
@@ -310,12 +237,10 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
     }
     remove(index);
   };
-
   const handleStrategyTypeChange = (index: number, newType: string) => {
     const strategyConfig =
       STRATEGY_TYPES[newType as keyof typeof STRATEGY_TYPES];
     if (!strategyConfig) return;
-
     setValue(
       `strategies.${index}.type`,
       newType as InterventionStrategy['type']
@@ -326,112 +251,83 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
       strategyConfig.defaultOutcome
     );
   };
-
   const handleMoveStrategy = (fromIndex: number, toIndex: number) => {
     move(fromIndex, toIndex);
   };
-
   const onSubmit = (data: StrategyRecommendationData) => {
     onNext(data);
   };
-
   // ===============================
   // RENDER HELPERS
   // ===============================
-
   const renderRecommendations = () => {
     if (!showRecommendations) return null;
-
     return (
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <CardContent>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 2,
-            }}
+          <div
+            className=""
           >
-            <Typography
-              variant="h6"
-              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            <div
+              
+              className=""
             >
               <LightbulbIcon color="primary" />
               Recommended Strategies
-            </Typography>
+            </div>
             <Button size="small" onClick={() => setShowRecommendations(false)}>
               Hide Recommendations
             </Button>
-          </Box>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          </div>
+          <div  color="text.secondary" className="">
             Based on the selected category, these strategies are commonly
             effective:
-          </Typography>
-
+          </div>
           {loadingRecommendations ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-              <CircularProgress size={24} />
-            </Box>
+            <div className="">
+              <Spinner size={24} />
+            </div>
           ) : (
-            <Grid container spacing={2}>
+            <div container spacing={2}>
               {recommendedStrategies.map((strategyType) => {
                 const config =
                   STRATEGY_TYPES[strategyType as keyof typeof STRATEGY_TYPES];
                 const isSelected =
                   selectedRecommendations.includes(strategyType);
-
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={strategyType}>
-                    <Paper
-                      sx={{
-                        p: 2,
-                        cursor: 'pointer',
-                        border: '1px solid',
-                        borderColor: isSelected ? config.color : 'divider',
-                        bgcolor: isSelected
-                          ? `${config.color}10`
+                  <div item xs={12} sm={6} md={4} key={strategyType}>
+                    <div
+                      className=""10`
                           : 'background.paper',
                         transition: 'all 0.2s ease-in-out',
                         '&:hover': {
                           borderColor: config.color,
                           bgcolor: `${config.color}05`,
                         },
-                      }}
                       onClick={() =>
                         !isSelected &&
-                        handleAddRecommendedStrategy(strategyType)
+                        handleAddRecommendedStrategy(strategyType)}
                       }
                     >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          mb: 1,
-                        }}
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" component="span">
+                        <div  component="span">
                           {config.icon}
-                        </Typography>
-                        <Typography variant="subtitle2" fontWeight="medium">
+                        </div>
+                        <div  fontWeight="medium">
                           {config.label}
-                        </Typography>
-                      </Box>
-                      <Typography
-                        variant="body2"
+                        </div>
+                      </div>
+                      <div
+                        
                         color="text.secondary"
-                        sx={{ mb: 1 }}
+                        className=""
                       >
                         {config.description}
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
+                      </div>
+                      <div
+                        className=""
                       >
                         <Chip
                           size="small"
@@ -440,66 +336,57 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
                           variant={isSelected ? 'filled' : 'outlined'}
                           icon={isSelected ? <CheckCircleIcon /> : <AddIcon />}
                         />
-                      </Box>
-                    </Paper>
-                  </Grid>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </Grid>
+            </div>
           )}
-
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+          <div className="">
             <Button
-              variant="outlined"
+              
               startIcon={<AddIcon />}
               onClick={handleAddCustomStrategy}
             >
               Add Custom Strategy
             </Button>
-          </Box>
+          </div>
         </CardContent>
       </Card>
     );
   };
-
   const renderStrategyForm = (index: number) => {
     const strategy = watchedStrategies[index];
     if (!strategy) return null;
-
     const strategyConfig = STRATEGY_TYPES[strategy.type];
     const isExpanded = expandedStrategy === index;
-
     return (
       <Card
         key={index}
-        sx={{ mb: 2, border: '1px solid', borderColor: 'divider' }}
+        className=""
       >
         <CardContent>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              mb: 2,
-            }}
+          <div
+            className=""
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <IconButton size="small" sx={{ cursor: 'grab' }}>
+            <div className="">
+              <IconButton size="small" className="">
                 <DragIcon />
               </IconButton>
-              <Typography variant="h6" component="span">
+              <div  component="span">
                 {strategyConfig?.icon}
-              </Typography>
-              <Typography variant="subtitle1" fontWeight="medium">
+              </div>
+              <div  fontWeight="medium">
                 Strategy {index + 1}
-              </Typography>
+              </div>
               <Chip
                 size="small"
                 label={strategy.priority}
                 color={strategy.priority === 'primary' ? 'primary' : 'default'}
               />
-            </Box>
-            <Box>
+            </div>
+            <div>
               <IconButton
                 size="small"
                 onClick={() => setExpandedStrategy(isExpanded ? null : index)}
@@ -513,83 +400,72 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
               >
                 <DeleteIcon />
               </IconButton>
-            </Box>
-          </Box>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            </div>
+          </div>
+          <div container spacing={2}>
+            <div item xs={12} md={6}>
               <Controller
                 name={`strategies.${index}.type`}
                 control={control}
-                rules={{ required: 'Strategy type is required' }}
-                render={({ field }) => (
-                  <FormControl
+                
+                render={({  field  }) => (
+                  <div
                     fullWidth
                     error={!!errors.strategies?.[index]?.type}
                   >
-                    <InputLabel>Strategy Type</InputLabel>
+                    <Label>Strategy Type</Label>
                     <Select
                       {...field}
                       label="Strategy Type"
-                      onChange={(e) => {
-                        field.onChange(e);
-                        handleStrategyTypeChange(index, e.target.value);
-                      }}
-                    >
+                      >
                       {Object.entries(STRATEGY_TYPES).map(([value, config]) => (
                         <MenuItem key={value} value={value}>
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography variant="body2">
+                            <div >
                               {config.icon}
-                            </Typography>
-                            <Box>
-                              <Typography variant="body1">
+                            </div>
+                            <div>
+                              <div >
                                 {config.label}
-                              </Typography>
-                              <Typography
-                                variant="body2"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 {config.description}
-                              </Typography>
-                            </Box>
-                          </Box>
+                              </div>
+                            </div>
+                          </div>
                         </MenuItem>
                       ))}
                     </Select>
                     {errors.strategies?.[index]?.type && (
-                      <FormHelperText>
+                      <p>
                         {errors.strategies[index]?.type?.message}
-                      </FormHelperText>
+                      </p>
                     )}
-                  </FormControl>
+                  </div>
                 )}
               />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
+            </div>
+            <div item xs={12} md={6}>
               <Controller
                 name={`strategies.${index}.priority`}
                 control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth>
-                    <InputLabel>Priority</InputLabel>
+                render={({  field  }) => (
+                  <div fullWidth>
+                    <Label>Priority</Label>
                     <Select {...field} label="Priority">
                       <MenuItem value="primary">Primary Strategy</MenuItem>
                       <MenuItem value="secondary">Secondary Strategy</MenuItem>
                     </Select>
-                  </FormControl>
+                  </div>
                 )}
               />
-            </Grid>
-
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Controller
                 name={`strategies.${index}.description`}
                 control={control}
@@ -597,11 +473,10 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
                   required: 'Strategy description is required',
                   minLength: {
                     value: 10,
-                    message: 'Description must be at least 10 characters',
+                    message: 'Description must be at least 10 characters',}
                   },
-                }}
-                render={({ field }) => (
-                  <TextField
+                render={({  field  }) => (
+                  <Input
                     {...field}
                     fullWidth
                     multiline
@@ -610,16 +485,15 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
                     placeholder="Describe the specific intervention strategy in detail..."
                     error={!!errors.strategies?.[index]?.description}
                     helperText={
-                      errors.strategies?.[index]?.description?.message
+                      errors.strategies?.[index]?.description?.message}
                     }
                   />
                 )}
               />
-            </Grid>
-
-            <Collapse in={isExpanded} sx={{ width: '100%' }}>
-              <Grid container spacing={2} sx={{ mt: 0 }}>
-                <Grid item xs={12} md={6}>
+            </div>
+            <Collapse in={isExpanded} className="">
+              <div container spacing={2} className="">
+                <div item xs={12} md={6}>
                   <Controller
                     name={`strategies.${index}.rationale`}
                     control={control}
@@ -627,11 +501,10 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
                       required: 'Rationale is required',
                       maxLength: {
                         value: 500,
-                        message: 'Rationale must not exceed 500 characters',
+                        message: 'Rationale must not exceed 500 characters',}
                       },
-                    }}
-                    render={({ field }) => (
-                      <TextField
+                    render={({  field  }) => (
+                      <Input
                         {...field}
                         fullWidth
                         multiline
@@ -640,15 +513,14 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
                         placeholder="Why is this strategy appropriate for this patient?"
                         error={!!errors.strategies?.[index]?.rationale}
                         helperText={
-                          errors.strategies?.[index]?.rationale?.message ||
+                          errors.strategies?.[index]?.rationale?.message ||}
                           `${field.value?.length || 0}/500 characters`
                         }
                       />
                     )}
                   />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
+                </div>
+                <div item xs={12} md={6}>
                   <Controller
                     name={`strategies.${index}.expectedOutcome`}
                     control={control}
@@ -657,16 +529,15 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
                       minLength: {
                         value: 20,
                         message:
-                          'Expected outcome must be at least 20 characters',
+                          'Expected outcome must be at least 20 characters',}
                       },
                       maxLength: {
                         value: 500,
                         message:
                           'Expected outcome must not exceed 500 characters',
                       },
-                    }}
-                    render={({ field }) => (
-                      <TextField
+                    render={({  field  }) => (
+                      <Input
                         {...field}
                         fullWidth
                         multiline
@@ -676,39 +547,33 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
                         error={!!errors.strategies?.[index]?.expectedOutcome}
                         helperText={
                           errors.strategies?.[index]?.expectedOutcome
-                            ?.message ||
+                            ?.message ||}
                           `${field.value?.length || 0}/500 characters`
                         }
                       />
                     )}
                   />
-                </Grid>
-              </Grid>
+                </div>
+              </div>
             </Collapse>
-          </Grid>
+          </div>
         </CardContent>
       </Card>
     );
   };
-
   const renderStrategiesList = () => (
-    <Card sx={{ mb: 3 }}>
+    <Card className="">
       <CardContent>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 2,
-          }}
+        <div
+          className=""
         >
-          <Typography variant="h6">Intervention Strategies</Typography>
-          <Box>
+          <div >Intervention Strategies</div>
+          <div>
             <Button
               size="small"
               startIcon={<PreviewIcon />}
               onClick={() => setShowPreview(true)}
-              sx={{ mr: 1 }}
+              className=""
             >
               Preview
             </Button>
@@ -716,30 +581,28 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
               size="small"
               startIcon={<AddIcon />}
               onClick={handleAddCustomStrategy}
-              variant="outlined"
+              
             >
               Add Strategy
             </Button>
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {fields.length === 0 ? (
-          <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'grey.50' }}>
-            <InfoIcon color="disabled" sx={{ fontSize: 48, mb: 1 }} />
-            <Typography variant="body1" color="text.secondary">
+          <div className="">
+            <InfoIcon color="disabled" className="" />
+            <div  color="text.secondary">
               No strategies added yet
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            </div>
+            <div  color="text.secondary">
               Add strategies from recommendations or create custom ones
-            </Typography>
-          </Paper>
+            </div>
+          </div>
         ) : (
-          <Box>{fields.map((field, index) => renderStrategyForm(index))}</Box>
+          <div>{fields.map((field, index) => renderStrategyForm(index))}</div>
         )}
       </CardContent>
     </Card>
   );
-
   const renderPreviewDialog = () => (
     <Dialog
       open={showPreview}
@@ -749,44 +612,43 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
     >
       <DialogTitle>Strategy Preview</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <div  color="text.secondary" className="">
           Review your intervention strategies before proceeding
-        </Typography>
-
+        </div>
         {watchedStrategies.map((strategy, index) => {
           const config = STRATEGY_TYPES[strategy.type];
           return (
-            <Card key={index} sx={{ mb: 2 }}>
+            <Card key={index} className="">
               <CardContent>
-                <Box
-                  sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+                <div
+                  className=""
                 >
-                  <Typography variant="h6" component="span">
+                  <div  component="span">
                     {config.icon}
-                  </Typography>
-                  <Typography variant="subtitle1" fontWeight="medium">
+                  </div>
+                  <div  fontWeight="medium">
                     {config.label}
-                  </Typography>
+                  </div>
                   <Chip
                     size="small"
                     label={strategy.priority}
                     color={
-                      strategy.priority === 'primary' ? 'primary' : 'default'
+                      strategy.priority === 'primary' ? 'primary' : 'default'}
                     }
                   />
-                </Box>
-                <Typography variant="body2" sx={{ mb: 1 }}>
+                </div>
+                <div  className="">
                   <strong>Description:</strong>{' '}
                   {strategy.description || 'Not specified'}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
+                </div>
+                <div  className="">
                   <strong>Rationale:</strong>{' '}
                   {strategy.rationale || 'Not specified'}
-                </Typography>
-                <Typography variant="body2">
+                </div>
+                <div >
                   <strong>Expected Outcome:</strong>{' '}
                   {strategy.expectedOutcome || 'Not specified'}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
           );
@@ -797,47 +659,43 @@ const StrategyRecommendationStep: React.FC<StrategyRecommendationStepProps> = ({
       </DialogActions>
     </Dialog>
   );
-
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
+    <div>
+      <div  gutterBottom>
         Step 2: Strategy Recommendation
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+      </div>
+      <div  color="text.secondary" className="">
         Select and customize intervention strategies based on the clinical issue
-      </Typography>
-
+      </div>
       <form onSubmit={handleSubmit(onSubmit)}>
         {renderRecommendations()}
         {renderStrategiesList()}
         {renderPreviewDialog()}
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-          <Box>
+        <div className="">
+          <div>
             <Button
-              variant="outlined"
+              
               onClick={onCancel}
               disabled={isLoading}
-              sx={{ mr: 1 }}
+              className=""
             >
               Cancel
             </Button>
-            <Button variant="outlined" onClick={onBack} disabled={isLoading}>
+            <Button  onClick={onBack} disabled={isLoading}>
               Back
             </Button>
-          </Box>
+          </div>
           <Button
             type="submit"
-            variant="contained"
+            
             disabled={!isValid || fields.length === 0 || isLoading}
-            startIcon={isLoading ? <CircularProgress size={20} /> : null}
+            startIcon={isLoading ? <Spinner size={20} /> : null}
           >
             {isLoading ? 'Processing...' : 'Next: Team Collaboration'}
           </Button>
-        </Box>
+        </div>
       </form>
-    </Box>
+    </div>
   );
 };
-
 export default StrategyRecommendationStep;

@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-
 /**
  * Custom hook for debouncing values
  * Useful for search inputs and API calls

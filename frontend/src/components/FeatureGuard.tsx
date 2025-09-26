@@ -1,7 +1,3 @@
-import React from 'react';
-import { useRBAC } from '../hooks/useRBAC';
-import { useFeatureAccess } from '../hooks/useFeatureAccess';
-import { useSubscriptionStatus } from '../hooks/useSubscription';
 
 interface FeatureGuardProps {
   feature: string;
@@ -21,12 +17,12 @@ interface FeatureGuardProps {
  * @param children - Content to show if user has access
  * @param fallback - Content to show if user doesn't have access (optional)
  */
-export const FeatureGuard: React.FC<FeatureGuardProps> = ({
+export const FeatureGuard: React.FC<FeatureGuardProps> = ({ 
   feature,
   requiredRole,
   requiresLicense = false,
   children,
-  fallback = null,
+  fallback = null
 }) => {
   const { role } = useRBAC();
   const { isFeatureEnabled } = useFeatureAccess();
@@ -64,10 +60,10 @@ interface SubscriptionGuardProps {
  * @param children - Content to show if user has the required tier
  * @param fallback - Content to show if user doesn't have the required tier
  */
-export const SubscriptionGuard: React.FC<SubscriptionGuardProps> = ({
+export const SubscriptionGuard: React.FC<SubscriptionGuardProps> = ({ 
   tier,
   children,
-  fallback = null,
+  fallback = null
 }) => {
   const subscription = useSubscriptionStatus();
 
@@ -101,10 +97,10 @@ interface RoleGuardProps {
  * @param children - Content to show if user has the required role
  * @param fallback - Content to show if user doesn't have the required role
  */
-export const RoleGuard: React.FC<RoleGuardProps> = ({
+export const RoleGuard: React.FC<RoleGuardProps> = ({ 
   role,
   children,
-  fallback = null,
+  fallback = null
 }) => {
   const { role: currentRole } = useRBAC();
 

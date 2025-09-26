@@ -1,44 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Stack,
-  Alert,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  FormHelperText,
-  Autocomplete,
-  CircularProgress,
-  Grid,
-  Paper,
-  Chip,
-  Tooltip,
-  IconButton,
-  Collapse,
-} from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
-import WarningIcon from '@mui/icons-material/Warning';
-import InfoIcon from '@mui/icons-material/Info';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import SearchIcon from '@mui/icons-material/Search';
-
-import { useSearchPatients } from '../../queries/usePatients';
-import { useDuplicateInterventions } from '../../queries/useClinicalInterventions';
-import { useClinicalInterventionStore } from '../../stores/clinicalInterventionStore';
-import type { ClinicalIntervention } from '../../stores/clinicalInterventionStore';
-
+import { Button, Input, Card, CardContent, Spinner, Alert } from '@/components/ui/button';
 // ===============================
 // TYPES AND INTERFACES
 // ===============================
-
 interface IssueIdentificationData {
   patientId: string;
   category: ClinicalIntervention['category'];
@@ -46,14 +9,12 @@ interface IssueIdentificationData {
   issueDescription: string;
   estimatedDuration?: number;
 }
-
 interface IssueIdentificationStepProps {
   onNext: (data: IssueIdentificationData) => void;
   onCancel?: () => void;
   initialData?: Partial<IssueIdentificationData>;
   isLoading?: boolean;
 }
-
 interface Patient {
   _id: string;
   firstName: string;
@@ -62,11 +23,9 @@ interface Patient {
   phoneNumber?: string;
   email?: string;
 }
-
 // ===============================
 // CONSTANTS
 // ===============================
-
 const INTERVENTION_CATEGORIES = {
   drug_therapy_problem: {
     label: 'Drug Therapy Problem',
@@ -154,7 +113,6 @@ const INTERVENTION_CATEGORIES = {
     icon: '📋',
   },
 } as const;
-
 const PRIORITY_LEVELS = {
   low: {
     label: 'Low Priority',
@@ -185,16 +143,14 @@ const PRIORITY_LEVELS = {
     icon: '🔴',
   },
 } as const;
-
 // ===============================
 // MAIN COMPONENT
 // ===============================
-
-const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
+const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({ 
   onNext,
   onCancel,
   initialData,
-  isLoading = false,
+  isLoading = false
 }) => {
   // State
   const [patientSearchQuery, setPatientSearchQuery] = useState('');
@@ -206,29 +162,24 @@ const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
   const [duplicateInterventions, setDuplicateInterventions] = useState<
     ClinicalIntervention[]
   >([]);
-
   // Store
   const { selectedPatient: storeSelectedPatient } =
     useClinicalInterventionStore();
-
   // Queries
   const { data: patientSearchResults, isLoading: searchingPatients } =
     useSearchPatients(patientSearchQuery, {
-      enabled: patientSearchQuery.length >= 2,
-    });
-
+      enabled: patientSearchQuery.length >= 2}
   // Form setup
   const defaultValues: IssueIdentificationData = useMemo(
-    () => ({
+    () => ({ 
       patientId: initialData?.patientId || storeSelectedPatient?._id || '',
       category: initialData?.category || 'drug_therapy_problem',
       priority: initialData?.priority || 'medium',
       issueDescription: initialData?.issueDescription || '',
-      estimatedDuration: initialData?.estimatedDuration || undefined,
+      estimatedDuration: initialData?.estimatedDuration || undefined}
     }),
     [initialData, storeSelectedPatient]
   );
-
   const {
     control,
     handleSubmit,
@@ -236,22 +187,19 @@ const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
     setValue,
     formState: { errors, isValid },
     reset,
-  } = useForm<IssueIdentificationData>({
+  } = useForm<IssueIdentificationData>({ 
     defaultValues,
-    mode: 'onChange',
+    mode: 'onChange'}
   });
-
   const watchedCategory = watch('category');
   const watchedPatientId = watch('patientId');
   const watchedIssueDescription = watch('issueDescription');
-
   // Duplicate check query
   const { data: duplicateCheck } = useDuplicateInterventions(
     watchedPatientId,
     watchedCategory,
     { enabled: !!watchedPatientId && !!watchedCategory }
   );
-
   // Effects
   useEffect(() => {
     if (storeSelectedPatient && !selectedPatient) {
@@ -259,7 +207,6 @@ const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
       setValue('patientId', storeSelectedPatient._id);
     }
   }, [storeSelectedPatient, selectedPatient, setValue]);
-
   // Check for duplicates when patient and category change
   useEffect(() => {
     if (duplicateCheck?.data && duplicateCheck.data.length > 0) {
@@ -270,11 +217,9 @@ const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
       setDuplicateInterventions([]);
     }
   }, [duplicateCheck]);
-
   // ===============================
   // HANDLERS
   // ===============================
-
   const handlePatientSelect = (patient: Patient | null) => {
     if (patient) {
       setSelectedPatient(patient);
@@ -282,93 +227,72 @@ const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
       setPatientSearchQuery('');
     }
   };
-
   const handleCategorySelect = (category: string) => {
     setValue('category', category as ClinicalIntervention['category']);
     setShowCategoryDetails(null);
   };
-
   const onSubmit = (data: IssueIdentificationData) => {
     onNext(data);
   };
-
   // ===============================
   // RENDER HELPERS
   // ===============================
-
   const renderPatientSelection = () => (
-    <Card sx={{ mb: 3 }}>
+    <Card className="">
       <CardContent>
-        <Typography
-          variant="h6"
+        <div
+          
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          className=""
         >
           <PersonIcon color="primary" />
           Patient Selection
-        </Typography>
-
+        </div>
         {selectedPatient ? (
-          <Paper
-            sx={{
-              p: 2,
-              bgcolor: 'primary.50',
-              border: '1px solid',
-              borderColor: 'primary.200',
-            }}
+          <div
+            className=""
           >
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
+            <div
+              className=""
             >
-              <Box>
-                <Typography variant="subtitle1" fontWeight="medium">
+              <div>
+                <div  fontWeight="medium">
                   {selectedPatient.firstName} {selectedPatient.lastName}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   DOB:{' '}
                   {new Date(selectedPatient.dateOfBirth).toLocaleDateString()} |
                   Phone: {selectedPatient.phoneNumber || 'N/A'}
-                </Typography>
-              </Box>
+                </div>
+              </div>
               <Button
                 size="small"
-                onClick={() => {
-                  setSelectedPatient(null);
-                  setValue('patientId', '');
-                }}
-              >
+                >
                 Change Patient
               </Button>
-            </Box>
-          </Paper>
+            </div>
+          </div>
         ) : (
           <Controller
             name="patientId"
             control={control}
-            rules={{ required: 'Patient selection is required' }}
-            render={({ field }) => (
+            
+            render={({  field  }) => (
               <Autocomplete
                 {...field}
                 options={patientSearchResults?.data?.results || []}
                 getOptionLabel={(option) =>
                   typeof option === 'string'
-                    ? option
+                    ? option}
                     : `${option.firstName} ${option.lastName} - ${
                         option.phoneNumber || 'No phone'
                       }`
                 }
                 loading={searchingPatients}
                 onInputChange={(_, value) => setPatientSearchQuery(value)}
-                onChange={(_, value) => {
-                  handlePatientSelect(value);
-                  field.onChange(value?._id || '');
-                }}
+                
                 renderInput={(params) => (
-                  <TextField
+                  <Input}
                     {...params}
                     label="Search and select patient"
                     placeholder="Type patient name or phone number..."
@@ -377,36 +301,34 @@ const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
                     InputProps={{
                       ...params.InputProps,
                       startAdornment: (
-                        <SearchIcon color="action" sx={{ mr: 1 }} />
+                        <SearchIcon color="action" className="" />
                       ),
                       endAdornment: (
-                        <>
-                          {searchingPatients && (
-                            <CircularProgress color="inherit" size={20} />
+                        <>{searchingPatients && (}
+                            <Spinner color="inherit" size={20} />
                           )}
                           {params.InputProps.endAdornment}
                         </>
                       ),
-                    }}
                   />
                 )}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <Box>
-                      <Typography variant="body1">
+                renderOption={(props, option) => (}
+                  <div component="li" {...props}>
+                    <div>
+                      <div >
                         {option.firstName} {option.lastName}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         DOB: {new Date(option.dateOfBirth).toLocaleDateString()}{' '}
                         | Phone: {option.phoneNumber || 'N/A'}
-                      </Typography>
-                    </Box>
-                  </Box>
+                      </div>
+                    </div>
+                  </div>
                 )}
                 noOptionsText={
                   patientSearchQuery.length < 2
                     ? 'Type at least 2 characters to search'
-                    : 'No patients found'
+                    : 'No patients found'}
                 }
               />
             )}
@@ -415,234 +337,185 @@ const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
       </CardContent>
     </Card>
   );
-
   const renderCategorySelection = () => (
-    <Card sx={{ mb: 3 }}>
+    <Card className="">
       <CardContent>
-        <Typography variant="h6" gutterBottom>
+        <div  gutterBottom>
           Clinical Issue Category
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        </div>
+        <div  color="text.secondary" className="">
           Select the category that best describes the clinical issue
-        </Typography>
-
+        </div>
         <Controller
           name="category"
           control={control}
-          rules={{ required: 'Category is required' }}
-          render={({ field }) => (
-            <Grid container spacing={2}>
+          
+          render={({  field  }) => (
+            <div container spacing={2}>
               {Object.entries(INTERVENTION_CATEGORIES).map(
                 ([value, config]) => (
-                  <Grid xs={12} sm={6} md={4} key={value}>
-                    <Paper
-                      sx={{
-                        p: 2,
-                        cursor: 'pointer',
-                        border: '2px solid',
-                        borderColor:
-                          field.value === value ? config.color : 'divider',
-                        bgcolor:
-                          field.value === value
-                            ? `${config.color}10`
+                  <div xs={12} sm={6} md={4} key={value}>
+                    <div
+                      className=""10`
                             : 'background.paper',
                         transition: 'all 0.2s ease-in-out',
                         '&:hover': {
                           borderColor: config.color,
                           bgcolor: `${config.color}05`,
                         },
-                      }}
                       onClick={() => handleCategorySelect(value)}
                     >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          mb: 1,
-                        }}
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" component="span">
+                        <div  component="span">
                           {config.icon}
-                        </Typography>
-                        <Typography variant="subtitle1" fontWeight="medium">
+                        </div>
+                        <div  fontWeight="medium">
                           {config.label}
-                        </Typography>
-                      </Box>
-                      <Typography
-                        variant="body2"
+                        </div>
+                      </div>
+                      <div
+                        
                         color="text.secondary"
-                        sx={{ mb: 1 }}
+                        className=""
                       >
                         {config.description}
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
+                      </div>
+                      <div
+                        className=""
                       >
                         <Chip
                           size="small"
                           label={field.value === value ? 'Selected' : 'Select'}
                           color={field.value === value ? 'primary' : 'default'}
                           variant={
-                            field.value === value ? 'filled' : 'outlined'
+                            field.value === value ? 'filled' : 'outlined'}
                           }
                         />
                         <IconButton
                           size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowCategoryDetails(
-                              showCategoryDetails === value ? null : value
-                            );
-                          }}
-                        >
+                          >
                           {showCategoryDetails === value ? (
                             <ExpandLessIcon />
                           ) : (
                             <ExpandMoreIcon />
                           )}
                         </IconButton>
-                      </Box>
+                      </div>
                       <Collapse in={showCategoryDetails === value}>
-                        <Box
-                          sx={{
-                            mt: 2,
-                            pt: 2,
-                            borderTop: '1px solid',
-                            borderColor: 'divider',
-                          }}
+                        <div
+                          className=""
                         >
-                          <Typography
-                            variant="body2"
+                          <div
+                            
                             fontWeight="medium"
-                            sx={{ mb: 1 }}
+                            className=""
                           >
                             Common Examples:
-                          </Typography>
+                          </div>
                           {config.examples.map((example, index) => (
-                            <Typography
+                            <div
                               key={index}
-                              variant="body2"
+                              
                               color="text.secondary"
-                              sx={{ ml: 1, mb: 0.5 }}
+                              className=""
                             >
                               • {example}
-                            </Typography>
+                            </div>
                           ))}
-                        </Box>
+                        </div>
                       </Collapse>
-                    </Paper>
-                  </Grid>
+                    </div>
+                  </div>
                 )
               )}
-            </Grid>
+            </div>
           )}
         />
         {errors.category && (
-          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+          <div  color="error" className="">
             {errors.category.message}
-          </Typography>
+          </div>
         )}
       </CardContent>
     </Card>
   );
-
   const renderPrioritySelection = () => (
-    <Card sx={{ mb: 3 }}>
+    <Card className="">
       <CardContent>
-        <Typography variant="h6" gutterBottom>
+        <div  gutterBottom>
           Priority Level
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        </div>
+        <div  color="text.secondary" className="">
           Select the urgency level based on clinical impact and patient safety
-        </Typography>
-
+        </div>
         <Controller
           name="priority"
           control={control}
-          rules={{ required: 'Priority is required' }}
-          render={({ field }) => (
-            <Grid container spacing={2}>
+          
+          render={({  field  }) => (
+            <div container spacing={2}>
               {Object.entries(PRIORITY_LEVELS).map(([value, config]) => (
-                <Grid xs={12} sm={6} key={value}>
-                  <Paper
-                    sx={{
-                      p: 2,
-                      cursor: 'pointer',
-                      border: '2px solid',
-                      borderColor:
-                        field.value === value ? config.color : 'divider',
-                      bgcolor:
-                        field.value === value
-                          ? `${config.color}10`
+                <div xs={12} sm={6} key={value}>
+                  <div
+                    className=""10`
                           : 'background.paper',
                       transition: 'all 0.2s ease-in-out',
                       '&:hover': {
                         borderColor: config.color,
                         bgcolor: `${config.color}05`,
                       },
-                    }}
                     onClick={() =>
                       setValue(
                         'priority',
                         value as ClinicalIntervention['priority']
-                      )
+                      )}
                     }
                   >
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        mb: 1,
-                      }}
+                    <div
+                      className=""
                     >
-                      <Typography variant="h6" component="span">
+                      <div  component="span">
                         {config.icon}
-                      </Typography>
-                      <Typography variant="subtitle1" fontWeight="medium">
+                      </div>
+                      <div  fontWeight="medium">
                         {config.label}
-                      </Typography>
-                    </Box>
-                    <Typography
-                      variant="body2"
+                      </div>
+                    </div>
+                    <div
+                      
                       color="text.secondary"
-                      sx={{ mb: 1 }}
+                      className=""
                     >
                       {config.description}
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+                    </div>
+                    <div  className="">
                       {config.guidance}
-                    </Typography>
-                  </Paper>
-                </Grid>
+                    </div>
+                  </div>
+                </div>
               ))}
-            </Grid>
+            </div>
           )}
         />
         {errors.priority && (
-          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+          <div  color="error" className="">
             {errors.priority.message}
-          </Typography>
+          </div>
         )}
       </CardContent>
     </Card>
   );
-
   const renderIssueDescription = () => (
-    <Card sx={{ mb: 3 }}>
+    <Card className="">
       <CardContent>
-        <Typography variant="h6" gutterBottom>
+        <div  gutterBottom>
           Issue Description
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        </div>
+        <div  color="text.secondary" className="">
           Provide a detailed description of the clinical issue or problem
-        </Typography>
-
+        </div>
         <Controller
           name="issueDescription"
           control={control}
@@ -650,15 +523,14 @@ const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
             required: 'Issue description is required',
             minLength: {
               value: 10,
-              message: 'Description must be at least 10 characters',
+              message: 'Description must be at least 10 characters',}
             },
             maxLength: {
               value: 1000,
               message: 'Description must not exceed 1000 characters',
             },
-          }}
-          render={({ field }) => (
-            <TextField
+          render={({  field  }) => (
+            <Input
               {...field}
               fullWidth
               multiline
@@ -667,99 +539,93 @@ const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
               placeholder="Describe the clinical issue, including relevant patient history, current medications, symptoms, or concerns..."
               error={!!errors.issueDescription}
               helperText={
-                errors.issueDescription?.message ||
+                errors.issueDescription?.message ||}
                 `${watchedIssueDescription?.length || 0}/1000 characters`
               }
             />
           )}
         />
-
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="body2" fontWeight="medium" sx={{ mb: 1 }}>
+        <div className="">
+          <div  fontWeight="medium" className="">
             💡 Tips for effective documentation:
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+          </div>
+          <div  color="text.secondary" className="">
             • Include relevant patient history and current medications
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+          </div>
+          <div  color="text.secondary" className="">
             • Describe symptoms, timing, and severity
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+          </div>
+          <div  color="text.secondary" className="">
             • Note any contributing factors or triggers
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+          </div>
+          <div  color="text.secondary" className="">
             • Reference lab values or clinical parameters if relevant
-          </Typography>
-        </Box>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
-
   const renderDuplicateWarning = () => {
     if (!showDuplicateWarning) return null;
-
     return (
       <Alert
         severity="warning"
         icon={<WarningIcon />}
-        sx={{ mb: 3 }}
-        action={
+        className=""
+        action={}
           <Button size="small" onClick={() => setShowDuplicateWarning(false)}>
             Dismiss
           </Button>
         }
       >
-        <Typography variant="body2" fontWeight="medium">
+        <div  fontWeight="medium">
           Similar interventions found for this patient
-        </Typography>
-        <Typography variant="body2" sx={{ mb: 1 }}>
+        </div>
+        <div  className="">
           {duplicateInterventions.length} existing intervention(s) with the same
           category. Please review to avoid duplicates.
-        </Typography>
-        <Box sx={{ mt: 1 }}>
+        </div>
+        <div className="">
           {duplicateInterventions.slice(0, 3).map((intervention) => (
             <Chip
               key={intervention._id}
               label={`${intervention.interventionNumber} - ${intervention.status}`}
               size="small"
-              sx={{ mr: 1, mb: 1 }}
+              className=""
             />
           ))}
           {duplicateInterventions.length > 3 && (
             <Chip
               label={`+${duplicateInterventions.length - 3} more`}
               size="small"
-              variant="outlined"
+              
             />
           )}
-        </Box>
+        </div>
       </Alert>
     );
   };
-
   const renderEstimatedDuration = () => (
-    <Card sx={{ mb: 3 }}>
+    <Card className="">
       <CardContent>
-        <Typography variant="h6" gutterBottom>
+        <div  gutterBottom>
           Estimated Duration (Optional)
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        </div>
+        <div  color="text.secondary" className="">
           Estimate how long this intervention might take to complete
-        </Typography>
-
+        </div>
         <Controller
           name="estimatedDuration"
           control={control}
-          render={({ field }) => (
-            <TextField
+          render={({  field  }) => (
+            <Input
               {...field}
               type="number"
               label="Duration in minutes"
               placeholder="e.g., 30"
-              sx={{ maxWidth: 200 }}
-              InputProps={{
+              className=""
+              InputProps={{}
                 inputProps: { min: 1, max: 480 },
-              }}
               helperText="Leave blank if uncertain"
             />
           )}
@@ -767,16 +633,14 @@ const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
       </CardContent>
     </Card>
   );
-
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
+    <div>
+      <div  gutterBottom>
         Step 1: Issue Identification
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+      </div>
+      <div  color="text.secondary" className="">
         Document the clinical issue or problem that requires intervention
-      </Typography>
-
+      </div>
       <form onSubmit={handleSubmit(onSubmit)}>
         {renderPatientSelection()}
         {renderDuplicateWarning()}
@@ -784,23 +648,21 @@ const IssueIdentificationStep: React.FC<IssueIdentificationStepProps> = ({
         {renderPrioritySelection()}
         {renderIssueDescription()}
         {renderEstimatedDuration()}
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-          <Button variant="outlined" onClick={onCancel} disabled={isLoading}>
+        <div className="">
+          <Button  onClick={onCancel} disabled={isLoading}>
             Cancel
           </Button>
           <Button
             type="submit"
-            variant="contained"
+            
             disabled={!isValid || isLoading}
-            startIcon={isLoading ? <CircularProgress size={20} /> : null}
+            startIcon={isLoading ? <Spinner size={20} /> : null}
           >
             {isLoading ? 'Processing...' : 'Next: Strategy Recommendation'}
           </Button>
-        </Box>
+        </div>
       </form>
-    </Box>
+    </div>
   );
 };
-
 export default IssueIdentificationStep;

@@ -43,7 +43,7 @@ declare class AuditService {
             totalActions: number;
             uniqueUsers: number;
             riskActivities: number;
-            lastActivity: Date | null;
+            lastActivity: Date;
         };
     }>;
     static getInterventionAuditLogs(interventionId: string, options?: AuditQueryOptions): Promise<{
@@ -60,14 +60,14 @@ declare class AuditService {
             totalActions: number;
             uniqueUsers: number;
             riskActivities: number;
-            lastActivity: Date | null;
+            lastActivity: Date;
         };
     }>;
     static calculateSummary(query?: any): Promise<{
         totalActions: number;
         uniqueUsers: number;
         riskActivities: number;
-        lastActivity: Date | null;
+        lastActivity: Date;
     }>;
     static exportAuditLogs(options: AuditQueryOptions & {
         format: 'csv' | 'json';
@@ -93,7 +93,7 @@ declare class AuditService {
     static createAuditContext(req: Request): {
         userId: any;
         ipAddress: string;
-        userAgent: string | undefined;
+        userAgent: string;
         sessionId: any;
         workspaceId: any;
     };

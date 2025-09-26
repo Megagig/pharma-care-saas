@@ -1,33 +1,22 @@
 import axios from 'axios';
-import {
-  DrugSearchResult,
-  DrugMonograph,
-  DrugInteraction,
-  AdverseEffect,
-  FormularyInfo,
-  TherapyPlan,
-  DrugIndication,
-} from '../types/drugTypes';
-
 // Use direct connection to backend during development
 const API_BASE_URL = 'http://localhost:5000/api/drugs';
 const PUBLIC_API_BASE_URL = 'http://localhost:5000/api/public';
 
 // Create axios instance with default config
-const apiClient = axios.create({
+const apiClient = axios.create({ 
   baseURL: API_BASE_URL,
-  withCredentials: true,
+  withCredentials: true}
 });
 
 // Create public axios instance that doesn't need auth
-export const publicApiClient = axios.create({
+export const publicApiClient = axios.create({ 
   baseURL: PUBLIC_API_BASE_URL,
   withCredentials: false,
   headers: {
     Accept: 'application/json',
-    'Content-Type': 'application/json',
-  },
-});
+    'Content-Type': 'application/json'}
+  }
 
 // Drug Information API Service
 export const drugInfoApi = {
@@ -50,8 +39,7 @@ export const drugInfoApi = {
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
-        },
-      });
+        }
 
       const response = await axios.get(`${PUBLIC_API_BASE_URL}/drug-search`, {
         params: { name },
@@ -63,8 +51,7 @@ export const drugInfoApi = {
         timeout: 10000,
         validateStatus: (status) => {
           return status >= 200 && status < 300;
-        },
-      });
+        }
 
       console.log('API response status:', response.status);
       console.log('API response headers:', response.headers);
@@ -111,8 +98,7 @@ export const drugInfoApi = {
           : 'No response',
         request: error.request
           ? 'Request was made but no response received'
-          : 'Request not made',
-      });
+          : 'Request not made'}
       throw error;
     }
   },
@@ -156,8 +142,7 @@ export const drugInfoApi = {
               status: error.response.status,
               data: error.response.data,
             }
-          : 'No response',
-      });
+          : 'No response'}
       throw error;
     }
   },
@@ -209,8 +194,7 @@ export const drugInfoApi = {
               status: error.response.status,
               data: error.response.data,
             }
-          : 'No response',
-      });
+          : 'No response'}
       throw error;
     }
   },
@@ -254,8 +238,7 @@ export const drugInfoApi = {
               status: error.response.status,
               data: error.response.data,
             }
-          : 'No response',
-      });
+          : 'No response'}
       throw error;
     }
   },
@@ -296,8 +279,7 @@ export const drugInfoApi = {
               status: error.response.status,
               data: error.response.data,
             }
-          : 'No response',
-      });
+          : 'No response'}
       throw error;
     }
   },

@@ -1,33 +1,8 @@
+import { Button, Card, CardContent } from '@/components/ui/button';
 /**
  * Mobile-optimized layout component for MTR components
  * Provides consistent mobile UX patterns
  */
-
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardActions,
-  Typography,
-  IconButton,
-  Collapse,
-  Chip,
-  Button,
-  SwipeableDrawer,
-  List,
-  ListItemIcon,
-  ListItemText,
-  ListItemButton,
-  Fab,
-  Zoom,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { useResponsive } from '../../hooks/useResponsive';
-import { useSwipeGesture, useLongPress } from '../../hooks/useGestures';
-
 interface MobileCardProps {
   title: string;
   subtitle?: string;
@@ -52,8 +27,7 @@ interface MobileCardProps {
   selected?: boolean;
   disabled?: boolean;
 }
-
-export const MobileCard: React.FC<MobileCardProps> = ({
+export const MobileCard: React.FC<MobileCardProps> = ({ 
   title,
   subtitle,
   avatar,
@@ -66,13 +40,12 @@ export const MobileCard: React.FC<MobileCardProps> = ({
   onSwipeRight,
   onLongPress,
   selected = false,
-  disabled = false,
+  disabled = false
 }) => {
   const { isMobile } = useResponsive();
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [showActions, setShowActions] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
-
   // Swipe gesture
   const swipeRef = useSwipeGesture(
     (result) => {
@@ -85,7 +58,6 @@ export const MobileCard: React.FC<MobileCardProps> = ({
     },
     { threshold: 80, preventScroll: false }
   );
-
   // Long press gesture
   const longPressRef = useLongPress(
     () => {
@@ -97,7 +69,6 @@ export const MobileCard: React.FC<MobileCardProps> = ({
     },
     { delay: 500 }
   );
-
   // Combine refs
   const combinedRef = (element: HTMLElement | null) => {
     if (swipeRef.current !== element) {
@@ -107,26 +78,25 @@ export const MobileCard: React.FC<MobileCardProps> = ({
       longPressRef.current = element;
     }
   };
-
   if (!isMobile) {
     // Desktop fallback - simple card
     return (
-      <Card sx={{ mb: 1, ...(selected && { bgcolor: 'action.selected' }) }}>
+      <Card className="">
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-            {avatar && <Box sx={{ flexShrink: 0 }}>{avatar}</Box>}
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h6" component="div">
+          <div className="">
+            {avatar && <div className="">{avatar}</div>}
+            <div className="">
+              <div  component="div">
                 {title}
-              </Typography>
+              </div>
               {subtitle && (
-                <Typography variant="body2" color="text.secondary">
+                <div  color="text.secondary">
                   {subtitle}
-                </Typography>
+                </div>
               )}
               {chips.length > 0 && (
-                <Box
-                  sx={{ mt: 1, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}
+                <div
+                  className=""
                 >
                   {chips.map((chip, index) => (
                     <Chip
@@ -137,12 +107,12 @@ export const MobileCard: React.FC<MobileCardProps> = ({
                       variant={chip.variant || 'outlined'}
                     />
                   ))}
-                </Box>
+                </div>
               )}
-              {children && <Box sx={{ mt: 2 }}>{children}</Box>}
-            </Box>
+              {children && <div className="">{children}</div>}
+            </div>
             {actions.length > 0 && (
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <div className="">
                 {actions.map((action, index) => (
                   <IconButton
                     key={index}
@@ -153,67 +123,41 @@ export const MobileCard: React.FC<MobileCardProps> = ({
                     {action.icon}
                   </IconButton>
                 ))}
-              </Box>
+              </div>
             )}
-          </Box>
+          </div>
         </CardContent>
       </Card>
     );
   }
-
   return (
     <>
       <Card
         ref={combinedRef}
-        sx={{
-          mb: 1,
-          borderRadius: 2,
-          transform: `translateX(${swipeOffset}px)`,
-          transition: swipeOffset === 0 ? 'transform 0.2s ease' : 'none',
-          ...(selected && {
-            bgcolor: 'action.selected',
-            border: 1,
-            borderColor: 'primary.main',
-          }),
-          ...(disabled && { opacity: 0.6 }),
-          '&:active': {
-            transform: 'scale(0.98)',
-          },
-        }}
-      >
-        <CardContent sx={{ pb: children || actions.length > 0 ? 1 : 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-            {avatar && <Box sx={{ flexShrink: 0, mt: 0.5 }}>{avatar}</Box>}
-
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
+        className="">
+        <CardContent className="">
+          <div className="">
+            {avatar && <div className="">{avatar}</div>}
+            <div className="">
+              <div
+                className=""
               >
-                <Typography
-                  variant="subtitle1"
+                <div
+                  
                   component="div"
-                  sx={{
-                    fontWeight: 600,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    flex: 1,
-                  }}
+                  className=""
                 >
                   {title}
-                </Typography>
-
+                </div>
                 {(collapsible || actions.length > 0) && (
                   <IconButton
                     size="small"
                     onClick={() => {
                       if (collapsible) {
-                        setExpanded(!expanded);
+                        setExpanded(!expanded);}
                       } else {
                         setShowActions(true);
-                      }
-                    }}
-                  >
+                      }>
                     {collapsible ? (
                       expanded ? (
                         <ExpandLessIcon />
@@ -225,21 +169,19 @@ export const MobileCard: React.FC<MobileCardProps> = ({
                     )}
                   </IconButton>
                 )}
-              </Box>
-
+              </div>
               {subtitle && (
-                <Typography
-                  variant="body2"
+                <div
+                  
                   color="text.secondary"
-                  sx={{ mb: 1 }}
+                  className=""
                 >
                   {subtitle}
-                </Typography>
+                </div>
               )}
-
               {chips.length > 0 && (
-                <Box
-                  sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1 }}
+                <div
+                  className=""
                 >
                   {chips.map((chip, index) => (
                     <Chip
@@ -250,20 +192,18 @@ export const MobileCard: React.FC<MobileCardProps> = ({
                       variant={chip.variant || 'outlined'}
                     />
                   ))}
-                </Box>
+                </div>
               )}
-
               {children && (
                 <Collapse in={!collapsible || expanded}>
-                  <Box sx={{ mt: 1 }}>{children}</Box>
+                  <div className="">{children}</div>
                 </Collapse>
               )}
-            </Box>
-          </Box>
+            </div>
+          </div>
         </CardContent>
-
         {actions.length > 0 && !collapsible && (
-          <CardActions sx={{ pt: 0, justifyContent: 'flex-end' }}>
+          <CardActions className="">
             {actions.slice(0, 2).map((action, index) => (
               <Button
                 key={index}
@@ -283,7 +223,6 @@ export const MobileCard: React.FC<MobileCardProps> = ({
           </CardActions>
         )}
       </Card>
-
       {/* Actions drawer */}
       <SwipeableDrawer
         anchor="bottom"
@@ -295,36 +234,30 @@ export const MobileCard: React.FC<MobileCardProps> = ({
           paper: {
             sx: {
               borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
+              borderTopRightRadius: 16,}
             },
-          },
-        }}
-      >
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2, textAlign: 'center' }}>
+          },>
+        <div className="">
+          <div  className="">
             Actions
-          </Typography>
+          </div>
           <List>
             {actions.map((action, index) => (
-              <ListItemButton
+              <Button
                 key={index}
-                onClick={() => {
-                  action.onClick();
-                  setShowActions(false);
-                }}
-                sx={{ borderRadius: 1, mb: 1 }}
+                
+                className=""
               >
-                <ListItemIcon>{action.icon}</ListItemIcon>
-                <ListItemText primary={action.label} />
+                <div>{action.icon}</div>
+                <div primary={action.label} />
               </ListItemButton>
             ))}
           </List>
-        </Box>
+        </div>
       </SwipeableDrawer>
     </>
   );
 };
-
 interface MobileListProps {
   items: Array<{
     id: string;
@@ -358,32 +291,28 @@ interface MobileListProps {
   emptyState?: React.ReactNode;
   loading?: boolean;
 }
-
-export const MobileList: React.FC<MobileListProps> = ({
+export const MobileList: React.FC<MobileListProps> = ({ 
   items,
-
   onItemSwipeLeft,
   onItemSwipeRight,
   onItemLongPress,
   emptyState,
-  loading = false,
+  loading = false
 }) => {
   if (loading) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
+      <div className="">
+        <div  color="text.secondary">
           Loading...
-        </Typography>
-      </Box>
+        </div>
+      </div>
     );
   }
-
   if (items.length === 0 && emptyState) {
-    return <Box>{emptyState}</Box>;
+    return <div>{emptyState}</div>;
   }
-
   return (
-    <Box>
+    <div>
       {items.map((item) => (
         <MobileCard
           key={item.id}
@@ -392,7 +321,7 @@ export const MobileList: React.FC<MobileListProps> = ({
           avatar={item.avatar}
           chips={item.chips}
           actions={item.actions}
-          selected={item.selected}
+          
           disabled={item.disabled}
           onSwipeLeft={() => onItemSwipeLeft?.(item.id)}
           onSwipeRight={() => onItemSwipeRight?.(item.id)}
@@ -401,10 +330,9 @@ export const MobileList: React.FC<MobileListProps> = ({
           {item.children}
         </MobileCard>
       ))}
-    </Box>
+    </div>
   );
 };
-
 interface MobileFabProps {
   icon: React.ReactNode;
   label?: string;
@@ -414,20 +342,17 @@ interface MobileFabProps {
   size?: 'small' | 'medium' | 'large';
   extended?: boolean;
 }
-
-export const MobileFab: React.FC<MobileFabProps> = ({
+export const MobileFab: React.FC<MobileFabProps> = ({ 
   icon,
   label,
   onClick,
   color = 'primary',
   position = 'bottom-right',
   size = 'large',
-  extended = false,
+  extended = false
 }) => {
   const { isMobile } = useResponsive();
-
   if (!isMobile) return null;
-
   const getPosition = () => {
     const base = { position: 'fixed' as const, zIndex: 1000 };
     switch (position) {
@@ -446,7 +371,6 @@ export const MobileFab: React.FC<MobileFabProps> = ({
         return { ...base, bottom: 16, right: 16 };
     }
   };
-
   return (
     <Zoom in={true}>
       <Fab
@@ -454,17 +378,13 @@ export const MobileFab: React.FC<MobileFabProps> = ({
         size={size}
         onClick={onClick}
         variant={extended && label ? 'extended' : 'circular'}
-        sx={getPosition()}
+        className=""
       >
         {icon}
-        {extended && label && <Box sx={{ ml: 1 }}>{label}</Box>}
+        {extended && label && <div className="">{label}</div>}
       </Fab>
     </Zoom>
   );
 };
-
 export default {
-  MobileCard,
-  MobileList,
-  MobileFab,
 };

@@ -157,8 +157,7 @@ class SecurityService {
   ) {
     const response = await api.patch(`/security/alerts/${alertId}/resolve`, {
       resolution,
-      preventiveMeasures,
-    });
+      preventiveMeasures}
     return response.data;
   }
 
@@ -176,8 +175,7 @@ class SecurityService {
           timestamp: new Date().toISOString(),
           performedBy: 'current_user', // This should be populated from auth context
         }
-        : undefined,
-    });
+        : undefined}
     return response.data;
   }
 
@@ -186,16 +184,14 @@ class SecurityService {
     const response = await api.post('/security/block-ip', {
       ipAddress,
       reason,
-      duration,
-    });
+      duration}
     return response.data;
   }
 
   // Generate security report
   async generateSecurityReport(config: SecurityReportConfig) {
     const response = await api.post('/security/reports/generate', config, {
-      responseType: 'blob',
-    });
+      responseType: 'blob'}
     return response.data;
   }
 

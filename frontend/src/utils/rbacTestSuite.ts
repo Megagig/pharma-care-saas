@@ -6,9 +6,6 @@
 
 // Test data constants
 const TEST_DATA = {
-  ROLES: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'super_admin'],
-  TIERS: ['free_trial', 'basic', 'pro', 'enterprise'],
-  FEATURES: [
     'patient_management',
     'medication_management',
     'clinical_notes',

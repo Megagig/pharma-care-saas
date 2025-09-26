@@ -1,58 +1,41 @@
-import React from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Chip,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  LinearProgress,
-  Alert,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Divider,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { AIAnalysisResult } from '../../../services/aiDiagnosticService';
+
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Alert } from '@/components/ui/alert';
+import { Accordion } from '@/components/ui/accordion';
+import { Separator } from '@/components/ui/separator';
 
 interface AIAnalysisResultsProps {
   analysis: AIAnalysisResult;
   loading?: boolean;
 }
-
-const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
+const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({ 
   analysis,
-  loading = false,
+  loading = false
 }) => {
   if (loading) {
     return (
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          <div className="">
+            <div  className="">
               AI Analysis in Progress
-            </Typography>
-          </Box>
-          <LinearProgress sx={{ mb: 2 }} />
-          <Typography variant="body2" color="text.secondary">
+            </div>
+          </div>
+          <Progress className="" />
+          <div  color="text.secondary">
             Our AI is analyzing the case data. This typically takes 30-60
             seconds...
-          </Typography>
+          </div>
         </CardContent>
       </Card>
     );
   }
-
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 0.8) return 'success';
     if (confidence >= 0.6) return 'warning';
     return 'error';
   };
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
@@ -65,42 +48,35 @@ const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
         return 'default';
     }
   };
-
   return (
-    <Box sx={{ space: 2 }}>
+    <div className="">
       {/* Header */}
-      <Card sx={{ mb: 2 }}>
+      <Card className="">
         <CardContent>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 2,
-            }}
+          <div
+            className=""
           >
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+            <div  className="">
               AI Diagnostic Analysis
-            </Typography>
+            </div>
             <Chip
               label={`${Math.round(analysis.confidence * 100)}% Confidence`}
               color={getConfidenceColor(analysis.confidence)}
-              variant="filled"
+              
             />
-          </Box>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Analysis completed in {analysis.processingTime}ms • Generated on{' '}
             {new Date(analysis.createdAt).toLocaleString()}
-          </Typography>
+          </div>
         </CardContent>
       </Card>
-
       {/* Primary Diagnosis */}
-      <Card sx={{ mb: 2 }}>
+      <Card className="">
         <CardContent>
-          <Typography
-            variant="h6"
-            sx={{ mb: 2, display: 'flex', alignItems: 'center' }}
+          <div
+            
+            className=""
           >
             Primary Diagnosis
             <Chip
@@ -111,52 +87,47 @@ const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
                 analysis.analysis.primaryDiagnosis.confidence
               )}
               size="small"
-              sx={{ ml: 2 }}
+              className=""
             />
-          </Typography>
-          <Typography
-            variant="h5"
+          </div>
+          <div
+            
             color="primary"
-            sx={{ mb: 1, fontWeight: 500 }}
+            className=""
           >
             {analysis.analysis.primaryDiagnosis.condition}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             {analysis.analysis.primaryDiagnosis.reasoning}
-          </Typography>
+          </div>
         </CardContent>
       </Card>
-
       {/* Differential Diagnoses */}
       {analysis.analysis.differentialDiagnoses.length > 0 && (
-        <Accordion sx={{ mb: 2 }}>
+        <Accordion className="">
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
+            <div >
               Differential Diagnoses (
               {analysis.analysis.differentialDiagnoses.length})
-            </Typography>
+            </div>
           </AccordionSummary>
           <AccordionDetails>
             <List>
               {analysis.analysis.differentialDiagnoses.map(
                 (diagnosis, index) => (
                   <React.Fragment key={index}>
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemText
+                    <div className="">
+                      <div
                         primary={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography
-                              variant="subtitle1"
-                              sx={{ fontWeight: 500 }}
-                            >
+                            <div
+                              
+                              className=""
+                            >}
                               {diagnosis.condition}
-                            </Typography>
+                            </div>
                             <Chip
                               label={`${Math.round(
                                 diagnosis.confidence * 100
@@ -164,14 +135,13 @@ const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
                               color={getConfidenceColor(diagnosis.confidence)}
                               size="small"
                             />
-                          </Box>
+                          </div>
                         }
                         secondary={diagnosis.reasoning}
                       />
-                    </ListItem>
-                    {index <
-                      analysis.analysis.differentialDiagnoses.length - 1 && (
-                      <Divider />
+                    </div>
+                    {index < analysis.analysis.differentialDiagnoses.length - 1 && (
+                      <Separator />
                     )}
                   </React.Fragment>
                 )
@@ -180,47 +150,42 @@ const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
           </AccordionDetails>
         </Accordion>
       )}
-
       {/* Recommended Tests */}
       {analysis.analysis.recommendedTests.length > 0 && (
-        <Accordion sx={{ mb: 2 }}>
+        <Accordion className="">
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
+            <div >
               Recommended Tests ({analysis.analysis.recommendedTests.length})
-            </Typography>
+            </div>
           </AccordionSummary>
           <AccordionDetails>
             <List>
               {analysis.analysis.recommendedTests.map((test, index) => (
                 <React.Fragment key={index}>
-                  <ListItem sx={{ px: 0 }}>
-                    <ListItemText
+                  <div className="">
+                    <div
                       primary={
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
+                        <div
+                          className=""
                         >
-                          <Typography
-                            variant="subtitle1"
-                            sx={{ fontWeight: 500 }}
-                          >
+                          <div
+                            
+                            className=""
+                          >}
                             {test.test}
-                          </Typography>
+                          </div>
                           <Chip
                             label={test.priority}
                             color={getPriorityColor(test.priority)}
                             size="small"
                           />
-                        </Box>
+                        </div>
                       }
                       secondary={test.reasoning}
                     />
-                  </ListItem>
+                  </div>
                   {index < analysis.analysis.recommendedTests.length - 1 && (
-                    <Divider />
+                    <Separator />
                   )}
                 </React.Fragment>
               ))}
@@ -228,42 +193,36 @@ const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
           </AccordionDetails>
         </Accordion>
       )}
-
       {/* Treatment Suggestions */}
       {analysis.analysis.treatmentSuggestions.length > 0 && (
-        <Accordion sx={{ mb: 2 }}>
+        <Accordion className="">
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
+            <div >
               Treatment Suggestions (
               {analysis.analysis.treatmentSuggestions.length})
-            </Typography>
+            </div>
           </AccordionSummary>
           <AccordionDetails>
             <List>
               {analysis.analysis.treatmentSuggestions.map(
                 (treatment, index) => (
                   <React.Fragment key={index}>
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemText
+                    <div className="">
+                      <div
                         primary={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              mb: 1,
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography
-                              variant="subtitle1"
-                              sx={{ fontWeight: 500 }}
-                            >
+                            <div
+                              
+                              className=""
+                            >}
                               {treatment.treatment}
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
+                            </div>
+                            <div className="">
                               <Chip
                                 label={treatment.type}
-                                variant="outlined"
+                                
                                 size="small"
                               />
                               <Chip
@@ -271,15 +230,15 @@ const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
                                 color={getPriorityColor(treatment.priority)}
                                 size="small"
                               />
-                            </Box>
-                          </Box>
+                            </div>
+                          </div>
                         }
                         secondary={treatment.reasoning}
                       />
-                    </ListItem>
+                    </div>
                     {index <
                       analysis.analysis.treatmentSuggestions.length - 1 && (
-                      <Divider />
+                      <Separator />
                     )}
                   </React.Fragment>
                 )
@@ -288,96 +247,85 @@ const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
           </AccordionDetails>
         </Accordion>
       )}
-
       {/* Risk Factors */}
       {analysis.analysis.riskFactors.length > 0 && (
-        <Accordion sx={{ mb: 2 }}>
+        <Accordion className="">
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
+            <div >
               Risk Factors ({analysis.analysis.riskFactors.length})
-            </Typography>
+            </div>
           </AccordionSummary>
           <AccordionDetails>
-            <Grid container spacing={2}>
+            <div container spacing={2}>
               {analysis.analysis.riskFactors.map((risk, index) => (
-                <Grid item xs={12} md={6} key={index}>
-                  <Card variant="outlined">
-                    <CardContent sx={{ p: 2 }}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          mb: 1,
-                        }}
+                <div item xs={12} md={6} key={index}>
+                  <Card >
+                    <CardContent className="">
+                      <div
+                        className=""
                       >
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ fontWeight: 600 }}
+                        <div
+                          
+                          className=""
                         >
                           {risk.factor}
-                        </Typography>
+                        </div>
                         <Chip
                           label={risk.severity}
                           color={getPriorityColor(risk.severity)}
                           size="small"
                         />
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {risk.description}
-                      </Typography>
+                      </div>
                     </CardContent>
                   </Card>
-                </Grid>
+                </div>
               ))}
-            </Grid>
+            </div>
           </AccordionDetails>
         </Accordion>
       )}
-
       {/* Follow-up Recommendations */}
       {analysis.analysis.followUpRecommendations.length > 0 && (
-        <Accordion sx={{ mb: 2 }}>
+        <Accordion className="">
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">
+            <div >
               Follow-up Recommendations (
               {analysis.analysis.followUpRecommendations.length})
-            </Typography>
+            </div>
           </AccordionSummary>
           <AccordionDetails>
             <List>
               {analysis.analysis.followUpRecommendations.map(
                 (followUp, index) => (
                   <React.Fragment key={index}>
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemText
+                    <div className="">
+                      <div
                         primary={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography
-                              variant="subtitle1"
-                              sx={{ fontWeight: 500 }}
-                            >
+                            <div
+                              
+                              className=""
+                            >}
                               {followUp.action}
-                            </Typography>
+                            </div>
                             <Chip
                               label={followUp.timeframe}
-                              variant="outlined"
+                              
                               size="small"
                             />
-                          </Box>
+                          </div>
                         }
                         secondary={followUp.reasoning}
                       />
-                    </ListItem>
+                    </div>
                     {index <
                       analysis.analysis.followUpRecommendations.length - 1 && (
-                      <Divider />
+                      <Separator />
                     )}
                   </React.Fragment>
                 )
@@ -386,18 +334,16 @@ const AIAnalysisResults: React.FC<AIAnalysisResultsProps> = ({
           </AccordionDetails>
         </Accordion>
       )}
-
       {/* Disclaimer */}
-      <Alert severity="warning" sx={{ mt: 2 }}>
-        <Typography variant="body2">
+      <Alert severity="warning" className="">
+        <div >
           <strong>Important:</strong> This AI analysis is for informational
           purposes only and should not replace professional medical judgment.
           Always consult with qualified healthcare professionals for diagnosis
           and treatment decisions.
-        </Typography>
+        </div>
       </Alert>
-    </Box>
+    </div>
   );
 };
-
 export default AIAnalysisResults;

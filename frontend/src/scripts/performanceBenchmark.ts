@@ -1,8 +1,3 @@
-import { performanceMonitor } from '../utils/performanceMonitor';
-import { communicationCache } from '../services/cacheService';
-import { offlineStorage } from '../services/offlineStorageService';
-import { Message, Conversation } from '../stores/types';
-
 interface BenchmarkResult {
     name: string;
     duration: number;
@@ -390,7 +385,7 @@ export class CommunicationBenchmark {
      * Generate test conversations
      */
     private generateTestConversations(count: number): Conversation[] {
-        return Array.from({ length: count }, (_, index) => ({
+        return Array.from({ length: count }, (_, index) => ({  })
             _id: `conv-${index}`,
             title: `Test Conversation ${index}`,
             type: 'group' as const,
@@ -413,8 +408,7 @@ export class CommunicationBenchmark {
             },
             unreadCount: Math.floor(Math.random() * 10),
             createdAt: new Date(Date.now() - index * 86400000).toISOString(),
-            updatedAt: new Date(Date.now() - index * 60000).toISOString(),
-        }));
+            updatedAt: new Date(Date.now() - index * 60000).toISOString()}
     }
 
     /**
@@ -434,7 +428,7 @@ export class CommunicationBenchmark {
             'Can we discuss this case in our next meeting?',
         ];
 
-        return Array.from({ length: count }, (_, index) => ({
+        return Array.from({ length: count }, (_, index) => ({  })
             _id: `msg-${index}`,
             conversationId: `conv-${index % 10}`,
             senderId: `user-${index % 3}`,
@@ -461,8 +455,7 @@ export class CommunicationBenchmark {
             editHistory: [],
             isDeleted: false,
             createdAt: new Date(Date.now() - (count - index) * 60000).toISOString(),
-            updatedAt: new Date(Date.now() - (count - index) * 60000).toISOString(),
-        }));
+            updatedAt: new Date(Date.now() - (count - index) * 60000).toISOString()}
     }
 
     /**
@@ -515,10 +508,10 @@ export class CommunicationBenchmark {
      * Export results to JSON
      */
     exportResults(): string {
-        return JSON.stringify({
+        return JSON.stringify({ 
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent,
-            results: this.results,
+            results: this.results}
         }, null, 2);
     }
 }

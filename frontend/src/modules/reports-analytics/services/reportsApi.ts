@@ -1,7 +1,4 @@
 // Reports API Service - Real data fetching
-import { ReportType } from '../types/reports';
-import { API_CONFIG, getApiUrl } from '../../../config/api';
-
 interface ApiResponse<T> {
     success: boolean;
     data: T;
@@ -61,8 +58,7 @@ async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<A
                 'Content-Type': 'application/json',
                 ...options?.headers,
             },
-            ...options,
-        });
+            ...options}
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -86,17 +82,15 @@ export const reportsApi = {
     async generateReport(reportType: ReportType, filters?: any): Promise<ApiResponse<ReportData>> {
         return apiRequest<ReportData>('/reports/generate', {
             method: 'POST',
-            body: JSON.stringify({
+            body: JSON.stringify({ 
                 type: reportType,
                 filters: filters || {
                     dateRange: {
                         startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
                         endDate: new Date(),
-                        preset: '30d',
+                        preset: '30d'}
                     },
-                },
-            }),
-        });
+                }}
     },
 
     // Get existing report data
@@ -128,8 +122,7 @@ export const reportsApi = {
     }>> {
         return apiRequest('/reports/patient-outcomes', {
             method: 'POST',
-            body: JSON.stringify({ filters }),
-        });
+            body: JSON.stringify({ filters })}
     },
 
     // Get pharmacist interventions data
@@ -141,8 +134,7 @@ export const reportsApi = {
     }>> {
         return apiRequest('/reports/pharmacist-interventions', {
             method: 'POST',
-            body: JSON.stringify({ filters }),
-        });
+            body: JSON.stringify({ filters })}
     },
 
     // Get therapy effectiveness data
@@ -154,8 +146,7 @@ export const reportsApi = {
     }>> {
         return apiRequest('/reports/therapy-effectiveness', {
             method: 'POST',
-            body: JSON.stringify({ filters }),
-        });
+            body: JSON.stringify({ filters })}
     },
 
     // Get quality improvement data
@@ -167,8 +158,7 @@ export const reportsApi = {
     }>> {
         return apiRequest('/reports/quality-improvement', {
             method: 'POST',
-            body: JSON.stringify({ filters }),
-        });
+            body: JSON.stringify({ filters })}
     },
 
     // Get regulatory compliance data
@@ -179,8 +169,7 @@ export const reportsApi = {
     }>> {
         return apiRequest('/reports/regulatory-compliance', {
             method: 'POST',
-            body: JSON.stringify({ filters }),
-        });
+            body: JSON.stringify({ filters })}
     },
 
     // Get cost effectiveness data
@@ -192,15 +181,13 @@ export const reportsApi = {
     }>> {
         return apiRequest('/reports/cost-effectiveness', {
             method: 'POST',
-            body: JSON.stringify({ filters }),
-        });
+            body: JSON.stringify({ filters })}
     },
 
     // Export report
     async exportReport(reportId: string, format: 'pdf' | 'excel' | 'csv'): Promise<ApiResponse<{ downloadUrl: string }>> {
         return apiRequest(`/reports/${reportId}/export/${format}`, {
-            method: 'POST',
-        });
+            method: 'POST'}
     },
 };
 

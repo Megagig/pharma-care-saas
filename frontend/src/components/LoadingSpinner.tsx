@@ -1,16 +1,15 @@
-import React from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Loader2 } from 'lucide-react';
+
 
 interface LoadingSpinnerProps {
   message?: string;
   size?: number;
   fullScreen?: boolean;
 }
-
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   message = 'Loading...',
   size = 40,
-  fullScreen = false
+  fullScreen = false 
 }) => {
   const containerStyle = fullScreen
     ? {
@@ -32,21 +31,15 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         flexDirection: 'column' as const,
         padding: 2,
       };
-
   return (
-    <Box sx={containerStyle}>
-      <CircularProgress size={size} />
+    <div style={containerStyle}>
+      <Loader2 className="animate-spin" size={size} />
       {message && (
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ mt: 2 }}
-        >
+        <div className="mt-2 text-sm text-gray-600">
           {message}
-        </Typography>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
-
 export default LoadingSpinner;

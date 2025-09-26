@@ -1,43 +1,47 @@
-import React, { useState, useCallback, useRef } from 'react';
-import {
-  Box,
-  Typography,
-  LinearProgress,
-  Alert,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Card,
-  CardMedia,
-  CardContent,
-  CardActions,
-  Grid,
-  Tooltip,
-  CircularProgress,
-  Snackbar,
-} from '@mui/material';
-import { Button } from '@/components/ui/button';
-import {
-  CloudUpload as UploadIcon,
-  Delete as DeleteIcon,
-  AttachFile as AttachFileIcon,
-  Visibility as ViewIcon,
-  Download as DownloadIcon,
-  Image as ImageIcon,
-  PictureAsPdf as PdfIcon,
-  Description as DocIcon,
-  InsertDriveFile as FileIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
-import { Attachment } from '../types/clinicalNote';
 import clinicalNoteService from '../services/clinicalNoteService';
+import { useState, useRef, useCallback } from 'react';
+import { toast } from 'react-toastify';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+// Placeholder icons - replace with actual imports
+const ImageIcon = () => <div>🖼️</div>;
+const PdfIcon = () => <div>📄</div>;
+const DocIcon = () => <div>📝</div>;
+const FileIcon = () => <div>📁</div>;
+const UploadIcon = ({ className }: { className?: string }) => <div className={className}>⬆️</div>;
+const ViewIcon = () => <div>👁️</div>;
+const DownloadIcon = ({ className }: { className?: string }) => <div className={className}>⬇️</div>;
+const DeleteIcon = () => <div>🗑️</div>;
+const IconButton = ({ children, onClick, disabled }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean }) => (
+  <button onClick={onClick} disabled={disabled} className="p-1 rounded hover:bg-gray-100">
+    {children}
+  </button>
+);
+const Chip = ({ label, color }: { label: string; color?: string }) => (
+  <span className={`px-2 py-1 text-xs rounded-full ${color === 'success' ? 'bg-green-100 text-green-800' : color === 'error' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
+    {label}
+  </span>
+);
+const CardMedia = ({ component, height, image, alt, className, onClick }: { component: string; height: number; image: string; alt: string; className?: string; onClick?: () => void }) => (
+  <img src={image} alt={alt} height={height} className={className} onClick={onClick} />
+);
+const CardActions = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={className}>{children}</div>
+);
+
+interface Attachment {
+  _id: string;
+  originalName: string;
+  size: number;
+  mimeType: string;
+  url: string;
+}
 
 interface UploadedFile {
   id: string;
@@ -79,20 +83,16 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
   ],
   maxFileSize = 10 * 1024 * 1024, // 10MB
   disabled = false,
-  showPreview = true,
+  showPreview = true
 }) => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [previewFile, setPreviewFile] = useState<
-    UploadedFile | Attachment | null
-  >(null);
+  const [previewFile, setPreviewFile] = useState<UploadedFile | Attachment | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formatFileSize = (bytes: number): string => {
@@ -106,8 +106,7 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
   const getFileIcon = (mimeType: string) => {
     if (mimeType.startsWith('image/')) return <ImageIcon />;
     if (mimeType === 'application/pdf') return <PdfIcon />;
-    if (mimeType.includes('word') || mimeType.includes('document'))
-      return <DocIcon />;
+    if (mimeType.includes('word') || mimeType.includes('document')) return <DocIcon />;
     return <FileIcon />;
   };
 
@@ -120,14 +119,11 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
   };
 
   const canPreview = (mimeType: string): boolean => {
-    return (
-      isImageFile(mimeType) || isPdfFile(mimeType) || mimeType === 'text/plain'
-    );
+    return isImageFile(mimeType) || isPdfFile(mimeType) || mimeType === 'text/plain';
   };
 
   const showSnackbar = (message: string) => {
-    setSnackbarMessage(message);
-    setSnackbarOpen(true);
+    toast.success(message);
   };
 
   const validateFile = (file: File): string | null => {
@@ -150,9 +146,7 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
     });
 
     if (!isValidType) {
-      return `File type not supported. Accepted types: ${acceptedTypes.join(
-        ', '
-      )}`;
+      return `File type not supported. Accepted types: ${acceptedTypes.join(', ')}`;
     }
 
     return null;
@@ -162,8 +156,7 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
     async (selectedFiles: FileList) => {
       setError(null);
 
-      const totalFiles =
-        files.length + existingAttachments.length + selectedFiles.length;
+      const totalFiles = files.length + existingAttachments.length + selectedFiles.length;
       if (totalFiles > maxFiles) {
         setError(`Maximum ${maxFiles} files allowed`);
         return;
@@ -194,22 +187,17 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
       try {
         if (noteId) {
           // Upload to existing note
-          const response = await clinicalNoteService.uploadAttachment(
-            noteId,
-            validFiles
-          );
+          const response = await clinicalNoteService.uploadAttachment(noteId, validFiles);
 
           // Convert API response to UploadedFile format
-          const uploadedFiles: UploadedFile[] = response.attachments.map(
-            (att) => ({
-              id: att._id,
-              name: att.originalName,
-              size: att.size,
-              type: att.mimeType,
-              url: att.url,
-              uploadStatus: 'completed' as const,
-            })
-          );
+          const uploadedFiles: UploadedFile[] = response.attachments.map((att) => ({
+            id: att._id,
+            name: att.originalName,
+            size: att.size,
+            type: att.mimeType,
+            url: att.url,
+            uploadStatus: 'completed' as const
+          }));
 
           const newFiles = [...files, ...uploadedFiles];
           setFiles(newFiles);
@@ -224,7 +212,7 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
             type: file.type,
             url: URL.createObjectURL(file),
             file,
-            uploadStatus: 'pending' as const,
+            uploadStatus: 'pending' as const
           }));
 
           const newFiles = [...files, ...localFiles];
@@ -239,15 +227,7 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
         setUploadProgress(0);
       }
     },
-    [
-      files,
-      existingAttachments,
-      maxFiles,
-      maxFileSize,
-      acceptedTypes,
-      onFilesUploaded,
-      noteId,
-    ]
+    [files, existingAttachments, maxFiles, maxFileSize, acceptedTypes, onFilesUploaded, noteId]
   );
 
   const handleFileRemove = (fileId: string) => {
@@ -272,10 +252,7 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
     if (!noteId) return;
 
     try {
-      const blob = await clinicalNoteService.downloadAttachment(
-        noteId,
-        attachment._id
-      );
+      const blob = await clinicalNoteService.downloadAttachment(noteId, attachment._id);
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -298,10 +275,7 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
     setPreviewOpen(true);
   };
 
-  const handleDeleteConfirm = (
-    fileId: string,
-    isAttachment: boolean = false
-  ) => {
+  const handleDeleteConfirm = (fileId: string, isAttachment: boolean = false) => {
     setFileToDelete(fileId);
     setDeleteConfirmOpen(true);
   };
@@ -311,9 +285,7 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
 
     try {
       // Check if it's an existing attachment or local file
-      const isExistingAttachment = existingAttachments.some(
-        (att) => att._id === fileToDelete
-      );
+      const isExistingAttachment = existingAttachments.some((att) => att._id === fileToDelete);
 
       if (isExistingAttachment) {
         await handleAttachmentDelete(fileToDelete);
@@ -321,7 +293,7 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
         handleFileRemove(fileToDelete);
       }
     } catch (error: unknown) {
-      setError(error.message || 'Failed to delete file');
+      setError((error as Error).message || 'Failed to delete file');
     } finally {
       setDeleteConfirmOpen(false);
       setFileToDelete(null);
@@ -348,24 +320,12 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
   const totalFiles = files.length + existingAttachments.length;
 
   return (
-    <Box>
+    <div className="space-y-4">
       {/* Upload Area */}
-      <Box
+      <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
-        sx={{
-          border: '2px dashed',
-          borderColor: disabled ? 'grey.300' : 'primary.main',
-          borderRadius: 2,
-          p: 3,
-          textAlign: 'center',
-          backgroundColor: disabled ? 'grey.50' : 'background.paper',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          transition: 'all 0.2s ease',
-          '&:hover': {
-            backgroundColor: disabled ? 'grey.50' : 'action.hover',
-          },
-        }}
+        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
       >
         <input
           ref={fileInputRef}
@@ -373,225 +333,213 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
           multiple
           accept={acceptedTypes.join(',')}
           onChange={(e) => e.target.files && handleFileSelect(e.target.files)}
-          style={{ display: 'none' }}
+          className="hidden"
           id="file-upload-input"
           disabled={disabled || uploading}
         />
 
-        <label
-          htmlFor="file-upload-input"
-          style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
-        >
-          <UploadIcon
-            sx={{
-              fontSize: 48,
-              color: disabled ? 'grey.400' : 'primary.main',
-              mb: 1,
-            }}
-          />
-          <Typography variant="h6" gutterBottom>
+        <label htmlFor="file-upload-input" className="cursor-pointer">
+          <UploadIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <div className="text-lg font-medium mb-2">
             {uploading ? 'Uploading...' : 'Drop files here or click to browse'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div className="text-sm text-gray-500 mb-1">
             Maximum {maxFiles} files, up to {formatFileSize(maxFileSize)} each
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div className="text-sm text-gray-500">
             Supported: {acceptedTypes.join(', ')}
-          </Typography>
+          </div>
         </label>
 
         {uploading && (
-          <Box sx={{ mt: 2 }}>
-            <LinearProgress variant="determinate" value={uploadProgress} />
-            <Typography variant="body2" sx={{ mt: 1 }}>
+          <div className="mt-4">
+            <Progress value={uploadProgress} className="w-full" />
+            <div className="text-sm text-gray-600 mt-1">
               {Math.round(uploadProgress)}% uploaded
-            </Typography>
-          </Box>
+            </div>
+          </div>
         )}
-      </Box>
+      </div>
 
       {/* Error Display */}
       {error && (
-        <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError(null)}>
-          {error}
+        <Alert>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {/* Existing Attachments */}
       {existingAttachments.length > 0 && (
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
+        <div>
+          <div className="text-lg font-medium mb-4">
             Existing Attachments ({existingAttachments.length})
-          </Typography>
-          <Grid container spacing={2}>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {existingAttachments.map((attachment) => (
-              <Grid item xs={12} sm={6} md={4} key={attachment._id}>
-                <Card variant="outlined">
-                  {isImageFile(attachment.mimeType) && showPreview && (
-                    <CardMedia
-                      component="img"
-                      height="120"
-                      image={attachment.url}
-                      alt={attachment.originalName}
-                      sx={{ objectFit: 'cover', cursor: 'pointer' }}
-                      onClick={() => handlePreviewFile(attachment)}
-                    />
-                  )}
-                  <CardContent sx={{ pb: 1 }}>
-                    <Box display="flex" alignItems="center" gap={1} mb={1}>
-                      {getFileIcon(attachment.mimeType)}
-                      <Typography
-                        variant="body2"
-                        noWrap
-                        title={attachment.originalName}
-                      >
-                        {attachment.originalName}
-                      </Typography>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {formatFileSize(attachment.size)}
-                    </Typography>
-                    <Chip
-                      label={attachment.mimeType}
-                      size="small"
-                      variant="outlined"
-                      sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
-                    />
-                  </CardContent>
-                  <CardActions sx={{ pt: 0, justifyContent: 'space-between' }}>
-                    <Box>
-                      {canPreview(attachment.mimeType) && (
-                        <Tooltip title="Preview">
-                          <IconButton
-                            size="small"
-                            onClick={() => handlePreviewFile(attachment)}
-                          >
-                            <ViewIcon />
-                          </IconButton>
+              <Card key={attachment._id} className="overflow-hidden">
+                {isImageFile(attachment.mimeType) && showPreview && (
+                  <CardMedia
+                    component="img"
+                    height={120}
+                    image={attachment.url}
+                    alt={attachment.originalName}
+                    className="w-full h-32 object-cover cursor-pointer"
+                    onClick={() => handlePreviewFile(attachment)}
+                  />
+                )}
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    {getFileIcon(attachment.mimeType)}
+                    <div className="font-medium truncate" title={attachment.originalName}>
+                      {attachment.originalName}
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-500 mb-2">
+                    {formatFileSize(attachment.size)}
+                  </div>
+                  <Chip label={attachment.mimeType} />
+                </CardContent>
+                <CardActions className="p-4 pt-0 flex justify-between">
+                  <div className="flex gap-2">
+                    {canPreview(attachment.mimeType) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <IconButton
+                              onClick={() => handlePreviewFile(attachment)}
+                            >
+                              <ViewIcon />
+                            </IconButton>
+                          </TooltipTrigger>
+                          <TooltipContent>Preview</TooltipContent>
                         </Tooltip>
-                      )}
-                      <Tooltip title="Download">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleAttachmentDownload(attachment)}
-                        >
-                          <DownloadIcon />
-                        </IconButton>
+                      </TooltipProvider>
+                    )}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <IconButton
+                            onClick={() => handleAttachmentDownload(attachment)}
+                          >
+                            <DownloadIcon />
+                          </IconButton>
+                        </TooltipTrigger>
+                        <TooltipContent>Download</TooltipContent>
                       </Tooltip>
-                    </Box>
-                    <Tooltip title="Delete">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() =>
-                          handleDeleteConfirm(attachment._id, true)
-                        }
-                        disabled={disabled}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                    </TooltipProvider>
+                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <IconButton
+                          onClick={() => handleDeleteConfirm(attachment._id, true)}
+                          disabled={disabled}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete</TooltipContent>
                     </Tooltip>
-                  </CardActions>
-                </Card>
-              </Grid>
+                  </TooltipProvider>
+                </CardActions>
+              </Card>
             ))}
-          </Grid>
-        </Box>
+          </div>
+        </div>
       )}
 
       {/* New Files */}
       {files.length > 0 && (
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
+        <div>
+          <div className="text-lg font-medium mb-4">
             New Files ({files.length})
-          </Typography>
-          <Grid container spacing={2}>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {files.map((file) => (
-              <Grid item xs={12} sm={6} md={4} key={file.id}>
-                <Card variant="outlined">
-                  {isImageFile(file.type) && showPreview && file.url && (
-                    <CardMedia
-                      component="img"
-                      height="120"
-                      image={file.url}
-                      alt={file.name}
-                      sx={{ objectFit: 'cover', cursor: 'pointer' }}
-                      onClick={() => handlePreviewFile(file)}
-                    />
-                  )}
-                  <CardContent sx={{ pb: 1 }}>
-                    <Box display="flex" alignItems="center" gap={1} mb={1}>
-                      {getFileIcon(file.type)}
-                      <Typography variant="body2" noWrap title={file.name}>
-                        {file.name}
-                      </Typography>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {formatFileSize(file.size)}
-                    </Typography>
-                    <Chip
-                      label={file.type}
-                      size="small"
-                      variant="outlined"
-                      sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
-                    />
-                    {file.uploadStatus && (
-                      <Box display="flex" alignItems="center" gap={1} mt={1}>
-                        {file.uploadStatus === 'uploading' && (
-                          <CircularProgress size={16} />
-                        )}
-                        <Chip
-                          label={file.uploadStatus}
-                          size="small"
-                          color={
-                            file.uploadStatus === 'completed'
-                              ? 'success'
-                              : file.uploadStatus === 'error'
-                              ? 'error'
-                              : 'default'
-                          }
-                          sx={{ height: 20, fontSize: '0.7rem' }}
-                        />
-                      </Box>
-                    )}
-                  </CardContent>
-                  <CardActions sx={{ pt: 0, justifyContent: 'space-between' }}>
-                    <Box>
-                      {canPreview(file.type) && file.url && (
-                        <Tooltip title="Preview">
-                          <IconButton
-                            size="small"
-                            onClick={() => handlePreviewFile(file)}
-                          >
-                            <ViewIcon />
-                          </IconButton>
-                        </Tooltip>
+              <Card key={file.id} className="overflow-hidden">
+                {isImageFile(file.type) && showPreview && file.url && (
+                  <CardMedia
+                    component="img"
+                    height={120}
+                    image={file.url}
+                    alt={file.name}
+                    className="w-full h-32 object-cover cursor-pointer"
+                    onClick={() => handlePreviewFile(file)}
+                  />
+                )}
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    {getFileIcon(file.type)}
+                    <div className="font-medium truncate" title={file.name}>
+                      {file.name}
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-500 mb-2">
+                    {formatFileSize(file.size)}
+                  </div>
+                  <Chip label={file.type} />
+                  {file.uploadStatus && (
+                    <div className="flex items-center gap-2 mt-2">
+                      {file.uploadStatus === 'uploading' && (
+                        <div className="animate-spin">⏳</div>
                       )}
-                    </Box>
-                    <Tooltip title="Remove">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDeleteConfirm(file.id)}
-                        disabled={disabled || uploading}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                      <Chip
+                        label={file.uploadStatus}
+                        color={
+                          file.uploadStatus === 'completed'
+                            ? 'success'
+                            : file.uploadStatus === 'error'
+                              ? 'error'
+                              : undefined
+                        }
+                      />
+                    </div>
+                  )}
+                </CardContent>
+                <CardActions className="p-4 pt-0 flex justify-between">
+                  <div className="flex gap-2">
+                    {canPreview(file.type) && file.url && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <IconButton
+                              onClick={() => handlePreviewFile(file)}
+                            >
+                              <ViewIcon />
+                            </IconButton>
+                          </TooltipTrigger>
+                          <TooltipContent>Preview</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <IconButton
+                          onClick={() => handleDeleteConfirm(file.id)}
+                          disabled={disabled || uploading}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TooltipTrigger>
+                      <TooltipContent>Remove</TooltipContent>
                     </Tooltip>
-                  </CardActions>
-                </Card>
-              </Grid>
+                  </TooltipProvider>
+                </CardActions>
+              </Card>
             ))}
-          </Grid>
-        </Box>
+          </div>
+        </div>
       )}
 
       {/* Upload Button */}
       {!uploading && totalFiles < maxFiles && (
         <Button
-          variant="outline"
           disabled={disabled}
-          className="mt-2"
+          className="w-full"
           onClick={() => fileInputRef.current?.click()}
         >
           <UploadIcon className="w-4 h-4 mr-2" />
@@ -600,108 +548,93 @@ const NoteFileUpload: React.FC<NoteFileUploadProps> = ({
       )}
 
       {/* File Preview Dialog */}
-      <Dialog
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Typography variant="h6">
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
               {'originalName' in (previewFile || {})
                 ? (previewFile as Attachment).originalName
                 : (previewFile as UploadedFile)?.name}
-            </Typography>
-            <IconButton onClick={() => setPreviewOpen(false)}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          {previewFile && (
-            <Box textAlign="center">
-              {isImageFile(
-                'mimeType' in previewFile
-                  ? previewFile.mimeType
-                  : previewFile.type
-              ) ? (
-                <img
-                  src={'url' in previewFile ? previewFile.url : previewFile.url}
-                  alt={
-                    'originalName' in previewFile
-                      ? previewFile.originalName
-                      : previewFile.name
-                  }
-                  style={{ maxWidth: '100%', maxHeight: '70vh' }}
-                />
-              ) : isPdfFile(
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="py-4">
+            {previewFile && (
+              <div className="text-center">
+                {isImageFile(
                   'mimeType' in previewFile
                     ? previewFile.mimeType
                     : previewFile.type
                 ) ? (
-                <iframe
-                  src={'url' in previewFile ? previewFile.url : previewFile.url}
-                  width="100%"
-                  height="500px"
-                  title="PDF Preview"
-                />
-              ) : (
-                <Typography variant="body1" color="text.secondary">
-                  Preview not available for this file type
-                </Typography>
-              )}
-            </Box>
-          )}
+                  <img
+                    src={'url' in previewFile ? previewFile.url : previewFile.url}
+                    alt={
+                      'originalName' in previewFile
+                        ? previewFile.originalName
+                        : previewFile.name
+                    }
+                    className="max-w-full max-h-[60vh] mx-auto"
+                  />
+                ) : isPdfFile(
+                  'mimeType' in previewFile
+                    ? previewFile.mimeType
+                    : previewFile.type
+                ) ? (
+                  <iframe
+                    src={'url' in previewFile ? previewFile.url : previewFile.url}
+                    width="100%"
+                    height="500px"
+                    title="PDF Preview"
+                    className="border rounded"
+                  />
+                ) : (
+                  <div className="text-gray-500">
+                    Preview not available for this file type
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            {'_id' in (previewFile || {}) && (
+              <Button
+                onClick={() => handleAttachmentDownload(previewFile as Attachment)}
+                variant="outline"
+              >
+                <DownloadIcon className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+            )}
+            <Button onClick={() => setPreviewOpen(false)}>Close</Button>
+          </div>
         </DialogContent>
-        <DialogActions>
-          {'_id' in (previewFile || {}) && (
-            <Button
-              onClick={() =>
-                handleAttachmentDownload(previewFile as Attachment)
-              }
-              variant="outline"
-            >
-              <DownloadIcon className="w-4 h-4 mr-2" />
-              Download
-            </Button>
-          )}
-          <Button onClick={() => setPreviewOpen(false)} variant="ghost">Close</Button>
-        </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-      >
-        <DialogTitle>Confirm Delete</DialogTitle>
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent>
-          <Typography>
-            Are you sure you want to delete this file? This action cannot be
-            undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)} variant="ghost">Cancel</Button>
-          <Button onClick={confirmDelete} variant="destructive">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+          </DialogHeader>
 
-      {/* Success Snackbar */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={3000}
-        onClose={() => setSnackbarOpen(false)}
-        message={snackbarMessage}
-      />
-    </Box>
+          <div className="py-4">
+            <p>
+              Are you sure you want to delete this file? This action cannot be undone.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => setDeleteConfirmOpen(false)} variant="outline">
+              Cancel
+            </Button>
+            <Button onClick={confirmDelete} variant="destructive">
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

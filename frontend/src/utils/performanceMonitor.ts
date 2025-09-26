@@ -57,8 +57,7 @@ export class PerformanceMonitor {
                         const resourceEntry = entry as PerformanceResourceTiming;
                         this.recordMetric('resource_load_time', resourceEntry.duration, {
                             resource_type: resourceEntry.initiatorType,
-                            resource_name: resourceEntry.name,
-                        });
+                            resource_name: resourceEntry.name}
                     }
                 });
             });
@@ -218,8 +217,7 @@ export class PerformanceMonitor {
                 if (renderStartTime) {
                     const renderTime = performance.now() - renderStartTime;
                     this.recordMetric('component_render_time', renderTime, {
-                        component: componentName,
-                    });
+                        component: componentName}
                 }
             },
         };
@@ -261,8 +259,7 @@ export class PerformanceMonitor {
                         url,
                         method,
                         status: status.toString(),
-                        size: size ? size.toString() : undefined,
-                    });
+                        size: size ? size.toString() : undefined}
                 }
             },
             onError: (error: Error) => {
@@ -272,8 +269,7 @@ export class PerformanceMonitor {
                         url,
                         method,
                         error: error.message,
-                        status: 'error',
-                    });
+                        status: 'error'}
                 }
             },
         };
@@ -346,11 +342,11 @@ export class PerformanceMonitor {
      * Export metrics for analysis
      */
     exportMetrics(): string {
-        return JSON.stringify({
+        return JSON.stringify({ 
             timestamp: Date.now(),
             metrics: this.metrics,
             userAgent: navigator.userAgent,
-            url: window.location.href,
+            url: window.location.href}
         }, null, 2);
     }
 
@@ -408,8 +404,7 @@ export const communicationPerformance = {
     measureVirtualization: (listType: 'messages' | 'conversations', itemCount: number) => {
         const measurement = performanceMonitor.measureRender(`virtualized_${listType}`);
         performanceMonitor.recordMetric(`virtualization_item_count`, itemCount, {
-            list_type: listType,
-        });
+            list_type: listType}
         return measurement;
     },
 };

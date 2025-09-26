@@ -1,52 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  TextField,
-  Alert,
-  CircularProgress,
-  Grid,
-  Paper,
-  Chip,
-  Divider,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  useTheme,
-  useMediaQuery,
-  Fab,
-  Tooltip,
-} from '@mui/material';
-import {
-  QrCodeScanner as QrCodeScannerIcon,
-  CameraAlt as CameraIcon,
-  FlashOn as FlashOnIcon,
-  FlashOff as FlashOffIcon,
-  Refresh as RefreshIcon,
-  Close as CloseIcon,
-  ArrowBack as ArrowBackIcon,
-  Edit as EditIcon,
-  Visibility as VisibilityIcon,
-  Assignment as AssignmentIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-} from '@mui/icons-material';
-import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
-
-import {
-  ManualLabOrder,
-  LAB_ORDER_STATUSES,
-  LAB_ORDER_PRIORITIES,
-} from '../types/manualLabOrder';
-import { Patient } from '../types/patientManagement';
-
+import { Button, Input, Card, CardContent, Spinner, Alert, Separator } from '@/components/ui/button';
 // Mock data for demonstration
 const MOCK_ORDER: ManualLabOrder = {
   _id: 'order_123',
@@ -100,24 +52,21 @@ const MOCK_ORDER: ManualLabOrder = {
     isDeleted: false,
   } as Patient,
 };
-
 interface OrderScanPageProps {
   token?: string;
   onOrderResolved?: (order: ManualLabOrder) => void;
   onNavigateToResults?: (orderId: string) => void;
 }
-
-const OrderScanPage: React.FC<OrderScanPageProps> = ({
+const OrderScanPage: React.FC<OrderScanPageProps> = ({ 
   token: propToken,
   onOrderResolved,
-  onNavigateToResults,
+  onNavigateToResults
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const { token: routeToken } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
-
   // State management
   const [token, setToken] = useState(
     propToken || routeToken || searchParams.get('token') || ''
@@ -133,20 +82,17 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
   const [cameraPermission, setCameraPermission] = useState<
     'granted' | 'denied' | 'prompt' | 'unknown'
   >('unknown');
-
   // Refs
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const qrCodeRef = useRef<Html5Qrcode | null>(null);
   const scannerElementRef = useRef<HTMLDivElement>(null);
-
   // Check camera permissions
   const checkCameraPermission = useCallback(async () => {
     try {
-      const result = await navigator.permissions.query({
-        name: 'camera' as PermissionName,
+      const result = await navigator.permissions.query({ 
+        name: 'camera' as PermissionName}
       });
       setCameraPermission(result.state);
-
       result.addEventListener('change', () => {
         setCameraPermission(result.state);
       });
@@ -155,12 +101,10 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
       setCameraPermission('unknown');
     }
   }, []);
-
   // Initialize camera permission check
   useEffect(() => {
     checkCameraPermission();
   }, [checkCameraPermission]);
-
   // Resolve token to order
   const resolveToken = useCallback(
     async (tokenToResolve: string) => {
@@ -168,19 +112,15 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
         setError('Please provide a valid token');
         return;
       }
-
       setIsLoading(true);
       setError(null);
-
       try {
         // Mock API call - replace with actual API call
         await new Promise((resolve) => setTimeout(resolve, 1000));
-
         // Mock token validation
         if (tokenToResolve === 'invalid_token') {
           throw new Error('Invalid or expired token');
         }
-
         // Mock successful resolution
         setOrder(MOCK_ORDER);
         if (onOrderResolved) {
@@ -197,11 +137,9 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
     },
     [onOrderResolved]
   );
-
   // Initialize scanner
   const initializeScanner = useCallback(() => {
     if (!scannerElementRef.current || scannerRef.current) return;
-
     const config = {
       fps: 10,
       qrbox: { width: 250, height: 250 },
@@ -209,13 +147,11 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
       disableFlip: false,
       supportedScanTypes: [Html5QrcodeScanner.SCAN_TYPE_CAMERA],
     };
-
     scannerRef.current = new Html5QrcodeScanner(
       'qr-scanner',
       config,
       /* verbose= */ false
     );
-
     scannerRef.current.render(
       (decodedText) => {
         // Success callback
@@ -228,10 +164,8 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
         console.debug('QR scan error:', errorMessage);
       }
     );
-
     setScannerActive(true);
   }, [resolveToken]);
-
   // Stop scanner
   const stopScanner = useCallback(() => {
     if (scannerRef.current) {
@@ -241,14 +175,12 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
     setScannerActive(false);
     setIsScanning(false);
   }, []);
-
   // Start scanning
   const startScanning = () => {
     setIsScanning(true);
     setError(null);
     setTimeout(initializeScanner, 100); // Small delay to ensure DOM is ready
   };
-
   // Handle manual token submission
   const handleManualTokenSubmit = () => {
     if (manualToken.trim()) {
@@ -257,7 +189,6 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
       setShowManualEntry(false);
     }
   };
-
   // Navigate to result entry
   const handleNavigateToResults = () => {
     if (order) {
@@ -268,120 +199,103 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
       }
     }
   };
-
   // Handle back navigation
   const handleBack = () => {
     navigate(-1);
   };
-
   // Auto-resolve token if provided
   useEffect(() => {
     if (token && !order && !isLoading) {
       resolveToken(token);
     }
   }, [token, order, isLoading, resolveToken]);
-
   // Cleanup scanner on unmount
   useEffect(() => {
     return () => {
       stopScanner();
     };
   }, [stopScanner]);
-
   // Get status info
   const getStatusInfo = (status: string) => {
     const statusInfo = LAB_ORDER_STATUSES.find((s) => s.value === status);
     return statusInfo || { value: status, label: status, color: '#666' };
   };
-
   const getPriorityInfo = (priority: string) => {
     const priorityInfo = LAB_ORDER_PRIORITIES.find((p) => p.value === priority);
     return priorityInfo || { value: priority, label: priority, color: '#666' };
   };
-
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={handleBack} sx={{ mr: 2 }}>
+      <div className="">
+        <IconButton onClick={handleBack} className="">
           <ArrowBackIcon />
         </IconButton>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 600 }}>
+        <div>
+          <div  className="">
             Scan Lab Order
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Scan QR code or enter token to access lab order
-          </Typography>
-        </Box>
-      </Box>
-
+          </div>
+        </div>
+      </div>
       {/* Error Alert */}
       {error && (
         <Alert
           severity="error"
-          sx={{ mb: 3 }}
-          action={
+          className=""
+          action={}
             <Button color="inherit" size="small" onClick={() => setError(null)}>
               Dismiss
             </Button>
           }
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <ErrorIcon sx={{ mr: 1 }} />
+          <div className="">
+            <ErrorIcon className="" />
             {error}
-          </Box>
+          </div>
         </Alert>
       )}
-
       {/* Loading State */}
       {isLoading && (
-        <Card sx={{ mb: 3 }}>
+        <Card className="">
           <CardContent>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                py: 4,
-              }}
+            <div
+              className=""
             >
-              <CircularProgress sx={{ mr: 2 }} />
-              <Typography>Resolving token...</Typography>
-            </Box>
+              <Spinner className="" />
+              <div>Resolving token...</div>
+            </div>
           </CardContent>
         </Card>
       )}
-
       {/* Scanner Section */}
       {!order && !isLoading && (
-        <Grid container spacing={3}>
+        <div container spacing={3}>
           {/* QR Scanner */}
-          <Grid item xs={12} md={8}>
+          <div item xs={12} md={8}>
             <Card>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>
+                <div  className="">
                   QR Code Scanner
-                </Typography>
-
+                </div>
                 {!isScanning && (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <div className="">
                     <QrCodeScannerIcon
-                      sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }}
+                      className=""
                     />
-                    <Typography variant="body1" sx={{ mb: 3 }}>
+                    <div  className="">
                       Position the QR code within the camera frame
-                    </Typography>
-
+                    </div>
                     {cameraPermission === 'denied' && (
-                      <Alert severity="warning" sx={{ mb: 2 }}>
+                      <Alert severity="warning" className="">
                         Camera access is required for QR scanning. Please enable
                         camera permissions in your browser settings.
                       </Alert>
                     )}
-
                     <Button
-                      variant="contained"
+                      
                       startIcon={<CameraIcon />}
                       onClick={startScanning}
                       disabled={cameraPermission === 'denied'}
@@ -389,75 +303,59 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
                     >
                       Start Camera
                     </Button>
-                  </Box>
+                  </div>
                 )}
-
                 {isScanning && (
-                  <Box>
-                    <Box
+                  <div>
+                    <div
                       id="qr-scanner"
                       ref={scannerElementRef}
-                      sx={{
-                        '& video': {
-                          width: '100%',
-                          borderRadius: 1,
-                        },
-                      }}
-                    />
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        mt: 2,
-                        gap: 1,
-                      }}
+                      className="" />
+                    <div
+                      className=""
                     >
                       <Button
-                        variant="outlined"
+                        
                         startIcon={<CloseIcon />}
                         onClick={stopScanner}
                       >
                         Stop Scanner
                       </Button>
-                    </Box>
-                  </Box>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
-          </Grid>
-
+          </div>
           {/* Manual Entry */}
-          <Grid item xs={12} md={4}>
+          <div item xs={12} md={4}>
             <Card>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>
+                <div  className="">
                   Manual Entry
-                </Typography>
-                <Typography
-                  variant="body2"
+                </div>
+                <div
+                  
                   color="text.secondary"
-                  sx={{ mb: 3 }}
+                  className=""
                 >
                   Can't scan? Enter the token manually
-                </Typography>
-
-                <TextField
+                </div>
+                <Input
                   fullWidth
                   label="Token"
                   value={manualToken}
                   onChange={(e) => setManualToken(e.target.value)}
                   placeholder="Enter token from requisition"
-                  sx={{ mb: 2 }}
+                  className=""
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
-                      handleManualTokenSubmit();
+                      handleManualTokenSubmit();}
                     }
-                  }}
                 />
-
                 <Button
                   fullWidth
-                  variant="outlined"
+                  
                   onClick={handleManualTokenSubmit}
                   disabled={!manualToken.trim()}
                 >
@@ -465,236 +363,198 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
                 </Button>
               </CardContent>
             </Card>
-
             {/* Instructions */}
-            <Card sx={{ mt: 2 }}>
+            <Card className="">
               <CardContent>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                <div  className="">
                   Instructions
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   1. Scan the QR code on the lab requisition form
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   2. Or manually enter the token printed below the QR code
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   3. Review order details and proceed to result entry
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </div>
+        </div>
       )}
-
       {/* Order Details */}
       {order && !isLoading && (
         <Card>
           <CardContent>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'between',
-                mb: 3,
-              }}
+            <div
+              className=""
             >
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <CheckCircleIcon color="success" sx={{ mr: 1 }} />
-                <Typography variant="h6">Order Found</Typography>
-              </Box>
+              <div className="">
+                <CheckCircleIcon color="success" className="" />
+                <div >Order Found</div>
+              </div>
               <Chip
                 label={getStatusInfo(order.status).label}
-                sx={{
-                  bgcolor: getStatusInfo(order.status).color,
-                  color: 'white',
-                }}
+                className=""
               />
-            </Box>
-
-            <Grid container spacing={3}>
+            </div>
+            <div container spacing={3}>
               {/* Order Information */}
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+              <div item xs={12} md={6}>
+                <div  className="">
                   Order Information
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
+                </div>
+                <div className="">
+                  <div  color="text.secondary">
                     Order ID
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  </div>
+                  <div  className="">
                     {order.orderId}
-                  </Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                </div>
+                <div className="">
+                  <div  color="text.secondary">
                     Priority
-                  </Typography>
+                  </div>
                   <Chip
                     label={getPriorityInfo(order.priority || 'routine').label}
                     size="small"
-                    sx={{
-                      bgcolor: getPriorityInfo(order.priority || 'routine')
-                        .color,
-                      color: 'white',
-                    }}
+                    className=""
                   />
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
+                </div>
+                <div className="">
+                  <div  color="text.secondary">
                     Created
-                  </Typography>
-                  <Typography variant="body1">
+                  </div>
+                  <div >
                     {new Date(order.createdAt).toLocaleDateString()} at{' '}
                     {new Date(order.createdAt).toLocaleTimeString()}
-                  </Typography>
-                </Box>
-              </Grid>
-
+                  </div>
+                </div>
+              </div>
               {/* Patient Information */}
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+              <div item xs={12} md={6}>
+                <div  className="">
                   Patient Information
-                </Typography>
+                </div>
                 {order.patient && (
-                  <Box>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
+                  <div>
+                    <div className="">
+                      <div  color="text.secondary">
                         Name
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      </div>
+                      <div  className="">
                         {order.patient.firstName} {order.patient.lastName}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                    </div>
+                    <div className="">
+                      <div  color="text.secondary">
                         MRN
-                      </Typography>
-                      <Typography variant="body1">
+                      </div>
+                      <div >
                         {order.patient.mrn}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                    </div>
+                    <div className="">
+                      <div  color="text.secondary">
                         Age
-                      </Typography>
-                      <Typography variant="body1">
+                      </div>
+                      <div >
                         {order.patient.age || 'Not specified'}
-                      </Typography>
-                    </Box>
-                  </Box>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </Grid>
-
+              </div>
               {/* Clinical Information */}
-              <Grid item xs={12}>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+              <div item xs={12}>
+                <Separator className="" />
+                <div  className="">
                   Clinical Information
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
+                </div>
+                <div className="">
+                  <div  color="text.secondary">
                     Clinical Indication
-                  </Typography>
-                  <Typography variant="body1">{order.indication}</Typography>
-                </Box>
+                  </div>
+                  <div >{order.indication}</div>
+                </div>
                 {order.notes && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
+                  <div className="">
+                    <div  color="text.secondary">
                       Additional Notes
-                    </Typography>
-                    <Typography variant="body1">{order.notes}</Typography>
-                  </Box>
+                    </div>
+                    <div >{order.notes}</div>
+                  </div>
                 )}
-              </Grid>
-
+              </div>
               {/* Ordered Tests */}
-              <Grid item xs={12}>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+              <div item xs={12}>
+                <Separator className="" />
+                <div  className="">
                   Ordered Tests ({order.tests.length})
-                </Typography>
-                <Paper variant="outlined">
+                </div>
+                <div >
                   {order.tests.map((test, index) => (
-                    <Box key={index}>
-                      <Box sx={{ p: 2 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'between',
-                            mb: 1,
-                          }}
+                    <div key={index}>
+                      <div className="">
+                        <div
+                          className=""
                         >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: 600 }}
+                          <div
+                            
+                            className=""
                           >
                             {test.name}
-                          </Typography>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
+                          </div>
+                          <div className="">
                             <Chip
                               label={test.code}
                               size="small"
-                              variant="outlined"
+                              
                             />
                             <Chip
                               label={test.category}
                               size="small"
                               color="primary"
                             />
-                          </Box>
-                        </Box>
-                        <Typography variant="body2" color="text.secondary">
+                          </div>
+                        </div>
+                        <div  color="text.secondary">
                           Specimen: {test.specimenType} | Reference Range:{' '}
                           {test.refRange}
-                        </Typography>
+                        </div>
                         {test.unit && (
-                          <Typography variant="body2" color="text.secondary">
+                          <div  color="text.secondary">
                             Unit: {test.unit}
-                          </Typography>
+                          </div>
                         )}
-                      </Box>
-                      {index < order.tests.length - 1 && <Divider />}
-                    </Box>
+                      </div>
+                      {index < order.tests.length - 1 && <Separator />}
+                    </div>
                   ))}
-                </Paper>
-              </Grid>
-            </Grid>
-
+                </div>
+              </div>
+            </div>
             {/* Action Buttons */}
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mt: 4,
-                pt: 3,
-                borderTop: 1,
-                borderColor: 'divider',
-              }}
+            <div
+              className=""
             >
               <Button
-                variant="outlined"
+                
                 startIcon={<VisibilityIcon />}
                 onClick={() => window.open(order.requisitionFormUrl, '_blank')}
               >
                 View Requisition
               </Button>
-
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <div className="">
                 <Button
-                  variant="outlined"
-                  onClick={() => {
-                    setOrder(null);
-                    setToken('');
-                    setManualToken('');
-                  }}
-                >
+                  
+                  >
                   Scan Another
                 </Button>
                 <Button
-                  variant="contained"
+                  
                   startIcon={<AssignmentIcon />}
                   onClick={handleNavigateToResults}
                   disabled={order.status === 'completed'}
@@ -703,44 +563,40 @@ const OrderScanPage: React.FC<OrderScanPageProps> = ({
                     ? 'Results Entered'
                     : 'Enter Results'}
                 </Button>
-              </Box>
-            </Box>
-
+              </div>
+            </div>
             {/* Status-specific messages */}
             {order.status === 'requested' && (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                <Typography variant="body2">
+              <Alert severity="info" className="">
+                <div >
                   This order is in "Requested" status. Sample collection may
                   still be pending.
-                </Typography>
+                </div>
               </Alert>
             )}
-
             {order.status === 'completed' && (
-              <Alert severity="success" sx={{ mt: 2 }}>
-                <Typography variant="body2">
+              <Alert severity="success" className="">
+                <div >
                   Results have already been entered for this order. You can view
                   the results but cannot modify them.
-                </Typography>
+                </div>
               </Alert>
             )}
           </CardContent>
         </Card>
       )}
-
       {/* Floating Action Button for Mobile */}
       {isMobile && !order && !isScanning && (
         <Fab
           color="primary"
-          sx={{ position: 'fixed', bottom: 16, right: 16 }}
+          className=""
           onClick={startScanning}
           disabled={cameraPermission === 'denied'}
         >
           <QrCodeScannerIcon />
         </Fab>
       )}
-    </Box>
+    </div>
   );
 };
-
 export default OrderScanPage;

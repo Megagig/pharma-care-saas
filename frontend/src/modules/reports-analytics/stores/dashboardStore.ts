@@ -1,8 +1,4 @@
 // Dashboard Store - Main state management for dashboard UI and navigation
-import { create } from 'zustand';
-import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
-import { ReportType } from '../types/reports';
-
 interface BreadcrumbItem {
     label: string;
     path?: string;
@@ -134,10 +130,10 @@ export const useDashboardStore = create<DashboardState>()(
     devtools(
         subscribeWithSelector(
             persist(
-                (set, get) => ({
+                (set, get) => ({ 
                     // Initial state
                     currentPath: '/reports-analytics',
-                    breadcrumbs: [
+                    breadcrumbs: [ })
                         { label: 'Dashboard', path: '/dashboard' },
                         { label: 'Reports & Analytics' },
                     ],
@@ -204,9 +200,8 @@ export const useDashboardStore = create<DashboardState>()(
 
                     updateLayout: (layoutUpdates: Partial<DashboardLayout>) => {
                         set(
-                            (state) => ({
-                                layout: { ...state.layout, ...layoutUpdates },
-                            }),
+                            (state) => ({  })
+                                layout: { ...state.layout, ...layoutUpdates }, },
                             false,
                             'updateLayout'
                         );
@@ -229,8 +224,8 @@ export const useDashboardStore = create<DashboardState>()(
                         };
 
                         set(
-                            (state) => ({
-                                quickAccessItems: [...state.quickAccessItems, newItem].slice(0, 10), // Limit to 10 items
+                            (state) => ({ 
+                                quickAccessItems: [...state.quickAccessItems, newItem].slice(0, 10), // Limit to 10 items })
                             }),
                             false,
                             'addQuickAccessItem'
@@ -239,8 +234,8 @@ export const useDashboardStore = create<DashboardState>()(
 
                     removeQuickAccessItem: (id: string) => {
                         set(
-                            (state) => ({
-                                quickAccessItems: state.quickAccessItems.filter(item => item.id !== id),
+                            (state) => ({ 
+                                quickAccessItems: state.quickAccessItems.filter(item => item.id !== id)}
                             }),
                             false,
                             'removeQuickAccessItem'
@@ -249,11 +244,10 @@ export const useDashboardStore = create<DashboardState>()(
 
                     updateQuickAccessItem: (id: string, updates: Partial<QuickAccessItem>) => {
                         set(
-                            (state) => ({
-                                quickAccessItems: state.quickAccessItems.map(item =>
+                            (state) => ({ 
+                                quickAccessItems: state.quickAccessItems.map(item => })
                                     item.id === id ? { ...item, ...updates } : item
-                                ),
-                            }),
+                                ), },
                             false,
                             'updateQuickAccessItem'
                         );
@@ -261,13 +255,12 @@ export const useDashboardStore = create<DashboardState>()(
 
                     incrementAccessCount: (reportType: ReportType) => {
                         set(
-                            (state) => ({
+                            (state) => ({ 
                                 quickAccessItems: state.quickAccessItems.map(item =>
-                                    item.reportType === reportType
+                                    item.reportType === reportType })
                                         ? { ...item, accessCount: item.accessCount + 1, lastAccessed: new Date() }
                                         : item
-                                ),
-                            }),
+                                ), },
                             false,
                             'incrementAccessCount'
                         );
@@ -275,10 +268,10 @@ export const useDashboardStore = create<DashboardState>()(
 
                     addToFavorites: (reportType: ReportType) => {
                         set(
-                            (state) => ({
+                            (state) => ({ 
                                 favoriteReports: state.favoriteReports.includes(reportType)
                                     ? state.favoriteReports
-                                    : [...state.favoriteReports, reportType],
+                                    : [...state.favoriteReports, reportType]}
                             }),
                             false,
                             'addToFavorites'
@@ -287,8 +280,8 @@ export const useDashboardStore = create<DashboardState>()(
 
                     removeFromFavorites: (reportType: ReportType) => {
                         set(
-                            (state) => ({
-                                favoriteReports: state.favoriteReports.filter(fav => fav !== reportType),
+                            (state) => ({ 
+                                favoriteReports: state.favoriteReports.filter(fav => fav !== reportType)}
                             }),
                             false,
                             'removeFromFavorites'
@@ -334,9 +327,9 @@ export const useDashboardStore = create<DashboardState>()(
 
                     setAutoRefresh: (enabled: boolean, interval?: number) => {
                         set(
-                            (state) => ({
+                            (state) => ({ 
                                 autoRefreshEnabled: enabled,
-                                autoRefreshInterval: interval || state.autoRefreshInterval,
+                                autoRefreshInterval: interval || state.autoRefreshInterval}
                             }),
                             false,
                             'setAutoRefresh'
@@ -375,12 +368,11 @@ export const useDashboardStore = create<DashboardState>()(
 
                     incrementRetryCount: () => {
                         set(
-                            (state) => ({
+                            (state) => ({ 
                                 errorState: {
                                     ...state.errorState,
-                                    retryCount: state.errorState.retryCount + 1,
-                                },
-                            }),
+                                    retryCount: state.errorState.retryCount + 1}
+                                }, },
                             false,
                             'incrementRetryCount'
                         );
@@ -388,12 +380,11 @@ export const useDashboardStore = create<DashboardState>()(
 
                     resetRetryCount: () => {
                         set(
-                            (state) => ({
+                            (state) => ({ 
                                 errorState: {
                                     ...state.errorState,
-                                    retryCount: 0,
-                                },
-                            }),
+                                    retryCount: 0}
+                                }, },
                             false,
                             'resetRetryCount'
                         );
@@ -449,16 +440,15 @@ export const useDashboardStore = create<DashboardState>()(
                             if (snapshot) {
                                 const parsed = JSON.parse(snapshot);
                                 set(
-                                    (state) => ({
+                                    (state) => ({ 
                                         ...state,
                                         ...parsed,
                                         errorState: {
                                             hasError: false,
                                             errorMessage: null,
                                             errorCode: null,
-                                            retryCount: 0,
-                                        },
-                                    }),
+                                            retryCount: 0}
+                                        }, },
                                     false,
                                     'restoreFromSnapshot'
                                 );
@@ -486,11 +476,10 @@ export const useDashboardStore = create<DashboardState>()(
                             false,
                             'resetToDefaults'
                         );
-                    },
-                }),
+                    }, },
                 {
                     name: 'dashboard-store',
-                    partialize: (state) => ({
+                    partialize: (state) => ({ 
                         // Persist important state across sessions
                         searchQuery: state.searchQuery,
                         selectedCategory: state.selectedCategory,
@@ -500,7 +489,7 @@ export const useDashboardStore = create<DashboardState>()(
                         recentlyViewed: state.recentlyViewed,
                         quickAccessItems: state.quickAccessItems,
                         autoRefreshEnabled: state.autoRefreshEnabled,
-                        autoRefreshInterval: state.autoRefreshInterval,
+                        autoRefreshInterval: state.autoRefreshInterval}
                     }),
                     // Custom storage with error handling
                     storage: {
@@ -536,16 +525,16 @@ export const useDashboardStore = create<DashboardState>()(
 );
 
 // Selectors for better performance and easier usage
-export const useDashboardNavigation = () => useDashboardStore((state) => ({
+export const useDashboardNavigation = () => useDashboardStore((state) => ({ 
     currentPath: state.currentPath,
     breadcrumbs: state.breadcrumbs,
     navigationHistory: state.navigationHistory,
     setCurrentPath: state.setCurrentPath,
     setBreadcrumbs: state.setBreadcrumbs,
-    addToNavigationHistory: state.addToNavigationHistory,
+    addToNavigationHistory: state.addToNavigationHistory}
 }));
 
-export const useDashboardUI = () => useDashboardStore((state) => ({
+export const useDashboardUI = () => useDashboardStore((state) => ({ 
     searchQuery: state.searchQuery,
     selectedCategory: state.selectedCategory,
     layout: state.layout,
@@ -555,30 +544,30 @@ export const useDashboardUI = () => useDashboardStore((state) => ({
     setSelectedCategory: state.setSelectedCategory,
     updateLayout: state.updateLayout,
     setSidebarCollapsed: state.setSidebarCollapsed,
-    setFullscreenMode: state.setFullscreenMode,
+    setFullscreenMode: state.setFullscreenMode}
 }));
 
-export const useDashboardFavorites = () => useDashboardStore((state) => ({
+export const useDashboardFavorites = () => useDashboardStore((state) => ({ 
     favoriteReports: state.favoriteReports,
     addToFavorites: state.addToFavorites,
     removeFromFavorites: state.removeFromFavorites,
     toggleFavorite: state.toggleFavorite,
-    isFavorite: state.isFavorite,
+    isFavorite: state.isFavorite}
 }));
 
-export const useDashboardRecents = () => useDashboardStore((state) => ({
+export const useDashboardRecents = () => useDashboardStore((state) => ({ 
     recentlyViewed: state.recentlyViewed,
     addToRecentlyViewed: state.addToRecentlyViewed,
     clearRecentlyViewed: state.clearRecentlyViewed,
-    getRecentReports: state.getRecentReports,
+    getRecentReports: state.getRecentReports}
 }));
 
-export const useDashboardError = () => useDashboardStore((state) => ({
+export const useDashboardError = () => useDashboardStore((state) => ({ 
     errorState: state.errorState,
     setError: state.setError,
     clearError: state.clearError,
     canRetry: state.canRetry,
-    incrementRetryCount: state.incrementRetryCount,
+    incrementRetryCount: state.incrementRetryCount}
 }));
 
 // Auto-save state snapshot every 30 seconds
@@ -598,9 +587,9 @@ if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
             const currentState = useDashboardStore.getState();
             if (event.data.tabId !== currentState.tabId) {
                 // Merge relevant state from other tabs
-                useDashboardStore.setState({
+                useDashboardStore.setState({ 
                     favoriteReports: event.data.favoriteReports || currentState.favoriteReports,
-                    recentlyViewed: event.data.recentlyViewed || currentState.recentlyViewed,
+                    recentlyViewed: event.data.recentlyViewed || currentState.recentlyViewed}
                 });
             }
         }
@@ -608,21 +597,21 @@ if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
 
     // Subscribe to state changes and broadcast to other tabs
     useDashboardStore.subscribe(
-        (state) => ({
+        (state) => ({ 
             favoriteReports: state.favoriteReports,
             recentlyViewed: state.recentlyViewed,
-            tabId: state.tabId,
+            tabId: state.tabId}
         }),
         (current, previous) => {
             if (
                 current.favoriteReports !== previous.favoriteReports ||
                 current.recentlyViewed !== previous.recentlyViewed
             ) {
-                channel.postMessage({
+                channel.postMessage({ 
                     type: 'state-sync',
                     tabId: current.tabId,
                     favoriteReports: current.favoriteReports,
-                    recentlyViewed: current.recentlyViewed,
+                    recentlyViewed: current.recentlyViewed}
                 });
             }
         }

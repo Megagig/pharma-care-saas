@@ -1,7 +1,3 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { ThemeMode, ResolvedTheme } from './types';
-
 interface ThemeStore {
   theme: ThemeMode;
   resolvedTheme: ResolvedTheme;
@@ -97,7 +93,7 @@ export const useThemeStore = create<ThemeStore>()(
         set({
           systemTheme,
           resolvedTheme,
-          isInitialized: true,
+          isInitialized: true
         });
 
         applyThemeToDOM(resolvedTheme);
@@ -165,15 +161,15 @@ export const useThemeStore = create<ThemeStore>()(
           console.warn('Error syncing theme preference:', error);
         }
       },
-    }),
+    },
     {
       name: 'theme-storage',
       partialize: (state) => ({
         theme: state.theme,
-      }),
+      })
     }
   )
-);
+  );
 
 // Custom hook for easier theme access
 export const useTheme = () => {

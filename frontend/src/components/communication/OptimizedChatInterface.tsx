@@ -1,28 +1,16 @@
-import React, {
   useState,
   useEffect,
   useCallback,
   useMemo,
   useRef,
-} from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  CircularProgress,
-  Alert,
-  Divider,
-} from '@mui/material';
+
 import VirtualizedMessageList from './VirtualizedMessageList';
+
 import MessageInput from './MessageInput';
+
 import ConversationHeader from './ConversationHeader';
-import { useCommunicationStore } from '../../stores/communicationStore';
-import { useResponsive } from '../../hooks/useResponsive';
-import {
-  performanceMonitor,
-  communicationPerformance,
-} from '../../utils/performanceMonitor';
-import { Message, Conversation } from '../../stores/types';
+
+import { Spinner, Alert, Separator } from '@/components/ui/button';
 
 interface OptimizedChatInterfaceProps {
   conversationId: string;
@@ -30,12 +18,11 @@ interface OptimizedChatInterfaceProps {
   showHeader?: boolean;
   onClose?: () => void;
 }
-
-const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
+const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({ 
   conversationId,
   height = '100%',
   showHeader = true,
-  onClose,
+  onClose
 }) => {
   const { isMobile } = useResponsive();
   const [isInitialized, setIsInitialized] = useState(false);
@@ -44,7 +31,6 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
   const renderMeasurement = useRef(
     communicationPerformance.measureMessageRender(conversationId)
   );
-
   // Store selectors with memoization
   const {
     activeConversation,
@@ -62,27 +48,21 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
     markConversationAsRead,
     messagePagination,
   } = useCommunicationStore();
-
   // Memoized conversation messages
   const conversationMessages = useMemo(() => {
     return messages[conversationId] || [];
   }, [messages, conversationId]);
-
   // Memoized pagination info
   const pagination = useMemo(() => {
     return messagePagination[conversationId];
   }, [messagePagination, conversationId]);
-
   // Current user ID
   const currentUserId = localStorage.getItem('userId') || '';
-
   // Initialize conversation
   useEffect(() => {
     const initializeConversation = async () => {
       if (!conversationId || isInitialized) return;
-
       renderMeasurement.current.onRenderStart();
-
       try {
         await performanceMonitor.measureFunction(
           'chat_interface_init',
@@ -98,17 +78,14 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
         renderMeasurement.current.onRenderEnd();
       }
     };
-
     initializeConversation();
   }, [conversationId, fetchMessages, isInitialized]);
-
   // Mark conversation as read when messages change
   useEffect(() => {
     if (conversationMessages.length > 0 && isInitialized) {
       const timer = setTimeout(() => {
         markConversationAsRead(conversationId);
       }, 1000);
-
       return () => clearTimeout(timer);
     }
   }, [
@@ -117,11 +94,9 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
     markConversationAsRead,
     isInitialized,
   ]);
-
   // Handle loading more messages
   const handleLoadMore = useCallback(async () => {
     if (loadingMore || !pagination?.hasMore) return;
-
     setLoadingMore(true);
     try {
       await performanceMonitor.measureFunction(
@@ -137,26 +112,23 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
       setLoadingMore(false);
     }
   }, [conversationId, loadMoreMessages, loadingMore, pagination?.hasMore]);
-
   // Handle sending message
   const handleSendMessage = useCallback(
     async (content: string, attachments?: File[], mentions?: string[]) => {
       if (!content.trim() && (!attachments || attachments.length === 0)) return;
-
       try {
         await performanceMonitor.measureFunction(
           'send_message',
           async () => {
-            await sendMessage({
+            await sendMessage({ 
               conversationId,
               content: {
                 text: content,
                 type: 'text',
-                attachments: attachments || [],
+                attachments: attachments || []}
               },
               mentions,
-              priority: 'normal',
-            });
+              priority: 'normal'}
           },
           { conversationId, hasAttachments: (attachments?.length || 0) > 0 }
         );
@@ -166,14 +138,12 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
     },
     [conversationId, sendMessage]
   );
-
   // Handle message reply
   const handleReply = useCallback((message: Message) => {
     // Focus message input and set reply context
     // This would be implemented based on your MessageInput component
     console.log('Reply to message:', message._id);
   }, []);
-
   // Handle message edit
   const handleEdit = useCallback(
     async (messageId: string, newContent: string) => {
@@ -191,7 +161,6 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
     },
     [editMessage]
   );
-
   // Handle message delete
   const handleDelete = useCallback(
     async (messageId: string) => {
@@ -209,7 +178,6 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
     },
     [deleteMessage]
   );
-
   // Handle reaction
   const handleReaction = useCallback(
     async (messageId: string, emoji: string) => {
@@ -219,7 +187,6 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
         const userReaction = message?.reactions.find(
           (r) => r.userId === currentUserId && r.emoji === emoji
         );
-
         if (userReaction) {
           await removeReaction(messageId, emoji);
         } else {
@@ -231,7 +198,6 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
     },
     [conversationMessages, currentUserId, addReaction, removeReaction]
   );
-
   // Handle thread creation
   const handleCreateThread = useCallback(
     async (messageId: string) => {
@@ -249,13 +215,11 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
     },
     [createThread]
   );
-
   // Handle thread view
   const handleViewThread = useCallback((threadId: string) => {
     // Navigate to thread view
     console.log('View thread:', threadId);
   }, []);
-
   // Calculate container height
   const containerHeight = useMemo(() => {
     if (typeof height === 'number') return height;
@@ -263,56 +227,39 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
     if (height.includes('%')) return '100%';
     return 600; // Default height
   }, [height]);
-
   // Calculate message list height
   const messageListHeight = useMemo(() => {
     let calculatedHeight =
       typeof containerHeight === 'number' ? containerHeight : 600;
-
     if (showHeader) calculatedHeight -= 64; // Header height
     calculatedHeight -= 80; // Message input height
-
     return Math.max(calculatedHeight, 200);
   }, [containerHeight, showHeader]);
-
   if (!isInitialized && messageLoading) {
     return (
-      <Box
-        sx={{
-          height: containerHeight,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
+      <div
+        className=""
       >
-        <CircularProgress />
-        <Typography variant="body2" sx={{ ml: 2 }}>
+        <Spinner />
+        <div  className="">
           Loading conversation...
-        </Typography>
-      </Box>
+        </div>
+      </div>
     );
   }
-
   if (errors.fetchMessages) {
     return (
-      <Box sx={{ height: containerHeight, p: 2 }}>
+      <div className="">
         <Alert severity="error">
           Failed to load conversation: {errors.fetchMessages}
         </Alert>
-      </Box>
+      </div>
     );
   }
-
   return (
-    <Paper
+    <div
       ref={containerRef}
-      sx={{
-        height: containerHeight,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        position: 'relative',
-      }}
+      className=""
       elevation={isMobile ? 0 : 1}
     >
       {/* Conversation Header */}
@@ -323,12 +270,11 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
             onClose={onClose}
             compact={isMobile}
           />
-          <Divider />
+          <Separator />
         </>
       )}
-
       {/* Message List */}
-      <Box sx={{ flex: 1, overflow: 'hidden' }}>
+      <div className="">
         <VirtualizedMessageList
           messages={conversationMessages}
           height={messageListHeight}
@@ -346,10 +292,9 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
           itemSize={isMobile ? 100 : 80}
           overscan={isMobile ? 3 : 5}
         />
-      </Box>
-
+      </div>
       {/* Message Input */}
-      <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
+      <div className="">
         <MessageInput
           onSendMessage={handleSendMessage}
           placeholder="Type a message..."
@@ -357,32 +302,19 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
           conversationId={conversationId}
           compact={isMobile}
         />
-      </Box>
-
+      </div>
       {/* Loading overlay for sending messages */}
       {messageLoading && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            bgcolor: 'rgba(255, 255, 255, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
+        <div
+          className=""
         >
-          <CircularProgress size={24} />
-          <Typography variant="body2" sx={{ ml: 1 }}>
+          <Spinner size={24} />
+          <div  className="">
             Sending...
-          </Typography>
-        </Box>
+          </div>
+        </div>
       )}
-    </Paper>
+    </div>
   );
 };
-
 export default OptimizedChatInterface;

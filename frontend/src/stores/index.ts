@@ -1,5 +1,4 @@
 // Main store composition and exports
-export * from './types';
 export * from './uiStore';
 export * from './themeStore';
 export * from './patientStore';
@@ -8,98 +7,6 @@ export * from './clinicalNoteStore';
 export * from './mtrStore';
 export * from './clinicalInterventionStore';
 export * from './communicationStore';
-export * from './sidebarHooks';
-
-// UI Store hooks now come from dedicated files
-export {
-  // Sidebar hooks
-  useSidebarControls,
-} from './sidebarHooks';
-
-// UI Store exports
-export {
-  // Main UI Store hook
-  useUIStore,
-  // UI Store hooks
-  useNotifications,
-  useLoading,
-  useModals,
-} from './uiStore';
-
-// Theme Store exports
-export { useTheme, useThemeStore } from './themeStore';
-
-export {
-  // Patient Store hooks
-  usePatientStore,
-  usePatients,
-  useSelectedPatient,
-  usePatientFilters,
-  usePatientActions,
-} from './patientStore';
-
-export {
-  // Medication Store hooks
-  useMedicationStore,
-  useMedications,
-  useSelectedMedication,
-  useMedicationFilters,
-  useMedicationActions,
-  useMedicationAnalytics,
-} from './medicationStore';
-
-export {
-  // Clinical Note Store hooks
-  useClinicalNoteStore,
-  useClinicalNotes,
-  useSelectedNote,
-  useClinicalNoteFilters,
-  useClinicalNoteActions,
-  useClinicalNoteAnalytics,
-} from './clinicalNoteStore';
-
-export {
-  // MTR Store hooks
-  useMTRStore,
-  useMTRSession,
-  useMTRNavigation,
-  useMTRPatient,
-  useMTRMedications,
-  useMTRAssessment,
-  useMTRPlan,
-  useMTRInterventions,
-  useMTRFollowUps,
-} from './mtrStore';
-
-export {
-  // Clinical Intervention Store hooks
-  useClinicalInterventionStore,
-  useInterventions,
-  useSelectedIntervention,
-  useInterventionFilters,
-  useInterventionActions,
-  useInterventionWorkflow,
-  useInterventionUI,
-  useInterventionAnalytics,
-} from './clinicalInterventionStore';
-
-export {
-  // Communication Store hooks
-  useCommunicationStore,
-  useCommunicationUtils,
-  useConversations,
-  useActiveConversation,
-  useConversationActions,
-  useMessages,
-  useMessageActions,
-  useRealTimeUpdates,
-  useNotifications as useCommunicationNotifications,
-  useCommunicationUI,
-  useConversationById,
-  useMessageById,
-  useUnreadConversationsCount,
-  useTypingUsersForConversation,
-} from './communicationStore';
 
 // Store reset function for clearing all stores (useful for logout)
 export const resetAllStores = () => {

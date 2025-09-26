@@ -1,42 +1,31 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { vi } from 'vitest';
+// Date picker components are now handled by shadcn/ui
 import MedicationHistory from '../MedicationHistory';
-import { useMTRStore } from '../../stores/mtrStore';
-
 // Mock the MTR store
 vi.mock('../../stores/mtrStore');
 
 // Mock the medication service
-vi.mock('../../services/medicationService', () => ({
+vi.mock('../../services/medicationService', () => ({ 
   medicationService: {
     getMedicationsByPatient: vi.fn().mockResolvedValue({
       success: true,
-      data: [],
+      data: []}
     }),
-  },
-}));
+  }
 
 const mockUseMTRStore = useMTRStore as unknown as vi.MockedFunction<
   typeof useMTRStore
 >;
 
 const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        {children}
-      </LocalizationProvider>
+      {children}
     </QueryClientProvider>
   );
 };
@@ -140,9 +129,9 @@ describe('MedicationHistory Component', () => {
       },
     ];
 
-    mockUseMTRStore.mockReturnValue({
+    mockUseMTRStore.mockReturnValue({ 
       ...mockStoreState,
-      medications: mockMedications,
+      medications: mockMedications}
     });
 
     render(<MedicationHistory {...mockProps} />, { wrapper: createWrapper() });
@@ -151,9 +140,9 @@ describe('MedicationHistory Component', () => {
   });
 
   it('shows validation errors when present', () => {
-    mockUseMTRStore.mockReturnValue({
+    mockUseMTRStore.mockReturnValue({ 
       ...mockStoreState,
-      validateMedications: vi.fn().mockReturnValue(['Drug name is required']),
+      validateMedications: vi.fn().mockReturnValue(['Drug name is required'])}
     });
 
     render(<MedicationHistory {...mockProps} />, { wrapper: createWrapper() });
@@ -198,9 +187,9 @@ describe('MedicationHistory Component', () => {
       },
     ];
 
-    mockUseMTRStore.mockReturnValue({
+    mockUseMTRStore.mockReturnValue({ 
       ...mockStoreState,
-      medications: duplicateMedications,
+      medications: duplicateMedications}
     });
 
     render(<MedicationHistory {...mockProps} />, { wrapper: createWrapper() });
@@ -213,11 +202,9 @@ describe('MedicationHistory Component', () => {
 
   it('calls import medications when import button is clicked', async () => {
     render(<MedicationHistory {...mockProps} />, { wrapper: createWrapper() });
-
-    const importButton = screen.getByRole('button', {
-      name: /import from records/i,
-    });
-    fireEvent.click(importButton);
+const importButton = screen.getByRole('button', {
+      name: /import from records/i}
+fireEvent.click(importButton);
 
     await waitFor(() => {
       expect(mockStoreState.importMedications).toHaveBeenCalledWith(
@@ -227,19 +214,17 @@ describe('MedicationHistory Component', () => {
   });
 
   it('disables continue button when validation fails', () => {
-    mockUseMTRStore.mockReturnValue({
+    mockUseMTRStore.mockReturnValue({ 
       ...mockStoreState,
-      validateMedications: vi.fn().mockReturnValue(['Validation error']),
+      validateMedications: vi.fn().mockReturnValue(['Validation error'])}
     });
 
     const mockOnNext = vi.fn();
     render(<MedicationHistory {...mockProps} onNext={mockOnNext} />, {
-      wrapper: createWrapper(),
-    });
+      wrapper: createWrapper()}
 
     const continueButton = screen.getByRole('button', {
-      name: /continue to assessment/i,
-    });
+      name: /continue to assessment/i}
     expect(continueButton).toBeDisabled();
   });
 
@@ -262,20 +247,18 @@ describe('MedicationHistory Component', () => {
       },
     ];
 
-    mockUseMTRStore.mockReturnValue({
+    mockUseMTRStore.mockReturnValue({ 
       ...mockStoreState,
       medications: validMedications,
-      validateMedications: vi.fn().mockReturnValue([]),
+      validateMedications: vi.fn().mockReturnValue([])}
     });
 
     const mockOnNext = vi.fn();
     render(<MedicationHistory {...mockProps} onNext={mockOnNext} />, {
-      wrapper: createWrapper(),
-    });
+      wrapper: createWrapper()}
 
     const continueButton = screen.getByRole('button', {
-      name: /continue to assessment/i,
-    });
+      name: /continue to assessment/i}
     expect(continueButton).not.toBeDisabled();
   });
 });

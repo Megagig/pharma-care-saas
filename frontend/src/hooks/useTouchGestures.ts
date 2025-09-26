@@ -1,5 +1,3 @@
-import { useRef, useEffect, useCallback } from 'react';
-
 export interface TouchGestureHandlers {
     onSwipeLeft?: () => void;
     onSwipeRight?: () => void;

@@ -1,64 +1,29 @@
 // Pharmacist Intervention Tracking Report Component
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  Divider,
-  Rating,
-} from '@mui/material';
-import {
-  Person,
-  TrendingUp,
-  Assessment,
-  Timeline,
-  Star,
-  CheckCircle,
-  Cancel,
-  Schedule,
-} from '@mui/icons-material';
 import ChartComponent from '../shared/ChartComponent';
-import { ChartData, KPICardData } from '../../types/charts';
-import { PharmacistInterventionFilters } from '../../types/filters';
+
+import { Card, CardContent, Alert, Avatar, Tabs, Separator } from '@/components/ui/button';
 
 interface PharmacistInterventionReportProps {
   filters: PharmacistInterventionFilters;
   onFilterChange?: (filters: PharmacistInterventionFilters) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
-
-const PharmacistInterventionReport: React.FC<
-  PharmacistInterventionReportProps
-> = ({ filters, onFilterChange }) => {
+const PharmacistInterventionReport: React.FC = ({ filters, onFilterChange }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   // Mock data - in real implementation, this would come from API
   const mockData = useMemo(
-    () => ({
+    () => ({ 
       // KPI Cards Data
       kpiData: [
         {
@@ -68,7 +33,7 @@ const PharmacistInterventionReport: React.FC<
           trend: {
             direction: 'up' as const,
             value: 18.5,
-            period: 'vs last month',
+            period: 'vs last month'}
           },
           status: 'success' as const,
           sparkline: [
@@ -113,7 +78,6 @@ const PharmacistInterventionReport: React.FC<
           status: 'info' as const,
         },
       ],
-
       // Intervention Metrics Over Time
       interventionMetricsData: {
         id: 'intervention-metrics',
@@ -309,7 +273,6 @@ const PharmacistInterventionReport: React.FC<
           },
         },
       },
-
       // Intervention Types Effectiveness
       interventionTypesData: {
         id: 'intervention-types',
@@ -466,7 +429,6 @@ const PharmacistInterventionReport: React.FC<
           },
         },
       },
-
       // Time-based Analysis
       timeAnalysisData: {
         id: 'time-analysis',
@@ -601,7 +563,6 @@ const PharmacistInterventionReport: React.FC<
           },
         },
       },
-
       // Top Performing Pharmacists
       topPharmacists: [
         {
@@ -650,7 +611,6 @@ const PharmacistInterventionReport: React.FC<
           specialties: ['Geriatrics', 'Endocrinology'],
         },
       ],
-
       // Performance Comparison
       performanceComparisonData: {
         id: 'performance-comparison',
@@ -824,82 +784,73 @@ const PharmacistInterventionReport: React.FC<
             rules: [],
           },
         },
-      },
-    }),
+      }, },
     []
   );
-
   // Simulate data loading
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [filters]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Alert severity="error" className="">
+        <div  gutterBottom>
           Error Loading Pharmacist Intervention Data
-        </Typography>
-        <Typography variant="body2">{error}</Typography>
+        </div>
+        <div >{error}</div>
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center' }}
+          className=""
         >
-          <Person sx={{ mr: 2, color: 'primary.main' }} />
+          <Person className="" />
           Pharmacist Intervention Tracking
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Comprehensive analysis of pharmacist interventions, acceptance rates,
           and performance metrics.
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div container spacing={3} className="">
         {mockData.kpiData.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <ChartComponent
-              data={{
+              data={{}
                 id: `kpi-${index}`,
                 title: '',
                 type: 'kpi-card',
                 data: [kpi],
                 config: {} as any,
-              }}
               height={180}
               loading={loading}
             />
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          
           scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          className=""
         >
           <Tab
             icon={<TrendingUp />}
@@ -918,25 +869,24 @@ const PharmacistInterventionReport: React.FC<
             iconPosition="start"
           />
         </Tabs>
-
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.interventionMetricsData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Intervention Insights
-                  </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Chip
                       label="Acceptance Rate: Above Target"
@@ -958,59 +908,44 @@ const PharmacistInterventionReport: React.FC<
                       color="success"
                       size="small"
                     />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Pharmacist interventions show consistent improvement across
                     all key metrics. The acceptance rate has exceeded targets,
                     and response times continue to decrease while maintaining
                     high quality standards.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
+          <div container spacing={3}>
+            <div item xs={12} md={8}>
               <ChartComponent
                 data={mockData.interventionTypesData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card sx={{ height: 400 }}>
+            </div>
+            <div item xs={12} md={4}>
+              <Card className="">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Intervention Type Analysis
-                  </Typography>
-
+                  </div>
                   {mockData.interventionTypesData.data.map((item, index) => (
-                    <Box
+                    <div
                       key={index}
-                      sx={{
-                        mb: 2,
-                        pb: 2,
-                        borderBottom:
-                          index < mockData.interventionTypesData.data.length - 1
-                            ? 1
-                            : 0,
-                        borderColor: 'divider',
-                      }}
+                      className=""
                     >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          mb: 1,
-                        }}
+                      <div
+                        className=""
                       >
-                        <Typography variant="body2" fontWeight="medium">
+                        <div  fontWeight="medium">
                           {item.type}
-                        </Typography>
+                        </div>
                         <Chip
                           label={`${item.successRate}%`}
                           color={
@@ -1018,218 +953,171 @@ const PharmacistInterventionReport: React.FC<
                               ? 'success'
                               : item.successRate > 85
                               ? 'warning'
-                              : 'error'
+                              : 'error'}
                           }
                           size="small"
                         />
-                      </Box>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {item.count} interventions • Avg: {item.avgTime}h
                         response
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   ))}
-
-                  <Alert severity="info" size="small" sx={{ mt: 2 }}>
-                    <Typography variant="caption">
+                  <Alert severity="info" size="small" className="">
+                    <div >
                       Drug interaction alerts show the highest success rate due
                       to their critical nature and immediate clinical relevance.
-                    </Typography>
+                    </div>
                   </Alert>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.timeAnalysisData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Peak Hours Analysis
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'primary.light',
-                          borderRadius: 2,
-                          color: 'primary.contrastText',
-                        }}
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Schedule sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">12 PM</Typography>
-                        <Typography variant="caption">Peak Hour</Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'success.light',
-                          borderRadius: 2,
-                          color: 'success.contrastText',
-                        }}
+                        <Schedule className="" />
+                        <div >12 PM</div>
+                        <div >Peak Hour</div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <CheckCircle sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">95 Int.</Typography>
-                        <Typography variant="caption">Max Volume</Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'warning.light',
-                          borderRadius: 2,
-                          color: 'warning.contrastText',
-                        }}
+                        <CheckCircle className="" />
+                        <div >95 Int.</div>
+                        <div >Max Volume</div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <TrendingUp sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">2.8h</Typography>
-                        <Typography variant="caption">Peak Response</Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Box
-                        sx={{
-                          textAlign: 'center',
-                          p: 2,
-                          backgroundColor: 'info.light',
-                          borderRadius: 2,
-                          color: 'info.contrastText',
-                        }}
+                        <TrendingUp className="" />
+                        <div >2.8h</div>
+                        <div >Peak Response</div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Timeline sx={{ fontSize: 32, mb: 1 }} />
-                        <Typography variant="h6">1.2h</Typography>
-                        <Typography variant="caption">Best Response</Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
+                        <Timeline className="" />
+                        <div >1.2h</div>
+                        <div >Best Response</div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
+          <div container spacing={3}>
+            <div item xs={12} md={8}>
               <ChartComponent
                 data={mockData.performanceComparisonData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card sx={{ height: 400 }}>
+            </div>
+            <div item xs={12} md={4}>
+              <Card className="">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Top Performers
-                  </Typography>
-
+                  </div>
                   <List dense>
                     {mockData.topPharmacists
                       .slice(0, 5)
                       .map((pharmacist, index) => (
                         <React.Fragment key={pharmacist.id}>
-                          <ListItem sx={{ px: 0 }}>
-                            <ListItemAvatar>
+                          <div className="">
+                            <divAvatar>
                               <Avatar
-                                sx={{
-                                  bgcolor:
-                                    index === 0
-                                      ? 'gold'
-                                      : index === 1
-                                      ? 'silver'
-                                      : index === 2
-                                      ? '#cd7f32'
-                                      : 'primary.main',
-                                }}
+                                className=""
                               >
                                 {index + 1}
                               </Avatar>
                             </ListItemAvatar>
-                            <ListItemText
+                            <div
                               primary={
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                  }}
+                                <div
+                                  className=""
                                 >
-                                  <Typography
-                                    variant="body2"
+                                  <div
+                                    
                                     fontWeight="medium"
-                                  >
+                                  >}
                                     {pharmacist.name}
-                                  </Typography>
+                                  </div>
                                   <Rating
                                     value={pharmacist.qualityScore}
                                     max={5}
                                     size="small"
                                     readOnly
                                   />
-                                </Box>
+                                </div>
                               }
                               secondary={
-                                <Box>
-                                  <Typography
-                                    variant="caption"
+                                <div>
+                                  <div
+                                    
                                     color="text.secondary"
-                                  >
+                                  >}
                                     {pharmacist.interventions} interventions •{' '}
                                     {pharmacist.acceptanceRate}% acceptance
-                                  </Typography>
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      flexWrap: 'wrap',
-                                      gap: 0.5,
-                                      mt: 0.5,
-                                    }}
+                                  </div>
+                                  <div
+                                    className=""
                                   >
                                     {pharmacist.specialties.map((specialty) => (
                                       <Chip
                                         key={specialty}
                                         label={specialty}
                                         size="small"
-                                        variant="outlined"
+                                        
                                       />
                                     ))}
-                                  </Box>
-                                </Box>
+                                  </div>
+                                </div>
                               }
                             />
-                          </ListItem>
+                          </div>
                           {index < mockData.topPharmacists.length - 1 && (
-                            <Divider />
+                            <Separator />
                           )}
                         </React.Fragment>
                       ))}
                   </List>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default PharmacistInterventionReport;

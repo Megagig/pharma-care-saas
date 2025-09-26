@@ -1,51 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  CardHeader,
-  Switch,
-  Chip,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormControlLabel,
-  Alert,
-  useTheme,
-  useMediaQuery,
-  Breadcrumbs,
-  Link,
-  IconButton,
-  Tooltip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Divider,
-  Skeleton,
-  Grid,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import FlagIcon from '@mui/icons-material/Flag';
-import FilterIcon from '@mui/icons-material/FilterList';
-import SearchIcon from '@mui/icons-material/Search';
-import { Link as RouterLink } from 'react-router-dom';
-
-import { useRBAC } from '../hooks/useRBAC';
+import { Link } from 'react-router-dom';
+import { Button, Input, Label, Card, CardContent, CardHeader, Dialog, DialogContent, DialogTitle, DialogFooter, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Alert, Skeleton, Switch, Separator, Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
+import { Home, Filter, Plus, Flag, Edit, Trash2, Settings, Check, X, AlertTriangle } from 'lucide-react';
 
 // Types
 interface FeatureFlag {
@@ -70,12 +26,12 @@ interface FeatureFlag {
 }
 
 const CATEGORIES = [
-  { value: 'core', label: 'Core Features', color: 'primary' },
-  { value: 'analytics', label: 'Analytics & Reporting', color: 'secondary' },
-  { value: 'collaboration', label: 'Collaboration & Teams', color: 'success' },
-  { value: 'integration', label: 'Integrations', color: 'info' },
-  { value: 'compliance', label: 'Compliance & Regulations', color: 'warning' },
-  { value: 'administration', label: 'Administration', color: 'error' },
+  { value: 'core', label: 'Core Features', color: 'bg-blue-100 text-blue-800' },
+  { value: 'analytics', label: 'Analytics & Reporting', color: 'bg-purple-100 text-purple-800' },
+  { value: 'collaboration', label: 'Collaboration & Teams', color: 'bg-green-100 text-green-800' },
+  { value: 'integration', label: 'Integrations', color: 'bg-indigo-100 text-indigo-800' },
+  { value: 'compliance', label: 'Compliance & Regulations', color: 'bg-yellow-100 text-yellow-800' },
+  { value: 'administration', label: 'Administration', color: 'bg-red-100 text-red-800' },
 ] as const;
 
 const SUBSCRIPTION_TIERS = [
@@ -96,10 +52,6 @@ const USER_ROLES = [
 ];
 
 const FeatureFlagsPage: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { isSuperAdmin } = useRBAC();
-
   // State
   const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -262,14 +214,12 @@ const FeatureFlagsPage: React.FC = () => {
       flag.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       flag.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
       flag.description.toLowerCase().includes(searchQuery.toLowerCase());
-
     const matchesCategory =
       categoryFilter === 'all' || flag.metadata.category === categoryFilter;
     const matchesStatus =
       statusFilter === 'all' ||
       (statusFilter === 'active' && flag.isActive) ||
       (statusFilter === 'inactive' && !flag.isActive);
-
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
@@ -280,748 +230,506 @@ const FeatureFlagsPage: React.FC = () => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical':
-        return 'error';
+        return 'bg-red-100 text-red-800';
       case 'high':
-        return 'warning';
+        return 'bg-yellow-100 text-yellow-800';
       case 'medium':
-        return 'info';
+        return 'bg-blue-100 text-blue-800';
       case 'low':
-        return 'success';
+        return 'bg-green-100 text-green-800';
       default:
-        return 'default';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  if (!isSuperAdmin) {
-    return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
-        <Alert severity="error" sx={{ mt: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Access Denied
-          </Typography>
-          <Typography>
-            You need super admin permissions to access feature flag management.
-          </Typography>
-        </Alert>
-      </Container>
-    );
-  }
-
   return (
-    <Container maxWidth="xl" sx={{ mt: 2, mb: 4 }}>
+    <div className="container mx-auto p-4 max-w-6xl">
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
-          <Link component={RouterLink} to="/dashboard" color="inherit">
+      <div className="mb-6">
+        <div className="flex items-center space-x-2 text-sm mb-4">
+          <Link to="/dashboard" className="text-blue-600 hover:text-blue-800">
             Dashboard
           </Link>
-          <Link component={RouterLink} to="/admin" color="inherit">
+          <span className="text-gray-500">/</span>
+          <Link to="/admin" className="text-blue-600 hover:text-blue-800">
             Admin
           </Link>
-          <Typography color="textPrimary">Feature Flags</Typography>
-        </Breadcrumbs>
-
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="h3" component="h1" gutterBottom>
-              Feature Flags Management
-            </Typography>
-            <Typography variant="body1" color="textSecondary">
-              Control feature access across different subscription tiers and
-              user roles
-            </Typography>
-          </Box>
-
-          {!isMobile && (
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleCreateFlag}
-              size="large"
-            >
-              Create Feature Flag
-            </Button>
-          )}
-        </Box>
-      </Box>
+          <span className="text-gray-500">/</span>
+          <span className="text-gray-700">Feature Flags</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold mb-1">Feature Flags Management</h1>
+            <p className="text-gray-600">
+              Control feature access across different subscription tiers and user roles
+            </p>
+          </div>
+          <Button onClick={handleCreateFlag} className="flex items-center">
+            <Plus className="h-4 w-4 mr-1" />
+            Create Feature Flag
+          </Button>
+        </div>
+      </div>
 
       {/* Filters Card */}
-      <Card sx={{ mb: 4 }}>
-        <CardHeader title="Filters & Search" avatar={<FilterIcon />} />
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center">
+            <Filter className="h-5 w-5 mr-2" />
+            <h2 className="text-lg font-semibold">Filters & Search</h2>
+          </div>
+        </CardHeader>
         <CardContent>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="search">Search</Label>
+              <Input
+                id="search"
                 placeholder="Search features..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  ),
-                }}
+                className="mt-1"
               />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={categoryFilter}
-                  label="Category"
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                >
-                  <MenuItem value="all">All Categories</MenuItem>
+            </div>
+            <div>
+              <Label htmlFor="category">Category</Label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {CATEGORIES.map((category) => (
-                    <MenuItem key={category.value} value={category.value}>
+                    <SelectItem key={category.value} value={category.value}>
                       {category.label}
-                    </MenuItem>
+                    </SelectItem>
                   ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="all">All Status</MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       {/* Feature Flags Table */}
       <Card>
-        <CardHeader
-          title={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <FlagIcon />
-              <Typography variant="h6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Flag className="h-5 w-5 mr-2" />
+              <h2 className="text-lg font-semibold">
                 Feature Flags ({filteredFlags.length})
-              </Typography>
-            </Box>
-          }
-          action={
-            isMobile && (
-              <IconButton onClick={handleCreateFlag}>
-                <AddIcon />
-              </IconButton>
-            )
-          }
-        />
-        <Divider />
-
+              </h2>
+            </div>
+          </div>
+        </CardHeader>
+        <Separator />
         {loading ? (
-          <Box sx={{ p: 3 }}>
+          <div className="p-4 space-y-2">
             {Array.from(new Array(5)).map((_, index) => (
-              <Skeleton
-                key={index}
-                variant="rectangular"
-                height={60}
-                sx={{ mb: 1 }}
-              />
+              <Skeleton key={index} className="h-12 w-full" />
             ))}
-          </Box>
+          </div>
         ) : (
-          <TableContainer>
+          <div className="overflow-x-auto">
             <Table>
-              <TableHead>
+              <TableHeader>
                 <TableRow>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Key</TableCell>
-                  <TableCell>Category</TableCell>
-                  <TableCell>Priority</TableCell>
-                  <TableCell>Tiers</TableCell>
-                  <TableCell align="center">Actions</TableCell>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Key</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Tiers</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
-              </TableHead>
+              </TableHeader>
               <TableBody>
                 {filteredFlags
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((flag) => (
-                    <TableRow key={flag._id} hover>
+                    <TableRow key={flag._id}>
                       <TableCell>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={flag.isActive}
-                              onChange={() => handleToggleFlag(flag)}
-                              color="primary"
-                            />
-                          }
-                          label=""
-                        />
+                        <div className="flex items-center">
+                          <Switch
+                            checked={flag.isActive}
+                            onCheckedChange={() => handleToggleFlag(flag)}
+                          />
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <Box>
-                          <Typography variant="subtitle2" gutterBottom>
-                            {flag.name}
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary">
-                            {flag.description}
-                          </Typography>
-                        </Box>
+                        <div>
+                          <div className="font-medium">{flag.name}</div>
+                          <div className="text-sm text-gray-500">{flag.description}</div>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontFamily: 'monospace',
-                            backgroundColor: 'background.paper',
-                            padding: '2px 6px',
-                            borderRadius: 1,
-                            border: '1px solid',
-                            borderColor: 'divider',
-                          }}
-                        >
-                          {flag.key}
-                        </Typography>
+                        <div className="font-mono text-sm">{flag.key}</div>
                       </TableCell>
                       <TableCell>
-                        <Chip
-                          label={getCategoryInfo(flag.metadata.category).label}
-                          size="sm"
-                          color={
-                            getCategoryInfo(flag.metadata.category).color as
-                              | 'default'
-                              | 'primary'
-                              | 'secondary'
-                              | 'error'
-                              | 'info'
-                              | 'success'
-                              | 'warning'
-                          }
-                          variant="outlined"
-                        />
+                        <Badge className={getCategoryInfo(flag.metadata.category).color}>
+                          {getCategoryInfo(flag.metadata.category).label}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <Chip
-                          label={flag.metadata.priority.toUpperCase()}
-                          size="sm"
-                          color={
-                            getPriorityColor(flag.metadata.priority) as
-                              | 'default'
-                              | 'primary'
-                              | 'secondary'
-                              | 'error'
-                              | 'info'
-                              | 'success'
-                              | 'warning'
-                          }
-                          variant="filled"
-                        />
+                        <Badge className={getPriorityColor(flag.metadata.priority)}>
+                          {flag.metadata.priority.toUpperCase()}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <Box
-                          sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}
-                        >
+                        <div className="flex flex-wrap gap-1">
                           {flag.allowedTiers.slice(0, 2).map((tier) => (
-                            <Chip
-                              key={tier}
-                              label={tier}
-                              size="sm"
-                              variant="outlined"
-                            />
+                            <Badge key={tier} variant="outline" className="text-xs">
+                              {tier}
+                            </Badge>
                           ))}
                           {flag.allowedTiers.length > 2 && (
-                            <Chip
-                              label={`+${flag.allowedTiers.length - 2}`}
-                              size="sm"
-                              variant="outlined"
-                              color="default"
-                            />
+                            <Badge variant="outline" className="text-xs">
+                              +{flag.allowedTiers.length - 2}
+                            </Badge>
                           )}
-                        </Box>
+                        </div>
                       </TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          <Tooltip title="Edit">
-                            <IconButton
-                              size="sm"
-                              onClick={() => handleEditFlag(flag)}
-                            >
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton
-                              size="sm"
-                              color="error"
-                              onClick={() => handleDeleteFlag(flag)}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center space-x-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditFlag(flag)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Edit</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteFlag(flag)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Delete</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
               </TableBody>
             </Table>
-            <TablePagination
-              component="div"
-              count={filteredFlags.length}
-              page={page}
-              onPageChange={(_, newPage) => setPage(newPage)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => {
-                setRowsPerPage(parseInt(e.target.value, 10));
-                setPage(0);
-              }}
-            />
-          </TableContainer>
+          </div>
         )}
       </Card>
 
-      {/* Mobile FAB for Create */}
-      {isMobile && (
-        <Box
-          sx={{
-            position: 'fixed',
-            bottom: 24,
-            right: 24,
-            zIndex: 1000,
-          }}
-        >
-          <Button
-            variant="contained"
-            onClick={handleCreateFlag}
-            sx={{
-              minWidth: 56,
-              height: 56,
-              borderRadius: '50%',
-            }}
-          >
-            <AddIcon />
-          </Button>
-        </Box>
-      )}
-
       {/* Create Feature Flag Dialog */}
-      <Dialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AddIcon />
-            Create New Feature Flag
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Feature Name"
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogTitle>
+            <div className="flex items-center">
+              <Plus className="h-5 w-5 mr-2" />
+              Create New Feature Flag
+            </div>
+          </DialogTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="name">Feature Name</Label>
+              <Input
+                id="name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="mt-1"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Feature Key"
+            </div>
+            <div>
+              <Label htmlFor="key">Feature Key</Label>
+              <Input
+                id="key"
                 value={formData.key}
-                onChange={(e) =>
-                  setFormData({ ...formData, key: e.target.value })
-                }
-                helperText="Unique identifier for the feature"
+                onChange={(e) => setFormData({ ...formData, key: e.target.value })}
+                className="mt-1"
               />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
+              <p className="text-xs text-gray-500 mt-1">Unique identifier for the feature</p>
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="description">Description</Label>
+              <textarea
+                id="description"
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={3}
-                label="Description"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={formData.category}
-                  label="Category"
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
-                >
+            </div>
+            <div>
+              <Label htmlFor="category">Category</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
                   {CATEGORIES.map((category) => (
-                    <MenuItem key={category.value} value={category.value}>
+                    <SelectItem key={category.value} value={category.value}>
                       {category.label}
-                    </MenuItem>
+                    </SelectItem>
                   ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Priority</InputLabel>
-                <Select
-                  value={formData.priority}
-                  label="Priority"
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      priority: e.target.value as
-                        | 'low'
-                        | 'medium'
-                        | 'high'
-                        | 'critical',
-                    })
-                  }
-                >
-                  <MenuItem value="low">Low</MenuItem>
-                  <MenuItem value="medium">Medium</MenuItem>
-                  <MenuItem value="high">High</MenuItem>
-                  <MenuItem value="critical">Critical</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Allowed Tiers</InputLabel>
-                <Select
-                  multiple
-                  value={formData.allowedTiers}
-                  label="Allowed Tiers"
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      allowedTiers: e.target.value as string[],
-                    })
-                  }
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((value) => (
-                        <Chip key={value} label={value} size="sm" />
-                      ))}
-                    </Box>
-                  )}
-                >
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="priority">Priority</Label>
+              <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value as 'low' | 'medium' | 'high' | 'critical' })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="tiers">Allowed Tiers</Label>
+              <Select value={formData.allowedTiers.join(',')} onValueChange={(value) => setFormData({ ...formData, allowedTiers: value.split(',') })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select tiers" />
+                </SelectTrigger>
+                <SelectContent>
                   {SUBSCRIPTION_TIERS.map((tier) => (
-                    <MenuItem key={tier} value={tier}>
+                    <SelectItem key={tier} value={tier}>
                       {tier}
-                    </MenuItem>
+                    </SelectItem>
                   ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Allowed Roles</InputLabel>
-                <Select
-                  multiple
-                  value={formData.allowedRoles}
-                  label="Allowed Roles"
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      allowedRoles: e.target.value as string[],
-                    })
-                  }
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((value) => (
-                        <Chip key={value} label={value} size="sm" />
-                      ))}
-                    </Box>
-                  )}
-                >
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="roles">Allowed Roles</Label>
+              <Select value={formData.allowedRoles.join(',')} onValueChange={(value) => setFormData({ ...formData, allowedRoles: value.split(',') })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select roles" />
+                </SelectTrigger>
+                <SelectContent>
                   {USER_ROLES.map((role) => (
-                    <MenuItem key={role} value={role}>
+                    <SelectItem key={role} value={role}>
                       {role}
-                    </MenuItem>
+                    </SelectItem>
                   ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.isActive}
-                    onChange={(e) =>
-                      setFormData({ ...formData, isActive: e.target.checked })
-                    }
-                  />
-                }
-                label="Active by default"
-              />
-            </Grid>
-          </Grid>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked as boolean })}
+                />
+                <Label>Active by default</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button>
+              Create Feature Flag
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              // Handle create logic here
-              setCreateDialogOpen(false);
-            }}
-          >
-            Create Feature Flag
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Edit Feature Flag Dialog */}
-      <Dialog
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <EditIcon />
-            Edit Feature Flag
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Feature Name"
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogTitle>
+            <div className="flex items-center">
+              <Edit className="h-5 w-5 mr-2" />
+              Edit Feature Flag
+            </div>
+          </DialogTitle>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="edit-name">Feature Name</Label>
+              <Input
+                id="edit-name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="mt-1"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Feature Key"
+            </div>
+            <div>
+              <Label htmlFor="edit-key">Feature Key</Label>
+              <Input
+                id="edit-key"
                 value={formData.key}
-                onChange={(e) =>
-                  setFormData({ ...formData, key: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, key: e.target.value })}
+                className="mt-1"
                 disabled
-                helperText="Key cannot be changed after creation"
               />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
+              <p className="text-xs text-gray-500 mt-1">Key cannot be changed after creation</p>
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <textarea
+                id="edit-description"
+                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={3}
-                label="Description"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={formData.category}
-                  label="Category"
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
-                >
+            </div>
+            <div>
+              <Label htmlFor="edit-category">Category</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
                   {CATEGORIES.map((category) => (
-                    <MenuItem key={category.value} value={category.value}>
+                    <SelectItem key={category.value} value={category.value}>
                       {category.label}
-                    </MenuItem>
+                    </SelectItem>
                   ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Priority</InputLabel>
-                <Select
-                  value={formData.priority}
-                  label="Priority"
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      priority: e.target.value as
-                        | 'low'
-                        | 'medium'
-                        | 'high'
-                        | 'critical',
-                    })
-                  }
-                >
-                  <MenuItem value="low">Low</MenuItem>
-                  <MenuItem value="medium">Medium</MenuItem>
-                  <MenuItem value="high">High</MenuItem>
-                  <MenuItem value="critical">Critical</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Allowed Tiers</InputLabel>
-                <Select
-                  multiple
-                  value={formData.allowedTiers}
-                  label="Allowed Tiers"
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      allowedTiers: e.target.value as string[],
-                    })
-                  }
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((value) => (
-                        <Chip key={value} label={value} size="sm" />
-                      ))}
-                    </Box>
-                  )}
-                >
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-priority">Priority</Label>
+              <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value as 'low' | 'medium' | 'high' | 'critical' })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-tiers">Allowed Tiers</Label>
+              <Select value={formData.allowedTiers.join(',')} onValueChange={(value) => setFormData({ ...formData, allowedTiers: value.split(',') })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select tiers" />
+                </SelectTrigger>
+                <SelectContent>
                   {SUBSCRIPTION_TIERS.map((tier) => (
-                    <MenuItem key={tier} value={tier}>
+                    <SelectItem key={tier} value={tier}>
                       {tier}
-                    </MenuItem>
+                    </SelectItem>
                   ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Allowed Roles</InputLabel>
-                <Select
-                  multiple
-                  value={formData.allowedRoles}
-                  label="Allowed Roles"
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      allowedRoles: e.target.value as string[],
-                    })
-                  }
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((value) => (
-                        <Chip key={value} label={value} size="sm" />
-                      ))}
-                    </Box>
-                  )}
-                >
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-roles">Allowed Roles</Label>
+              <Select value={formData.allowedRoles.join(',')} onValueChange={(value) => setFormData({ ...formData, allowedRoles: value.split(',') })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select roles" />
+                </SelectTrigger>
+                <SelectContent>
                   {USER_ROLES.map((role) => (
-                    <MenuItem key={role} value={role}>
+                    <SelectItem key={role} value={role}>
                       {role}
-                    </MenuItem>
+                    </SelectItem>
                   ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.isActive}
-                    onChange={(e) =>
-                      setFormData({ ...formData, isActive: e.target.checked })
-                    }
-                  />
-                }
-                label="Feature is active"
-              />
-            </Grid>
-          </Grid>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked as boolean })}
+                />
+                <Label>Feature is active</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button>
+              Update Feature Flag
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              // Handle update logic here
-              setEditDialogOpen(false);
-            }}
-          >
-            Update Feature Flag
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              color: 'error.main',
-            }}
-          >
-            <DeleteIcon />
-            Delete Feature Flag
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            This action cannot be undone. This will permanently delete the
-            feature flag and may affect users who depend on it.
-          </Alert>
-          <Typography variant="body1">
-            Are you sure you want to delete the feature flag{' '}
-            <strong>"${selectedFlag?.name}"</strong>?
-          </Typography>
-          <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-            Key: {selectedFlag?.key}
-          </Typography>
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>
+            <div className="flex items-center">
+              <Trash2 className="h-5 w-5 mr-2" />
+              Delete Feature Flag
+            </div>
+          </DialogTitle>
+          <div className="space-y-4">
+            <Alert className="bg-yellow-50 border-yellow-200">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <div className="text-yellow-800">
+                This action cannot be undone. This will permanently delete the feature flag and may affect users who depend on it.
+              </div>
+            </Alert>
+            <div>
+              Are you sure you want to delete the feature flag <strong>"{selectedFlag?.name}"</strong>?
+            </div>
+            <div className="text-sm text-gray-500">
+              Key: {selectedFlag?.key}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (selectedFlag) {
+                  setFeatureFlags((prev) =>
+                    prev.filter((f) => f._id !== selectedFlag._id)
+                  );
+                }
+                setDeleteDialogOpen(false);
+              }}
+            >
+              Delete Forever
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={() => {
-              // Handle delete logic here
-              if (selectedFlag) {
-                setFeatureFlags((prev) =>
-                  prev.filter((f) => f._id !== selectedFlag._id)
-                );
-              }
-              setDeleteDialogOpen(false);
-            }}
-          >
-            Delete Forever
-          </Button>
-        </DialogActions>
       </Dialog>
-    </Container>
+    </div>
   );
 };
 

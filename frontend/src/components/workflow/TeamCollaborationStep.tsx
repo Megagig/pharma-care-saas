@@ -1,71 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Stack,
-  Alert,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  FormHelperText,
-  Grid,
-  Paper,
-  Chip,
-  IconButton,
-  Tooltip,
-  Avatar,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemAvatar,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-  Autocomplete,
-  Badge,
-} from '@mui/material';
-import Timeline from '@mui/lab/Timeline';
-import TimelineItem from '@mui/lab/TimelineItem';
-import TimelineSeparator from '@mui/lab/TimelineSeparator';
-import TimelineConnector from '@mui/lab/TimelineConnector';
-import TimelineContent from '@mui/lab/TimelineContent';
-import TimelineDot from '@mui/lab/TimelineDot';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import PersonIcon from '@mui/icons-material/Person';
-import GroupIcon from '@mui/icons-material/Group';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import EmailIcon from '@mui/icons-material/Email';
-import PhoneIcon from '@mui/icons-material/Phone';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PendingIcon from '@mui/icons-material/Pending';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import CancelIcon from '@mui/icons-material/Cancel';
-import HistoryIcon from '@mui/icons-material/History';
-import TemplateIcon from '@mui/icons-material/Template';
-
-import { useWorkplaceUsers } from '../../queries/useUsers';
-import type { TeamAssignment } from '../../stores/clinicalInterventionStore';
-
+import { Button, Input, Label, Card, CardContent, Badge, Dialog, DialogContent, DialogTitle, Select, Spinner, Alert, Avatar } from '@/components/ui/button';
 // ===============================
 // TYPES AND INTERFACES
 // ===============================
-
 interface TeamCollaborationData {
   assignments: Omit<TeamAssignment, '_id' | 'assignedAt'>[];
 }
-
 interface TeamCollaborationStepProps {
   onNext: (data: TeamCollaborationData) => void;
   onBack?: () => void;
@@ -75,7 +14,6 @@ interface TeamCollaborationStepProps {
   };
   isLoading?: boolean;
 }
-
 interface User {
   _id: string;
   firstName: string;
@@ -85,7 +23,6 @@ interface User {
   phoneNumber?: string;
   avatar?: string;
 }
-
 interface CommunicationTemplate {
   id: string;
   name: string;
@@ -93,11 +30,9 @@ interface CommunicationTemplate {
   content: string;
   role: string;
 }
-
 // ===============================
 // CONSTANTS
 // ===============================
-
 const TEAM_ROLES = {
   pharmacist: {
     label: 'Pharmacist',
@@ -160,7 +95,6 @@ const TEAM_ROLES = {
     ],
   },
 } as const;
-
 const ASSIGNMENT_STATUS = {
   pending: {
     label: 'Pending',
@@ -187,7 +121,6 @@ const ASSIGNMENT_STATUS = {
     color: '#f44336',
   },
 } as const;
-
 const COMMUNICATION_TEMPLATES: CommunicationTemplate[] = [
   {
     id: 'physician_consultation',
@@ -195,15 +128,11 @@ const COMMUNICATION_TEMPLATES: CommunicationTemplate[] = [
     role: 'physician',
     subject: 'Clinical Intervention Consultation Required',
     content: `Dear Dr. [Name],
-
 I am writing to request your consultation regarding a clinical intervention for [Patient Name].
-
 Clinical Issue: [Issue Description]
 Recommended Strategy: [Strategy Details]
 Clinical Rationale: [Rationale]
-
 Your input would be valuable in optimizing this patient's care. Please let me know your thoughts or if you would like to discuss this case further.
-
 Best regards,
 [Your Name]
 Clinical Pharmacist`,
@@ -214,17 +143,12 @@ Clinical Pharmacist`,
     role: 'patient',
     subject: 'Important Information About Your Medications',
     content: `Dear [Patient Name],
-
 We have identified an opportunity to optimize your medication therapy to improve your health outcomes.
-
 What we found: [Issue Description]
 What we recommend: [Strategy Details]
 Why this helps: [Expected Outcome]
-
 Please schedule an appointment with us to discuss these recommendations in detail. We want to ensure you understand and are comfortable with any changes to your medications.
-
 If you have any questions or concerns, please don't hesitate to contact us.
-
 Best regards,
 [Your Name]
 Clinical Pharmacist`,
@@ -235,34 +159,27 @@ Clinical Pharmacist`,
     role: 'nurse',
     subject: 'Enhanced Patient Monitoring Required',
     content: `Dear [Nurse Name],
-
 We have initiated a clinical intervention for [Patient Name] that requires enhanced monitoring.
-
 Intervention Details: [Strategy Details]
 Monitoring Parameters: [Specific Parameters]
 Frequency: [Monitoring Schedule]
 Alert Criteria: [When to Contact Pharmacist/Physician]
-
 Please document all observations and contact me immediately if you notice any concerning changes.
-
 Thank you for your collaboration in ensuring optimal patient care.
-
 Best regards,
 [Your Name]
 Clinical Pharmacist`,
   },
 ];
-
 // ===============================
 // MAIN COMPONENT
 // ===============================
-
-const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
+const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({ 
   onNext,
   onBack,
   onCancel,
   initialData,
-  isLoading = false,
+  isLoading = false
 }) => {
   // State
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
@@ -270,24 +187,20 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
     useState<CommunicationTemplate | null>(null);
   const [showAssignmentHistory, setShowAssignmentHistory] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
-
   // Queries
   const { data: workplaceUsersData, isLoading: loadingUsers } =
     useWorkplaceUsers();
-
   // Available users for assignment
   const availableUsers = useMemo(() => {
     return workplaceUsersData?.data?.users || [];
   }, [workplaceUsersData]);
-
   // Form setup
   const defaultValues: TeamCollaborationData = useMemo(
-    () => ({
-      assignments: initialData?.assignments || [],
+    () => ({ 
+      assignments: initialData?.assignments || []}
     }),
     [initialData?.assignments]
   );
-
   const {
     control,
     handleSubmit,
@@ -295,46 +208,38 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
     setValue,
     formState: { errors, isValid },
     reset,
-  } = useForm<TeamCollaborationData>({
+  } = useForm<TeamCollaborationData>({ 
     defaultValues,
-    mode: 'onChange',
+    mode: 'onChange'}
   });
-
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({ 
     control,
-    name: 'assignments',
+    name: 'assignments'}
   });
-
   const watchedAssignments = watch('assignments');
-
   // ===============================
   // HANDLERS
   // ===============================
-
   const handleAddAssignment = () => {
-    append({
+    append({ 
       userId: '',
       role: 'pharmacist',
       task: '',
       status: 'pending',
-      notes: '',
+      notes: ''}
     });
   };
-
   const handleRemoveAssignment = (index: number) => {
     remove(index);
   };
-
   const handleRoleChange = (index: number, role: string) => {
     setValue(`assignments.${index}.role`, role as TeamAssignment['role']);
-
     // Set default task based on role
     const roleConfig = TEAM_ROLES[role as keyof typeof TEAM_ROLES];
     if (roleConfig && roleConfig.defaultTasks.length > 0) {
       setValue(`assignments.${index}.task`, roleConfig.defaultTasks[0]);
     }
   };
-
   const handleGenerateTemplate = (
     assignment: TeamAssignment,
     templateId: string
@@ -345,84 +250,62 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
       setShowTemplateDialog(true);
     }
   };
-
   const onSubmit = (data: TeamCollaborationData) => {
     onNext(data);
   };
-
   // ===============================
   // RENDER HELPERS
   // ===============================
-
   const renderTeamOverview = () => {
     const roleCount = watchedAssignments.reduce((acc, assignment) => {
       acc[assignment.role] = (acc[assignment.role] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
     return (
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <CardContent>
-          <Typography
-            variant="h6"
+          <div
+            
             gutterBottom
-            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            className=""
           >
             <GroupIcon color="primary" />
             Team Overview
-          </Typography>
-
-          <Grid container spacing={2}>
+          </div>
+          <div container spacing={2}>
             {Object.entries(TEAM_ROLES).map(([roleKey, roleConfig]) => (
-              <Grid item xs={6} sm={4} md={2} key={roleKey}>
-                <Paper
-                  sx={{
-                    p: 2,
-                    textAlign: 'center',
-                    bgcolor: roleCount[roleKey]
-                      ? `${roleConfig.color}10`
-                      : 'grey.50',
-                    border: '1px solid',
-                    borderColor: roleCount[roleKey]
-                      ? roleConfig.color
-                      : 'divider',
-                  }}
-                >
-                  <Typography variant="h4" component="div">
+              <div item xs={6} sm={4} md={2} key={roleKey}>
+                <div
+                  className="">
+                  <div  component="div">
                     {roleConfig.icon}
-                  </Typography>
-                  <Typography variant="body2" fontWeight="medium">
+                  </div>
+                  <div  fontWeight="medium">
                     {roleConfig.label}
-                  </Typography>
+                  </div>
                   <Badge
                     badgeContent={roleCount[roleKey] || 0}
                     color="primary"
-                    sx={{ mt: 1 }}
+                    className=""
                   >
                     <AssignmentIcon color="action" />
                   </Badge>
-                </Paper>
-              </Grid>
+                </div>
+              </div>
             ))}
-          </Grid>
-
-          <Box
-            sx={{
-              mt: 2,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
+          </div>
+          <div
+            className=""
           >
-            <Typography variant="body2" color="text.secondary">
+            <div  color="text.secondary">
               Total assignments: {watchedAssignments.length}
-            </Typography>
-            <Box>
+            </div>
+            <div>
               <Button
                 size="small"
                 startIcon={<HistoryIcon />}
                 onClick={() => setShowAssignmentHistory(true)}
-                sx={{ mr: 1 }}
+                className=""
               >
                 View History
               </Button>
@@ -430,52 +313,44 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
                 size="small"
                 startIcon={<AddIcon />}
                 onClick={handleAddAssignment}
-                variant="outlined"
+                
               >
                 Add Assignment
               </Button>
-            </Box>
-          </Box>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   };
-
   const renderAssignmentForm = (index: number) => {
     const assignment = watchedAssignments[index];
     if (!assignment) return null;
-
     const roleConfig = TEAM_ROLES[assignment.role];
     const statusConfig = ASSIGNMENT_STATUS[assignment.status];
-
     return (
       <Card
         key={index}
-        sx={{ mb: 2, border: '1px solid', borderColor: 'divider' }}
+        className=""
       >
         <CardContent>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              mb: 2,
-            }}
+          <div
+            className=""
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="h6" component="span">
+            <div className="">
+              <div  component="span">
                 {roleConfig.icon}
-              </Typography>
-              <Typography variant="subtitle1" fontWeight="medium">
+              </div>
+              <div  fontWeight="medium">
                 Assignment {index + 1}
-              </Typography>
+              </div>
               <Chip
                 size="small"
                 label={statusConfig.label}
                 color={statusConfig.color as any}
                 icon={statusConfig.icon}
               />
-            </Box>
+            </div>
             <IconButton
               size="small"
               onClick={() => handleRemoveAssignment(index)}
@@ -483,132 +358,119 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
             >
               <DeleteIcon />
             </IconButton>
-          </Box>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+          </div>
+          <div container spacing={2}>
+            <div item xs={12} md={6}>
               <Controller
                 name={`assignments.${index}.role`}
                 control={control}
-                rules={{ required: 'Role is required' }}
-                render={({ field }) => (
-                  <FormControl
+                
+                render={({  field  }) => (
+                  <div
                     fullWidth
                     error={!!errors.assignments?.[index]?.role}
                   >
-                    <InputLabel>Team Role</InputLabel>
+                    <Label>Team Role</Label>
                     <Select
                       {...field}
                       label="Team Role"
-                      onChange={(e) => {
-                        field.onChange(e);
-                        handleRoleChange(index, e.target.value);
-                      }}
-                    >
+                      >
                       {Object.entries(TEAM_ROLES).map(([value, config]) => (
                         <MenuItem key={value} value={value}>
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography variant="body2">
+                            <div >
                               {config.icon}
-                            </Typography>
-                            <Box>
-                              <Typography variant="body1">
+                            </div>
+                            <div>
+                              <div >
                                 {config.label}
-                              </Typography>
-                              <Typography
-                                variant="body2"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 {config.description}
-                              </Typography>
-                            </Box>
-                          </Box>
+                              </div>
+                            </div>
+                          </div>
                         </MenuItem>
                       ))}
                     </Select>
                     {errors.assignments?.[index]?.role && (
-                      <FormHelperText>
+                      <p>
                         {errors.assignments[index]?.role?.message}
-                      </FormHelperText>
+                      </p>
                     )}
-                  </FormControl>
+                  </div>
                 )}
               />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
+            </div>
+            <div item xs={12} md={6}>
               <Controller
                 name={`assignments.${index}.userId`}
                 control={control}
-                rules={{ required: 'Team member selection is required' }}
-                render={({ field }) => (
+                
+                render={({  field  }) => (
                   <Autocomplete
                     {...field}
                     options={availableUsers}
                     getOptionLabel={(option) =>
                       typeof option === 'string'
-                        ? option
+                        ? option}
                         : `${option.firstName} ${option.lastName} (${option.role})`
                     }
                     loading={loadingUsers}
                     onChange={(_, value) => field.onChange(value?._id || '')}
                     value={
                       availableUsers.find((user) => user._id === field.value) ||
-                      null
+                      null}
                     }
                     renderInput={(params) => (
-                      <TextField
+                      <Input}
                         {...params}
                         label="Select Team Member"
                         placeholder="Search by name or role..."
                         error={!!errors.assignments?.[index]?.userId}
                         helperText={
-                          errors.assignments?.[index]?.userId?.message
+                          errors.assignments?.[index]?.userId?.message}
                         }
                         InputProps={{
                           ...params.InputProps,
                           endAdornment: (
-                            <>
-                              {loadingUsers && (
-                                <CircularProgress color="inherit" size={20} />
+                            <>{loadingUsers && (}
+                                <Spinner color="inherit" size={20} />
                               )}
                               {params.InputProps.endAdornment}
                             </>
                           ),
-                        }}
                       />
                     )}
-                    renderOption={(props, option) => (
-                      <Box component="li" {...props}>
-                        <ListItemAvatar>
+                    renderOption={(props, option) => (}
+                      <div component="li" {...props}>
+                        <divAvatar>
                           <Avatar src={option.avatar}>
                             {option.firstName[0]}
                             {option.lastName[0]}
                           </Avatar>
                         </ListItemAvatar>
-                        <Box>
-                          <Typography variant="body1">
+                        <div>
+                          <div >
                             {option.firstName} {option.lastName}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          </div>
+                          <div  color="text.secondary">
                             {option.role} • {option.email}
-                          </Typography>
-                        </Box>
-                      </Box>
+                          </div>
+                        </div>
+                      </div>
                     )}
                     noOptionsText="No team members found"
                   />
                 )}
               />
-            </Grid>
-
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Controller
                 name={`assignments.${index}.task`}
                 control={control}
@@ -616,11 +478,10 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
                   required: 'Task description is required',
                   minLength: {
                     value: 10,
-                    message: 'Task must be at least 10 characters',
+                    message: 'Task must be at least 10 characters',}
                   },
-                }}
-                render={({ field }) => (
-                  <TextField
+                render={({  field  }) => (
+                  <Input
                     {...field}
                     fullWidth
                     multiline
@@ -632,85 +493,73 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
                   />
                 )}
               />
-
               {roleConfig.defaultTasks.length > 0 && (
-                <Box sx={{ mt: 1 }}>
-                  <Typography
-                    variant="body2"
+                <div className="">
+                  <div
+                    
                     color="text.secondary"
-                    sx={{ mb: 1 }}
+                    className=""
                   >
                     Suggested tasks for {roleConfig.label}:
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  </div>
+                  <div className="">
                     {roleConfig.defaultTasks.map((task, taskIndex) => (
                       <Chip
                         key={taskIndex}
                         label={task}
                         size="small"
-                        variant="outlined"
-                        onClick={() =>
+                        
+                        onClick={() =>}
                           setValue(`assignments.${index}.task`, task)
                         }
-                        sx={{ cursor: 'pointer' }}
+                        className=""
                       />
                     ))}
-                  </Box>
-                </Box>
+                  </div>
+                </div>
               )}
-            </Grid>
-
-            <Grid item xs={12} md={6}>
+            </div>
+            <div item xs={12} md={6}>
               <Controller
                 name={`assignments.${index}.status`}
                 control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth>
-                    <InputLabel>Status</InputLabel>
+                render={({  field  }) => (
+                  <div fullWidth>
+                    <Label>Status</Label>
                     <Select {...field} label="Status">
                       {Object.entries(ASSIGNMENT_STATUS).map(
                         ([value, config]) => (
                           <MenuItem key={value} value={value}>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                              }}
+                            <div
+                              className=""
                             >
                               {config.icon}
-                              <Box>
-                                <Typography variant="body1">
+                              <div>
+                                <div >
                                   {config.label}
-                                </Typography>
-                                <Typography
-                                  variant="body2"
+                                </div>
+                                <div
+                                  
                                   color="text.secondary"
                                 >
                                   {config.description}
-                                </Typography>
-                              </Box>
-                            </Box>
+                                </div>
+                              </div>
+                            </div>
                           </MenuItem>
                         )
                       )}
                     </Select>
-                  </FormControl>
+                  </div>
                 )}
               />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 1,
-                  height: '100%',
-                  alignItems: 'flex-end',
-                }}
+            </div>
+            <div item xs={12} md={6}>
+              <div
+                className=""
               >
                 <Button
-                  variant="outlined"
+                  
                   size="small"
                   startIcon={<TemplateIcon />}
                   onClick={() => {
@@ -718,30 +567,28 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
                       (t) => t.role === assignment.role
                     );
                     if (template) {
-                      handleGenerateTemplate(assignment, template.id);
+                      handleGenerateTemplate(assignment, template.id);}
                     }
-                  }}
                   disabled={!assignment.role}
                 >
                   Generate Template
                 </Button>
                 <Button
-                  variant="outlined"
+                  
                   size="small"
                   startIcon={<EmailIcon />}
                   disabled={!assignment.userId}
                 >
                   Send Email
                 </Button>
-              </Box>
-            </Grid>
-
-            <Grid item xs={12}>
+              </div>
+            </div>
+            <div item xs={12}>
               <Controller
                 name={`assignments.${index}.notes`}
                 control={control}
-                render={({ field }) => (
-                  <TextField
+                render={({  field  }) => (
+                  <Input
                     {...field}
                     fullWidth
                     multiline
@@ -751,48 +598,45 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
                   />
                 )}
               />
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   };
-
   const renderAssignmentsList = () => (
-    <Card sx={{ mb: 3 }}>
+    <Card className="">
       <CardContent>
-        <Typography variant="h6" gutterBottom>
+        <div  gutterBottom>
           Team Assignments
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        </div>
+        <div  color="text.secondary" className="">
           Assign specific tasks to team members for collaborative intervention
           implementation
-        </Typography>
-
+        </div>
         {fields.length === 0 ? (
-          <Paper sx={{ p: 3, textAlign: 'center', bgcolor: 'grey.50' }}>
-            <GroupIcon color="disabled" sx={{ fontSize: 48, mb: 1 }} />
-            <Typography variant="body1" color="text.secondary">
+          <div className="">
+            <GroupIcon color="disabled" className="" />
+            <div  color="text.secondary">
               No team assignments yet
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            </div>
+            <div  color="text.secondary" className="">
               Add team members to collaborate on this intervention
-            </Typography>
+            </div>
             <Button
-              variant="outlined"
+              
               startIcon={<AddIcon />}
               onClick={handleAddAssignment}
             >
               Add First Assignment
             </Button>
-          </Paper>
+          </div>
         ) : (
-          <Box>{fields.map((field, index) => renderAssignmentForm(index))}</Box>
+          <div>{fields.map((field, index) => renderAssignmentForm(index))}</div>
         )}
       </CardContent>
     </Card>
   );
-
   const renderTemplateDialog = () => (
     <Dialog
       open={showTemplateDialog}
@@ -803,41 +647,40 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
       <DialogTitle>Communication Template</DialogTitle>
       <DialogContent>
         {selectedTemplate && (
-          <Box>
-            <Typography variant="h6" gutterBottom>
+          <div>
+            <div  gutterBottom>
               {selectedTemplate.name}
-            </Typography>
-            <TextField
+            </div>
+            <Input
               fullWidth
               label="Subject"
               value={selectedTemplate.subject}
               margin="normal"
-              InputProps={{ readOnly: true }}
+              
             />
-            <TextField
+            <Input
               fullWidth
               multiline
               rows={10}
               label="Message Content"
               value={selectedTemplate.content}
               margin="normal"
-              InputProps={{ readOnly: true }}
+              
             />
-            <Alert severity="info" sx={{ mt: 2 }}>
+            <Alert severity="info" className="">
               This template can be customized with specific patient and
               intervention details. Placeholders like [Patient Name] and [Issue
               Description] should be replaced with actual values.
             </Alert>
-          </Box>
+          </div>
         )}
       </DialogContent>
       <DialogActions>
         <Button onClick={() => setShowTemplateDialog(false)}>Close</Button>
-        <Button variant="contained">Copy Template</Button>
+        <Button >Copy Template</Button>
       </DialogActions>
     </Dialog>
   );
-
   const renderAssignmentHistory = () => (
     <Dialog
       open={showAssignmentHistory}
@@ -856,10 +699,10 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
               <TimelineConnector />
             </TimelineSeparator>
             <TimelineContent>
-              <Typography variant="h6" component="span">
+              <div  component="span">
                 Assignment Created
-              </Typography>
-              <Typography>Initial team assignments configured</Typography>
+              </div>
+              <div>Initial team assignments configured</div>
             </TimelineContent>
           </TimelineItem>
           <TimelineItem>
@@ -869,12 +712,12 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
               </TimelineDot>
             </TimelineSeparator>
             <TimelineContent>
-              <Typography variant="h6" component="span">
+              <div  component="span">
                 Notifications Sent
-              </Typography>
-              <Typography>
+              </div>
+              <div>
                 Team members notified of their assignments
-              </Typography>
+              </div>
             </TimelineContent>
           </TimelineItem>
         </Timeline>
@@ -884,49 +727,45 @@ const TeamCollaborationStep: React.FC<TeamCollaborationStepProps> = ({
       </DialogActions>
     </Dialog>
   );
-
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
+    <div>
+      <div  gutterBottom>
         Step 3: Team Collaboration
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+      </div>
+      <div  color="text.secondary" className="">
         Assign tasks to healthcare team members for collaborative intervention
         implementation
-      </Typography>
-
+      </div>
       <form onSubmit={handleSubmit(onSubmit)}>
         {renderTeamOverview()}
         {renderAssignmentsList()}
         {renderTemplateDialog()}
         {renderAssignmentHistory()}
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-          <Box>
+        <div className="">
+          <div>
             <Button
-              variant="outlined"
+              
               onClick={onCancel}
               disabled={isLoading}
-              sx={{ mr: 1 }}
+              className=""
             >
               Cancel
             </Button>
-            <Button variant="outlined" onClick={onBack} disabled={isLoading}>
+            <Button  onClick={onBack} disabled={isLoading}>
               Back
             </Button>
-          </Box>
+          </div>
           <Button
             type="submit"
-            variant="contained"
+            
             disabled={!isValid || isLoading}
-            startIcon={isLoading ? <CircularProgress size={20} /> : null}
+            startIcon={isLoading ? <Spinner size={20} /> : null}
           >
             {isLoading ? 'Processing...' : 'Next: Outcome Tracking'}
           </Button>
-        </Box>
+        </div>
       </form>
-    </Box>
+    </div>
   );
 };
-
 export default TeamCollaborationStep;

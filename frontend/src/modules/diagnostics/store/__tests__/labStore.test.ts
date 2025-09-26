@@ -1,10 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useLabStore } from '../labStore';
-import { labApi } from '../../api/labApi';
-import type { LabOrder, LabResult, LabOrderForm, LabResultForm } from '../../types';
-
 // Mock the API
-vi.mock('../../api/labApi', () => ({
+vi.mock('../../api/labApi', () => ({ 
     labApi: {
         createOrder: vi.fn(),
         getOrders: vi.fn(),
@@ -19,9 +14,8 @@ vi.mock('../../api/labApi', () => ({
         getAbnormalResults: vi.fn(),
         getTestCatalog: vi.fn(),
         importFHIR: vi.fn(),
-        exportOrder: vi.fn(),
-    },
-}));
+        exportOrder: vi.fn()}
+    }
 
 const mockLabOrder: LabOrder = {
     _id: 'order-1',
@@ -94,7 +88,7 @@ const mockResultForm: LabResultForm = {
 describe('LabStore', () => {
     beforeEach(() => {
         // Reset store state
-        useLabStore.setState({
+        useLabStore.setState({ 
             orders: [],
             results: [],
             selectedOrder: null,
@@ -109,7 +103,7 @@ describe('LabStore', () => {
                     page: 1,
                     limit: 20,
                     sortBy: 'orderDate',
-                    sortOrder: 'desc',
+                    sortOrder: 'desc'}
                 },
                 results: {
                     search: '',
@@ -173,8 +167,7 @@ describe('LabStore', () => {
                 fetchAbnormal: null,
                 fhirImport: null,
                 fhirExport: null,
-            },
-        });
+            }
 
         // Clear all mocks
         vi.clearAllMocks();
@@ -289,8 +282,8 @@ describe('LabStore', () => {
             vi.mocked(labApi.updateOrderStatus).mockResolvedValue(mockResponse);
 
             // Add order to state first
-            useLabStore.setState({
-                orders: [mockLabOrder],
+            useLabStore.setState({ 
+                orders: [mockLabOrder]}
             });
 
             const { updateOrderStatus } = useLabStore.getState();
@@ -490,14 +483,14 @@ describe('LabStore', () => {
     describe('selectors', () => {
         beforeEach(() => {
             // Set up test data
-            useLabStore.setState({
+            useLabStore.setState({ 
                 orders: [
                     mockLabOrder,
                     {
                         ...mockLabOrder,
                         _id: 'order-2',
                         status: 'completed',
-                        patientId: 'patient-2',
+                        patientId: 'patient-2'}
                     },
                 ],
                 results: [
@@ -517,8 +510,7 @@ describe('LabStore', () => {
                         interpretation: 'critical',
                         patientId: 'patient-1',
                     },
-                ],
-            });
+                ]}
         });
 
         it('should get orders by patient', () => {
@@ -676,7 +668,7 @@ describe('LabStore', () => {
 
         it('should clear errors', () => {
             // Set some errors
-            useLabStore.setState({
+            useLabStore.setState({ 
                 errors: {
                     createOrder: 'Some error',
                     fetchOrders: 'Another error',
@@ -689,9 +681,8 @@ describe('LabStore', () => {
                     fetchCritical: null,
                     fetchAbnormal: null,
                     fhirImport: null,
-                    fhirExport: null,
-                },
-            });
+                    fhirExport: null}
+                }
 
             const { clearErrors } = useLabStore.getState();
             clearErrors();

@@ -1,5 +1,3 @@
-import { useCallback, useRef, useEffect } from 'react';
-
 interface RequestConfig {
     url: string;
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -197,11 +195,11 @@ export const useConnectionPool = (options: {
 
             const batchUrl = requests[0].url.split('?')[0] + '/batch';
             const batchBody = {
-                requests: requests.map(req => ({
+                requests: requests.map(req => ({ 
                     id: req.id,
                     url: req.url,
                     method: req.method || 'GET',
-                    headers: req.headers,
+                    headers: req.headers}
                 })),
             };
 
@@ -211,8 +209,7 @@ export const useConnectionPool = (options: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify(batchBody),
-            });
+                body: JSON.stringify(batchBody)}
 
             if (!response.ok) {
                 throw new Error(`Batch request failed: ${response.statusText}`);

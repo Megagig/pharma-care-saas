@@ -1,14 +1,4 @@
 // Template Inheritance Service - Handle template inheritance and composition
-import {
-    ReportTemplate,
-    TemplateSection,
-    SectionContent,
-    LayoutConfig,
-    ValidationError
-} from '../types/templates';
-import { ChartConfig } from '../types/charts';
-import { FilterDefinition } from '../types/filters';
-
 export interface TemplateInheritance {
     parentId: string;
     overrides: TemplateOverrides;
@@ -300,12 +290,12 @@ export class TemplateInheritanceService {
                 // Check for conflicts
                 const existingSection = composedTemplate.sections.find(s => s.id === sectionCopy.id);
                 if (existingSection) {
-                    conflicts.push({
+                    conflicts.push({ 
                         type: 'section-id',
                         id: sectionCopy.id,
                         sources: [existingSection.id, source.templateId],
                         resolution: 'use-last',
-                        resolvedValue: sectionCopy,
+                        resolvedValue: sectionCopy}
                     });
                 }
 
@@ -444,12 +434,12 @@ export class TemplateInheritanceService {
         for (const filter of additional) {
             const existingIndex = result.findIndex(f => f.key === filter.key);
             if (existingIndex !== -1) {
-                conflicts.push({
+                conflicts.push({ 
                     type: 'filter-id',
                     id: filter.key,
                     sources: ['base', 'additional'],
                     resolution: 'use-last',
-                    resolvedValue: filter,
+                    resolvedValue: filter}
                 });
                 result[existingIndex] = filter;
             } else {
@@ -473,12 +463,12 @@ export class TemplateInheritanceService {
         for (const chart of additional) {
             const existingIndex = result.findIndex(c => (c as any).id === (chart as any).id);
             if (existingIndex !== -1) {
-                conflicts.push({
+                conflicts.push({ 
                     type: 'chart-id',
                     id: (chart as any).id,
                     sources: ['base', 'additional'],
                     resolution: 'use-last',
-                    resolvedValue: chart,
+                    resolvedValue: chart}
                 });
                 result[existingIndex] = chart;
             } else {

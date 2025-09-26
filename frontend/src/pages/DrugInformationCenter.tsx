@@ -1,16 +1,4 @@
-import React, { useState, useEffect } from 'react';
 import ModulePage from '../components/ModulePage';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import InfoIcon from '@mui/icons-material/Info';
-import {
-  Box,
-  Tabs,
-  Tab,
-  Typography,
-  Paper,
-  Alert,
-  useTheme,
-} from '@mui/material';
 import DrugSearch from '../components/DrugSearch';
 import DrugDetails from '../components/DrugDetails';
 import DrugInteractions from '../components/DrugInteractions';
@@ -18,24 +6,27 @@ import DrugIndications from '../components/DrugIndications';
 import AdverseEffects from '../components/AdverseEffects';
 import Formulary from '../components/Formulary';
 import TherapyPlanManager from '../components/TherapyPlan';
-import { useDrugStore } from '../stores/drugStore';
-import type { ModuleInfo } from '../types/moduleTypes';
+import { Alert } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BookOpen as BookOpenIcon } from 'lucide-react';
 
 const DrugInformationCenter: React.FC = () => {
-  const theme = useTheme();
-  const [activeTab, setActiveTab] = useState(0);
-  const { selectedDrug, searchError, setSearchError } = useDrugStore();
+  const [activeTab, setActiveTab] = React.useState(0);
+
+  // Mock state for demonstration
+  const [selectedDrug, setSelectedDrug] = React.useState<any>(null);
+  const [searchError, setSearchError] = React.useState<string | null>(null);
 
   // Clear any search errors when component mounts
-  useEffect(() => {
+  React.useEffect(() => {
     setSearchError(null);
     return () => {
       // Clean up any resources when component unmounts
       setSearchError(null);
     };
-  }, [setSearchError]);
+  }, []);
 
-  const moduleInfo: ModuleInfo = {
+  const moduleInfo = {
     title: 'Drug Information Center',
     purpose:
       'Access comprehensive drug monographs, clinical guidelines, and formulary information for informed decision-making.',
@@ -64,280 +55,133 @@ const DrugInformationCenter: React.FC = () => {
     estimatedRelease: 'Available now',
   };
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+  const handleTabChange = (value: string) => {
+    setActiveTab(Number(value));
   };
 
-  const handleDrugSelect = () => {
+  const handleDrugSelect = (drug: any) => {
+    setSelectedDrug(drug);
     setActiveTab(1); // Switch to details tab when a drug is selected
   };
 
   return (
     <ModulePage
       moduleInfo={moduleInfo}
-      icon={
-        MenuBookIcon as React.ComponentType<{
-          sx?: React.CSSProperties;
-          fontSize?: string;
-        }>
-      }
+      icon={BookOpenIcon}
       gradient="linear-gradient(135deg, #0047AB 0%, #87CEEB 100%)"
       hideModuleInfo={true}
     >
-      <Box className="drug-information-center" sx={{ width: '100%' }}>
-        <Paper
-          elevation={3}
-          sx={{
-            p: 3,
-            borderRadius: '12px',
-            background:
-              theme.palette.mode === 'dark'
-                ? 'linear-gradient(to bottom, #1e293b, #0f172a)'
-                : 'linear-gradient(to bottom, #f9f9f9, #ffffff)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-          }}
-        >
-          <Typography
-            variant="h5"
-            sx={{
-              mb: 3,
-              fontWeight: 600,
-              color: theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
-              borderBottom: '2px solid',
-              borderBottomColor:
-                theme.palette.mode === 'dark' ? '#374151' : '#e0e0e0',
-              paddingBottom: 2,
-            }}
-          >
-            Drug Information Center
-          </Typography>
+      <div className="drug-information-center">
+        <div className="space-y-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Drug Information Center
+            </h1>
+            <div className="mb-6">
+              <DrugSearch onDrugSelect={handleDrugSelect} />
+            </div>
 
-          <Box sx={{ mb: 4 }}>
-            <DrugSearch onDrugSelect={handleDrugSelect} />
-          </Box>
+            {searchError && (
+              <Alert className="mb-4" variant="destructive">
+                {searchError}
+              </Alert>
+            )}
 
-          {searchError && (
-            <Alert
-              severity="error"
-              sx={{
-                mb: 4,
-                borderRadius: '8px',
-              }}
-            >
-              {searchError}
-            </Alert>
-          )}
+            {selectedDrug ? (
+              <>
+                <div className="mb-6">
+                  <Tabs value={activeTab.toString()} onValueChange={handleTabChange}>
+                    <TabsList className="grid w-full grid-cols-7">
+                      <TabsTrigger value="0">Overview</TabsTrigger>
+                      <TabsTrigger value="1">Monograph</TabsTrigger>
+                      <TabsTrigger value="2">Indications</TabsTrigger>
+                      <TabsTrigger value="3">Interactions</TabsTrigger>
+                      <TabsTrigger value="4">Adverse Effects</TabsTrigger>
+                      <TabsTrigger value="5">Formulary</TabsTrigger>
+                      <TabsTrigger value="6">Therapy Plan</TabsTrigger>
+                    </TabsList>
 
-          {selectedDrug ? (
-            <>
-              <Box
-                sx={{
-                  borderBottom: 1,
-                  borderColor: 'divider',
-                  mt: 3,
-                  backgroundColor:
-                    theme.palette.mode === 'dark' ? '#374151' : '#f5f9ff',
-                  borderRadius: '8px 8px 0 0',
-                  px: 1,
-                }}
-              >
-                <Tabs
-                  value={activeTab}
-                  onChange={handleTabChange}
-                  variant="scrollable"
-                  scrollButtons="auto"
-                  sx={{
-                    '& .MuiTab-root': {
-                      fontWeight: 500,
-                      py: 2,
-                      minHeight: '48px',
-                    },
-                    '& .Mui-selected': {
-                      color:
-                        theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
-                      fontWeight: 600,
-                    },
-                    '& .MuiTabs-indicator': {
-                      backgroundColor:
-                        theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
-                      height: 3,
-                    },
-                  }}
-                >
-                  <Tab label="Overview" />
-                  <Tab label="Monograph" />
-                  <Tab label="Indications" />
-                  <Tab label="Interactions" />
-                  <Tab label="Adverse Effects" />
-                  <Tab label="Formulary" />
-                  <Tab label="Therapy Plan" />
-                </Tabs>
-              </Box>
+                    <TabsContent value="0" className="mt-6">
+                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                          {selectedDrug.name}
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Drug Identifier (RxCUI)
+                            </h3>
+                            <p className="font-medium">{selectedDrug.rxCui}</p>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Available Information
+                            </h3>
+                            <p>Monograph, Interactions, Side Effects, Alternatives</p>
+                          </div>
+                        </div>
+                        <Alert className="mt-4">
+                          Select the tabs above to view detailed drug information
+                          and clinical data
+                        </Alert>
+                      </div>
+                    </TabsContent>
 
-              <Box
-                sx={{
-                  mt: 3,
-                  p: 2,
-                  bgcolor: theme.palette.mode === 'dark' ? '#1e293b' : '#fff',
-                  borderRadius: '0 0 8px 8px',
-                  boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.05)',
-                }}
-              >
-                {activeTab === 0 && (
-                  <Box
-                    sx={{
-                      p: 2,
-                      borderRadius: '8px',
-                      bgcolor:
-                        theme.palette.mode === 'dark' ? '#0f172a' : '#f9fbff',
-                    }}
-                  >
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        mb: 3,
-                        fontWeight: 600,
-                        color:
-                          theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
-                      }}
-                    >
-                      {selectedDrug.name}
-                    </Typography>
+                    <TabsContent value="1" className="mt-6">
+                      <DrugDetails drugId={selectedDrug.rxCui} />
+                    </TabsContent>
 
-                    <Box
-                      sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}
-                    >
-                      <Paper
-                        sx={{
-                          p: 2,
-                          bgcolor:
-                            theme.palette.mode === 'dark'
-                              ? '#374151'
-                              : '#f0f7ff',
-                          borderRadius: '8px',
-                          flex: '1 1 45%',
-                          minWidth: '250px',
-                        }}
-                      >
-                        <Typography
-                          variant="subtitle2"
-                          color="text.secondary"
-                          gutterBottom
-                        >
-                          Drug Identifier (RxCUI)
-                        </Typography>
-                        <Typography variant="body1" fontWeight={500}>
-                          {selectedDrug.rxCui}
-                        </Typography>
-                      </Paper>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          bgcolor:
-                            theme.palette.mode === 'dark'
-                              ? '#374151'
-                              : '#f0f7ff',
-                          borderRadius: '8px',
-                          flex: '1 1 45%',
-                          minWidth: '250px',
-                        }}
-                      >
-                        <Typography
-                          variant="subtitle2"
-                          color="text.secondary"
-                          gutterBottom
-                        >
-                          Available Information
-                        </Typography>
-                        <Typography variant="body1">
-                          Monograph, Interactions, Side Effects, Alternatives
-                        </Typography>
-                      </Paper>
-                    </Box>
+                    <TabsContent value="2" className="mt-6">
+                      <DrugIndications
+                        drugId={selectedDrug.rxCui}
+                        drugName={selectedDrug.name}
+                      />
+                    </TabsContent>
 
-                    <Alert
-                      severity="info"
-                      icon={<InfoIcon />}
-                      sx={{ borderRadius: '8px', fontSize: '1rem' }}
-                    >
-                      Select the tabs above to view detailed drug information
-                      and clinical data
-                    </Alert>
-                  </Box>
-                )}
+                    <TabsContent value="3" className="mt-6">
+                      <DrugInteractions
+                        rxcui={selectedDrug.rxCui}
+                        drugName={selectedDrug.name}
+                      />
+                    </TabsContent>
 
-                {activeTab === 1 && <DrugDetails drugId={selectedDrug.rxCui} />}
-                {activeTab === 2 && (
-                  <DrugIndications
-                    drugId={selectedDrug.rxCui}
-                    drugName={selectedDrug.name}
-                  />
-                )}
-                {activeTab === 3 && (
-                  <DrugInteractions
-                    rxcui={selectedDrug.rxCui}
-                    drugName={selectedDrug.name}
-                  />
-                )}
-                {activeTab === 4 && (
-                  <AdverseEffects
-                    drugId={selectedDrug.rxCui}
-                    drugName={selectedDrug.name}
-                  />
-                )}
-                {activeTab === 5 && (
-                  <Formulary
-                    drugId={selectedDrug.rxCui}
-                    drugName={selectedDrug.name}
-                  />
-                )}
-                {activeTab === 6 && <TherapyPlanManager />}
-              </Box>
-            </>
-          ) : (
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: '300px',
-                bgcolor: theme.palette.mode === 'dark' ? '#0f172a' : '#f9fbff',
-                borderRadius: '8px',
-                p: 4,
-              }}
-            >
-              <MenuBookIcon
-                sx={{
-                  fontSize: '4rem',
-                  color: theme.palette.mode === 'dark' ? '#87CEEB' : '#0047AB',
-                  opacity: 0.6,
-                  mb: 2,
-                }}
-              />
-              <Typography
-                variant="h6"
-                align="center"
-                color="text.secondary"
-                sx={{ maxWidth: '500px', mb: 2 }}
-              >
-                Search for a drug above to view detailed clinical information,
-                interactions, and formulary data
-              </Typography>
-              <Typography
-                variant="body2"
-                align="center"
-                color="text.secondary"
-                sx={{ maxWidth: '600px' }}
-              >
-                Access comprehensive monographs, check drug interactions, review
-                adverse effects, find therapeutic alternatives, and create
-                therapy plans all in one place.
-              </Typography>
-            </Box>
-          )}
-        </Paper>
-      </Box>
+                    <TabsContent value="4" className="mt-6">
+                      <AdverseEffects
+                        drugId={selectedDrug.rxCui}
+                        drugName={selectedDrug.name}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="5" className="mt-6">
+                      <Formulary
+                        drugId={selectedDrug.rxCui}
+                        drugName={selectedDrug.name}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="6" className="mt-6">
+                      <TherapyPlanManager />
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <BookOpenIcon className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Search for a drug above to view detailed clinical information,
+                  interactions, and formulary data
+                </p>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Access comprehensive monographs, check drug interactions, review
+                  adverse effects, find therapeutic alternatives, and create
+                  therapy plans all in one place.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </ModulePage>
   );
 };

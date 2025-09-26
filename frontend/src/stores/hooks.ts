@@ -1,13 +1,4 @@
-import { useCallback, useMemo } from 'react';
-import { useNotifications } from '../context/NotificationContext';
-import { useSidebarControls } from './sidebarHooks';
-
 // Direct imports from store files - using explicit file paths to avoid circular dependencies
-import { usePatientStore } from './patientStore';
-import { useMedicationStore } from './medicationStore';
-import { useClinicalNoteStore } from './clinicalNoteStore';
-import { useAppLoading, useLoadingStore } from './loadingStore';
-
 // Sidebar hooks are now using the dedicated sidebar store
 export const useSidebarOpen = () => {
   const { sidebarOpen } = useSidebarControls();
@@ -42,19 +33,18 @@ export const usePatientManagement = () => {
     async (patientData: Record<string, unknown>) => {
       const result = await createPatient(patientData);
       if (result) {
-        addNotification({
+        addNotification({ 
           type: 'success',
-          title: 'Patient Created',
+          title: 'Patient Created'}
           message: `Patient ${result.firstName} ${result.lastName} has been successfully created.`,
-          duration: 5000,
-        });
+          duration: 5000}
         return result;
       } else {
-        addNotification({
+        addNotification({ 
           type: 'error',
           title: 'Creation Failed',
           message: 'Failed to create patient. Please try again.',
-          duration: 5000,
+          duration: 5000}
         });
         return null;
       }
@@ -66,19 +56,19 @@ export const usePatientManagement = () => {
     async (id: string, patientData: Record<string, unknown>) => {
       const result = await updatePatient(id, patientData);
       if (result) {
-        addNotification({
+        addNotification({ 
           type: 'success',
           title: 'Patient Updated',
           message: `Patient information has been successfully updated.`,
-          duration: 5000,
+          duration: 5000}
         });
         return result;
       } else {
-        addNotification({
+        addNotification({ 
           type: 'error',
           title: 'Update Failed',
           message: 'Failed to update patient. Please try again.',
-          duration: 5000,
+          duration: 5000}
         });
         return null;
       }
@@ -90,19 +80,18 @@ export const usePatientManagement = () => {
     async (id: string, patientName: string) => {
       const result = await deletePatient(id);
       if (result) {
-        addNotification({
+        addNotification({ 
           type: 'success',
-          title: 'Patient Deleted',
+          title: 'Patient Deleted'}
           message: `Patient ${patientName} has been successfully deleted.`,
-          duration: 5000,
-        });
+          duration: 5000}
         return true;
       } else {
-        addNotification({
+        addNotification({ 
           type: 'error',
           title: 'Deletion Failed',
           message: 'Failed to delete patient. Please try again.',
-          duration: 5000,
+          duration: 5000}
         });
         return false;
       }
@@ -155,19 +144,18 @@ export const useMedicationManagement = () => {
     async (medicationData: Record<string, unknown>) => {
       const result = await createMedication(medicationData);
       if (result) {
-        addNotification({
+        addNotification({ 
           type: 'success',
-          title: 'Medication Added',
+          title: 'Medication Added'}
           message: `Medication ${result.name} has been successfully added.`,
-          duration: 5000,
-        });
+          duration: 5000}
         return result;
       } else {
-        addNotification({
+        addNotification({ 
           type: 'error',
           title: 'Addition Failed',
           message: 'Failed to add medication. Please try again.',
-          duration: 5000,
+          duration: 5000}
         });
         return null;
       }
@@ -182,19 +170,18 @@ export const useMedicationManagement = () => {
         status as 'active' | 'inactive' | 'discontinued'
       );
       if (result) {
-        addNotification({
+        addNotification({ 
           type: 'success',
-          title: 'Status Updated',
+          title: 'Status Updated'}
           message: `${medicationName} status changed to ${status}.`,
-          duration: 5000,
-        });
+          duration: 5000}
         return true;
       } else {
-        addNotification({
+        addNotification({ 
           type: 'error',
           title: 'Update Failed',
           message: 'Failed to update medication status. Please try again.',
-          duration: 5000,
+          duration: 5000}
         });
         return false;
       }
@@ -239,19 +226,18 @@ export const useClinicalNoteManagement = () => {
     async (noteData: Record<string, unknown>) => {
       const result = await createNote(noteData);
       if (result) {
-        addNotification({
+        addNotification({ 
           type: 'success',
-          title: 'Note Created',
+          title: 'Note Created'}
           message: `Clinical note "${result.title}" has been successfully created.`,
-          duration: 5000,
-        });
+          duration: 5000}
         return result;
       } else {
-        addNotification({
+        addNotification({ 
           type: 'error',
           title: 'Creation Failed',
           message: 'Failed to create clinical note. Please try again.',
-          duration: 5000,
+          duration: 5000}
         });
         return null;
       }
@@ -265,19 +251,18 @@ export const useClinicalNoteManagement = () => {
       if (result) {
         const note = notes.find((n) => n._id === id);
         const newStatus = note?.isPrivate ? 'public' : 'private';
-        addNotification({
+        addNotification({ 
           type: 'success',
-          title: 'Privacy Updated',
+          title: 'Privacy Updated'}
           message: `Note "${noteTitle}" is now ${newStatus}.`,
-          duration: 5000,
-        });
+          duration: 5000}
         return true;
       } else {
-        addNotification({
+        addNotification({ 
           type: 'error',
           title: 'Update Failed',
           message: 'Failed to update note privacy. Please try again.',
-          duration: 5000,
+          duration: 5000}
         });
         return false;
       }
@@ -417,11 +402,11 @@ export const useErrorManagement = () => {
 
   const displayError = useCallback(
     (title: string, message: string) => {
-      addNotification({
+      addNotification({ 
         type: 'error',
         title,
         message,
-        duration: 8000,
+        duration: 8000}
       });
     },
     [addNotification]

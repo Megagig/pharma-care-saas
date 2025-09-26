@@ -1,49 +1,37 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Container,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
-  Alert,
-  LinearProgress,
-  IconButton,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormControlLabel,
-  Checkbox,
-  Chip,
-  Autocomplete,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Divider,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ErrorBoundary } from '../../../components/common/ErrorBoundary';
-import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
-import { aiDiagnosticService } from '../../../services/aiDiagnosticService';
 import { toast } from 'react-hot-toast';
+import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
+import { usePatientStore } from '../../../../stores/patientStore';
+import { aiDiagnosticService } from '@/services/aiDiagnosticService';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus as AddIcon, ArrowLeft as ArrowBackIcon } from 'lucide-react';
 
-// Use the stable version of patient store
-import { usePatientStore } from '../../../stores';
-
-// Test 2: Add back form validation
 const caseIntakeSchema = z.object({
   patientId: z.string().min(1, 'Patient selection is required'),
   symptoms: z.object({
@@ -100,7 +88,7 @@ const STEPS = [
 
 const CaseIntakePage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeStep, setActiveStep] = useState(0);
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
   const [newPatientData, setNewPatientData] = useState({
@@ -111,7 +99,6 @@ const CaseIntakePage: React.FC = () => {
     email: '',
   });
 
-  // Use individual selectors to avoid object recreation
   const patients = usePatientStore((state) => state.patients);
   const loading = usePatientStore(
     (state) => state.loading.fetchPatients || false
@@ -122,8 +109,7 @@ const CaseIntakePage: React.FC = () => {
   const fetchPatients = usePatientStore((state) => state.fetchPatients);
   const createPatient = usePatientStore((state) => state.createPatient);
 
-  // Fetch patients only once when component mounts (no dependencies to avoid infinite loop)
-  React.useEffect(() => {
+  useEffect(() => {
     const loadPatients = async () => {
       try {
         await fetchPatients();
@@ -132,9 +118,8 @@ const CaseIntakePage: React.FC = () => {
       }
     };
     loadPatients();
-  }, [fetchPatients]); // Empty dependency array - only run once on mount
+  }, [fetchPatients]);
 
-  // Initialize react-hook-form with zod validation
   const methods = useForm<CaseIntakeFormData>({
     resolver: zodResolver(caseIntakeSchema),
     defaultValues: {
@@ -164,41 +149,9 @@ const CaseIntakePage: React.FC = () => {
     setValue,
   } = methods;
 
-  // Handle patient selection from URL parameters (when returning from patients page)
-  React.useEffect(() => {
+  useEffect(() => {
     const selectedPatientId = searchParams.get('selectedPatient');
-    if (selectedPatientId) {
-      if (patients.length > 0) {
-        // Verify the patient exists in the loaded patients
-        const patientExists = patients.some((p) => p._id === selectedPatientId);
-        if (patientExists) {
-          setValue('patientId', selectedPatientId, {
-            shouldValidate: true,
-            shouldDirty: true,
-            shouldTouch: true,
-          });
-
-          // Manually trigger validation for this field
-          setTimeout(() => {
-            trigger('patientId');
-          }, 100);
-
-          // Clear the URL parameter to avoid re-selecting on refresh
-          const newSearchParams = new URLSearchParams(searchParams);
-          newSearchParams.delete('selectedPatient');
-          const newUrl = `/pharmacy/diagnostics/case/new${
-            newSearchParams.toString() ? '?' + newSearchParams.toString() : ''
-          }`;
-          navigate(newUrl, { replace: true });
-        }
-      }
-    }
-  }, [searchParams, setValue, navigate, patients, trigger]);
-
-  // Additional effect to handle the case where URL param exists but patients aren't loaded yet
-  React.useEffect(() => {
-    const selectedPatientId = searchParams.get('selectedPatient');
-    if (selectedPatientId && patients.length > 0 && !watch('patientId')) {
+    if (selectedPatientId && patients.length > 0) {
       const patientExists = patients.some((p) => p._id === selectedPatientId);
       if (patientExists) {
         setValue('patientId', selectedPatientId, {
@@ -206,20 +159,19 @@ const CaseIntakePage: React.FC = () => {
           shouldDirty: true,
           shouldTouch: true,
         });
-
-        // Manually trigger validation for this field
         setTimeout(() => {
           trigger('patientId');
         }, 100);
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('selectedPatient');
+        setSearchParams(newSearchParams);
       }
     }
-  }, [patients, searchParams, setValue, trigger, watch]);
+  }, [searchParams, setValue, patients, trigger, setSearchParams]);
 
   const handleNext = async () => {
-    // Validate current step before proceeding
     const fieldsToValidate = getFieldsForStep(activeStep);
     const isValid = await trigger(fieldsToValidate);
-
     if (isValid && activeStep < STEPS.length - 1) {
       setActiveStep(activeStep + 1);
     }
@@ -240,8 +192,6 @@ const CaseIntakePage: React.FC = () => {
   const onSubmit = async (data: CaseIntakeFormData) => {
     try {
       setSubmitting(true);
-
-      // Show loading message with time expectation
       toast.loading(
         'Submitting case for AI analysis... This may take up to 3 minutes.',
         {
@@ -249,27 +199,19 @@ const CaseIntakePage: React.FC = () => {
         }
       );
 
-      // Debug: Log the form data
-      console.log('Form data received:', data);
-
-      // Transform form data to match API expectations
       const caseData = {
         patientId: data.patientId,
         symptoms: {
           subjective:
-            data.symptoms?.subjective && data.symptoms.subjective.trim()
-              ? data.symptoms.subjective
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter((s) => s.length > 0)
-              : [],
+            data.symptoms?.subjective
+              ?.split(',')
+              .map((s) => s.trim())
+              .filter((s) => s.length > 0) || [],
           objective:
-            data.symptoms?.objective && data.symptoms.objective.trim()
-              ? data.symptoms.objective
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter((s) => s.length > 0)
-              : [],
+            data.symptoms?.objective
+              ?.split(',')
+              .map((s) => s.trim())
+              .filter((s) => s.length > 0) || [],
           duration: data.symptoms?.duration || undefined,
           severity: data.symptoms?.severity || undefined,
           onset: data.symptoms?.onset || undefined,
@@ -297,15 +239,10 @@ const CaseIntakePage: React.FC = () => {
         },
       };
 
-      // Debug: Log the transformed data
-      console.log('Transformed case data:', caseData);
-
-      // Validate required fields before submission
       if (!caseData.patientId) {
         toast.error('Patient selection is required');
         return;
       }
-
       if (
         !caseData.symptoms.subjective ||
         caseData.symptoms.subjective.length === 0
@@ -314,24 +251,14 @@ const CaseIntakePage: React.FC = () => {
         return;
       }
 
-      // Submit case for AI analysis
       const diagnosticCase = await aiDiagnosticService.submitCase(caseData);
-
-      // Dismiss loading toast and show success message
       toast.dismiss('ai-analysis-loading');
       toast.success('AI analysis completed successfully!');
-
-      // Navigate to results page with the completed analysis
       navigate(`/pharmacy/diagnostics/case/${diagnosticCase.id}/results`);
     } catch (error: unknown) {
       console.error('Failed to submit case:', error);
-
-      // Dismiss loading toast
       toast.dismiss('ai-analysis-loading');
-
-      // Extract error message
       let errorMessage = 'Failed to submit case. Please try again.';
-
       if (
         error &&
         typeof error === 'object' &&
@@ -344,55 +271,17 @@ const CaseIntakePage: React.FC = () => {
         'errors' in error.response.data &&
         Array.isArray(error.response.data.errors)
       ) {
-        // Show specific validation errors
         const validationErrors = error.response.data.errors
-          .map((err: unknown) => {
-            if (err && typeof err === 'object') {
-              const errObj = err as {
-                path?: string;
-                param?: string;
-                msg?: string;
-                message?: string;
-              };
-              return `${errObj.path || errObj.param}: ${
-                errObj.msg || errObj.message
-              }`;
-            }
-            return String(err);
-          })
+          .map((err: any) => `${err.path || err.param}: ${err.msg || err.message}`)
           .join(', ');
         errorMessage = `Validation failed: ${validationErrors}`;
       } else if (
         error &&
         typeof error === 'object' &&
-        'response' in error &&
-        error.response &&
-        typeof error.response === 'object' &&
-        'data' in error.response &&
-        error.response.data &&
-        typeof error.response.data === 'object' &&
-        'message' in error.response.data
+        'message' in error
       ) {
-        const responseData = error.response.data as { message: string };
-        errorMessage = responseData.message;
-      } else if (error && typeof error === 'object' && 'message' in error) {
-        const errorObj = error as { message: string };
-        errorMessage = errorObj.message;
+        errorMessage = (error as { message: string }).message;
       }
-
-      // Debug: Log the full error
-      if (
-        error &&
-        typeof error === 'object' &&
-        'response' in error &&
-        error.response &&
-        typeof error.response === 'object' &&
-        'data' in error.response
-      ) {
-        console.error('Full error details:', error.response.data);
-      }
-
-      // Show error toast
       toast.error(errorMessage);
     } finally {
       setSubmitting(false);
@@ -408,11 +297,9 @@ const CaseIntakePage: React.FC = () => {
     ) {
       return;
     }
-
     const createdPatient = await createPatient(newPatientData);
     if (createdPatient) {
-      // Auto-select the newly created patient
-      methods.setValue('patientId', createdPatient._id);
+      setValue('patientId', createdPatient._id);
       setCreatePatientOpen(false);
       setNewPatientData({
         firstName: '',
@@ -435,7 +322,6 @@ const CaseIntakePage: React.FC = () => {
     });
   };
 
-  // Helper function to determine which fields to validate for each step
   const getFieldsForStep = (step: number): (keyof CaseIntakeFormData)[] => {
     switch (step) {
       case 0:
@@ -451,16 +337,13 @@ const CaseIntakePage: React.FC = () => {
     }
   };
 
-  // Helper function to sort patients with selected patient first
   const getSortedPatients = () => {
     const selectedPatientId = watch('patientId');
     if (!selectedPatientId) {
       return patients;
     }
-
     const selectedPatient = patients.find((p) => p._id === selectedPatientId);
     const otherPatients = patients.filter((p) => p._id !== selectedPatientId);
-
     return selectedPatient ? [selectedPatient, ...otherPatients] : patients;
   };
 
@@ -468,59 +351,37 @@ const CaseIntakePage: React.FC = () => {
     switch (activeStep) {
       case 0:
         return (
-          <Box>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 3,
-              }}
-            >
-              <Typography variant="h6">Patient Selection</Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium">Patient Selection</h3>
+              <div className="space-x-2">
                 <Button
-                  size="small"
-                  onClick={() => {
-                    fetchPatients();
-                  }}
+                  size="sm"
+                  variant="outline"
+                  onClick={() => fetchPatients()}
                   disabled={loading}
-                  sx={{ textTransform: 'none' }}
                 >
                   {loading ? 'Loading...' : 'Refresh'}
                 </Button>
                 <Button
-                  size="small"
-                  variant="outlined"
+                  size="sm"
+                  variant="outline"
                   onClick={() => navigate('/patients?for=diagnostics')}
-                  sx={{ textTransform: 'none' }}
                 >
                   Select from Patients
                 </Button>
                 <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<AddIcon />}
+                  size="sm"
                   onClick={() => setCreatePatientOpen(true)}
-                  sx={{ textTransform: 'none' }}
                 >
-                  New Patient
+                  <AddIcon className="mr-2 h-4 w-4" /> New Patient
                 </Button>
-              </Box>
-            </Box>
-
+              </div>
+            </div>
             {watch('patientId') && (
-              <Box
-                sx={{ mb: 2, p: 2, bgcolor: 'success.light', borderRadius: 1 }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  color="success.dark"
-                  sx={{ mb: 1 }}
-                >
-                  Selected Patient:
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              <Alert variant="default">
+                <AlertTitle>Selected Patient</AlertTitle>
+                <AlertDescription>
                   {(() => {
                     const selectedPatient = patients.find(
                       (p) => p._id === watch('patientId')
@@ -529,647 +390,522 @@ const CaseIntakePage: React.FC = () => {
                       ? `${selectedPatient.firstName} ${selectedPatient.lastName} - DOB: ${selectedPatient.dateOfBirth}`
                       : 'Loading patient details...';
                   })()}
-                </Typography>
-              </Box>
+                </AlertDescription>
+              </Alert>
             )}
             <Controller
               name="patientId"
               control={control}
               render={({ field }) => (
-                <FormControl fullWidth error={!!errors.patientId}>
-                  <InputLabel>Select Patient</InputLabel>
-                  <Select {...field} label="Select Patient" disabled={loading}>
-                    {loading ? (
-                      <MenuItem disabled>Loading patients...</MenuItem>
-                    ) : patients.length === 0 ? (
-                      <MenuItem disabled>
-                        No patients found. Please add patients first.
-                      </MenuItem>
-                    ) : (
-                      getSortedPatients().map((patient, index) => (
-                        <MenuItem key={patient._id} value={patient._id}>
-                          {index === 0 &&
-                            watch('patientId') === patient._id && (
-                              <Typography
-                                component="span"
-                                sx={{
-                                  fontWeight: 'bold',
-                                  color: 'primary.main',
-                                  mr: 1,
-                                }}
-                              >
-                                ✓
-                              </Typography>
-                            )}
-                          {patient.firstName} {patient.lastName} - DOB:{' '}
-                          {patient.dateOfBirth}
-                        </MenuItem>
-                      ))
-                    )}
+                <div className="space-y-2">
+                  <Label>Select Patient</Label>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={loading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a patient" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Patients</SelectLabel>
+                        {loading ? (
+                          <SelectItem value="loading" disabled>
+                            Loading patients...
+                          </SelectItem>
+                        ) : patients.length === 0 ? (
+                          <SelectItem value="no-patients" disabled>
+                            No patients found. Please add patients first.
+                          </SelectItem>
+                        ) : (
+                          getSortedPatients().map((patient) => (
+                            <SelectItem key={patient._id} value={patient._id}>
+                              {patient.firstName} {patient.lastName} - DOB:{' '}
+                              {patient.dateOfBirth}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectGroup>
+                    </SelectContent>
                   </Select>
                   {errors.patientId && (
-                    <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                    <p className="text-sm font-medium text-destructive">
                       {errors.patientId.message}
-                    </Typography>
+                    </p>
                   )}
-                  {!loading && patients.length === 0 && (
-                    <Box
-                      sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}
-                    >
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 1 }}
-                      >
-                        No patients found. You can:
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={() => navigate('/patients?for=diagnostics')}
-                          sx={{ textTransform: 'none' }}
-                        >
-                          Select from Patients
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<AddIcon />}
-                          onClick={() => setCreatePatientOpen(true)}
-                          sx={{ textTransform: 'none' }}
-                        >
-                          Create New Patient
-                        </Button>
-                      </Box>
-                    </Box>
-                  )}
-                </FormControl>
+                </div>
               )}
             />
-          </Box>
+          </div>
         );
-
       case 1:
         return (
-          <Box>
-            <Typography variant="h6" sx={{ mb: 3 }}>
-              Symptom Assessment
-            </Typography>
-            <Grid container spacing={3}>
-              {/* Subjective Symptoms - Large text area at top */}
-              <Grid item xs={12}>
-                <Controller
-                  name="symptoms.subjective"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Symptom Assessment</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <Controller
+                name="symptoms.subjective"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label>Subjective Symptoms</Label>
+                    <Input
                       {...field}
-                      fullWidth
-                      multiline
-                      rows={6}
-                      label="Subjective Symptoms"
                       placeholder="Describe the patient's reported symptoms in detail..."
-                      error={!!errors.symptoms?.subjective}
-                      helperText={errors.symptoms?.subjective?.message}
-                      sx={{ mb: 2 }}
                     />
-                  )}
-                />
-              </Grid>
-
-              {/* Objective Symptoms - Free text field below subjective */}
-              <Grid item xs={12}>
-                <Controller
-                  name="symptoms.objective"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
+                    {errors.symptoms?.subjective && (
+                      <p className="text-sm font-medium text-destructive">
+                        {errors.symptoms.subjective.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+              <Controller
+                name="symptoms.objective"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label>Objective Symptoms (Optional)</Label>
+                    <Input
                       {...field}
-                      fullWidth
-                      multiline
-                      rows={4}
-                      label="Objective Symptoms (Optional)"
                       placeholder="Document observable signs and clinical findings..."
-                      error={!!errors.symptoms?.objective}
-                      helperText={errors.symptoms?.objective?.message}
-                      sx={{ mb: 2 }}
                     />
-                  )}
-                />
-              </Grid>
-
-              {/* Duration, Severity, and Onset below */}
-              <Grid item xs={12} md={4}>
+                  </div>
+                )}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Controller
                   name="symptoms.duration"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Duration"
-                      placeholder="e.g., 3 days, 2 weeks"
-                      error={!!errors.symptoms?.duration}
-                      helperText={errors.symptoms?.duration?.message}
-                    />
+                    <div className="space-y-2">
+                      <Label>Duration</Label>
+                      <Input {...field} placeholder="e.g., 3 days, 2 weeks" />
+                    </div>
                   )}
                 />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
                 <Controller
                   name="symptoms.severity"
                   control={control}
                   render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Severity</InputLabel>
-                      <Select {...field} label="Severity">
-                        <MenuItem value="mild">Mild</MenuItem>
-                        <MenuItem value="moderate">Moderate</MenuItem>
-                        <MenuItem value="severe">Severe</MenuItem>
+                    <div className="space-y-2">
+                      <Label>Severity</Label>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select severity" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mild">Mild</SelectItem>
+                          <SelectItem value="moderate">Moderate</SelectItem>
+                          <SelectItem value="severe">Severe</SelectItem>
+                        </SelectContent>
                       </Select>
-                    </FormControl>
+                    </div>
                   )}
                 />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
                 <Controller
                   name="symptoms.onset"
                   control={control}
                   render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Onset</InputLabel>
-                      <Select {...field} label="Onset">
-                        <MenuItem value="acute">Acute</MenuItem>
-                        <MenuItem value="chronic">Chronic</MenuItem>
-                        <MenuItem value="subacute">Subacute</MenuItem>
+                    <div className="space-y-2">
+                      <Label>Onset</Label>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select onset" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="acute">Acute</SelectItem>
+                          <SelectItem value="chronic">Chronic</SelectItem>
+                          <SelectItem value="subacute">Subacute</SelectItem>
+                        </SelectContent>
                       </Select>
-                    </FormControl>
+                    </div>
                   )}
                 />
-              </Grid>
-            </Grid>
-          </Box>
+              </div>
+            </div>
+          </div>
         );
-
       case 2:
         return (
-          <Box>
-            <Typography variant="h6" sx={{ mb: 3 }}>
-              Vital Signs & Medical History
-            </Typography>
-            <Grid container spacing={3}>
-              {/* Medical History at the top */}
-              <Grid item xs={12}>
-                <Controller
-                  name="medicalHistory"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Vital Signs & Medical History</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <Controller
+                name="medicalHistory"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label>Medical History</Label>
+                    <Input
                       {...field}
-                      fullWidth
-                      multiline
-                      rows={6}
-                      label="Medical History"
                       placeholder="Document patient's medical history, past illnesses, surgeries, family history, etc..."
-                      error={!!errors.medicalHistory}
-                      helperText={errors.medicalHistory?.message}
-                      sx={{ mb: 3 }}
                     />
-                  )}
-                />
-              </Grid>
-
-              {/* Allergies as free text */}
-              <Grid item xs={12}>
-                <Controller
-                  name="allergies"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      multiline
-                      rows={2}
-                      label="Allergies (Optional)"
-                      placeholder="List any known allergies..."
-                      sx={{ mb: 3 }}
-                    />
-                  )}
-                />
-              </Grid>
-
-              {/* Vital Signs section */}
-              <Grid item xs={12}>
-                <Typography variant="subtitle1" sx={{ mb: 2 }}>
-                  Vital Signs (Optional)
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="vitals.bloodPressure"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label="Blood Pressure"
-                      placeholder="e.g., 120/80"
-                    />
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="vitals.heartRate"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      type="number"
-                      label="Heart Rate (bpm)"
-                      value={field.value || ''}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value ? Number(e.target.value) : undefined
-                        )
-                      }
-                    />
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="vitals.temperature"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      type="number"
-                      label="Temperature (°C)"
-                      value={field.value || ''}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value ? Number(e.target.value) : undefined
-                        )
-                      }
-                    />
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="vitals.bloodGlucose"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      type="number"
-                      label="Blood Glucose (mg/dL)"
-                      value={field.value || ''}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value ? Number(e.target.value) : undefined
-                        )
-                      }
-                    />
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name="vitals.respiratoryRate"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      type="number"
-                      label="Respiratory Rate (breaths/min)"
-                      value={field.value || ''}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value ? Number(e.target.value) : undefined
-                        )
-                      }
-                    />
-                  )}
-                />
-              </Grid>
-            </Grid>
-          </Box>
+                    {errors.medicalHistory && (
+                      <p className="text-sm font-medium text-destructive">
+                        {errors.medicalHistory.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+              <Controller
+                name="allergies"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label>Allergies (Optional)</Label>
+                    <Input {...field} placeholder="List any known allergies..." />
+                  </div>
+                )}
+              />
+              <div>
+                <h4 className="font-medium">Vital Signs (Optional)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                  <Controller
+                    name="vitals.bloodPressure"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label>Blood Pressure</Label>
+                        <Input {...field} placeholder="e.g., 120/80" />
+                      </div>
+                    )}
+                  />
+                  <Controller
+                    name="vitals.heartRate"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label>Heart Rate (bpm)</Label>
+                        <Input
+                          {...field}
+                          type="number"
+                          value={field.value || ''}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? Number(e.target.value) : undefined
+                            )
+                          }
+                        />
+                      </div>
+                    )}
+                  />
+                  <Controller
+                    name="vitals.temperature"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label>Temperature (°C)</Label>
+                        <Input
+                          {...field}
+                          type="number"
+                          value={field.value || ''}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? Number(e.target.value) : undefined
+                            )
+                          }
+                        />
+                      </div>
+                    )}
+                  />
+                  <Controller
+                    name="vitals.bloodGlucose"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label>Blood Glucose (mg/dL)</Label>
+                        <Input
+                          {...field}
+                          type="number"
+                          value={field.value || ''}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? Number(e.target.value) : undefined
+                            )
+                          }
+                        />
+                      </div>
+                    )}
+                  />
+                  <Controller
+                    name="vitals.respiratoryRate"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label>Respiratory Rate (breaths/min)</Label>
+                        <Input
+                          {...field}
+                          type="number"
+                          value={field.value || ''}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? Number(e.target.value) : undefined
+                            )
+                          }
+                        />
+                      </div>
+                    )}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         );
-
       case 3:
         return (
-          <Box>
-            <Typography variant="h6" sx={{ mb: 3 }}>
-              Review & Submit
-            </Typography>
-
-            <Alert severity="info" sx={{ mb: 3 }}>
-              Please review the information below and provide consent for AI
-              analysis.
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Review & Submit</h3>
+            <Alert>
+              <AlertTitle>Info</AlertTitle>
+              <AlertDescription>
+                Please review the information below and provide consent for AI
+                analysis.
+              </AlertDescription>
             </Alert>
-
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2">Selected Patient:</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {watch('patientId')
-                  ? (() => {
-                      const selectedPatient = patients.find(
-                        (p) => p._id === watch('patientId')
-                      );
-                      return selectedPatient
-                        ? `${selectedPatient.firstName} ${selectedPatient.lastName} - DOB: ${selectedPatient.dateOfBirth}`
-                        : 'Patient not found';
-                    })()
-                  : 'None selected'}
-              </Typography>
-            </Box>
-
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2">Subjective Symptoms:</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {watch('symptoms.subjective') || 'None specified'}
-              </Typography>
-            </Box>
-
-            {watch('symptoms.objective') && (
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2">Objective Symptoms:</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {watch('symptoms.objective')}
-                </Typography>
-              </Box>
-            )}
-
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2">Medical History:</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {watch('medicalHistory') || 'None specified'}
-              </Typography>
-            </Box>
-
+            <div className="space-y-2">
+              <div>
+                <span className="font-medium">Selected Patient:</span>{' '}
+                <span className="text-muted-foreground">
+                  {watch('patientId')
+                    ? (() => {
+                        const selectedPatient = patients.find(
+                          (p) => p._id === watch('patientId')
+                        );
+                        return selectedPatient
+                          ? `${selectedPatient.firstName} ${selectedPatient.lastName} - DOB: ${selectedPatient.dateOfBirth}`
+                          : 'Patient not found';
+                      })()
+                    : 'None selected'}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium">Subjective Symptoms:</span>{' '}
+                <span className="text-muted-foreground">
+                  {watch('symptoms.subjective') || 'None specified'}
+                </span>
+              </div>
+              {watch('symptoms.objective') && (
+                <div>
+                  <span className="font-medium">Objective Symptoms:</span>{' '}
+                  <span className="text-muted-foreground">
+                    {watch('symptoms.objective')}
+                  </span>
+                </div>
+              )}
+              <div>
+                <span className="font-medium">Medical History:</span>{' '}
+                <span className="text-muted-foreground">
+                  {watch('medicalHistory') || 'None specified'}
+                </span>
+              </div>
+            </div>
             <Controller
               name="consent"
               control={control}
               render={({ field }) => (
-                <FormControlLabel
-                  control={
-                    <Checkbox checked={field.value} onChange={field.onChange} />
-                  }
-                  label="I consent to AI-powered diagnostic analysis of this case"
-                />
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="consent"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                  <Label htmlFor="consent">
+                    I consent to AI-powered diagnostic analysis of this case
+                  </Label>
+                </div>
               )}
             />
             {errors.consent && (
-              <Typography variant="caption" color="error" display="block">
+              <p className="text-sm font-medium text-destructive">
                 {errors.consent.message}
-              </Typography>
+              </p>
             )}
-          </Box>
+          </div>
         );
-
       default:
         return null;
     }
   };
 
   return (
-    <ErrorBoundary>
-      <FormProvider {...methods}>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-          {/* Header */}
-          <Box sx={{ mb: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <IconButton onClick={handleCancel} sx={{ mr: 1 }}>
-                <ArrowBackIcon />
-              </IconButton>
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                  New Diagnostic Case
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Complete the form to create a new diagnostic case
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Progress */}
-            <LinearProgress
-              variant="determinate"
-              value={(activeStep / (STEPS.length - 1)) * 100}
-              sx={{ mb: 2 }}
-            />
-          </Box>
-
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Grid container spacing={4}>
-              {/* Stepper */}
-              <Grid item xs={12} md={4}>
-                <Card sx={{ position: 'sticky', top: 24 }}>
-                  <CardContent>
-                    <Stepper
-                      activeStep={activeStep}
-                      orientation="vertical"
-                      sx={{
-                        '& .MuiStepContent-root': {
-                          borderLeft: 'none',
-                          pl: 0,
-                          ml: 2,
-                        },
-                      }}
-                    >
-                      {STEPS.map((step) => (
-                        <Step key={step.label}>
-                          <StepLabel>
-                            <Typography variant="subtitle2">
-                              {step.label}
-                            </Typography>
-                          </StepLabel>
-                          <StepContent>
-                            <Typography variant="body2" color="text.secondary">
-                              {step.description}
-                            </Typography>
-                          </StepContent>
-                        </Step>
-                      ))}
-                    </Stepper>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Step Content */}
-              <Grid item xs={12} md={8}>
-                <Card>
-                  <CardContent sx={{ minHeight: 400 }}>
-                    {renderStepContent()}
-                  </CardContent>
-
-                  {/* Navigation */}
-                  <Box sx={{ p: 3, borderTop: 1, borderColor: 'divider' }}>
-                    <Box
-                      sx={{ display: 'flex', justifyContent: 'space-between' }}
-                    >
-                      <Button onClick={handleBack} disabled={activeStep === 0}>
-                        Back
-                      </Button>
-                      {activeStep === STEPS.length - 1 ? (
-                        <>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              display: 'block',
-                              mb: 1,
-                              fontStyle: 'italic',
-                            }}
-                          >
-                            AI analysis may take up to 60 seconds to complete
-                          </Typography>
-                          <Button
-                            type="submit"
-                            variant="contained"
-                            disabled={!watch('consent') || submitting}
-                          >
-                            {submitting
-                              ? 'Submitting for AI Analysis...'
-                              : 'Submit for AI Analysis'}
-                          </Button>
-                        </>
-                      ) : (
-                        <Button variant="contained" onClick={handleNext}>
-                          Next
-                        </Button>
-                      )}
-                    </Box>
-                  </Box>
-                </Card>
-              </Grid>
-            </Grid>
-          </form>
-        </Container>
-      </FormProvider>
-
-      {/* Create Patient Dialog */}
-      <Dialog
-        open={createPatientOpen}
-        onClose={handleCloseCreatePatient}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Create New Patient</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="First Name"
-                  value={newPatientData.firstName}
-                  onChange={(e) =>
-                    setNewPatientData((prev) => ({
-                      ...prev,
-                      firstName: e.target.value,
-                    }))
-                  }
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Last Name"
-                  value={newPatientData.lastName}
-                  onChange={(e) =>
-                    setNewPatientData((prev) => ({
-                      ...prev,
-                      lastName: e.target.value,
-                    }))
-                  }
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Phone"
-                  value={newPatientData.phone}
-                  onChange={(e) =>
-                    setNewPatientData((prev) => ({
-                      ...prev,
-                      phone: e.target.value,
-                    }))
-                  }
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Date of Birth"
-                  type="date"
-                  value={newPatientData.dateOfBirth}
-                  onChange={(e) =>
-                    setNewPatientData((prev) => ({
-                      ...prev,
-                      dateOfBirth: e.target.value,
-                    }))
-                  }
-                  InputLabelProps={{ shrink: true }}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Email (Optional)"
-                  type="email"
-                  value={newPatientData.email}
-                  onChange={(e) =>
-                    setNewPatientData((prev) => ({
-                      ...prev,
-                      email: e.target.value,
-                    }))
-                  }
-                />
-              </Grid>
-            </Grid>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseCreatePatient}>Cancel</Button>
-          <Button
-            onClick={handleCreatePatient}
-            variant="contained"
-            disabled={
-              createLoading ||
-              !newPatientData.firstName ||
-              !newPatientData.lastName ||
-              !newPatientData.phone ||
-              !newPatientData.dateOfBirth
-            }
-          >
-            {createLoading ? 'Creating...' : 'Create Patient'}
+    <FormProvider {...methods}>
+      <div className="container mx-auto p-4">
+        <div className="flex items-center mb-4">
+          <Button variant="ghost" size="icon" onClick={handleCancel}>
+            <ArrowBackIcon className="h-4 w-4" />
           </Button>
-        </DialogActions>
+          <div className="ml-4">
+            <h2 className="text-xl font-semibold">New Diagnostic Case</h2>
+            <p className="text-sm text-muted-foreground">
+              Complete the form to create a new diagnostic case
+            </p>
+          </div>
+        </div>
+        <Progress value={(activeStep / (STEPS.length - 1)) * 100} className="mb-4" />
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-1">
+              <Card>
+                <CardContent className="p-4">
+                  <nav className="space-y-1">
+                    {STEPS.map((step, index) => (
+                      <button
+                        key={step.label}
+                        type="button"
+                        className={`w-full text-left p-2 rounded-md ${
+                          activeStep === index
+                            ? 'bg-primary text-primary-foreground'
+                            : 'hover:bg-accent'
+                        }`}
+                        onClick={() => setActiveStep(index)}
+                      >
+                        <p className="font-medium">{step.label}</p>
+                        <p className="text-sm text-muted-foreground">{step.description}</p>
+                      </button>
+                    ))}
+                  </nav>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="md:col-span-2">
+              <Card>
+                <CardContent className="p-4">
+                  {renderStepContent()}
+                </CardContent>
+                <div className="p-4 border-t flex justify-between items-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                    disabled={activeStep === 0}
+                  >
+                    Back
+                  </Button>
+                  {activeStep === STEPS.length - 1 ? (
+                    <div className="flex items-center space-x-4">
+                      <p className="text-sm text-muted-foreground">
+                        AI analysis may take up to 60 seconds to complete
+                      </p>
+                      <Button
+                        type="submit"
+                        disabled={!watch('consent') || submitting}
+                      >
+                        {submitting
+                          ? 'Submitting for AI Analysis...'
+                          : 'Submit for AI Analysis'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button type="button" onClick={handleNext}>
+                      Next
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            </div>
+          </div>
+        </form>
+      </div>
+      <Dialog open={createPatientOpen} onOpenChange={setCreatePatientOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Patient</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label>First Name</Label>
+              <Input
+                value={newPatientData.firstName}
+                onChange={(e) =>
+                  setNewPatientData((prev) => ({
+                    ...prev,
+                    firstName: e.target.value,
+                  }))
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Last Name</Label>
+              <Input
+                value={newPatientData.lastName}
+                onChange={(e) =>
+                  setNewPatientData((prev) => ({
+                    ...prev,
+                    lastName: e.target.value,
+                  }))
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input
+                value={newPatientData.phone}
+                onChange={(e) =>
+                  setNewPatientData((prev) => ({
+                    ...prev,
+                    phone: e.target.value,
+                  }))
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Date of Birth</Label>
+              <Input
+                type="date"
+                value={newPatientData.dateOfBirth}
+                onChange={(e) =>
+                  setNewPatientData((prev) => ({
+                    ...prev,
+                    dateOfBirth: e.target.value,
+                  }))
+                }
+                required
+              />
+            </div>
+            <div className="col-span-2 space-y-2">
+              <Label>Email (Optional)</Label>
+              <Input
+                type="email"
+                value={newPatientData.email}
+                onChange={(e) =>
+                  setNewPatientData((prev) => ({
+                    ...prev,
+                    email: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseCreatePatient}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreatePatient}
+              disabled={
+                createLoading ||
+                !newPatientData.firstName ||
+                !newPatientData.lastName ||
+                !newPatientData.phone ||
+                !newPatientData.dateOfBirth
+              }
+            >
+              {createLoading ? 'Creating...' : 'Create Patient'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
-    </ErrorBoundary>
+    </FormProvider>
   );
 };
 
-// Wrap with feature guard
 const CaseIntakePageWithGuard: React.FC = () => (
   <DiagnosticFeatureGuard>
     <CaseIntakePage />

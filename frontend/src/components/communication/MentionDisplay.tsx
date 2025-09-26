@@ -1,6 +1,5 @@
-import React from 'react';
-import { Typography, Chip, Tooltip, Box, Link } from '@mui/material';
-import { Person, LocalPharmacy, MedicalServices } from '@mui/icons-material';
+
+import { Tooltip } from '@/components/ui/button';
 
 interface User {
   _id: string;
@@ -10,7 +9,6 @@ interface User {
   email?: string;
   avatar?: string;
 }
-
 interface MentionDisplayProps {
   text: string;
   mentions?: string[];
@@ -20,22 +18,20 @@ interface MentionDisplayProps {
   color?: string;
   sx?: any;
 }
-
-const MentionDisplay: React.FC<MentionDisplayProps> = ({
+const MentionDisplay: React.FC<MentionDisplayProps> = ({ 
   text,
   mentions = [],
   users = [],
   onMentionClick,
   variant = 'body2',
   color,
-  sx,
+  sx
 }) => {
   // Create a map of user IDs to user data for quick lookup
   const userMap = users.reduce((acc, user) => {
     acc[user._id] = user;
     return acc;
   }, {} as Record<string, User>);
-
   // Get role color
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -49,35 +45,30 @@ const MentionDisplay: React.FC<MentionDisplayProps> = ({
         return 'text.primary';
     }
   };
-
   // Get role icon
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'doctor':
-        return <MedicalServices sx={{ fontSize: 14 }} />;
+        return <MedicalServices className="" />;
       case 'pharmacist':
-        return <LocalPharmacy sx={{ fontSize: 14 }} />;
+        return <LocalPharmacy className="" />;
       case 'patient':
-        return <Person sx={{ fontSize: 14 }} />;
+        return <Person className="" />;
       default:
-        return <Person sx={{ fontSize: 14 }} />;
+        return <Person className="" />;
     }
   };
-
   // Parse text and render with mentions highlighted
   const renderTextWithMentions = () => {
     if (!text) return null;
-
     // Regex to match mention format: @[Display Name](userId)
     const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
     const parts = [];
     let lastIndex = 0;
     let match;
-
     while ((match = mentionRegex.exec(text)) !== null) {
       const [fullMatch, displayName, userId] = match;
       const user = userMap[userId];
-
       // Add text before mention
       if (match.index > lastIndex) {
         parts.push(
@@ -86,22 +77,21 @@ const MentionDisplay: React.FC<MentionDisplayProps> = ({
           </span>
         );
       }
-
       // Add mention component
       if (user) {
         parts.push(
           <Tooltip
             key={`mention-${match.index}`}
             title={
-              <Box>
-                <Typography variant="caption" fontWeight="bold">
+              <div>
+                <div  fontWeight="bold">}
                   {user.firstName} {user.lastName}
-                </Typography>
+                </div>
                 <br />
-                <Typography variant="caption">
+                <div >
                   {user.role} • {user.email}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             }
             arrow
           >
@@ -110,24 +100,14 @@ const MentionDisplay: React.FC<MentionDisplayProps> = ({
               size="small"
               icon={getRoleIcon(user.role)}
               onClick={
-                onMentionClick ? () => onMentionClick(userId) : undefined
+                onMentionClick ? () => onMentionClick(userId) : undefined}
               }
-              sx={{
-                mx: 0.25,
-                height: 20,
-                fontSize: '0.75rem',
-                bgcolor: getRoleColor(user.role),
-                color: 'white',
-                cursor: onMentionClick ? 'pointer' : 'default',
-                '& .MuiChip-icon': {
-                  color: 'white',
-                },
+              className=""
                 '&:hover': onMentionClick
                   ? {
                       opacity: 0.8,
                     }
                   : {},
-              }}
             />
           </Tooltip>
         );
@@ -138,37 +118,27 @@ const MentionDisplay: React.FC<MentionDisplayProps> = ({
             key={`mention-unknown-${match.index}`}
             label={displayName}
             size="small"
-            variant="outlined"
-            sx={{
-              mx: 0.25,
-              height: 20,
-              fontSize: '0.75rem',
-              color: 'text.secondary',
-            }}
+            
+            className=""
           />
         );
       }
-
       lastIndex = match.index + fullMatch.length;
     }
-
     // Add remaining text
     if (lastIndex < text.length) {
       parts.push(
         <span key={`text-${lastIndex}`}>{text.substring(lastIndex)}</span>
       );
     }
-
     return parts.length > 0 ? parts : text;
   };
-
   // Handle URL links in text (basic implementation)
   const renderWithLinks = (content: any) => {
     if (typeof content === 'string') {
       // Simple URL regex
       const urlRegex = /(https?:\/\/[^\s]+)/g;
       const parts = content.split(urlRegex);
-
       return parts.map((part, index) => {
         if (urlRegex.test(part)) {
           return (
@@ -177,7 +147,7 @@ const MentionDisplay: React.FC<MentionDisplayProps> = ({
               href={part}
               target="_blank"
               rel="noopener noreferrer"
-              sx={{ wordBreak: 'break-all' }}
+              className=""
             >
               {part}
             </Link>
@@ -188,27 +158,20 @@ const MentionDisplay: React.FC<MentionDisplayProps> = ({
     }
     return content;
   };
-
   const content = renderTextWithMentions();
   const finalContent = Array.isArray(content)
     ? content.map((part, index) => (
         <span key={index}>{renderWithLinks(part)}</span>
       ))
     : renderWithLinks(content);
-
   return (
-    <Typography
+    <div
       variant={variant}
       color={color}
-      sx={{
-        wordBreak: 'break-word',
-        whiteSpace: 'pre-wrap',
-        ...sx,
-      }}
+      className=""
     >
       {finalContent}
-    </Typography>
+    </div>
   );
 };
-
 export default MentionDisplay;

@@ -1,24 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { patientService } from '../services/patientService';
-import type {
-  AllergySearchParams,
-  MedicationSearchParams,
-  DTPSearchParams,
-  CreateAllergyData,
-  UpdateAllergyData,
-  CreateConditionData,
-  UpdateConditionData,
-  CreateMedicationData,
-  UpdateMedicationData,
-  CreateAssessmentData,
-  UpdateAssessmentData,
-  CreateDTPData,
-  UpdateDTPData,
-  CreateCarePlanData,
-  UpdateCarePlanData,
-  CreateVisitData,
-  UpdateVisitData,
-} from '../types/patientManagement';
 
 // Query keys factory
 const patientResourceKeys = {
@@ -45,40 +24,39 @@ export const usePatientAllergies = (
   patientId: string,
   params?: AllergySearchParams
 ) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: [...patientResourceKeys.allergies(patientId), params],
     queryFn: () => patientService.getAllergies(patientId, params),
     enabled: !!patientId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes })
   });
 };
 
 export const useCreateAllergy = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       patientId,
-      allergyData,
+      allergyData}
     }: {
       patientId: string;
       allergyData: CreateAllergyData;
     }) => patientService.createAllergy(patientId, allergyData),
     onSuccess: (_, { patientId }) => {
-      queryClient.invalidateQueries({
-        queryKey: patientResourceKeys.allergies(patientId),
+      queryClient.invalidateQueries({ 
+        queryKey: patientResourceKeys.allergies(patientId)}
       });
-    },
-  });
+    }
 };
 
 export const useUpdateAllergy = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       allergyId,
-      allergyData,
+      allergyData}
     }: {
       allergyId: string;
       allergyData: UpdateAllergyData;
@@ -86,59 +64,56 @@ export const useUpdateAllergy = () => {
     onSuccess: () => {
       // Invalidate all allergy queries since we don't know which patient it belongs to
       queryClient.invalidateQueries({ queryKey: patientResourceKeys.all });
-    },
-  });
+    }
 };
 
 export const useDeleteAllergy = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: (allergyId: string) => patientService.deleteAllergy(allergyId),
     onSuccess: () => {
-      // Invalidate all allergy queries since we don't know which patient it belongs to
+      // Invalidate all allergy queries since we don't know which patient it belongs to })
       queryClient.invalidateQueries({ queryKey: patientResourceKeys.all });
-    },
-  });
+    }
 };
 
 // ==================== CONDITIONS ====================
 
 export const usePatientConditions = (patientId: string) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: patientResourceKeys.conditions(patientId),
     queryFn: () => patientService.getConditions(patientId),
     enabled: !!patientId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes })
   });
 };
 
 export const useCreateCondition = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       patientId,
-      conditionData,
+      conditionData}
     }: {
       patientId: string;
       conditionData: CreateConditionData;
     }) => patientService.createCondition(patientId, conditionData),
     onSuccess: (_, { patientId }) => {
-      queryClient.invalidateQueries({
-        queryKey: patientResourceKeys.conditions(patientId),
+      queryClient.invalidateQueries({ 
+        queryKey: patientResourceKeys.conditions(patientId)}
       });
-    },
-  });
+    }
 };
 
 export const useUpdateCondition = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       conditionId,
-      conditionData,
+      conditionData}
     }: {
       conditionId: string;
       conditionData: UpdateConditionData;
@@ -146,21 +121,19 @@ export const useUpdateCondition = () => {
     onSuccess: () => {
       // Invalidate all condition queries since we don't know which patient it belongs to
       queryClient.invalidateQueries({ queryKey: patientResourceKeys.all });
-    },
-  });
+    }
 };
 
 export const useDeleteCondition = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: (conditionId: string) =>
       patientService.deleteCondition(conditionId),
     onSuccess: () => {
-      // Invalidate all condition queries since we don't know which patient it belongs to
+      // Invalidate all condition queries since we don't know which patient it belongs to })
       queryClient.invalidateQueries({ queryKey: patientResourceKeys.all });
-    },
-  });
+    }
 };
 
 // ==================== MEDICATIONS ====================
@@ -169,40 +142,39 @@ export const usePatientMedications = (
   patientId: string,
   params?: MedicationSearchParams
 ) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: [...patientResourceKeys.medications(patientId), params],
     queryFn: () => patientService.getMedications(patientId, params),
     enabled: !!patientId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes })
   });
 };
 
 export const useCreateMedication = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       patientId,
-      medicationData,
+      medicationData}
     }: {
       patientId: string;
       medicationData: CreateMedicationData;
     }) => patientService.createMedication(patientId, medicationData),
     onSuccess: (_, { patientId }) => {
-      queryClient.invalidateQueries({
-        queryKey: patientResourceKeys.medications(patientId),
+      queryClient.invalidateQueries({ 
+        queryKey: patientResourceKeys.medications(patientId)}
       });
-    },
-  });
+    }
 };
 
 export const useUpdateMedication = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       medicationId,
-      medicationData,
+      medicationData}
     }: {
       medicationId: string;
       medicationData: UpdateMedicationData;
@@ -210,60 +182,57 @@ export const useUpdateMedication = () => {
     onSuccess: () => {
       // Invalidate all medication queries since we don't know which patient it belongs to
       queryClient.invalidateQueries({ queryKey: patientResourceKeys.all });
-    },
-  });
+    }
 };
 
 export const useDeleteMedication = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: (medicationId: string) =>
       patientService.deleteMedication(medicationId),
     onSuccess: () => {
-      // Invalidate all medication queries since we don't know which patient it belongs to
+      // Invalidate all medication queries since we don't know which patient it belongs to })
       queryClient.invalidateQueries({ queryKey: patientResourceKeys.all });
-    },
-  });
+    }
 };
 
 // ==================== ASSESSMENTS ====================
 
 export const usePatientAssessments = (patientId: string) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: patientResourceKeys.assessments(patientId),
     queryFn: () => patientService.getAssessments(patientId),
     enabled: !!patientId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes })
   });
 };
 
 export const useCreateAssessment = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       patientId,
-      assessmentData,
+      assessmentData}
     }: {
       patientId: string;
       assessmentData: CreateAssessmentData;
     }) => patientService.createAssessment(patientId, assessmentData),
     onSuccess: (_, { patientId }) => {
-      queryClient.invalidateQueries({
-        queryKey: patientResourceKeys.assessments(patientId),
+      queryClient.invalidateQueries({ 
+        queryKey: patientResourceKeys.assessments(patientId)}
       });
-    },
-  });
+    }
 };
 
 export const useUpdateAssessment = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       assessmentId,
-      assessmentData,
+      assessmentData}
     }: {
       assessmentId: string;
       assessmentData: UpdateAssessmentData;
@@ -271,8 +240,7 @@ export const useUpdateAssessment = () => {
     onSuccess: () => {
       // Invalidate all assessment queries since we don't know which patient it belongs to
       queryClient.invalidateQueries({ queryKey: patientResourceKeys.all });
-    },
-  });
+    }
 };
 
 // Note: Delete assessment function doesn't exist in service, so omitting it
@@ -280,40 +248,39 @@ export const useUpdateAssessment = () => {
 // ==================== DTPs (Drug Therapy Problems) ====================
 
 export const usePatientDTPs = (patientId: string, params?: DTPSearchParams) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: [...patientResourceKeys.dtps(patientId), params],
     queryFn: () => patientService.getDTPs(patientId, params),
     enabled: !!patientId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes })
   });
 };
 
 export const useCreateDTP = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       patientId,
-      dtpData,
+      dtpData}
     }: {
       patientId: string;
       dtpData: CreateDTPData;
     }) => patientService.createDTP(patientId, dtpData),
     onSuccess: (_, { patientId }) => {
-      queryClient.invalidateQueries({
-        queryKey: patientResourceKeys.dtps(patientId),
+      queryClient.invalidateQueries({ 
+        queryKey: patientResourceKeys.dtps(patientId)}
       });
-    },
-  });
+    }
 };
 
 export const useUpdateDTP = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       dtpId,
-      dtpData,
+      dtpData}
     }: {
       dtpId: string;
       dtpData: UpdateDTPData;
@@ -321,8 +288,7 @@ export const useUpdateDTP = () => {
     onSuccess: () => {
       // Invalidate all DTP queries since we don't know which patient it belongs to
       queryClient.invalidateQueries({ queryKey: patientResourceKeys.all });
-    },
-  });
+    }
 };
 
 // Note: Delete DTP function doesn't exist in service, so omitting it
@@ -330,40 +296,39 @@ export const useUpdateDTP = () => {
 // ==================== CARE PLANS ====================
 
 export const usePatientCarePlans = (patientId: string) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: patientResourceKeys.carePlans(patientId),
     queryFn: () => patientService.getCarePlans(patientId),
     enabled: !!patientId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes })
   });
 };
 
 export const useCreateCarePlan = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       patientId,
-      carePlanData,
+      carePlanData}
     }: {
       patientId: string;
       carePlanData: CreateCarePlanData;
     }) => patientService.createCarePlan(patientId, carePlanData),
     onSuccess: (_, { patientId }) => {
-      queryClient.invalidateQueries({
-        queryKey: patientResourceKeys.carePlans(patientId),
+      queryClient.invalidateQueries({ 
+        queryKey: patientResourceKeys.carePlans(patientId)}
       });
-    },
-  });
+    }
 };
 
 export const useUpdateCarePlan = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       carePlanId,
-      carePlanData,
+      carePlanData}
     }: {
       carePlanId: string;
       carePlanData: UpdateCarePlanData;
@@ -371,8 +336,7 @@ export const useUpdateCarePlan = () => {
     onSuccess: () => {
       // Invalidate all care plan queries since we don't know which patient it belongs to
       queryClient.invalidateQueries({ queryKey: patientResourceKeys.all });
-    },
-  });
+    }
 };
 
 // Note: Delete care plan function doesn't exist in service, so omitting it
@@ -380,40 +344,39 @@ export const useUpdateCarePlan = () => {
 // ==================== VISITS ====================
 
 export const usePatientVisits = (patientId: string) => {
-  return useQuery({
+  return useQuery({ 
     queryKey: patientResourceKeys.visits(patientId),
     queryFn: () => patientService.getVisits(patientId),
     enabled: !!patientId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes })
   });
 };
 
 export const useCreateVisit = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       patientId,
-      visitData,
+      visitData}
     }: {
       patientId: string;
       visitData: CreateVisitData;
     }) => patientService.createVisit(patientId, visitData),
     onSuccess: (_, { patientId }) => {
-      queryClient.invalidateQueries({
-        queryKey: patientResourceKeys.visits(patientId),
+      queryClient.invalidateQueries({ 
+        queryKey: patientResourceKeys.visits(patientId)}
       });
-    },
-  });
+    }
 };
 
 export const useUpdateVisit = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation({ 
     mutationFn: ({
       visitId,
-      visitData,
+      visitData}
     }: {
       visitId: string;
       visitData: UpdateVisitData;
@@ -421,8 +384,7 @@ export const useUpdateVisit = () => {
     onSuccess: () => {
       // Invalidate all visit queries since we don't know which patient it belongs to
       queryClient.invalidateQueries({ queryKey: patientResourceKeys.all });
-    },
-  });
+    }
 };
 
 // Note: Delete visit function doesn't exist in service, so omitting it
@@ -450,7 +412,7 @@ export interface PatientOverview {
 }
 
 export const usePatientAnalytics = () => {
-  return useQuery<PatientAnalytics>({
+  return useQuery<PatientAnalytics>({ 
     queryKey: ['patient-analytics'],
     queryFn: async () => {
       // Mock data - replace with actual API call when endpoint is ready
@@ -458,7 +420,7 @@ export const usePatientAnalytics = () => {
       return {
         totalPatients: 247,
         newPatientsThisMonth: 23,
-        averageAge: 42.5,
+        averageAge: 42.5}
         genderDistribution: { male: 123, female: 124, other: 0 },
         topConditions: [
           { name: 'Hypertension', count: 89 },
@@ -482,7 +444,7 @@ export const usePatientAnalytics = () => {
 };
 
 export const usePatientOverview = (patientId: string) => {
-  return useQuery<PatientOverview>({
+  return useQuery<PatientOverview>({ 
     queryKey: ['patient-overview', patientId],
     queryFn: async () => {
       // Mock data - replace with actual API call when endpoint is ready
@@ -493,7 +455,7 @@ export const usePatientOverview = (patientId: string) => {
         activeMedications: 3,
         activeConditions: 2,
         lastAssessmentDate: '2024-01-10T14:20:00Z',
-        upcomingAppointments: 1,
+        upcomingAppointments: 1}
       };
     },
     enabled: !!patientId,

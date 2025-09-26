@@ -4,8 +4,7 @@ import axios from 'axios';
 export const isAuthenticated = async (): Promise<boolean> => {
   try {
     const response = await axios.get('/api/auth/me', {
-      withCredentials: true,
-    });
+      withCredentials: true}
     return response.status === 200;
   } catch {
     return false;
@@ -16,8 +15,7 @@ export const isAuthenticated = async (): Promise<boolean> => {
 export const hasRole = async (requiredRole: string): Promise<boolean> => {
   try {
     const response = await axios.get('/api/auth/me', {
-      withCredentials: true,
-    });
+      withCredentials: true}
 
     if (response.status !== 200) return false;
 

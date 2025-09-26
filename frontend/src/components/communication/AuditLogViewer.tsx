@@ -1,43 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Chip,
-  IconButton,
-  Tooltip,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Card,
-  CardContent,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  CircularProgress,
-  Collapse,
-} from '@mui/material';
-import FilterList from '@mui/icons-material/FilterList';
-import Download from '@mui/icons-material/Download';
-import Search from '@mui/icons-material/Search';
-import Visibility from '@mui/icons-material/Visibility';
-import Security from '@mui/icons-material/Security';
-import Warning from '@mui/icons-material/Warning';
-import Error from '@mui/icons-material/Error';
-import Info from '@mui/icons-material/Info';
-
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Tooltip, Spinner, Alert } from '@/components/ui/button';
 // Icon aliases for consistency
 const FilterIcon = FilterList;
 const DownloadIcon = Download;
@@ -47,15 +8,10 @@ const SecurityIcon = Security;
 const WarningIcon = Warning;
 const ErrorIcon = Error;
 const InfoIcon = Info;
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, parseISO } from 'date-fns';
 
 // Helper function to safely parse JSON responses
 const safeJsonParse = async (response: Response): Promise<unknown> => {
   const contentType = response.headers.get('content-type');
-
   if (contentType && contentType.includes('application/json')) {
     try {
       return await response.json();
@@ -66,7 +22,6 @@ const safeJsonParse = async (response: Response): Promise<unknown> => {
   } else {
     // Try to get text response and see if it's actually JSON
     const textResponse = await response.text();
-
     // Check if it's an HTML error page (common when endpoints don't exist)
     if (
       textResponse.trim().startsWith('<!DOCTYPE') ||
@@ -79,7 +34,6 @@ const safeJsonParse = async (response: Response): Promise<unknown> => {
         `Server returned HTML instead of JSON: ${response.status} ${response.statusText}`
       );
     }
-
     // Handle empty responses
     if (!textResponse.trim()) {
       console.warn('Received empty response');
@@ -87,7 +41,6 @@ const safeJsonParse = async (response: Response): Promise<unknown> => {
         `Server returned empty response: ${response.status} ${response.statusText}`
       );
     }
-
     try {
       return JSON.parse(textResponse);
     } catch {
@@ -98,7 +51,6 @@ const safeJsonParse = async (response: Response): Promise<unknown> => {
     }
   }
 };
-
 interface AuditLog {
   _id: string;
   action: string;
@@ -127,7 +79,6 @@ interface AuditLog {
   };
   errorMessage?: string;
 }
-
 interface AuditFilters {
   userId?: string;
   action?: string;
@@ -141,7 +92,6 @@ interface AuditFilters {
   endDate?: Date | null;
   searchQuery?: string;
 }
-
 interface AuditLogViewerProps {
   conversationId?: string;
   patientId?: string;
@@ -149,13 +99,12 @@ interface AuditLogViewerProps {
   showFilters?: boolean;
   showExport?: boolean;
 }
-
-const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
+const AuditLogViewer: React.FC<AuditLogViewerProps> = ({ 
   conversationId,
   patientId,
   height = '600px',
   showFilters = true,
-  showExport = true,
+  showExport = true
 }) => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
@@ -163,25 +112,22 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [totalCount, setTotalCount] = useState(0);
-  const [filters, setFilters] = useState<AuditFilters>({
+  const [filters, setFilters] = useState<AuditFilters>({ 
     conversationId,
-    patientId,
+    patientId
   });
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [exporting, setExporting] = useState(false);
-
   // Fetch audit logs
   const fetchAuditLogs = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     try {
-      const queryParams = new URLSearchParams({
+      const queryParams = new URLSearchParams({ 
         limit: rowsPerPage.toString(),
-        offset: (page * rowsPerPage).toString(),
+        offset: (page * rowsPerPage).toString()
       });
-
       // Add filters to query params
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -192,17 +138,14 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           }
         }
       });
-
       const endpoint = conversationId
         ? `/api/communication/audit/conversation/${conversationId}?${queryParams}`
         : `/api/communication/audit?${queryParams}`;
-
       const response = await fetch(endpoint, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+        }
       });
-
       if (!response.ok) {
         // Handle different error cases
         if (response.status === 404) {
@@ -211,11 +154,9 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           setTotalCount(0);
           return;
         }
-
         if (response.status === 401 || response.status === 403) {
           throw new Error('Authentication required. Please log in again.');
         }
-
         try {
           const errorData = await safeJsonParse(response);
           throw new Error(
@@ -228,7 +169,6 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           );
         }
       }
-
       const data = await safeJsonParse(response);
       setLogs((data as { data: AuditLog[] }).data);
       setTotalCount(
@@ -243,32 +183,27 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       setLoading(false);
     }
   }, [conversationId, filters, page, rowsPerPage]);
-
   useEffect(() => {
     fetchAuditLogs();
   }, [fetchAuditLogs]);
-
   // Handle filter changes
   const handleFilterChange = (key: keyof AuditFilters, value: unknown) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(0); // Reset to first page when filters change
   };
-
   // Clear filters
   const clearFilters = () => {
-    setFilters({
+    setFilters({ 
       conversationId,
       patientId,
     });
     setPage(0);
   };
-
   // Export audit logs
   const handleExport = async (format: 'csv' | 'json') => {
     setExporting(true);
     try {
       const queryParams = new URLSearchParams({ format });
-
       // Add filters to export
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -279,7 +214,6 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           }
         }
       });
-
       const response = await fetch(
         `/api/communication/audit/export?${queryParams}`,
         {
@@ -288,16 +222,13 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           },
         }
       );
-
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error('Export functionality is not available');
         }
-
         if (response.status === 401 || response.status === 403) {
           throw new Error('Authentication required. Please log in again.');
         }
-
         try {
           const errorData = await safeJsonParse(response);
           throw new Error(
@@ -310,7 +241,6 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           );
         }
       }
-
       // Download file
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -329,7 +259,6 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       setExporting(false);
     }
   };
-
   // Get risk level color and icon
   const getRiskLevelDisplay = (riskLevel: string) => {
     const config = {
@@ -338,10 +267,8 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       high: { color: 'error', icon: <ErrorIcon fontSize="small" /> },
       critical: { color: 'error', icon: <SecurityIcon fontSize="small" /> },
     };
-
     const { color, icon } =
       config[riskLevel as keyof typeof config] || config.low;
-
     return (
       <Chip
         size="small"
@@ -353,15 +280,14 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
             | 'info'
             | 'default'
             | 'primary'
-            | 'secondary'
+            | 'secondary'}
         }
         icon={icon}
         label={riskLevel.toUpperCase()}
-        variant="outlined"
+        
       />
     );
   };
-
   // Format action name
   const formatAction = (action: string) => {
     return action
@@ -369,7 +295,6 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
-
   // Format details for display
   const formatDetails = (log: AuditLog) => {
     const details = [];
@@ -383,23 +308,17 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
     if (log.duration) details.push(`${log.duration}ms`);
     return details.join(', ');
   };
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ height, display: 'flex', flexDirection: 'column' }}>
+      <div className="">
         {/* Header */}
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 2,
-            }}
+        <div className="">
+          <div
+            className=""
           >
-            <Typography
-              variant="h6"
-              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            <div
+              
+              className=""
             >
               <SecurityIcon />
               Audit Log Viewer
@@ -409,8 +328,8 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                   label={`Conversation: ${conversationId.slice(-8)}`}
                 />
               )}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            </div>
+            <div className="">
               {showFilters && (
                 <Button
                   startIcon={<FilterIcon />}
@@ -428,7 +347,7 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                     onClick={() => handleExport('csv')}
                     disabled={exporting}
                     size="small"
-                    variant="outlined"
+                    
                   >
                     Export CSV
                   </Button>
@@ -437,48 +356,41 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                     onClick={() => handleExport('json')}
                     disabled={exporting}
                     size="small"
-                    variant="outlined"
+                    
                   >
                     Export JSON
                   </Button>
                 </>
               )}
-            </Box>
-          </Box>
-
+            </div>
+          </div>
           {/* Filters Panel */}
           <Collapse in={showFiltersPanel}>
-            <Card variant="outlined" sx={{ mb: 2 }}>
+            <Card  className="">
               <CardContent>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                <div >
                   <div
-                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
-                  >
-                    <TextField
+                    >
+                    <Input
                       fullWidth
                       size="small"
                       label="Search"
                       placeholder="Search actions, users..."
                       value={filters.searchQuery || ''}
                       onChange={(e) =>
-                        handleFilterChange('searchQuery', e.target.value)
+                        handleFilterChange('searchQuery', e.target.value)}
                       }
-                      InputProps={{
-                        startAdornment: (
-                          <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                        ),
-                      }}
+                      
                     />
                   </div>
                   <div
-                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
-                  >
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Action</InputLabel>
+                    >
+                    <div fullWidth size="small">
+                      <Label>Action</Label>
                       <Select
                         value={filters.action || ''}
                         onChange={(e) =>
-                          handleFilterChange('action', e.target.value)
+                          handleFilterChange('action', e.target.value)}
                         }
                         label="Action"
                       >
@@ -496,17 +408,16 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                           Conversation Exported
                         </MenuItem>
                       </Select>
-                    </FormControl>
+                    </div>
                   </div>
                   <div
-                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
-                  >
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Risk Level</InputLabel>
+                    >
+                    <div fullWidth size="small">
+                      <Label>Risk Level</Label>
                       <Select
                         value={filters.riskLevel || ''}
                         onChange={(e) =>
-                          handleFilterChange('riskLevel', e.target.value)
+                          handleFilterChange('riskLevel', e.target.value)}
                         }
                         label="Risk Level"
                       >
@@ -516,18 +427,17 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                         <MenuItem value="high">High</MenuItem>
                         <MenuItem value="critical">Critical</MenuItem>
                       </Select>
-                    </FormControl>
+                    </div>
                   </div>
                   <div
-                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
-                  >
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Success</InputLabel>
+                    >
+                    <div fullWidth size="small">
+                      <Label>Success</Label>
                       <Select
                         value={
                           filters.success !== undefined
                             ? filters.success.toString()
-                            : ''
+                            : ''}
                         }
                         onChange={(e) =>
                           handleFilterChange(
@@ -535,7 +445,7 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                             e.target.value === ''
                               ? undefined
                               : e.target.value === 'true'
-                          )
+                          )}
                         }
                         label="Success"
                       >
@@ -543,38 +453,33 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                         <MenuItem value="true">Success</MenuItem>
                         <MenuItem value="false">Failed</MenuItem>
                       </Select>
-                    </FormControl>
+                    </div>
                   </div>
                   <div
-                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
-                  >
+                    >
                     <DatePicker
                       label="Start Date"
                       value={filters.startDate}
                       onChange={(date) => handleFilterChange('startDate', date)}
-                      slotProps={{
+                      slotProps={{}
                         textField: { size: 'small', fullWidth: true },
-                      }}
                     />
                   </div>
                   <div
-                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
-                  >
+                    >
                     <DatePicker
                       label="End Date"
                       value={filters.endDate}
                       onChange={(date) => handleFilterChange('endDate', date)}
-                      slotProps={{
+                      slotProps={{}
                         textField: { size: 'small', fullWidth: true },
-                      }}
                     />
                   </div>
                   <div
-                    style={{ flex: '1 1 calc(25% - 16px)', minWidth: '250px' }}
-                  >
+                    >
                     <Button
                       fullWidth
-                      variant="outlined"
+                      
                       onClick={clearFilters}
                       size="small"
                     >
@@ -585,25 +490,22 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
               </CardContent>
             </Card>
           </Collapse>
-        </Box>
-
+        </div>
         {/* Error Alert */}
         {error && (
-          <Alert severity="error" sx={{ m: 2 }} onClose={() => setError(null)}>
+          <Alert severity="error" className="" onClose={() => setError(null)}>
             {error}
           </Alert>
         )}
-
         {/* Loading State */}
         {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
+          <div className="">
+            <Spinner />
+          </div>
         )}
-
         {/* Audit Logs Table */}
         {!loading && (
-          <TableContainer component={Paper} sx={{ flex: 1, overflow: 'auto' }}>
+          <TableContainer  className="">
             <Table stickyHeader size="small">
               <TableHead>
                 <TableRow>
@@ -620,28 +522,28 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                 {logs.map((log) => (
                   <TableRow key={log._id} hover>
                     <TableCell>
-                      <Typography variant="body2">
+                      <div >
                         {format(
                           parseISO(log.timestamp),
                           'MMM dd, yyyy HH:mm:ss'
                         )}
-                      </Typography>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" fontWeight="medium">
+                      <div  fontWeight="medium">
                         {formatAction(log.action)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {log.targetType}
-                      </Typography>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">
+                      <div >
                         {log.userId.firstName} {log.userId.lastName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {log.userId.role}
-                      </Typography>
+                      </div>
                     </TableCell>
                     <TableCell>{getRiskLevelDisplay(log.riskLevel)}</TableCell>
                     <TableCell>
@@ -649,17 +551,17 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                         size="small"
                         color={log.success ? 'success' : 'error'}
                         label={log.success ? 'Success' : 'Failed'}
-                        variant="outlined"
+                        
                       />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                      <div  noWrap className="">
                         {formatDetails(log)}
-                      </Typography>
+                      </div>
                       {log.errorMessage && (
-                        <Typography variant="caption" color="error">
+                        <div  color="error">
                           {log.errorMessage}
-                        </Typography>
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -676,10 +578,10 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
                 ))}
                 {logs.length === 0 && !loading && (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                      <Typography color="text.secondary">
+                    <TableCell colSpan={7} align="center" className="">
+                      <div color="text.secondary">
                         No audit logs found
-                      </Typography>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -687,7 +589,6 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
             </Table>
           </TableContainer>
         )}
-
         {/* Pagination */}
         {!loading && logs.length > 0 && (
           <TablePagination
@@ -696,14 +597,10 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
             page={page}
             onPageChange={(_, newPage) => setPage(newPage)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(e) => {
-              setRowsPerPage(parseInt(e.target.value, 10));
-              setPage(0);
-            }}
+            
             rowsPerPageOptions={[10, 25, 50, 100]}
           />
         )}
-
         {/* Audit Log Details Dialog */}
         <Dialog
           open={!!selectedLog}
@@ -717,81 +614,74 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           </DialogTitle>
           <DialogContent>
             {selectedLog && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+              <div >
                 <div
-                  style={{ flex: '1 1 calc(50% - 16px)', minWidth: '250px' }}
-                >
-                  <Typography variant="subtitle2" gutterBottom>
+                  >
+                  <div  gutterBottom>
                     Basic Information
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     <strong>Action:</strong> {formatAction(selectedLog.action)}
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     <strong>Timestamp:</strong>{' '}
                     {format(parseISO(selectedLog.timestamp), 'PPpp')}
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     <strong>User:</strong> {selectedLog.userId.firstName}{' '}
                     {selectedLog.userId.lastName} ({selectedLog.userId.email})
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     <strong>Role:</strong> {selectedLog.userId.role}
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     <strong>Target Type:</strong> {selectedLog.targetType}
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     <strong>Target ID:</strong> {selectedLog.targetId}
-                  </Typography>
+                  </div>
                 </div>
                 <div
-                  style={{ flex: '1 1 calc(50% - 16px)', minWidth: '250px' }}
-                >
-                  <Typography variant="subtitle2" gutterBottom>
+                  >
+                  <div  gutterBottom>
                     Security & Compliance
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     <strong>Risk Level:</strong> {selectedLog.riskLevel}
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     <strong>Compliance Category:</strong>{' '}
                     {selectedLog.complianceCategory}
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     <strong>Success:</strong>{' '}
                     {selectedLog.success ? 'Yes' : 'No'}
-                  </Typography>
-                  <Typography variant="body2">
+                  </div>
+                  <div >
                     <strong>IP Address:</strong> {selectedLog.ipAddress}
-                  </Typography>
+                  </div>
                   {selectedLog.duration && (
-                    <Typography variant="body2">
+                    <div >
                       <strong>Duration:</strong> {selectedLog.duration}ms
-                    </Typography>
+                    </div>
                   )}
                 </div>
-                <div style={{ flex: '1 1 100%', minWidth: '250px' }}>
-                  <Typography variant="subtitle2" gutterBottom>
+                <div >
+                  <div  gutterBottom>
                     Details
-                  </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+                  </div>
+                  <div  className="">
                     <pre
-                      style={{
-                        margin: 0,
-                        fontSize: '0.875rem',
-                        whiteSpace: 'pre-wrap',
-                      }}
-                    >
+                      >
                       {JSON.stringify(selectedLog.details, null, 2)}
                     </pre>
-                  </Paper>
+                  </div>
                 </div>
                 {selectedLog.errorMessage && (
-                  <div style={{ flex: '1 1 100%', minWidth: '250px' }}>
-                    <Typography variant="subtitle2" gutterBottom color="error">
+                  <div >
+                    <div  gutterBottom color="error">
                       Error Message
-                    </Typography>
+                    </div>
                     <Alert severity="error">{selectedLog.errorMessage}</Alert>
                   </div>
                 )}
@@ -802,9 +692,8 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
             <Button onClick={() => setSelectedLog(null)}>Close</Button>
           </DialogActions>
         </Dialog>
-      </Box>
+      </div>
     </LocalizationProvider>
   );
 };
-
 export default AuditLogViewer;

@@ -9,7 +9,7 @@ export declare const validatePDFToken: (token: string) => {
     payload?: any;
     error?: string;
 };
-export declare const validatePDFAccess: (req: AuthRequest, res: Response, next: NextFunction) => Response<any, Record<string, any>> | undefined;
+export declare const validatePDFAccess: (req: AuthRequest, res: Response, next: NextFunction) => Response<any, Record<string, any>>;
 export declare const csrfProtection: (req: AuthRequest, res: Response, next: NextFunction) => void | Response<any, Record<string, any>>;
 export declare const generateCSRFToken: (req: AuthRequest, res: Response, next: NextFunction) => void;
 export declare const detectSuspiciousActivity: (req: AuthRequest, res: Response, next: NextFunction) => void | Response<any, Record<string, any>>;
@@ -24,7 +24,7 @@ declare const _default: {
         payload?: any;
         error?: string;
     };
-    validatePDFAccess: (req: AuthRequest, res: Response, next: NextFunction) => Response<any, Record<string, any>> | undefined;
+    validatePDFAccess: (req: AuthRequest, res: Response, next: NextFunction) => Response<any, Record<string, any>>;
     csrfProtection: (req: AuthRequest, res: Response, next: NextFunction) => void | Response<any, Record<string, any>>;
     generateCSRFToken: (req: AuthRequest, res: Response, next: NextFunction) => void;
     detectSuspiciousActivity: (req: AuthRequest, res: Response, next: NextFunction) => void | Response<any, Record<string, any>>;

@@ -1,38 +1,12 @@
-import React, {
   useState,
   useRef,
   forwardRef,
   useImperativeHandle,
   useEffect,
-} from 'react';
-import {
-  Box,
-  TextField,
-  IconButton,
-  Paper,
-  Chip,
-  Collapse,
-  Typography,
-  Button,
-  Menu,
-  MenuItem,
-  Tooltip,
-  CircularProgress,
-} from '@mui/material';
-import {
-  Send,
-  AttachFile,
-  CameraAlt,
-  Mic,
-  EmojiEmotions,
-  Add,
-  Close,
-  PhotoLibrary,
-  Description,
-  LocationOn,
-} from '@mui/icons-material';
-import { useIsTouchDevice } from '../../hooks/useResponsive';
+
 import MobileFileUpload from './MobileFileUpload';
+
+import { Button, Input, Spinner } from '@/components/ui/button';
 
 interface MobileMessageInputProps {
   conversationId: string;
@@ -52,16 +26,12 @@ interface MobileMessageInputProps {
   threadId?: string;
   parentMessageId?: string;
 }
-
 export interface MobileMessageInputRef {
   focus: () => void;
   clear: () => void;
   insertText: (text: string) => void;
 }
-
 const MobileMessageInput = forwardRef<
-  MobileMessageInputRef,
-  MobileMessageInputProps
 >(
   (
     {
@@ -87,39 +57,32 @@ const MobileMessageInput = forwardRef<
       useState<null | HTMLElement>(null);
     const [mentions, setMentions] = useState<string[]>([]);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
     const inputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-
     const isTouchDevice = useIsTouchDevice();
-
     // Expose methods via ref
-    useImperativeHandle(ref, () => ({
+    useImperativeHandle(ref, () => ({ 
       focus: () => inputRef.current?.focus(),
       clear: () => {
         setMessage('');
         setAttachments([]);
-        setMentions([]);
+        setMentions([]); })
       },
       insertText: (text: string) => {
         setMessage((prev) => prev + text);
         inputRef.current?.focus();
-      },
-    }));
-
+      }
     // Handle typing indicators
     useEffect(() => {
       if (message.trim()) {
         onTypingStart?.();
-
         // Clear existing timeout
         if (typingTimeoutRef.current) {
           clearTimeout(typingTimeoutRef.current);
         }
-
         // Set new timeout to stop typing indicator
         typingTimeoutRef.current = setTimeout(() => {
           onTypingStop?.();
@@ -127,21 +90,18 @@ const MobileMessageInput = forwardRef<
       } else {
         onTypingStop?.();
       }
-
       return () => {
         if (typingTimeoutRef.current) {
           clearTimeout(typingTimeoutRef.current);
         }
       };
     }, [message, onTypingStart, onTypingStop]);
-
     // Handle message change
     const handleMessageChange = (
       event: React.ChangeEvent<HTMLInputElement>
     ) => {
       const value = event.target.value;
       setMessage(value);
-
       // Detect mentions (@username)
       const mentionMatches = value.match(/@\w+/g);
       if (mentionMatches) {
@@ -150,7 +110,6 @@ const MobileMessageInput = forwardRef<
         setMentions([]);
       }
     };
-
     // Handle send message
     const handleSendMessage = async () => {
       if (
@@ -160,9 +119,7 @@ const MobileMessageInput = forwardRef<
       ) {
         return;
       }
-
       setIsSending(true);
-
       try {
         await onSendMessage(
           message.trim(),
@@ -171,7 +128,6 @@ const MobileMessageInput = forwardRef<
           parentMessageId,
           mentions.length > 0 ? mentions : undefined
         );
-
         // Clear input after successful send
         setMessage('');
         setAttachments([]);
@@ -183,7 +139,6 @@ const MobileMessageInput = forwardRef<
         setIsSending(false);
       }
     };
-
     // Handle key press
     const handleKeyPress = (event: React.KeyboardEvent) => {
       if (event.key === 'Enter' && !event.shiftKey) {
@@ -191,18 +146,15 @@ const MobileMessageInput = forwardRef<
         handleSendMessage();
       }
     };
-
     // Handle file attachment
     const handleFileAttachment = (files: File[]) => {
       setAttachments((prev) => [...prev, ...files]);
       setShowAttachmentMenu(false);
     };
-
     // Remove attachment
     const removeAttachment = (index: number) => {
       setAttachments((prev) => prev.filter((_, i) => i !== index));
     };
-
     // Handle camera capture
     const handleCameraCapture = () => {
       if (cameraInputRef.current) {
@@ -210,7 +162,6 @@ const MobileMessageInput = forwardRef<
       }
       setShowAttachmentMenu(false);
     };
-
     // Handle file selection
     const handleFileSelection = () => {
       if (fileInputRef.current) {
@@ -218,7 +169,6 @@ const MobileMessageInput = forwardRef<
       }
       setShowAttachmentMenu(false);
     };
-
     // Handle voice recording
     const handleVoiceRecording = async () => {
       if (isRecording) {
@@ -230,28 +180,23 @@ const MobileMessageInput = forwardRef<
       } else {
         // Start recording
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: true}
           });
           const mediaRecorder = new MediaRecorder(stream);
           mediaRecorderRef.current = mediaRecorder;
-
           const chunks: Blob[] = [];
           mediaRecorder.ondataavailable = (event) => {
             chunks.push(event.data);
           };
-
           mediaRecorder.onstop = () => {
             const audioBlob = new Blob(chunks, { type: 'audio/wav' });
             const audioFile = new File([audioBlob], 'voice-message.wav', {
-              type: 'audio/wav',
-            });
+              type: 'audio/wav'}
             handleFileAttachment([audioFile]);
-
             // Stop all tracks
             stream.getTracks().forEach((track) => track.stop());
           };
-
           mediaRecorder.start();
           setIsRecording(true);
         } catch (error) {
@@ -259,7 +204,6 @@ const MobileMessageInput = forwardRef<
         }
       }
     };
-
     // Attachment menu items
     const attachmentMenuItems = [
       {
@@ -286,7 +230,6 @@ const MobileMessageInput = forwardRef<
         },
       },
     ];
-
     // Common emojis for healthcare
     const commonEmojis = [
       '👍',
@@ -306,116 +249,76 @@ const MobileMessageInput = forwardRef<
       '📊',
       '🏥',
     ];
-
     return (
-      <Box sx={{ p: 1 }}>
+      <div className="">
         {/* Reply indicator */}
         <Collapse in={!!replyToMessage}>
           {replyToMessage && (
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 1,
-                mb: 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                backgroundColor: 'action.hover',
-              }}
+            <div
+              
+              className=""
             >
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="caption" color="primary">
+              <div className="">
+                <div  color="primary">
                   Replying to {replyToMessage.senderName}
-                </Typography>
-                <Typography variant="body2" noWrap>
+                </div>
+                <div  noWrap>
                   {replyToMessage.content.text}
-                </Typography>
-              </Box>
+                </div>
+              </div>
               <IconButton size="small" onClick={onCancelReply}>
                 <Close />
               </IconButton>
-            </Paper>
+            </div>
           )}
         </Collapse>
-
         {/* Attachments preview */}
         <Collapse in={attachments.length > 0}>
-          <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <div className="">
             {attachments.map((file, index) => (
               <Chip
                 key={index}
                 label={file.name}
                 onDelete={() => removeAttachment(index)}
                 size="small"
-                variant="outlined"
-                sx={{ maxWidth: 200 }}
+                
+                className=""
               />
             ))}
-          </Box>
+          </div>
         </Collapse>
-
         {/* Emoji picker */}
         <Collapse in={showEmojiPicker}>
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 1,
-              mb: 1,
-              display: 'flex',
-              gap: 0.5,
-              flexWrap: 'wrap',
-              maxHeight: 120,
-              overflow: 'auto',
-            }}
+          <div
+            
+            className=""
           >
             {commonEmojis.map((emoji) => (
               <Button
                 key={emoji}
                 size="small"
-                onClick={() => {
-                  setMessage((prev) => prev + emoji);
-                  setShowEmojiPicker(false);
-                  inputRef.current?.focus();
-                }}
-                sx={{
-                  minWidth: 'auto',
-                  p: 0.5,
-                  fontSize: '1.2rem',
-                }}
+                
+                className=""
               >
                 {emoji}
               </Button>
             ))}
-          </Paper>
+          </div>
         </Collapse>
-
         {/* Main input area */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            gap: 1,
-            backgroundColor: 'background.paper',
-            borderRadius: 2,
-            border: 1,
-            borderColor: 'divider',
-            p: 0.5,
-          }}
+        <div
+          className=""
         >
           {/* Attachment button */}
           <IconButton
             size="small"
-            onClick={(e) => {
-              setAttachmentMenuAnchor(e.currentTarget);
-              setShowAttachmentMenu(true);
-            }}
+            
             disabled={disabled}
           >
             <Add />
           </IconButton>
-
           {/* Text input */}
-          <TextField
+          <Input
             ref={inputRef}
             fullWidth
             multiline
@@ -425,21 +328,14 @@ const MobileMessageInput = forwardRef<
             onKeyPress={handleKeyPress}
             placeholder={disabled ? 'This conversation is closed' : placeholder}
             disabled={disabled}
-            variant="standard"
+            
             InputProps={{
               disableUnderline: true,
               sx: {
                 fontSize: '16px', // Prevent zoom on iOS
-                lineHeight: 1.4,
+                lineHeight: 1.4,}
               },
-            }}
-            sx={{
-              '& .MuiInputBase-root': {
-                padding: '8px 0',
-              },
-            }}
-          />
-
+            className="" />
           {/* Emoji button */}
           <IconButton
             size="small"
@@ -449,7 +345,6 @@ const MobileMessageInput = forwardRef<
           >
             <EmojiEmotions />
           </IconButton>
-
           {/* Voice/Send button */}
           {message.trim() || attachments.length > 0 ? (
             <IconButton
@@ -457,19 +352,9 @@ const MobileMessageInput = forwardRef<
               onClick={handleSendMessage}
               disabled={disabled || isSending}
               color="primary"
-              sx={{
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '&.Mui-disabled': {
-                  backgroundColor: 'action.disabledBackground',
-                },
-              }}
-            >
+              className="">
               {isSending ? (
-                <CircularProgress size={20} color="inherit" />
+                <Spinner size={20} color="inherit" />
               ) : (
                 <Send />
               )}
@@ -480,81 +365,54 @@ const MobileMessageInput = forwardRef<
               onClick={handleVoiceRecording}
               disabled={disabled}
               color={isRecording ? 'error' : 'default'}
-              sx={{
-                ...(isRecording && {
-                  backgroundColor: 'error.main',
-                  color: 'error.contrastText',
-                  animation: 'pulse 1s infinite',
-                  '@keyframes pulse': {
-                    '0%': { opacity: 1 },
-                    '50%': { opacity: 0.7 },
-                    '100%': { opacity: 1 },
-                  },
-                }),
-              }}
-            >
+              className="">
               <Mic />
             </IconButton>
           )}
-        </Box>
-
+        </div>
         {/* Attachment menu */}
         <Menu
           anchorEl={attachmentMenuAnchor}
           open={showAttachmentMenu}
           onClose={() => setShowAttachmentMenu(false)}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'left',
-          }}
-          transformOrigin={{
-            vertical: 'bottom',
-            horizontal: 'left',
-          }}
-        >
+          >
           {attachmentMenuItems.map((item) => (
             <MenuItem key={item.label} onClick={item.onClick}>
               {item.icon}
-              <Typography sx={{ ml: 1 }}>{item.label}</Typography>
+              <div className="">{item.label}</div>
             </MenuItem>
           ))}
         </Menu>
-
         {/* Hidden file inputs */}
         <input
           ref={fileInputRef}
           type="file"
           multiple
           accept="*/*"
-          style={{ display: 'none' }}
+          
           onChange={(e) => {
             const files = Array.from(e.target.files || []);
             if (files.length > 0) {
-              handleFileAttachment(files);
+              handleFileAttachment(files);}
             }
             e.target.value = '';
-          }}
         />
-
         <input
           ref={cameraInputRef}
           type="file"
           accept="image/*,video/*"
           capture="environment"
-          style={{ display: 'none' }}
+          
           onChange={(e) => {
             const files = Array.from(e.target.files || []);
             if (files.length > 0) {
-              handleFileAttachment(files);
+              handleFileAttachment(files);}
             }
             e.target.value = '';
-          }}
         />
-      </Box>
+      </div>
     );
   }
 );
-
 MobileMessageInput.displayName = 'MobileMessageInput';
-
 export default MobileMessageInput;

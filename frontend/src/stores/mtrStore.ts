@@ -1,20 +1,4 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { Patient, LoadingState, ErrorState } from './types';
 // Import from our proxy which handles all the TypeScript issues
-import { mtrService } from '../services/mtrServiceProxy';
-import type {
-  MedicationTherapyReview,
-  DrugTherapyProblem,
-  MTRIntervention,
-  MTRFollowUp,
-  TherapyPlan,
-  TherapyRecommendation,
-  MonitoringParameter,
-  TherapyGoal,
-  ClinicalOutcomes,
-  MTRMedicationEntry,
-} from '../types/mtr';
 
 // MTR-specific types based on backend models
 export interface MTRMedication {
@@ -68,7 +52,7 @@ const convertMedicationEntryToMTRMedication = (entry: {
   adherenceScore?: number;
   notes?: string;
   isManual?: boolean;
-}): MTRMedication => ({
+}): MTRMedication => ({ 
   id: entry._id || entry.id,
   drugName: entry.drugName,
   genericName: entry.genericName,
@@ -113,7 +97,7 @@ const convertMTRMedicationToEntry = (
   adherenceScore?: number;
   notes?: string;
   isManual?: boolean;
-} => ({
+} => ({ 
   drugName: medication.drugName,
   genericName: medication.genericName,
   strength: medication.strength,
@@ -253,8 +237,8 @@ const checkMTRPermissions = async (): Promise<boolean> => {
     NODE_ENV: import.meta.env.NODE_ENV,
     MODE: import.meta.env.MODE,
     DEV: import.meta.env.DEV,
-    PROD: import.meta.env.PROD,
-  });
+    PROD: import.meta.env.PROD
+  };
 
   // Multiple checks for development mode
   const isDevelopment =
@@ -307,10 +291,10 @@ const checkMTRPermissions = async (): Promise<boolean> => {
 
 export const useMTRStore = create<MTRStore>()(
   persist(
-    (set, get) => ({
+    (set, get) => ({ 
       // Initial state
       currentReview: null,
-      currentStep: 0,
+      currentStep: 0}
       stepData: {},
       selectedPatient: null,
       medications: [],
@@ -390,17 +374,16 @@ export const useMTRStore = create<MTRStore>()(
           updatedAt: new Date().toISOString(),
         };
 
-        set({
+        set({ 
           currentReview: basicReview,
-          currentStep: 0,
+          currentStep: 0}
           stepData: {},
           selectedPatient: null,
           medications: [],
           identifiedProblems: [],
           therapyPlan: null,
           interventions: [],
-          followUps: [],
-        });
+          followUps: []}
 
         console.log('Initialized basic MTR session for patient selection');
       },
@@ -484,14 +467,13 @@ export const useMTRStore = create<MTRStore>()(
           console.log('MTR creation response received:', {
             hasReview: !!response.review,
             reviewId: response.review?._id,
-            responseKeys: Object.keys(response),
-          });
+            responseKeys: Object.keys(response)}
 
           // Helper function to create default workflow steps
-          const createDefaultSteps = () => ({
+          const createDefaultSteps = () => ({ 
             patientSelection: {
               completed: false,
-              completedAt: undefined,
+              completedAt: undefined}
               data: {},
             },
             medicationHistory: {
@@ -518,8 +500,7 @@ export const useMTRStore = create<MTRStore>()(
               completed: false,
               completedAt: undefined,
               data: {},
-            },
-          });
+            }
 
           // Extract review data and ID from response
           if (!response.review) {
@@ -946,9 +927,9 @@ export const useMTRStore = create<MTRStore>()(
             })
             .filter(Boolean) as MTRMedication[];
 
-          set({
+          set({ 
             currentReview: validReview,
-            currentStep: 0,
+            currentStep: 0}
             stepData: {},
             medications: medications,
             identifiedProblems: [], // Will be populated from actual DrugTherapyProblem objects
@@ -1036,7 +1017,7 @@ export const useMTRStore = create<MTRStore>()(
               validReview._id
             );
 
-            set({
+            set({ 
               currentReview: validReview,
               medications: (validReview.medications || []).map(
                 convertMedicationEntryToMTRMedication
@@ -1046,7 +1027,7 @@ export const useMTRStore = create<MTRStore>()(
               interventions: [], // Will be populated from actual MTRIntervention objects
               followUps: [], // Will be populated from actual MTRFollowUp objects
               // Set current step based on review progress
-              currentStep: get().getNextStep() || 0,
+              currentStep: get().getNextStep() || 0}
             });
 
             console.log('Loaded MTR review:', reviewId);
@@ -1093,9 +1074,9 @@ export const useMTRStore = create<MTRStore>()(
           // No need to dynamically import it here
 
           // Get all MTR sessions for patient
-          const response = await mtrService.getMTRSessions({
+          const response = await mtrService.getMTRSessions({ 
             patientId,
-            status: 'in_progress',
+            status: 'in_progress'}
           });
 
           if (response.results && response.results.length > 0) {
@@ -1123,7 +1104,7 @@ export const useMTRStore = create<MTRStore>()(
               validReview._id
             );
 
-            set({
+            set({ 
               currentReview: validReview,
               medications: (validReview.medications || []).map(
                 convertMedicationEntryToMTRMedication
@@ -1132,7 +1113,7 @@ export const useMTRStore = create<MTRStore>()(
               therapyPlan: validReview.plan || null,
               interventions: [], // Will be populated from actual MTRIntervention objects
               followUps: [], // Will be populated from actual MTRFollowUp objects
-              currentStep: get().getNextStep() || 0,
+              currentStep: get().getNextStep() || 0}
             });
 
             console.log(
@@ -1177,9 +1158,9 @@ export const useMTRStore = create<MTRStore>()(
 
         console.log(
           'Current review before save:',
-          JSON.stringify({
+          JSON.stringify({ 
             id: currentReview._id,
-            status: currentReview.status,
+            status: currentReview.status}
           })
         );
 
@@ -1258,12 +1239,11 @@ export const useMTRStore = create<MTRStore>()(
           );
 
           // Update the store with the saved review
-          set({
+          set({ 
             currentReview: {
               ...response.review,
-              updatedAt: new Date().toISOString(),
-            },
-          });
+              updatedAt: new Date().toISOString()}
+            }
 
           console.log('MTR review saved successfully:', currentReview._id);
         } catch (error) {
@@ -1301,8 +1281,7 @@ export const useMTRStore = create<MTRStore>()(
         console.log('Complete review called with:', {
           providedId: reviewId,
           hasCurrentReview: !!currentReview,
-          currentReviewId: currentReview?._id,
-        });
+          currentReviewId: currentReview?._id}
 
         // Use provided reviewId or fallback to currentReview._id
         let idToUse = reviewId || (currentReview && currentReview._id);
@@ -1340,8 +1319,7 @@ export const useMTRStore = create<MTRStore>()(
             currentReviewHasId: !!currentReview?._id,
             currentReviewId: currentReview?._id,
             sessionExists: !!reviewWithSession.session,
-            sessionHasId: !!reviewWithSession.session?._id,
-          });
+            sessionHasId: !!reviewWithSession.session?._id}
 
           throw error;
         }
@@ -1476,10 +1454,9 @@ export const useMTRStore = create<MTRStore>()(
             _id: currentReview._id, // Explicitly preserve the ID
             steps: updatedSteps,
           };
-          set({
-            currentReview: updatedReview,
-            stepData: { ...get().stepData, [stepName]: data },
-          });
+          set({ 
+            currentReview: updatedReview}
+            stepData: { ...get().stepData, [stepName]: data }
 
           // Auto-save after completing step
           await saveReview();
@@ -1588,25 +1565,23 @@ export const useMTRStore = create<MTRStore>()(
 
       // Medication management actions
       addMedication: (medication: MTRMedication) => {
-        set((state) => ({
+        set((state) => ({ 
           medications: [
-            ...state.medications,
+            ...state.medications}
             { ...medication, id: Date.now().toString() },
-          ],
-        }));
+          ]}
       },
 
       updateMedication: (id: string, updates: Partial<MTRMedication>) => {
-        set((state) => ({
-          medications: state.medications.map((med) =>
+        set((state) => ({ 
+          medications: state.medications.map((med) => })
             med.id === id ? { ...med, ...updates } : med
-          ),
-        }));
+          )}
       },
 
       removeMedication: (id: string) => {
-        set((state) => ({
-          medications: state.medications.filter((med) => med.id !== id),
+        set((state) => ({ 
+          medications: state.medications.filter((med) => med.id !== id)}
         }));
       },
 
@@ -1614,7 +1589,7 @@ export const useMTRStore = create<MTRStore>()(
         set({ medications });
       },
 
-      importMedications: async (patientId: string) => {
+importMedications: async (patientId: string) => {;
         const { setLoading, setError } = get();
         setLoading('importMedications', true);
         setError('importMedications', null);
@@ -1684,20 +1659,18 @@ export const useMTRStore = create<MTRStore>()(
       },
 
       addProblem: (problem: DrugTherapyProblem) => {
-        set((state) => ({
+        set((state) => ({ 
           identifiedProblems: [
-            ...state.identifiedProblems,
+            ...state.identifiedProblems}
             { ...problem, _id: Date.now().toString() },
-          ],
-        }));
+          ]}
       },
 
       updateProblem: (id: string, updates: Partial<DrugTherapyProblem>) => {
-        set((state) => ({
-          identifiedProblems: state.identifiedProblems.map((problem) =>
+        set((state) => ({ 
+          identifiedProblems: state.identifiedProblems.map((problem) => })
             problem._id === id ? { ...problem, ...updates } : problem
-          ),
-        }));
+          )}
       },
 
       resolveProblem: (id: string, resolution: string) => {
@@ -1708,8 +1681,7 @@ export const useMTRStore = create<MTRStore>()(
             action: resolution,
             outcome: 'Problem resolved',
             resolvedAt: new Date().toISOString(),
-          },
-        });
+          }
       },
 
       checkDrugInteractions: async (medications: MTRMedication[]) => {
@@ -1719,7 +1691,7 @@ export const useMTRStore = create<MTRStore>()(
 
         // Simple mock logic for demonstration
         if (medications.length > 1) {
-          interactions.push({
+          interactions.push({  })
             _id: `dtp_${Date.now()}`,
             workplaceId: 'mock_workplace',
             patientId: 'mock_patient',
@@ -1741,8 +1713,7 @@ export const useMTRStore = create<MTRStore>()(
             createdBy: 'system',
             isDeleted: false,
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
+            updatedAt: new Date().toISOString()}
         }
 
         return interactions;
@@ -1768,11 +1739,10 @@ export const useMTRStore = create<MTRStore>()(
       },
 
       updatePlan: (updates: Partial<TherapyPlan>) => {
-        set((state) => ({
-          therapyPlan: state.therapyPlan
+        set((state) => ({ 
+          therapyPlan: state.therapyPlan })
             ? { ...state.therapyPlan, ...updates }
-            : null,
-        }));
+            : null}
       },
 
       addRecommendation: (recommendation: TherapyRecommendation) => {
@@ -1815,8 +1785,8 @@ export const useMTRStore = create<MTRStore>()(
             performedAt: new Date().toISOString(),
           };
 
-          set((state) => ({
-            interventions: [...state.interventions, newIntervention],
+          set((state) => ({ 
+            interventions: [...state.interventions, newIntervention]}
           }));
 
           console.log('Recorded intervention');
@@ -1833,13 +1803,12 @@ export const useMTRStore = create<MTRStore>()(
       },
 
       updateIntervention: (id: string, updates: Partial<MTRIntervention>) => {
-        set((state) => ({
+        set((state) => ({ 
           interventions: state.interventions.map((intervention) =>
-            intervention._id === id
+            intervention._id === id })
               ? { ...intervention, ...updates }
               : intervention
-          ),
-        }));
+          )}
       },
 
       markInterventionComplete: (
@@ -1850,8 +1819,7 @@ export const useMTRStore = create<MTRStore>()(
         const { updateIntervention } = get();
         updateIntervention(id, {
           outcome: outcome as MTRIntervention['outcome'],
-          outcomeDetails: details || '',
-        });
+          outcomeDetails: details || ''}
       },
 
       // Follow-up actions
@@ -1866,8 +1834,8 @@ export const useMTRStore = create<MTRStore>()(
             _id: Date.now().toString(),
           };
 
-          set((state) => ({
-            followUps: [...state.followUps, newFollowUp],
+          set((state) => ({ 
+            followUps: [...state.followUps, newFollowUp]}
           }));
 
           console.log('Scheduled follow-up');
@@ -1884,11 +1852,10 @@ export const useMTRStore = create<MTRStore>()(
       },
 
       updateFollowUp: (id: string, updates: Partial<MTRFollowUp>) => {
-        set((state) => ({
-          followUps: state.followUps.map((followUp) =>
+        set((state) => ({ 
+          followUps: state.followUps.map((followUp) => })
             followUp._id === id ? { ...followUp, ...updates } : followUp
-          ),
-        }));
+          )}
       },
 
       completeFollowUp: async (id: string, outcome: MTRFollowUp['outcome']) => {
@@ -1900,8 +1867,7 @@ export const useMTRStore = create<MTRStore>()(
           updateFollowUp(id, {
             status: 'completed',
             completedAt: new Date().toISOString(),
-            outcome: outcome as MTRFollowUp['outcome'],
-          });
+            outcome: outcome as MTRFollowUp['outcome']}
 
           console.log('Completed follow-up');
         } catch (error) {
@@ -1921,15 +1887,14 @@ export const useMTRStore = create<MTRStore>()(
         updateFollowUp(id, {
           scheduledDate: newDate,
           status: 'rescheduled',
-          ...(reason && { rescheduledReason: reason }),
-        });
+          ...(reason && { rescheduledReason: reason })}
       },
 
       // Utility actions
       clearStore: () => {
-        set({
+        set({ 
           currentReview: null,
-          currentStep: 0,
+          currentStep: 0}
           stepData: {},
           selectedPatient: null,
           medications: [],
@@ -1968,20 +1933,17 @@ export const useMTRStore = create<MTRStore>()(
             scheduleFollowUp: null,
             completeFollowUp: null,
             cancelReview: null,
-          },
-        });
+          }
       },
 
       setLoading: (key: string, loading: boolean) => {
-        set((state) => ({
-          loading: { ...state.loading, [key]: loading },
-        }));
+        set((state) => ({  })
+          loading: { ...state.loading, [key]: loading }
       },
 
       setError: (key: string, error: string | null) => {
-        set((state) => ({
-          errors: { ...state.errors, [key]: error },
-        }));
+        set((state) => ({  })
+          errors: { ...state.errors, [key]: error }
       },
 
       clearErrors: () => {
@@ -2093,15 +2055,14 @@ export const useMTRStore = create<MTRStore>()(
 
       checkPermissions: async () => {
         return await checkMTRPermissions();
-      },
-    }),
+      }, },
     {
       name: 'mtr-store',
-      partialize: (state) => ({
+      partialize: (state) => ({ 
         currentReview: state.currentReview,
         currentStep: state.currentStep,
         stepData: state.stepData,
-        selectedPatient: state.selectedPatient,
+        selectedPatient: state.selectedPatient}
       }),
     }
   )
@@ -2109,7 +2070,7 @@ export const useMTRStore = create<MTRStore>()(
 
 // Utility hooks for easier access to specific MTR states
 export const useMTRSession = () =>
-  useMTRStore((state) => ({
+  useMTRStore((state) => ({ 
     currentReview: state.currentReview,
     currentStep: state.currentStep,
     loading: state.loading.createReview || state.loading.loadReview || false,
@@ -2120,11 +2081,11 @@ export const useMTRSession = () =>
     completeReview: state.completeReview,
     cancelReview: state.cancelReview,
     completionPercentage: state.getCompletionPercentage(),
-    canComplete: state.canCompleteReview(),
+    canComplete: state.canCompleteReview()}
   }));
 
 export const useMTRNavigation = () =>
-  useMTRStore((state) => ({
+  useMTRStore((state) => ({ 
     currentStep: state.currentStep,
     currentStepName: state.getCurrentStepName(),
     nextStep: state.getNextStep(),
@@ -2132,22 +2093,22 @@ export const useMTRNavigation = () =>
     completeStep: state.completeStep,
     validateStep: state.validateStep,
     loading: state.loading.completeStep || false,
-    error: state.errors.completeStep || null,
+    error: state.errors.completeStep || null}
   }));
 
 export const useMTRPatient = () =>
-  useMTRStore((state) => ({
+  useMTRStore((state) => ({ 
     selectedPatient: state.selectedPatient,
     selectPatient: state.selectPatient,
     searchPatients: state.searchPatients,
     createNewPatient: state.createNewPatient,
     loading:
       state.loading.searchPatients || state.loading.createNewPatient || false,
-    error: state.errors.searchPatients || state.errors.createNewPatient || null,
+    error: state.errors.searchPatients || state.errors.createNewPatient || null}
   }));
 
 export const useMTRMedications = () =>
-  useMTRStore((state) => ({
+  useMTRStore((state) => ({ 
     medications: state.medications,
     addMedication: state.addMedication,
     updateMedication: state.updateMedication,
@@ -2156,22 +2117,22 @@ export const useMTRMedications = () =>
     importMedications: state.importMedications,
     validateMedications: state.validateMedications,
     loading: state.loading.importMedications || false,
-    error: state.errors.importMedications || null,
+    error: state.errors.importMedications || null}
   }));
 
 export const useMTRAssessment = () =>
-  useMTRStore((state) => ({
+  useMTRStore((state) => ({ 
     identifiedProblems: state.identifiedProblems,
     runAssessment: state.runAssessment,
     addProblem: state.addProblem,
     updateProblem: state.updateProblem,
     resolveProblem: state.resolveProblem,
     loading: state.loading.runAssessment || false,
-    error: state.errors.runAssessment || null,
+    error: state.errors.runAssessment || null}
   }));
 
 export const useMTRPlan = () =>
-  useMTRStore((state) => ({
+  useMTRStore((state) => ({ 
     therapyPlan: state.therapyPlan,
     createPlan: state.createPlan,
     updatePlan: state.updatePlan,
@@ -2179,21 +2140,21 @@ export const useMTRPlan = () =>
     addMonitoringParameter: state.addMonitoringParameter,
     addTherapyGoal: state.addTherapyGoal,
     loading: state.loading.createPlan || false,
-    error: state.errors.createPlan || null,
+    error: state.errors.createPlan || null}
   }));
 
 export const useMTRInterventions = () =>
-  useMTRStore((state) => ({
+  useMTRStore((state) => ({ 
     interventions: state.interventions,
     recordIntervention: state.recordIntervention,
     updateIntervention: state.updateIntervention,
     markInterventionComplete: state.markInterventionComplete,
     loading: state.loading.recordIntervention || false,
-    error: state.errors.recordIntervention || null,
+    error: state.errors.recordIntervention || null}
   }));
 
 export const useMTRFollowUps = () =>
-  useMTRStore((state) => ({
+  useMTRStore((state) => ({ 
     followUps: state.followUps,
     scheduleFollowUp: state.scheduleFollowUp,
     updateFollowUp: state.updateFollowUp,
@@ -2202,5 +2163,5 @@ export const useMTRFollowUps = () =>
     loading:
       state.loading.scheduleFollowUp || state.loading.completeFollowUp || false,
     error:
-      state.errors.scheduleFollowUp || state.errors.completeFollowUp || null,
+      state.errors.scheduleFollowUp || state.errors.completeFollowUp || null}
   }));

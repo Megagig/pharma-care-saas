@@ -1,5 +1,4 @@
 import DOMPurify from 'dompurify';
-import React from 'react';
 
 // Validation result interface
 export interface ValidationResult {
@@ -102,8 +101,8 @@ export class ClinicalInterventionValidator {
 
         // Required validation
         if (rule.required && this.isEmpty(value)) {
-            errors.push({
-                field: fieldName,
+            errors.push({ 
+                field: fieldName}
                 message: `${this.getFieldLabel(fieldName)} is required`,
                 code: 'REQUIRED',
                 severity: 'error'
@@ -118,8 +117,8 @@ export class ClinicalInterventionValidator {
         // Length validations
         if (typeof value === 'string') {
             if (rule.minLength && value.length < rule.minLength) {
-                errors.push({
-                    field: fieldName,
+                errors.push({ 
+                    field: fieldName}
                     message: `${this.getFieldLabel(fieldName)} must be at least ${rule.minLength} characters`,
                     code: 'MIN_LENGTH',
                     severity: 'error'
@@ -127,8 +126,8 @@ export class ClinicalInterventionValidator {
             }
 
             if (rule.maxLength && value.length > rule.maxLength) {
-                errors.push({
-                    field: fieldName,
+                errors.push({ 
+                    field: fieldName}
                     message: `${this.getFieldLabel(fieldName)} must not exceed ${rule.maxLength} characters`,
                     code: 'MAX_LENGTH',
                     severity: 'error'
@@ -137,8 +136,8 @@ export class ClinicalInterventionValidator {
 
             // Warning for approaching max length
             if (rule.maxLength && value.length > rule.maxLength * 0.9) {
-                warnings.push({
-                    field: fieldName,
+                warnings.push({ 
+                    field: fieldName}
                     message: `Approaching character limit (${value.length}/${rule.maxLength})`,
                     code: 'APPROACHING_LIMIT',
                     suggestion: 'Consider shortening your text'
@@ -148,8 +147,8 @@ export class ClinicalInterventionValidator {
 
         // Pattern validation
         if (rule.pattern && typeof value === 'string' && !rule.pattern.test(value)) {
-            errors.push({
-                field: fieldName,
+            errors.push({ 
+                field: fieldName}
                 message: `${this.getFieldLabel(fieldName)} format is invalid`,
                 code: 'INVALID_FORMAT',
                 severity: 'error'
@@ -403,11 +402,11 @@ export const interventionBusinessRules: BusinessRule[] = [
                 );
 
                 if (duplicates.length > 0) {
-                    errors.push({
+                    errors.push({ 
                         field: 'strategies',
                         message: 'Duplicate strategy types are not allowed',
                         code: 'DUPLICATE_STRATEGIES',
-                        severity: 'error'
+                        severity: 'error' })
                     });
                 }
             }
@@ -426,7 +425,7 @@ export const interventionBusinessRules: BusinessRule[] = [
                 formData.strategies.forEach((strategy: any, index: number) => {
                     if (strategy.type === 'custom') {
                         if (!strategy.description || strategy.description.length < 20) {
-                            errors.push({
+                            errors.push({  })
                                 field: `strategies.${index}.description`,
                                 message: 'Custom strategies require detailed description (minimum 20 characters)',
                                 code: 'CUSTOM_STRATEGY_INSUFFICIENT_DETAIL',
@@ -435,7 +434,7 @@ export const interventionBusinessRules: BusinessRule[] = [
                         }
 
                         if (!strategy.rationale || strategy.rationale.length < 20) {
-                            errors.push({
+                            errors.push({  })
                                 field: `strategies.${index}.rationale`,
                                 message: 'Custom strategies require detailed rationale (minimum 20 characters)',
                                 code: 'CUSTOM_STRATEGY_INSUFFICIENT_RATIONALE',
@@ -458,20 +457,20 @@ export const interventionBusinessRules: BusinessRule[] = [
 
             if (formData.strategies && Array.isArray(formData.strategies)) {
                 if (formData.strategies.length === 0) {
-                    warnings.push({
+                    warnings.push({ 
                         field: 'strategies',
                         message: 'Consider adding at least one intervention strategy',
                         code: 'NO_STRATEGIES',
-                        suggestion: 'Add strategies to improve intervention effectiveness'
+                        suggestion: 'Add strategies to improve intervention effectiveness' })
                     });
                 }
 
                 if (formData.strategies.length > 5) {
-                    warnings.push({
+                    warnings.push({ 
                         field: 'strategies',
                         message: 'Many strategies may complicate implementation',
                         code: 'TOO_MANY_STRATEGIES',
-                        suggestion: 'Consider focusing on the most important strategies'
+                        suggestion: 'Consider focusing on the most important strategies' })
                     });
                 }
             }
@@ -489,10 +488,10 @@ export const interventionValidator = new ClinicalInterventionValidator(
 
 // Validation hooks for React components
 export const useFieldValidation = (fieldName: string, value: any, formData?: any) => {
-    const [validationResult, setValidationResult] = React.useState<ValidationResult>({
+    const [validationResult, setValidationResult] = React.useState<ValidationResult>({ 
         isValid: true,
         errors: [],
-        warnings: []
+        warnings: [] })
     });
 
     React.useEffect(() => {
@@ -504,10 +503,10 @@ export const useFieldValidation = (fieldName: string, value: any, formData?: any
 };
 
 export const useFormValidation = (formData: any) => {
-    const [validationResult, setValidationResult] = React.useState<ValidationResult>({
+    const [validationResult, setValidationResult] = React.useState<ValidationResult>({ 
         isValid: true,
         errors: [],
-        warnings: []
+        warnings: [] })
     });
 
     React.useEffect(() => {
@@ -525,10 +524,10 @@ export const useDebouncedValidation = (
     formData?: any,
     delay: number = 300
 ) => {
-    const [validationResult, setValidationResult] = React.useState<ValidationResult>({
+    const [validationResult, setValidationResult] = React.useState<ValidationResult>({ 
         isValid: true,
         errors: [],
-        warnings: []
+        warnings: [] })
     });
 
     React.useEffect(() => {

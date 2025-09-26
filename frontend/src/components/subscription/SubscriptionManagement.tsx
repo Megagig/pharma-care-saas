@@ -1,39 +1,14 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Chip,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Alert,
-  FormControlLabel,
-  Switch,
-  Container,
-  Paper,
-  Divider,
-  Stack,
-  LinearProgress,
-} from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import StarIcon from '@mui/icons-material/Star';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import SecurityIcon from '@mui/icons-material/Security';
-import SupportIcon from '@mui/icons-material/Support';
-import GroupIcon from '@mui/icons-material/Group';
-import { useUIStore } from '../../stores';
-import {
-  useCurrentSubscriptionQuery,
-  useAvailablePlansQuery,
-} from '../../queries/useSubscription';
-import {
-  subscriptionService,
-  SubscriptionPlan,
-} from '../../services/subscriptionService';
+import { useState } from 'react';
+import { Button, Card, CardContent, Progress, Alert, Switch, Separator } from '@/components/ui/button';
+import { useUIStore } from '@/stores';
+import { useCurrentSubscriptionQuery, useAvailablePlansQuery } from '@/hooks/useSubscription';
+import { subscriptionService } from '@/services/subscriptionService';
+import { StarIcon, SecurityIcon, TrendingUpIcon, GroupIcon, SupportIcon, CheckCircleIcon } from '@/components/ui/icons';
+import { FormControlLabel } from '@/components/ui/form-control';
+import { Chip } from '@/components/ui/chip';
+import { List } from '@/components/ui/list';
+import { Typography } from '@/components/ui/typography';
+import { Box, Grid, Stack } from '@/components/ui/layout';
 
 const SubscriptionManagement: React.FC = () => {
   const addNotification = useUIStore((state) => state.addNotification);
@@ -41,18 +16,14 @@ const SubscriptionManagement: React.FC = () => {
     'monthly'
   );
   const [loading, setLoading] = useState<string | null>(null);
-
   // Queries
   const { data: currentSubscription, isLoading: subscriptionLoading } =
     useCurrentSubscriptionQuery();
-
   const { data: plans = [], isLoading: plansLoading } =
     useAvailablePlansQuery(billingInterval);
-
   // Helper function to convert features object to display features array
   const getDisplayFeatures = (plan: SubscriptionPlan): string[] => {
     const features = [];
-
     if (plan.features.patientLimit) {
       if (plan.features.patientLimit === -1) {
         features.push('Unlimited patients');
@@ -62,7 +33,6 @@ const SubscriptionManagement: React.FC = () => {
     } else {
       features.push('Unlimited patients');
     }
-
     if (plan.features.reminderSmsMonthlyLimit) {
       if (plan.features.reminderSmsMonthlyLimit === -1) {
         features.push('Unlimited SMS reminders');
@@ -72,12 +42,10 @@ const SubscriptionManagement: React.FC = () => {
         );
       }
     }
-
     if (plan.features.reportsExport) features.push('Export reports');
     if (plan.features.careNoteExport) features.push('Export care notes');
     if (plan.features.adrModule) features.push('ADR monitoring');
     if (plan.features.multiUserSupport) features.push('Multi-user support');
-
     if (plan.features.teamSize) {
       if (plan.features.teamSize === -1) {
         features.push('Unlimited team members');
@@ -85,11 +53,9 @@ const SubscriptionManagement: React.FC = () => {
         features.push(`Up to ${plan.features.teamSize} team members`);
       }
     }
-
     if (plan.features.apiAccess) features.push('API access');
     if (plan.features.customIntegrations) features.push('Custom integrations');
     if (plan.features.prioritySupport) features.push('Priority support');
-
     // New features for Pharmily and Network tiers
     if (plan.features.adrReporting) features.push('ADR Reporting');
     if (plan.features.drugInteractionChecker)
@@ -101,10 +67,8 @@ const SubscriptionManagement: React.FC = () => {
       features.push('Shared Patient Records');
     if (plan.features.groupAnalytics) features.push('Group Analytics');
     if (plan.features.cdss) features.push('Clinical Decision Support System');
-
     return features;
   };
-
   // Use plans directly from the query (already filtered by billing interval)
   const tierOrder = [
     'free_trial',
@@ -117,11 +81,9 @@ const SubscriptionManagement: React.FC = () => {
   const filteredPlans = plans.sort(
     (a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier)
   );
-
   const isCurrentPlan = (planId: string) => {
     return currentSubscription?.subscription?.planId?._id === planId;
   };
-
   const getTrialDaysRemaining = () => {
     if (
       currentSubscription?.subscription?.status === 'trial' &&
@@ -135,7 +97,6 @@ const SubscriptionManagement: React.FC = () => {
     }
     return 0;
   };
-
   const handleSubscribe = async (plan: SubscriptionPlan) => {
     // Handle Enterprise contact sales
     if (plan.isContactSales && plan.whatsappNumber) {
@@ -149,24 +110,21 @@ const SubscriptionManagement: React.FC = () => {
       window.open(whatsappUrl, '_blank');
       return;
     }
-
     if (isCurrentPlan(plan._id)) {
       addNotification({
         type: 'info',
         title: 'Already Subscribed',
         message: 'You are already subscribed to this plan',
-        duration: 3000,
+        duration: 3000
       });
       return;
     }
-
     setLoading(plan._id);
     try {
       const response = await subscriptionService.createCheckoutSession(
         plan._id,
         billingInterval
       );
-
       if (response.success && response.data?.authorization_url) {
         // Redirect to Paystack checkout
         window.location.href = response.data.authorization_url;
@@ -184,28 +142,24 @@ const SubscriptionManagement: React.FC = () => {
         type: 'error',
         title: 'Subscription Error',
         message: errorMessage,
-        duration: 5000,
+        duration: 5000
       });
     } finally {
       setLoading(null);
     }
   };
-
   const formatPrice = (price: number, interval: 'monthly' | 'yearly') => {
     const formatted = new Intl.NumberFormat('en-NG', {
       style: 'currency',
       currency: 'NGN',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 0
     }).format(price);
-
     if (interval === 'yearly') {
       const monthlyEquivalent = Math.round(price / 12);
       return `${formatted}/year (₦${monthlyEquivalent.toLocaleString()}/mo)`;
     }
-
     return `${formatted}/month`;
   };
-
   const getPlanIcon = (tier: string) => {
     switch (tier) {
       case 'free_trial':
@@ -224,7 +178,6 @@ const SubscriptionManagement: React.FC = () => {
         return <StarIcon color="action" />;
     }
   };
-
   const getYearlySavings = (monthlyPrice: number) => {
     // 25% discount calculation: Monthly × 12 × 0.75
     const yearlyPrice = monthlyPrice * 12 * 0.75;
@@ -233,32 +186,28 @@ const SubscriptionManagement: React.FC = () => {
     const savingsPercentage = (savings / actualYearlyCost) * 100;
     return Math.round(savingsPercentage);
   };
-
   if (subscriptionLoading || plansLoading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-          <LinearProgress sx={{ width: '100%' }} />
-        </Box>
-        <Typography variant="h6" align="center">
+      <div className="max-w-lg">
+        <div className="">
+          <Progress className="" />
+        </div>
+        <div className="text-center">
           Loading subscription plans...
-        </Typography>
-      </Container>
+        </div>
+      </div>
     );
   }
-
   const trialDaysRemaining = getTrialDaysRemaining();
-
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 6, textAlign: 'center' }}>
-        <Typography variant="h3" component="h1" gutterBottom fontWeight="bold">
+    <div className="max-w-lg">
+      <div className="">
+        <h1 className="font-bold mb-2">
           Subscription Plans
-        </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
+        </h1>
+        <div className="text-gray-600 mb-4">
           Choose the perfect plan for your pharmacy needs
-        </Typography>
-
+        </div>
         {/* Current Subscription Status */}
         {currentSubscription?.subscription && (
           <Alert
@@ -267,9 +216,9 @@ const SubscriptionManagement: React.FC = () => {
                 ? 'info'
                 : 'success'
             }
-            sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}
+            className=""
           >
-            <Typography variant="body1">
+            <div>
               {currentSubscription.subscription.status === 'trial' ? (
                 <>
                   You are currently on a <strong>Free Trial</strong>
@@ -293,12 +242,11 @@ const SubscriptionManagement: React.FC = () => {
                   </strong>
                 </>
               )}
-            </Typography>
+            </div>
           </Alert>
         )}
-
         {/* Billing Toggle */}
-        <Paper elevation={1} sx={{ display: 'inline-flex', p: 1, mb: 4 }}>
+        <div className="">
           <FormControlLabel
             control={
               <Switch
@@ -309,128 +257,90 @@ const SubscriptionManagement: React.FC = () => {
                 color="primary"
               />
             }
-            label={
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="body2">
-                  {billingInterval === 'monthly' ? 'Monthly' : 'Yearly'}
-                </Typography>
-                {billingInterval === 'yearly' && (
-                  <Chip
-                    label="Save 25%"
-                    size="small"
-                    color="success"
-                    variant="outlined"
-                  />
-                )}
-              </Stack>
-            }
+            label=""
           />
-        </Paper>
-      </Box>
-
+          <div className="flex flex-row gap-1 items-center">
+            <div>
+              {billingInterval === 'monthly' ? 'Monthly' : 'Yearly'}
+            </div>
+            {billingInterval === 'yearly' && (
+              <Chip
+                label="Save 25%"
+                size="small"
+                color="success"
+              />
+            )}
+          </div>
+        </div>
+      </div>
       {/* Plans Grid */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            md: 'repeat(3, 1fr)',
-          },
-          gap: 3,
-          mb: 6,
-          justifyItems: 'center',
-        }}
-      >
+      <div
+        className="">
         {filteredPlans.map((plan) => (
-          <Box key={plan._id}>
+          <div key={plan._id}>
             <Card
               elevation={plan.popularPlan ? 8 : 2}
-              sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'relative',
-                border: plan.popularPlan ? 2 : 1,
-                borderColor: plan.popularPlan ? 'primary.main' : 'divider',
-                transform: plan.popularPlan ? 'scale(1.05)' : 'none',
-                transition: 'all 0.3s ease-in-out',
-                '&:hover': {
-                  transform: plan.popularPlan ? 'scale(1.07)' : 'scale(1.02)',
-                  boxShadow: (theme) => theme.shadows[8],
-                },
-              }}
-            >
+              className="">
               {plan.popularPlan && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: -10,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    zIndex: 1,
-                  }}
+                <div
+                  className=""
                 >
                   <Chip
                     label="Most Popular"
                     color="primary"
                     icon={<StarIcon />}
-                    sx={{ fontWeight: 'bold' }}
+                    className=""
                   />
-                </Box>
+                </div>
               )}
+              <CardContent className="">
+                <div className="">
+                  <div className="">{getPlanIcon(plan.tier)}</div>
+                  <div
 
-              <CardContent sx={{ flexGrow: 1, pt: plan.popularPlan ? 4 : 2 }}>
-                <Box sx={{ textAlign: 'center', mb: 3 }}>
-                  <Box sx={{ mb: 2 }}>{getPlanIcon(plan.tier)}</Box>
-
-                  <Typography
-                    variant="h5"
                     component="h2"
                     fontWeight="bold"
                     gutterBottom
                   >
                     {plan.name}
-                  </Typography>
+                  </div>
+                  <div
 
-                  <Typography
-                    variant="body2"
                     color="text.secondary"
-                    sx={{ mb: 2 }}
+                    className=""
                   >
                     {plan.description}
-                  </Typography>
-
+                  </div>
                   {plan.tier === 'free_trial' ? (
-                    <Box>
-                      <Typography
-                        variant="h3"
+                    <div>
+                      <div
+
                         fontWeight="bold"
                         color="primary.main"
                       >
                         Free
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                      <div color="text.secondary">
                         14-day trial
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   ) : plan.isContactSales ? (
-                    <Box>
-                      <Typography
-                        variant="h5"
+                    <div>
+                      <div
+
                         fontWeight="bold"
                         color="primary.main"
                       >
                         Contact Sales
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                      <div color="text.secondary">
                         Custom pricing
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   ) : (
-                    <Box>
-                      <Typography
-                        variant="h3"
+                    <div>
+                      <div
+
                         fontWeight="bold"
                         color="primary.main"
                       >
@@ -439,46 +349,40 @@ const SubscriptionManagement: React.FC = () => {
                             '/'
                           )[0]
                         }
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      </div>
+                      <div color="text.secondary">
                         /{billingInterval === 'monthly' ? 'month' : 'year'}
-                      </Typography>
+                      </div>
                       {billingInterval === 'yearly' && (
-                        <Typography
-                          variant="caption"
+                        <div
+
                           color="success.main"
                           fontWeight="bold"
                         >
                           Save ₦
                           {getYearlySavings(plan.priceNGN).toLocaleString()}
                           /month
-                        </Typography>
+                        </div>
                       )}
-                    </Box>
+                    </div>
                   )}
-                </Box>
-
-                <Divider sx={{ mb: 2 }} />
-
-                <List dense sx={{ mb: 3 }}>
+                </div>
+                <Separator className="" />
+                <List dense className="">
                   {getDisplayFeatures(plan)
                     .slice(0, 6)
                     .map((feature, index) => (
-                      <ListItem key={index} disablePadding>
-                        <ListItemIcon sx={{ minWidth: 32 }}>
+                      <div key={index} disablePadding>
+                        <div className="">
                           <CheckCircleIcon color="success" fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText
+                        </div>
+                        <div
                           primary={feature}
-                          primaryTypographyProps={{
-                            variant: 'body2',
-                            fontSize: '0.875rem',
-                          }}
+
                         />
-                      </ListItem>
+                      </div>
                     ))}
                 </List>
-
                 <Button
                   variant={plan.popularPlan ? 'contained' : 'outlined'}
                   color={plan.popularPlan ? 'primary' : 'inherit'}
@@ -486,75 +390,49 @@ const SubscriptionManagement: React.FC = () => {
                   size="large"
                   disabled={loading === plan._id || isCurrentPlan(plan._id)}
                   onClick={() => handleSubscribe(plan)}
-                  sx={{
-                    mt: 'auto',
-                    fontWeight: 'bold',
-                    py: 1.5,
-                  }}
+                  className=""
                 >
                   {loading === plan._id
                     ? 'Processing...'
                     : isCurrentPlan(plan._id)
-                    ? 'Current Plan'
-                    : plan.isContactSales
-                    ? 'Contact Sales'
-                    : 'Subscribe Now'}
+                      ? 'Current Plan'
+                      : plan.isContactSales
+                        ? 'Contact Sales'
+                        : 'Subscribe Now'}
                 </Button>
               </CardContent>
             </Card>
-          </Box>
+          </div>
         ))}
-      </Box>
-
+      </div>
       {/* Additional Information */}
-      <Box sx={{ textAlign: 'center', mt: 6 }}>
-        <Typography variant="h6" gutterBottom>
+      <div className="">
+        <div gutterBottom>
           All plans include
-        </Typography>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: 2,
-            mt: 2,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+        </div>
+        <div
+          className="">
+          <div
+            className=""
           >
-            <SecurityIcon color="primary" sx={{ mr: 1 }} />
-            <Typography variant="body2">Secure & Compliant</Typography>
-          </Box>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            <SecurityIcon color="primary" className="" />
+            <div >Secure & Compliant</div>
+          </div>
+          <div
+            className=""
           >
-            <SupportIcon color="primary" sx={{ mr: 1 }} />
-            <Typography variant="body2">24/7 Support</Typography>
-          </Box>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            <SupportIcon color="primary" className="" />
+            <div >24/7 Support</div>
+          </div>
+          <div
+            className=""
           >
-            <CheckCircleIcon color="primary" sx={{ mr: 1 }} />
-            <Typography variant="body2">No Setup Fees</Typography>
-          </Box>
-        </Box>
-      </Box>
-    </Container>
+            <CheckCircleIcon color="primary" className="" />
+            <div >No Setup Fees</div>
+          </div>
+        </div>
+      </div>
+    </div >
   );
 };
-
 export default SubscriptionManagement;

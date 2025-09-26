@@ -1,14 +1,4 @@
 import api from '../lib/api';
-import {
-  ClinicalNote,
-  ClinicalNoteFormData,
-  ClinicalNoteFilters,
-  ClinicalNotesResponse,
-  BulkUpdateData,
-  NoteStatistics,
-  Attachment
-} from '../types/clinicalNote';
-
 class ClinicalNoteService {
   private readonly baseUrl = '/notes';
 
@@ -242,7 +232,7 @@ class ClinicalNoteService {
       }>(`${this.baseUrl}/${noteId}/attachments`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-        },
+        }
       });
       return response.data;
     } catch (error: any) {
@@ -274,7 +264,7 @@ class ClinicalNoteService {
   async downloadAttachment(noteId: string, attachmentId: string): Promise<Blob> {
     try {
       const response = await api.get(`${this.baseUrl}/${noteId}/attachments/${attachmentId}/download`, {
-        responseType: 'blob',
+        responseType: 'blob'
       });
       return response.data;
     } catch (error: any) {

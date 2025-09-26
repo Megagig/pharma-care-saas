@@ -1,5 +1,3 @@
-import { apiClient } from '../../../lib/apiClient';
-
 export interface CreateClinicalNoteFromDiagnosticRequest {
     diagnosticRequestId: string;
     diagnosticResultId?: string;

@@ -1,28 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import {
-  Alert,
-  Button,
-  Box,
-  Typography,
-  Stack,
-  Paper,
-  Divider,
-  Chip,
-  IconButton,
-  Collapse,
-} from '@mui/material';
-import {
-  Error as ErrorIcon,
-  Refresh,
-  BugReport,
-  ExpandMore,
-  ExpandLess,
-  Wifi,
-  WifiOff,
-} from '@mui/icons-material';
-import { retryMechanism } from '../../utils/retryMechanism';
-import { performanceMonitor } from '../../utils/performanceMonitor';
-import { socketService } from '../../services/socketService';
+import { Button, Alert, Separator } from '@/components/ui/button';
 
 interface Props {
   children: ReactNode;
@@ -32,7 +8,6 @@ interface Props {
   enableRetry?: boolean;
   enableOfflineMode?: boolean;
 }
-
 interface State {
   hasError: boolean;
   error?: Error;
@@ -43,7 +18,6 @@ interface State {
   isOffline: boolean;
   lastErrorTime: number;
 }
-
 /**
  * Communication-specific Error Boundary with advanced recovery features
  * Handles real-time messaging errors, offline scenarios, and provides contextual recovery options
@@ -51,7 +25,6 @@ interface State {
 class CommunicationErrorBoundary extends Component<Props, State> {
   private retryTimeouts: NodeJS.Timeout[] = [];
   private offlineCheckInterval?: NodeJS.Timeout;
-
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -63,7 +36,6 @@ class CommunicationErrorBoundary extends Component<Props, State> {
       lastErrorTime: 0,
     };
   }
-
   static getDerivedStateFromError(error: Error): Partial<State> {
     const errorId = `comm_error_${Date.now()}_${Math.random()
       .toString(36)
@@ -75,58 +47,44 @@ class CommunicationErrorBoundary extends Component<Props, State> {
       lastErrorTime: Date.now(),
     };
   }
-
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const { context = 'unknown', onError } = this.props;
-
     // Log error with performance monitoring
     performanceMonitor.recordMetric('communication_error', 1, {
       context,
       errorType: error.name,
       errorMessage: error.message,
-      componentStack: errorInfo.componentStack?.split('\n')[1] || 'unknown',
-    });
-
+      componentStack: errorInfo.componentStack?.split('\n')[1] || 'unknown'}
     console.error(`Communication Error in ${context}:`, error, errorInfo);
-
-    this.setState({
+    this.setState({ 
       error,
-      errorInfo,
+      errorInfo}
     });
-
     // Call custom error handler
     if (onError) {
       onError(error, errorInfo);
     }
-
     // Report error to error tracking service
     this.reportError(error, errorInfo, context);
   }
-
   componentDidMount() {
     // Monitor online/offline status
     window.addEventListener('online', this.handleOnline);
     window.addEventListener('offline', this.handleOffline);
-
     // Check connection status periodically
     this.offlineCheckInterval = setInterval(this.checkConnectionStatus, 5000);
   }
-
   componentWillUnmount() {
     window.removeEventListener('online', this.handleOnline);
     window.removeEventListener('offline', this.handleOffline);
-
     // Clear timeouts
     this.retryTimeouts.forEach((timeout) => clearTimeout(timeout));
-
     if (this.offlineCheckInterval) {
       clearInterval(this.offlineCheckInterval);
     }
   }
-
   private handleOnline = () => {
     this.setState({ isOffline: false });
-
     // If we had an error and are now online, suggest retry
     if (this.state.hasError && this.isNetworkError(this.state.error)) {
       this.showRecoveryMessage(
@@ -134,23 +92,18 @@ class CommunicationErrorBoundary extends Component<Props, State> {
       );
     }
   };
-
   private handleOffline = () => {
     this.setState({ isOffline: true });
   };
-
   private checkConnectionStatus = () => {
     const isSocketConnected = socketService.isConnected();
     const isOnline = navigator.onLine;
-
-    this.setState((prevState) => ({
-      isOffline: !isOnline || !isSocketConnected,
+    this.setState((prevState) => ({ 
+      isOffline: !isOnline || !isSocketConnected}
     }));
   };
-
   private isNetworkError = (error?: Error): boolean => {
     if (!error) return false;
-
     const networkErrorPatterns = [
       'network error',
       'fetch',
@@ -160,20 +113,16 @@ class CommunicationErrorBoundary extends Component<Props, State> {
       'websocket',
       'offline',
     ];
-
     return networkErrorPatterns.some(
       (pattern) =>
         error.message.toLowerCase().includes(pattern) ||
         error.name.toLowerCase().includes(pattern)
     );
   };
-
   private isRecoverableError = (error?: Error): boolean => {
     if (!error) return false;
-
     // Network errors are usually recoverable
     if (this.isNetworkError(error)) return true;
-
     // Component errors might be recoverable with retry
     const recoverablePatterns = [
       'chunkloaderror',
@@ -181,20 +130,16 @@ class CommunicationErrorBoundary extends Component<Props, State> {
       'dynamically imported module',
       'script error',
     ];
-
     return recoverablePatterns.some((pattern) =>
       error.message.toLowerCase().includes(pattern)
     );
   };
-
   private getErrorSeverity = (
     error?: Error
   ): 'low' | 'medium' | 'high' | 'critical' => {
     if (!error) return 'medium';
-
     // Network errors are usually low severity
     if (this.isNetworkError(error)) return 'low';
-
     // Security or authentication errors are high severity
     if (
       error.message.includes('auth') ||
@@ -202,15 +147,12 @@ class CommunicationErrorBoundary extends Component<Props, State> {
     ) {
       return 'high';
     }
-
     // Data corruption or critical component failures
     if (error.message.includes('corrupt') || error.name === 'ChunkLoadError') {
       return 'critical';
     }
-
     return 'medium';
   };
-
   private getRecoveryActions = (
     error?: Error
   ): Array<{
@@ -219,69 +161,58 @@ class CommunicationErrorBoundary extends Component<Props, State> {
     primary?: boolean;
   }> => {
     const actions = [];
-
     // Always allow retry for recoverable errors
     if (this.isRecoverableError(error) && this.props.enableRetry !== false) {
-      actions.push({
+      actions.push({ 
         label: 'Try Again',
         action: this.handleRetry,
-        primary: true,
+        primary: true}
       });
     }
-
     // Network-specific actions
     if (this.isNetworkError(error)) {
-      actions.push({
+      actions.push({ 
         label: 'Check Connection',
-        action: this.handleConnectionCheck,
+        action: this.handleConnectionCheck}
       });
-
       if (this.props.enableOfflineMode) {
-        actions.push({
+        actions.push({ 
           label: 'Continue Offline',
-          action: this.handleOfflineMode,
+          action: this.handleOfflineMode}
         });
       }
     }
-
     // Chunk loading errors
     if (error?.name === 'ChunkLoadError') {
-      actions.push({
+      actions.push({ 
         label: 'Reload Page',
         action: this.handlePageReload,
-        primary: true,
+        primary: true}
       });
     }
-
     // Always allow error reporting
-    actions.push({
+    actions.push({ 
       label: 'Report Issue',
-      action: this.handleReportError,
+      action: this.handleReportError}
     });
-
     return actions;
   };
-
   private handleRetry = async () => {
     const { context = 'communication' } = this.props;
     const retryCount = this.state.retryCount + 1;
-
     this.setState({ retryCount });
-
     try {
       // Use retry mechanism for automatic retry with backoff
       await retryMechanism.executeWithRetry(
         async () => {
           // Reset error state to trigger re-render
-          this.setState({
+          this.setState({ 
             hasError: false,
             error: undefined,
-            errorInfo: undefined,
+            errorInfo: undefined}
           });
-
           // Wait a bit to ensure component re-renders
           await new Promise((resolve) => setTimeout(resolve, 100));
-
           // If still in error state, throw to trigger retry
           if (this.state.hasError) {
             throw new Error('Component still in error state');
@@ -301,11 +232,9 @@ class CommunicationErrorBoundary extends Component<Props, State> {
       this.showRecoveryMessage('Retry failed. Please try refreshing the page.');
     }
   };
-
   private handleConnectionCheck = () => {
     // Force socket reconnection
     socketService.forceReconnect();
-
     // Check if we can reach the server
     fetch('/api/health', { method: 'HEAD' })
       .then(() => {
@@ -317,22 +246,18 @@ class CommunicationErrorBoundary extends Component<Props, State> {
         );
       });
   };
-
   private handleOfflineMode = () => {
     this.setState({ hasError: false });
     this.showRecoveryMessage(
       'Switched to offline mode. Some features may be limited.'
     );
   };
-
   private handlePageReload = () => {
     window.location.reload();
   };
-
   private handleReportError = () => {
     const { error, errorInfo, errorId } = this.state;
     const { context } = this.props;
-
     const errorReport = {
       errorId,
       context,
@@ -345,10 +270,8 @@ class CommunicationErrorBoundary extends Component<Props, State> {
       isOffline: this.state.isOffline,
       socketConnected: socketService.isConnected(),
     };
-
     // In production, this would send to error tracking service
     console.log('Error Report:', errorReport);
-
     // Copy to clipboard for easy sharing
     navigator.clipboard
       ?.writeText(JSON.stringify(errorReport, null, 2))
@@ -359,12 +282,10 @@ class CommunicationErrorBoundary extends Component<Props, State> {
         this.showRecoveryMessage('Error report logged to console.');
       });
   };
-
   private showRecoveryMessage = (message: string) => {
     // This would integrate with your notification system
     console.log('Recovery message:', message);
   };
-
   private reportError = (
     error: Error,
     errorInfo: ErrorInfo,
@@ -375,57 +296,49 @@ class CommunicationErrorBoundary extends Component<Props, State> {
       // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
     }
   };
-
   private toggleDetails = () => {
     this.setState((prevState) => ({ showDetails: !prevState.showDetails }));
   };
-
   render() {
     if (this.state.hasError) {
       const { error, errorInfo, showDetails, isOffline, retryCount } =
         this.state;
       const { fallback, context = 'Communication' } = this.props;
-
       // Custom fallback UI
       if (fallback) {
         return fallback;
       }
-
       const severity = this.getErrorSeverity(error);
       const recoveryActions = this.getRecoveryActions(error);
       const isRecoverable = this.isRecoverableError(error);
-
       return (
-        <Box sx={{ p: 3, maxWidth: 600, mx: 'auto' }}>
-          <Paper elevation={2} sx={{ p: 4 }}>
-            <Stack spacing={3} alignItems="center" textAlign="center">
+        <div className="">
+          <div className="">
+            <div spacing={3} alignItems="center" textAlign="center">
               {/* Error Icon and Status */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <div className="">
                 <ErrorIcon
                   color={severity === 'critical' ? 'error' : 'warning'}
-                  sx={{ fontSize: 48 }}
+                  className=""
                 />
                 {isOffline && (
-                  <WifiOff color="disabled" sx={{ fontSize: 24 }} />
+                  <WifiOff color="disabled" className="" />
                 )}
-              </Box>
-
+              </div>
               {/* Error Title */}
-              <Typography variant="h5" color="error" gutterBottom>
+              <div  color="error" gutterBottom>
                 {context} Error
-              </Typography>
-
+              </div>
               {/* Error Description */}
-              <Typography variant="body1" color="text.secondary">
+              <div  color="text.secondary">
                 {this.isNetworkError(error)
                   ? 'Connection issue detected. Please check your internet connection and try again.'
                   : isRecoverable
                   ? 'A temporary error occurred. This can usually be resolved by trying again.'
                   : 'An unexpected error occurred while loading this component.'}
-              </Typography>
-
+              </div>
               {/* Status Chips */}
-              <Stack
+              <div
                 direction="row"
                 spacing={1}
                 flexWrap="wrap"
@@ -438,7 +351,7 @@ class CommunicationErrorBoundary extends Component<Props, State> {
                       ? 'error'
                       : severity === 'high'
                       ? 'warning'
-                      : 'default'
+                      : 'default'}
                   }
                   size="small"
                 />
@@ -453,11 +366,10 @@ class CommunicationErrorBoundary extends Component<Props, State> {
                     size="small"
                   />
                 )}
-              </Stack>
-
+              </div>
               {/* Recovery Actions */}
               {recoveryActions.length > 0 && (
-                <Stack
+                <div
                   direction="row"
                   spacing={2}
                   flexWrap="wrap"
@@ -475,21 +387,19 @@ class CommunicationErrorBoundary extends Component<Props, State> {
                           <BugReport />
                         ) : action.label === 'Check Connection' ? (
                           <Wifi />
-                        ) : undefined
+                        ) : undefined}
                       }
                     >
                       {action.label}
                     </Button>
                   ))}
-                </Stack>
+                </div>
               )}
-
               {/* Error Details (Development) */}
               {process.env.NODE_ENV === 'development' && error && (
                 <>
-                  <Divider sx={{ width: '100%' }} />
-
-                  <Box sx={{ width: '100%' }}>
+                  <Separator className="" />
+                  <div className="">
                     <Button
                       onClick={this.toggleDetails}
                       endIcon={showDetails ? <ExpandLess /> : <ExpandMore />}
@@ -497,60 +407,43 @@ class CommunicationErrorBoundary extends Component<Props, State> {
                     >
                       Error Details
                     </Button>
-
                     <Collapse in={showDetails}>
-                      <Alert severity="error" sx={{ mt: 2, textAlign: 'left' }}>
-                        <Typography variant="subtitle2" gutterBottom>
+                      <Alert severity="error" className="">
+                        <div  gutterBottom>
                           Error Message:
-                        </Typography>
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           component="pre"
-                          sx={{
-                            fontFamily: 'monospace',
-                            fontSize: '0.8rem',
-                            overflow: 'auto',
-                            maxHeight: 200,
-                            whiteSpace: 'pre-wrap',
-                            mb: 2,
-                          }}
+                          className=""
                         >
                           {error.message}
-                        </Typography>
-
+                        </div>
                         {error.stack && (
                           <>
-                            <Typography variant="subtitle2" gutterBottom>
+                            <div  gutterBottom>
                               Stack Trace:
-                            </Typography>
-                            <Typography
-                              variant="body2"
+                            </div>
+                            <div
+                              
                               component="pre"
-                              sx={{
-                                fontFamily: 'monospace',
-                                fontSize: '0.75rem',
-                                overflow: 'auto',
-                                maxHeight: 300,
-                                whiteSpace: 'pre-wrap',
-                              }}
+                              className=""
                             >
                               {error.stack}
-                            </Typography>
+                            </div>
                           </>
                         )}
                       </Alert>
                     </Collapse>
-                  </Box>
+                  </div>
                 </>
               )}
-            </Stack>
-          </Paper>
-        </Box>
+            </div>
+          </div>
+        </div>
       );
     }
-
     return this.props.children;
   }
 }
-
 export default CommunicationErrorBoundary;

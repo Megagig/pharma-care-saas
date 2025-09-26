@@ -1,6 +1,3 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useIsTouchDevice } from './useResponsive';
-
 interface NotificationPermission {
     granted: boolean;
     denied: boolean;
@@ -20,10 +17,10 @@ interface PushNotificationOptions {
 }
 
 export const useMobileNotifications = () => {
-    const [permission, setPermission] = useState<NotificationPermission>({
+    const [permission, setPermission] = useState<NotificationPermission>({ 
         granted: false,
         denied: false,
-        default: true,
+        default: true}
     });
     const [isSupported, setIsSupported] = useState(false);
     const [serviceWorkerRegistration, setServiceWorkerRegistration] = useState<ServiceWorkerRegistration | null>(null);
@@ -38,10 +35,10 @@ export const useMobileNotifications = () => {
 
             if (supported) {
                 const currentPermission = Notification.permission;
-                setPermission({
+                setPermission({ 
                     granted: currentPermission === 'granted',
                     denied: currentPermission === 'denied',
-                    default: currentPermission === 'default',
+                    default: currentPermission === 'default'}
                 });
             }
         };
@@ -133,8 +130,7 @@ export const useMobileNotifications = () => {
                             title: 'View',
                             icon: '/icons/view-icon.png',
                         },
-                    ],
-                });
+                    ]}
             } else {
                 // Fallback to regular notification
                 const notification = new Notification(options.title, {
@@ -143,8 +139,7 @@ export const useMobileNotifications = () => {
                     tag: options.tag,
                     data: options.data,
                     requireInteraction: options.requireInteraction || false,
-                    silent: options.silent || false,
-                });
+                    silent: options.silent || false}
 
                 // Handle notification click
                 notification.onclick = () => {
@@ -178,11 +173,11 @@ export const useMobileNotifications = () => {
         const handlePushMessage = (event: MessageEvent) => {
             if (event.data?.type === 'push-notification') {
                 const { title, body, data } = event.data.payload;
-                showNotification({
+                showNotification({ 
                     title,
                     body,
                     data,
-                    requireInteraction: data?.priority === 'urgent',
+                    requireInteraction: data?.priority === 'urgent'}
                 });
             }
         };
@@ -274,7 +269,7 @@ export const useCommunicationNotifications = () => {
             vibrate([300, 100, 300, 100, 300]);
         }
 
-        return await showNotification({
+        return await showNotification({  })
             title: `New message from ${message.senderName}`,
             body: message.content,
             tag: `message-${message.conversationId}`,
@@ -283,8 +278,7 @@ export const useCommunicationNotifications = () => {
                 priority: message.priority,
             },
             requireInteraction: isUrgent,
-            icon: '/icons/message-icon.png',
-        });
+            icon: '/icons/message-icon.png'}
     }, [showNotification, vibrate, permission.granted]);
 
     const showMentionNotification = useCallback(async (mention: {
@@ -297,7 +291,7 @@ export const useCommunicationNotifications = () => {
         // Always vibrate for mentions
         vibrate([200, 100, 200]);
 
-        return await showNotification({
+        return await showNotification({  })
             title: `${mention.senderName} mentioned you`,
             body: mention.content,
             tag: `mention-${mention.conversationId}`,
@@ -306,8 +300,7 @@ export const useCommunicationNotifications = () => {
                 type: 'mention',
             },
             requireInteraction: true,
-            icon: '/icons/mention-icon.png',
-        });
+            icon: '/icons/mention-icon.png'}
     }, [showNotification, vibrate, permission.granted]);
 
     const showConversationNotification = useCallback(async (conversation: {
@@ -323,16 +316,15 @@ export const useCommunicationNotifications = () => {
             updated: 'Conversation updated',
         };
 
-        return await showNotification({
+        return await showNotification({ 
             title: titles[conversation.type],
-            body: conversation.title,
+            body: conversation.title}
             tag: `conversation-${conversation.conversationId}`,
             data: {
                 conversationId: conversation.conversationId,
                 type: 'conversation',
             },
-            icon: '/icons/conversation-icon.png',
-        });
+            icon: '/icons/conversation-icon.png'}
     }, [showNotification, permission.granted]);
 
     return {

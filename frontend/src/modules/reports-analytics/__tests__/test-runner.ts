@@ -5,7 +5,6 @@
  * Runs all test suites and generates coverage reports
  */
 
-import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
@@ -54,8 +53,7 @@ async function runTestSuite(suite: TestSuite): Promise<boolean> {
         const command = `npx vitest run --config ${testDir}/vitest.config.ts "${suite.pattern}"`;
         execSync(command, {
             cwd: rootDir,
-            stdio: 'inherit',
-        });
+            stdio: 'inherit'}
 
         console.log(`✅ ${suite.name} passed`);
         return true;
@@ -72,8 +70,7 @@ async function generateCoverageReport(): Promise<void> {
         const command = `npx vitest run --coverage --config ${testDir}/vitest.config.ts`;
         execSync(command, {
             cwd: rootDir,
-            stdio: 'inherit',
-        });
+            stdio: 'inherit'}
 
         console.log('✅ Coverage report generated');
     } catch (error) {

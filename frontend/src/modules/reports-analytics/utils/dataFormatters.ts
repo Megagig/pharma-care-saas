@@ -1,6 +1,4 @@
 // Data Formatting Utilities
-import { DataPoint } from '../types/charts';
-
 /**
  * Format currency values with proper symbol and locale
  */
@@ -14,8 +12,7 @@ export const formatCurrency = (
             style: 'currency',
             currency: currency,
             minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-        }).format(value);
+            maximumFractionDigits: 2, }.format(value);
     } catch (error) {
         // Fallback for unsupported currencies
         const symbol = currency === 'NGN' ? '₦' : '$';

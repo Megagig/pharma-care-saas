@@ -1,8 +1,5 @@
-import React from 'react';
-import ModulePage from '../components/ModulePage';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import type { ModuleInfo } from '../types/moduleTypes';
 
+import ModulePage from '../components/ModulePage';
 const PharmacyReports: React.FC = () => {
   const moduleInfo: ModuleInfo = {
     title: 'Reports & Analytics',
@@ -32,7 +29,6 @@ const PharmacyReports: React.FC = () => {
     status: 'placeholder',
     estimatedRelease: 'Q3 2025',
   };
-
   return (
     <ModulePage
       moduleInfo={moduleInfo}
@@ -41,5 +37,4 @@ const PharmacyReports: React.FC = () => {
     />
   );
 };
-
 export default PharmacyReports;

@@ -1,35 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Alert,
-  AlertTitle,
-  Typography,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Chip,
-  Button,
-  Collapse,
-  IconButton,
-  Tooltip,
-  FormHelperText,
-  InputAdornment,
-} from '@mui/material';
-import {
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  CheckCircle as CheckCircleIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Refresh as RefreshIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
-
+import { Button, Input, Tooltip, Alert, AlertTitle } from '@/components/ui/button';
 // Validation types
 export type ValidationSeverity = 'error' | 'warning' | 'info' | 'success';
-
 export interface ValidationRule {
   id: string;
   field: string;
@@ -39,14 +10,12 @@ export interface ValidationRule {
   autoFix?: (value: any) => any;
   dependencies?: string[];
 }
-
 export interface ValidationResult {
   isValid: boolean;
   errors: ValidationMessage[];
   warnings: ValidationMessage[];
   infos: ValidationMessage[];
 }
-
 export interface ValidationMessage {
   id: string;
   field: string;
@@ -54,7 +23,6 @@ export interface ValidationMessage {
   severity: ValidationSeverity;
   canAutoFix?: boolean;
 }
-
 interface ValidationFeedbackProps {
   validationResult: ValidationResult;
   onAutoFix?: (fieldId: string) => void;
@@ -62,7 +30,6 @@ interface ValidationFeedbackProps {
   showDetails?: boolean;
   compact?: boolean;
 }
-
 interface FieldValidationProps {
   field: string;
   value: any;
@@ -71,14 +38,12 @@ interface FieldValidationProps {
   showInline?: boolean;
   onValidationChange?: (field: string, result: ValidationResult) => void;
 }
-
 interface RealTimeValidatorProps {
   formData: any;
   rules: ValidationRule[];
   onValidationChange: (result: ValidationResult) => void;
   debounceMs?: number;
 }
-
 // Predefined validation rules for clinical notes
 export const CLINICAL_NOTE_VALIDATION_RULES: ValidationRule[] = [
   {
@@ -171,19 +136,15 @@ export const CLINICAL_NOTE_VALIDATION_RULES: ValidationRule[] = [
     severity: 'warning',
     validator: (value) => {
       if (!value) return true;
-
       const { bloodPressure, heartRate, temperature } = value;
-
       // Basic range checks
       if (bloodPressure) {
         const { systolic, diastolic } = bloodPressure;
         if (systolic && (systolic < 70 || systolic > 200)) return false;
         if (diastolic && (diastolic < 40 || diastolic > 120)) return false;
       }
-
       if (heartRate && (heartRate < 40 || heartRate > 150)) return false;
       if (temperature && (temperature < 35 || temperature > 42)) return false;
-
       return true;
     },
   },
@@ -199,19 +160,15 @@ export const CLINICAL_NOTE_VALIDATION_RULES: ValidationRule[] = [
     },
   },
 ];
-
 // Validation engine
 export class ClinicalNoteValidator {
   private rules: ValidationRule[];
-
   constructor(rules: ValidationRule[] = CLINICAL_NOTE_VALIDATION_RULES) {
     this.rules = rules;
   }
-
   validateField(field: string, value: any, formData?: any): ValidationResult {
     const fieldRules = this.rules.filter((rule) => rule.field === field);
     const messages: ValidationMessage[] = [];
-
     for (const rule of fieldRules) {
       // Check dependencies
       if (rule.dependencies) {
@@ -219,36 +176,28 @@ export class ClinicalNoteValidator {
           const depValue = this.getNestedValue(formData, dep);
           return depValue !== undefined && depValue !== null;
         });
-
         if (!dependenciesMet) continue;
       }
-
       const isValid = rule.validator(value, formData);
-
       if (!isValid) {
-        messages.push({
+        messages.push({ 
           id: rule.id,
           field: rule.field,
           message: rule.message,
           severity: rule.severity,
-          canAutoFix: !!rule.autoFix,
+          canAutoFix: !!rule.autoFix}
         });
       }
     }
-
     return this.categorizeMessages(messages);
   }
-
   validateForm(formData: any): ValidationResult {
     const allMessages: ValidationMessage[] = [];
     const processedFields = new Set<string>();
-
     for (const rule of this.rules) {
       if (processedFields.has(rule.field)) continue;
-
       const value = this.getNestedValue(formData, rule.field);
       const fieldResult = this.validateField(rule.field, value, formData);
-
       allMessages.push(
         ...fieldResult.errors,
         ...fieldResult.warnings,
@@ -256,24 +205,19 @@ export class ClinicalNoteValidator {
       );
       processedFields.add(rule.field);
     }
-
     return this.categorizeMessages(allMessages);
   }
-
   autoFix(field: string, value: any): any {
     const rule = this.rules.find((r) => r.field === field && r.autoFix);
     return rule ? rule.autoFix!(value) : value;
   }
-
   private getNestedValue(obj: any, path: string): any {
     return path.split('.').reduce((current, key) => current?.[key], obj);
   }
-
   private categorizeMessages(messages: ValidationMessage[]): ValidationResult {
     const errors = messages.filter((m) => m.severity === 'error');
     const warnings = messages.filter((m) => m.severity === 'warning');
     const infos = messages.filter((m) => m.severity === 'info');
-
     return {
       isValid: errors.length === 0,
       errors,
@@ -282,19 +226,17 @@ export class ClinicalNoteValidator {
     };
   }
 }
-
 // Validation feedback component
-export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
+export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({ 
   validationResult,
   onAutoFix,
   onDismiss,
   showDetails = true,
-  compact = false,
+  compact = false
 }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set()
   );
-
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(section)) {
@@ -304,13 +246,11 @@ export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
     }
     setExpandedSections(newExpanded);
   };
-
   const renderMessages = (
     messages: ValidationMessage[],
     severity: ValidationSeverity
   ) => {
     if (messages.length === 0) return null;
-
     const getSeverityIcon = () => {
       switch (severity) {
         case 'error':
@@ -323,7 +263,6 @@ export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
           return <CheckCircleIcon color="success" />;
       }
     };
-
     const getSeverityColor = () => {
       switch (severity) {
         case 'error':
@@ -338,48 +277,40 @@ export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
           return 'info';
       }
     };
-
     if (compact) {
       return (
-        <Alert severity={getSeverityColor()} sx={{ mb: 1 }}>
-          <Typography variant="body2">
+        <Alert severity={getSeverityColor()} className="">
+          <div >
             {messages.length} {severity}(s) found
-          </Typography>
+          </div>
         </Alert>
       );
     }
-
     const sectionKey = `${severity}-section`;
     const isExpanded = expandedSections.has(sectionKey);
-
     return (
       <Alert
         severity={getSeverityColor()}
-        sx={{ mb: 2 }}
+        className=""
         action={
-          showDetails && messages.length > 1 ? (
+          showDetails && messages.length > 1 ? (}
             <IconButton size="small" onClick={() => toggleSection(sectionKey)}>
               {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
           ) : undefined
         }
       >
-        <AlertTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <AlertTitle className="">
           {getSeverityIcon()}
           {severity.charAt(0).toUpperCase() + severity.slice(1)}s
           <Chip label={messages.length} size="small" />
         </AlertTitle>
-
         {messages.length === 1 ? (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
+          <div
+            className=""
           >
-            <Typography variant="body2">{messages[0].message}</Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <div >{messages[0].message}</div>
+            <div className="">
               {messages[0].canAutoFix && onAutoFix && (
                 <Button
                   size="small"
@@ -397,30 +328,26 @@ export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
                   <CloseIcon fontSize="small" />
                 </IconButton>
               )}
-            </Box>
-          </Box>
+            </div>
+          </div>
         ) : (
           <Collapse in={isExpanded || messages.length <= 3}>
             <List dense>
               {messages.map((message) => (
-                <ListItem
+                <div
                   key={message.id}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    py: 0.5,
-                  }}
+                  className=""
                 >
-                  <ListItemIcon sx={{ minWidth: 32 }}>
+                  <div className="">
                     {getSeverityIcon()}
-                  </ListItemIcon>
-                  <ListItemText
+                  </div>
+                  <div
                     primary={message.message}
                     secondary={`Field: ${message.field}`}
-                    primaryTypographyProps={{ variant: 'body2' }}
-                    secondaryTypographyProps={{ variant: 'caption' }}
+                    
+                    
                   />
-                  <Box sx={{ display: 'flex', gap: 0.5, ml: 1 }}>
+                  <div className="">
                     {message.canAutoFix && onAutoFix && (
                       <Tooltip title="Auto-fix this issue">
                         <IconButton
@@ -441,8 +368,8 @@ export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
                         </IconButton>
                       </Tooltip>
                     )}
-                  </Box>
-                </ListItem>
+                  </div>
+                </div>
               ))}
             </List>
           </Collapse>
@@ -450,115 +377,96 @@ export const ValidationFeedback: React.FC<ValidationFeedbackProps> = ({
       </Alert>
     );
   };
-
   const { errors, warnings, infos } = validationResult;
-
   if (errors.length === 0 && warnings.length === 0 && infos.length === 0) {
     return null;
   }
-
   return (
-    <Box>
+    <div>
       {renderMessages(errors, 'error')}
       {renderMessages(warnings, 'warning')}
       {renderMessages(infos, 'info')}
-    </Box>
+    </div>
   );
 };
-
 // Field-level validation component
-export const FieldValidation: React.FC<FieldValidationProps> = ({
+export const FieldValidation: React.FC<FieldValidationProps> = ({ 
   field,
   value,
   rules,
   formData,
   showInline = true,
-  onValidationChange,
+  onValidationChange
 }) => {
-  const [validationResult, setValidationResult] = useState<ValidationResult>({
+  const [validationResult, setValidationResult] = useState<ValidationResult>({ 
     isValid: true,
     errors: [],
     warnings: [],
-    infos: [],
+    infos: []}
   });
-
   const validator = new ClinicalNoteValidator(rules);
-
   useEffect(() => {
     const result = validator.validateField(field, value, formData);
     setValidationResult(result);
-
     if (onValidationChange) {
       onValidationChange(field, result);
     }
   }, [field, value, formData, rules]);
-
   if (!showInline || validationResult.isValid) {
     return null;
   }
-
   const allMessages = [
     ...validationResult.errors,
     ...validationResult.warnings,
     ...validationResult.infos,
   ];
-
   return (
-    <Box sx={{ mt: 0.5 }}>
+    <div className="">
       {allMessages.map((message) => (
-        <FormHelperText
+        <p
           key={message.id}
           error={message.severity === 'error'}
-          sx={{
-            color: message.severity === 'warning' ? 'warning.main' : undefined,
-          }}
+          className=""
         >
           {message.message}
-        </FormHelperText>
+        </p>
       ))}
-    </Box>
+    </div>
   );
 };
-
 // Real-time validation hook
 export const useRealTimeValidation = (
   formData: any,
   rules: ValidationRule[] = CLINICAL_NOTE_VALIDATION_RULES,
   debounceMs: number = 300
 ) => {
-  const [validationResult, setValidationResult] = useState<ValidationResult>({
+  const [validationResult, setValidationResult] = useState<ValidationResult>({ 
     isValid: true,
     errors: [],
     warnings: [],
-    infos: [],
+    infos: []}
   });
-
   const validator = new ClinicalNoteValidator(rules);
-
   const validateForm = useCallback(() => {
     const result = validator.validateForm(formData);
     setValidationResult(result);
   }, [formData, validator]);
-
   useEffect(() => {
     const timeoutId = setTimeout(validateForm, debounceMs);
     return () => clearTimeout(timeoutId);
   }, [validateForm, debounceMs]);
-
   const validateField = useCallback(
     (field: string, value: any) => {
       return validator.validateField(field, value, formData);
     },
     [formData, validator]
   );
-
   const autoFix = useCallback(
     (field: string, value: any) => {
       return validator.autoFix(field, value);
     },
     [validator]
   );
-
   return {
     validationResult,
     validateField,
@@ -568,14 +476,12 @@ export const useRealTimeValidation = (
     hasWarnings: validationResult.warnings.length > 0,
   };
 };
-
 // Validation input adornment component
 export const ValidationInputAdornment: React.FC<{
   validationResult: ValidationResult;
   position?: 'start' | 'end';
 }> = ({ validationResult, position = 'end' }) => {
   const { errors, warnings } = validationResult;
-
   if (errors.length === 0 && warnings.length === 0) {
     return (
       <InputAdornment position={position}>
@@ -583,31 +489,22 @@ export const ValidationInputAdornment: React.FC<{
       </InputAdornment>
     );
   }
-
   const icon =
     errors.length > 0 ? (
       <ErrorIcon color="error" fontSize="small" />
     ) : (
       <WarningIcon color="warning" fontSize="small" />
     );
-
   const tooltip =
     errors.length > 0
       ? `${errors.length} error(s)`
       : `${warnings.length} warning(s)`;
-
   return (
     <InputAdornment position={position}>
       <Tooltip title={tooltip}>{icon}</Tooltip>
     </InputAdornment>
   );
 };
-
 export default {
-  ValidationFeedback,
-  FieldValidation,
-  ValidationInputAdornment,
-  ClinicalNoteValidator,
   useRealTimeValidation,
-  CLINICAL_NOTE_VALIDATION_RULES,
 };

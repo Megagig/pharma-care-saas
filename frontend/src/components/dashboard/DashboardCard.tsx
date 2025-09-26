@@ -1,23 +1,5 @@
-import React from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  IconButton,
-  Skeleton,
-  Avatar,
-  Chip,
-  alpha,
-  useTheme,
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import {
-  ArrowForward as ArrowForwardIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
+
+import { Card, CardContent, Skeleton, Avatar } from '@/components/ui/button';
 
 interface DashboardCardProps {
   title: string;
@@ -37,8 +19,7 @@ interface DashboardCardProps {
     color: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
   };
 }
-
-const DashboardCard: React.FC<DashboardCardProps> = ({
+const DashboardCard: React.FC<DashboardCardProps> = ({ 
   title,
   value,
   icon,
@@ -47,28 +28,21 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   subtitle,
   loading = false,
   trend,
-  badge,
+  badge
 }) => {
   const navigate = useNavigate();
   const theme = useTheme();
-
   const handleClick = () => {
     if (navigateTo) {
       navigate(navigateTo);
     }
   };
-
   return (
     <motion.div
-      whileHover={{ y: -4, scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-    >
+      
+      >
       <Card
-        sx={{
-          height: '100%',
-          cursor: navigateTo ? 'pointer' : 'default',
-          background: `linear-gradient(135deg, ${alpha(color, 0.1)} 0%, ${alpha(
+        className="" 0%, ${alpha(
             color,
             0.05
           )} 100%)`,
@@ -81,47 +55,28 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                 transform: 'translateY(-2px)',
               }
             : {},
-        }}
         onClick={handleClick}
       >
-        <CardContent sx={{ p: 3, position: 'relative' }}>
+        <CardContent className="">
           {/* Background Pattern */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: -20,
-              right: -20,
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              background: `linear-gradient(135deg, ${alpha(
-                color,
-                0.1
-              )}, ${alpha(color, 0.05)})`,
+          <div
+            className="" ${alpha(color, 0.05)})`,
               zIndex: 0,
-            }}
           />
-
-          <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <div className="">
             {/* Header with Icon and Badge */}
-            <Box
+            <div
               display="flex"
               alignItems="center"
               justifyContent="space-between"
               mb={2}
             >
               <Avatar
-                sx={{
-                  bgcolor: alpha(color, 0.15),
-                  color: color,
-                  width: 56,
-                  height: 56,
-                }}
+                className=""
               >
                 {icon}
               </Avatar>
-
-              <Box
+              <div
                 display="flex"
                 flexDirection="column"
                 alignItems="flex-end"
@@ -132,7 +87,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                     label={badge.label}
                     color={badge.color}
                     size="small"
-                    variant="outlined"
+                    
                   />
                 )}
                 {trend && (
@@ -142,84 +97,68 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                         <TrendingUpIcon />
                       ) : (
                         <TrendingDownIcon />
-                      )
+                      )}
                     }
                     label={`${trend.isPositive ? '+' : ''}${trend.value}%`}
                     size="small"
                     color={trend.isPositive ? 'success' : 'error'}
-                    variant="filled"
-                    sx={{ fontSize: '0.75rem' }}
+                    
+                    className=""
                   />
                 )}
                 {navigateTo && (
                   <IconButton
                     size="small"
-                    sx={{
-                      color: color,
-                      bgcolor: alpha(color, 0.1),
-                      '&:hover': { bgcolor: alpha(color, 0.2) },
-                    }}
-                  >
+                    className="">
                     <ArrowForwardIcon fontSize="small" />
                   </IconButton>
                 )}
-              </Box>
-            </Box>
-
+              </div>
+            </div>
             {/* Title */}
-            <Typography
-              variant="h6"
+            <div
+              
               color="text.secondary"
               gutterBottom
-              sx={{ fontWeight: 500 }}
+              className=""
             >
               {title}
-            </Typography>
-
+            </div>
             {/* Value */}
             {loading ? (
-              <Skeleton variant="text" width="60%" height={48} />
+              <Skeleton  width="60%" height={48} />
             ) : (
-              <Typography
-                variant="h3"
+              <div
+                
                 component="div"
-                sx={{
-                  color: color,
-                  fontWeight: 'bold',
-                  mb: 1,
-                  fontSize: { xs: '1.75rem', sm: '2.125rem' },
-                }}
-              >
+                className="">
                 {value}
-              </Typography>
+              </div>
             )}
-
             {/* Subtitle */}
             {subtitle && (
-              <Typography
-                variant="body2"
+              <div
+                
                 color="text.secondary"
-                sx={{ opacity: 0.8 }}
+                className=""
               >
                 {subtitle}
-              </Typography>
+              </div>
             )}
-
             {/* Trend Period */}
             {trend?.period && (
-              <Typography
-                variant="caption"
+              <div
+                
                 color="text.secondary"
-                sx={{ mt: 1, display: 'block', opacity: 0.7 }}
+                className=""
               >
                 vs {trend.period}
-              </Typography>
+              </div>
             )}
-          </Box>
+          </div>
         </CardContent>
       </Card>
     </motion.div>
   );
 };
-
 export default DashboardCard;

@@ -1,5 +1,3 @@
-import { api } from '../lib/api';
-
 export interface SystemActivity {
     id: string;
     type: 'patient_registration' | 'clinical_note' | 'medication_update' | 'mtr_session' | 'system_alert';
@@ -48,7 +46,7 @@ class ActivityService {
             if (patientsResponse.status === 'fulfilled' && patientsResponse.value?.data) {
                 const patientsArray = this.extractArrayFromResponse(patientsResponse.value.data);
                 patientsArray.forEach((patient: any) => {
-                    systemActivities.push({
+                    systemActivities.push({  })
                         id: `patient-${patient._id}`,
                         type: 'patient_registration',
                         title: 'New Patient Registration',
@@ -67,7 +65,7 @@ class ActivityService {
             if (notesResponse.status === 'fulfilled' && notesResponse.value?.data) {
                 const notesArray = this.extractArrayFromResponse(notesResponse.value.data);
                 notesArray.forEach((note: any) => {
-                    systemActivities.push({
+                    systemActivities.push({  })
                         id: `note-${note._id}`,
                         type: 'clinical_note',
                         title: 'Clinical Note Added',
@@ -88,7 +86,7 @@ class ActivityService {
                 medicationsArray.forEach((medication: any, index: number) => {
                     // Ensure we have a valid ID to prevent duplicate keys
                     const medicationId = medication._id || medication.id || `temp-${Date.now()}-${index}`;
-                    systemActivities.push({
+                    systemActivities.push({  })
                         id: `medication-${medicationId}`,
                         type: 'medication_update',
                         title: 'Medication Update',
@@ -107,7 +105,7 @@ class ActivityService {
             if (mtrsResponse.status === 'fulfilled' && mtrsResponse.value?.data) {
                 const mtrsArray = this.extractArrayFromResponse(mtrsResponse.value.data);
                 mtrsArray.forEach((mtr: unknown) => {
-                    systemActivities.push({
+                    systemActivities.push({  })
                         id: `mtr-${mtr._id}`,
                         type: 'mtr_session',
                         title: 'MTR Session Completed',
@@ -156,7 +154,7 @@ class ActivityService {
                             break;
                     }
 
-                    userActivities.push({
+                    userActivities.push({  })
                         id: `user-${activity.id}`,
                         type: userActivityType,
                         title: userTitle,

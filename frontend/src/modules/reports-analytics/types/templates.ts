@@ -39,11 +39,11 @@ export interface GridConfig {
 }
 
 export interface BreakpointConfig {
-    xs: Partial<GridConfig>;
-    sm: Partial<GridConfig>;
-    md: Partial<GridConfig>;
-    lg: Partial<GridConfig>;
-    xl: Partial<GridConfig>;
+    xs: Partial<divConfig>;
+    sm: Partial<divConfig>;
+    md: Partial<divConfig>;
+    lg: Partial<divConfig>;
+    xl: Partial<divConfig>;
 }
 
 export interface TemplateSection {

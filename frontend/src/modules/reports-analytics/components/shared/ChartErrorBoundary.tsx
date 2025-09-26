@@ -1,126 +1,80 @@
+import { Button, Alert } from '@/components/ui/button';
 // Chart Error Boundary Component
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Box, Paper, Typography, Alert } from '@mui/material';
-import { Button } from '@/components/ui/button';
-import {
-  Refresh as RefreshIcon,
-  BugReport as BugIcon,
-} from '@mui/icons-material';
-
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
-
 interface State {
   hasError: boolean;
   error?: Error;
   errorInfo?: ErrorInfo;
 }
-
 class ChartErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
   }
-
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
-
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo });
-
     // Log error to monitoring service
     console.error('Chart Error Boundary caught an error:', error, errorInfo);
-
     // Call optional error handler
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
   }
-
   handleRetry = () => {
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
-
   render() {
     if (this.state.hasError) {
       // Custom fallback UI
       if (this.props.fallback) {
         return this.props.fallback;
       }
-
       // Default error UI
       return (
-        <Paper
-          sx={{
-            p: 3,
-            minHeight: 200,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'linear-gradient(135deg, #ef444415, #f9731608)',
-            border: '1px solid #ef444430',
-          }}
+        <div
+          className=""
         >
           <Alert
             severity="error"
-            sx={{
-              width: '100%',
-              maxWidth: 500,
-              backgroundColor: 'transparent',
-              border: 'none',
-              '& .MuiAlert-icon': {
-                fontSize: 32,
-              },
-            }}
-            icon={<BugIcon />}
+            className="" icon={<BugIcon />}
           >
-            <Typography variant="h6" gutterBottom color="error.main">
+            <div  gutterBottom color="error.main">
               Chart Rendering Error
-            </Typography>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            </div>
+            <div  color="text.secondary" className="">
               Something went wrong while rendering this chart. This is likely a
               temporary issue.
-            </Typography>
-
+            </div>
             {/* Error details in development */}
             {process.env.NODE_ENV === 'development' && this.state.error && (
-              <Box
-                sx={{
-                  mt: 2,
-                  p: 2,
-                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                  borderRadius: 1,
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  maxHeight: 150,
-                  overflow: 'auto',
-                }}
+              <div
+                className=""
               >
-                <Typography variant="caption" color="error.main">
+                <div  color="error.main">
                   <strong>Error:</strong> {this.state.error.message}
-                </Typography>
+                </div>
                 {this.state.errorInfo && (
-                  <Typography
-                    variant="caption"
+                  <div
+                    
                     color="text.secondary"
                     component="pre"
-                    sx={{ mt: 1, whiteSpace: 'pre-wrap' }}
+                    className=""
                   >
                     {this.state.errorInfo.componentStack}
-                  </Typography>
+                  </div>
                 )}
-              </Box>
+              </div>
             )}
-
-            <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+            <div className="">
               <Button
-                variant="destructive"
+                
                 size="sm"
                 onClick={this.handleRetry}
                 className="mt-2"
@@ -128,30 +82,23 @@ class ChartErrorBoundary extends Component<Props, State> {
                 <RefreshIcon className="w-4 h-4 mr-2" />
                 Try Again
               </Button>
-            </Box>
+            </div>
           </Alert>
-
           {/* Accessibility message */}
-          <Typography
-            variant="caption"
+          <div
+            
             color="text.secondary"
-            sx={{
-              mt: 2,
-              fontStyle: 'italic',
-              textAlign: 'center',
-            }}
+            className=""
             role="status"
             aria-live="polite"
           >
             Chart could not be rendered due to an error. Please try again or
             contact support.
-          </Typography>
-        </Paper>
+          </div>
+        </div>
       );
     }
-
     return this.props.children;
   }
 }
-
 export default ChartErrorBoundary;

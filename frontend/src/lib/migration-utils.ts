@@ -2,9 +2,6 @@
  * Migration utilities for converting MUI components to shadcn/ui equivalents
  */
 
-import { ButtonProps as ShadcnButtonProps } from '@/components/ui/button';
-import { MUI_TO_LUCIDE_MAPPING, type IconMappingConfig } from '@/components/migration/IconMapper';
-
 /**
  * Maps MUI Button variant to shadcn Button variant
  */
@@ -180,4 +177,127 @@ export function generateIconMigrationReport(usedIcons: string[]): string {
   });
   
   return report;
+}
+
+/**
+ * Select component migration utilities
+ */
+
+/**
+ * Maps MUI Select size to shadcn Select size classes
+ */
+export function mapMuiSelectSize(muiSize?: string): string {
+  switch (muiSize) {
+    case 'small':
+      return 'h-8 text-sm';
+    case 'medium':
+      return 'h-10 text-sm';
+    case 'large':
+      return 'h-12 text-base';
+    default:
+      return 'h-10 text-sm';
+  }
+}
+
+/**
+ * Maps MUI Select variant to shadcn Select styling
+ */
+export function mapMuiSelectVariant(muiVariant?: string): string {
+  switch (muiVariant) {
+    case 'outlined':
+      return 'border border-input';
+    case 'filled':
+      return 'bg-muted border-0 border-b-2 border-input rounded-t-md rounded-b-none';
+    case 'standard':
+      return 'border-0 border-b border-input rounded-none bg-transparent';
+    default:
+      return 'border border-input';
+  }
+}
+
+/**
+ * Generates error styling classes for Select components
+ */
+export function getSelectErrorClasses(hasError?: boolean): string {
+  if (!hasError) return '';
+  return 'border-destructive focus:ring-destructive';
+}
+
+/**
+ * Maps MUI FormControl fullWidth to Tailwind classes
+ */
+export function mapFormControlWidth(fullWidth?: boolean): string {
+  return fullWidth ? 'w-full' : '';
+}
+
+/**
+ * Chip/Badge migration utilities
+ */
+
+/**
+ * Maps MUI Chip variant to shadcn Badge variant
+ */
+export function mapMuiChipVariant(muiVariant?: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  switch (muiVariant) {
+    case 'filled':
+      return 'default';
+    case 'outlined':
+      return 'outline';
+    default:
+      return 'default';
+  }
+}
+
+/**
+ * Maps MUI Chip color to shadcn Badge variant
+ */
+export function mapMuiChipColor(muiColor?: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  switch (muiColor) {
+    case 'error':
+      return 'destructive';
+    case 'warning':
+      return 'secondary';
+    case 'info':
+      return 'secondary';
+    case 'success':
+      return 'default';
+    case 'primary':
+      return 'default';
+    case 'secondary':
+      return 'secondary';
+    default:
+      return 'default';
+  }
+}
+
+/**
+ * Maps MUI Chip size to shadcn Badge size classes
+ */
+export function mapMuiChipSize(muiSize?: string): string {
+  switch (muiSize) {
+    case 'small':
+      return 'text-xs px-2 py-0.5';
+    case 'medium':
+      return 'text-sm px-2.5 py-0.5';
+    default:
+      return 'text-sm px-2.5 py-0.5';
+  }
+}
+
+/**
+ * Form validation utilities
+ */
+
+/**
+ * Gets error text styling classes for form validation
+ */
+export function getFormErrorClasses(): string {
+  return 'text-xs text-destructive mt-1';
+}
+
+/**
+ * Gets helper text styling classes for form guidance
+ */
+export function getFormHelperClasses(): string {
+  return 'text-xs text-muted-foreground mt-1';
 }

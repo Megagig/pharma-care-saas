@@ -1,70 +1,58 @@
 // Core chat interface components
-export { default as ChatInterface } from './ChatInterface';
-export { default as MessageThread } from './MessageThread';
-export { default as MessageItem } from './MessageItem';
-export { default as ParticipantList } from './ParticipantList';
-
+// Removed incomplete export: export { default as ChatInterface 
+export { default as MessageThread 
+export { default as MessageItem 
+export { default as ParticipantList 
 // Conversation management components
-export { default as ConversationList } from './ConversationList';
-export { default as ConversationItem } from './ConversationItem';
-export { default as NewConversationModal } from './NewConversationModal';
-export { default as ConversationSettings } from './ConversationSettings';
-
+export { default as ConversationList 
+export { default as ConversationItem 
+export { default as NewConversationModal 
+export { default as ConversationSettings 
 // Utility components
-export { default as ConnectionStatus } from './ConnectionStatus';
-export { default as TypingIndicator } from './TypingIndicator';
-
+export { default as ConnectionStatus 
+export { default as TypingIndicator 
 // File management components
-export { default as FileUpload } from './FileUpload';
-export { default as FilePreview } from './FilePreview';
-
+export { default as FileUpload 
+export { default as FilePreview 
 // Notification components
-export { default as NotificationCenter } from './NotificationCenter';
-export { default as NotificationItem } from './NotificationItem';
-export { default as NotificationPreferences } from './NotificationPreferences';
-export { default as NotificationIndicators } from './NotificationIndicators';
-
+export { default as NotificationCenter 
+export { default as NotificationItem 
+export { default as NotificationPreferences 
+export { default as NotificationIndicators 
 // Patient query management components
-export { default as PatientQueryDashboard } from './PatientQueryDashboard';
-export { default as QueryCard } from './QueryCard';
-
+export { default as PatientQueryDashboard 
+export { default as QueryCard 
 // Mention system components
-export { default as MentionInput } from './MentionInput';
-export { default as ThreadView } from './ThreadView';
-export { default as ThreadIndicator } from './ThreadIndicator';
-export { default as MentionDisplay } from './MentionDisplay';
-export { default as MentionSearch } from './MentionSearch';
-
+export { default as MentionInput 
+export { default as ThreadView 
+export { default as ThreadIndicator 
+export { default as MentionDisplay 
+export { default as MentionSearch 
 // Search components
-export { default as SearchInterface } from './SearchInterface';
-export { default as MessageSearch } from './MessageSearch';
-export { default as ConversationSearch } from './ConversationSearch';
-
+export { default as SearchInterface 
+export { default as MessageSearch 
+export { default as ConversationSearch 
 // Audit and compliance components
-export { default as AuditLogViewer } from './AuditLogViewer';
-export { default as ComplianceDashboard } from './ComplianceDashboard';
-export { default as AuditTrailVisualization } from './AuditTrailVisualization';
-export { default as AuditSearch } from './AuditSearch';
-
+export { default as AuditLogViewer 
+export { default as ComplianceDashboard 
+export { default as AuditTrailVisualization 
+export { default as AuditSearch 
 // Mobile and Responsive Components
-export { default as ResponsiveCommunicationHub } from './ResponsiveCommunicationHub';
-export { default as MobileChatInterface } from './MobileChatInterface';
-export { default as MobileMessageInput } from './MobileMessageInput';
-export { default as MobileFileUpload } from './MobileFileUpload';
-
+export { default as ResponsiveCommunicationHub 
+export { default as MobileChatInterface 
+export { default as MobileMessageInput 
+export { default as MobileFileUpload 
 // Performance-optimized components
-export { default as VirtualizedMessageList } from './VirtualizedMessageList';
-export { default as VirtualizedConversationList } from './VirtualizedConversationList';
-export { default as OptimizedChatInterface } from './OptimizedChatInterface';
-export { default as LazyImage } from './LazyImage';
-
+export { default as VirtualizedMessageList 
+export { default as VirtualizedConversationList 
+export { default as OptimizedChatInterface 
+export { default as LazyImage 
 // Dashboard integration components
-export { default as CommunicationWidget } from './CommunicationWidget';
-export { default as CommunicationMetrics } from './CommunicationMetrics';
-export { default as CommunicationNotificationBadge } from './CommunicationNotificationBadge';
-
+export { default as CommunicationWidget 
+export { default as CommunicationMetrics 
+export { default as CommunicationNotificationBadge 
 // Export types for external use
-export type { default as ChatInterfaceProps } from './ChatInterface';
-export type { default as MessageThreadProps } from './MessageThread';
-export type { default as MessageItemProps } from './MessageItem';
-export type { default as ParticipantListProps } from './ParticipantList';
+export type { default as ChatInterfaceProps 
+export type { default as MessageThreadProps 
+export type { default as MessageItemProps 
+export type { default as ParticipantListProps

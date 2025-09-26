@@ -1,37 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  IconButton,
-  LinearProgress,
-  Alert,
-  Chip,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Grid,
-  Card,
-  CardMedia,
-  CardContent,
-  Fab,
-} from '@mui/material';
-import {
-  CloudUpload,
-  CameraAlt,
-  PhotoLibrary,
-  Description,
-  Close,
-  Delete,
-  Visibility,
-  Add,
-  CheckCircle,
-  Error as ErrorIcon,
-} from '@mui/icons-material';
-import { useDropzone } from 'react-dropzone';
-import { useIsTouchDevice } from '../../hooks/useResponsive';
+import { Button, Card, CardContent, Dialog, DialogContent, DialogTitle, Progress, Alert } from '@/components/ui/button';
 
 interface FileUploadItem {
   file: File;
@@ -41,7 +8,6 @@ interface FileUploadItem {
   error?: string;
   preview?: string;
 }
-
 interface MobileFileUploadProps {
   conversationId: string;
   onFilesUploaded: (files: File[]) => void;
@@ -52,8 +18,7 @@ interface MobileFileUploadProps {
   disabled?: boolean;
   compact?: boolean;
 }
-
-const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
+const MobileFileUpload: React.FC<MobileFileUploadProps> = ({ 
   conversationId,
   onFilesUploaded,
   onUploadProgress,
@@ -67,26 +32,23 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
     'text/*',
   ],
   disabled = false,
-  compact = false,
+  compact = false
 }) => {
   const [uploadItems, setUploadItems] = useState<FileUploadItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileUploadItem | null>(null);
   const [showCameraDialog, setShowCameraDialog] = useState(false);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
   const isTouchDevice = useIsTouchDevice();
-
   // Dropzone configuration
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     accept: acceptedFileTypes.reduce((acc, type) => {
       acc[type] = [];
-      return acc;
+      return acc; })
     }, {} as Record<string, string[]>),
     maxFiles,
     maxSize: maxFileSize,
@@ -96,34 +58,27 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
       rejectedFiles.forEach((rejection) => {
         console.error('File rejected:', rejection.file.name, rejection.errors);
       });
-    },
-  });
-
+    }
   // Handle file drop
   function handleFileDrop(acceptedFiles: File[]) {
-    const newItems: FileUploadItem[] = acceptedFiles.map((file) => ({
-      file,
+    const newItems: FileUploadItem[] = acceptedFiles.map((file) => ({ 
+      file}
       id: `${Date.now()}-${Math.random()}`,
       progress: 0,
       status: 'pending',
       preview: file.type.startsWith('image/')
         ? URL.createObjectURL(file)
-        : undefined,
-    }));
-
+        : undefined}
     setUploadItems((prev) => [...prev, ...newItems]);
     uploadFiles(newItems);
   }
-
   // Upload files
   const uploadFiles = async (items: FileUploadItem[]) => {
     setIsUploading(true);
-
     try {
       for (const item of items) {
         await uploadSingleFile(item);
       }
-
       // Notify parent component
       const completedFiles = items.map((item) => item.file);
       onFilesUploaded(completedFiles);
@@ -133,7 +88,6 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
       setIsUploading(false);
     }
   };
-
   // Upload single file
   const uploadSingleFile = async (item: FileUploadItem) => {
     return new Promise<void>((resolve, reject) => {
@@ -141,17 +95,14 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
       setUploadItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, status: 'uploading' } : i))
       );
-
       // Simulate upload progress (replace with actual upload logic)
       const simulateUpload = () => {
         let progress = 0;
         const interval = setInterval(() => {
           progress += Math.random() * 20;
-
           if (progress >= 100) {
             progress = 100;
             clearInterval(interval);
-
             // Update to completed
             setUploadItems((prev) =>
               prev.map((i) =>
@@ -160,7 +111,6 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
                   : i
               )
             );
-
             onUploadProgress?.(item.id, 100);
             resolve();
           } else {
@@ -168,20 +118,16 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
             setUploadItems((prev) =>
               prev.map((i) => (i.id === item.id ? { ...i, progress } : i))
             );
-
             onUploadProgress?.(item.id, progress);
           }
         }, 100);
       };
-
       // Start simulated upload
       simulateUpload();
-
       // TODO: Replace with actual upload implementation
       // const formData = new FormData();
       // formData.append('file', item.file);
       // formData.append('conversationId', conversationId);
-
       // fetch('/api/communication/files/upload', {
       //   method: 'POST',
       //   body: formData,
@@ -212,7 +158,6 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
       // });
     });
   };
-
   // Remove file
   const removeFile = (itemId: string) => {
     setUploadItems((prev) => {
@@ -223,14 +168,11 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
       return prev.filter((i) => i.id !== itemId);
     });
   };
-
   // Handle camera capture
   const handleCameraCapture = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-      });
-
+      const stream = await navigator.mediaDevices.getUserMedia({  })
+        video: { facingMode: 'environment' }
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
@@ -240,25 +182,21 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
       console.error('Camera access failed:', error);
     }
   };
-
   // Capture photo from camera
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-
       if (context) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0);
-
         canvas.toBlob(
           (blob) => {
             if (blob) {
               const file = new File([blob], `photo-${Date.now()}.jpg`, {
-                type: 'image/jpeg',
-              });
+                type: 'image/jpeg'}
               handleFileDrop([file]);
             }
           },
@@ -266,21 +204,18 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
           0.8
         );
       }
-
       // Stop camera stream
       const stream = video.srcObject as MediaStream;
       stream?.getTracks().forEach((track) => track.stop());
       setShowCameraDialog(false);
     }
   };
-
   // Get file icon
   const getFileIcon = (file: File) => {
     if (file.type.startsWith('image/')) return <PhotoLibrary />;
     if (file.type.startsWith('video/')) return <CameraAlt />;
     return <Description />;
   };
-
   // Format file size
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -289,13 +224,12 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
-
   if (compact) {
     return (
-      <Box sx={{ p: 1 }}>
+      <div className="">
         {/* Compact upload button */}
         <Button
-          variant="outlined"
+          
           startIcon={<Add />}
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isUploading}
@@ -304,147 +238,105 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
         >
           Add Files
         </Button>
-
         {/* File list */}
         {uploadItems.length > 0 && (
-          <Box sx={{ mt: 1 }}>
+          <div className="">
             {uploadItems.map((item) => (
-              <Box
+              <div
                 key={item.id}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  p: 1,
-                  border: 1,
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                  mb: 0.5,
-                }}
+                className=""
               >
                 {getFileIcon(item.file)}
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" noWrap>
+                <div className="">
+                  <div  noWrap>
                     {item.file.name}
-                  </Typography>
+                  </div>
                   {item.status === 'uploading' && (
-                    <LinearProgress
-                      variant="determinate"
-                      value={item.progress}
+                    <Progress
+                      
                       size="small"
                     />
                   )}
-                </Box>
+                </div>
                 <IconButton size="small" onClick={() => removeFile(item.id)}>
                   <Close />
                 </IconButton>
-              </Box>
+              </div>
             ))}
-          </Box>
+          </div>
         )}
-
         <input
           ref={fileInputRef}
           type="file"
           multiple
           accept={acceptedFileTypes.join(',')}
-          style={{ display: 'none' }}
+          
           onChange={(e) => {
             const files = Array.from(e.target.files || []);
             if (files.length > 0) {
-              handleFileDrop(files);
+              handleFileDrop(files);}
             }
             e.target.value = '';
-          }}
         />
-      </Box>
+      </div>
     );
   }
-
   return (
-    <Box sx={{ p: 2 }}>
+    <div className="">
       {/* Upload area */}
-      <Paper
+      <div
         {...getRootProps()}
-        sx={{
-          p: 3,
-          border: 2,
-          borderStyle: 'dashed',
-          borderColor: isDragActive ? 'primary.main' : 'divider',
-          backgroundColor: isDragActive ? 'action.hover' : 'background.paper',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          textAlign: 'center',
-          transition: 'all 0.2s ease',
-        }}
+        className=""
       >
         <input {...getInputProps()} />
         <CloudUpload
-          sx={{
-            fontSize: 48,
-            color: isDragActive ? 'primary.main' : 'text.secondary',
-            mb: 2,
-          }}
+          className=""
         />
-        <Typography variant="h6" gutterBottom>
+        <div  gutterBottom>
           {isDragActive ? 'Drop files here' : 'Upload Files'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        </div>
+        <div  color="text.secondary" className="">
           Drag and drop files here, or click to select files
-        </Typography>
-
+        </div>
         {/* Action buttons */}
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 1,
-            justifyContent: 'center',
-            flexWrap: 'wrap',
-          }}
+        <div
+          className=""
         >
           <Button
-            variant="outlined"
+            
             startIcon={<PhotoLibrary />}
-            onClick={(e) => {
-              e.stopPropagation();
-              fileInputRef.current?.click();
-            }}
+            
             size="small"
           >
             Gallery
           </Button>
-
           {isTouchDevice && (
             <Button
-              variant="outlined"
+              
               startIcon={<CameraAlt />}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleCameraCapture();
-              }}
+              
               size="small"
             >
               Camera
             </Button>
           )}
-        </Box>
-      </Paper>
-
+        </div>
+      </div>
       {/* Upload progress */}
       {isUploading && (
-        <Alert severity="info" sx={{ mt: 2 }}>
-          <Typography variant="body2">
+        <Alert severity="info" className="">
+          <div >
             Uploading{' '}
             {uploadItems.filter((i) => i.status === 'uploading').length}{' '}
             file(s)...
-          </Typography>
+          </div>
         </Alert>
       )}
-
       {/* File grid */}
       {uploadItems.length > 0 && (
-        <Grid container spacing={2} sx={{ mt: 2 }}>
+        <div container spacing={2} className="">
           {uploadItems.map((item) => (
-            <Grid item xs={6} sm={4} md={3} key={item.id}>
+            <div item xs={6} sm={4} md={3} key={item.id}>
               <Card>
                 {item.preview ? (
                   <CardMedia
@@ -452,95 +344,74 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
                     height="120"
                     image={item.preview}
                     alt={item.file.name}
-                    sx={{ cursor: 'pointer' }}
-                    onClick={() => {
-                      setPreviewFile(item);
-                      setShowPreview(true);
-                    }}
+                    className=""
+                    
                   />
                 ) : (
-                  <Box
-                    sx={{
-                      height: 120,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: 'action.hover',
-                    }}
+                  <div
+                    className=""
                   >
                     {getFileIcon(item.file)}
-                  </Box>
+                  </div>
                 )}
-
-                <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                  <Typography variant="caption" noWrap>
+                <CardContent className="">
+                  <div  noWrap>
                     {item.file.name}
-                  </Typography>
-                  <Typography
-                    variant="caption"
+                  </div>
+                  <div
+                    
                     color="text.secondary"
                     display="block"
                   >
                     {formatFileSize(item.file.size)}
-                  </Typography>
-
+                  </div>
                   {/* Status indicator */}
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                      mt: 0.5,
-                    }}
+                  <div
+                    className=""
                   >
                     {item.status === 'uploading' && (
                       <>
-                        <LinearProgress
-                          variant="determinate"
-                          value={item.progress}
-                          sx={{ flex: 1, height: 4 }}
+                        <Progress
+                          
+                          className=""
                         />
-                        <Typography variant="caption">
+                        <div >
                           {Math.round(item.progress)}%
-                        </Typography>
+                        </div>
                       </>
                     )}
-
                     {item.status === 'completed' && (
                       <Chip
                         icon={<CheckCircle />}
                         label="Uploaded"
                         size="small"
                         color="success"
-                        variant="outlined"
+                        
                       />
                     )}
-
                     {item.status === 'error' && (
                       <Chip
                         icon={<ErrorIcon />}
                         label="Failed"
                         size="small"
                         color="error"
-                        variant="outlined"
+                        
                       />
                     )}
-
                     <IconButton
                       size="small"
                       onClick={() => removeFile(item.id)}
-                      sx={{ ml: 'auto' }}
+                      className=""
                     >
                       <Delete />
                     </IconButton>
-                  </Box>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
+            </div>
           ))}
-        </Grid>
+        </div>
       )}
-
       {/* Camera dialog */}
       <Dialog
         open={showCameraDialog}
@@ -552,20 +423,19 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
         <DialogContent>
           <video
             ref={videoRef}
-            style={{ width: '100%', height: 'auto' }}
+            
             autoPlay
             playsInline
           />
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
+          <canvas ref={canvasRef}  />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowCameraDialog(false)}>Cancel</Button>
-          <Button onClick={capturePhoto} variant="contained">
+          <Button onClick={capturePhoto} >
             Capture
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Preview dialog */}
       <Dialog
         open={showPreview}
@@ -577,7 +447,7 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
           {previewFile?.file.name}
           <IconButton
             onClick={() => setShowPreview(false)}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
+            className=""
           >
             <Close />
           </IconButton>
@@ -587,29 +457,26 @@ const MobileFileUpload: React.FC<MobileFileUploadProps> = ({
             <img
               src={previewFile.preview}
               alt={previewFile.file.name}
-              style={{ width: '100%', height: 'auto' }}
+              
             />
           )}
         </DialogContent>
       </Dialog>
-
       {/* Hidden inputs */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
         accept={acceptedFileTypes.join(',')}
-        style={{ display: 'none' }}
+        
         onChange={(e) => {
           const files = Array.from(e.target.files || []);
           if (files.length > 0) {
-            handleFileDrop(files);
+            handleFileDrop(files);}
           }
           e.target.value = '';
-        }}
       />
-    </Box>
+    </div>
   );
 };
-
 export default MobileFileUpload;

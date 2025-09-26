@@ -1,31 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  IconButton,
-  Divider,
-  Collapse,
-  Badge,
-  Tooltip,
-  Button,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
-import {
-  ExpandMore,
-  ExpandLess,
-  Reply,
-  Close,
-  Forum,
-  Person,
-  Schedule,
-} from '@mui/icons-material';
-import { Message } from '../../stores/types';
 import MessageItem from './MessageItem';
-import MessageThread from './MessageThread';
-import { useCommunicationStore } from '../../stores/communicationStore';
-import { formatDistanceToNow } from 'date-fns';
+
+// import MessageThread from './MessageThread';
+
+import { Badge, Tooltip, Spinner, Alert, Separator } from '@/components/ui/button';
 
 interface ThreadViewProps {
   threadId: string;
@@ -35,7 +12,6 @@ interface ThreadViewProps {
   showReplyInput?: boolean;
   maxHeight?: string | number;
 }
-
 interface ThreadSummary {
   threadId: string;
   rootMessage: Message;
@@ -44,14 +20,13 @@ interface ThreadSummary {
   lastReplyAt?: string;
   unreadCount: number;
 }
-
-const ThreadView: React.FC<ThreadViewProps> = ({
+const ThreadView: React.FC<ThreadViewProps> = ({ 
   threadId,
   conversationId,
   onClose,
   compact = false,
   showReplyInput = true,
-  maxHeight = '600px',
+  maxHeight = '600px'
 }) => {
   const [expanded, setExpanded] = useState(!compact);
   const [threadSummary, setThreadSummary] = useState<ThreadSummary | null>(
@@ -63,15 +38,12 @@ const ThreadView: React.FC<ThreadViewProps> = ({
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const { sendMessage } = useCommunicationStore();
-
   // Fetch thread summary
   const fetchThreadSummary = async () => {
     try {
       setLoading(true);
       setError(null);
-
       const response = await fetch(
         `/api/communication/threads/${threadId}/summary`,
         {
@@ -80,11 +52,9 @@ const ThreadView: React.FC<ThreadViewProps> = ({
           },
         }
       );
-
       if (!response.ok) {
         throw new Error('Failed to fetch thread summary');
       }
-
       const result = await response.json();
       setThreadSummary(result.data);
     } catch (err) {
@@ -93,13 +63,11 @@ const ThreadView: React.FC<ThreadViewProps> = ({
       setLoading(false);
     }
   };
-
   // Fetch thread messages
   const fetchThreadMessages = async () => {
     try {
       setLoading(true);
       setError(null);
-
       const response = await fetch(
         `/api/communication/threads/${threadId}/messages`,
         {
@@ -108,11 +76,9 @@ const ThreadView: React.FC<ThreadViewProps> = ({
           },
         }
       );
-
       if (!response.ok) {
         throw new Error('Failed to fetch thread messages');
       }
-
       const result = await response.json();
       setThreadMessages(result.data);
     } catch (err) {
@@ -123,7 +89,6 @@ const ThreadView: React.FC<ThreadViewProps> = ({
       setLoading(false);
     }
   };
-
   // Load thread data
   useEffect(() => {
     fetchThreadSummary();
@@ -131,7 +96,6 @@ const ThreadView: React.FC<ThreadViewProps> = ({
       fetchThreadMessages();
     }
   }, [threadId, expanded]);
-
   // Handle expand/collapse
   const handleToggleExpanded = () => {
     setExpanded(!expanded);
@@ -139,7 +103,6 @@ const ThreadView: React.FC<ThreadViewProps> = ({
       fetchThreadMessages();
     }
   };
-
   // Handle reply to thread
   const handleReplyToThread = async (
     content: string,
@@ -155,20 +118,17 @@ const ThreadView: React.FC<ThreadViewProps> = ({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
-          body: JSON.stringify({
+          body: JSON.stringify({ 
             content: {
               text: content,
-              type: 'text',
+              type: 'text'}
             },
-            mentions,
-          }),
+            mentions, },
         }
       );
-
       if (!response.ok) {
         throw new Error('Failed to send reply');
       }
-
       // Refresh thread messages
       await fetchThreadMessages();
       await fetchThreadSummary();
@@ -177,122 +137,92 @@ const ThreadView: React.FC<ThreadViewProps> = ({
       throw err;
     }
   };
-
   if (loading && !threadSummary) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          p: 2,
-        }}
+      <div
+        className=""
       >
-        <CircularProgress size={24} />
-      </Box>
+        <Spinner size={24} />
+      </div>
     );
   }
-
   if (error && !threadSummary) {
     return (
-      <Alert severity="error" sx={{ m: 1 }}>
+      <Alert severity="error" className="">
         {error}
       </Alert>
     );
   }
-
   if (!threadSummary) {
     return null;
   }
-
   return (
-    <Paper
-      variant="outlined"
-      sx={{
-        mb: 1,
-        overflow: 'hidden',
-        border: '1px solid',
-        borderColor: 'primary.light',
-        borderRadius: 2,
-      }}
+    <div
+      
+      className=""
     >
       {/* Thread Header */}
-      <Box
-        sx={{
-          p: 2,
-          bgcolor: 'primary.50',
-          borderBottom: expanded ? 1 : 0,
-          borderColor: 'divider',
-          cursor: compact ? 'pointer' : 'default',
-        }}
+      <div
+        className=""
         onClick={compact ? handleToggleExpanded : undefined}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <div className="">
           {/* Thread Icon */}
           <Forum color="primary" fontSize="small" />
-
           {/* Thread Info */}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
+          <div className="">
+            <div
+              className=""
             >
-              <Typography variant="subtitle2" fontWeight="bold" noWrap>
+              <div  fontWeight="bold" noWrap>
                 Thread
-              </Typography>
-
+              </div>
               {threadSummary.unreadCount > 0 && (
                 <Badge
                   badgeContent={threadSummary.unreadCount}
                   color="error"
-                  sx={{ '& .MuiBadge-badge': { fontSize: '0.75rem' } }}
-                />
+                  className="" />
               )}
-
               {threadSummary.lastReplyAt && (
-                <Typography variant="caption" color="text.secondary">
+                <div  color="text.secondary">
                   Last reply{' '}
                   {formatDistanceToNow(new Date(threadSummary.lastReplyAt), {
-                    addSuffix: true,
-                  })}
-                </Typography>
+                    addSuffix: true, }}
+                </div>
               )}
-            </Box>
-
-            <Typography
-              variant="body2"
+            </div>
+            <div
+              
               color="text.secondary"
               noWrap
-              sx={{ maxWidth: '100%' }}
+              className=""
             >
               {threadSummary.rootMessage.content.text?.substring(0, 100)}
               {(threadSummary.rootMessage.content.text?.length || 0) > 100
                 ? '...'
                 : ''}
-            </Typography>
-
-            <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5 }}
+            </div>
+            <div
+              className=""
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <div className="">
                 <Reply fontSize="small" color="action" />
-                <Typography variant="caption" color="text.secondary">
+                <div  color="text.secondary">
                   {threadSummary.replyCount}{' '}
                   {threadSummary.replyCount === 1 ? 'reply' : 'replies'}
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                </div>
+              </div>
+              <div className="">
                 <Person fontSize="small" color="action" />
-                <Typography variant="caption" color="text.secondary">
+                <div  color="text.secondary">
                   {threadSummary.participants.length} participant
                   {threadSummary.participants.length !== 1 ? 's' : ''}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
+                </div>
+              </div>
+            </div>
+          </div>
           {/* Actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <div className="">
             {compact && (
               <Tooltip title={expanded ? 'Collapse thread' : 'Expand thread'}>
                 <IconButton size="small" onClick={handleToggleExpanded}>
@@ -300,7 +230,6 @@ const ThreadView: React.FC<ThreadViewProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-
             {onClose && (
               <Tooltip title="Close thread">
                 <IconButton size="small" onClick={onClose}>
@@ -308,52 +237,45 @@ const ThreadView: React.FC<ThreadViewProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-          </Box>
-        </Box>
-      </Box>
-
+          </div>
+        </div>
+      </div>
       {/* Thread Content */}
       <Collapse in={expanded}>
-        <Box
-          sx={{
-            maxHeight,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
+        <div
+          className=""
         >
           {/* Root Message */}
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-            <Typography
-              variant="caption"
+          <div className="">
+            <div
+              
               color="primary"
-              sx={{ mb: 1, display: 'block' }}
+              className=""
             >
               Thread starter
-            </Typography>
+            </div>
             <MessageItem
               message={threadSummary.rootMessage}
               showAvatar={true}
               showTimestamp={true}
               compact={false}
-              onReply={() => {}} // Disable reply on root message in thread view
+               // Disable reply on root message in thread view
             />
-          </Box>
-
+          </div>
           {/* Thread Messages */}
           {threadMessages && (
-            <Box sx={{ flex: 1, overflow: 'hidden' }}>
+            <div className="">
               {threadMessages.replies.length > 0 ? (
-                <Box sx={{ p: 1 }}>
-                  <Typography
-                    variant="caption"
+                <div className="">
+                  <div
+                    
                     color="text.secondary"
-                    sx={{ mb: 1, display: 'block', px: 1 }}
+                    className=""
                   >
                     Replies ({threadMessages.replies.length})
-                  </Typography>
-                  <Box
-                    sx={{ pl: 2, borderLeft: 2, borderColor: 'primary.light' }}
+                  </div>
+                  <div
+                    className=""
                   >
                     {threadMessages.replies.map((reply, index) => {
                       const prevReply =
@@ -362,28 +284,27 @@ const ThreadView: React.FC<ThreadViewProps> = ({
                         prevReply &&
                         new Date(reply.createdAt).toDateString() !==
                           new Date(prevReply.createdAt).toDateString();
-
                       return (
                         <React.Fragment key={reply._id}>
                           {showDateDivider && (
-                            <Box sx={{ my: 2 }}>
-                              <Divider>
-                                <Typography
-                                  variant="caption"
+                            <div className="">
+                              <Separator>
+                                <div
+                                  
                                   color="text.secondary"
                                 >
                                   {new Date(
                                     reply.createdAt
                                   ).toLocaleDateString()}
-                                </Typography>
-                              </Divider>
-                            </Box>
+                                </div>
+                              </Separator>
+                            </div>
                           )}
                           <MessageItem
                             message={reply}
                             showAvatar={
                               !prevReply ||
-                              prevReply.senderId !== reply.senderId
+                              prevReply.senderId !== reply.senderId}
                             }
                             showTimestamp={true}
                             compact={true}
@@ -391,28 +312,22 @@ const ThreadView: React.FC<ThreadViewProps> = ({
                         </React.Fragment>
                       );
                     })}
-                  </Box>
-                </Box>
+                  </div>
+                </div>
               ) : (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    p: 4,
-                  }}
+                <div
+                  className=""
                 >
-                  <Typography variant="body2" color="text.secondary">
+                  <div  color="text.secondary">
                     No replies yet. Be the first to reply!
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               )}
-            </Box>
+            </div>
           )}
-
           {/* Reply Input */}
           {showReplyInput && expanded && (
-            <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
+            <div className="">
               <MessageThread
                 conversationId={conversationId}
                 messages={[]}
@@ -421,12 +336,11 @@ const ThreadView: React.FC<ThreadViewProps> = ({
                 parentMessage={threadSummary.rootMessage}
                 maxHeight="200px"
               />
-            </Box>
+            </div>
           )}
-        </Box>
+        </div>
       </Collapse>
-    </Paper>
+    </div>
   );
 };
-
 export default ThreadView;

@@ -1,42 +1,28 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  Chip,
-  CircularProgress,
-  Divider,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  Typography,
-  Alert,
-  Button,
-  Paper,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
-} from '@mui/material';
-import {
-  Email as EmailIcon,
-  PersonAdd as InviteIcon,
-  CheckCircle as AcceptedIcon,
-  HourglassEmpty as PendingIcon,
-  Cancel as RejectedIcon,
-  Refresh as RefreshIcon,
-  Delete as DeleteIcon,
-  Search as SearchIcon,
-} from '@mui/icons-material';
-import { useUIStore } from '../../stores';
+import React, { useState, useEffect } from 'react';
+
+import { Button } from '@/components/ui/button';
+
+import { Input } from '@/components/ui/input';
+
+import { Label } from '@/components/ui/label';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { CardHeader } from '@/components/ui/card';
+
+import { Dialog } from '@/components/ui/dialog';
+
+import { DialogContent } from '@/components/ui/dialog';
+
+import { DialogTitle } from '@/components/ui/dialog';
+
+import { Select } from '@/components/ui/select';
+
+import { Spinner } from '@/components/ui/spinner';
+
+import { Separator } from '@/components/ui/separator';
 
 interface Invitation {
   id: string;
@@ -48,7 +34,6 @@ interface Invitation {
   expiresAt: string;
   workspace: string;
 }
-
 const InvitationManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [invitations, setInvitations] = useState<Invitation[]>([
@@ -96,29 +81,23 @@ const InvitationManagement: React.FC = () => {
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [newInvitation, setNewInvitation] = useState({
+  const [newInvitation, setNewInvitation] = useState({ 
     email: '',
     role: 'pharmacist',
-    workspace: 'Main Pharmacy',
+    workspace: 'Main Pharmacy'}
   });
-
   const addNotification = useUIStore((state) => state.addNotification);
-
   const handleSendInvitation = async () => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
-      addNotification({
+      addNotification({ 
         type: 'info',
-        title: 'Invitation Sent',
-        message: `Invitation sent to ${newInvitation.email}`,
-      });
-
+        title: 'Invitation Sent'}
+        message: `Invitation sent to ${newInvitation.email}`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       // Add the new invitation to the list
       const invitation: Invitation = {
         id: (invitations.length + 1).toString(),
@@ -130,40 +109,33 @@ const InvitationManagement: React.FC = () => {
         expiresAt: new Date(Date.now() + 604800000).toISOString(), // 7 days from now
         workspace: newInvitation.workspace,
       };
-
       setInvitations([invitation, ...invitations]);
       setShowInviteDialog(false);
-      setNewInvitation({
+      setNewInvitation({ 
         email: '',
         role: 'pharmacist',
-        workspace: 'Main Pharmacy',
+        workspace: 'Main Pharmacy'}
       });
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
-        title: 'Invitation Failed',
-        message: `Failed to send invitation to ${newInvitation.email}`,
-      });
+        title: 'Invitation Failed'}
+        message: `Failed to send invitation to ${newInvitation.email}`}
     } finally {
       setLoading(false);
     }
   };
-
   const handleRevokeInvitation = async (invitationId: string) => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
-      addNotification({
+      addNotification({ 
         type: 'info',
-        title: 'Invitation Revoked',
-        message: `Invitation revoked for ID: ${invitationId}`,
-      });
-
+        title: 'Invitation Revoked'}
+        message: `Invitation revoked for ID: ${invitationId}`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       // Update the invitation status
       setInvitations(
         invitations.map((inv) =>
@@ -171,31 +143,25 @@ const InvitationManagement: React.FC = () => {
         )
       );
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
-        title: 'Revoke Failed',
-        message: `Failed to revoke invitation: ${invitationId}`,
-      });
+        title: 'Revoke Failed'}
+        message: `Failed to revoke invitation: ${invitationId}`}
     } finally {
       setLoading(false);
     }
   };
-
   const handleResendInvitation = async (invitationId: string) => {
     try {
       setLoading(true);
-
       // In a real implementation, this would call an API
       // For now, we'll simulate the process
-      addNotification({
+      addNotification({ 
         type: 'info',
-        title: 'Invitation Resent',
-        message: `Invitation resent for ID: ${invitationId}`,
-      });
-
+        title: 'Invitation Resent'}
+        message: `Invitation resent for ID: ${invitationId}`}
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       // Update the invitation expiration date
       setInvitations(
         invitations.map((inv) =>
@@ -208,16 +174,14 @@ const InvitationManagement: React.FC = () => {
         )
       );
     } catch (err) {
-      addNotification({
+      addNotification({ 
         type: 'error',
-        title: 'Resend Failed',
-        message: `Failed to resend invitation: ${invitationId}`,
-      });
+        title: 'Resend Failed'}
+        message: `Failed to resend invitation: ${invitationId}`}
     } finally {
       setLoading(false);
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'accepted':
@@ -232,7 +196,6 @@ const InvitationManagement: React.FC = () => {
         return 'default';
     }
   };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'accepted':
@@ -247,7 +210,6 @@ const InvitationManagement: React.FC = () => {
         return <PendingIcon />;
     }
   };
-
   const filteredInvitations = invitations.filter((invitation) => {
     const matchesSearch =
       invitation.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -256,121 +218,106 @@ const InvitationManagement: React.FC = () => {
       filterStatus === 'all' || invitation.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
-
   return (
-    <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
+    <div>
+      <div
+        className=""
       >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <InviteIcon sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h5" component="h1">
+        <div className="">
+          <InviteIcon className="" />
+          <div  component="h1">
             Invitation Management
-          </Typography>
-        </Box>
-        <Box>
+          </div>
+        </div>
+        <div>
           <Button
-            variant="contained"
+            
             startIcon={<InviteIcon />}
             onClick={() => setShowInviteDialog(true)}
-            sx={{ mr: 1 }}
+            className=""
           >
             Invite User
           </Button>
           <Button
-            variant="outlined"
+            
             startIcon={<RefreshIcon />}
             onClick={() => setLoading(true)}
           >
             Refresh
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Invitation Stats */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <div container spacing={3} className="">
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary.main" gutterBottom>
+            <CardContent className="">
+              <div  color="primary.main" gutterBottom>
                 {invitations.length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Total Invitations
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="info.main" gutterBottom>
+            <CardContent className="">
+              <div  color="info.main" gutterBottom>
                 {invitations.filter((i) => i.status === 'pending').length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Pending
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main" gutterBottom>
+            <CardContent className="">
+              <div  color="success.main" gutterBottom>
                 {invitations.filter((i) => i.status === 'accepted').length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Accepted
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main" gutterBottom>
+            <CardContent className="">
+              <div  color="warning.main" gutterBottom>
                 {
                   invitations.filter(
                     (i) => i.status === 'expired' || i.status === 'rejected'
                   ).length
                 }
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </div>
+              <div  color="textSecondary">
                 Expired/Rejected
-              </Typography>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Search and Filter */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <CardContent>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
+          <div container spacing={2}>
+            <div item xs={12} md={6}>
+              <Input
                 fullWidth
                 placeholder="Search by email or role..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  ),
-                }}
+                
               />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Status Filter</InputLabel>
+            </div>
+            <div item xs={12} md={6}>
+              <div fullWidth>
+                <Label>Status Filter</Label>
                 <Select
                   value={filterStatus}
                   label="Status Filter"
@@ -382,56 +329,45 @@ const InvitationManagement: React.FC = () => {
                   <MenuItem value="rejected">Rejected</MenuItem>
                   <MenuItem value="expired">Expired</MenuItem>
                 </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
       {/* Invitation List */}
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
+      <div container spacing={3}>
+        <div item xs={12}>
           <Card>
             <CardHeader
               title="Invitation List"
               subheader="Manage all workspace invitations"
             />
-            <Divider />
+            <Separator />
             <CardContent>
               {filteredInvitations.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="body1" color="textSecondary">
+                <div className="">
+                  <div  color="textSecondary">
                     No invitations found
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               ) : (
                 <List>
                   {filteredInvitations.map((invitation) => (
-                    <ListItem
+                    <div
                       key={invitation.id}
-                      sx={{
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        mb: 1,
-                        '&:last-child': { mb: 0 },
-                      }}
+                      className=""
                     >
-                      <Box sx={{ mr: 2, mt: 0.5 }}>
+                      <div className="">
                         <EmailIcon />
-                      </Box>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              mb: 0.5,
-                            }}
+                          <div
+                            className=""
                           >
-                            <Typography variant="subtitle1" sx={{ mr: 1 }}>
+                            <div  className="">}
                               {invitation.email}
-                            </Typography>
+                            </div>
                             <Chip
                               label={invitation.status}
                               size="small"
@@ -440,66 +376,62 @@ const InvitationManagement: React.FC = () => {
                             <Chip
                               label={invitation.role}
                               size="small"
-                              variant="outlined"
-                              sx={{ ml: 1 }}
+                              
+                              className=""
                             />
-                          </Box>
+                          </div>
                         }
                         secondary={
-                          <Box>
-                            <Typography variant="body2" color="textSecondary">
+                          <div>
+                            <div  color="textSecondary">}
                               Invited by {invitation.invitedBy} to{' '}
                               {invitation.workspace}
-                            </Typography>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                mt: 1,
-                              }}
+                            </div>
+                            <div
+                              className=""
                             >
-                              <Typography
-                                variant="caption"
+                              <div
+                                
                                 color="textSecondary"
-                                sx={{ mr: 2 }}
+                                className=""
                               >
                                 Invited:{' '}
                                 {new Date(
                                   invitation.invitedAt
                                 ).toLocaleDateString()}
-                              </Typography>
-                              <Typography
-                                variant="caption"
+                              </div>
+                              <div
+                                
                                 color="textSecondary"
                               >
                                 Expires:{' '}
                                 {new Date(
                                   invitation.expiresAt
                                 ).toLocaleDateString()}
-                              </Typography>
-                            </Box>
-                          </Box>
+                              </div>
+                            </div>
+                          </div>
                         }
                       />
-                      <Box>
+                      <div>
                         {invitation.status === 'pending' && (
                           <>
                             <Button
-                              variant="outlined"
+                              
                               size="small"
                               onClick={() =>
-                                handleResendInvitation(invitation.id)
+                                handleResendInvitation(invitation.id)}
                               }
-                              sx={{ mr: 1 }}
+                              className=""
                             >
                               Resend
                             </Button>
                             <Button
-                              variant="outlined"
+                              
                               color="error"
                               size="small"
                               onClick={() =>
-                                handleRevokeInvitation(invitation.id)
+                                handleRevokeInvitation(invitation.id)}
                               }
                             >
                               Revoke
@@ -508,25 +440,24 @@ const InvitationManagement: React.FC = () => {
                         )}
                         {invitation.status === 'expired' && (
                           <Button
-                            variant="outlined"
+                            
                             size="small"
                             onClick={() =>
-                              handleResendInvitation(invitation.id)
+                              handleResendInvitation(invitation.id)}
                             }
                           >
                             Resend
                           </Button>
                         )}
-                      </Box>
-                    </ListItem>
+                      </div>
+                    </div>
                   ))}
                 </List>
               )}
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Invite User Dialog */}
       <Dialog
         open={showInviteDialog}
@@ -535,33 +466,33 @@ const InvitationManagement: React.FC = () => {
         fullWidth
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <InviteIcon sx={{ mr: 1 }} />
+          <div className="">
+            <InviteIcon className="" />
             Invite New User
-          </Box>
+          </div>
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <TextField
+          <div className="">
+            <Input
               fullWidth
               label="Email Address"
               type="email"
               value={newInvitation.email}
-              onChange={(e) =>
+              onChange={(e) =>}
                 setNewInvitation({ ...newInvitation, email: e.target.value })
               }
               margin="normal"
               required
             />
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Role</InputLabel>
+            <div fullWidth margin="normal">
+              <Label>Role</Label>
               <Select
                 value={newInvitation.role}
                 label="Role"
                 onChange={(e) =>
-                  setNewInvitation({
-                    ...newInvitation,
-                    role: e.target.value as string,
+                  setNewInvitation({ 
+                    ...newInvitation}
+                    role: e.target.value as string,}
                   })
                 }
               >
@@ -570,16 +501,16 @@ const InvitationManagement: React.FC = () => {
                 <MenuItem value="pharmacy_outlet">Pharmacy Outlet</MenuItem>
                 <MenuItem value="intern_pharmacist">Intern Pharmacist</MenuItem>
               </Select>
-            </FormControl>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Workspace</InputLabel>
+            </div>
+            <div fullWidth margin="normal">
+              <Label>Workspace</Label>
               <Select
                 value={newInvitation.workspace}
                 label="Workspace"
                 onChange={(e) =>
-                  setNewInvitation({
-                    ...newInvitation,
-                    workspace: e.target.value as string,
+                  setNewInvitation({ 
+                    ...newInvitation}
+                    workspace: e.target.value as string,}
                   })
                 }
               >
@@ -587,27 +518,26 @@ const InvitationManagement: React.FC = () => {
                 <MenuItem value="Branch Pharmacy">Branch Pharmacy</MenuItem>
                 <MenuItem value="Mobile Unit">Mobile Unit</MenuItem>
               </Select>
-            </FormControl>
-          </Box>
+            </div>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowInviteDialog(false)}>Cancel</Button>
           <Button
-            variant="contained"
+            
             onClick={handleSendInvitation}
             disabled={
               loading ||
               !newInvitation.email ||
-              !newInvitation.email.includes('@')
+              !newInvitation.email.includes('@')}
             }
-            startIcon={loading ? <CircularProgress size={20} /> : <EmailIcon />}
+            startIcon={loading ? <Spinner size={20} /> : <EmailIcon />}
           >
             Send Invitation
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
-
 export default InvitationManagement;

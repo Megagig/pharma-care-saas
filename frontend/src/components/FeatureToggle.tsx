@@ -1,11 +1,7 @@
-import React from 'react';
-import {
-  Switch,
-  FormControlLabel,
-  FormControl,
-  FormHelperText,
-} from '@mui/material';
+
 import useFeatureFlags from '../hooks/useFeatureFlags';
+
+import { Switch } from '@/components/ui/button';
 
 interface FeatureToggleProps {
   featureKey: string;
@@ -18,12 +14,12 @@ interface FeatureToggleProps {
 /**
  * Component that provides a toggle switch for a feature flag
  */
-const FeatureToggle: React.FC<FeatureToggleProps> = ({
+const FeatureToggle: React.FC<FeatureToggleProps> = ({ 
   featureKey,
   label,
   description,
   disabled = false,
-  onChange,
+  onChange
 }) => {
   const { featureFlags, isLoading } = useFeatureFlags();
 
@@ -39,10 +35,10 @@ const FeatureToggle: React.FC<FeatureToggleProps> = ({
   };
 
   return (
-    <FormControl component="fieldset" disabled={disabled || isLoading}>
+    <div component="fieldset" disabled={disabled || isLoading}>
       <FormControlLabel
         control={
-          <Switch
+          <Switch}
             checked={isEnabled}
             onChange={handleChange}
             name={featureKey}
@@ -51,8 +47,8 @@ const FeatureToggle: React.FC<FeatureToggleProps> = ({
         }
         label={label}
       />
-      {description && <FormHelperText>{description}</FormHelperText>}
-    </FormControl>
+      {description && <p>{description}</p>}
+    </div>
   );
 };
 

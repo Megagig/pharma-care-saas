@@ -1,8 +1,3 @@
-import { renderHook, act } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useCommunicationStore } from '../communicationStore';
-import type { Conversation, Message, CommunicationNotification } from '../types';
-
 // Mock fetch globally
 global.fetch = vi.fn();
 
@@ -14,8 +9,7 @@ const mockLocalStorage = {
     clear: vi.fn(),
 };
 Object.defineProperty(window, 'localStorage', {
-    value: mockLocalStorage,
-});
+    value: mockLocalStorage}
 
 describe('CommunicationStore', () => {
     beforeEach(() => {
@@ -161,8 +155,7 @@ describe('CommunicationStore', () => {
             act(() => {
                 tempId = result.current.optimisticSendMessage('conv-1', {
                     senderId: 'user-1',
-                    content: { text: 'Optimistic message', type: 'text' },
-                });
+                    content: { text: 'Optimistic message', type: 'text' }
             });
 
             expect(tempId).toMatch(/^temp_/);
@@ -177,8 +170,7 @@ describe('CommunicationStore', () => {
             act(() => {
                 tempId = result.current.optimisticSendMessage('conv-1', {
                     senderId: 'user-1',
-                    content: { text: 'Optimistic message', type: 'text' },
-                });
+                    content: { text: 'Optimistic message', type: 'text' }
             });
 
             act(() => {
@@ -195,8 +187,7 @@ describe('CommunicationStore', () => {
             act(() => {
                 tempId = result.current.optimisticSendMessage('conv-1', {
                     senderId: 'user-1',
-                    content: { text: 'Optimistic message', type: 'text' },
-                });
+                    content: { text: 'Optimistic message', type: 'text' }
             });
 
             act(() => {
@@ -329,9 +320,9 @@ describe('CommunicationStore', () => {
 
             act(() => {
                 result.current.addNotification(mockNotification);
-                result.current.addNotification({
+                result.current.addNotification({ 
                     ...mockNotification,
-                    _id: 'notif-2',
+                    _id: 'notif-2'}
                 });
                 result.current.markAllNotificationsAsRead();
             });
@@ -440,8 +431,7 @@ describe('CommunicationStore', () => {
                     editHistory: [],
                     isDeleted: false,
                     createdAt: '2024-01-01T00:00:00Z',
-                    updatedAt: '2024-01-01T00:00:00Z',
-                });
+                    updatedAt: '2024-01-01T00:00:00Z'}
                 result.current.setSidebarOpen(false);
                 result.current.setSearchQuery('test');
             });

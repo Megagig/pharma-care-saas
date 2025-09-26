@@ -1,14 +1,7 @@
-import React from 'react';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  within,
-} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import AuditTrailVisualization from '../AuditTrailVisualization';
 
+import userEvent from '@testing-library/user-event';
+
+import AuditTrailVisualization from '../AuditTrailVisualization';
 // Mock fetch
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -133,9 +126,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('renders audit trail visualization with header', () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(<AuditTrailVisualization conversationId="conv1" />);
@@ -147,9 +140,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('fetches and displays audit events', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(<AuditTrailVisualization conversationId="conv1" />);
@@ -163,18 +156,17 @@ describe('AuditTrailVisualization', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/communication/audit/conversation/conv1'),
-      expect.objectContaining({
+      expect.objectContaining({ 
         headers: {
-          Authorization: 'Bearer mock-token',
-        },
-      })
+          Authorization: 'Bearer mock-token'}
+        }}
     );
   });
 
   it('groups events by time periods correctly', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(<AuditTrailVisualization conversationId="conv1" />);
@@ -186,9 +178,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('displays user information correctly', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(<AuditTrailVisualization conversationId="conv1" />);
@@ -201,9 +193,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('shows risk levels with appropriate colors', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(<AuditTrailVisualization conversationId="conv1" />);
@@ -217,9 +209,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('displays success and failure status correctly', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(<AuditTrailVisualization conversationId="conv1" />);
@@ -234,9 +226,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('expands event details when clicked', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     const user = userEvent.setup();
@@ -266,9 +258,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('shows additional details in expanded view', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     const user = userEvent.setup();
@@ -296,9 +288,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('opens filters panel when filter button is clicked', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     const user = userEvent.setup();
@@ -317,17 +309,16 @@ describe('AuditTrailVisualization', () => {
 
   it('applies filters and refetches data', async () => {
     mockFetch
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce({ 
         ok: true,
-        json: async () => mockApiResponse,
+        json: async () => mockApiResponse}
       })
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce({ 
         ok: true,
         json: async () => ({
           ...mockApiResponse,
-          data: [mockAuditEvents[0]], // Filtered result
-        }),
-      });
+          data: [mockAuditEvents[0]], // Filtered result })
+        })}
 
     const user = userEvent.setup();
 
@@ -353,13 +344,13 @@ describe('AuditTrailVisualization', () => {
 
   it('clears filters when clear button is clicked', async () => {
     mockFetch
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce({ 
         ok: true,
-        json: async () => mockApiResponse,
+        json: async () => mockApiResponse}
       })
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce({ 
         ok: true,
-        json: async () => mockApiResponse,
+        json: async () => mockApiResponse}
       });
 
     const user = userEvent.setup();
@@ -385,13 +376,13 @@ describe('AuditTrailVisualization', () => {
 
   it('handles refresh button click', async () => {
     mockFetch
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce({ 
         ok: true,
-        json: async () => mockApiResponse,
+        json: async () => mockApiResponse}
       })
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce({ 
         ok: true,
-        json: async () => mockApiResponse,
+        json: async () => mockApiResponse}
       });
 
     const user = userEvent.setup();
@@ -411,9 +402,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('displays timestamps correctly', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(<AuditTrailVisualization conversationId="conv1" />);
@@ -427,9 +418,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('shows duration when available', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(<AuditTrailVisualization conversationId="conv1" />);
@@ -443,9 +434,9 @@ describe('AuditTrailVisualization', () => {
   it('handles auto-refresh when enabled', async () => {
     jest.useFakeTimers();
 
-    mockFetch.mockResolvedValue({
+    mockFetch.mockResolvedValue({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(
@@ -492,10 +483,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('displays empty state when no events found', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true, data: [] }),
-    });
+    mockFetch.mockResolvedValueOnce({ 
+      ok: true}
+      json: async () => ({ success: true, data: [] })}
 
     render(<AuditTrailVisualization conversationId="conv1" />);
 
@@ -507,9 +497,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('displays user avatars correctly', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(<AuditTrailVisualization conversationId="conv1" />);
@@ -523,9 +513,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('shows role chips for users', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(<AuditTrailVisualization conversationId="conv1" />);
@@ -538,9 +528,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('formats action names correctly', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     render(<AuditTrailVisualization conversationId="conv1" />);
@@ -554,9 +544,9 @@ describe('AuditTrailVisualization', () => {
   });
 
   it('displays metadata in expanded view', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({ 
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => mockApiResponse}
     });
 
     const user = userEvent.setup();

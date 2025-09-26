@@ -1,19 +1,16 @@
-import React from 'react';
-import { Box } from '@mui/material';
+
 import PatientMedicationsPage from './medications/PatientMedicationsPage';
 
 interface MedicationManagementProps {
   patientId: string;
 }
-
-const MedicationManagement: React.FC<MedicationManagementProps> = ({
-  patientId,
+const MedicationManagement: React.FC<MedicationManagementProps> = ({ 
+  patientId
 }) => {
   return (
-    <Box>
+    <div>
       <PatientMedicationsPage patientId={patientId} />
-    </Box>
+    </div>
   );
 };
-
 export default MedicationManagement;

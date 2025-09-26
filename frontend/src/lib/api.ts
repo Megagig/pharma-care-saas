@@ -1,13 +1,12 @@
 import axios from 'axios';
 
 // Default API instance
-export const api = axios.create({
+export const api = axios.create({ 
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
-  },
-});
+    'Content-Type': 'application/json'}
+  }
 
 // Interceptor for ensuring credentials are included (for httpOnly cookies)
 api.interceptors.request.use(
@@ -50,9 +49,9 @@ api.interceptors.response.use(
           console.log('Token refresh successful, retrying original request');
           // New access token is automatically set as httpOnly cookie by server
           // Retry original request with the same config
-          return axios({
+          return axios({ 
             ...originalRequest,
-            withCredentials: true, // Ensure credentials are sent
+            withCredentials: true, // Ensure credentials are sent })
           });
         } else {
           console.warn(
@@ -81,13 +80,12 @@ api.interceptors.response.use(
 );
 
 // Form data API instance (for file uploads)
-export const formDataApi = axios.create({
+export const formDataApi = axios.create({ 
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
   withCredentials: true,
   headers: {
-    'Content-Type': 'multipart/form-data',
-  },
-});
+    'Content-Type': 'multipart/form-data'}
+  }
 
 // Apply the same credentials interceptor to formDataApi
 formDataApi.interceptors.request.use(

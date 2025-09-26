@@ -1,7 +1,3 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { ComponentTestCase, generateTestCases } from './migration-utils';
-import { ComponentType } from 'react';
-
 // Test runner for migrated components
 export class MigrationTestRunner {
     private testResults: Map<string, { passed: number; failed: number; errors: string[] }> = new Map();

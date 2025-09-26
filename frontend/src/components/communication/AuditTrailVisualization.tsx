@@ -1,56 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Card,
-  CardContent,
-  CardHeader,
-  Chip,
-  Avatar,
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-  TimelineOppositeContent,
-  Tooltip,
-  IconButton,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Grid,
-  Alert,
-  CircularProgress,
-  Collapse,
-  Divider,
-} from '@mui/material';
-import {
-  Message as MessageIcon,
-  Group as GroupIcon,
-  AttachFile as AttachFileIcon,
-  Visibility as VisibilityIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Security as SecurityIcon,
-  Person as PersonIcon,
-  Schedule as ScheduleIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  FilterList as FilterIcon,
-  Timeline as TimelineIcon,
-} from '@mui/icons-material';
-import {
-  format,
+import { Button, Label, Card, CardContent, Select, Spinner, Alert, Avatar, Separator } from '@/components/ui/button';
+format,
   parseISO,
   isToday,
   isYesterday,
   differenceInMinutes,
-} from 'date-fns';
 
 interface AuditEvent {
   _id: string;
@@ -76,7 +29,6 @@ interface AuditEvent {
   duration?: number;
   ipAddress: string;
 }
-
 interface AuditTrailVisualizationProps {
   conversationId: string;
   height?: string;
@@ -84,41 +36,36 @@ interface AuditTrailVisualizationProps {
   autoRefresh?: boolean;
   refreshInterval?: number;
 }
-
-const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
+const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({ 
   conversationId,
   height = '600px',
   showFilters = true,
   autoRefresh = false,
-  refreshInterval = 30000, // 30 seconds
+  refreshInterval = 30000, // 30 seconds })
 }) => {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState({ 
     action: '',
     riskLevel: '',
     userId: '',
-    success: '',
+    success: ''}
   });
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
-
   // Fetch audit trail
   const fetchAuditTrail = async () => {
     setLoading(true);
     setError(null);
-
     try {
       const queryParams = new URLSearchParams();
-
       // Add filters
       Object.entries(filters).forEach(([key, value]) => {
         if (value) {
           queryParams.append(key, value);
         }
       });
-
       const response = await fetch(
         `/api/communication/audit/conversation/${conversationId}?${queryParams}`,
         {
@@ -127,11 +74,9 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
           },
         }
       );
-
       if (!response.ok) {
         throw new Error('Failed to fetch audit trail');
       }
-
       const data = await response.json();
       setEvents(data.data || []);
     } catch (err) {
@@ -142,11 +87,9 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchAuditTrail();
   }, [conversationId, filters]);
-
   // Auto-refresh
   useEffect(() => {
     if (autoRefresh && refreshInterval > 0) {
@@ -154,14 +97,12 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
       return () => clearInterval(interval);
     }
   }, [autoRefresh, refreshInterval, conversationId, filters]);
-
   // Get icon for action type
   const getActionIcon = (action: string, riskLevel: string) => {
     const iconProps = {
       fontSize: 'small' as const,
       color: getRiskColor(riskLevel),
     };
-
     switch (action) {
       case 'message_sent':
         return <MessageIcon {...iconProps} />;
@@ -184,7 +125,6 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
         return <SecurityIcon {...iconProps} />;
     }
   };
-
   // Get risk level color
   const getRiskColor = (
     riskLevel: string
@@ -201,7 +141,6 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
         return 'default';
     }
   };
-
   // Format action name
   const formatAction = (action: string) => {
     return action
@@ -209,11 +148,9 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
-
   // Format timestamp
   const formatTimestamp = (timestamp: string) => {
     const date = parseISO(timestamp);
-
     if (isToday(date)) {
       return `Today at ${format(date, 'HH:mm')}`;
     } else if (isYesterday(date)) {
@@ -222,13 +159,11 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
       return format(date, 'MMM dd, yyyy HH:mm');
     }
   };
-
   // Get time difference for timeline spacing
   const getTimeDifference = (current: string, previous?: string) => {
     if (!previous) return 0;
     return differenceInMinutes(parseISO(current), parseISO(previous));
   };
-
   // Toggle event expansion
   const toggleEventExpansion = (eventId: string) => {
     const newExpanded = new Set(expandedEvents);
@@ -239,15 +174,12 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
     }
     setExpandedEvents(newExpanded);
   };
-
   // Group events by time periods
   const groupEventsByPeriod = (events: AuditEvent[]) => {
     const groups: { [key: string]: AuditEvent[] } = {};
-
     events.forEach((event) => {
       const date = parseISO(event.timestamp);
       let key: string;
-
       if (isToday(date)) {
         key = 'Today';
       } else if (isYesterday(date)) {
@@ -255,33 +187,24 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
       } else {
         key = format(date, 'MMMM dd, yyyy');
       }
-
       if (!groups[key]) {
         groups[key] = [];
       }
       groups[key].push(event);
     });
-
     return groups;
   };
-
   const eventGroups = groupEventsByPeriod(events);
-
   return (
-    <Box sx={{ height, display: 'flex', flexDirection: 'column' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 2,
-          }}
+      <div className="">
+        <div
+          className=""
         >
-          <Typography
-            variant="h6"
-            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          <div
+            
+            className=""
           >
             <TimelineIcon />
             Audit Trail Visualization
@@ -289,8 +212,8 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
               size="small"
               label={`Conversation: ${conversationId.slice(-8)}`}
             />
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          </div>
+          <div className="">
             {showFilters && (
               <Button
                 startIcon={<FilterIcon />}
@@ -305,27 +228,26 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
               onClick={fetchAuditTrail}
               disabled={loading}
               size="small"
-              variant="outlined"
+              
             >
               Refresh
             </Button>
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {/* Filters Panel */}
         <Collapse in={showFiltersPanel}>
-          <Card variant="outlined" sx={{ mb: 2 }}>
+          <Card  className="">
             <CardContent>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Action</InputLabel>
+              <div container spacing={2}>
+                <div item xs={12} sm={6} md={3}>
+                  <div fullWidth size="small">
+                    <Label>Action</Label>
                     <Select
                       value={filters.action}
                       onChange={(e) =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          action: e.target.value,
+                        setFilters((prev) => ({ 
+                          ...prev}
+                          action: e.target.value,}
                         }))
                       }
                       label="Action"
@@ -339,17 +261,17 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
                       </MenuItem>
                       <MenuItem value="file_uploaded">File Uploaded</MenuItem>
                     </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Risk Level</InputLabel>
+                  </div>
+                </div>
+                <div item xs={12} sm={6} md={3}>
+                  <div fullWidth size="small">
+                    <Label>Risk Level</Label>
                     <Select
                       value={filters.riskLevel}
                       onChange={(e) =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          riskLevel: e.target.value,
+                        setFilters((prev) => ({ 
+                          ...prev}
+                          riskLevel: e.target.value,}
                         }))
                       }
                       label="Risk Level"
@@ -360,17 +282,17 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
                       <MenuItem value="high">High</MenuItem>
                       <MenuItem value="critical">Critical</MenuItem>
                     </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Status</InputLabel>
+                  </div>
+                </div>
+                <div item xs={12} sm={6} md={3}>
+                  <div fullWidth size="small">
+                    <Label>Status</Label>
                     <Select
                       value={filters.success}
                       onChange={(e) =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          success: e.target.value,
+                        setFilters((prev) => ({ 
+                          ...prev}
+                          success: e.target.value,}
                         }))
                       }
                       label="Status"
@@ -379,60 +301,57 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
                       <MenuItem value="true">Success</MenuItem>
                       <MenuItem value="false">Failed</MenuItem>
                     </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                </div>
+                <div item xs={12} sm={6} md={3}>
                   <Button
                     fullWidth
-                    variant="outlined"
+                    
                     onClick={() =>
-                      setFilters({
+                      setFilters({ 
                         action: '',
                         riskLevel: '',
-                        userId: '',
-                        success: '',
+                        userId: ''}
+                        success: '',}
                       })
                     }
                     size="small"
                   >
                     Clear Filters
                   </Button>
-                </Grid>
-              </Grid>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </Collapse>
-      </Box>
-
+      </div>
       {/* Error Alert */}
       {error && (
-        <Alert severity="error" sx={{ m: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" className="" onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
-
       {/* Loading State */}
       {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div className="">
+          <Spinner />
+        </div>
       )}
-
       {/* Timeline Content */}
       {!loading && (
-        <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+        <div className="">
           {Object.keys(eventGroups).length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography color="text.secondary">
+            <div className="">
+              <div color="text.secondary">
                 No audit events found for this conversation
-              </Typography>
-            </Box>
+              </div>
+            </div>
           ) : (
             Object.entries(eventGroups).map(([period, periodEvents]) => (
-              <Box key={period} sx={{ mb: 4 }}>
-                <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+              <div key={period} className="">
+                <div  className="">
                   {period}
-                </Typography>
+                </div>
                 <Timeline>
                   {periodEvents.map((event, index) => {
                     const isExpanded = expandedEvents.has(event._id);
@@ -440,22 +359,21 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
                       event.timestamp,
                       index > 0 ? periodEvents[index - 1].timestamp : undefined
                     );
-
                     return (
                       <TimelineItem key={event._id}>
                         <TimelineOppositeContent
-                          sx={{ m: 'auto 0', minWidth: 120 }}
+                          className=""
                         >
-                          <Typography variant="body2" color="text.secondary">
+                          <div  color="text.secondary">
                             {format(parseISO(event.timestamp), 'HH:mm:ss')}
-                          </Typography>
+                          </div>
                           {event.duration && (
-                            <Typography
-                              variant="caption"
+                            <div
+                              
                               color="text.secondary"
                             >
                               {event.duration}ms
-                            </Typography>
+                            </div>
                           )}
                         </TimelineOppositeContent>
                         <TimelineSeparator>
@@ -466,72 +384,50 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
                             <TimelineConnector />
                           )}
                         </TimelineSeparator>
-                        <TimelineContent sx={{ py: '12px', px: 2 }}>
+                        <TimelineContent className="">
                           <Card
-                            variant="outlined"
-                            sx={{
-                              cursor: 'pointer',
-                              '&:hover': { bgcolor: 'action.hover' },
-                            }}
-                            onClick={() => toggleEventExpansion(event._id)}
+                            
+                            className="" onClick={() => toggleEventExpansion(event._id)}
                           >
-                            <CardContent sx={{ pb: '16px !important' }}>
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  alignItems: 'flex-start',
-                                  mb: 1,
-                                }}
+                            <CardContent className="">
+                              <div
+                                className=""
                               >
-                                <Box>
-                                  <Typography
-                                    variant="subtitle2"
+                                <div>
+                                  <div
+                                    
                                     fontWeight="medium"
                                   >
                                     {formatAction(event.action)}
-                                  </Typography>
-                                  <Box
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 1,
-                                      mt: 0.5,
-                                    }}
+                                  </div>
+                                  <div
+                                    className=""
                                   >
                                     <Avatar
-                                      sx={{
-                                        width: 24,
-                                        height: 24,
-                                        fontSize: '0.75rem',
-                                      }}
+                                      className=""
                                     >
                                       {event.userId.firstName[0]}
                                       {event.userId.lastName[0]}
                                     </Avatar>
-                                    <Typography variant="body2">
+                                    <div >
                                       {event.userId.firstName}{' '}
                                       {event.userId.lastName}
-                                    </Typography>
+                                    </div>
                                     <Chip
                                       size="small"
                                       label={event.userId.role}
-                                      variant="outlined"
+                                      
                                     />
-                                  </Box>
-                                </Box>
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                  }}
+                                  </div>
+                                </div>
+                                <div
+                                  className=""
                                 >
                                   <Chip
                                     size="small"
                                     label={event.success ? 'Success' : 'Failed'}
                                     color={event.success ? 'success' : 'error'}
-                                    variant="outlined"
+                                    
                                   />
                                   <IconButton size="small">
                                     {isExpanded ? (
@@ -540,91 +436,81 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
                                       <ExpandMoreIcon />
                                     )}
                                   </IconButton>
-                                </Box>
-                              </Box>
-
+                                </div>
+                              </div>
                               <Collapse in={isExpanded}>
-                                <Divider sx={{ my: 1 }} />
-                                <Grid container spacing={2}>
-                                  <Grid item xs={12} sm={6}>
-                                    <Typography
-                                      variant="caption"
+                                <Separator className="" />
+                                <div container spacing={2}>
+                                  <div item xs={12} sm={6}>
+                                    <div
+                                      
                                       color="text.secondary"
                                     >
                                       Target Details
-                                    </Typography>
-                                    <Typography variant="body2">
+                                    </div>
+                                    <div >
                                       Type: {event.targetType}
-                                    </Typography>
-                                    <Typography
-                                      variant="body2"
-                                      sx={{ wordBreak: 'break-all' }}
+                                    </div>
+                                    <div
+                                      
+                                      className=""
                                     >
                                       ID: {event.targetId}
-                                    </Typography>
+                                    </div>
                                     {event.details.messageId && (
-                                      <Typography variant="body2">
+                                      <div >
                                         Message:{' '}
                                         {event.details.messageId.slice(-8)}
-                                      </Typography>
+                                      </div>
                                     )}
                                     {event.details.fileName && (
-                                      <Typography variant="body2">
+                                      <div >
                                         File: {event.details.fileName}
-                                      </Typography>
+                                      </div>
                                     )}
-                                  </Grid>
-                                  <Grid item xs={12} sm={6}>
-                                    <Typography
-                                      variant="caption"
+                                  </div>
+                                  <div item xs={12} sm={6}>
+                                    <div
+                                      
                                       color="text.secondary"
                                     >
                                       Security Info
-                                    </Typography>
-                                    <Typography variant="body2">
+                                    </div>
+                                    <div >
                                       Risk Level: {event.riskLevel}
-                                    </Typography>
-                                    <Typography variant="body2">
+                                    </div>
+                                    <div >
                                       IP: {event.ipAddress}
-                                    </Typography>
-                                    <Typography variant="body2">
+                                    </div>
+                                    <div >
                                       Timestamp:{' '}
                                       {formatTimestamp(event.timestamp)}
-                                    </Typography>
-                                  </Grid>
+                                    </div>
+                                  </div>
                                   {event.details.metadata && (
-                                    <Grid item xs={12}>
-                                      <Typography
-                                        variant="caption"
+                                    <div item xs={12}>
+                                      <div
+                                        
                                         color="text.secondary"
                                       >
                                         Additional Details
-                                      </Typography>
-                                      <Paper
-                                        variant="outlined"
-                                        sx={{
-                                          p: 1,
-                                          bgcolor: 'grey.50',
-                                          mt: 0.5,
-                                        }}
+                                      </div>
+                                      <div
+                                        
+                                        className=""
                                       >
                                         <pre
-                                          style={{
-                                            margin: 0,
-                                            fontSize: '0.75rem',
-                                            whiteSpace: 'pre-wrap',
-                                          }}
-                                        >
+                                          >
                                           {JSON.stringify(
                                             event.details.metadata,
                                             null,
                                             2
                                           )}
                                         </pre>
-                                      </Paper>
-                                    </Grid>
+                                      </div>
+                                    </div>
                                   )}
-                                </Grid>
+                                </div>
                               </Collapse>
                             </CardContent>
                           </Card>
@@ -633,13 +519,12 @@ const AuditTrailVisualization: React.FC<AuditTrailVisualizationProps> = ({
                     );
                   })}
                 </Timeline>
-              </Box>
+              </div>
             ))
           )}
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
-
 export default AuditTrailVisualization;

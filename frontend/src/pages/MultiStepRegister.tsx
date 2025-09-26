@@ -1,123 +1,54 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Card,
-  CardContent,
-  Alert,
-  CircularProgress,
-  Checkbox,
-  FormControlLabel,
-  Stack,
-  Stepper,
-  Step,
-  StepLabel,
-  RadioGroup,
-  Radio,
-  FormControl,
-  FormLabel,
-  Paper,
-  Chip,
-  Divider,
-  InputLabel,
-  Select,
-  MenuItem,
-  InputAdornment,
-  IconButton,
-} from '@mui/material';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
-import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
-import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { authService, WorkplaceResponse } from '../services/authService';
+import { useForm } from 'react-hook-form';
+import {
+  User as PersonOutline,
+  Building as BusinessOutline,
+  GraduationCap as SchoolOutline,
+  Briefcase as WorkOutline,
+  CheckCircle as CheckCircleOutline,
+  Eye as Visibility,
+  EyeOff as VisibilityOff,
+  ChevronRight,
+  ChevronLeft
+} from 'lucide-react';
+
 import ThemeToggle from '../components/common/ThemeToggle';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { authService } from '@/services/authService';
 
 // Nigerian states for dropdown
 const nigerianStates = [
-  'Abia',
-  'Adamawa',
-  'Akwa Ibom',
-  'Anambra',
-  'Bauchi',
-  'Bayelsa',
-  'Benue',
-  'Borno',
-  'Cross River',
-  'Delta',
-  'Ebonyi',
-  'Edo',
-  'Ekiti',
-  'Enugu',
-  'FCT',
-  'Gombe',
-  'Imo',
-  'Jigawa',
-  'Kaduna',
-  'Kano',
-  'Katsina',
-  'Kebbi',
-  'Kogi',
-  'Kwara',
-  'Lagos',
-  'Nasarawa',
-  'Niger',
-  'Ogun',
-  'Ondo',
-  'Osun',
-  'Oyo',
-  'Plateau',
-  'Rivers',
-  'Sokoto',
-  'Taraba',
-  'Yobe',
-  'Zamfara',
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+  'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe', 'Imo',
+  'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa',
+  'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba',
+  'Yobe', 'Zamfara',
 ];
 
 // Workplace types
 const workplaceTypes = [
-  {
-    value: 'Community',
-    label: 'Community Pharmacy',
-    icon: <WorkOutlineIcon />,
-  },
-  {
-    value: 'Hospital',
-    label: 'Hospital/Clinic',
-    icon: <BusinessOutlinedIcon />,
-  },
-  {
-    value: 'Academia',
-    label: 'Academic Institution',
-    icon: <SchoolOutlinedIcon />,
-  },
-  {
-    value: 'Industry',
-    label: 'Pharmaceutical Industry',
-    icon: <BusinessOutlinedIcon />,
-  },
-  {
-    value: 'Regulatory Body',
-    label: 'Regulatory Body',
-    icon: <BusinessOutlinedIcon />,
-  },
-  { value: 'Other', label: 'Other', icon: <WorkOutlineIcon /> },
+  { value: 'Community', label: 'Community Pharmacy', icon: <WorkOutline className="h-5 w-5" /> },
+  { value: 'Hospital', label: 'Hospital/Clinic', icon: <BusinessOutline className="h-5 w-5" /> },
+  { value: 'Academia', label: 'Academic Institution', icon: <SchoolOutline className="h-5 w-5" /> },
+  { value: 'Industry', label: 'Pharmaceutical Industry', icon: <BusinessOutline className="h-5 w-5" /> },
+  { value: 'Regulatory Body', label: 'Regulatory Body', icon: <BusinessOutline className="h-5 w-5" /> },
+  { value: 'Other', label: 'Other', icon: <WorkOutline className="h-5 w-5" /> },
 ];
 
 // Workplace roles
 const workplaceRoles = [
-  'Staff',
-  'Pharmacist',
-  'Cashier',
-  'Technician',
-  'Assistant',
+  'Staff', 'Pharmacist', 'Cashier', 'Technician', 'Assistant',
 ];
 
 interface UserFormData {
@@ -183,6 +114,8 @@ const MultiStepRegister = () => {
   const [foundWorkplace, setFoundWorkplace] = useState<Workplace | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+
   const navigate = useNavigate();
 
   // Form data states
@@ -211,8 +144,6 @@ const MultiStepRegister = () => {
     inviteCode: '',
     workplaceRole: 'Staff',
   });
-
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   // Handle form field changes
   const handleUserFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -252,14 +183,12 @@ const MultiStepRegister = () => {
     setError('');
 
     try {
-      const response: WorkplaceResponse =
-        await authService.findWorkplaceByInviteCode(joinForm.inviteCode);
+      const response = await authService.findWorkplaceByInviteCode(joinForm.inviteCode);
       setFoundWorkplace(response.data);
       toast.success(`Found workplace: ${response.data.name}`);
     } catch (error: unknown) {
       const apiError = error as { response?: { data?: { message?: string } } };
-      const errorMessage =
-        apiError.response?.data?.message || 'Invalid invite code';
+      const errorMessage = apiError.response?.data?.message || 'Invalid invite code';
       setError(errorMessage);
       setFoundWorkplace(null);
     } finally {
@@ -342,7 +271,6 @@ const MultiStepRegister = () => {
   // Navigation functions
   const handleNext = () => {
     setError('');
-
     if (activeStep === 0 && !validateStep1()) return;
     if (activeStep === 1 && !validateStep2()) return;
 
@@ -381,7 +309,6 @@ const MultiStepRegister = () => {
       }
 
       console.log('Registration payload:', payload);
-
       await authService.registerWithWorkplace(payload);
 
       toast.success(
@@ -393,17 +320,16 @@ const MultiStepRegister = () => {
         state: {
           email: userForm.email,
           workplaceFlow,
-          workplaceName:
-            workplaceFlow === 'create'
-              ? workplaceForm.name
-              : foundWorkplace?.name,
+          workplaceName: workplaceFlow === 'create'
+            ? workplaceForm.name
+            : foundWorkplace?.name,
         },
       });
     } catch (error: unknown) {
       console.error('Registration error:', error);
       const apiError = error as {
         response?: { data?: { message?: string } };
-        message?: string;
+        message?: string
       };
       const errorMessage =
         apiError.response?.data?.message ||
@@ -421,545 +347,555 @@ const MultiStepRegister = () => {
     switch (activeStep) {
       case 0:
         return (
-          <Stack spacing={3}>
-            <Box sx={{ textAlign: 'center', mb: 2 }}>
-              <PersonOutlineIcon
-                sx={{ fontSize: 48, color: 'primary.main', mb: 1 }}
-              />
-              <Typography variant="h5" gutterBottom>
+          <div className="space-y-6">
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-full mb-4">
+                <PersonOutline className="h-8 w-8 text-blue-600 dark:text-blue-300" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Personal Information
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
                 Let's start with your basic information
-              </Typography>
-            </Box>
+              </p>
+            </div>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                fullWidth
-                label="First Name"
-                name="firstName"
-                value={userForm.firstName}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  First Name
+                </Label>
+                <Input
+                  id="firstName"
+                  name="firstName"
+                  value={userForm.firstName}
+                  onChange={handleUserFormChange}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Last Name
+                </Label>
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  value={userForm.lastName}
+                  onChange={handleUserFormChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Email
+              </Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={userForm.email}
                 onChange={handleUserFormChange}
                 required
               />
-              <TextField
-                fullWidth
-                label="Last Name"
-                name="lastName"
-                value={userForm.lastName}
+            </div>
+
+            <div>
+              <Label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Phone Number
+              </Label>
+              <Input
+                id="phone"
+                name="phone"
+                value={userForm.phone}
                 onChange={handleUserFormChange}
                 required
               />
-            </Stack>
+            </div>
 
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              type="email"
-              value={userForm.email}
-              onChange={handleUserFormChange}
-              required
-            />
-
-            <TextField
-              fullWidth
-              label="Phone Number"
-              name="phone"
-              value={userForm.phone}
-              onChange={handleUserFormChange}
-              required
-            />
-
-            <TextField
-              fullWidth
-              label="Professional License Number"
-              name="licenseNumber"
-              value={userForm.licenseNumber}
-              onChange={handleUserFormChange}
-              helperText="You can add or verify your license later in your profile"
-            />
-
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                fullWidth
-                label="Password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                value={userForm.password}
+            <div>
+              <Label htmlFor="licenseNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Professional License Number
+              </Label>
+              <Input
+                id="licenseNumber"
+                name="licenseNumber"
+                value={userForm.licenseNumber}
                 onChange={handleUserFormChange}
-                required
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle password visibility"
-                        onClick={handleTogglePasswordVisibility}
-                        edge="end"
-                      >
-                        {showPassword ? (
-                          <VisibilityOffIcon />
-                        ) : (
-                          <VisibilityIcon />
-                        )}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
               />
-              <TextField
-                fullWidth
-                label="Confirm Password"
-                name="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={userForm.confirmPassword}
-                onChange={handleUserFormChange}
-                required
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle confirm password visibility"
-                        onClick={handleToggleConfirmPasswordVisibility}
-                        edge="end"
-                      >
-                        {showConfirmPassword ? (
-                          <VisibilityOffIcon />
-                        ) : (
-                          <VisibilityIcon />
-                        )}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Stack>
-          </Stack>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                You can add or verify your license later in your profile
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={userForm.password}
+                    onChange={handleUserFormChange}
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+                    onClick={handleTogglePasswordVisibility}
+                  >
+                    {showPassword ? (
+                      <VisibilityOff className="h-5 w-5" />
+                    ) : (
+                      <Visibility className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={userForm.confirmPassword}
+                    onChange={handleUserFormChange}
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+                    onClick={handleToggleConfirmPasswordVisibility}
+                  >
+                    {showConfirmPassword ? (
+                      <VisibilityOff className="h-5 w-5" />
+                    ) : (
+                      <Visibility className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         );
+
       case 1:
         return (
-          <Stack spacing={3}>
-            <Box sx={{ textAlign: 'center', mb: 2 }}>
-              <BusinessOutlinedIcon
-                sx={{ fontSize: 48, color: 'primary.main', mb: 1 }}
-              />
-              <Typography variant="h5" gutterBottom>
+          <div className="space-y-6">
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-full mb-4">
+                <BusinessOutline className="h-8 w-8 text-blue-600 dark:text-blue-300" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Workplace Setup
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
                 How would you like to set up your workplace?
-              </Typography>
-            </Box>
+              </p>
+            </div>
 
-            <FormControl component="fieldset">
-              <FormLabel component="legend" sx={{ mb: 2 }}>
+            <div className="space-y-4">
+              <Label className="text-base font-medium text-gray-900 dark:text-white">
                 Choose your setup option:
-              </FormLabel>
-              <RadioGroup
-                value={workplaceFlow}
-                onChange={(e) =>
-                  setWorkplaceFlow(e.target.value as WorkplaceFlow)
-                }
-              >
-                <Paper
-                  sx={{
-                    p: 2,
-                    mb: 2,
-                    border: workplaceFlow === 'create' ? 2 : 1,
-                    borderColor:
-                      workplaceFlow === 'create' ? 'primary.main' : 'divider',
-                  }}
-                >
-                  <FormControlLabel
-                    value="create"
-                    control={<Radio />}
-                    label={
-                      <Box>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 'medium' }}
-                        >
-                          Create a new workplace
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Set up your pharmacy, hospital, clinic, or
-                          organization
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </Paper>
+              </Label>
 
-                <Paper
-                  sx={{
-                    p: 2,
-                    mb: 2,
-                    border: workplaceFlow === 'join' ? 2 : 1,
-                    borderColor:
-                      workplaceFlow === 'join' ? 'primary.main' : 'divider',
-                  }}
+              <div className="space-y-3">
+                <div
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${workplaceFlow === 'create' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600'}`}
+                  onClick={() => setWorkplaceFlow('create')}
                 >
-                  <FormControlLabel
-                    value="join"
-                    control={<Radio />}
-                    label={
-                      <Box>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 'medium' }}
-                        >
-                          Join an existing workplace
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Use an invite code from your workplace owner
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </Paper>
+                  <div className="flex items-start">
+                    <div className={`flex items-center justify-center w-5 h-5 rounded-full border mr-3 mt-0.5 ${workplaceFlow === 'create' ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                      {workplaceFlow === 'create' && (
+                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Create a new workplace</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Set up your pharmacy, hospital, clinic, or organization
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                <Paper
-                  sx={{
-                    p: 2,
-                    border: workplaceFlow === 'skip' ? 2 : 1,
-                    borderColor:
-                      workplaceFlow === 'skip' ? 'primary.main' : 'divider',
-                  }}
+                <div
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${workplaceFlow === 'join' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600'}`}
+                  onClick={() => setWorkplaceFlow('join')}
                 >
-                  <FormControlLabel
-                    value="skip"
-                    control={<Radio />}
-                    label={
-                      <Box>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 'medium' }}
-                        >
-                          Skip for now
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Access general features only (Knowledge Hub, CPD,
-                          Forum)
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </Paper>
-              </RadioGroup>
-            </FormControl>
+                  <div className="flex items-start">
+                    <div className={`flex items-center justify-center w-5 h-5 rounded-full border mr-3 mt-0.5 ${workplaceFlow === 'join' ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                      {workplaceFlow === 'join' && (
+                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Join an existing workplace</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Use an invite code from your workplace owner
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${workplaceFlow === 'skip' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600'}`}
+                  onClick={() => setWorkplaceFlow('skip')}
+                >
+                  <div className="flex items-start">
+                    <div className={`flex items-center justify-center w-5 h-5 rounded-full border mr-3 mt-0.5 ${workplaceFlow === 'skip' ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                      {workplaceFlow === 'skip' && (
+                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900 dark:text-white">Skip for now</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Access general features only (Knowledge Hub, CPD, Forum)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {workplaceFlow === 'create' && (
-              <Stack spacing={3} sx={{ mt: 3 }}>
-                <Divider>
-                  <Chip label="Workplace Details" />
-                </Divider>
+              <div className="space-y-6 pt-4">
+                <Separator>
+                  <Badge variant="secondary">Workplace Details</Badge>
+                </Separator>
 
-                <TextField
-                  fullWidth
-                  label="Workplace Name"
-                  name="name"
-                  value={workplaceForm.name}
-                  onChange={handleWorkplaceFormChange}
-                  required
-                  placeholder="e.g., Central Pharmacy, City Hospital"
-                />
+                <div>
+                  <Label htmlFor="workplaceName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Workplace Name
+                  </Label>
+                  <Input
+                    id="workplaceName"
+                    name="name"
+                    value={workplaceForm.name}
+                    onChange={handleWorkplaceFormChange}
+                    required
+                    placeholder="e.g., Central Pharmacy, City Hospital"
+                  />
+                </div>
 
-                <FormControl fullWidth>
-                  <InputLabel>Workplace Type</InputLabel>
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Workplace Type
+                  </Label>
                   <Select
                     value={workplaceForm.type}
-                    onChange={(e) =>
-                      setWorkplaceForm((prev) => ({
-                        ...prev,
-                        type: e.target.value,
-                      }))
-                    }
-                    label="Workplace Type"
+                    onValueChange={(value) => setWorkplaceForm(prev => ({ ...prev, type: value }))}
                   >
-                    {workplaceTypes.map((type) => (
-                      <MenuItem key={type.value} value={type.value}>
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          {type.icon}
-                          {type.label}
-                        </Box>
-                      </MenuItem>
-                    ))}
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select workplace type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {workplaceTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          <div className="flex items-center">
+                            {type.icon}
+                            <span className="ml-2">{type.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
-                </FormControl>
+                </div>
 
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                  <TextField
-                    fullWidth
-                    label="License Number"
-                    name="licenseNumber"
-                    value={workplaceForm.licenseNumber}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="workplaceLicense" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      License Number
+                    </Label>
+                    <Input
+                      id="workplaceLicense"
+                      name="licenseNumber"
+                      value={workplaceForm.licenseNumber}
+                      onChange={handleWorkplaceFormChange}
+                      required
+                      placeholder="PCN/PHARMACYLIC/2024/001"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="workplaceEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Workplace Email
+                    </Label>
+                    <Input
+                      id="workplaceEmail"
+                      name="email"
+                      type="email"
+                      value={workplaceForm.email}
+                      onChange={handleWorkplaceFormChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="workplaceAddress" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Address (Optional)
+                  </Label>
+                  <textarea
+                    id="workplaceAddress"
+                    name="address"
+                    value={workplaceForm.address}
                     onChange={handleWorkplaceFormChange}
-                    required
-                    placeholder="PCN/PHARMACYLIC/2024/001"
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  <TextField
-                    fullWidth
-                    label="Workplace Email"
-                    name="email"
-                    type="email"
-                    value={workplaceForm.email}
-                    onChange={handleWorkplaceFormChange}
-                    required
-                  />
-                </Stack>
+                </div>
 
-                <TextField
-                  fullWidth
-                  label="Address (Optional)"
-                  name="address"
-                  value={workplaceForm.address}
-                  onChange={handleWorkplaceFormChange}
-                  multiline
-                  rows={2}
-                />
-
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                  <FormControl fullWidth>
-                    <InputLabel>State (Optional)</InputLabel>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      State (Optional)
+                    </Label>
                     <Select
                       value={workplaceForm.state}
-                      onChange={(e) =>
-                        setWorkplaceForm((prev) => ({
-                          ...prev,
-                          state: e.target.value,
-                        }))
-                      }
-                      label="State (Optional)"
+                      onValueChange={(value) => setWorkplaceForm(prev => ({ ...prev, state: value }))}
                     >
-                      {nigerianStates.map((state) => (
-                        <MenuItem key={state} value={state}>
-                          {state}
-                        </MenuItem>
-                      ))}
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {nigerianStates.map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
-                  </FormControl>
-                  <TextField
-                    fullWidth
-                    label="LGA (Optional)"
-                    name="lga"
-                    value={workplaceForm.lga}
-                    onChange={handleWorkplaceFormChange}
-                  />
-                </Stack>
-              </Stack>
-            )}
-            {workplaceFlow === 'join' && (
-              <Stack spacing={3} sx={{ mt: 3 }}>
-                <Divider>
-                  <Chip label="Join Workplace" />
-                </Divider>
+                  </div>
 
-                <Box>
-                  <Stack direction="row" spacing={2} alignItems="flex-end">
-                    <TextField
-                      fullWidth
-                      label="Invite Code"
-                      name="inviteCode"
-                      value={joinForm.inviteCode}
-                      onChange={handleJoinFormChange}
-                      placeholder="ABC123"
-                      helperText="Enter the 6-character invite code from your workplace"
+                  <div>
+                    <Label htmlFor="workplaceLga" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      LGA (Optional)
+                    </Label>
+                    <Input
+                      id="workplaceLga"
+                      name="lga"
+                      value={workplaceForm.lga}
+                      onChange={handleWorkplaceFormChange}
                     />
-                    <Button
-                      variant="outlined"
-                      onClick={handleFindWorkplace}
-                      disabled={loading || !joinForm.inviteCode.trim()}
-                      sx={{ minWidth: 120 }}
-                    >
-                      {loading ? <CircularProgress size={20} /> : 'Find'}
-                    </Button>
-                  </Stack>
-                </Box>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {workplaceFlow === 'join' && (
+              <div className="space-y-6 pt-4">
+                <Separator>
+                  <Badge variant="secondary">Join Workplace</Badge>
+                </Separator>
+
+                <div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Invite Code
+                      </Label>
+                      <Input
+                        id="inviteCode"
+                        name="inviteCode"
+                        value={joinForm.inviteCode}
+                        onChange={handleJoinFormChange}
+                        placeholder="ABC123"
+                      />
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        Enter the 6-character invite code from your workplace
+                      </p>
+                    </div>
+                    <div className="self-end">
+                      <Button
+                        onClick={handleFindWorkplace}
+                        disabled={loading || !joinForm.inviteCode.trim()}
+                        className="h-10"
+                      >
+                        {loading ? 'Finding...' : 'Find'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
 
                 {foundWorkplace && (
-                  <Paper
-                    sx={{
-                      p: 3,
-                      bgcolor: 'success.light',
-                      color: 'success.contrastText',
-                    }}
-                  >
-                    <Typography variant="h6" gutterBottom>
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <h3 className="font-medium text-green-800 dark:text-green-200 mb-2">
                       ✅ Workplace Found!
-                    </Typography>
-                    <Typography variant="body1" gutterBottom>
-                      <strong>{foundWorkplace.name}</strong>
-                    </Typography>
-                    <Typography variant="body2">
-                      Type: {foundWorkplace.type} | Location:{' '}
-                      {foundWorkplace.state}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
+                    </h3>
+                    <p className="font-semibold text-green-800 dark:text-green-200 mb-1">
+                      {foundWorkplace.name}
+                    </p>
+                    <p className="text-green-700 dark:text-green-300 mb-1">
+                      Type: {foundWorkplace.type} | Location: {foundWorkplace.state}
+                    </p>
+                    <p className="text-green-700 dark:text-green-300">
                       Team Size: {foundWorkplace.teamSize} members
-                    </Typography>
-                  </Paper>
+                    </p>
+                  </div>
                 )}
 
                 {foundWorkplace && (
-                  <FormControl fullWidth>
-                    <InputLabel>Your Role</InputLabel>
+                  <div>
+                    <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Your Role
+                    </Label>
                     <Select
                       value={joinForm.workplaceRole}
-                      onChange={(e) =>
-                        setJoinForm((prev) => ({
-                          ...prev,
-                          workplaceRole: e.target.value,
-                        }))
-                      }
-                      label="Your Role"
+                      onValueChange={(value) => setJoinForm(prev => ({ ...prev, workplaceRole: value }))}
                     >
-                      {workplaceRoles.map((role) => (
-                        <MenuItem key={role} value={role}>
-                          {role}
-                        </MenuItem>
-                      ))}
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {workplaceRoles.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
-                  </FormControl>
+                  </div>
                 )}
-              </Stack>
+              </div>
             )}
+
             {workplaceFlow === 'skip' && (
-              <Paper sx={{ p: 3, mt: 3, bgcolor: 'warning.light' }}>
-                <Typography variant="h6" gutterBottom color="warning.dark">
-                  Limited Access Mode
-                </Typography>
-                <Typography variant="body2" color="warning.dark" paragraph>
-                  By skipping workplace setup, you'll have access to:
-                </Typography>
-                <Stack
-                  component="ul"
-                  spacing={1}
-                  sx={{ pl: 2, color: 'warning.dark' }}
-                >
-                  <Typography component="li" variant="body2">
-                    ✅ Knowledge Hub & Resources
-                  </Typography>
-                  <Typography component="li" variant="body2">
-                    ✅ CPD Tracking
-                  </Typography>
-                  <Typography component="li" variant="body2">
-                    ✅ Professional Forum
-                  </Typography>
-                  <Typography component="li" variant="body2">
-                    ❌ Patient Management (requires workplace)
-                  </Typography>
-                  <Typography component="li" variant="body2">
-                    ❌ Medication Management (requires workplace)
-                  </Typography>
-                  <Typography component="li" variant="body2">
-                    ❌ Billing & Reports (requires workplace)
-                  </Typography>
-                </Stack>
-                <Typography
-                  variant="body2"
-                  color="warning.dark"
-                  sx={{ mt: 2, fontStyle: 'italic' }}
-                >
-                  You can create or join a workplace anytime from your
-                  dashboard.
-                </Typography>
-              </Paper>
+              <div className="space-y-4 pt-4">
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <h3 className="font-medium text-amber-800 dark:text-amber-200 mb-2">
+                    Limited Access Mode
+                  </h3>
+                  <p className="text-amber-700 dark:text-amber-300 mb-3">
+                    By skipping workplace setup, you'll have access to:
+                  </p>
+
+                  <ul className="space-y-1 text-amber-700 dark:text-amber-300">
+                    <li className="flex items-center">
+                      <span className="mr-2">✅</span> Knowledge Hub & Resources
+                    </li>
+                    <li className="flex items-center">
+                      <span className="mr-2">✅</span> CPD Tracking
+                    </li>
+                    <li className="flex items-center">
+                      <span className="mr-2">✅</span> Professional Forum
+                    </li>
+                    <li className="flex items-center">
+                      <span className="mr-2">❌</span> Patient Management (requires workplace)
+                    </li>
+                    <li className="flex items-center">
+                      <span className="mr-2">❌</span> Medication Management (requires workplace)
+                    </li>
+                    <li className="flex items-center">
+                      <span className="mr-2">❌</span> Billing & Reports (requires workplace)
+                    </li>
+                  </ul>
+
+                  <p className="text-amber-700 dark:text-amber-300 mt-3">
+                    You can create or join a workplace anytime from your dashboard.
+                  </p>
+                </div>
+              </div>
             )}
-          </Stack>
+          </div>
         );
+
       case 2:
         return (
-          <Stack spacing={3}>
-            <Box sx={{ textAlign: 'center', mb: 2 }}>
-              <CheckCircleOutlineIcon
-                sx={{ fontSize: 48, color: 'success.main', mb: 1 }}
-              />
-              <Typography variant="h5" gutterBottom>
+          <div className="space-y-6">
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-full mb-4">
+                <CheckCircleOutline className="h-8 w-8 text-green-600 dark:text-green-300" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Almost Done!
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
                 Review your information and complete registration
-              </Typography>
-            </Box>
+              </p>
+            </div>
 
             {/* Summary */}
-            <Paper sx={{ p: 3, bgcolor: 'grey.50' }}>
-              <Typography variant="h6" gutterBottom>
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 Registration Summary
-              </Typography>
+              </h3>
 
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Name:
-                  </Typography>
-                  <Typography variant="body1">
-                    {userForm.firstName} {userForm.lastName}
-                  </Typography>
-                </Box>
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg space-y-3">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Name:</p>
+                  <p className="font-medium">{userForm.firstName} {userForm.lastName}</p>
+                </div>
 
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Email:
-                  </Typography>
-                  <Typography variant="body1">{userForm.email}</Typography>
-                </Box>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Email:</p>
+                  <p className="font-medium">{userForm.email}</p>
+                </div>
 
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Workplace Setup:
-                  </Typography>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Workplace Setup:</p>
                   {workplaceFlow === 'create' && (
-                    <Typography variant="body1">
-                      Creating new workplace:{' '}
-                      <strong>{workplaceForm.name}</strong> (
-                      {workplaceForm.type})
-                    </Typography>
+                    <p className="font-medium">
+                      Creating new workplace: <span className="text-blue-600 dark:text-blue-400">{workplaceForm.name}</span> ({workplaceForm.type})
+                    </p>
                   )}
                   {workplaceFlow === 'join' && (
-                    <Typography variant="body1">
-                      Joining: <strong>{foundWorkplace?.name}</strong> as{' '}
-                      {joinForm.workplaceRole}
-                    </Typography>
+                    <p className="font-medium">
+                      Joining: <span className="text-blue-600 dark:text-blue-400">{foundWorkplace?.name}</span> as {joinForm.workplaceRole}
+                    </p>
                   )}
                   {workplaceFlow === 'skip' && (
-                    <Typography variant="body1">
+                    <p className="font-medium">
                       Independent account (no workplace)
-                    </Typography>
+                    </p>
                   )}
-                </Box>
+                </div>
 
                 {workplaceFlow === 'create' && (
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    🎉 You'll get a 14-day free trial to explore all features!
+                  <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                    <CheckCircleOutline className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <AlertDescription className="text-blue-800 dark:text-blue-200">
+                      🎉 You'll get a 14-day free trial to explore all features!
+                    </AlertDescription>
                   </Alert>
                 )}
 
                 {workplaceFlow === 'join' && (
-                  <Alert severity="success" sx={{ mt: 2 }}>
-                    🤝 You'll inherit your workplace's subscription plan!
+                  <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                    <CheckCircleOutline className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <AlertDescription className="text-green-800 dark:text-green-200">
+                      🤝 You'll inherit your workplace's subscription plan!
+                    </AlertDescription>
                   </Alert>
                 )}
-              </Stack>
-            </Paper>
+              </div>
+            </div>
 
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={agreeToTerms}
-                  onChange={(e) => setAgreeToTerms(e.target.checked)}
-                />
-              }
-              label={
-                <Typography variant="body2">
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="terms"
+                checked={agreeToTerms}
+                onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
+              />
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <label htmlFor="terms" className="cursor-pointer">
                   I agree to the{' '}
                   <Link
                     to="/terms"
                     target="_blank"
-                    style={{ color: 'inherit' }}
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
                   >
                     Terms of Service
                   </Link>{' '}
@@ -967,173 +903,144 @@ const MultiStepRegister = () => {
                   <Link
                     to="/privacy"
                     target="_blank"
-                    style={{ color: 'inherit' }}
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
                   >
                     Privacy Policy
                   </Link>
-                </Typography>
-              }
-            />
-          </Stack>
+                </label>
+              </div>
+            </div>
+          </div>
         );
+
       default:
         return null;
     }
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: (theme) =>
-          theme.palette.mode === 'dark'
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
-            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        py: 4,
-        position: 'relative',
-        transition: 'background 0.3s ease',
-      }}
-    >
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       {/* Floating Theme Toggle */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          zIndex: 1000,
-        }}
-      >
-        <ThemeToggle size="sm" variant="button" />
-      </Box>
+      <div className="fixed top-4 right-4 z-10">
+        <ThemeToggle size="sm" />
+      </div>
 
-      <Container maxWidth="md">
-        <Card
-          elevation={24}
-          sx={{
-            borderRadius: 4,
-            overflow: 'hidden',
-            backdropFilter: 'blur(10px)',
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          }}
-        >
-          <CardContent sx={{ p: 4 }}>
+      <div className="max-w-3xl mx-auto">
+        <Card className="shadow-lg">
+          <CardContent className="p-6 sm:p-8">
             {/* Back to Homepage Link */}
-            <Box sx={{ mb: 3 }}>
-              <Button
-                component={Link}
-                to="/"
-                variant="text"
-                sx={{
-                  color: 'text.secondary',
-                  textTransform: 'none',
-                  fontWeight: 500,
-                  '&:hover': {
-                    color: 'primary.main',
-                    backgroundColor: 'transparent',
-                  },
-                }}
-              >
-                ← Back to Homepage
+            <div className="mb-6">
+              <Button variant="ghost" asChild className="pl-0">
+                <Link to="/" className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Back to Homepage
+                </Link>
               </Button>
-            </Box>
+            </div>
 
             {/* Header */}
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <Typography
-                variant="h3"
-                component="h1"
-                sx={{ fontWeight: 'bold', mb: 1 }}
-              >
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 Join PharmaCareSaaS
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
                 Create your account and set up your workplace
-              </Typography>
-            </Box>
+              </p>
+            </div>
 
             {/* Stepper */}
-            <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
+            <div className="mb-8">
+              <div className="flex items-center justify-between">
+                {steps.map((label, index) => (
+                  <div key={label} className="flex items-center">
+                    <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${index <= activeStep ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                      {index < activeStep ? (
+                        <CheckCircleOutline className="h-5 w-5" />
+                      ) : (
+                        <span>{index + 1}</span>
+                      )}
+                    </div>
+                    <div className={`ml-2 text-sm font-medium ${index <= activeStep ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                      {label}
+                    </div>
+                    {index < steps.length - 1 && (
+                      <div className={`mx-4 h-0.5 w-16 ${index < activeStep ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* Error Message */}
             {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
+              <Alert className="mb-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                <AlertDescription className="text-red-800 dark:text-red-200">
+                  {error}
+                </AlertDescription>
               </Alert>
             )}
 
             {/* Step Content */}
-            <Box sx={{ mb: 4 }}>{renderStepContent()}</Box>
+            <div className="mb-8">{renderStepContent()}</div>
 
             {/* Navigation Buttons */}
-            <Stack direction="row" spacing={2} justifyContent="space-between">
+            <div className="flex justify-between">
               <Button
+                variant="outline"
                 onClick={handleBack}
                 disabled={activeStep === 0 || loading}
-                variant="outlined"
+                className="flex items-center"
               >
+                <ChevronLeft className="h-4 w-4 mr-1" />
                 Back
               </Button>
-
-              <Box sx={{ flex: 1 }} />
 
               {activeStep < steps.length - 1 ? (
                 <Button
                   onClick={handleNext}
                   disabled={loading}
-                  variant="contained"
-                  size="large"
+                  className="flex items-center"
                 >
                   {workplaceFlow === 'skip' && activeStep === 1
                     ? 'Skip to Confirmation'
                     : 'Continue'}
+                  <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               ) : (
                 <Button
                   onClick={handleSubmit}
                   disabled={loading || !agreeToTerms}
-                  variant="contained"
-                  size="large"
-                  startIcon={
-                    loading ? (
-                      <CircularProgress size={20} />
-                    ) : (
-                      <CheckCircleOutlineIcon />
-                    )
-                  }
+                  className="flex items-center"
                 >
-                  {loading ? 'Creating Account...' : 'Complete Registration'}
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Creating Account...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircleOutline className="h-4 w-4 mr-2" />
+                      Complete Registration
+                    </>
+                  )}
                 </Button>
               )}
-            </Stack>
+            </div>
 
             {/* Sign In Link */}
-            <Box sx={{ textAlign: 'center', mt: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                Already have an account?{' '}
-                <Link
-                  to="/login"
-                  style={{
-                    color: 'inherit',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  Sign In
-                </Link>
-              </Typography>
-            </Box>
+            <div className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
+              Already have an account?{' '}
+              <Link
+                to="/login"
+                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+              >
+                Sign In
+              </Link>
+            </div>
           </CardContent>
         </Card>
-      </Container>
-    </Box>
+      </div>
+    </div>
   );
 };
 

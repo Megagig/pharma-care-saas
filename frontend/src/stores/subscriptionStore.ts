@@ -1,16 +1,3 @@
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
-import {
-  subscriptionService,
-  SubscriptionPlan,
-  Subscription,
-} from '../services/subscriptionService';
-import {
-  paymentService,
-  Payment,
-  PaymentMethod,
-} from '../services/paymentService';
-
 interface SubscriptionState {
   // Subscription data
   currentSubscription: Subscription | null;
@@ -116,27 +103,25 @@ const initialState: SubscriptionState = {
 export const useSubscriptionStore = create<SubscriptionStore>()(
   devtools(
     persist(
-      (set, get) => ({
+      (set, get) => ({ 
         ...initialState,
 
         // Subscription actions
         loadCurrentSubscription: async () => {
-          set((state) => ({
-            loading: { ...state.loading, subscription: true },
-          }));
+          set((state) => ({ })
+            loading: { ...state.loading, subscription: true }
           try {
             const subscription =
               await subscriptionService.getCurrentSubscription();
-            set({
-              currentSubscription: subscription.data?.subscription || null,
+            set({ 
+              currentSubscription: subscription.data?.subscription || null}
             });
           } catch (error) {
             console.error('Failed to load current subscription:', error);
             set({ currentSubscription: null });
           } finally {
-            set((state) => ({
-              loading: { ...state.loading, subscription: false },
-            }));
+            set((state) => ({  })
+              loading: { ...state.loading, subscription: false }
           }
         },
 
@@ -220,9 +205,8 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
 
         // Payment actions
         loadPaymentMethods: async () => {
-          set((state) => ({
-            loading: { ...state.loading, paymentMethods: true },
-          }));
+          set((state) => ({  })
+            loading: { ...state.loading, paymentMethods: true }
           try {
             const methods = await paymentService.getPaymentMethods();
             set({ paymentMethods: methods });
@@ -230,9 +214,8 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
             console.error('Failed to load payment methods:', error);
             set({ paymentMethods: [] });
           } finally {
-            set((state) => ({
-              loading: { ...state.loading, paymentMethods: false },
-            }));
+            set((state) => ({  })
+              loading: { ...state.loading, paymentMethods: false }
           }
         },
 
@@ -283,9 +266,8 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
 
         // Payment history actions
         loadPaymentHistory: async (page = 1, limit = 10) => {
-          set((state) => ({
-            loading: { ...state.loading, paymentHistory: true },
-          }));
+          set((state) => ({  })
+            loading: { ...state.loading, paymentHistory: true }
           try {
             const { filters } = get();
             const response = await paymentService.getPayments(
@@ -296,17 +278,16 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
               filters.dateTo
             );
 
-            set({
+            set({ 
               paymentHistory: response.payments,
-              pagination: response.pagination,
+              pagination: response.pagination}
             });
           } catch (error) {
             console.error('Failed to load payment history:', error);
             set({ paymentHistory: [] });
           } finally {
-            set((state) => ({
-              loading: { ...state.loading, paymentHistory: false },
-            }));
+            set((state) => ({  })
+              loading: { ...state.loading, paymentHistory: false }
           }
         },
 
@@ -341,9 +322,8 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
 
         // Filter actions
         updateFilters: (newFilters) => {
-          set((state) => ({
-            filters: { ...state.filters, ...newFilters },
-          }));
+          set((state) => ({  })
+            filters: { ...state.filters, ...newFilters }
         },
 
         clearFilters: () => {
@@ -352,21 +332,19 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
 
         // UI actions
         setLoading: (key, value) => {
-          set((state) => ({
-            loading: { ...state.loading, [key]: value },
-          }));
+          set((state) => ({  })
+            loading: { ...state.loading, [key]: value }
         },
 
         resetStore: () => {
           set(initialState);
-        },
-      }),
+        }, },
       {
         name: 'subscription-store',
-        partialize: (state) => ({
+        partialize: (state) => ({ 
           currentSubscription: state.currentSubscription,
           availablePlans: state.availablePlans,
-          filters: state.filters,
+          filters: state.filters}
         }),
       }
     ),
@@ -393,7 +371,7 @@ export const useSubscriptionLoading = () =>
   useSubscriptionStore((state) => state.loading);
 
 export const useSubscriptionActions = () =>
-  useSubscriptionStore((state) => ({
+  useSubscriptionStore((state) => ({ 
     loadCurrentSubscription: state.loadCurrentSubscription,
     loadAvailablePlans: state.loadAvailablePlans,
     createCheckoutSession: state.createCheckoutSession,
@@ -409,5 +387,5 @@ export const useSubscriptionActions = () =>
     loadUsageMetrics: state.loadUsageMetrics,
     loadBillingHistory: state.loadBillingHistory,
     updateFilters: state.updateFilters,
-    clearFilters: state.clearFilters,
+    clearFilters: state.clearFilters}
   }));

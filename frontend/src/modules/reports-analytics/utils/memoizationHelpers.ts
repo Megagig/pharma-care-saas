@@ -1,7 +1,4 @@
 // Memoization Utilities for Expensive Calculations and Chart Rendering
-import { useMemo, useCallback, useRef, useEffect } from 'react';
-import { ChartData, ChartConfig } from '../types/charts';
-
 // Generic memoization function with TTL support
 export function memoizeWithTTL<T extends (...args: any[]) => any>(
     fn: T,
@@ -128,10 +125,10 @@ export const memoizedAggregations = {
             groups[key].values.push(item.value);
         });
 
-        return Object.values(groups).map(group => ({
+        return Object.values(groups).map(group => ({ 
             timestamp: group.timestamp,
             value: group.values.reduce((sum, val) => sum + val, 0) / group.values.length,
-            count: group.values.length,
+            count: group.values.length}
         }));
     }),
 };
@@ -317,12 +314,12 @@ export const memoizedChartTransforms = {
         data: Array<{ date: string | Date; value: number;[key: string]: any }>,
         dateFormat?: string
     ) => {
-        return data.map(item => ({
+        return data.map(item => ({ 
             ...item,
             date: typeof item.date === 'string' ? new Date(item.date) : item.date,
             formattedDate: typeof item.date === 'string'
                 ? new Date(item.date).toLocaleDateString()
-                : item.date.toLocaleDateString(),
+                : item.date.toLocaleDateString()}
         }));
     }),
 
@@ -382,14 +379,13 @@ export const memoizedChartTransforms = {
             yValues.reduce((sum, val) => sum + Math.pow(val - yMean, 2), 0) / yValues.length
         );
 
-        return data.map(item => ({
+        return data.map(item => ({ 
             ...item,
             isOutlier:
                 Math.abs(item.x - xMean) > outlierThreshold * xStd ||
-                Math.abs(item.y - yMean) > outlierThreshold * yStd,
+                Math.abs(item.y - yMean) > outlierThreshold * yStd}
         }));
     }),
 };
 
 // React import fix
-import React from 'react';

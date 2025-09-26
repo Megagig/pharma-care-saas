@@ -1,38 +1,12 @@
-import * as React from 'react';
-import { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  SelectChangeEvent,
-  Tabs,
-  Tab,
-} from '@mui/material';
+
+import { Label, Select, Tooltip, Spinner, Tabs } from '@/components/ui/button';
 import {
   useAdherenceAnalytics,
   usePrescriptionPatternAnalytics,
   useInteractionAnalytics,
   usePatientMedicationSummary,
   useMedicationCostAnalytics,
-} from '../../queries/medicationAnalyticsQueries';
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  BarChart,
-  Bar,
-} from 'recharts';
+} from '@/hooks/useMedications';
 
 interface MedicationAnalyticsPanelProps {
   patientId: string;
@@ -71,8 +45,8 @@ interface MedicationCostAnalyticsData {
   };
 }
 
-const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
-  patientId,
+const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({ 
+  patientId
 }) => {
   // State for UI controls
   const [adherencePeriod, setAdherencePeriod] = useState<string>('6months');
@@ -116,9 +90,9 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
     isLoadingCostAnalytics
   ) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress />
-      </Box>
+      <div className="">
+        <Spinner />
+      </div>
     );
   }
 
@@ -129,81 +103,76 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
       : 'Patient Medication Analytics';
 
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
+    <div>
+      <div  gutterBottom>
         {analyticsTitle}
-      </Typography>
+      </div>
 
       {/* Analytics Summary */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Grid container spacing={3}>
-          <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h3" color="primary">
+      <div className="">
+        <div container spacing={3}>
+          <div className="">
+            <div className="">
+              <div  color="primary">
                 {summaryData?.activeCount || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Active Medications
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h3" color="primary">
+              </div>
+            </div>
+          </div>
+          <div className="">
+            <div className="">
+              <div  color="primary">
                 {summaryData?.adherenceRate || 0}%
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Adherence Rate
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h3" color="error">
+              </div>
+            </div>
+          </div>
+          <div className="">
+            <div className="">
+              <div  color="error">
                 {summaryData?.interactionCount || 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Potential Interactions
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h3" color="primary">
+              </div>
+            </div>
+          </div>
+          <div className="">
+            <div className="">
+              <div  color="primary">
                 {costData?.formattedTotalCost || '₦0.00'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              </div>
+              <div  color="text.secondary">
                 Monthly Cost
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Analytics Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+      <div className="">
         <Tabs value={activeTab} onChange={handleTabChange}>
           <Tab label="Adherence" />
           <Tab label="Prescriptions" />
           <Tab label="Interactions" />
           <Tab label="Financial" />
         </Tabs>
-      </Box>
+      </div>
 
       {/* Adherence Analytics */}
       {activeTab === 0 && adherenceData && (
-        <Box>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 3,
-            }}
+        <div>
+          <div
+            className=""
           >
-            <Typography variant="h6">Adherence Analytics</Typography>
-            <FormControl sx={{ minWidth: 150 }} size="small">
-              <InputLabel>Time Period</InputLabel>
+            <div >Adherence Analytics</div>
+            <div className="" size="small">
+              <Label>Time Period</Label>
               <Select
                 value={adherencePeriod}
                 label="Time Period"
@@ -213,15 +182,15 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                 <MenuItem value="6months">Last 6 Months</MenuItem>
                 <MenuItem value="1year">Last Year</MenuItem>
               </Select>
-            </FormControl>
-          </Box>
+            </div>
+          </div>
 
-          <Grid container spacing={3}>
-            <Grid sx={{ gridColumn: 'span 12', md: 6 }}>
-              <Paper sx={{ p: 2, height: '100%' }}>
-                <Typography variant="subtitle1" gutterBottom>
+          <div container spacing={3}>
+            <div className="">
+              <div className="">
+                <div  gutterBottom>
                   Monthly Adherence Trends
-                </Typography>
+                </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={adherenceData?.monthlyAdherence || []}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -233,93 +202,59 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                       type="monotone"
                       dataKey="adherence"
                       stroke="#8884d8"
-                      activeDot={{ r: 8 }}
+                      
                       strokeWidth={2}
                       name="Adherence %"
                     />
                   </LineChart>
                 </ResponsiveContainer>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    mt: 2,
-                    color:
-                      adherenceData?.trendDirection === 'up'
-                        ? 'success.main'
-                        : adherenceData?.trendDirection === 'down'
-                        ? 'error.main'
-                        : 'text.secondary',
-                  }}
+                <div
+                  className=""
                 >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
+                  <div
+                    
+                    className=""
                   >
                     {adherenceData?.trendDirection === 'up'
                       ? '↑ Improving Trend'
                       : adherenceData?.trendDirection === 'down'
                       ? '↓ Declining Trend'
                       : '→ Stable Trend'}
-                  </Typography>
-                </Box>
-              </Paper>
-            </Grid>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-            <Grid sx={{ gridColumn: 'span 12', md: 6 }}>
-              <Paper sx={{ p: 2, height: '100%' }}>
-                <Typography variant="subtitle1" gutterBottom>
+            <div className="">
+              <div className="">
+                <div  gutterBottom>
                   Overall Adherence Rate
-                </Typography>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: 300,
-                  }}
+                </div>
+                <div
+                  className=""
                 >
-                  <Box
-                    sx={{
-                      position: 'relative',
-                      display: 'inline-flex',
-                      mb: 2,
-                    }}
+                  <div
+                    className=""
                   >
-                    <CircularProgress
-                      variant="determinate"
-                      value={adherenceData?.averageAdherence || 0}
+                    <Spinner
+                      
                       size={160}
                       thickness={5}
-                      sx={{ color: 'primary.main' }}
+                      className=""
                     />
-                    <Box
-                      sx={{
-                        top: 0,
-                        left: 0,
-                        bottom: 0,
-                        right: 0,
-                        position: 'absolute',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
+                    <div
+                      className=""
                     >
-                      <Typography
-                        variant="h3"
+                      <div
+                        
                         component="div"
                         color="text.secondary"
                       >
                         {`${adherenceData?.averageAdherence || 0}%`}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Typography variant="body1" align="center">
+                      </div>
+                    </div>
+                  </div>
+                  <div  align="center">
                     {(adherenceData?.averageAdherence || 0) >= 90
                       ? 'Excellent Adherence'
                       : (adherenceData?.averageAdherence || 0) >= 80
@@ -327,27 +262,27 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                       : (adherenceData?.averageAdherence || 0) >= 70
                       ? 'Fair Adherence'
                       : 'Needs Improvement'}
-                  </Typography>
-                </Box>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Prescription Pattern Analytics */}
       {activeTab === 1 && prescriptionData && (
-        <Box>
-          <Typography variant="h6" sx={{ mb: 3 }}>
+        <div>
+          <div  className="">
             Prescription Pattern Analytics
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid sx={{ gridColumn: 'span 12', md: 6 }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>
+          </div>
+          <div container spacing={3}>
+            <div className="">
+              <div className="">
+                <div  gutterBottom>
                   Medications by Category
-                </Typography>
-                <Box sx={{ height: 300 }}>
+                </div>
+                <div className="">
                   {prescriptionData?.medicationsByCategory && (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
@@ -367,25 +302,25 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                       </LineChart>
                     </ResponsiveContainer>
                   )}
-                </Box>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Interaction Analytics */}
       {activeTab === 2 && interactionData && (
-        <Box>
-          <Typography variant="h6" sx={{ mb: 3 }}>
+        <div>
+          <div  className="">
             Medication Interaction Analytics
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid sx={{ gridColumn: 'span 12' }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>
+          </div>
+          <div container spacing={3}>
+            <div className="">
+              <div className="">
+                <div  gutterBottom>
                   Interaction Trend Over Time
-                </Typography>
+                </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={interactionData?.interactionTrends || []}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -397,79 +332,79 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                       type="monotone"
                       dataKey="count"
                       stroke="#ff7300"
-                      activeDot={{ r: 8 }}
+                      
                       name="Interactions"
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Financial Analytics */}
       {activeTab === 3 && costData && (
-        <Box>
-          <Typography variant="h6" sx={{ mb: 3 }}>
+        <div>
+          <div  className="">
             Medication Financial Analytics
-          </Typography>
-          <Grid container spacing={3}>
+          </div>
+          <div container spacing={3}>
             {/* Financial Summary Cards */}
-            <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
-              <Paper sx={{ p: 2, height: '100%', textAlign: 'center' }}>
-                <Typography variant="subtitle1" gutterBottom>
+            <div className="">
+              <div className="">
+                <div  gutterBottom>
                   Total Revenue
-                </Typography>
-                <Typography variant="h4" color="primary.main">
+                </div>
+                <div  color="primary.main">
                   {costData?.formattedTotalRevenue || '₦0.00'}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
-              <Paper sx={{ p: 2, height: '100%', textAlign: 'center' }}>
-                <Typography variant="subtitle1" gutterBottom>
+                </div>
+              </div>
+            </div>
+            <div className="">
+              <div className="">
+                <div  gutterBottom>
                   Total Cost
-                </Typography>
-                <Typography variant="h4" color="error.main">
+                </div>
+                <div  color="error.main">
                   {costData?.formattedTotalCost || '₦0.00'}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
-              <Paper sx={{ p: 2, height: '100%', textAlign: 'center' }}>
-                <Typography variant="subtitle1" gutterBottom>
+                </div>
+              </div>
+            </div>
+            <div className="">
+              <div className="">
+                <div  gutterBottom>
                   Total Profit
-                </Typography>
-                <Typography variant="h4" color="success.main">
+                </div>
+                <div  color="success.main">
                   {costData?.formattedTotalProfit || '₦0.00'}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid sx={{ gridColumn: 'span 12', md: 3 }}>
-              <Paper sx={{ p: 2, height: '100%', textAlign: 'center' }}>
-                <Typography variant="subtitle1" gutterBottom>
+                </div>
+              </div>
+            </div>
+            <div className="">
+              <div className="">
+                <div  gutterBottom>
                   Profit Margin
-                </Typography>
-                <Typography
-                  variant="h4"
+                </div>
+                <div
+                  
                   color={
                     costData?.profitMargin && costData.profitMargin > 0
                       ? 'success.main'
-                      : 'error.main'
+                      : 'error.main'}
                   }
                 >
                   {costData?.formattedProfitMargin || '0%'}
-                </Typography>
-              </Paper>
-            </Grid>
+                </div>
+              </div>
+            </div>
 
             {/* Financial Analytics Charts */}
-            <Grid sx={{ gridColumn: 'span 12', md: 6 }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>
+            <div className="">
+              <div className="">
+                <div  gutterBottom>
                   Monthly Revenue vs Cost
-                </Typography>
+                </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={costData?.monthlyFinancials || []}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -500,14 +435,14 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              </Paper>
-            </Grid>
+              </div>
+            </div>
 
-            <Grid sx={{ gridColumn: 'span 12', md: 6 }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>
+            <div className="">
+              <div className="">
+                <div  gutterBottom>
                   Top 5 Most Profitable Medications
-                </Typography>
+                </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={costData?.topProfitableMedications || []}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -518,12 +453,12 @@ const MedicationAnalyticsPanel: React.FC<MedicationAnalyticsPanelProps> = ({
                     <Bar dataKey="profit" fill="#82ca9d" name="Profit" />
                   </BarChart>
                 </ResponsiveContainer>
-              </Paper>
-            </Grid>
-          </Grid>
-        </Box>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 

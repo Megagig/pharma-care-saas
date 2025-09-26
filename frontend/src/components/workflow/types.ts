@@ -1,9 +1,7 @@
-import type {
     ClinicalIntervention,
     InterventionStrategy,
     TeamAssignment,
     InterventionOutcome
-} from '../../stores/clinicalInterventionStore';
 
 // Issue Identification Step Types
 export interface IssueIdentificationData {

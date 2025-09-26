@@ -1,11 +1,5 @@
-import React from 'react';
-import { useTheme } from '../../hooks/useTheme';
-import { ThemeToggle } from '../../context/ThemeContext';
-import { Card } from './card';
-import { Button } from './button';
-import { Input } from './input';
-import { Badge } from './badge';
 
+import { Button, Input, Card, Badge } from '@/components/ui/button';
 /**
  * Theme test component to verify the new theme system works correctly
  * This component demonstrates all theme features and can be used for testing
@@ -29,7 +23,7 @@ export function ThemeTest() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <span className="font-medium">Current Mode:</span>
-            <Badge variant="outline" className="ml-2 capitalize">
+            <Badge  className="ml-2 capitalize">
               {theme}
             </Badge>
           </div>
@@ -44,7 +38,7 @@ export function ThemeTest() {
           </div>
           <div>
             <span className="font-medium">System Theme:</span>
-            <Badge variant="outline" className="ml-2 capitalize">
+            <Badge  className="ml-2 capitalize">
               {systemTheme}
             </Badge>
           </div>
@@ -122,12 +116,12 @@ export function ThemeTest() {
           <div className="space-y-2">
             <h3 className="font-medium">Buttons</h3>
             <div className="flex flex-wrap gap-2">
-              <Button variant="default">Default</Button>
-              <Button variant="secondary">Secondary</Button>
-              <Button variant="destructive">Destructive</Button>
-              <Button variant="outline">Outline</Button>
-              <Button variant="ghost">Ghost</Button>
-              <Button variant="link">Link</Button>
+              <Button >Default</Button>
+              <Button >Secondary</Button>
+              <Button >Destructive</Button>
+              <Button >Outline</Button>
+              <Button >Ghost</Button>
+              <Button >Link</Button>
             </div>
           </div>
 
@@ -145,9 +139,9 @@ export function ThemeTest() {
             <h3 className="font-medium">Badges</h3>
             <div className="flex flex-wrap gap-2">
               <Badge>Default</Badge>
-              <Badge variant="secondary">Secondary</Badge>
-              <Badge variant="destructive">Destructive</Badge>
-              <Badge variant="outline">Outline</Badge>
+              <Badge >Secondary</Badge>
+              <Badge >Destructive</Badge>
+              <Badge >Outline</Badge>
             </div>
           </div>
         </div>

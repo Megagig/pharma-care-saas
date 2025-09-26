@@ -1,6 +1,3 @@
-import { useCallback } from 'react';
-import { useFeatureFlags } from '../queries/featureFlagQueries';
-
 /**
  * Custom hook to manage feature flags in components
  * This provides a simplified interface for components to check feature flags

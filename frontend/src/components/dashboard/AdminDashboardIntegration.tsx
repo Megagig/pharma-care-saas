@@ -1,34 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Alert,
-  Skeleton,
-  Chip,
-  useTheme,
-  Avatar,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-} from '@mui/material';
-import {
-  BusinessOutlined as BusinessIcon,
-  People as PeopleIcon,
-  CreditCard as CreditCardIcon,
-  SecurityOutlined as SecurityIcon,
-  TrendingUp as TrendingUpIcon,
-  Warning as WarningIcon,
-  CheckCircleOutlined as CheckCircleIcon,
-  Schedule as ScheduleIcon,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
-import { useAuth } from '../../hooks/useAuth';
-import { adminService } from '../../services/adminService';
 import DashboardChart from './DashboardChart';
+
+import { Card, CardContent, Alert, Skeleton, Avatar } from '@/components/ui/button';
 
 interface AdminDashboardData {
   summary: {
@@ -81,7 +53,6 @@ interface AdminDashboardData {
   };
   timestamp: string;
 }
-
 interface SystemHealthData {
   timestamp: string;
   database: {
@@ -107,7 +78,6 @@ interface SystemHealthData {
   };
   recentErrors: unknown[];
 }
-
 const AdminDashboardIntegration: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
@@ -119,13 +89,11 @@ const AdminDashboardIntegration: React.FC = () => {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
     if (user?.role === 'super_admin') {
       fetchAdminData();
     }
   }, [user]);
-
   const fetchAdminData = async () => {
     try {
       setLoading(true);
@@ -133,7 +101,6 @@ const AdminDashboardIntegration: React.FC = () => {
         adminService.getDashboardOverview(),
         adminService.getSystemHealth(),
       ]);
-
       setDashboardData(dashboardResponse.data);
       setSystemHealth(healthResponse.data);
       setError(null);
@@ -145,45 +112,40 @@ const AdminDashboardIntegration: React.FC = () => {
       setLoading(false);
     }
   };
-
   // Don't render for non-admin users
   if (user?.role !== 'super_admin') {
     return null;
   }
-
   if (loading) {
     return (
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
+      <div className="">
+        <div  className="">
           Admin Overview
-        </Typography>
-        <Grid container spacing={3}>
+        </div>
+        <div container spacing={3}>
           {[...Array(4)].map((_, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
+            <div item xs={12} sm={6} md={3} key={index}>
               <Skeleton
-                variant="rectangular"
+                
                 height={120}
-                sx={{ borderRadius: 2 }}
+                className=""
               />
-            </Grid>
+            </div>
           ))}
-        </Grid>
-      </Box>
+        </div>
+      </div>
     );
   }
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ mb: 4 }}>
+      <Alert severity="error" className="">
         Error loading admin data: {error}
       </Alert>
     );
   }
-
   if (!dashboardData || !systemHealth) {
     return null;
   }
-
   // Format uptime
   const formatUptime = (seconds: number) => {
     const days = Math.floor(seconds / 86400);
@@ -191,72 +153,52 @@ const AdminDashboardIntegration: React.FC = () => {
     const minutes = Math.floor((seconds % 3600) / 60);
     return `${days}d ${hours}h ${minutes}m`;
   };
-
   // Format memory usage
   const formatMemory = (bytes: number) => {
     return `${Math.round(bytes / 1024 / 1024)} MB`;
   };
-
   // Prepare chart data
   const subscriptionTierData = dashboardData.summary.subscriptions.byTier.map(
-    (tier) => ({
+    (tier) => ({ 
       name: tier._id || 'Unknown',
       value: tier.count,
-      revenue: tier.revenue,
+      revenue: tier.revenue}
     })
   );
-
   const invitationStatusData = dashboardData.summary.invitations.stats.map(
-    (stat) => ({
+    (stat) => ({ 
       name: stat._id,
-      value: stat.count,
+      value: stat.count}
     })
   );
-
-  const emailDeliveryData = systemHealth.services.emailDelivery.map((stat) => ({
+  const emailDeliveryData = systemHealth.services.emailDelivery.map((stat) => ({ 
     name: stat._id,
-    value: stat.count,
+    value: stat.count}
   }));
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold' }}>
+      
+      >
+      <div className="">
+        <div  className="">
           Admin Overview
-        </Typography>
-
+        </div>
         {/* Admin KPIs */}
-        <Box
-          className="admin-kpis-grid"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: '1fr 1fr',
-              md: 'repeat(4, 1fr)',
-            },
-            gap: 3,
-            mb: 4,
-            width: '100%',
-          }}
-        >
-          <Box sx={{ width: '100%' }}>
-            <Card sx={{ height: '100%' }}>
+        <div
+          className="">
+          <div className="">
+            <Card className="">
               <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                <div display="flex" alignItems="center" mb={2}>
+                  <Avatar className="">
                     <BusinessIcon />
                   </Avatar>
-                  <Typography variant="h6">Workspaces</Typography>
-                </Box>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  <div >Workspaces</div>
+                </div>
+                <div  className="">
                   {dashboardData.summary.workspaces.total}
-                </Typography>
-                <Box display="flex" gap={1} mb={1}>
+                </div>
+                <div display="flex" gap={1} mb={1}>
                   <Chip
                     label={`${dashboardData.summary.workspaces.active} Active`}
                     color="success"
@@ -272,129 +214,106 @@ const AdminDashboardIntegration: React.FC = () => {
                     color="error"
                     size="small"
                   />
-                </Box>
+                </div>
                 {dashboardData.summary.workspaces.growth !== 0 && (
-                  <Box display="flex" alignItems="center">
+                  <div display="flex" alignItems="center">
                     <TrendingUpIcon
-                      sx={{
-                        fontSize: 16,
-                        color:
-                          dashboardData.summary.workspaces.growth > 0
-                            ? 'success.main'
-                            : 'error.main',
-                        mr: 0.5,
-                      }}
+                      className=""
                     />
-                    <Typography variant="caption" color="text.secondary">
+                    <div  color="text.secondary">
                       {dashboardData.summary.workspaces.growth > 0 ? '+' : ''}
                       {dashboardData.summary.workspaces.growth.toFixed(1)}%
                       growth
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
-            <Card sx={{ height: '100%' }}>
+          </div>
+          <div className="">
+            <Card className="">
               <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+                <div display="flex" alignItems="center" mb={2}>
+                  <Avatar className="">
                     <PeopleIcon />
                   </Avatar>
-                  <Typography variant="h6">Users</Typography>
-                </Box>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  <div >Users</div>
+                </div>
+                <div  className="">
                   {dashboardData.summary.users.total}
-                </Typography>
-                <Typography
-                  variant="body2"
+                </div>
+                <div
+                  
                   color="text.secondary"
-                  sx={{ mb: 1 }}
+                  className=""
                 >
                   {dashboardData.summary.users.active} active users
-                </Typography>
+                </div>
                 {dashboardData.summary.users.growth !== 0 && (
-                  <Box display="flex" alignItems="center">
+                  <div display="flex" alignItems="center">
                     <TrendingUpIcon
-                      sx={{
-                        fontSize: 16,
-                        color:
-                          dashboardData.summary.users.growth > 0
-                            ? 'success.main'
-                            : 'error.main',
-                        mr: 0.5,
-                      }}
+                      className=""
                     />
-                    <Typography variant="caption" color="text.secondary">
+                    <div  color="text.secondary">
                       {dashboardData.summary.users.growth > 0 ? '+' : ''}
                       {dashboardData.summary.users.growth.toFixed(1)}% growth
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
-            <Card sx={{ height: '100%' }}>
+          </div>
+          <div className="">
+            <Card className="">
               <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
+                <div display="flex" alignItems="center" mb={2}>
+                  <Avatar className="">
                     <CreditCardIcon />
                   </Avatar>
-                  <Typography variant="h6">Subscriptions</Typography>
-                </Box>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  <div >Subscriptions</div>
+                </div>
+                <div  className="">
                   {dashboardData.summary.subscriptions.total}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   {dashboardData.summary.subscriptions.active} active
                   subscriptions
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Box>
-
-          <Box sx={{ width: '100%' }}>
-            <Card sx={{ height: '100%' }}>
+          </div>
+          <div className="">
+            <Card className="">
               <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
+                <div display="flex" alignItems="center" mb={2}>
                   <Avatar
-                    sx={{
-                      bgcolor: systemHealth.database.connected
-                        ? 'success.main'
-                        : 'error.main',
-                      mr: 2,
-                    }}
+                    className=""
                   >
                     <SecurityIcon />
                   </Avatar>
-                  <Typography variant="h6">System Health</Typography>
-                </Box>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <CheckCircleIcon sx={{ color: 'success.main', mr: 1 }} />
-                  <Typography variant="body2">Database Connected</Typography>
-                </Box>
-                <Typography
-                  variant="body2"
+                  <div >System Health</div>
+                </div>
+                <div display="flex" alignItems="center" mb={1}>
+                  <CheckCircleIcon className="" />
+                  <div >Database Connected</div>
+                </div>
+                <div
+                  
                   color="text.secondary"
-                  sx={{ mb: 1 }}
+                  className=""
                 >
                   Uptime: {formatUptime(systemHealth.application.uptime)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Memory: {formatMemory(systemHealth.application.memory.used)}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {/* Charts */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={4}>
+        <div container spacing={3} className="">
+          <div item xs={12} md={4}>
             <DashboardChart
               title="Subscriptions by Tier"
               data={subscriptionTierData}
@@ -403,12 +322,11 @@ const AdminDashboardIntegration: React.FC = () => {
               colors={[
                 theme.palette.primary.main,
                 theme.palette.secondary.main,
-                theme.palette.warning.main,
+                theme.palette.warning.main,}
               ]}
             />
-          </Grid>
-
-          <Grid item xs={12} md={4}>
+          </div>
+          <div item xs={12} md={4}>
             <DashboardChart
               title="Invitation Status"
               data={invitationStatusData}
@@ -417,12 +335,11 @@ const AdminDashboardIntegration: React.FC = () => {
               colors={[
                 theme.palette.success.main,
                 theme.palette.info.main,
-                theme.palette.error.main,
+                theme.palette.error.main,}
               ]}
             />
-          </Grid>
-
-          <Grid item xs={12} md={4}>
+          </div>
+          <div item xs={12} md={4}>
             <DashboardChart
               title="Email Delivery (7 days)"
               data={emailDeliveryData}
@@ -430,90 +347,81 @@ const AdminDashboardIntegration: React.FC = () => {
               height={300}
               colors={[theme.palette.info.main]}
             />
-          </Grid>
-        </Grid>
-
+          </div>
+        </div>
         {/* Alerts */}
         {(dashboardData.alerts.trialExpiring.length > 0 ||
           dashboardData.alerts.failedPayments.length > 0) && (
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-              gap: 3,
-              width: '100%',
-            }}
-          >
+          <div
+            className="">
             {dashboardData.alerts.trialExpiring.length > 0 && (
-              <Box sx={{ width: '100%' }}>
+              <div className="">
                 <Card>
                   <CardContent>
-                    <Box display="flex" alignItems="center" mb={2}>
-                      <WarningIcon sx={{ color: 'warning.main', mr: 1 }} />
-                      <Typography variant="h6">Trials Expiring Soon</Typography>
-                    </Box>
+                    <div display="flex" alignItems="center" mb={2}>
+                      <WarningIcon className="" />
+                      <div >Trials Expiring Soon</div>
+                    </div>
                     <List dense>
                       {dashboardData.alerts.trialExpiring
                         .slice(0, 5)
                         .map((workspace) => (
-                          <ListItem key={workspace._id}>
-                            <ListItemAvatar>
-                              <Avatar sx={{ bgcolor: 'warning.main' }}>
+                          <div key={workspace._id}>
+                            <divAvatar>
+                              <Avatar className="">
                                 <ScheduleIcon />
                               </Avatar>
                             </ListItemAvatar>
-                            <ListItemText
+                            <div
                               primary={workspace.name}
                               secondary={`Expires: ${new Date(
-                                workspace.trialEndDate
+                                workspace.trialEndDate}
                               ).toLocaleDateString()}`}
                             />
-                          </ListItem>
+                          </div>
                         ))}
                     </List>
                   </CardContent>
                 </Card>
-              </Box>
+              </div>
             )}
-
             {dashboardData.alerts.failedPayments.length > 0 && (
-              <Box sx={{ width: '100%' }}>
+              <div className="">
                 <Card>
                   <CardContent>
-                    <Box display="flex" alignItems="center" mb={2}>
-                      <WarningIcon sx={{ color: 'error.main', mr: 1 }} />
-                      <Typography variant="h6">Failed Payments</Typography>
-                    </Box>
+                    <div display="flex" alignItems="center" mb={2}>
+                      <WarningIcon className="" />
+                      <div >Failed Payments</div>
+                    </div>
                     <List dense>
                       {dashboardData.alerts.failedPayments
                         .slice(0, 5)
                         .map((payment) => (
-                          <ListItem key={payment._id}>
-                            <ListItemAvatar>
-                              <Avatar sx={{ bgcolor: 'error.main' }}>
+                          <div key={payment._id}>
+                            <divAvatar>
+                              <Avatar className="">
                                 <CreditCardIcon />
                               </Avatar>
                             </ListItemAvatar>
-                            <ListItemText
+                            <div
                               primary={payment.workspaceId.name}
                               secondary={`Status: ${
-                                payment.status
+                                payment.status}
                               } - ${new Date(
                                 payment.updatedAt
                               ).toLocaleDateString()}`}
                             />
-                          </ListItem>
+                          </div>
                         ))}
                     </List>
                   </CardContent>
                 </Card>
-              </Box>
+              </div>
             )}
-          </Box>
+          </div>
         )}
-      </Box>
+      </div>
     </motion.div>
   );
 };
-
 export default AdminDashboardIntegration;

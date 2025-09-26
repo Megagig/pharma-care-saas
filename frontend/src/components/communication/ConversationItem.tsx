@@ -1,32 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  ListItemButton,
-  Avatar,
-  Typography,
-  Chip,
-  Badge,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tooltip,
-  AvatarGroup,
-} from '@mui/material';
-import {
-  MoreVert,
-  Group,
-  Person,
-  QuestionAnswer,
-  Archive,
-  CheckCircle,
-  Delete,
-  Unarchive,
-  PriorityHigh,
-  Schedule,
-} from '@mui/icons-material';
-import { formatDistanceToNow } from 'date-fns';
-import { Conversation } from '../../stores/types';
-import { useCommunicationStore } from '../../stores/communicationStore';
+import { Badge, Tooltip, Avatar } from '@/components/ui/button';
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -35,23 +7,20 @@ interface ConversationItemProps {
   onAction?: (action: string, conversationId: string) => void;
   compact?: boolean;
 }
-
-const ConversationItem: React.FC<ConversationItemProps> = ({
+const ConversationItem: React.FC<ConversationItemProps> = ({ 
   conversation,
   selected = false,
   onClick,
   onAction,
-  compact = false,
+  compact = false
 }) => {
   const { messages } = useCommunicationStore();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-
   // Get conversation messages to calculate unread count
   const conversationMessages = messages[conversation._id] || [];
   const unreadCount = conversationMessages.filter(
     (msg) => msg.status !== 'read'
   ).length;
-
   // Get conversation type icon
   const getTypeIcon = () => {
     switch (conversation.type) {
@@ -63,7 +32,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         return <Person fontSize="small" />;
     }
   };
-
   // Get conversation status color
   const getStatusColor = () => {
     switch (conversation.status) {
@@ -75,7 +43,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         return 'text.primary';
     }
   };
-
   // Get priority color
   const getPriorityColor = () => {
     switch (conversation.priority) {
@@ -89,24 +56,20 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         return 'text.secondary';
     }
   };
-
   // Format last message time
   const formatLastMessageTime = () => {
     try {
       return formatDistanceToNow(new Date(conversation.lastMessageAt), {
-        addSuffix: true,
-      });
+        addSuffix: true}
     } catch {
       return 'Unknown';
     }
   };
-
   // Get conversation title
   const getConversationTitle = () => {
     if (conversation.title) {
       return conversation.title;
     }
-
     // Generate title based on type and participants
     switch (conversation.type) {
       case 'patient_query':
@@ -117,32 +80,26 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         return 'Direct Message';
     }
   };
-
   // Get conversation subtitle
   const getConversationSubtitle = () => {
     const participantRoles = conversation.participants
       .map((p) => p.role)
       .filter((role, index, arr) => arr.indexOf(role) === index);
-
     return participantRoles.join(', ');
   };
-
   // Handle menu actions
   const handleMenuAction = (action: string) => {
     setMenuAnchor(null);
     onAction?.(action, conversation._id);
   };
-
   // Handle menu click
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
     setMenuAnchor(event.currentTarget);
   };
-
   // Get available actions based on conversation status
   const getAvailableActions = () => {
     const actions = [];
-
     if (conversation.status === 'active') {
       actions.push(
         {
@@ -157,205 +114,155 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         }
       );
     }
-
     if (conversation.status === 'archived') {
-      actions.push({
+      actions.push({ 
         key: 'unarchive',
         label: 'Unarchive',
-        icon: <Unarchive fontSize="small" />,
+        icon: <Unarchive fontSize="small" />}
       });
     }
-
-    actions.push({
+    actions.push({ 
       key: 'delete',
       label: 'Delete',
       icon: <Delete fontSize="small" />,
-      danger: true,
+      danger: true}
     });
-
     return actions;
   };
-
   const availableActions = getAvailableActions();
-
   return (
     <>
-      <ListItemButton
-        selected={selected}
+      <Button
+        
         onClick={onClick}
-        sx={{
-          width: '100%',
-          p: compact ? 1 : 2,
-          borderRadius: 1,
-          mb: 0.5,
-          '&.Mui-selected': {
-            bgcolor: 'primary.light',
-            '&:hover': {
-              bgcolor: 'primary.light',
-            },
-          },
-        }}
-      >
-        <Box
-          sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 2 }}
+        className="">
+        <div
+          className=""
         >
           {/* Avatar/Icon */}
-          <Box sx={{ position: 'relative' }}>
+          <div className="">
             {conversation.type === 'group' ? (
               <AvatarGroup
                 max={2}
-                sx={{ '& .MuiAvatar-root': { width: 32, height: 32 } }}
-              >
+                className="">
                 {conversation.participants
                   .slice(0, 2)
                   .map((participant, index) => (
                     <Avatar
                       key={participant.userId}
-                      sx={{ bgcolor: 'primary.main' }}
+                      className=""
                     >
                       {participant.role.charAt(0).toUpperCase()}
                     </Avatar>
                   ))}
               </AvatarGroup>
             ) : (
-              <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
+              <Avatar className="">
                 {getTypeIcon()}
               </Avatar>
             )}
-
             {/* Priority indicator */}
             {conversation.priority === 'urgent' && (
               <PriorityHigh
-                sx={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -4,
-                  color: 'error.main',
-                  fontSize: 16,
-                }}
+                className=""
               />
             )}
-          </Box>
-
+          </div>
           {/* Content */}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
+          <div className="">
             {/* Title and Status */}
-            <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
+            <div
+              className=""
             >
-              <Typography
+              <div
                 variant={compact ? 'body2' : 'subtitle2'}
                 noWrap
-                sx={{
-                  flex: 1,
-                  fontWeight: unreadCount > 0 ? 'bold' : 'normal',
-                  color: getStatusColor(),
-                }}
+                className=""
               >
                 {getConversationTitle()}
-              </Typography>
-
+              </div>
               {/* Status indicators */}
               {conversation.status === 'resolved' && (
-                <CheckCircle sx={{ fontSize: 16, color: 'success.main' }} />
+                <CheckCircle className="" />
               )}
               {conversation.status === 'archived' && (
-                <Archive sx={{ fontSize: 16, color: 'text.disabled' }} />
+                <Archive className="" />
               )}
-            </Box>
-
+            </div>
             {/* Subtitle and metadata */}
             {!compact && (
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
+              <div
+                className=""
               >
-                <Typography
-                  variant="caption"
+                <div
+                  
                   color="text.secondary"
                   noWrap
-                  sx={{ flex: 1 }}
+                  className=""
                 >
                   {getConversationSubtitle()}
-                </Typography>
-
+                </div>
                 {conversation.priority !== 'normal' && (
                   <Chip
                     label={conversation.priority}
                     size="small"
-                    sx={{
-                      height: 16,
-                      fontSize: '0.625rem',
-                      bgcolor: getPriorityColor(),
-                      color: 'white',
-                    }}
+                    className=""
                   />
                 )}
-              </Box>
+              </div>
             )}
-
             {/* Tags */}
             {!compact && conversation.tags && conversation.tags.length > 0 && (
-              <Box
-                sx={{ display: 'flex', gap: 0.5, mb: 0.5, flexWrap: 'wrap' }}
+              <div
+                className=""
               >
                 {conversation.tags.slice(0, 2).map((tag) => (
                   <Chip
                     key={tag}
                     label={tag}
                     size="small"
-                    variant="outlined"
-                    sx={{ height: 16, fontSize: '0.625rem' }}
+                    
+                    className=""
                   />
                 ))}
                 {conversation.tags.length > 2 && (
-                  <Typography variant="caption" color="text.secondary">
+                  <div  color="text.secondary">
                     +{conversation.tags.length - 2} more
-                  </Typography>
+                  </div>
                 )}
-              </Box>
+              </div>
             )}
-
             {/* Last message time */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Schedule sx={{ fontSize: 12, color: 'text.secondary' }} />
-              <Typography variant="caption" color="text.secondary">
+            <div className="">
+              <Schedule className="" />
+              <div  color="text.secondary">
                 {formatLastMessageTime()}
-              </Typography>
-            </Box>
-          </Box>
-
+              </div>
+            </div>
+          </div>
           {/* Right side indicators */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <div className="">
             {/* Unread count */}
             {unreadCount > 0 && (
               <Badge
                 badgeContent={unreadCount}
                 color="primary"
                 max={99}
-                sx={{
-                  '& .MuiBadge-badge': {
-                    fontSize: '0.625rem',
-                    height: 16,
-                    minWidth: 16,
-                  },
-                }}
-              />
+                className="" />
             )}
-
             {/* Menu button */}
             <Tooltip title="More options">
               <IconButton
                 size="small"
                 onClick={handleMenuClick}
-                sx={{ opacity: selected ? 1 : 0.7 }}
+                className=""
               >
                 <MoreVert fontSize="small" />
               </IconButton>
             </Tooltip>
-          </Box>
-        </Box>
+          </div>
+        </div>
       </ListItemButton>
-
       {/* Action Menu */}
       <Menu
         anchorEl={menuAnchor}
@@ -367,19 +274,16 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           <MenuItem
             key={action.key}
             onClick={() => handleMenuAction(action.key)}
-            sx={{
-              color: action.danger ? 'error.main' : 'inherit',
-            }}
+            className=""
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <div className="">
               {action.icon}
               {action.label}
-            </Box>
+            </div>
           </MenuItem>
         ))}
       </Menu>
     </>
   );
 };
-
 export default ConversationItem;

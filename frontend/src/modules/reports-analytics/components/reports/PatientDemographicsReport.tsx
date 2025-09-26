@@ -1,70 +1,34 @@
 // Patient Demographics & Segmentation Report Component
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  Paper,
-} from '@mui/material';
-import {
-  People,
-  LocationOn,
-  Timeline,
-  Assessment,
-  TrendingUp,
-  Map,
-  BarChart,
-  PieChart,
-} from '@mui/icons-material';
 import ChartComponent from '../shared/ChartComponent';
-import { ChartData, KPICardData } from '../../types/charts';
-import { PatientDemographicsFilters } from '../../types/filters';
-import { PatientDemographicsData } from '../../types/reports';
-import { useCurrentFilters } from '../../stores/filtersStore';
+
+import { Button, Label, Card, CardContent, Select, Alert, Switch, Tabs } from '@/components/ui/button';
 
 interface PatientDemographicsReportProps {
   filters: PatientDemographicsFilters;
   onFilterChange?: (filters: PatientDemographicsFilters) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
-
-const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
+const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({ 
   filters,
-  onFilterChange,
+  onFilterChange
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSegment, setSelectedSegment] = useState('age');
   const [showGeographicHeatmap, setShowGeographicHeatmap] = useState(true);
-
   // Mock data - in real implementation, this would come from API
   const mockData = useMemo(
-    () => ({
+    () => ({ 
       // KPI Cards Data
       kpiData: [
         {
@@ -74,7 +38,7 @@ const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
           trend: {
             direction: 'up' as const,
             value: 8.3,
-            period: 'vs last quarter',
+            period: 'vs last quarter'}
           },
           status: 'info' as const,
           sparkline: [
@@ -118,7 +82,6 @@ const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
           status: 'success' as const,
         },
       ],
-
       // Age Distribution
       ageDistributionData: {
         id: 'age-distribution',
@@ -251,7 +214,6 @@ const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
           },
         },
       },
-
       // Geographic Patterns
       geographicPatternsData: {
         id: 'geographic-patterns',
@@ -433,7 +395,6 @@ const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
           },
         },
       },
-
       // Patient Journey Analytics
       patientJourneyData: {
         id: 'patient-journey',
@@ -596,7 +557,6 @@ const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
           },
         },
       },
-
       // Service Utilization Analysis
       serviceUtilizationData: {
         id: 'service-utilization',
@@ -770,63 +730,56 @@ const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
             rules: [],
           },
         },
-      },
-    }),
+      }, },
     [selectedSegment]
   );
-
   // Simulate data loading
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [filters, selectedSegment]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Alert severity="error" className="">
+        <div  gutterBottom>
           Error Loading Patient Demographics Data
-        </Typography>
-        <Typography variant="body2">{error}</Typography>
+        </div>
+        <div >{error}</div>
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center' }}
+          className=""
         >
-          <People sx={{ mr: 2, color: 'primary.main' }} />
+          <People className="" />
           Patient Demographics & Segmentation
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Comprehensive analysis of patient population, geographic patterns,
           journey analytics, and service utilization with targeted
           recommendations.
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* Controls */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <CardContent>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Segmentation</InputLabel>
+          <div container spacing={3} alignItems="center">
+            <div item xs={12} sm={6} md={3}>
+              <div fullWidth size="small">
+                <Label>Segmentation</Label>
                 <Select
                   value={selectedSegment}
                   label="Segmentation"
@@ -837,77 +790,65 @@ const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
                   <MenuItem value="condition">Medical Conditions</MenuItem>
                   <MenuItem value="geography">Geographic</MenuItem>
                 </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+              </div>
+            </div>
+            <div item xs={12} sm={6} md={3}>
               <FormControlLabel
                 control={
-                  <Switch
+                  <Switch}
                     checked={showGeographicHeatmap}
                     onChange={(e) => setShowGeographicHeatmap(e.target.checked)}
                   />
                 }
                 label="Geographic Heatmap"
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            </div>
+            <div item xs={12} sm={6} md={3}>
               <Button
-                variant="outlined"
+                
                 startIcon={<Assessment />}
                 fullWidth
-                onClick={() => {
-                  // Trigger segmentation analysis
-                  setLoading(true);
-                  setTimeout(() => setLoading(false), 1500);
-                }}
-              >
+                >
                 Analyze Segments
               </Button>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            </div>
+            <div item xs={12} sm={6} md={3}>
               <Button
-                variant="outlined"
+                
                 startIcon={<Map />}
                 fullWidth
-                onClick={() => {
-                  // Export geographic data
-                  console.log('Exporting geographic data...');
-                }}
-              >
+                >
                 Export Map Data
               </Button>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div container spacing={3} className="">
         {mockData.kpiData.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <ChartComponent
-              data={{
+              data={{}
                 id: `kpi-${index}`,
                 title: '',
                 type: 'kpi-card',
                 data: [kpi],
                 config: {} as any,
-              }}
               height={180}
               loading={loading}
             />
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          
           scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          className=""
         >
           <Tab
             icon={<BarChart />}
@@ -930,121 +871,103 @@ const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
             iconPosition="start"
           />
         </Tabs>
-
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.ageDistributionData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Population Insights
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'primary.light',
-                        }}
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="primary.contrastText">
+                        <div  color="primary.contrastText">
                           46-55 Years
-                        </Typography>
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="primary.contrastText"
                         >
                           Largest Segment (22.9%)
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'success.light',
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="success.contrastText">
+                        <div  color="success.contrastText">
                           66+ Years
-                        </Typography>
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="success.contrastText"
                         >
                           Highest Utilization (88%)
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'warning.light',
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="warning.contrastText">
+                        <div  color="warning.contrastText">
                           18-25 Years
-                        </Typography>
-                        <Typography
-                          variant="body2"
+                        </div>
+                        <div
+                          
                           color="warning.contrastText"
                         >
                           Growth Opportunity (65%)
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper
-                        sx={{
-                          p: 2,
-                          textAlign: 'center',
-                          bgcolor: 'info.light',
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div
+                        className=""
                       >
-                        <Typography variant="h6" color="info.contrastText">
+                        <div  color="info.contrastText">
                           36-55 Years
-                        </Typography>
-                        <Typography variant="body2" color="info.contrastText">
+                        </div>
+                        <div  color="info.contrastText">
                           Core Demographics (45%)
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                  </Grid>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.geographicPatternsData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Geographic Analysis
-                  </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}
+                  </div>
+                  <div
+                    className=""
                   >
                     <Chip
                       label="Downtown: High Density"
@@ -1061,130 +984,113 @@ const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
                       color="warning"
                       size="small"
                     />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Geographic analysis reveals concentration in urban areas
                     with opportunities for expansion in underserved regions.
                     University area shows highest service utilization rates
                     despite moderate patient density.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.patientJourneyData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Journey Analytics Summary
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={4}>
-                      <Box
-                        sx={{
-                          p: 2,
-                          border: 1,
-                          borderColor: 'success.main',
-                          borderRadius: 1,
-                        }}
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} md={4}>
+                      <div
+                        className=""
                       >
-                        <Typography
-                          variant="subtitle1"
+                        <div
+                          
                           color="success.main"
                           gutterBottom
                         >
                           Overall Completion Rate
-                        </Typography>
-                        <Typography variant="h5" color="success.main">
+                        </div>
+                        <div  color="success.main">
                           66.7%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           From initial contact to completion
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <Box
-                        sx={{
-                          p: 2,
-                          border: 1,
-                          borderColor: 'warning.main',
-                          borderRadius: 1,
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={4}>
+                      <div
+                        className=""
                       >
-                        <Typography
-                          variant="subtitle1"
+                        <div
+                          
                           color="warning.main"
                           gutterBottom
                         >
                           Highest Drop-off
-                        </Typography>
-                        <Typography variant="h5" color="warning.main">
+                        </div>
+                        <div  color="warning.main">
                           Assessment
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           10.1% drop-off rate
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <Box
-                        sx={{
-                          p: 2,
-                          border: 1,
-                          borderColor: 'info.main',
-                          borderRadius: 1,
-                        }}
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={4}>
+                      <div
+                        className=""
                       >
-                        <Typography
-                          variant="subtitle1"
+                        <div
+                          
                           color="info.main"
                           gutterBottom
                         >
                           Average Duration
-                        </Typography>
-                        <Typography variant="h5" color="info.main">
+                        </div>
+                        <div  color="info.main">
                           74.4 days
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Complete patient journey
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <ChartComponent
                 data={mockData.serviceUtilizationData}
                 height={400}
                 loading={loading}
               />
-            </Grid>
-            <Grid item xs={12}>
+            </div>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Service Utilization Insights
-                  </Typography>
-                  <Grid container spacing={2}>
+                  </div>
+                  <div container spacing={2}>
                     {[
                       {
                         service: 'Immunizations',
@@ -1205,108 +1111,100 @@ const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
                         status: 'warning',
                       },
                     ].map((item, index) => (
-                      <Grid item xs={12} md={4} key={index}>
-                        <Box
-                          sx={{
-                            p: 2,
-                            border: 1,
-                            borderColor: `${item.status}.main`,
-                            borderRadius: 1,
-                          }}
-                        >
-                          <Typography variant="subtitle1" gutterBottom>
+                      <div item xs={12} md={4} key={index}>
+                        <div
+                          className="">
+                          <div  gutterBottom>
                             {item.service}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          </div>
+                          <div  color="text.secondary">
                             Utilization: {item.utilization}%
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          </div>
+                          <div  color="text.secondary">
                             Satisfaction: {item.satisfaction}/5.0
-                          </Typography>
-                        </Box>
-                      </Grid>
+                          </div>
+                        </div>
+                      </div>
                     ))}
-                  </Grid>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
       </Card>
-
       {/* Targeted Recommendations */}
       <Card>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <div  gutterBottom>
             Targeted Recommendations
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
-                <Typography
-                  variant="subtitle1"
+          </div>
+          <div container spacing={2}>
+            <div item xs={12} md={6}>
+              <div className="">
+                <div
+                  
                   color="info.contrastText"
                   gutterBottom
                 >
                   Young Adult Engagement
-                </Typography>
-                <Typography variant="body2" color="info.contrastText">
+                </div>
+                <div  color="info.contrastText">
                   Implement digital health initiatives and flexible scheduling
                   to improve engagement in the 18-25 age group (currently 65%
                   utilization).
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Box sx={{ p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
-                <Typography
-                  variant="subtitle1"
+                </div>
+              </div>
+            </div>
+            <div item xs={12} md={6}>
+              <div className="">
+                <div
+                  
                   color="warning.contrastText"
                   gutterBottom
                 >
                   Geographic Expansion
-                </Typography>
-                <Typography variant="body2" color="warning.contrastText">
+                </div>
+                <div  color="warning.contrastText">
                   Consider satellite services in Industrial Area to address the
                   62% utilization rate and improve accessibility.
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
-                <Typography
-                  variant="subtitle1"
+                </div>
+              </div>
+            </div>
+            <div item xs={12} md={6}>
+              <div className="">
+                <div
+                  
                   color="success.contrastText"
                   gutterBottom
                 >
                   Patient Education Enhancement
-                </Typography>
-                <Typography variant="body2" color="success.contrastText">
+                </div>
+                <div  color="success.contrastText">
                   Boost patient education services through interactive programs
                   to increase the current 65% utilization rate.
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Box sx={{ p: 2, bgcolor: 'primary.light', borderRadius: 1 }}>
-                <Typography
-                  variant="subtitle1"
+                </div>
+              </div>
+            </div>
+            <div item xs={12} md={6}>
+              <div className="">
+                <div
+                  
                   color="primary.contrastText"
                   gutterBottom
                 >
                   Journey Optimization
-                </Typography>
-                <Typography variant="body2" color="primary.contrastText">
+                </div>
+                <div  color="primary.contrastText">
                   Streamline the assessment process to reduce the 10.1% drop-off
                   rate and improve overall completion rates.
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default PatientDemographicsReport;

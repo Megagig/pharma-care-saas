@@ -1,47 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  InputAdornment,
-  Button,
-  Chip,
-  Card,
-  CardContent,
-  Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Autocomplete,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Tooltip,
-  Alert,
-  CircularProgress,
-  Divider,
-  Badge,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Clear as ClearIcon,
-  FilterList as FilterIcon,
-  History as HistoryIcon,
-  Bookmark as BookmarkIcon,
-  BookmarkBorder as BookmarkBorderIcon,
-  Visibility as ViewIcon,
-  Download as DownloadIcon,
-  TrendingUp as TrendingIcon,
-} from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, parseISO, subDays } from 'date-fns';
-import { debounce } from 'lodash';
+import { Button, Input, Label, Card, CardContent, Badge, Select, Tooltip, Spinner, Alert, Separator } from '@/components/ui/button';
 
 interface SearchFilters {
   query: string;
@@ -54,7 +11,6 @@ interface SearchFilters {
   startDate?: Date | null;
   endDate?: Date | null;
 }
-
 interface SearchResult {
   _id: string;
   action: string;
@@ -77,7 +33,6 @@ interface SearchResult {
   };
   score?: number; // Search relevance score
 }
-
 interface SavedSearch {
   id: string;
   name: string;
@@ -85,31 +40,28 @@ interface SavedSearch {
   createdAt: string;
   resultCount?: number;
 }
-
 interface SearchSuggestion {
   type: 'action' | 'user' | 'category' | 'recent';
   value: string;
   label: string;
   count?: number;
 }
-
 interface AuditSearchProps {
   height?: string;
   onResultSelect?: (result: SearchResult) => void;
   showSavedSearches?: boolean;
   showSuggestions?: boolean;
 }
-
-const AuditSearch: React.FC<AuditSearchProps> = ({
+const AuditSearch: React.FC<AuditSearchProps> = ({ 
   height = '600px',
   onResultSelect,
   showSavedSearches = true,
-  showSuggestions = true,
+  showSuggestions = true
 }) => {
-  const [filters, setFilters] = useState<SearchFilters>({
+  const [filters, setFilters] = useState<SearchFilters>({ 
     query: '',
     startDate: subDays(new Date(), 30),
-    endDate: new Date(),
+    endDate: new Date()}
   });
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -119,7 +71,6 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
   // Debounced search function
   const debouncedSearch = useCallback(
     debounce(async (searchFilters: SearchFilters) => {
@@ -128,17 +79,13 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
         setTotalResults(0);
         return;
       }
-
       setLoading(true);
       setError(null);
-
       try {
         const queryParams = new URLSearchParams();
-
         if (searchFilters.query.trim()) {
           queryParams.append('q', searchFilters.query.trim());
         }
-
         // Add other filters
         Object.entries(searchFilters).forEach(([key, value]) => {
           if (
@@ -154,7 +101,6 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
             }
           }
         });
-
         const response = await fetch(
           `/api/communication/audit/search?${queryParams}`,
           {
@@ -163,15 +109,12 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
             },
           }
         );
-
         if (!response.ok) {
           throw new Error('Search failed');
         }
-
         const data = await response.json();
         setResults(data.data || []);
         setTotalResults(data.pagination?.total || data.data?.length || 0);
-
         // Add to search history
         if (searchFilters.query.trim()) {
           addToSearchHistory(searchFilters.query.trim());
@@ -184,7 +127,6 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
     }, 500),
     []
   );
-
   // Check if advanced filters are set
   const hasAdvancedFilters = (filters: SearchFilters) => {
     return !!(
@@ -198,7 +140,6 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
       filters.endDate
     );
   };
-
   // Add to search history
   const addToSearchHistory = (query: string) => {
     setSearchHistory((prev) => {
@@ -206,7 +147,6 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
       return [query, ...filtered].slice(0, 10); // Keep last 10 searches
     });
   };
-
   // Load search suggestions
   const loadSuggestions = async () => {
     try {
@@ -249,7 +189,6 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
       console.error('Failed to load suggestions:', err);
     }
   };
-
   // Load saved searches
   const loadSavedSearches = () => {
     const saved = localStorage.getItem('auditSearches');
@@ -257,12 +196,10 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
       setSavedSearches(JSON.parse(saved));
     }
   };
-
   // Save current search
   const saveCurrentSearch = () => {
     const name = prompt('Enter a name for this search:');
     if (!name) return;
-
     const newSearch: SavedSearch = {
       id: Date.now().toString(),
       name,
@@ -270,50 +207,42 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
       createdAt: new Date().toISOString(),
       resultCount: totalResults,
     };
-
     const updated = [...savedSearches, newSearch];
     setSavedSearches(updated);
     localStorage.setItem('auditSearches', JSON.stringify(updated));
   };
-
   // Load saved search
   const loadSavedSearch = (savedSearch: SavedSearch) => {
     setFilters(savedSearch.filters);
   };
-
   // Delete saved search
   const deleteSavedSearch = (id: string) => {
     const updated = savedSearches.filter((search) => search.id !== id);
     setSavedSearches(updated);
     localStorage.setItem('auditSearches', JSON.stringify(updated));
   };
-
   // Handle filter changes
   const handleFilterChange = (key: keyof SearchFilters, value: any) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
   };
-
   // Clear all filters
   const clearFilters = () => {
-    setFilters({
+    setFilters({ 
       query: '',
       startDate: subDays(new Date(), 30),
-      endDate: new Date(),
+      endDate: new Date()}
     });
     setResults([]);
     setTotalResults(0);
   };
-
   // Export search results
   const exportResults = async () => {
     try {
       const queryParams = new URLSearchParams();
-
       if (filters.query.trim()) {
         queryParams.append('q', filters.query.trim());
       }
-
       Object.entries(filters).forEach(([key, value]) => {
         if (
           key !== 'query' &&
@@ -328,9 +257,7 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
           }
         }
       });
-
       queryParams.append('format', 'csv');
-
       const response = await fetch(
         `/api/communication/audit/export?${queryParams}`,
         {
@@ -339,11 +266,9 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
           },
         }
       );
-
       if (!response.ok) {
         throw new Error('Export failed');
       }
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -360,11 +285,9 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
       setError(err instanceof Error ? err.message : 'Export failed');
     }
   };
-
   useEffect(() => {
     debouncedSearch(filters);
   }, [filters, debouncedSearch]);
-
   useEffect(() => {
     if (showSuggestions) {
       loadSuggestions();
@@ -373,25 +296,23 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
       loadSavedSearches();
     }
   }, [showSuggestions, showSavedSearches]);
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ height, display: 'flex', flexDirection: 'column' }}>
+      <div className="">
         {/* Search Header */}
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography
-            variant="h6"
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}
+        <div className="">
+          <div
+            
+            className=""
           >
             <SearchIcon />
             Audit Log Search
             {totalResults > 0 && (
               <Badge badgeContent={totalResults} color="primary" max={999} />
             )}
-          </Typography>
-
+          </div>
           {/* Main Search Bar */}
-          <TextField
+          <Input
             fullWidth
             placeholder="Search audit logs... (e.g., 'message sent by John', 'high risk activities', 'file uploads')"
             value={filters.query}
@@ -405,19 +326,17 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
               endAdornment: filters.query && (
                 <InputAdornment position="end">
                   <IconButton
-                    size="small"
-                    onClick={() => handleFilterChange('query', '')}
+                    size="small"}
+                    onClick={() =>handleFilterChange('query', '')}
                   >
                     <ClearIcon />
                   </IconButton>
                 </InputAdornment>
               ),
-            }}
-            sx={{ mb: 2 }}
+            className=""
           />
-
           {/* Quick Actions */}
-          <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+          <div className="">
             <Button
               startIcon={<FilterIcon />}
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -431,7 +350,7 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
                 startIcon={<ClearIcon />}
                 onClick={clearFilters}
                 size="small"
-                variant="outlined"
+                
               >
                 Clear All
               </Button>
@@ -442,7 +361,7 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
                   startIcon={<BookmarkIcon />}
                   onClick={saveCurrentSearch}
                   size="small"
-                  variant="outlined"
+                  
                 >
                   Save Search
                 </Button>
@@ -450,26 +369,25 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
                   startIcon={<DownloadIcon />}
                   onClick={exportResults}
                   size="small"
-                  variant="outlined"
+                  
                 >
                   Export Results
                 </Button>
               </>
             )}
-          </Box>
-
+          </div>
           {/* Advanced Filters */}
           {showAdvancedFilters && (
-            <Card variant="outlined" sx={{ mb: 2 }}>
+            <Card  className="">
               <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Action</InputLabel>
+                <div container spacing={2}>
+                  <div item xs={12} sm={6} md={3}>
+                    <div fullWidth size="small">
+                      <Label>Action</Label>
                       <Select
                         value={filters.action || ''}
                         onChange={(e) =>
-                          handleFilterChange('action', e.target.value)
+                          handleFilterChange('action', e.target.value)}
                         }
                         label="Action"
                       >
@@ -484,15 +402,15 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
                           Participant Added
                         </MenuItem>
                       </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Risk Level</InputLabel>
+                    </div>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
+                    <div fullWidth size="small">
+                      <Label>Risk Level</Label>
                       <Select
                         value={filters.riskLevel || ''}
                         onChange={(e) =>
-                          handleFilterChange('riskLevel', e.target.value)
+                          handleFilterChange('riskLevel', e.target.value)}
                         }
                         label="Risk Level"
                       >
@@ -502,177 +420,155 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
                         <MenuItem value="high">High</MenuItem>
                         <MenuItem value="critical">Critical</MenuItem>
                       </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                    </div>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
                     <DatePicker
                       label="Start Date"
                       value={filters.startDate}
                       onChange={(date) => handleFilterChange('startDate', date)}
-                      slotProps={{
+                      slotProps={{}
                         textField: { size: 'small', fullWidth: true },
-                      }}
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
+                  </div>
+                  <div item xs={12} sm={6} md={3}>
                     <DatePicker
                       label="End Date"
                       value={filters.endDate}
                       onChange={(date) => handleFilterChange('endDate', date)}
-                      slotProps={{
+                      slotProps={{}
                         textField: { size: 'small', fullWidth: true },
-                      }}
                     />
-                  </Grid>
-                </Grid>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
-
           {/* Search Suggestions */}
           {showSuggestions && suggestions.length > 0 && !filters.query && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
+            <div className="">
+              <div  gutterBottom>
                 Popular Searches
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              </div>
+              <div className="">
                 {suggestions.slice(0, 8).map((suggestion) => (
                   <Chip
                     key={suggestion.value}
                     label={`${suggestion.label} (${suggestion.count})`}
                     onClick={() =>
-                      handleFilterChange('query', suggestion.label)
+                      handleFilterChange('query', suggestion.label)}
                     }
-                    variant="outlined"
+                    
                     size="small"
                     icon={<TrendingIcon />}
                   />
                 ))}
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
-
           {/* Search History */}
           {searchHistory.length > 0 && !filters.query && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
+            <div className="">
+              <div  gutterBottom>
                 Recent Searches
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              </div>
+              <div className="">
                 {searchHistory.slice(0, 5).map((query, index) => (
                   <Chip
                     key={index}
                     label={query}
                     onClick={() => handleFilterChange('query', query)}
-                    variant="outlined"
+                    
                     size="small"
                     icon={<HistoryIcon />}
                   />
                 ))}
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
-        </Box>
-
+        </div>
         {/* Content Area */}
-        <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div className="">
           {/* Saved Searches Sidebar */}
           {showSavedSearches && savedSearches.length > 0 && (
-            <Box
-              sx={{
-                width: 250,
-                borderRight: 1,
-                borderColor: 'divider',
-                overflow: 'auto',
-              }}
+            <div
+              className=""
             >
-              <Box sx={{ p: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
+              <div className="">
+                <div  gutterBottom>
                   Saved Searches
-                </Typography>
+                </div>
                 <List dense>
                   {savedSearches.map((savedSearch) => (
-                    <ListItem
+                    <div
                       key={savedSearch.id}
                       button
                       onClick={() => loadSavedSearch(savedSearch)}
                     >
-                      <ListItemText
+                      <div
                         primary={savedSearch.name}
                         secondary={`${
-                          savedSearch.resultCount || 0
+                          savedSearch.resultCount || 0}
                         } results • ${format(
                           parseISO(savedSearch.createdAt),
                           'MMM dd'
                         )}`}
                       />
-                      <ListItemSecondaryAction>
+                      <divSecondaryAction>
                         <IconButton
                           size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteSavedSearch(savedSearch.id);
-                          }}
-                        >
+                          >
                           <ClearIcon />
                         </IconButton>
                       </ListItemSecondaryAction>
-                    </ListItem>
+                    </div>
                   ))}
                 </List>
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
-
           {/* Results Area */}
-          <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <div className="">
             {/* Error Alert */}
             {error && (
               <Alert
                 severity="error"
-                sx={{ m: 2 }}
+                className=""
                 onClose={() => setError(null)}
               >
                 {error}
               </Alert>
             )}
-
             {/* Loading State */}
             {loading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress />
-              </Box>
+              <div className="">
+                <Spinner />
+              </div>
             )}
-
             {/* Results */}
             {!loading && results.length > 0 && (
-              <Box sx={{ p: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>
+              <div className="">
+                <div  gutterBottom>
                   {totalResults.toLocaleString()} results found
-                </Typography>
+                </div>
                 <List>
                   {results.map((result, index) => (
                     <React.Fragment key={result._id}>
-                      <ListItem
+                      <div
                         button
                         onClick={() => onResultSelect?.(result)}
-                        sx={{ alignItems: 'flex-start' }}
+                        className=""
                       >
-                        <ListItemText
+                        <div
                           primary={
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                                mb: 0.5,
-                              }}
+                            <div
+                              className=""
                             >
-                              <Typography variant="subtitle2">
+                              <div >
                                 {result.action
-                                  .replace(/_/g, ' ')
+                                  .replace(/_/g, ' ')}
                                   .replace(/\b\w/g, (l) => l.toUpperCase())}
-                              </Typography>
+                              </div>
                               <Chip
                                 size="small"
                                 label={result.riskLevel}
@@ -682,37 +578,37 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
                                     ? 'error'
                                     : result.riskLevel === 'medium'
                                     ? 'warning'
-                                    : 'success'
+                                    : 'success'}
                                 }
-                                variant="outlined"
+                                
                               />
                               <Chip
                                 size="small"
                                 label={result.success ? 'Success' : 'Failed'}
                                 color={result.success ? 'success' : 'error'}
-                                variant="outlined"
+                                
                               />
-                            </Box>
+                            </div>
                           }
                           secondary={
-                            <Box>
-                              <Typography
-                                variant="body2"
+                            <div>
+                              <div
+                                
                                 color="text.secondary"
-                              >
+                              >}
                                 {result.userId.firstName}{' '}
                                 {result.userId.lastName} ({result.userId.role})
-                              </Typography>
-                              <Typography
-                                variant="body2"
+                              </div>
+                              <div
+                                
                                 color="text.secondary"
                               >
                                 {format(parseISO(result.timestamp), 'PPpp')}
-                              </Typography>
+                              </div>
                               {(result.details.conversationId ||
                                 result.details.fileName) && (
-                                <Typography
-                                  variant="body2"
+                                <div
+                                  
                                   color="text.secondary"
                                 >
                                   {result.details.conversationId &&
@@ -721,12 +617,12 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
                                     )}`}
                                   {result.details.fileName &&
                                     ` • File: ${result.details.fileName}`}
-                                </Typography>
+                                </div>
                               )}
-                            </Box>
+                            </div>
                           }
                         />
-                        <ListItemSecondaryAction>
+                        <divSecondaryAction>
                           <Tooltip title="View Details">
                             <IconButton
                               onClick={() => onResultSelect?.(result)}
@@ -735,54 +631,51 @@ const AuditSearch: React.FC<AuditSearchProps> = ({
                             </IconButton>
                           </Tooltip>
                         </ListItemSecondaryAction>
-                      </ListItem>
-                      {index < results.length - 1 && <Divider />}
+                      </div>
+                      {index < results.length - 1 && <Separator />}
                     </React.Fragment>
                   ))}
                 </List>
-              </Box>
+              </div>
             )}
-
             {/* No Results */}
             {!loading &&
               results.length === 0 &&
               (filters.query || hasAdvancedFilters(filters)) && (
-                <Box sx={{ textAlign: 'center', p: 4 }}>
-                  <Typography color="text.secondary" gutterBottom>
+                <div className="">
+                  <div color="text.secondary" gutterBottom>
                     No audit logs found matching your search criteria
-                  </Typography>
+                  </div>
                   <Button
                     onClick={clearFilters}
-                    variant="outlined"
+                    
                     size="small"
                   >
                     Clear Search
                   </Button>
-                </Box>
+                </div>
               )}
-
             {/* Initial State */}
             {!loading &&
               results.length === 0 &&
               !filters.query &&
               !hasAdvancedFilters(filters) && (
-                <Box sx={{ textAlign: 'center', p: 4 }}>
+                <div className="">
                   <SearchIcon
-                    sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }}
+                    className=""
                   />
-                  <Typography color="text.secondary" gutterBottom>
+                  <div color="text.secondary" gutterBottom>
                     Enter a search query or use filters to find audit logs
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Try searching for actions, users, or specific events
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               )}
-          </Box>
-        </Box>
-      </Box>
+          </div>
+        </div>
+      </div>
     </LocalizationProvider>
   );
 };
-
 export default AuditSearch;

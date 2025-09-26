@@ -1,10 +1,4 @@
 // Filters Store - State management for report filters
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
-import { ReportFilters, FilterPreset, FilterDefinition } from '../types/filters';
-import { ReportType } from '../types/reports';
-import { createDateRangeFromPreset, validateFilters, resetFilters } from '../utils/filterHelpers';
-
 interface FiltersState {
     // Current filters by report type
     filters: Record<string, ReportFilters>;
@@ -48,8 +42,8 @@ const DEFAULT_FILTERS: ReportFilters = {
 export const useFiltersStore = create<FiltersState>()(
     devtools(
         persist(
-            (set, get) => ({
-                // Initial state
+            (set, get) => ({ 
+                // Initial state })
                 filters: {},
                 presets: [],
                 definitions: {},
@@ -60,10 +54,10 @@ export const useFiltersStore = create<FiltersState>()(
                 // Actions
                 setFilters: (reportType: string, filters: ReportFilters) => {
                     set(
-                        (state) => ({
+                        (state) => ({ 
                             filters: {
                                 ...state.filters,
-                                [reportType]: filters,
+                                [reportType]: filters}
                             },
                             activePreset: null, // Clear active preset when filters change
                         }),
@@ -106,17 +100,16 @@ export const useFiltersStore = create<FiltersState>()(
                     const defaultFilters = resetFilters(definitions);
 
                     set(
-                        (state) => ({
+                        (state) => ({ 
                             filters: {
                                 ...state.filters,
-                                [reportType]: defaultFilters,
+                                [reportType]: defaultFilters}
                             },
                             activePreset: null,
                             validationErrors: {
                                 ...state.validationErrors,
                                 [reportType]: {},
-                            },
-                        }),
+                            }, },
                         false,
                         'resetFilters'
                     );
@@ -128,13 +121,12 @@ export const useFiltersStore = create<FiltersState>()(
 
                     if (preset) {
                         set(
-                            (state) => ({
+                            (state) => ({ 
                                 filters: {
                                     ...state.filters,
-                                    [reportType]: preset.filters,
+                                    [reportType]: preset.filters}
                                 },
-                                activePreset: presetId,
-                            }),
+                                activePreset: presetId, },
                             false,
                             'applyPreset'
                         );
@@ -152,8 +144,8 @@ export const useFiltersStore = create<FiltersState>()(
                     };
 
                     set(
-                        (state) => ({
-                            presets: [...state.presets, newPreset],
+                        (state) => ({ 
+                            presets: [...state.presets, newPreset]}
                         }),
                         false,
                         'savePreset'
@@ -162,9 +154,9 @@ export const useFiltersStore = create<FiltersState>()(
 
                 deletePreset: (presetId: string) => {
                     set(
-                        (state) => ({
+                        (state) => ({ 
                             presets: state.presets.filter(p => p.id !== presetId),
-                            activePreset: state.activePreset === presetId ? null : state.activePreset,
+                            activePreset: state.activePreset === presetId ? null : state.activePreset}
                         }),
                         false,
                         'deletePreset'
@@ -173,12 +165,11 @@ export const useFiltersStore = create<FiltersState>()(
 
                 setFilterDefinitions: (reportType: string, definitions: FilterDefinition[]) => {
                     set(
-                        (state) => ({
+                        (state) => ({ 
                             definitions: {
                                 ...state.definitions,
-                                [reportType]: definitions,
-                            },
-                        }),
+                                [reportType]: definitions}
+                            }, },
                         false,
                         'setFilterDefinitions'
                     );
@@ -200,12 +191,11 @@ export const useFiltersStore = create<FiltersState>()(
                     const validation = validateFilters(filters, definitions);
 
                     set(
-                        (state) => ({
+                        (state) => ({ 
                             validationErrors: {
                                 ...state.validationErrors,
-                                [reportType]: validation.errors,
-                            },
-                        }),
+                                [reportType]: validation.errors}
+                            }, },
                         false,
                         'validateCurrentFilters'
                     );
@@ -242,15 +232,14 @@ export const useFiltersStore = create<FiltersState>()(
                     if (!preset) return false;
 
                     return JSON.stringify(currentFilters) !== JSON.stringify(preset.filters);
-                },
-            }),
+                }, },
             {
                 name: 'filters-store',
-                partialize: (state) => ({
+                partialize: (state) => ({ 
                     // Persist filters and presets
                     filters: state.filters,
                     presets: state.presets,
-                    panelOpen: state.panelOpen,
+                    panelOpen: state.panelOpen}
                 }),
             }
         ),

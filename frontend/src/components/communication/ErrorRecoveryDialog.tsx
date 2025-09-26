@@ -1,40 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  Box,
-  Alert,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
-  Chip,
-  IconButton,
-  Collapse,
-  Stack,
-  LinearProgress,
-} from '@mui/material';
-import {
-  Close,
-  Refresh,
-  CheckCircle,
-  Error as ErrorIcon,
-  Warning,
-  Info,
-  ExpandMore,
-  ExpandLess,
-  PlayArrow,
-  Stop,
-} from '@mui/icons-material';
-import {
-  CommunicationError,
-  ErrorAction,
-} from '../../services/communicationErrorService';
-import { retryMechanism } from '../../utils/retryMechanism';
+import { Button, Dialog, DialogContent, DialogTitle, Progress, Alert } from '@/components/ui/button';
 
 interface ErrorRecoveryDialogProps {
   open: boolean;
@@ -44,7 +8,6 @@ interface ErrorRecoveryDialogProps {
   onRecover?: () => void;
   showTechnicalDetails?: boolean;
 }
-
 interface RecoveryStep {
   id: string;
   label: string;
@@ -54,43 +17,38 @@ interface RecoveryStep {
   inProgress: boolean;
   optional: boolean;
 }
-
 /**
  * User-friendly error recovery dialog with guided recovery steps
  * Provides clear explanations, actionable solutions, and automated recovery options
  */
-const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
+const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({ 
   open,
   error,
   onClose,
   onRetry,
   onRecover,
-  showTechnicalDetails = false,
+  showTechnicalDetails = false
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [recoverySteps, setRecoverySteps] = useState<RecoveryStep[]>([]);
   const [showDetails, setShowDetails] = useState(false);
   const [autoRecoveryInProgress, setAutoRecoveryInProgress] = useState(false);
   const [recoveryProgress, setRecoveryProgress] = useState(0);
-
   // Generate recovery steps based on error type
   useEffect(() => {
     if (!error) {
       setRecoverySteps([]);
       return;
     }
-
     const steps = generateRecoverySteps(error);
     setRecoverySteps(steps);
     setActiveStep(0);
   }, [error]);
-
   /**
    * Generate recovery steps based on error type
    */
   const generateRecoverySteps = (error: CommunicationError): RecoveryStep[] => {
     const baseSteps: RecoveryStep[] = [];
-
     switch (error.type) {
       case 'connection_lost':
         baseSteps.push(
@@ -128,7 +86,6 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
           }
         );
         break;
-
       case 'message_send_failed':
         baseSteps.push(
           {
@@ -157,8 +114,7 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
               );
               await offlineStorage.saveFormDraft('message_draft', {
                 content: error.details?.messageContent || '',
-                timestamp: Date.now(),
-              });
+                timestamp: Date.now()}
               return true;
             },
             completed: false,
@@ -167,7 +123,6 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
           }
         );
         break;
-
       case 'file_upload_failed':
         baseSteps.push(
           {
@@ -200,14 +155,13 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
           }
         );
         break;
-
       case 'authentication_expired':
-        baseSteps.push({
+        baseSteps.push({ 
           id: 'refresh_session',
           label: 'Refresh Session',
           description: 'Attempt to refresh your authentication session',
           action: async () => {
-            try {
+            try { })
               const { authService } = await import(
                 '../../services/authService'
               );
@@ -218,43 +172,37 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
           },
           completed: false,
           inProgress: false,
-          optional: false,
-        });
+          optional: false}
         break;
-
       case 'rate_limited':
-        baseSteps.push({
+        baseSteps.push({ 
           id: 'wait_cooldown',
           label: 'Wait for Rate Limit Reset',
           description: 'Wait for the rate limit to reset before trying again',
           action: async () => {
             await new Promise((resolve) => setTimeout(resolve, 5000));
-            return true;
+            return true; })
           },
           completed: false,
           inProgress: false,
-          optional: false,
-        });
+          optional: false}
         break;
-
       default:
-        baseSteps.push({
+        baseSteps.push({ 
           id: 'generic_retry',
           label: 'Retry Operation',
           description: 'Attempt the operation again',
           action: async () => {
             if (onRetry) {
               await onRetry();
-              return true;
+              return true; })
             }
             return false;
           },
           completed: false,
           inProgress: false,
-          optional: false,
-        });
+          optional: false}
     }
-
     // Add common recovery steps
     baseSteps.push(
       {
@@ -289,70 +237,55 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
         optional: true,
       }
     );
-
     return baseSteps;
   };
-
   /**
    * Execute a recovery step
    */
   const executeStep = async (stepIndex: number): Promise<void> => {
     const step = recoverySteps[stepIndex];
     if (!step || step.completed) return;
-
     // Update step to in progress
     setRecoverySteps((prev) =>
       prev.map((s, i) => (i === stepIndex ? { ...s, inProgress: true } : s))
     );
-
     try {
       const success = await step.action();
-
       // Update step completion status
       setRecoverySteps((prev) =>
         prev.map((s, i) =>
           i === stepIndex ? { ...s, completed: success, inProgress: false } : s
         )
       );
-
       if (success && stepIndex === recoverySteps.length - 1) {
         // All steps completed successfully
         onRecover?.();
       }
     } catch (error) {
       console.error(`Recovery step ${step.id} failed:`, error);
-
       // Mark step as failed
       setRecoverySteps((prev) =>
         prev.map((s, i) => (i === stepIndex ? { ...s, inProgress: false } : s))
       );
     }
   };
-
   /**
    * Execute all recovery steps automatically
    */
   const executeAutoRecovery = async (): Promise<void> => {
     setAutoRecoveryInProgress(true);
     setRecoveryProgress(0);
-
     const nonOptionalSteps = recoverySteps.filter((step) => !step.optional);
-
     for (let i = 0; i < nonOptionalSteps.length; i++) {
       const stepIndex = recoverySteps.indexOf(nonOptionalSteps[i]);
       setActiveStep(stepIndex);
-
       await executeStep(stepIndex);
-
       setRecoveryProgress(((i + 1) / nonOptionalSteps.length) * 100);
-
       // Wait a bit between steps
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-
     setAutoRecoveryInProgress(false);
   };
-
   /**
    * Get error severity icon and color
    */
@@ -368,32 +301,27 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
         return { icon: <Info />, color: 'info' as const };
     }
   };
-
   if (!error) return null;
-
   const severityDisplay = getSeverityDisplay(error.severity);
   const completedSteps = recoverySteps.filter((step) => step.completed).length;
   const totalSteps = recoverySteps.filter((step) => !step.optional).length;
-
   return (
     <Dialog
       open={open}
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{
+      PaperProps={{}
         sx: { minHeight: '400px' },
-      }}
-    >
+      >
       <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <div className="">
+          <div className="">
             {severityDisplay.icon}
-            <Typography variant="h6">Error Recovery Assistant</Typography>
-          </Box>
-
-          <Box
-            sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}
+            <div >Error Recovery Assistant</div>
+          </div>
+          <div
+            className=""
           >
             <Chip
               label={error.severity}
@@ -403,103 +331,83 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
             <IconButton onClick={onClose} size="small">
               <Close />
             </IconButton>
-          </Box>
-        </Box>
+          </div>
+        </div>
       </DialogTitle>
-
       <DialogContent>
-        <Stack spacing={3}>
+        <div spacing={3}>
           {/* Error Description */}
           <Alert severity={severityDisplay.color}>
-            <Typography variant="subtitle2" gutterBottom>
+            <div  gutterBottom>
               {error.userMessage}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            </div>
+            <div  color="text.secondary">
               Don't worry! We'll help you resolve this issue step by step.
-            </Typography>
+            </div>
           </Alert>
-
           {/* Auto Recovery Progress */}
           {autoRecoveryInProgress && (
-            <Box>
-              <Typography variant="body2" gutterBottom>
+            <div>
+              <div  gutterBottom>
                 Automatic recovery in progress...
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={recoveryProgress}
-                sx={{ mb: 1 }}
+              </div>
+              <Progress
+                
+                className=""
               />
-              <Typography variant="caption" color="text.secondary">
+              <div  color="text.secondary">
                 {Math.round(recoveryProgress)}% complete
-              </Typography>
-            </Box>
+              </div>
+            </div>
           )}
-
           {/* Recovery Steps */}
-          <Box>
-            <Typography variant="subtitle1" gutterBottom>
+          <div>
+            <div  gutterBottom>
               Recovery Steps ({completedSteps}/{totalSteps} completed)
-            </Typography>
-
+            </div>
             <Stepper activeStep={activeStep} orientation="vertical">
               {recoverySteps.map((step, index) => (
                 <Step key={step.id} completed={step.completed}>
                   <StepLabel
                     optional={
                       step.optional && (
-                        <Typography variant="caption">Optional</Typography>
-                      )
+                        <div >Optional</div>
+                      )}
                     }
                     StepIconComponent={() => (
-                      <Box
-                        sx={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          bgcolor: step.completed
-                            ? 'success.main'
-                            : step.inProgress
-                            ? 'primary.main'
-                            : 'grey.300',
-                          color: 'white',
-                        }}
+                      <div
+                        className=""
                       >
                         {step.completed ? (
-                          <CheckCircle sx={{ fontSize: 16 }} />
-                        ) : step.inProgress ? (
-                          <LinearProgress size={16} />
+                          <CheckCircle className="" />
+                        ) : step.inProgress ? (}
+                          <Progress size={16} />
                         ) : (
-                          <Typography variant="caption">{index + 1}</Typography>
+                          <div >{index + 1}</div>
                         )}
-                      </Box>
+                      </div>
                     )}
                   >
                     {step.label}
                   </StepLabel>
-
                   <StepContent>
-                    <Typography
-                      variant="body2"
+                    <div
+                      
                       color="text.secondary"
                       gutterBottom
                     >
                       {step.description}
-                    </Typography>
-
-                    <Box sx={{ mt: 1 }}>
+                    </div>
+                    <div className="">
                       <Button
                         size="small"
-                        variant="outlined"
+                        
                         startIcon={step.inProgress ? <Stop /> : <PlayArrow />}
                         onClick={() => executeStep(index)}
                         disabled={
                           step.completed ||
                           step.inProgress ||
-                          autoRecoveryInProgress
+                          autoRecoveryInProgress}
                         }
                       >
                         {step.inProgress
@@ -508,16 +416,15 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
                           ? 'Completed'
                           : 'Run Step'}
                       </Button>
-                    </Box>
+                    </div>
                   </StepContent>
                 </Step>
               ))}
             </Stepper>
-          </Box>
-
+          </div>
           {/* Technical Details */}
           {showTechnicalDetails && (
-            <Box>
+            <div>
               <Button
                 onClick={() => setShowDetails(!showDetails)}
                 endIcon={showDetails ? <ExpandLess /> : <ExpandMore />}
@@ -525,22 +432,15 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
               >
                 Technical Details
               </Button>
-
               <Collapse in={showDetails}>
-                <Alert severity="info" sx={{ mt: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom>
+                <Alert severity="info" className="">
+                  <div  gutterBottom>
                     Error Information:
-                  </Typography>
-                  <Typography
-                    variant="body2"
+                  </div>
+                  <div
+                    
                     component="pre"
-                    sx={{
-                      fontFamily: 'monospace',
-                      fontSize: '0.8rem',
-                      whiteSpace: 'pre-wrap',
-                      overflow: 'auto',
-                      maxHeight: 200,
-                    }}
+                    className=""
                   >
                     {JSON.stringify(
                       {
@@ -553,29 +453,26 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
                       null,
                       2
                     )}
-                  </Typography>
+                  </div>
                 </Alert>
               </Collapse>
-            </Box>
+            </div>
           )}
-        </Stack>
+        </div>
       </DialogContent>
-
       <DialogActions>
         <Button onClick={onClose}>Close</Button>
-
         <Button
-          variant="outlined"
+          
           startIcon={<Refresh />}
           onClick={executeAutoRecovery}
           disabled={autoRecoveryInProgress || completedSteps === totalSteps}
         >
           {autoRecoveryInProgress ? 'Running...' : 'Auto Recovery'}
         </Button>
-
         {onRetry && (
           <Button
-            variant="contained"
+            
             startIcon={<Refresh />}
             onClick={onRetry}
             disabled={autoRecoveryInProgress}
@@ -587,5 +484,4 @@ const ErrorRecoveryDialog: React.FC<ErrorRecoveryDialogProps> = ({
     </Dialog>
   );
 };
-
 export default ErrorRecoveryDialog;

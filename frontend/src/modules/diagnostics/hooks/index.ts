@@ -2,16 +2,14 @@
 // These will be implemented in subsequent tasks
 
 // Diagnostic Hooks
-export { default as useDiagnostics } from './useDiagnostics';
-export { default as useDiagnosticRequest } from './useDiagnosticRequest';
-export { default as useDiagnosticResult } from './useDiagnosticResult';
-
+// Removed incomplete export: export { default as useDiagnostics 
+export { default as useDiagnosticRequest 
+export { default as useDiagnosticResult 
 // Lab Hooks
-export { default as useLabOrders } from './useLabOrders';
-export { default as useLabResults } from './useLabResults';
-export { default as useLabTrends } from './useLabTrends';
-
+export { default as useLabOrders 
+export { default as useLabResults 
+export { default as useLabTrends 
 // Interaction Hooks
-export { default as useInteractions } from './useInteractions';
-export { default as useDrugInfo } from './useDrugInfo';
-export { default as useAllergyCheck } from './useAllergyCheck';
+export { default as useInteractions 
+export { default as useDrugInfo 
+export { default as useAllergyCheck

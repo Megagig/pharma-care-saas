@@ -1,16 +1,4 @@
 // Template Rendering Service - Core engine for dynamic template rendering
-import {
-    ReportTemplate,
-    TemplateSection,
-    SectionContent,
-    VisibilityCondition,
-    MetricConfig,
-    ValidationError
-} from '../types/templates';
-import { ChartData, ChartConfig, KPICardData, ProgressRingData } from '../types/charts';
-import { ReportFilters, FilterDefinition } from '../types/filters';
-import { ReportData } from '../types/reports';
-
 export interface RenderContext {
     template: ReportTemplate;
     data: ReportData;
@@ -312,8 +300,7 @@ export class TemplateRenderingEngine {
                 try {
                     const renderedSection = await this.renderSection(section, {
                         ...context,
-                        data: processedData,
-                    });
+                        data: processedData}
 
                     if (renderedSection) {
                         sections.push(renderedSection);
@@ -359,26 +346,26 @@ export class TemplateRenderingEngine {
 
         // Basic template validation
         if (!template.id) {
-            errors.push({
+            errors.push({ 
                 type: 'error',
                 field: 'id',
-                message: 'Template ID is required',
+                message: 'Template ID is required'}
             });
         }
 
         if (!template.name) {
-            errors.push({
+            errors.push({ 
                 type: 'error',
                 field: 'name',
-                message: 'Template name is required',
+                message: 'Template name is required'}
             });
         }
 
         if (!template.sections || template.sections.length === 0) {
-            errors.push({
+            errors.push({ 
                 type: 'warning',
                 field: 'sections',
-                message: 'Template has no sections defined',
+                message: 'Template has no sections defined'}
             });
         }
 
@@ -404,28 +391,25 @@ export class TemplateRenderingEngine {
         const errors: ValidationError[] = [];
 
         if (!section.id) {
-            errors.push({
-                type: 'error',
+            errors.push({ 
+                type: 'error'}
                 field: `section.${section.id}.id`,
-                message: 'Section ID is required',
-            });
+                message: 'Section ID is required'}
         }
 
         if (!section.type) {
-            errors.push({
-                type: 'error',
+            errors.push({ 
+                type: 'error'}
                 field: `section.${section.id}.type`,
-                message: 'Section type is required',
-            });
+                message: 'Section type is required'}
         }
 
         // Validate section content based on type
         if (section.content) {
             const contentErrors = await this.validateSectionContent(section.type, section.content);
-            errors.push(...contentErrors.map(error => ({
-                ...error,
-                field: `section.${section.id}.${error.field}`,
-            })));
+            errors.push(...contentErrors.map(error => ({ 
+                ...error}
+                field: `section.${section.id}.${error.field}`, });
         }
 
         return errors;
@@ -453,18 +437,18 @@ export class TemplateRenderingEngine {
 
         if (layout.grid) {
             if (layout.grid.columns <= 0) {
-                errors.push({
+                errors.push({ 
                     type: 'error',
                     field: 'layout.grid.columns',
-                    message: 'Grid columns must be greater than 0',
+                    message: 'Grid columns must be greater than 0'}
                 });
             }
 
             if (layout.grid.rows <= 0) {
-                errors.push({
+                errors.push({ 
                     type: 'error',
                     field: 'layout.grid.rows',
-                    message: 'Grid rows must be greater than 0',
+                    message: 'Grid rows must be greater than 0'}
                 });
             }
         }
@@ -497,13 +481,13 @@ export class TemplateRenderingEngine {
         return {
             ...data,
             // Apply date range filter
-            charts: data.charts?.map(chart => ({
+            charts: data.charts?.map(chart => ({ 
                 ...chart,
-                data: this.filterChartDataByDateRange(chart.data, filters.dateRange),
+                data: this.filterChartDataByDateRange(chart.data, filters.dateRange)}
             })),
-            tables: data.tables?.map(table => ({
+            tables: data.tables?.map(table => ({ 
                 ...table,
-                data: this.filterTableDataByFilters(table.data, filters),
+                data: this.filterTableDataByFilters(table.data, filters)}
             })),
         };
     }
@@ -911,7 +895,7 @@ export class TemplateRenderingEngine {
                 for (const chartId of content.charts) {
                     const chartData = context.data.charts.find(c => c.id === chartId);
                     if (chartData) {
-                        renderedCharts.push({
+                        renderedCharts.push({ 
                             id: chartData.id,
                             title: chartData.title,
                             subtitle: chartData.subtitle,
@@ -921,7 +905,7 @@ export class TemplateRenderingEngine {
                             loading: chartData.loading || false,
                             error: chartData.error,
                             isEmpty: !chartData.data || chartData.data.length === 0,
-                            dataSource: 'api', // This would be determined dynamically
+                            dataSource: 'api', // This would be determined dynamically })
                         });
                     }
                 }
@@ -941,7 +925,7 @@ export class TemplateRenderingEngine {
                 for (const tableId of content.tables) {
                     const tableData = context.data.tables.find(t => t.id === tableId);
                     if (tableData) {
-                        renderedTables.push({
+                        renderedTables.push({ 
                             id: tableData.id,
                             title: tableData.title,
                             columns: this.processTableColumns(tableData.columns),
@@ -952,7 +936,7 @@ export class TemplateRenderingEngine {
                                 currentPage: 1,
                                 totalItems: tableData.data.length,
                                 showSizeOptions: true,
-                                sizeOptions: [5, 10, 25, 50],
+                                sizeOptions: [5, 10, 25, 50]}
                             } : undefined,
                             sorting: content.sorting ? {
                                 enabled: true,
@@ -960,8 +944,7 @@ export class TemplateRenderingEngine {
                             } : undefined,
                             filtering: content.filtering,
                             loading: false,
-                            isEmpty: !tableData.data || tableData.data.length === 0,
-                        });
+                            isEmpty: !tableData.data || tableData.data.length === 0}
                     }
                 }
             }
@@ -1048,7 +1031,7 @@ export class TemplateRenderingEngine {
      * Process table columns
      */
     private processTableColumns(columns: any[]): TableColumn[] {
-        return columns.map(col => ({
+        return columns.map(col => ({ 
             key: col.key,
             label: col.label,
             type: col.type || 'text',
@@ -1056,7 +1039,7 @@ export class TemplateRenderingEngine {
             sortable: col.sortable !== false,
             filterable: col.filterable !== false,
             format: col.format,
-            align: col.align || 'left',
+            align: col.align || 'left'}
         }));
     }
 
@@ -1129,10 +1112,10 @@ export class TemplateRenderingEngine {
         this.validators.set('charts', (content: SectionContent) => {
             const errors: ValidationError[] = [];
             if (content.charts && content.charts.length === 0) {
-                errors.push({
+                errors.push({ 
                     type: 'warning',
                     field: 'charts',
-                    message: 'No charts specified for charts section',
+                    message: 'No charts specified for charts section'}
                 });
             }
             return errors;
@@ -1141,10 +1124,10 @@ export class TemplateRenderingEngine {
         this.validators.set('tables', (content: SectionContent) => {
             const errors: ValidationError[] = [];
             if (content.tables && content.tables.length === 0) {
-                errors.push({
+                errors.push({ 
                     type: 'warning',
                     field: 'tables',
-                    message: 'No tables specified for tables section',
+                    message: 'No tables specified for tables section'}
                 });
             }
             return errors;
@@ -1153,10 +1136,10 @@ export class TemplateRenderingEngine {
         this.validators.set('text', (content: SectionContent) => {
             const errors: ValidationError[] = [];
             if (!content.text || content.text.trim().length === 0) {
-                errors.push({
+                errors.push({ 
                     type: 'warning',
                     field: 'text',
-                    message: 'Text section has no content',
+                    message: 'Text section has no content'}
                 });
             }
             return errors;

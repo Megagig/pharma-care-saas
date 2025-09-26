@@ -1,43 +1,4 @@
-import React, { useState, useCallback } from 'react';
-import {
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  ListItemSecondaryAction,
-  Avatar,
-  IconButton,
-  Typography,
-  Box,
-  Chip,
-  Tooltip,
-  Menu,
-  MenuItem,
-  Button,
-  Collapse,
-} from '@mui/material';
-import {
-  Message as MessageIcon,
-  AlternateEmail as MentionIcon,
-  MedicalServices as ClinicalIcon,
-  Warning as AlertIcon,
-  GroupAdd as InviteIcon,
-  AttachFile as FileIcon,
-  Assignment as InterventionIcon,
-  Help as QueryIcon,
-  PriorityHigh as UrgentIcon,
-  Notifications as SystemIcon,
-  MoreVert as MoreIcon,
-  Close as DismissIcon,
-  OpenInNew as OpenIcon,
-  Schedule as ScheduleIcon,
-  CheckCircle as ReadIcon,
-  RadioButtonUnchecked as UnreadIcon,
-  ExpandMore as ExpandIcon,
-  ExpandLess as CollapseIcon,
-} from '@mui/icons-material';
-import { formatDistanceToNow } from 'date-fns';
-import { CommunicationNotification } from '../../stores/types';
-import { useCommunicationStore } from '../../stores/communicationStore';
+import { Button, Tooltip, Alert, Avatar } from '@/components/ui/button';
 
 interface NotificationItemProps {
   notification: CommunicationNotification;
@@ -46,18 +7,16 @@ interface NotificationItemProps {
   showActions?: boolean;
   compact?: boolean;
 }
-
-const NotificationItem: React.FC<NotificationItemProps> = ({
+const NotificationItem: React.FC<NotificationItemProps> = ({ 
   notification,
   onClick,
   onDismiss,
   showActions = true,
-  compact = false,
+  compact = false
 }) => {
   const { markNotificationAsRead } = useCommunicationStore();
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [expanded, setExpanded] = useState(false);
-
   // Get notification icon based on type
   const getNotificationIcon = useCallback(() => {
     const iconProps = {
@@ -67,7 +26,6 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         fontSize: compact ? 20 : 24,
       },
     };
-
     switch (notification.type) {
       case 'new_message':
         return <MessageIcon {...iconProps} />;
@@ -93,7 +51,6 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         return <MessageIcon {...iconProps} />;
     }
   }, [notification.type, notification.status, compact]);
-
   // Get priority color
   const getPriorityColor = useCallback(() => {
     switch (notification.priority) {
@@ -109,7 +66,6 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         return 'default';
     }
   }, [notification.priority]);
-
   // Get notification type label
   const getTypeLabel = useCallback(() => {
     switch (notification.type) {
@@ -137,24 +93,20 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         return 'Notification';
     }
   }, [notification.type]);
-
   // Format timestamp
   const formatTimestamp = useCallback(() => {
     try {
       return formatDistanceToNow(new Date(notification.createdAt), {
-        addSuffix: true,
-      });
+        addSuffix: true}
     } catch {
       return 'Unknown time';
     }
   }, [notification.createdAt]);
-
   // Handle notification click
   const handleClick = useCallback(() => {
     if (notification.status === 'unread') {
       markNotificationAsRead(notification._id);
     }
-
     if (onClick) {
       onClick();
     } else if (notification.data.actionUrl) {
@@ -162,7 +114,6 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
       window.location.href = notification.data.actionUrl;
     }
   }, [notification, markNotificationAsRead, onClick]);
-
   // Handle mark as read/unread
   const handleToggleRead = useCallback(
     (event: React.MouseEvent) => {
@@ -174,7 +125,6 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     },
     [notification, markNotificationAsRead]
   );
-
   // Handle dismiss
   const handleDismiss = useCallback(
     (event: React.MouseEvent) => {
@@ -186,17 +136,14 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     },
     [onDismiss]
   );
-
   // Handle menu actions
   const handleMenuClick = useCallback((event: React.MouseEvent) => {
     event.stopPropagation();
     setMenuAnchorEl(event.currentTarget);
   }, []);
-
   const handleMenuClose = useCallback(() => {
     setMenuAnchorEl(null);
   }, []);
-
   // Handle expand/collapse
   const handleToggleExpand = useCallback(
     (event: React.MouseEvent) => {
@@ -205,134 +152,97 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     },
     [expanded]
   );
-
   // Check if notification is scheduled
   const isScheduled =
     notification.scheduledFor &&
     new Date(notification.scheduledFor) > new Date();
-
   return (
     <>
-      <ListItem
+      <div
         button
         onClick={handleClick}
-        sx={{
-          backgroundColor:
-            notification.status === 'unread' ? 'action.hover' : 'transparent',
-          borderLeft: notification.status === 'unread' ? 3 : 0,
-          borderLeftColor:
-            notification.status === 'unread' ? 'primary.main' : 'transparent',
-          py: compact ? 1 : 1.5,
-          '&:hover': {
-            backgroundColor: 'action.selected',
-          },
-        }}
-      >
-        <ListItemAvatar>
+        className="">
+        <divAvatar>
           <Avatar
-            sx={{
-              bgcolor:
-                notification.status === 'unread' ? 'primary.light' : 'grey.300',
-              width: compact ? 32 : 40,
-              height: compact ? 32 : 40,
-            }}
+            className=""
           >
             {getNotificationIcon()}
           </Avatar>
         </ListItemAvatar>
-
-        <ListItemText
+        <div
           primary={
-            <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}
+            <div
+              className=""
             >
-              <Typography
+              <div}
                 variant={compact ? 'body2' : 'subtitle2'}
-                sx={{
-                  fontWeight: notification.status === 'unread' ? 600 : 400,
-                  flex: 1,
-                }}
+                className=""
                 noWrap
               >
                 {notification.title}
-              </Typography>
-
+              </div>
               {notification.priority !== 'normal' && (
                 <Chip
                   label={notification.priority}
                   size="small"
                   color={getPriorityColor() as any}
-                  sx={{ height: 20, fontSize: '0.7rem' }}
+                  className=""
                 />
               )}
-
               {isScheduled && (
                 <Tooltip title="Scheduled notification">
                   <ScheduleIcon
-                    sx={{ fontSize: 16, color: 'text.secondary' }}
+                    className=""
                   />
                 </Tooltip>
               )}
-            </Box>
+            </div>
           }
           secondary={
-            <Box>
-              <Typography
-                variant="body2"
+            <div>
+              <div
+                
                 color="text.secondary"
-                sx={{
-                  display: '-webkit-box',
-                  WebkitLineClamp: expanded ? 'none' : compact ? 1 : 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  mb: 0.5,
-                }}
-              >
+                className=""
+              >}
                 {notification.content}
-              </Typography>
-
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
+              </div>
+              <div
+                className=""
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <div className="">
                   <Chip
                     label={getTypeLabel()}
                     size="small"
-                    variant="outlined"
-                    sx={{ height: 18, fontSize: '0.65rem' }}
+                    
+                    className=""
                   />
-                  <Typography variant="caption" color="text.secondary">
+                  <div  color="text.secondary">
                     {formatTimestamp()}
-                  </Typography>
-                </Box>
-
+                  </div>
+                </div>
                 {notification.content.length > 100 && (
                   <Button
                     size="small"
                     onClick={handleToggleExpand}
                     startIcon={expanded ? <CollapseIcon /> : <ExpandIcon />}
-                    sx={{ minWidth: 'auto', p: 0.5 }}
+                    className=""
                   >
                     {expanded ? 'Less' : 'More'}
                   </Button>
                 )}
-              </Box>
-            </Box>
+              </div>
+            </div>
           }
         />
-
         {showActions && (
-          <ListItemSecondaryAction>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <divSecondaryAction>
+            <div className="">
               <Tooltip
                 title={
                   notification.status === 'unread'
                     ? 'Mark as read'
-                    : 'Mark as unread'
+                    : 'Mark as unread'}
                 }
               >
                 <IconButton size="small" onClick={handleToggleRead}>
@@ -343,7 +253,6 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                   )}
                 </IconButton>
               </Tooltip>
-
               {notification.data.actionUrl && (
                 <Tooltip title="Open">
                   <IconButton size="small" onClick={handleClick}>
@@ -351,53 +260,46 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                   </IconButton>
                 </Tooltip>
               )}
-
               <Tooltip title="More actions">
                 <IconButton size="small" onClick={handleMenuClick}>
                   <MoreIcon />
                 </IconButton>
               </Tooltip>
-            </Box>
+            </div>
           </ListItemSecondaryAction>
         )}
-      </ListItem>
-
+      </div>
       {/* Expanded content */}
       <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <Box sx={{ px: 3, pb: 2, backgroundColor: 'grey.50' }}>
+        <div className="">
           {notification.data.conversationId && (
-            <Typography variant="caption" display="block" gutterBottom>
+            <div  display="block" gutterBottom>
               Conversation ID: {notification.data.conversationId}
-            </Typography>
+            </div>
           )}
-
           {notification.data.patientId && (
-            <Typography variant="caption" display="block" gutterBottom>
+            <div  display="block" gutterBottom>
               Patient ID: {notification.data.patientId}
-            </Typography>
+            </div>
           )}
-
           {notification.data.senderId && (
-            <Typography variant="caption" display="block" gutterBottom>
+            <div  display="block" gutterBottom>
               From: {notification.data.senderId}
-            </Typography>
+            </div>
           )}
-
           {notification.scheduledFor && (
-            <Typography variant="caption" display="block" gutterBottom>
+            <div  display="block" gutterBottom>
               Scheduled for:{' '}
               {new Date(notification.scheduledFor).toLocaleString()}
-            </Typography>
+            </div>
           )}
-
           {notification.readAt && (
-            <Typography variant="caption" display="block" gutterBottom>
+            <div  display="block" gutterBottom>
               Read at: {new Date(notification.readAt).toLocaleString()}
-            </Typography>
+            </div>
           )}
-        </Box>
+        </div>
       </Collapse>
-
       {/* Action Menu */}
       <Menu
         anchorEl={menuAnchorEl}
@@ -407,31 +309,28 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         <MenuItem onClick={handleToggleRead}>
           {notification.status === 'unread' ? (
             <>
-              <ReadIcon sx={{ mr: 1 }} />
+              <ReadIcon className="" />
               Mark as read
             </>
           ) : (
             <>
-              <UnreadIcon sx={{ mr: 1 }} />
+              <UnreadIcon className="" />
               Mark as unread
             </>
           )}
         </MenuItem>
-
         {notification.data.actionUrl && (
           <MenuItem onClick={handleClick}>
-            <OpenIcon sx={{ mr: 1 }} />
+            <OpenIcon className="" />
             Open
           </MenuItem>
         )}
-
         <MenuItem onClick={handleDismiss}>
-          <DismissIcon sx={{ mr: 1 }} />
+          <DismissIcon className="" />
           Dismiss
         </MenuItem>
       </Menu>
     </>
   );
 };
-
 export default NotificationItem;

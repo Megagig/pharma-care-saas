@@ -1,38 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  CircularProgress,
-  Divider,
-  FormControl,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  Typography,
-  Alert,
-  Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from '@mui/material';
-import {
-  Analytics as AnalyticsIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  Refresh as RefreshIcon,
-  People as PeopleIcon,
-  Storage as StorageIcon,
-  Timeline as TimelineIcon,
-} from '@mui/icons-material';
-import { adminService } from '../../services/adminService';
-import { useUIStore } from '../../stores';
+
+import { Button } from '@/components/ui/button';
+
+import { Label } from '@/components/ui/label';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { CardHeader } from '@/components/ui/card';
+
+import { Select } from '@/components/ui/select';
+
+import { Spinner } from '@/components/ui/spinner';
+
+import { Alert } from '@/components/ui/alert';
+
+import { Separator } from '@/components/ui/separator';
 
 interface UsageData {
   period: string;
@@ -44,7 +28,6 @@ interface UsageData {
   apiCalls: number;
   storageUsed: number;
 }
-
 interface UsageMetrics {
   currentPeriod: UsageData;
   previousPeriod: UsageData;
@@ -56,7 +39,6 @@ interface UsageMetrics {
     apiCalls: number;
   };
 }
-
 const UsageMonitoring: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [usageMetrics, setUsageMetrics] = useState<UsageMetrics | null>(null);
@@ -64,14 +46,11 @@ const UsageMonitoring: React.FC = () => {
     'month'
   );
   const [error, setError] = useState<string | null>(null);
-
   const addNotification = useUIStore((state) => state.addNotification);
-
   const loadUsageData = async () => {
     try {
       setLoading(true);
       setError(null);
-
       // In a real implementation, this would call the adminService
       // For now, we'll mock the data structure
       const mockMetrics: UsageMetrics = {
@@ -103,31 +82,26 @@ const UsageMonitoring: React.FC = () => {
           apiCalls: 13.6,
         },
       };
-
       setUsageMetrics(mockMetrics);
     } catch (err) {
       setError('Failed to load usage data');
-      addNotification({
+      addNotification({ 
         type: 'error',
         title: 'Error',
-        message: 'Failed to load usage monitoring data',
+        message: 'Failed to load usage monitoring data'}
       });
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     loadUsageData();
   }, [period]);
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
-      currency: 'NGN',
-    }).format(amount);
+      currency: 'NGN', }.format(amount);
   };
-
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1) + 'M';
@@ -137,66 +111,56 @@ const UsageMonitoring: React.FC = () => {
     }
     return num.toString();
   };
-
   const getGrowthIcon = (value: number) => {
     if (value > 0) {
       return (
-        <TrendingUpIcon sx={{ color: 'success.main', fontSize: '1rem' }} />
+        <TrendingUpIcon className="" />
       );
     } else if (value < 0) {
       return (
-        <TrendingDownIcon sx={{ color: 'error.main', fontSize: '1rem' }} />
+        <TrendingDownIcon className="" />
       );
     }
     return null;
   };
-
   const getGrowthColor = (value: number) => {
     if (value > 0) return 'success.main';
     if (value < 0) return 'error.main';
     return 'text.primary';
   };
-
   if (loading) {
     return (
-      <Box
+      <div
         display="flex"
         justifyContent="center"
         alignItems="center"
         minHeight="200px"
       >
-        <CircularProgress />
-      </Box>
+        <Spinner />
+      </div>
     );
   }
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
+      <Alert severity="error" className="">
         {error}
       </Alert>
     );
   }
-
   return (
-    <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-        }}
+    <div>
+      <div
+        className=""
       >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <AnalyticsIcon sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h5" component="h1">
+        <div className="">
+          <AnalyticsIcon className="" />
+          <div  component="h1">
             Usage Monitoring & Analytics
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Period</InputLabel>
+          </div>
+        </div>
+        <div className="">
+          <div size="small" className="">
+            <Label>Period</Label>
             <Select
               value={period}
               label="Period"
@@ -207,212 +171,187 @@ const UsageMonitoring: React.FC = () => {
               <MenuItem value="month">This Month</MenuItem>
               <MenuItem value="year">This Year</MenuItem>
             </Select>
-          </FormControl>
+          </div>
           <Button
-            variant="outlined"
+            
             startIcon={<RefreshIcon />}
             onClick={loadUsageData}
           >
             Refresh
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Usage Metrics */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={2.4}>
+      <div container spacing={3} className="">
+        <div item xs={12} sm={6} md={2.4}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <PeopleIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="body2" color="textSecondary">
+              <div className="">
+                <PeopleIcon className="" />
+                <div  color="textSecondary">
                   Total Users
-                </Typography>
-              </Box>
-              <Typography variant="h4" gutterBottom>
+                </div>
+              </div>
+              <div  gutterBottom>
                 {usageMetrics?.currentPeriod.users.toLocaleString() || '0'}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              </div>
+              <div className="">
                 {getGrowthIcon(usageMetrics?.growth.users || 0)}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: getGrowthColor(usageMetrics?.growth.users || 0),
-                    ml: 0.5,
-                  }}
+                <div
+                  
+                  className=""
                 >
                   {usageMetrics?.growth.users.toFixed(1) || '0'}%
-                </Typography>
-                <Typography
-                  variant="body2"
+                </div>
+                <div
+                  
                   color="textSecondary"
-                  sx={{ ml: 0.5 }}
+                  className=""
                 >
                   vs {usageMetrics?.previousPeriod.period}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
+        </div>
+        <div item xs={12} sm={6} md={2.4}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <PeopleIcon sx={{ mr: 1, color: 'success.main' }} />
-                <Typography variant="body2" color="textSecondary">
+              <div className="">
+                <PeopleIcon className="" />
+                <div  color="textSecondary">
                   Active Users
-                </Typography>
-              </Box>
-              <Typography variant="h4" gutterBottom>
+                </div>
+              </div>
+              <div  gutterBottom>
                 {usageMetrics?.currentPeriod.activeUsers.toLocaleString() ||
                   '0'}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              </div>
+              <div className="">
                 {getGrowthIcon(usageMetrics?.growth.activeUsers || 0)}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: getGrowthColor(
-                      usageMetrics?.growth.activeUsers || 0
-                    ),
-                    ml: 0.5,
-                  }}
+                <div
+                  
+                  className=""
                 >
                   {usageMetrics?.growth.activeUsers.toFixed(1) || '0'}%
-                </Typography>
-                <Typography
-                  variant="body2"
+                </div>
+                <div
+                  
                   color="textSecondary"
-                  sx={{ ml: 0.5 }}
+                  className=""
                 >
                   vs {usageMetrics?.previousPeriod.period}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
+        </div>
+        <div item xs={12} sm={6} md={2.4}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <StorageIcon sx={{ mr: 1, color: 'info.main' }} />
-                <Typography variant="body2" color="textSecondary">
+              <div className="">
+                <StorageIcon className="" />
+                <div  color="textSecondary">
                   Subscriptions
-                </Typography>
-              </Box>
-              <Typography variant="h4" gutterBottom>
+                </div>
+              </div>
+              <div  gutterBottom>
                 {usageMetrics?.currentPeriod.subscriptions.toLocaleString() ||
                   '0'}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              </div>
+              <div className="">
                 {getGrowthIcon(usageMetrics?.growth.subscriptions || 0)}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: getGrowthColor(
-                      usageMetrics?.growth.subscriptions || 0
-                    ),
-                    ml: 0.5,
-                  }}
+                <div
+                  
+                  className=""
                 >
                   {usageMetrics?.growth.subscriptions.toFixed(1) || '0'}%
-                </Typography>
-                <Typography
-                  variant="body2"
+                </div>
+                <div
+                  
                   color="textSecondary"
-                  sx={{ ml: 0.5 }}
+                  className=""
                 >
                   vs {usageMetrics?.previousPeriod.period}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
+        </div>
+        <div item xs={12} sm={6} md={2.4}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <TimelineIcon sx={{ mr: 1, color: 'warning.main' }} />
-                <Typography variant="body2" color="textSecondary">
+              <div className="">
+                <TimelineIcon className="" />
+                <div  color="textSecondary">
                   Revenue
-                </Typography>
-              </Box>
-              <Typography variant="h4" gutterBottom>
+                </div>
+              </div>
+              <div  gutterBottom>
                 {formatCurrency(usageMetrics?.currentPeriod.revenue || 0)}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              </div>
+              <div className="">
                 {getGrowthIcon(usageMetrics?.growth.revenue || 0)}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: getGrowthColor(usageMetrics?.growth.revenue || 0),
-                    ml: 0.5,
-                  }}
+                <div
+                  
+                  className=""
                 >
                   {usageMetrics?.growth.revenue.toFixed(1) || '0'}%
-                </Typography>
-                <Typography
-                  variant="body2"
+                </div>
+                <div
+                  
                   color="textSecondary"
-                  sx={{ ml: 0.5 }}
+                  className=""
                 >
                   vs {usageMetrics?.previousPeriod.period}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={2.4}>
+        </div>
+        <div item xs={12} sm={6} md={2.4}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <AnalyticsIcon sx={{ mr: 1, color: 'secondary.main' }} />
-                <Typography variant="body2" color="textSecondary">
+              <div className="">
+                <AnalyticsIcon className="" />
+                <div  color="textSecondary">
                   API Calls
-                </Typography>
-              </Box>
-              <Typography variant="h4" gutterBottom>
+                </div>
+              </div>
+              <div  gutterBottom>
                 {formatNumber(usageMetrics?.currentPeriod.apiCalls || 0)}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              </div>
+              <div className="">
                 {getGrowthIcon(usageMetrics?.growth.apiCalls || 0)}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: getGrowthColor(usageMetrics?.growth.apiCalls || 0),
-                    ml: 0.5,
-                  }}
+                <div
+                  
+                  className=""
                 >
                   {usageMetrics?.growth.apiCalls.toFixed(1) || '0'}%
-                </Typography>
-                <Typography
-                  variant="body2"
+                </div>
+                <div
+                  
                   color="textSecondary"
-                  sx={{ ml: 0.5 }}
+                  className=""
                 >
                   vs {usageMetrics?.previousPeriod.period}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Detailed Usage Table */}
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
+      <div container spacing={3}>
+        <div item xs={12}>
           <Card>
             <CardHeader
               title="Detailed Usage Statistics"
               subheader="Comprehensive breakdown of system usage"
             />
-            <Divider />
+            <Separator />
             <CardContent>
-              <TableContainer component={Paper}>
+              <TableContainer >
                 <Table>
                   <TableHead>
                     <TableRow>
@@ -438,26 +377,17 @@ const UsageMonitoring: React.FC = () => {
                         {usageMetrics?.previousPeriod.users.toLocaleString()}
                       </TableCell>
                       <TableCell align="right">
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                          }}
+                        <div
+                          className=""
                         >
                           {getGrowthIcon(usageMetrics?.growth.users || 0)}
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: getGrowthColor(
-                                usageMetrics?.growth.users || 0
-                              ),
-                              ml: 0.5,
-                            }}
+                          <div
+                            
+                            className=""
                           >
                             {usageMetrics?.growth.users.toFixed(1)}%
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                     <TableRow>
@@ -471,26 +401,17 @@ const UsageMonitoring: React.FC = () => {
                         {usageMetrics?.previousPeriod.activeUsers.toLocaleString()}
                       </TableCell>
                       <TableCell align="right">
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                          }}
+                        <div
+                          className=""
                         >
                           {getGrowthIcon(usageMetrics?.growth.activeUsers || 0)}
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: getGrowthColor(
-                                usageMetrics?.growth.activeUsers || 0
-                              ),
-                              ml: 0.5,
-                            }}
+                          <div
+                            
+                            className=""
                           >
                             {usageMetrics?.growth.activeUsers.toFixed(1)}%
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                     <TableRow>
@@ -504,28 +425,19 @@ const UsageMonitoring: React.FC = () => {
                         {usageMetrics?.previousPeriod.subscriptions.toLocaleString()}
                       </TableCell>
                       <TableCell align="right">
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                          }}
+                        <div
+                          className=""
                         >
                           {getGrowthIcon(
                             usageMetrics?.growth.subscriptions || 0
                           )}
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: getGrowthColor(
-                                usageMetrics?.growth.subscriptions || 0
-                              ),
-                              ml: 0.5,
-                            }}
+                          <div
+                            
+                            className=""
                           >
                             {usageMetrics?.growth.subscriptions.toFixed(1)}%
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                     <TableRow>
@@ -539,12 +451,8 @@ const UsageMonitoring: React.FC = () => {
                         {usageMetrics?.previousPeriod.activeSubscriptions.toLocaleString()}
                       </TableCell>
                       <TableCell align="right">
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                          }}
+                        <div
+                          className=""
                         >
                           {getGrowthIcon(
                             (((usageMetrics?.currentPeriod
@@ -555,20 +463,9 @@ const UsageMonitoring: React.FC = () => {
                                 .activeSubscriptions || 1)) *
                               100
                           )}
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: getGrowthColor(
-                                (((usageMetrics?.currentPeriod
-                                  .activeSubscriptions || 0) -
-                                  (usageMetrics?.previousPeriod
-                                    .activeSubscriptions || 0)) /
-                                  (usageMetrics?.previousPeriod
-                                    .activeSubscriptions || 1)) *
-                                  100
-                              ),
-                              ml: 0.5,
-                            }}
+                          <div
+                            
+                            className=""
                           >
                             {(
                               (((usageMetrics?.currentPeriod
@@ -580,8 +477,8 @@ const UsageMonitoring: React.FC = () => {
                               100
                             ).toFixed(1)}
                             %
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                     <TableRow>
@@ -599,26 +496,17 @@ const UsageMonitoring: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell align="right">
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                          }}
+                        <div
+                          className=""
                         >
                           {getGrowthIcon(usageMetrics?.growth.revenue || 0)}
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: getGrowthColor(
-                                usageMetrics?.growth.revenue || 0
-                              ),
-                              ml: 0.5,
-                            }}
+                          <div
+                            
+                            className=""
                           >
                             {usageMetrics?.growth.revenue.toFixed(1)}%
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                     <TableRow>
@@ -636,26 +524,17 @@ const UsageMonitoring: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell align="right">
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                          }}
+                        <div
+                          className=""
                         >
                           {getGrowthIcon(usageMetrics?.growth.apiCalls || 0)}
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: getGrowthColor(
-                                usageMetrics?.growth.apiCalls || 0
-                              ),
-                              ml: 0.5,
-                            }}
+                          <div
+                            
+                            className=""
                           >
                             {usageMetrics?.growth.apiCalls.toFixed(1)}%
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                     <TableRow>
@@ -669,12 +548,8 @@ const UsageMonitoring: React.FC = () => {
                         {usageMetrics?.previousPeriod.storageUsed.toLocaleString()}
                       </TableCell>
                       <TableCell align="right">
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                          }}
+                        <div
+                          className=""
                         >
                           {getGrowthIcon(
                             (((usageMetrics?.currentPeriod.storageUsed || 0) -
@@ -682,20 +557,9 @@ const UsageMonitoring: React.FC = () => {
                               (usageMetrics?.previousPeriod.storageUsed || 1)) *
                               100
                           )}
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: getGrowthColor(
-                                (((usageMetrics?.currentPeriod.storageUsed ||
-                                  0) -
-                                  (usageMetrics?.previousPeriod.storageUsed ||
-                                    0)) /
-                                  (usageMetrics?.previousPeriod.storageUsed ||
-                                    1)) *
-                                  100
-                              ),
-                              ml: 0.5,
-                            }}
+                          <div
+                            
+                            className=""
                           >
                             {(
                               (((usageMetrics?.currentPeriod.storageUsed || 0) -
@@ -706,8 +570,8 @@ const UsageMonitoring: React.FC = () => {
                               100
                             ).toFixed(1)}
                             %
-                          </Typography>
-                        </Box>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -715,10 +579,9 @@ const UsageMonitoring: React.FC = () => {
               </TableContainer>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 };
-
 export default UsageMonitoring;

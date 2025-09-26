@@ -1,10 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
-import {
-  errorHandlingService,
-  AppError,
-} from '../services/errorHandlingService';
-
 // Enhanced error types specific to clinical notes
 export interface ClinicalNoteError extends AppError {
   context: 'clinical-notes';
@@ -267,14 +261,12 @@ export const useClinicalNotesErrorHandling = () => {
       case 'medium':
         toast(getMessage(), {
           ...toastOptions,
-          icon: '⚠️',
-        });
+          icon: '⚠️'}
         break;
       case 'low':
         toast(getMessage(), {
           ...toastOptions,
-          icon: 'ℹ️',
-        });
+          icon: 'ℹ️'}
         break;
     }
   };

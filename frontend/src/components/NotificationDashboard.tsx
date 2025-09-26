@@ -1,60 +1,16 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  Chip,
-  Button,
-  IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControlLabel,
-  Switch,
-  Divider,
-  Alert,
-  CircularProgress,
-  Tooltip,
-  Badge,
-} from '@mui/material';
-import {
-  Notifications as NotificationsIcon,
-  NotificationsActive as NotificationsActiveIcon,
-  NotificationsOff as NotificationsOffIcon,
-  Email as EmailIcon,
-  Sms as SmsIcon,
-  Refresh as RefreshIcon,
-  Settings as SettingsIcon,
-  TrendingUp as TrendingUpIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Schedule as ScheduleIcon,
-} from '@mui/icons-material';
-import { format } from 'date-fns';
-import { useManualLabNotifications } from '../hooks/useManualLabNotifications';
 import CriticalAlertBanner from './CriticalAlertBanner';
+
+import { Button, Card, CardContent, Badge, Dialog, DialogContent, DialogTitle, Tooltip, Spinner, Alert, Switch, Separator } from '@/components/ui/button';
 
 interface NotificationDashboardProps {
   onViewOrder?: (orderId: string) => void;
   onScheduleReferral?: (alert: any) => void;
   onCreateCarePlan?: (alert: any) => void;
 }
-
-const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
+const NotificationDashboard: React.FC<NotificationDashboardProps> = ({ 
   onViewOrder,
   onScheduleReferral,
-  onCreateCarePlan,
+  onCreateCarePlan
 }) => {
   const {
     alerts,
@@ -76,12 +32,10 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
     enablePolling,
     disablePolling,
   } = useManualLabNotifications();
-
   const [settingsDialog, setSettingsDialog] = useState(false);
   const [testingNotification, setTestingNotification] = useState<
     'email' | 'sms' | null
   >(null);
-
   const handleTestNotification = async (type: 'email' | 'sms') => {
     setTestingNotification(type);
     try {
@@ -90,11 +44,9 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
       setTestingNotification(null);
     }
   };
-
   const handlePreferenceChange = async (key: string, value: boolean) => {
     await updatePreferences({ [key]: value });
   };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'delivered':
@@ -107,7 +59,6 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
         return <ScheduleIcon color="info" />;
     }
   };
-
   const getChannelIcon = (channel: string) => {
     switch (channel) {
       case 'email':
@@ -118,50 +69,47 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
         return <NotificationsIcon />;
     }
   };
-
   if (alertsLoading || preferencesLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" p={4}>
-        <CircularProgress />
-        <Typography variant="body1" sx={{ ml: 2 }}>
+      <div display="flex" justifyContent="center" alignItems="center" p={4}>
+        <Spinner />
+        <div  className="">
           Loading notifications...
-        </Typography>
-      </Box>
+        </div>
+      </div>
     );
   }
-
   return (
-    <Box sx={{ p: 3 }}>
+    <div className="">
       {/* Header */}
-      <Box
+      <div
         display="flex"
         justifyContent="space-between"
         alignItems="center"
         mb={3}
       >
-        <Box display="flex" alignItems="center" gap={2}>
+        <div display="flex" alignItems="center" gap={2}>
           <Badge badgeContent={criticalAlertsCount} color="error">
             <NotificationsActiveIcon
               color={hasCriticalAlerts ? 'error' : 'primary'}
             />
           </Badge>
-          <Typography variant="h4" component="h1">
+          <div  component="h1">
             Notification Center
-          </Typography>
+          </div>
           {!notificationsEnabled && (
             <Chip
               icon={<NotificationsOffIcon />}
               label="Notifications Disabled"
               color="warning"
-              variant="outlined"
+              
             />
           )}
-        </Box>
-
-        <Box display="flex" gap={1}>
+        </div>
+        <div display="flex" gap={1}>
           <Tooltip
             title={
-              pollingEnabled ? 'Disable auto-refresh' : 'Enable auto-refresh'
+              pollingEnabled ? 'Disable auto-refresh' : 'Enable auto-refresh'}
             }
           >
             <IconButton
@@ -177,90 +125,85 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
             </IconButton>
           </Tooltip>
           <Button
-            variant="outlined"
+            
             startIcon={<SettingsIcon />}
             onClick={() => setSettingsDialog(true)}
           >
             Settings
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      <div container spacing={3} className="">
+        <div item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" gap={2}>
+              <div display="flex" alignItems="center" gap={2}>
                 <ErrorIcon color="error" />
-                <Box>
-                  <Typography variant="h4" color="error">
+                <div>
+                  <div  color="error">
                     {criticalAlertsCount}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Critical Alerts
-                  </Typography>
-                </Box>
-              </Box>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" gap={2}>
+              <div display="flex" alignItems="center" gap={2}>
                 <WarningIcon color="warning" />
-                <Box>
-                  <Typography variant="h4" color="warning.main">
+                <div>
+                  <div  color="warning.main">
                     {unacknowledgedAlertsCount}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Unacknowledged
-                  </Typography>
-                </Box>
-              </Box>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" gap={2}>
+              <div display="flex" alignItems="center" gap={2}>
                 <CheckCircleIcon color="success" />
-                <Box>
-                  <Typography variant="h4" color="success.main">
+                <div>
+                  <div  color="success.main">
                     {stats?.sent || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Delivered Today
-                  </Typography>
-                </Box>
-              </Box>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" gap={2}>
+              <div display="flex" alignItems="center" gap={2}>
                 <TrendingUpIcon color="info" />
-                <Box>
-                  <Typography variant="h4" color="info.main">
+                <div>
+                  <div  color="info.main">
                     {stats?.pending || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Pending
-                  </Typography>
-                </Box>
-              </Box>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
-
+        </div>
+      </div>
       {/* Critical Alerts Banner */}
       {alerts.length > 0 && (
         <CriticalAlertBanner
@@ -274,16 +217,15 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
           currentPreferences={preferences}
         />
       )}
-
       {/* Notification Statistics */}
       {stats && (
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={6}>
+        <div container spacing={3} className="">
+          <div item xs={12} md={6}>
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
+                <div  gutterBottom>
                   Notifications by Type
-                </Typography>
+                </div>
                 <TableContainer>
                   <Table size="small">
                     <TableHead>
@@ -308,14 +250,13 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
                 </TableContainer>
               </CardContent>
             </Card>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
+          </div>
+          <div item xs={12} md={6}>
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
+                <div  gutterBottom>
                   Delivery Channels
-                </Typography>
+                </div>
                 <TableContainer>
                   <Table size="small">
                     <TableHead>
@@ -329,10 +270,10 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
                         ([channel, count]) => (
                           <TableRow key={channel}>
                             <TableCell>
-                              <Box display="flex" alignItems="center" gap={1}>
+                              <div display="flex" alignItems="center" gap={1}>
                                 {getChannelIcon(channel)}
                                 {channel.toUpperCase()}
-                              </Box>
+                              </div>
                             </TableCell>
                             <TableCell align="right">{count}</TableCell>
                           </TableRow>
@@ -343,10 +284,9 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
                 </TableContainer>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </div>
+        </div>
       )}
-
       {/* Settings Dialog */}
       <Dialog
         open={settingsDialog}
@@ -355,22 +295,22 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
         fullWidth
       >
         <DialogTitle>
-          <Box display="flex" alignItems="center" gap={1}>
+          <div display="flex" alignItems="center" gap={1}>
             <SettingsIcon />
             Notification Settings
-          </Box>
+          </div>
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ py: 2 }}>
-            <Typography variant="h6" gutterBottom>
+          <div className="">
+            <div  gutterBottom>
               Alert Types
-            </Typography>
+            </div>
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences?.criticalAlerts !== false}
                   onChange={(e) =>
-                    handlePreferenceChange('criticalAlerts', e.target.checked)
+                    handlePreferenceChange('criticalAlerts', e.target.checked)}
                   }
                 />
               }
@@ -378,13 +318,13 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
             />
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences?.resultNotifications !== false}
                   onChange={(e) =>
                     handlePreferenceChange(
                       'resultNotifications',
                       e.target.checked
-                    )
+                    )}
                   }
                 />
               }
@@ -392,27 +332,25 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
             />
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences?.orderReminders !== false}
                   onChange={(e) =>
-                    handlePreferenceChange('orderReminders', e.target.checked)
+                    handlePreferenceChange('orderReminders', e.target.checked)}
                   }
                 />
               }
               label="Order Reminders"
             />
-
-            <Divider sx={{ my: 2 }} />
-
-            <Typography variant="h6" gutterBottom>
+            <Separator className="" />
+            <div  gutterBottom>
               Delivery Channels
-            </Typography>
+            </div>
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences?.email !== false}
                   onChange={(e) =>
-                    handlePreferenceChange('email', e.target.checked)
+                    handlePreferenceChange('email', e.target.checked)}
                   }
                 />
               }
@@ -420,10 +358,10 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
             />
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences?.sms === true}
                   onChange={(e) =>
-                    handlePreferenceChange('sms', e.target.checked)
+                    handlePreferenceChange('sms', e.target.checked)}
                   }
                 />
               }
@@ -431,28 +369,26 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
             />
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={preferences?.push === true}
                   onChange={(e) =>
-                    handlePreferenceChange('push', e.target.checked)
+                    handlePreferenceChange('push', e.target.checked)}
                   }
                   disabled
                 />
               }
               label="Push Notifications (Coming Soon)"
             />
-
-            <Divider sx={{ my: 2 }} />
-
-            <Typography variant="h6" gutterBottom>
+            <Separator className="" />
+            <div  gutterBottom>
               Test Notifications
-            </Typography>
-            <Box display="flex" gap={2}>
+            </div>
+            <div display="flex" gap={2}>
               <Button
-                variant="outlined"
+                
                 startIcon={
-                  testingNotification === 'email' ? (
-                    <CircularProgress size={16} />
+                  testingNotification === 'email' ? (}
+                    <Spinner size={16} />
                   ) : (
                     <EmailIcon />
                   )
@@ -463,10 +399,10 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
                 Test Email
               </Button>
               <Button
-                variant="outlined"
+                
                 startIcon={
-                  testingNotification === 'sms' ? (
-                    <CircularProgress size={16} />
+                  testingNotification === 'sms' ? (}
+                    <Spinner size={16} />
                   ) : (
                     <SmsIcon />
                   )
@@ -476,21 +412,19 @@ const NotificationDashboard: React.FC<NotificationDashboardProps> = ({
               >
                 Test SMS
               </Button>
-            </Box>
-
-            <Alert severity="info" sx={{ mt: 2 }}>
+            </div>
+            <Alert severity="info" className="">
               Critical alerts will always be delivered via email regardless of
               preferences. SMS notifications require a valid phone number in
               your profile.
             </Alert>
-          </Box>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSettingsDialog(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
-
 export default NotificationDashboard;

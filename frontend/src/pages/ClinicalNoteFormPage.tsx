@@ -1,30 +1,15 @@
 import React from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Breadcrumbs,
-  Link,
-  Button,
-  Paper,
-  Container,
-  Fade,
-} from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  Home as HomeIcon,
-  Note as NoteIcon,
-  Add as AddIcon,
-} from '@mui/icons-material';
-import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate, useLocation, useParams, Link } from 'react-router-dom';
+import { Home as HomeIcon, FileText as NoteIcon, Plus as AddIcon, ArrowLeft as ArrowBackIcon } from 'lucide-react';
+
 import ClinicalNoteForm from '../components/ClinicalNoteForm';
 import ClinicalNotesUXEnhancer from '../components/ClinicalNotesUXEnhancer';
+import { Button } from '@/components/ui/button';
 
 const ClinicalNoteFormPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
-
   const noteId = params.id;
   const isEditing = location.pathname.includes('/edit');
   const patientId = location.state?.patientId || params.patientId;
@@ -49,7 +34,7 @@ const ClinicalNoteFormPage: React.FC = () => {
     });
   };
 
-  const handleNoteUpdated = (note: unknown) => {
+  const handleNoteUpdated = (note: any) => {
     navigate(`/notes/${note._id}`, {
       replace: true,
       state: {
@@ -65,12 +50,12 @@ const ClinicalNoteFormPage: React.FC = () => {
       {
         label: 'Dashboard',
         path: '/dashboard',
-        icon: <HomeIcon fontSize="small" />,
+        icon: <HomeIcon className="h-4 w-4" />,
       },
       {
         label: 'Clinical Notes',
         path: '/notes',
-        icon: <NoteIcon fontSize="small" />,
+        icon: <NoteIcon className="h-4 w-4" />,
       },
     ];
 
@@ -79,19 +64,19 @@ const ClinicalNoteFormPage: React.FC = () => {
         {
           label: 'Note Details',
           path: `/notes/${noteId}`,
-          icon: <NoteIcon fontSize="small" />,
+          icon: <NoteIcon className="h-4 w-4" />,
         },
         {
           label: 'Edit',
           path: `/notes/${noteId}/edit`,
-          icon: <AddIcon fontSize="small" />,
+          icon: <AddIcon className="h-4 w-4" />,
         }
       );
     } else {
       breadcrumbs.push({
         label: 'New Note',
         path: '/notes/new',
-        icon: <AddIcon fontSize="small" />,
+        icon: <AddIcon className="h-4 w-4" />,
       });
     }
 
@@ -101,124 +86,69 @@ const ClinicalNoteFormPage: React.FC = () => {
   // Render breadcrumbs
   const renderBreadcrumbs = () => {
     const breadcrumbs = getBreadcrumbs();
-
     return (
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        sx={{
-          mb: 2,
-          '& .MuiBreadcrumbs-separator': {
-            mx: 1,
-          },
-        }}
-      >
+      <div className="flex items-center space-x-2 text-sm mb-4" aria-label="breadcrumb">
         {breadcrumbs.map((crumb, index) => {
           const isLast = index === breadcrumbs.length - 1;
-
           if (isLast) {
             return (
-              <Box
-                key={crumb.path}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  color: 'text.primary',
-                  fontWeight: 500,
-                }}
-              >
+              <div key={crumb.path} className="flex items-center text-gray-500">
                 {crumb.icon}
-                <Typography variant="body2" color="textPrimary">
-                  {crumb.label}
-                </Typography>
-              </Box>
+                <span className="ml-1">{crumb.label}</span>
+              </div>
             );
           }
-
           return (
             <Link
               key={crumb.path}
-              component={RouterLink}
               to={crumb.path}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                color: 'text.secondary',
-                textDecoration: 'none',
-                '&:hover': {
-                  color: 'primary.main',
-                  textDecoration: 'underline',
-                },
-              }}
+              className="flex items-center text-blue-600 hover:text-blue-800"
             >
               {crumb.icon}
-              <Typography variant="body2">{crumb.label}</Typography>
+              <span className="ml-1">{crumb.label}</span>
             </Link>
           );
         })}
-      </Breadcrumbs>
+      </div>
     );
   };
 
   return (
     <ClinicalNotesUXEnhancer context="clinical-note-form-page">
-      <Container
-        maxWidth="xl"
-        sx={{
-          py: 3,
-          px: { xs: 2, sm: 3 },
-          minHeight: 'calc(100vh - 120px)',
-        }}
-      >
+      <div className="container mx-auto p-4 max-w-6xl">
         {/* Page Header */}
-        <Box sx={{ mb: 3 }}>
+        <div className="mb-6">
           {renderBreadcrumbs()}
-
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 2,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
               <Button
-                variant="outlined"
-                startIcon={<ArrowBackIcon />}
+                variant="ghost"
                 onClick={handleBackNavigation}
                 size="sm"
+                className="flex items-center"
               >
+                <ArrowBackIcon className="h-4 w-4 mr-1" />
                 Back
               </Button>
-
-              <Typography
-                variant="h4"
-                component="h1"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.primary',
-                }}
-              >
+              <h1 className="text-2xl font-bold ml-4">
                 {isEditing ? 'Edit Clinical Note' : 'Create New Clinical Note'}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
+              </h1>
+            </div>
+          </div>
+        </div>
 
         {/* Form Content */}
-        <Fade in timeout={300}>
-          <Paper elevation={1} sx={{ p: 3 }}>
+        <div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
             <ClinicalNoteForm
               noteId={noteId}
               patientId={patientId}
               onSave={isEditing ? handleNoteUpdated : handleNoteCreated}
               onCancel={handleBackNavigation}
             />
-          </Paper>
-        </Fade>
-      </Container>
+          </div>
+        </div>
+      </div>
     </ClinicalNotesUXEnhancer>
   );
 };

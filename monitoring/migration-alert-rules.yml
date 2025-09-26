@@ -1,0 +1,259 @@
+# Migration-specific alert rules
+
+groups:
+  - name: migration-performance
+    rules:
+      # Page load time alerts
+      - alert: SlowPageLoad
+        expr: page_load_time_p95 > 5000
+        for: 5m
+        labels:
+          severity: warning
+          component: frontend
+        annotations:
+          summary: "Page load time is too slow"
+          description: "95th percentile page load time is {{ $value }}ms, which exceeds the 5000ms threshold"
+
+      - alert: CriticalPageLoad
+        expr: page_load_time_p95 > 10000
+        for: 2m
+        labels:
+          severity: critical
+          component: frontend
+        annotations:
+          summary: "Critical page load performance"
+          description: "95th percentile page load time is {{ $value }}ms, which is critically slow"
+
+      # Theme toggle performance
+      - alert: SlowThemeToggle
+        expr: theme_toggle_time_avg > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: theme
+        annotations:
+          summary: "Theme toggle is slow"
+          description: "Average theme toggle time is {{ $value }}ms, exceeding 100ms threshold"
+
+      - alert: CriticalThemeToggle
+        expr: theme_toggle_time_avg > 500
+        for: 2m
+        labels:
+          severity: critical
+          component: theme
+        annotations:
+          summary: "Critical theme toggle performance"
+          description: "Average theme toggle time is {{ $value }}ms, which is critically slow"
+
+      # Bundle size alerts
+      - alert: BundleSizeIncrease
+        expr: bundle_size_bytes > 2000000
+        for: 1m
+        labels:
+          severity: warning
+          component: build
+        annotations:
+          summary: "Bundle size has increased"
+          description: "Bundle size is {{ $value }} bytes, exceeding 2MB threshold"
+
+      - alert: CriticalBundleSize
+        expr: bundle_size_bytes > 3000000
+        for: 1m
+        labels:
+          severity: critical
+          component: build
+        annotations:
+          summary: "Critical bundle size increase"
+          description: "Bundle size is {{ $value }} bytes, which is critically large"
+
+  - name: migration-errors
+    rules:
+      # Error rate alerts
+      - alert: HighErrorRate
+        expr: error_rate_percent > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }}%, exceeding 5% threshold"
+
+      - alert: CriticalErrorRate
+        expr: error_rate_percent > 10
+        for: 2m
+        labels:
+          severity: critical
+          component: application
+        annotations:
+          summary: "Critical error rate"
+          description: "Error rate is {{ $value }}%, which is critically high"
+
+      # JavaScript errors
+      - alert: JavaScriptErrors
+        expr: js_error_rate > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: frontend
+        annotations:
+          summary: "JavaScript errors detected"
+          description: "JavaScript error rate is {{ $value }} errors/minute"
+
+      # Component-specific errors
+      - alert: ComponentErrors
+        expr: component_error_rate{component!=""} > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: "{{ $labels.component }}"
+        annotations:
+          summary: "Component errors detected"
+          description: "Component {{ $labels.component }} has {{ $value }} errors/minute"
+
+  - name: migration-resources
+    rules:
+      # Memory usage alerts
+      - alert: HighMemoryUsage
+        expr: memory_usage_percent > 85
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}%, exceeding 85% threshold"
+
+      - alert: CriticalMemoryUsage
+        expr: memory_usage_percent > 95
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Critical memory usage"
+          description: "Memory usage is {{ $value }}%, which is critically high"
+
+      # CPU usage alerts
+      - alert: HighCPUUsage
+        expr: cpu_usage_percent > 80
+        for: 15m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%, exceeding 80% threshold"
+
+      # Disk usage alerts
+      - alert: HighDiskUsage
+        expr: disk_usage_percent > 85
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is {{ $value }}%, exceeding 85% threshold"
+
+  - name: migration-user-experience
+    rules:
+      # Core Web Vitals
+      - alert: PoorLCP
+        expr: largest_contentful_paint_p75 > 4000
+        for: 10m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "Poor Largest Contentful Paint"
+          description: "75th percentile LCP is {{ $value }}ms, exceeding 4000ms threshold"
+
+      - alert: PoorFID
+        expr: first_input_delay_p75 > 300
+        for: 10m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "Poor First Input Delay"
+          description: "75th percentile FID is {{ $value }}ms, exceeding 300ms threshold"
+
+      - alert: PoorCLS
+        expr: cumulative_layout_shift_p75 > 0.25
+        for: 10m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "Poor Cumulative Layout Shift"
+          description: "75th percentile CLS is {{ $value }}, exceeding 0.25 threshold"
+
+      # User engagement metrics
+      - alert: HighBounceRate
+        expr: bounce_rate_percent > 70
+        for: 30m
+        labels:
+          severity: warning
+          component: user-experience
+        annotations:
+          summary: "High bounce rate"
+          description: "Bounce rate is {{ $value }}%, which may indicate UX issues"
+
+      - alert: LowSessionDuration
+        expr: avg_session_duration_seconds < 120
+        for: 30m
+        labels:
+          severity: warning
+          component: user-experience
+        annotations:
+          summary: "Low session duration"
+          description: "Average session duration is {{ $value }} seconds, which is unusually low"
+
+  - name: migration-accessibility
+    rules:
+      # Accessibility compliance
+      - alert: AccessibilityRegression
+        expr: accessibility_score < 90
+        for: 15m
+        labels:
+          severity: warning
+          component: accessibility
+        annotations:
+          summary: "Accessibility score regression"
+          description: "Accessibility score is {{ $value }}, below 90% threshold"
+
+      # Keyboard navigation issues
+      - alert: KeyboardNavigationErrors
+        expr: keyboard_nav_errors > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: accessibility
+        annotations:
+          summary: "Keyboard navigation errors"
+          description: "{{ $value }} keyboard navigation errors detected"
+
+  - name: migration-business-metrics
+    rules:
+      # Conversion rate
+      - alert: ConversionRateDecline
+        expr: (conversion_rate_current / conversion_rate_baseline - 1) * 100 < -10
+        for: 60m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "Conversion rate decline"
+          description: "Conversion rate has declined by {{ $value }}% compared to baseline"
+
+      # User satisfaction
+      - alert: IncreasedSupportTickets
+        expr: support_tickets_rate > support_tickets_baseline * 1.5
+        for: 30m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "Increased support tickets"
+          description: "Support ticket rate is {{ $value }}, 50% above baseline"

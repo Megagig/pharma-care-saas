@@ -1,70 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-  TextField,
-  InputAdornment,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
-  IconButton,
-  Menu,
-  Alert,
-  Snackbar,
-  CircularProgress,
-  Card,
-  CardContent,
-  CardActions,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Checkbox,
-  FormControlLabel,
-  Switch,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  MoreVert as MoreVertIcon,
-  Security as SecurityIcon,
-  ContentCopy as ContentCopyIcon,
-  ExpandMore as ExpandMoreIcon,
-  AccountTree as AccountTreeIcon,
-  Group as GroupIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-} from '@mui/icons-material';
-import { useRBAC } from '../../hooks/useRBAC';
-import { rbacService } from '../../services/rbacService';
-import type {
-  Role,
-  Permission,
-  RoleFormData,
-  PermissionCategory,
-} from '../../types/rbac';
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Spinner, Alert, Switch, Accordion } from '@/components/ui/button';
 
 interface RoleManagementProps {
   onRoleSelect?: (role: Role) => void;
 }
-
 const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
   const { canAccess } = useRBAC();
-
   // State management
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -74,43 +14,37 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
-
   // Dialog states
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
-
   // Form state
-  const [roleForm, setRoleForm] = useState<RoleFormData>({
+  const [roleForm, setRoleForm] = useState<RoleFormData>({ 
     name: '',
     displayName: '',
     description: '',
     category: 'custom',
     permissions: [],
-    isActive: true,
+    isActive: true}
   });
-
   // Menu states
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-
   // Notification state
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
     severity: 'success' | 'error' | 'warning' | 'info';
-  }>({
+  }>({ 
     open: false,
     message: '',
-    severity: 'info',
+    severity: 'info'}
   });
-
   // Load initial data
   useEffect(() => {
     loadData();
   }, []);
-
   const loadData = async () => {
     try {
       setLoading(true);
@@ -118,11 +52,9 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
         rbacService.getRoles({ page: 1, limit: 100 }),
         rbacService.getPermissions({ page: 1, limit: 500 }),
       ]);
-
       if (rolesResponse.success) {
         setRoles(rolesResponse.data.roles);
       }
-
       if (permissionsResponse.success) {
         setPermissions(permissionsResponse.data.permissions);
         setPermissionCategories(permissionsResponse.data.categories);
@@ -134,47 +66,42 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
       setLoading(false);
     }
   };
-
   const showSnackbar = (
     message: string,
     severity: 'success' | 'error' | 'warning' | 'info'
   ) => {
     setSnackbar({ open: true, message, severity });
   };
-
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
-
   // Role CRUD operations
   const handleCreateRole = () => {
     setEditingRole(null);
-    setRoleForm({
+    setRoleForm({ 
       name: '',
       displayName: '',
       description: '',
       category: 'custom',
       permissions: [],
-      isActive: true,
+      isActive: true}
     });
     setRoleDialogOpen(true);
   };
-
   const handleEditRole = (role: Role) => {
     setEditingRole(role);
-    setRoleForm({
+    setRoleForm({ 
       name: role.name,
       displayName: role.displayName,
       description: role.description,
       category: role.category,
       parentRoleId: role.parentRole,
       permissions: role.permissions,
-      isActive: role.isActive,
+      isActive: role.isActive}
     });
     setRoleDialogOpen(true);
     handleMenuClose();
   };
-
   const handleSaveRole = async () => {
     try {
       if (editingRole) {
@@ -201,10 +128,8 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
       showSnackbar('Failed to save role', 'error');
     }
   };
-
   const handleDeleteRole = async () => {
     if (!roleToDelete) return;
-
     try {
       const response = await rbacService.deleteRole(roleToDelete._id);
       if (response.success) {
@@ -219,7 +144,6 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
       setRoleToDelete(null);
     }
   };
-
   const handleCloneRole = async (role: Role) => {
     try {
       const response = await rbacService.cloneRole(
@@ -236,28 +160,24 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
     }
     handleMenuClose();
   };
-
   // Menu handlers
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, role: Role) => {
     setAnchorEl(event.currentTarget);
     setSelectedRole(role);
   };
-
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedRole(null);
   };
-
   // Permission handling
   const handlePermissionToggle = (permission: string) => {
-    setRoleForm((prev) => ({
+    setRoleForm((prev) => ({ 
       ...prev,
       permissions: prev.permissions.includes(permission)
         ? prev.permissions.filter((p) => p !== permission)
-        : [...prev.permissions, permission],
+        : [...prev.permissions, permission]}
     }));
   };
-
   // Filter roles
   const filteredRoles = roles.filter((role) => {
     const matchesSearch =
@@ -265,75 +185,52 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
       role.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       role.description.toLowerCase().includes(searchTerm.toLowerCase());
-
     const matchesCategory = !categoryFilter || role.category === categoryFilter;
-
     return matchesSearch && matchesCategory;
   });
-
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: 400,
-        }}
+      <div
+        className=""
       >
-        <CircularProgress />
-      </Box>
+        <Spinner />
+      </div>
     );
   }
-
   return (
-    <Box>
+    <div>
       {/* Header */}
-      <Box
-        sx={{
-          mb: 3,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
+      <div
+        className=""
       >
-        <Typography
-          variant="h5"
-          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+        <div
+          
+          className=""
         >
           <SecurityIcon color="primary" />
           Role Management
-        </Typography>
-
+        </div>
         <Button
-          variant="contained"
+          
           startIcon={<AddIcon />}
           onClick={handleCreateRole}
           disabled={!canAccess('canCreate')}
         >
           Create Role
         </Button>
-      </Box>
-
+      </div>
       {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <TextField
+      <div className="">
+        <div className="">
+          <Input
             placeholder="Search roles..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ minWidth: 250 }}
+            
+            className=""
           />
-
-          <FormControl sx={{ minWidth: 150 }}>
-            <InputLabel>Category</InputLabel>
+          <div className="">
+            <Label>Category</Label>
             <Select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
@@ -344,38 +241,26 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
               <MenuItem value="workplace">Workplace</MenuItem>
               <MenuItem value="custom">Custom</MenuItem>
             </Select>
-          </FormControl>
-        </Box>
-      </Paper>
-
+          </div>
+        </div>
+      </div>
       {/* Roles Grid */}
-      <Grid container spacing={3}>
+      <div container spacing={3}>
         {filteredRoles.map((role) => (
-          <Grid item xs={12} md={6} lg={4} key={role._id}>
+          <div item xs={12} md={6} lg={4} key={role._id}>
             <Card
-              sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                cursor: onRoleSelect ? 'pointer' : 'default',
-                '&:hover': onRoleSelect ? { boxShadow: 4 } : {},
-              }}
+              className="" : {},
               onClick={() => onRoleSelect?.(role)}
             >
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    mb: 2,
-                  }}
+              <CardContent className="">
+                <div
+                  className=""
                 >
-                  <Box>
-                    <Typography variant="h6" gutterBottom>
+                  <div>
+                    <div  gutterBottom>
                       {role.displayName}
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                    </div>
+                    <div className="">
                       <Chip
                         label={role.category}
                         size="small"
@@ -384,71 +269,60 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
                             ? 'primary'
                             : role.category === 'workplace'
                             ? 'secondary'
-                            : 'default'
+                            : 'default'}
                         }
-                        variant="outlined"
+                        
                       />
                       {!role.isActive && (
                         <Chip
                           label="Inactive"
                           size="small"
                           color="error"
-                          variant="outlined"
+                          
                         />
                       )}
-                    </Box>
-                  </Box>
-
+                    </div>
+                  </div>
                   <IconButton
                     size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMenuOpen(e, role);
-                    }}
+                    
                     disabled={role.isSystemRole && !canAccess('canManage')}
                   >
                     <MoreVertIcon />
                   </IconButton>
-                </Box>
-
-                <Typography
-                  variant="body2"
+                </div>
+                <div
+                  
                   color="textSecondary"
-                  sx={{ mb: 2 }}
+                  className=""
                 >
                   {role.description}
-                </Typography>
-
-                <Box
-                  sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
+                </div>
+                <div
+                  className=""
                 >
                   <GroupIcon fontSize="small" color="action" />
-                  <Typography variant="caption">
+                  <div >
                     {role.permissions.length} permissions
-                  </Typography>
-                </Box>
-
+                  </div>
+                </div>
                 {role.hierarchyLevel > 0 && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <div className="">
                     <AccountTreeIcon fontSize="small" color="action" />
-                    <Typography variant="caption">
+                    <div >
                       Level {role.hierarchyLevel}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 )}
               </CardContent>
-
               <CardActions>
                 <Button
                   size="small"
                   startIcon={<EditIcon />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditRole(role);
-                  }}
+                  
                   disabled={
                     !canAccess('canUpdate') ||
-                    (role.isSystemRole && !canAccess('canManage'))
+                    (role.isSystemRole && !canAccess('canManage'))}
                   }
                 >
                   Edit
@@ -456,20 +330,16 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
                 <Button
                   size="small"
                   startIcon={<ContentCopyIcon />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCloneRole(role);
-                  }}
+                  
                   disabled={!canAccess('canCreate')}
                 >
                   Clone
                 </Button>
               </CardActions>
             </Card>
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Role Creation/Edit Dialog */}
       <Dialog
         open={roleDialogOpen}
@@ -481,63 +351,63 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
           {editingRole ? 'Edit Role' : 'Create New Role'}
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div className="">
             {/* Basic Information */}
-            <Box>
-              <Typography variant="h6" gutterBottom>
+            <div>
+              <div  gutterBottom>
                 Basic Information
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
+              </div>
+              <div container spacing={2}>
+                <div item xs={12} sm={6}>
+                  <Input
                     fullWidth
                     label="Role Name"
                     value={roleForm.name}
-                    onChange={(e) =>
+                    onChange={(e) =>}
                       setRoleForm((prev) => ({ ...prev, name: e.target.value }))
                     }
                     helperText="Internal role identifier (lowercase, no spaces)"
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
+                </div>
+                <div item xs={12} sm={6}>
+                  <Input
                     fullWidth
                     label="Display Name"
                     value={roleForm.displayName}
                     onChange={(e) =>
-                      setRoleForm((prev) => ({
-                        ...prev,
-                        displayName: e.target.value,
+                      setRoleForm((prev) => ({ 
+                        ...prev}
+                        displayName: e.target.value,}
                       }))
                     }
                     helperText="User-friendly role name"
                   />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
+                </div>
+                <div item xs={12}>
+                  <Input
                     fullWidth
                     multiline
                     rows={3}
                     label="Description"
                     value={roleForm.description}
                     onChange={(e) =>
-                      setRoleForm((prev) => ({
-                        ...prev,
-                        description: e.target.value,
+                      setRoleForm((prev) => ({ 
+                        ...prev}
+                        description: e.target.value,}
                       }))
                     }
                     helperText="Describe the role's purpose and responsibilities"
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Category</InputLabel>
+                </div>
+                <div item xs={12} sm={6}>
+                  <div fullWidth>
+                    <Label>Category</Label>
                     <Select
                       value={roleForm.category}
                       onChange={(e) =>
-                        setRoleForm((prev) => ({
-                          ...prev,
-                          category: e.target.value as any,
+                        setRoleForm((prev) => ({ 
+                          ...prev}
+                          category: e.target.value as any,}
                         }))
                       }
                       label="Category"
@@ -548,87 +418,85 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
                         <MenuItem value="system">System</MenuItem>
                       )}
                     </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                  </div>
+                </div>
+                <div item xs={12} sm={6}>
                   <FormControlLabel
                     control={
-                      <Switch
+                      <Switch}
                         checked={roleForm.isActive}
                         onChange={(e) =>
-                          setRoleForm((prev) => ({
-                            ...prev,
-                            isActive: e.target.checked,
+                          setRoleForm((prev) => ({ 
+                            ...prev}
+                            isActive: e.target.checked,}
                           }))
                         }
                       />
                     }
                     label="Active"
                   />
-                </Grid>
-              </Grid>
-            </Box>
-
+                </div>
+              </div>
+            </div>
             {/* Permissions */}
-            <Box>
-              <Typography variant="h6" gutterBottom>
+            <div>
+              <div  gutterBottom>
                 Permissions
-              </Typography>
+              </div>
               {permissionCategories.map((category) => (
                 <Accordion key={category.name}>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="subtitle1">
+                    <div >
                       {category.displayName}
                       <Chip
                         label={
                           category.permissions.filter((p) =>
                             roleForm.permissions.includes(p.action)
-                          ).length
+                          ).length}
                         }
                         size="small"
-                        sx={{ ml: 1 }}
+                        className=""
                       />
-                    </Typography>
+                    </div>
                   </AccordionSummary>
                   <AccordionDetails>
                     <List dense>
                       {category.permissions.map((permission) => (
-                        <ListItem key={permission.action} disablePadding>
-                          <ListItemIcon>
+                        <div key={permission.action} disablePadding>
+                          <div>
                             <Checkbox
                               checked={roleForm.permissions.includes(
-                                permission.action
+                                permission.action}
                               )}
                               onChange={() =>
-                                handlePermissionToggle(permission.action)
+                                handlePermissionToggle(permission.action)}
                               }
                             />
-                          </ListItemIcon>
-                          <ListItemText
+                          </div>
+                          <div
                             primary={permission.displayName}
                             secondary={permission.description}
                           />
-                        </ListItem>
+                        </div>
                       ))}
                     </List>
                   </AccordionDetails>
                 </Accordion>
               ))}
-            </Box>
-          </Box>
+            </div>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRoleDialogOpen(false)}>Cancel</Button>
           <Button
             onClick={handleSaveRole}
-            variant="contained"
+            
             disabled={!roleForm.name || !roleForm.displayName}
           >
             {editingRole ? 'Update' : 'Create'} Role
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteConfirmOpen}
@@ -636,23 +504,22 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
       >
         <DialogTitle>Delete Role</DialogTitle>
         <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
+          <Alert severity="warning" className="">
             This action cannot be undone. All users with this role will lose
             their permissions.
           </Alert>
-          <Typography>
+          <div>
             Are you sure you want to delete the role "
             {roleToDelete?.displayName}"?
-          </Typography>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteRole} color="error" variant="contained">
+          <Button onClick={handleDeleteRole} color="error" >
             Delete
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Role Action Menu */}
       <Menu
         anchorEl={anchorEl}
@@ -660,40 +527,33 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
         onClose={handleMenuClose}
       >
         <MenuItem onClick={() => selectedRole && handleEditRole(selectedRole)}>
-          <EditIcon sx={{ mr: 1 }} />
+          <EditIcon className="" />
           Edit Role
         </MenuItem>
         <MenuItem onClick={() => selectedRole && handleCloneRole(selectedRole)}>
-          <ContentCopyIcon sx={{ mr: 1 }} />
+          <ContentCopyIcon className="" />
           Clone Role
         </MenuItem>
         <MenuItem
-          onClick={() => {
-            setRoleToDelete(selectedRole);
-            setDeleteConfirmOpen(true);
-            handleMenuClose();
-          }}
+          
           disabled={selectedRole?.isSystemRole}
-          sx={{ color: 'error.main' }}
+          className=""
         >
-          <DeleteIcon sx={{ mr: 1 }} />
+          <DeleteIcon className="" />
           Delete Role
         </MenuItem>
       </Menu>
-
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
+        >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </div>
   );
 };
-
 export default RoleManagement;

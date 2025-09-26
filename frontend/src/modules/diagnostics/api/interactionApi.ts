@@ -1,10 +1,7 @@
-import { apiClient } from '../../../lib/api';
-import type {
     DrugInteraction,
     AllergyAlert,
     Contraindication,
     ApiResponse
-} from '../types';
 
 const API_BASE = '/api/interactions';
 

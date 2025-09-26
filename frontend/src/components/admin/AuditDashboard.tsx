@@ -1,46 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  Chip,
-  Button,
-  TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Paper,
-  Alert,
-  CircularProgress,
-  Tooltip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-} from '@mui/material';
-import {
-  Download as DownloadIcon,
-  Visibility as ViewIcon,
-  Warning as WarningIcon,
-  Security as SecurityIcon,
-  Assessment as ReportIcon,
-  FilterList as FilterIcon,
-  Refresh as RefreshIcon,
-} from '@mui/icons-material';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { format, subDays } from 'date-fns';
-import { auditService } from '../../services/auditService';
+import { Button, Input, Label, Card, CardContent, Dialog, DialogContent, DialogTitle, Select, Tooltip, Spinner, Alert } from '@/components/ui/button';
 
 interface AuditLog {
   _id: string;
@@ -76,7 +34,6 @@ interface AuditLog {
   errorMessage?: string;
   duration?: number;
 }
-
 interface AuditFilters {
   startDate?: Date;
   endDate?: Date;
@@ -89,13 +46,12 @@ interface AuditFilters {
   reviewId?: string;
   ipAddress?: string;
 }
-
 const AuditDashboard: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [filters, setFilters] = useState<AuditFilters>({
+  const [filters, setFilters] = useState<AuditFilters>({ 
     startDate: subDays(new Date(), 7), // Default to last 7 days
-    endDate: new Date(),
+    endDate: new Date()}
   });
   const [showFilters, setShowFilters] = useState(false);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
@@ -103,14 +59,13 @@ const AuditDashboard: React.FC = () => {
   const [exportFormat, setExportFormat] = useState<'json' | 'csv' | 'pdf'>(
     'json'
   );
-
   // Fetch audit logs
   const {
     data: auditData,
     isLoading,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery({ 
     queryKey: ['auditLogs', page, rowsPerPage, filters],
     queryFn: () =>
       auditService.getAuditLogs({
@@ -118,34 +73,29 @@ const AuditDashboard: React.FC = () => {
         limit: rowsPerPage,
         ...filters,
         startDate: filters.startDate?.toISOString(),
-        endDate: filters.endDate?.toISOString(),
-      }),
-  });
-
+        endDate: filters.endDate?.toISOString()}
+      })}
   // Fetch audit summary
-  const { data: summaryData } = useQuery({
+  const { data: summaryData } = useQuery({ 
     queryKey: ['auditSummary', filters.startDate, filters.endDate],
     queryFn: () =>
       auditService.getAuditSummary({
         startDate: filters.startDate?.toISOString(),
-        endDate: filters.endDate?.toISOString(),
-      }),
-  });
-
+        endDate: filters.endDate?.toISOString()}
+      })}
   // Fetch filter options
-  const { data: filterOptions } = useQuery({
+  const { data: filterOptions } = useQuery({ 
     queryKey: ['auditActions'],
-    queryFn: () => auditService.getAuditActions(),
+    queryFn: () => auditService.getAuditActions()}
   });
-
   // Export mutation
-  const exportMutation = useMutation({
+  const exportMutation = useMutation({ 
     mutationFn: (exportData: Record<string, unknown>) =>
       auditService.exportAuditData(exportData),
     onSuccess: (data, variables) => {
       // Handle file download
       const blob = new Blob([data], {
-        type: variables.format === 'csv' ? 'text/csv' : 'application/json',
+        type: variables.format === 'csv' ? 'text/csv' : 'application/json'}
       });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -158,16 +108,13 @@ const AuditDashboard: React.FC = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       setExportDialogOpen(false);
-    },
-  });
-
+    }
   const handleFilterChange = (field: keyof AuditFilters, value: unknown) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
     setPage(0); // Reset to first page when filters change
   };
-
   const handleExport = () => {
-    exportMutation.mutate({
+    exportMutation.mutate({ 
       format: exportFormat,
       startDate: filters.startDate?.toISOString(),
       endDate: filters.endDate?.toISOString(),
@@ -179,12 +126,10 @@ const AuditDashboard: React.FC = () => {
         riskLevel: filters.riskLevel,
         patientId: filters.patientId,
         reviewId: filters.reviewId,
-        ipAddress: filters.ipAddress,
+        ipAddress: filters.ipAddress}
       },
-      includeDetails: true,
-    });
+      includeDetails: true}
   };
-
   const getRiskLevelColor = (riskLevel: string) => {
     switch (riskLevel) {
       case 'critical':
@@ -199,7 +144,6 @@ const AuditDashboard: React.FC = () => {
         return 'default';
     }
   };
-
   const getComplianceCategoryIcon = (category: string) => {
     switch (category) {
       case 'system_security':
@@ -210,100 +154,90 @@ const AuditDashboard: React.FC = () => {
         return <ReportIcon fontSize="small" />;
     }
   };
-
   if (error) {
     return (
       <Alert severity="error">Failed to load audit logs: {error.message}</Alert>
     );
   }
-
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
+    <div className="">
+      <div  gutterBottom>
         Audit Trail Dashboard
-      </Typography>
-
+      </div>
       {/* Summary Cards */}
       {summaryData && (
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        <div container spacing={3} className="">
+          <div item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Typography color="textSecondary" gutterBottom>
+                <div color="textSecondary" gutterBottom>
                   Total Logs
-                </Typography>
-                <Typography variant="h5">
+                </div>
+                <div >
                   {summaryData.totalLogs?.toLocaleString() || 0}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </div>
+          <div item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Typography color="textSecondary" gutterBottom>
+                <div color="textSecondary" gutterBottom>
                   Unique Users
-                </Typography>
-                <Typography variant="h5">
+                </div>
+                <div >
                   {summaryData.uniqueUserCount || 0}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </div>
+          <div item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Typography color="textSecondary" gutterBottom>
+                <div color="textSecondary" gutterBottom>
                   Error Rate
-                </Typography>
-                <Typography
-                  variant="h5"
+                </div>
+                <div
+                  
                   color={summaryData.errorRate > 5 ? 'error' : 'success'}
                 >
                   {summaryData.errorRate?.toFixed(1) || 0}%
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </div>
+          <div item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
-                <Typography color="textSecondary" gutterBottom>
+                <div color="textSecondary" gutterBottom>
                   Compliance Score
-                </Typography>
-                <Typography
-                  variant="h5"
+                </div>
+                <div
+                  
                   color={
-                    summaryData.complianceScore > 80 ? 'success' : 'warning'
+                    summaryData.complianceScore > 80 ? 'success' : 'warning'}
                   }
                 >
                   {summaryData.complianceScore || 0}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </div>
+        </div>
       )}
-
       {/* Controls */}
-      <Box
-        sx={{
-          mb: 3,
-          display: 'flex',
-          gap: 2,
-          alignItems: 'center',
-          flexWrap: 'wrap',
-        }}
+      <div
+        className=""
       >
         <Button
-          variant="outlined"
+          
           startIcon={<FilterIcon />}
           onClick={() => setShowFilters(!showFilters)}
         >
           Filters
         </Button>
         <Button
-          variant="outlined"
+          
           startIcon={<RefreshIcon />}
           onClick={() => refetch()}
           disabled={isLoading}
@@ -311,59 +245,58 @@ const AuditDashboard: React.FC = () => {
           Refresh
         </Button>
         <Button
-          variant="outlined"
+          
           startIcon={<DownloadIcon />}
           onClick={() => setExportDialogOpen(true)}
         >
           Export
         </Button>
-      </Box>
-
+      </div>
       {/* Filters */}
       {showFilters && (
-        <Card sx={{ mb: 3 }}>
+        <Card className="">
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <div  gutterBottom>
               Filters
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
+            </div>
+            <div container spacing={2}>
+              <div item xs={12} sm={6} md={3}>
+                <Input
                   fullWidth
                   type="date"
                   label="Start Date"
                   value={
                     filters.startDate
                       ? format(filters.startDate, 'yyyy-MM-dd')
-                      : ''
+                      : ''}
                   }
                   onChange={(e) =>
-                    handleFilterChange('startDate', new Date(e.target.value))
+                    handleFilterChange('startDate', new Date(e.target.value))}
                   }
-                  InputLabelProps={{ shrink: true }}
+                  
                 />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
+              </div>
+              <div item xs={12} sm={6} md={3}>
+                <Input
                   fullWidth
                   type="date"
                   label="End Date"
                   value={
-                    filters.endDate ? format(filters.endDate, 'yyyy-MM-dd') : ''
+                    filters.endDate ? format(filters.endDate, 'yyyy-MM-dd') : ''}
                   }
                   onChange={(e) =>
-                    handleFilterChange('endDate', new Date(e.target.value))
+                    handleFilterChange('endDate', new Date(e.target.value))}
                   }
-                  InputLabelProps={{ shrink: true }}
+                  
                 />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth>
-                  <InputLabel>Action</InputLabel>
+              </div>
+              <div item xs={12} sm={6} md={3}>
+                <div fullWidth>
+                  <Label>Action</Label>
                   <Select
                     value={filters.action || ''}
                     onChange={(e) =>
-                      handleFilterChange('action', e.target.value || undefined)
+                      handleFilterChange('action', e.target.value || undefined)}
                     }
                     label="Action"
                   >
@@ -374,18 +307,18 @@ const AuditDashboard: React.FC = () => {
                       </MenuItem>
                     ))}
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth>
-                  <InputLabel>Risk Level</InputLabel>
+                </div>
+              </div>
+              <div item xs={12} sm={6} md={3}>
+                <div fullWidth>
+                  <Label>Risk Level</Label>
                   <Select
                     value={filters.riskLevel || ''}
                     onChange={(e) =>
                       handleFilterChange(
                         'riskLevel',
                         e.target.value || undefined
-                      )
+                      )}
                     }
                     label="Risk Level"
                   >
@@ -396,18 +329,18 @@ const AuditDashboard: React.FC = () => {
                       </MenuItem>
                     ))}
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth>
-                  <InputLabel>Resource Type</InputLabel>
+                </div>
+              </div>
+              <div item xs={12} sm={6} md={3}>
+                <div fullWidth>
+                  <Label>Resource Type</Label>
                   <Select
                     value={filters.resourceType || ''}
                     onChange={(e) =>
                       handleFilterChange(
                         'resourceType',
                         e.target.value || undefined
-                      )
+                      )}
                     }
                     label="Resource Type"
                   >
@@ -418,18 +351,18 @@ const AuditDashboard: React.FC = () => {
                       </MenuItem>
                     ))}
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth>
-                  <InputLabel>Compliance Category</InputLabel>
+                </div>
+              </div>
+              <div item xs={12} sm={6} md={3}>
+                <div fullWidth>
+                  <Label>Compliance Category</Label>
                   <Select
                     value={filters.complianceCategory || ''}
                     onChange={(e) =>
                       handleFilterChange(
                         'complianceCategory',
                         e.target.value || undefined
-                      )
+                      )}
                     }
                     label="Compliance Category"
                   >
@@ -444,36 +377,35 @@ const AuditDashboard: React.FC = () => {
                       )
                     )}
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
+                </div>
+              </div>
+              <div item xs={12} sm={6} md={3}>
+                <Input
                   fullWidth
                   label="IP Address"
                   value={filters.ipAddress || ''}
                   onChange={(e) =>
-                    handleFilterChange('ipAddress', e.target.value || undefined)
+                    handleFilterChange('ipAddress', e.target.value || undefined)}
                   }
                 />
-              </Grid>
-            </Grid>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
-
       {/* Audit Logs Table */}
       <Card>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <div  gutterBottom>
             Audit Logs
-          </Typography>
+          </div>
           {isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress />
-            </Box>
+            <div className="">
+              <Spinner />
+            </div>
           ) : (
             <>
-              <TableContainer component={Paper}>
+              <TableContainer >
                 <Table>
                   <TableHead>
                     <TableRow>
@@ -491,17 +423,17 @@ const AuditDashboard: React.FC = () => {
                     {auditData?.data?.map((log: AuditLog) => (
                       <TableRow key={log._id}>
                         <TableCell>
-                          <Typography variant="body2">
+                          <div >
                             {format(
                               new Date(log.timestamp),
                               'MMM dd, yyyy HH:mm:ss'
                             )}
-                          </Typography>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">
+                          <div >
                             {log.actionDisplay}
-                          </Typography>
+                          </div>
                           {log.errorMessage && (
                             <Tooltip title={log.errorMessage}>
                               <WarningIcon color="error" fontSize="small" />
@@ -509,22 +441,22 @@ const AuditDashboard: React.FC = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">
+                          <div >
                             {log.userId.firstName} {log.userId.lastName}
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary">
+                          </div>
+                          <div  color="textSecondary">
                             {log.userRole}
-                          </Typography>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">
+                          <div >
                             {log.resourceType}
-                          </Typography>
+                          </div>
                           {log.patientId && (
-                            <Typography variant="caption" color="textSecondary">
+                            <div  color="textSecondary">
                               Patient: {log.patientId.firstName}{' '}
                               {log.patientId.lastName}
-                            </Typography>
+                            </div>
                           )}
                         </TableCell>
                         <TableCell>
@@ -538,29 +470,25 @@ const AuditDashboard: React.FC = () => {
                                 | 'error'
                                 | 'info'
                                 | 'success'
-                                | 'warning'
+                                | 'warning'}
                             }
                             size="small"
                           />
                         </TableCell>
                         <TableCell>
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
+                          <div
+                            className=""
                           >
                             {getComplianceCategoryIcon(log.complianceCategory)}
-                            <Typography variant="body2">
+                            <div >
                               {log.complianceCategoryDisplay}
-                            </Typography>
-                          </Box>
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">
+                          <div >
                             {log.ipAddress || 'N/A'}
-                          </Typography>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <IconButton
@@ -582,16 +510,12 @@ const AuditDashboard: React.FC = () => {
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={(_, newPage) => setPage(newPage)}
-                onRowsPerPageChange={(e) => {
-                  setRowsPerPage(parseInt(e.target.value, 10));
-                  setPage(0);
-                }}
+                
               />
             </>
           )}
         </CardContent>
       </Card>
-
       {/* Log Details Dialog */}
       <Dialog
         open={!!selectedLog}
@@ -602,29 +526,29 @@ const AuditDashboard: React.FC = () => {
         <DialogTitle>Audit Log Details</DialogTitle>
         <DialogContent>
           {selectedLog && (
-            <Box sx={{ mt: 1 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2">Timestamp</Typography>
-                  <Typography variant="body2">
+            <div className="">
+              <div container spacing={2}>
+                <div item xs={12} sm={6}>
+                  <div >Timestamp</div>
+                  <div >
                     {format(new Date(selectedLog.timestamp), 'PPpp')}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2">Action</Typography>
-                  <Typography variant="body2">
+                  </div>
+                </div>
+                <div item xs={12} sm={6}>
+                  <div >Action</div>
+                  <div >
                     {selectedLog.actionDisplay}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2">User</Typography>
-                  <Typography variant="body2">
+                  </div>
+                </div>
+                <div item xs={12} sm={6}>
+                  <div >User</div>
+                  <div >
                     {selectedLog.userId.firstName} {selectedLog.userId.lastName}{' '}
                     ({selectedLog.userId.email})
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2">Risk Level</Typography>
+                  </div>
+                </div>
+                <div item xs={12} sm={6}>
+                  <div >Risk Level</div>
                   <Chip
                     label={selectedLog.riskLevelDisplay}
                     color={
@@ -635,52 +559,44 @@ const AuditDashboard: React.FC = () => {
                         | 'error'
                         | 'info'
                         | 'success'
-                        | 'warning'
+                        | 'warning'}
                     }
                     size="small"
                   />
-                </Grid>
+                </div>
                 {selectedLog.duration && (
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="subtitle2">Duration</Typography>
-                    <Typography variant="body2">
+                  <div item xs={12} sm={6}>
+                    <div >Duration</div>
+                    <div >
                       {selectedLog.duration}ms
-                    </Typography>
-                  </Grid>
+                    </div>
+                  </div>
                 )}
                 {selectedLog.errorMessage && (
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2">Error Message</Typography>
-                    <Typography variant="body2" color="error">
+                  <div item xs={12}>
+                    <div >Error Message</div>
+                    <div  color="error">
                       {selectedLog.errorMessage}
-                    </Typography>
-                  </Grid>
+                    </div>
+                  </div>
                 )}
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2">Details</Typography>
-                  <Box
+                <div item xs={12}>
+                  <div >Details</div>
+                  <div
                     component="pre"
-                    sx={{
-                      backgroundColor: 'grey.100',
-                      p: 2,
-                      borderRadius: 1,
-                      overflow: 'auto',
-                      maxHeight: 300,
-                      fontSize: '0.875rem',
-                    }}
+                    className=""
                   >
                     {JSON.stringify(selectedLog.details, null, 2)}
-                  </Box>
-                </Grid>
-              </Grid>
-            </Box>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSelectedLog(null)}>Close</Button>
         </DialogActions>
       </Dialog>
-
       {/* Export Dialog */}
       <Dialog
         open={exportDialogOpen}
@@ -688,8 +604,8 @@ const AuditDashboard: React.FC = () => {
       >
         <DialogTitle>Export Audit Data</DialogTitle>
         <DialogContent>
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Format</InputLabel>
+          <div fullWidth className="">
+            <Label>Format</Label>
             <Select
               value={exportFormat}
               onChange={(e) => setExportFormat(e.target.value as string)}
@@ -699,21 +615,20 @@ const AuditDashboard: React.FC = () => {
               <MenuItem value="csv">CSV</MenuItem>
               <MenuItem value="pdf">PDF</MenuItem>
             </Select>
-          </FormControl>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setExportDialogOpen(false)}>Cancel</Button>
           <Button
             onClick={handleExport}
-            variant="contained"
+            
             disabled={exportMutation.isPending}
           >
             {exportMutation.isPending ? 'Exporting...' : 'Export'}
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
-
 export default AuditDashboard;

@@ -1,5 +1,3 @@
-import axios, { AxiosResponse, AxiosError } from 'axios';
-
 // Create axios instance with base configuration
 const getBaseURL = () => {
   try {
@@ -20,14 +18,13 @@ const getBaseURL = () => {
   }
 };
 
-const api = axios.create({
+const api = axios.create({ 
   baseURL: getBaseURL(),
   timeout: 60000, // Reduced from 120000 (120s) to 60000 (60s) for better UX
   withCredentials: true, // Include httpOnly cookies
   headers: {
-    'Content-Type': 'application/json',
-  },
-});
+    'Content-Type': 'application/json'}
+  }
 
 // Request interceptor to ensure credentials are included
 api.interceptors.request.use(

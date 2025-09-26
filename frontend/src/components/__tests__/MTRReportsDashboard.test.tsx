@@ -1,43 +1,31 @@
-import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+// Removed MUI styles import - using Tailwind CSS
+// Date picker components are now handled by shadcn/ui
 import MTRReportsDashboard from '../MTRReportsDashboard';
-import * as mtrQueries from '../../queries/useMTRQueries';
 
+import * as mtrQueries from '../../queries/useMTRQueries';
 // Mock the MTR queries
 jest.mock('../../queries/useMTRQueries');
-
 const mockMTRQueries = mtrQueries as jest.Mocked<typeof mtrQueries>;
-
 const theme = createTheme();
-
 const renderWithProviders = (component: React.ReactElement) => {
-  const queryClient = new QueryClient({
+  const queryClient = new QueryClient({ 
     defaultOptions: {
       queries: {
-        retry: false,
+        retry: false}
       },
-    },
-  });
-
+    }
   return render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          {component}
-        </LocalizationProvider>
+        {component}
       </ThemeProvider>
     </QueryClientProvider>
   );
 };
-
 describe('MTRReportsDashboard', () => {
   beforeEach(() => {
     // Mock all the query hooks
-    mockMTRQueries.useMTRSummaryReport.mockReturnValue({
+    mockMTRQueries.useMTRSummaryReport.mockReturnValue({ 
       data: {
         data: {
           summary: {
@@ -52,7 +40,7 @@ describe('MTRReportsDashboard', () => {
             totalMedicationsOptimized: 200,
             adherenceImprovedCount: 75,
             adverseEventsReducedCount: 25,
-            totalCostSavings: 15000,
+            totalCostSavings: 15000}
           },
           distributions: {
             reviewType: [
@@ -88,8 +76,7 @@ describe('MTRReportsDashboard', () => {
       error: null,
       refetch: jest.fn(),
     } as unknown);
-
-    mockMTRQueries.useInterventionEffectivenessReport.mockReturnValue({
+    mockMTRQueries.useInterventionEffectivenessReport.mockReturnValue({ 
       data: {
         data: {
           summary: {
@@ -98,7 +85,7 @@ describe('MTRReportsDashboard', () => {
             rejectedInterventions: 30,
             modifiedInterventions: 15,
             pendingInterventions: 5,
-            overallAcceptanceRate: 80.0,
+            overallAcceptanceRate: 80.0}
           },
           effectiveness: {
             byType: [
@@ -152,8 +139,7 @@ describe('MTRReportsDashboard', () => {
       error: null,
       refetch: jest.fn(),
     } as unknown);
-
-    mockMTRQueries.usePharmacistPerformanceReport.mockReturnValue({
+    mockMTRQueries.usePharmacistPerformanceReport.mockReturnValue({ 
       data: {
         data: {
           pharmacistPerformance: [
@@ -173,7 +159,7 @@ describe('MTRReportsDashboard', () => {
               acceptedInterventions: 45,
               interventionAcceptanceRate: 90.0,
               efficiencyScore: 88.0,
-              qualityScore: 91.5,
+              qualityScore: 91.5}
             },
           ],
           summary: {
@@ -190,8 +176,7 @@ describe('MTRReportsDashboard', () => {
       error: null,
       refetch: jest.fn(),
     } as unknown);
-
-    mockMTRQueries.useQualityAssuranceReport.mockReturnValue({
+    mockMTRQueries.useQualityAssuranceReport.mockReturnValue({ 
       data: {
         data: {
           completionTimeAnalysis: [
@@ -200,7 +185,7 @@ describe('MTRReportsDashboard', () => {
               avgCompletionTime: 5.2,
               minCompletionTime: 2.0,
               maxCompletionTime: 10.0,
-              count: 70,
+              count: 70}
             },
             {
               _id: 'urgent',
@@ -251,8 +236,7 @@ describe('MTRReportsDashboard', () => {
       error: null,
       refetch: jest.fn(),
     } as unknown);
-
-    mockMTRQueries.useOutcomeMetricsReport.mockReturnValue({
+    mockMTRQueries.useOutcomeMetricsReport.mockReturnValue({ 
       data: {
         data: {
           summary: {
@@ -267,7 +251,7 @@ describe('MTRReportsDashboard', () => {
             avgProblemsPerReview: 1.5,
             avgMedicationsPerReview: 2.0,
             adherenceImprovementRate: 75.0,
-            adverseEventReductionRate: 25.0,
+            adverseEventReductionRate: 25.0}
           },
           outcomesByType: [
             {
@@ -312,30 +296,23 @@ describe('MTRReportsDashboard', () => {
       refetch: jest.fn(),
     } as unknown);
   });
-
   afterEach(() => {
     jest.clearAllMocks();
   });
-
   it('renders the dashboard title', () => {
     renderWithProviders(<MTRReportsDashboard />);
-
     expect(screen.getByText('MTR Reports & Analytics')).toBeInTheDocument();
   });
-
   it('renders all report tabs', () => {
     renderWithProviders(<MTRReportsDashboard />);
-
     expect(screen.getByText('Summary')).toBeInTheDocument();
     expect(screen.getByText('Interventions')).toBeInTheDocument();
     expect(screen.getByText('Pharmacists')).toBeInTheDocument();
     expect(screen.getByText('Quality')).toBeInTheDocument();
     expect(screen.getByText('Outcomes')).toBeInTheDocument();
   });
-
   it('displays summary report data', async () => {
     renderWithProviders(<MTRReportsDashboard />);
-
     await waitFor(() => {
       expect(screen.getByText('100')).toBeInTheDocument(); // Total Reviews
       expect(screen.getByText('85.0%')).toBeInTheDocument(); // Completion Rate
@@ -343,46 +320,36 @@ describe('MTRReportsDashboard', () => {
       expect(screen.getByText('150')).toBeInTheDocument(); // Problems Resolved
     });
   });
-
   it('shows filter controls', () => {
     renderWithProviders(<MTRReportsDashboard />);
-
     expect(screen.getByText('Report Filters')).toBeInTheDocument();
     expect(screen.getByText('Show Filters')).toBeInTheDocument();
   });
-
   it('displays export and refresh buttons', () => {
     renderWithProviders(<MTRReportsDashboard />);
-
     expect(screen.getByText('Export')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /refresh/i })
     ).toBeInTheDocument();
   });
-
   it('handles loading state', () => {
-    mockMTRQueries.useMTRSummaryReport.mockReturnValue({
+    mockMTRQueries.useMTRSummaryReport.mockReturnValue({ 
       data: null,
       isLoading: true,
       error: null,
-      refetch: jest.fn(),
+      refetch: jest.fn()}
     } as unknown);
-
     renderWithProviders(<MTRReportsDashboard />);
-
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
-
   it('handles error state', () => {
-    mockMTRQueries.useMTRSummaryReport.mockReturnValue({
+    mockMTRQueries.useMTRSummaryReport.mockReturnValue({ 
       data: null,
-      isLoading: false,
+      isLoading: false}
       error: { message: 'Failed to load data' },
       refetch: jest.fn(),
     } as unknown);
-
     renderWithProviders(<MTRReportsDashboard />);
-
     expect(
       screen.getByText(/Failed to load summary report/)
     ).toBeInTheDocument();

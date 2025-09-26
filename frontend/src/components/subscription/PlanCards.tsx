@@ -1,23 +1,5 @@
-import React from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Grid,
-} from '@mui/material';
-import {
-  Check as CheckIcon,
-  Close as CloseIcon,
-  Star as StarIcon,
-  Bolt as BoltIcon,
-  Stars as StarsIcon,
-} from '@mui/icons-material';
+
+import { Button, Card, CardContent } from '@/components/ui/button';
 
 interface Plan {
   name: string;
@@ -29,185 +11,130 @@ interface Plan {
   actionText?: string;
   onSelectPlan?: () => void;
 }
-
 interface PlanCardsProps {
   plans: Plan[];
 }
-
 const PlanCards: React.FC<PlanCardsProps> = ({ plans }) => {
   return (
-    <Grid container spacing={4} justifyContent="center">
+    <div container spacing={4} justifyContent="center">
       {plans.map((plan, index) => (
-        <Grid item xs={12} md={4} key={index}>
+        <div item xs={12} md={4} key={index}>
           <Card
-            sx={{
-              height: '100%',
-              position: 'relative',
-              border: plan.popular ? 2 : 1,
-              borderColor: plan.popular ? 'primary.main' : 'grey.200',
-              transform: plan.popular ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.3s ease-in-out',
-              '&:hover': {
-                transform: plan.popular ? 'scale(1.05)' : 'scale(1.02)',
-                boxShadow: plan.popular ? 6 : 4,
-              },
-            }}
-          >
+            className="">
             {plan.popular && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: -1,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  px: 3,
-                  py: 0.5,
-                  borderRadius: '0 0 12px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                }}
+              <div
+                className=""
               >
                 <StarIcon fontSize="small" />
-                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                <div  className="">
                   Most Popular
-                </Typography>
-              </Box>
+                </div>
+              </div>
             )}
-
             <CardContent
-              sx={{
-                p: 4,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
+              className=""
             >
-              <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    mb: 2,
-                  }}
+              <div className="">
+                <div
+                  className=""
                 >
                   {plan.name === 'Enterprise' ? (
                     <StarsIcon
-                      sx={{ fontSize: 32, color: 'warning.main', mr: 1 }}
+                      className=""
                     />
                   ) : (
                     <BoltIcon
-                      sx={{ fontSize: 32, color: 'primary.main', mr: 1 }}
+                      className=""
                     />
                   )}
-                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                  <div  className="">
                     {plan.name}
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="body2"
+                  </div>
+                </div>
+                <div
+                  
                   color="text.secondary"
-                  sx={{ mb: 3 }}
+                  className=""
                 >
                   {plan.description}
-                </Typography>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    justifyContent: 'center',
-                    mb: 2,
-                  }}
+                </div>
+                <div
+                  className=""
                 >
-                  <Typography
-                    variant="h3"
-                    sx={{ fontWeight: 700, color: 'primary.main' }}
+                  <div
+                    
+                    className=""
                   >
                     ₦{plan.price}
-                  </Typography>
-                  <Typography
-                    variant="h6"
+                  </div>
+                  <div
+                    
                     color="text.secondary"
-                    sx={{ ml: 1 }}
+                    className=""
                   >
                     /month
-                  </Typography>
-                </Box>
-                <Typography variant="caption" color="text.secondary">
+                  </div>
+                </div>
+                <div  color="text.secondary">
                   Billed monthly
-                </Typography>
-              </Box>
-
+                </div>
+              </div>
               <Button
                 variant={plan.popular ? 'contained' : 'outlined'}
                 size="large"
                 fullWidth
-                sx={{
-                  mb: 4,
-                  py: 1.5,
-                  borderRadius: 3,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                }}
+                className=""
                 onClick={plan.onSelectPlan}
               >
                 {plan.actionText ||
                   (plan.popular ? 'Start Free Trial' : 'Get Started')}
               </Button>
-
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+              <div className="">
+                <div  className="">
                   What's included:
-                </Typography>
+                </div>
                 <List disablePadding>
                   {plan.features.map((feature, featureIndex) => (
-                    <ListItem
+                    <div
                       key={featureIndex}
                       disablePadding
-                      sx={{ py: 0.5 }}
+                      className=""
                     >
-                      <ListItemIcon sx={{ minWidth: 32 }}>
+                      <div className="">
                         <CheckIcon
-                          sx={{ fontSize: 20, color: 'success.main' }}
+                          className=""
                         />
-                      </ListItemIcon>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={feature}
-                        primaryTypographyProps={{ variant: 'body2' }}
+                        
                       />
-                    </ListItem>
+                    </div>
                   ))}
                   {plan.notIncluded.map((feature, featureIndex) => (
-                    <ListItem
+                    <div
                       key={featureIndex}
                       disablePadding
-                      sx={{ py: 0.5, opacity: 0.6 }}
+                      className=""
                     >
-                      <ListItemIcon sx={{ minWidth: 32 }}>
+                      <div className="">
                         <CloseIcon
-                          sx={{ fontSize: 20, color: 'text.disabled' }}
+                          className=""
                         />
-                      </ListItemIcon>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={feature}
-                        primaryTypographyProps={{
-                          variant: 'body2',
-                          color: 'text.secondary',
-                        }}
+                        
                       />
-                    </ListItem>
+                    </div>
                   ))}
                 </List>
-              </Box>
+              </div>
             </CardContent>
           </Card>
-        </Grid>
+        </div>
       ))}
-    </Grid>
+    </div>
   );
 };
-
 export default PlanCards;

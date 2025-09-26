@@ -3,9 +3,6 @@
  * Implements code splitting, lazy loading, caching, and performance monitoring
  */
 
-import { lazy, ComponentType, LazyExoticComponent } from 'react';
-import { QueryClient } from '@tanstack/react-query';
-
 // ===============================
 // CODE SPLITTING AND LAZY LOADING
 // ===============================
@@ -109,7 +106,7 @@ export const LazyComponents = {
  * Enhanced query client configuration for optimal caching
  */
 export const createOptimizedQueryClient = (): QueryClient => {
-    return new QueryClient({
+    return new QueryClient({ 
         defaultOptions: {
             queries: {
                 // Cache for 5 minutes by default
@@ -122,7 +119,7 @@ export const createOptimizedQueryClient = (): QueryClient => {
                 retry: (failureCount, error: any) => {
                     // Don't retry on 4xx errors (client errors)
                     if (error?.response?.status >= 400 && error?.response?.status < 500) {
-                        return false;
+                        return false; })
                     }
 
                     // Retry up to 3 times for other errors
@@ -150,8 +147,7 @@ export const createOptimizedQueryClient = (): QueryClient => {
                 // Network mode for mutations
                 networkMode: 'online',
             },
-        },
-    });
+        }
 };
 
 /**
@@ -212,21 +208,21 @@ export class CacheManager {
 
         if (interventionId) {
             // Invalidate specific intervention
-            promises.push(this.queryClient.invalidateQueries({
-                queryKey: ['intervention', interventionId]
+            promises.push(this.queryClient.invalidateQueries({ 
+                queryKey: ['intervention', interventionId] })
             }));
-            promises.push(this.queryClient.invalidateQueries({
-                queryKey: ['intervention-details', interventionId]
+            promises.push(this.queryClient.invalidateQueries({ 
+                queryKey: ['intervention-details', interventionId] })
             }));
         }
 
         if (patientId) {
             // Invalidate patient-related caches
-            promises.push(this.queryClient.invalidateQueries({
-                queryKey: ['patient-interventions', patientId]
+            promises.push(this.queryClient.invalidateQueries({ 
+                queryKey: ['patient-interventions', patientId] })
             }));
-            promises.push(this.queryClient.invalidateQueries({
-                queryKey: ['patient-summary', patientId]
+            promises.push(this.queryClient.invalidateQueries({ 
+                queryKey: ['patient-summary', patientId] })
             }));
         }
 
@@ -268,11 +264,11 @@ export class PerformanceMonitor {
      * Record performance metric
      */
     static recordMetric(name: string, value: number, metadata?: Record<string, any>): void {
-        this.metrics.push({
+        this.metrics.push({ 
             name,
             value,
             timestamp: Date.now(),
-            metadata,
+            metadata}
         });
 
         // Keep only recent metrics
@@ -314,8 +310,7 @@ export class PerformanceMonitor {
 
             this.recordMetric(`async_${operationName}`, endTime - startTime, {
                 ...metadata,
-                success: true,
-            });
+                success: true}
 
             return result;
         } catch (error) {
@@ -324,8 +319,7 @@ export class PerformanceMonitor {
             this.recordMetric(`async_${operationName}`, endTime - startTime, {
                 ...metadata,
                 success: false,
-                error: error instanceof Error ? error.message : 'Unknown error',
-            });
+                error: error instanceof Error ? error.message : 'Unknown error'}
 
             throw error;
         }
@@ -371,8 +365,7 @@ export class PerformanceMonitor {
         new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
                 this.recordMetric('lcp', entry.startTime, {
-                    element: entry.element?.tagName,
-                });
+                    element: entry.element?.tagName}
             }
         }).observe({ entryTypes: ['largest-contentful-paint'] });
 
@@ -380,8 +373,7 @@ export class PerformanceMonitor {
         new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
                 this.recordMetric('fid', entry.processingStart - entry.startTime, {
-                    eventType: entry.name,
-                });
+                    eventType: entry.name}
             }
         }).observe({ entryTypes: ['first-input'] });
 
@@ -419,7 +411,7 @@ export class MemoryOptimizer {
      * Optimize large intervention lists for rendering
      */
     static optimizeInterventionList(interventions: any[]): any[] {
-        return interventions.map(intervention => ({
+        return interventions.map(intervention => ({ 
             _id: intervention._id,
             interventionNumber: intervention.interventionNumber,
             category: intervention.category,
@@ -429,7 +421,7 @@ export class MemoryOptimizer {
 
             // Optimized patient info
             patient: intervention.patient ? {
-                _id: intervention.patient._id,
+                _id: intervention.patient._id}
                 displayName: `${intervention.patient.firstName} ${intervention.patient.lastName}`,
                 mrn: intervention.patient.mrn,
             } : null,
@@ -450,8 +442,7 @@ export class MemoryOptimizer {
             // Essential dates
             startedAt: intervention.startedAt,
             completedAt: intervention.completedAt,
-            updatedAt: intervention.updatedAt,
-        }));
+            updatedAt: intervention.updatedAt}
     }
 
     /**

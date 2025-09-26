@@ -1,55 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Typography,
-  Alert,
-  AlertTitle,
-  Button,
-  Card,
-  CardContent,
-  CardActions,
-  Stack,
-  Chip,
-  LinearProgress,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Collapse,
-  Fab,
-  Badge,
-  useTheme,
-  useMediaQuery,
-  Snackbar,
-} from '@mui/material';
-import {
-  Refresh as RefreshIcon,
-  Replay as ReplayIcon,
-  Cancel as CancelIcon,
-  BugReport as BugReportIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  NetworkCheck as NetworkCheckIcon,
-  Wifi as WifiIcon,
-  WifiOff as WifiOffIcon,
-  CloudOff as CloudOffIcon,
-  Send as SendIcon,
-} from '@mui/icons-material';
-import { AppError } from '../services/errorHandlingService';
-import { useRetry } from '../utils/retryMechanism';
-import { useErrorReporting } from '../services/errorReportingService';
-
+import { Button, Input, Card, CardContent, Badge, Dialog, DialogContent, DialogTitle, Progress, Alert, AlertTitle } from '@/components/ui/button';
 // Props interfaces
 interface ErrorRecoverySystemProps {
   errors: AppError[];
@@ -60,7 +9,6 @@ interface ErrorRecoverySystemProps {
   showRetryProgress?: boolean;
   maxVisibleErrors?: number;
 }
-
 interface ErrorRecoveryCardProps {
   error: AppError;
   onRetry?: () => Promise<void>;
@@ -68,60 +16,49 @@ interface ErrorRecoveryCardProps {
   showDetails?: boolean;
   compact?: boolean;
 }
-
 interface NetworkStatusProps {
   showDetails?: boolean;
 }
-
 interface RetryProgressProps {
   activeRetries: string[];
   onCancel?: (operationId: string) => void;
 }
-
 // Network status component
-const NetworkStatus: React.FC<NetworkStatusProps> = ({
-  showDetails = true,
+const NetworkStatus: React.FC<NetworkStatusProps> = ({ 
+  showDetails = true
 }) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [connectionType, setConnectionType] = useState<string>('unknown');
   const [lastOnlineTime, setLastOnlineTime] = useState<Date | null>(null);
-
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
       setLastOnlineTime(new Date());
     };
-
     const handleOffline = () => {
       setIsOnline(false);
     };
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     // Get connection type if available
     const nav = navigator as any;
     if (nav.connection) {
       setConnectionType(nav.connection.effectiveType || 'unknown');
-
       nav.connection.addEventListener('change', () => {
         setConnectionType(nav.connection.effectiveType || 'unknown');
       });
     }
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
   const getConnectionIcon = () => {
     if (!isOnline) return <WifiOffIcon color="error" />;
     if (connectionType === 'slow-2g' || connectionType === '2g')
       return <CloudOffIcon color="warning" />;
     return <WifiIcon color="success" />;
   };
-
   const getConnectionText = () => {
     if (!isOnline) return 'Offline';
     if (connectionType === 'slow-2g') return 'Very Slow Connection';
@@ -130,76 +67,70 @@ const NetworkStatus: React.FC<NetworkStatusProps> = ({
     if (connectionType === '4g') return 'Fast Connection';
     return 'Online';
   };
-
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <div className="">
       {getConnectionIcon()}
-      <Typography variant="body2" color={isOnline ? 'text.primary' : 'error'}>
+      <div  color={isOnline ? 'text.primary' : 'error'}>
         {getConnectionText()}
-      </Typography>
+      </div>
       {showDetails && !isOnline && lastOnlineTime && (
-        <Typography variant="caption" color="text.secondary">
+        <div  color="text.secondary">
           Last online: {lastOnlineTime.toLocaleTimeString()}
-        </Typography>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
-
 // Retry progress component
-const RetryProgress: React.FC<RetryProgressProps> = ({
+const RetryProgress: React.FC<RetryProgressProps> = ({ 
   activeRetries,
-  onCancel,
+  onCancel
 }) => {
   if (activeRetries.length === 0) return null;
-
   return (
-    <Card sx={{ mb: 2, bgcolor: 'info.50' }}>
-      <CardContent sx={{ pb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+    <Card className="">
+      <CardContent className="">
+        <div className="">
           <ReplayIcon color="info" />
-          <Typography variant="subtitle2">
+          <div >
             Retrying Operations ({activeRetries.length})
-          </Typography>
-        </Box>
-
-        <Stack spacing={1}>
+          </div>
+        </div>
+        <div spacing={1}>
           {activeRetries.map((operationId) => (
-            <Box
+            <div
               key={operationId}
-              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              className=""
             >
-              <LinearProgress sx={{ flex: 1, height: 6, borderRadius: 3 }} />
-              <Typography variant="caption" sx={{ minWidth: 100 }}>
+              <Progress className="" />
+              <div  className="">
                 {operationId}
-              </Typography>
+              </div>
               {onCancel && (
                 <IconButton size="small" onClick={() => onCancel(operationId)}>
                   <CancelIcon fontSize="small" />
                 </IconButton>
               )}
-            </Box>
+            </div>
           ))}
-        </Stack>
+        </div>
       </CardContent>
     </Card>
   );
 };
-
 // Individual error recovery card
-const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
+const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({ 
   error,
   onRetry,
   onDismiss,
   showDetails = false,
-  compact = false,
+  compact = false
 }) => {
   const [isRetrying, setIsRetrying] = useState(false);
   const [showErrorDetails, setShowErrorDetails] = useState(showDetails);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportDescription, setReportDescription] = useState('');
   const { submitErrorReport } = useErrorReporting();
-
   const getSeverityColor = () => {
     switch (error.severity) {
       case 'critical':
@@ -213,7 +144,6 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
         return 'info';
     }
   };
-
   const getSeverityIcon = () => {
     switch (error.severity) {
       case 'critical':
@@ -227,10 +157,8 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
         return <InfoIcon />;
     }
   };
-
   const handleRetry = async () => {
     if (!onRetry) return;
-
     setIsRetrying(true);
     try {
       await onRetry();
@@ -240,7 +168,6 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
       setIsRetrying(false);
     }
   };
-
   const handleReportError = async () => {
     try {
       await submitErrorReport(
@@ -251,14 +178,12 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
         },
         reportDescription
       );
-
       setShowReportDialog(false);
       setReportDescription('');
     } catch (reportError) {
       console.error('Failed to submit error report:', reportError);
     }
   };
-
   const getRecoveryInstructions = (): string[] => {
     switch (error.recoveryAction) {
       case 'retry':
@@ -298,14 +223,13 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
         ];
     }
   };
-
   if (compact) {
     return (
       <Alert
         severity={getSeverityColor() as any}
-        sx={{ mb: 1 }}
-        action={
-          <Stack direction="row" spacing={1}>
+        className=""
+        action={}
+          <div direction="row" spacing={1}>
             {onRetry && (
               <Button
                 size="small"
@@ -313,10 +237,10 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
                 disabled={isRetrying}
                 startIcon={
                   isRetrying ? (
-                    <LinearProgress sx={{ width: 16, height: 2 }} />
+                    <Progress className="" />
                   ) : (
                     <RefreshIcon />
-                  )
+                  )}
                 }
               >
                 Retry
@@ -327,7 +251,7 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
                 <CancelIcon fontSize="small" />
               </IconButton>
             )}
-          </Stack>
+          </div>
         }
       >
         <AlertTitle>{error.type.replace(/_/g, ' ')}</AlertTitle>
@@ -335,19 +259,18 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
       </Alert>
     );
   }
-
   return (
     <>
-      <Card sx={{ mb: 2, border: `1px solid ${getSeverityColor()}` }}>
+      <Card className="">
         <CardContent>
-          <Box
-            sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2 }}
+          <div
+            className=""
           >
             {getSeverityIcon()}
-            <Box sx={{ flex: 1 }}>
-              <Typography
-                variant="h6"
-                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            <div className="">
+              <div
+                
+                className=""
               >
                 {error.type.replace(/_/g, ' ')}
                 <Chip
@@ -355,59 +278,51 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
                   size="small"
                   color={getSeverityColor() as any}
                 />
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              </div>
+              <div  color="text.secondary" className="">
                 {new Date(error.timestamp).toLocaleString()}
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
+              </div>
+              <div  className="">
                 {error.message}
-              </Typography>
-
+              </div>
               {/* Recovery Instructions */}
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
+              <div className="">
+                <div  gutterBottom>
                   Recovery Steps:
-                </Typography>
+                </div>
                 <List dense>
                   {getRecoveryInstructions().map((instruction, index) => (
-                    <ListItem key={index} sx={{ py: 0.25, pl: 0 }}>
-                      <ListItemIcon sx={{ minWidth: 24 }}>
+                    <div key={index} className="">
+                      <div className="">
                         <CheckCircleIcon fontSize="small" color="primary" />
-                      </ListItemIcon>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={instruction}
-                        primaryTypographyProps={{ variant: 'body2' }}
+                        
                       />
-                    </ListItem>
+                    </div>
                   ))}
                 </List>
-              </Box>
-
+              </div>
               {/* Error Details */}
-              <Box>
+              <div>
                 <Button
                   size="small"
                   startIcon={
-                    showErrorDetails ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                    showErrorDetails ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                   }
                   onClick={() => setShowErrorDetails(!showErrorDetails)}
                 >
                   {showErrorDetails ? 'Hide' : 'Show'} Technical Details
                 </Button>
-
                 <Collapse in={showErrorDetails}>
-                  <Box
-                    sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}
+                  <div
+                    className=""
                   >
-                    <Typography
-                      variant="body2"
+                    <div
+                      
                       component="pre"
-                      sx={{
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                        fontSize: '0.75rem',
-                        fontFamily: 'monospace',
-                      }}
+                      className=""
                     >
                       <strong>Error Type:</strong> {error.type}
                       {'\n'}
@@ -433,25 +348,24 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
                           {error.technicalMessage}
                         </>
                       )}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 </Collapse>
-              </Box>
-            </Box>
-          </Box>
+              </div>
+            </div>
+          </div>
         </CardContent>
-
-        <CardActions sx={{ justifyContent: 'space-between' }}>
-          <Stack direction="row" spacing={1}>
+        <CardActions className="">
+          <div direction="row" spacing={1}>
             {onRetry && (
               <Button
-                variant="contained"
+                
                 startIcon={
                   isRetrying ? (
-                    <LinearProgress sx={{ width: 16, height: 2 }} />
+                    <Progress className="" />
                   ) : (
                     <RefreshIcon />
-                  )
+                  )}
                 }
                 onClick={handleRetry}
                 disabled={isRetrying}
@@ -459,13 +373,11 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
                 {isRetrying ? 'Retrying...' : 'Retry'}
               </Button>
             )}
-
-            <Button variant="outlined" onClick={() => window.location.reload()}>
+            <Button  onClick={() => window.location.reload()}>
               Refresh Page
             </Button>
-          </Stack>
-
-          <Stack direction="row" spacing={1}>
+          </div>
+          <div direction="row" spacing={1}>
             <Button
               startIcon={<BugReportIcon />}
               onClick={() => setShowReportDialog(true)}
@@ -473,16 +385,14 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
             >
               Report
             </Button>
-
             {onDismiss && (
               <Button onClick={onDismiss} size="small">
                 Dismiss
               </Button>
             )}
-          </Stack>
+          </div>
         </CardActions>
       </Card>
-
       {/* Error Report Dialog */}
       <Dialog
         open={showReportDialog}
@@ -492,11 +402,11 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
       >
         <DialogTitle>Report Error</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <div  color="text.secondary" className="">
             Help us improve by describing what you were doing when this error
             occurred.
-          </Typography>
-          <TextField
+          </div>
+          <Input
             fullWidth
             multiline
             rows={4}
@@ -509,7 +419,7 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
         <DialogActions>
           <Button onClick={() => setShowReportDialog(false)}>Cancel</Button>
           <Button
-            variant="contained"
+            
             startIcon={<SendIcon />}
             onClick={handleReportError}
             disabled={!reportDescription.trim()}
@@ -521,78 +431,58 @@ const ErrorRecoveryCard: React.FC<ErrorRecoveryCardProps> = ({
     </>
   );
 };
-
 // Main error recovery system component
-const ErrorRecoverySystem: React.FC<ErrorRecoverySystemProps> = ({
+const ErrorRecoverySystem: React.FC<ErrorRecoverySystemProps> = ({ 
   errors,
   onRetry,
   onDismiss,
   onClearAll,
   showNetworkStatus = true,
   showRetryProgress = true,
-  maxVisibleErrors = 5,
+  maxVisibleErrors = 5
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { activeRetries, cancelRetry } = useRetry();
   const { hasPendingReports, pendingReportsCount } = useErrorReporting();
-
   const [showAllErrors, setShowAllErrors] = useState(false);
   const [showSystemPanel, setShowSystemPanel] = useState(false);
-
   const visibleErrors = showAllErrors
     ? errors
     : errors.slice(0, maxVisibleErrors);
   const hasMoreErrors = errors.length > maxVisibleErrors;
-
   if (errors.length === 0 && activeRetries.length === 0 && !hasPendingReports) {
     return null;
   }
-
   return (
-    <Box sx={{ position: 'relative' }}>
+    <div className="">
       {/* Network Status */}
       {showNetworkStatus && (
-        <Box
-          sx={{
-            mb: 2,
-            p: 1,
-            bgcolor: 'background.paper',
-            borderRadius: 1,
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
+        <div
+          className=""
         >
           <NetworkStatus showDetails={!isMobile} />
-        </Box>
+        </div>
       )}
-
       {/* Retry Progress */}
       {showRetryProgress && (
         <RetryProgress activeRetries={activeRetries} onCancel={cancelRetry} />
       )}
-
       {/* Error List */}
       {errors.length > 0 && (
-        <Box sx={{ mb: 2 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 2,
-            }}
+        <div className="">
+          <div
+            className=""
           >
-            <Typography variant="h6">
+            <div >
               Active Errors ({errors.length})
-            </Typography>
+            </div>
             {onClearAll && (
               <Button size="small" onClick={onClearAll}>
                 Clear All
               </Button>
             )}
-          </Box>
-
+          </div>
           {visibleErrors.map((error, index) => (
             <ErrorRecoveryCard
               key={`${error.type}-${error.timestamp}-${index}`}
@@ -602,28 +492,26 @@ const ErrorRecoverySystem: React.FC<ErrorRecoverySystemProps> = ({
               compact={isMobile}
             />
           ))}
-
           {hasMoreErrors && (
             <Button
               fullWidth
-              variant="outlined"
+              
               onClick={() => setShowAllErrors(!showAllErrors)}
-              sx={{ mt: 1 }}
+              className=""
             >
               {showAllErrors
                 ? 'Show Less'
                 : `Show ${errors.length - maxVisibleErrors} More Errors`}
             </Button>
           )}
-        </Box>
+        </div>
       )}
-
       {/* Floating Action Button for System Panel */}
       {(hasPendingReports || activeRetries.length > 0) && (
         <Fab
           color="primary"
           size="small"
-          sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1000 }}
+          className=""
           onClick={() => setShowSystemPanel(true)}
         >
           <Badge
@@ -634,7 +522,6 @@ const ErrorRecoverySystem: React.FC<ErrorRecoverySystemProps> = ({
           </Badge>
         </Fab>
       )}
-
       {/* System Panel Dialog */}
       <Dialog
         open={showSystemPanel}
@@ -645,16 +532,14 @@ const ErrorRecoverySystem: React.FC<ErrorRecoverySystemProps> = ({
       >
         <DialogTitle>System Status</DialogTitle>
         <DialogContent>
-          <Stack spacing={2}>
+          <div spacing={2}>
             <NetworkStatus showDetails={true} />
-
             {activeRetries.length > 0 && (
               <RetryProgress
                 activeRetries={activeRetries}
                 onCancel={cancelRetry}
               />
             )}
-
             {hasPendingReports && (
               <Alert severity="info">
                 <AlertTitle>Pending Error Reports</AlertTitle>
@@ -663,15 +548,14 @@ const ErrorRecoverySystem: React.FC<ErrorRecoverySystemProps> = ({
                 will be automatically sent when connection is restored.
               </Alert>
             )}
-          </Stack>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowSystemPanel(false)}>Close</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
-
 export default ErrorRecoverySystem;
 export { NetworkStatus, RetryProgress, ErrorRecoveryCard };

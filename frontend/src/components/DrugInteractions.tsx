@@ -1,40 +1,34 @@
-import React from 'react';
-import { useDrugInteractions } from '../queries/drugQueries';
-import { Box, CircularProgress, Typography, Paper, Chip, Alert } from '@mui/material';
+
 import LoadingSkeleton from './LoadingSkeleton';
-import { SeverityIcon } from './SeverityIcon';
+
+import { Alert } from '@/components/ui/button';
 
 interface DrugInteractionsProps {
   rxcui?: string;
   rxcuis?: string[];
   drugName?: string;
 }
-
 const DrugInteractions: React.FC<DrugInteractionsProps> = ({ rxcui, rxcuis, drugName }) => {
   const { data: interactions, isLoading, error } = useDrugInteractions(rxcui, rxcuis);
-
   if (isLoading) {
     return <LoadingSkeleton type="list" />;
   }
-
   if (error) {
     return (
-      <Box my={4}>
+      <div my={4}>
         <Alert severity="error">
           Error loading drug interactions: {(error as any).message}
         </Alert>
-      </Box>
+      </div>
     );
   }
-
   if (!interactions || !interactions.interactionTypeGroup) {
     return (
-      <Box my={4}>
-        <Typography>No interaction data available</Typography>
-      </Box>
+      <div my={4}>
+        <div>No interaction data available</div>
+      </div>
     );
   }
-
   // Flatten interaction data for easier display
   const interactionPairs: any[] = [];
   interactions.interactionTypeGroup.forEach(group => {
@@ -49,40 +43,37 @@ const DrugInteractions: React.FC<DrugInteractionsProps> = ({ rxcui, rxcuis, drug
       });
     });
   });
-
   return (
-    <Paper elevation={2} className="p-4">
-      <Typography variant="h6" className="mb-4">
+    <div className="p-4">
+      <div className="mb-4">
         Drug Interactions {drugName ? `for ${drugName}` : ''}
-      </Typography>
-      
+      </div>
       {interactionPairs.length === 0 ? (
         <Alert severity="success">
           No significant drug interactions found
         </Alert>
       ) : (
-        <Box>
+        <div>
           {interactionPairs.map((interaction, index) => (
-            <Paper key={index} className="p-3 mb-3 border-l-4 border-blue-500">
-              <Box display="flex" justifyContent="space-between" alignItems="center" className="mb-2">
-                <Typography variant="subtitle1">
+            <div key={index} className="p-3 mb-3 border-l-4 border-blue-500">
+              <div display="flex" justifyContent="space-between" alignItems="center" className="mb-2">
+                <div >
                   {interaction.drug1} + {interaction.drug2}
-                </Typography>
+                </div>
                 <Chip
                   label={interaction.severity}
                   color={interaction.severity === 'HIGH' ? 'error' : interaction.severity === 'MODERATE' ? 'warning' : 'info'}
                   icon={<SeverityIcon severity={interaction.severity} />}
                 />
-              </Box>
-              <Typography variant="body2">
+              </div>
+              <div >
                 {interaction.description}
-              </Typography>
-            </Paper>
+              </div>
+            </div>
           ))}
-        </Box>
+        </div>
       )}
-    </Paper>
+    </div>
   );
 };
-
 export default DrugInteractions;

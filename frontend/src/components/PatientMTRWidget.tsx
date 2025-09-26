@@ -1,66 +1,50 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  Typography,
-  Button,
-  Stack,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  IconButton,
-  Tooltip,
-  Alert,
-  Skeleton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Divider,
-} from '@mui/material';
-import MTRIcon from '@mui/icons-material/Assignment';
-import StartIcon from '@mui/icons-material/PlayArrow';
-import ViewIcon from '@mui/icons-material/Visibility';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import WarningIcon from '@mui/icons-material/Warning';
-import CompletedIcon from '@mui/icons-material/CheckCircle';
-import SyncIcon from '@mui/icons-material/Sync';
-import AddIcon from '@mui/icons-material/Add';
-import HistoryIcon from '@mui/icons-material/Timeline';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+
+import { Button } from '@/components/ui/button';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { CardHeader } from '@/components/ui/card';
+
+import { Dialog } from '@/components/ui/dialog';
+
+import { DialogContent } from '@/components/ui/dialog';
+
+import { DialogTitle } from '@/components/ui/dialog';
+
+import { Tooltip } from '@/components/ui/tooltip';
+
+import { Alert } from '@/components/ui/alert';
+
+import { Skeleton } from '@/components/ui/skeleton';
+
+import { Separator } from '@/components/ui/separator';
 import {
   usePatientDashboardMTRData,
   useSyncMedicationsWithMTR,
   useSyncDTPsWithMTR,
-} from '../queries/usePatientMTRIntegration';
-import { useCreateMTRSession } from '../queries/useMTRQueries';
-import type { MedicationTherapyReview } from '../types/mtr';
+} from '@/hooks/useMTR';
 
 // ===============================
 // PATIENT MTR WIDGET COMPONENT
 // ===============================
-
 interface PatientMTRWidgetProps {
   patientId: string;
   onStartMTR?: (mtrId: string) => void;
   onViewMTR?: (mtrId: string) => void;
 }
-
-export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
+export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({ 
   patientId,
   onStartMTR,
-  onViewMTR,
+  onViewMTR
 }) => {
   const navigate = useNavigate();
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [selectedMTRForSync, setSelectedMTRForSync] = useState<string | null>(
     null
   );
-
   // Queries
   const {
     data: dashboardData,
@@ -71,42 +55,34 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
     patientId,
     !!patientId && patientId.length === 24
   );
-
   // Mutations
   const createMTRMutation = useCreateMTRSession();
   const syncMedicationsMutation = useSyncMedicationsWithMTR();
   const syncDTPsMutation = useSyncDTPsWithMTR();
-
   const handleStartMTR = async (event?: React.MouseEvent) => {
     // Prevent default behavior and event propagation
     if (event) {
       event.preventDefault();
       event.stopPropagation();
     }
-
     // Prevent multiple clicks
     if (createMTRMutation.isPending) {
       console.log('MTR creation already in progress, ignoring click');
       return;
     }
-
     try {
       console.log('Starting MTR for patient:', patientId);
-
-      const result = await createMTRMutation.mutateAsync({
+      const result = await createMTRMutation.mutateAsync({ 
         patientId,
         reviewType: 'initial',
         priority: 'routine',
         patientConsent: true,
-        confidentialityAgreed: true,
+        confidentialityAgreed: true}
       });
-
       console.log('MTR creation result:', result);
-
       // Check different possible response structures
       let newMTRId =
         result?.review?._id || result?.data?.review?._id || result?._id;
-
       if (!newMTRId) {
         console.error('No MTR ID returned from creation:', result);
         console.error(
@@ -115,9 +91,7 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
         );
         throw new Error('Failed to create MTR session - no ID returned');
       }
-
       console.log('Navigating to MTR:', newMTRId);
-
       if (onStartMTR) {
         onStartMTR(newMTRId);
       } else {
@@ -129,8 +103,7 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
         // Use setTimeout to ensure the navigation happens after the current event loop
         setTimeout(() => {
           navigate(`/pharmacy/medication-therapy/${newMTRId}`, {
-            replace: false,
-          });
+            replace: false}
         }, 100);
       }
     } catch (error) {
@@ -138,7 +111,6 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
       // The error notification is already handled by the mutation's onError
     }
   };
-
   const handleViewMTR = (mtrId: string) => {
     if (onViewMTR) {
       onViewMTR(mtrId);
@@ -146,24 +118,21 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
       navigate(`/pharmacy/medication-therapy/${mtrId}`);
     }
   };
-
   const handleSyncData = (mtrId: string) => {
     setSelectedMTRForSync(mtrId);
     setShowSyncDialog(true);
   };
-
   const handleConfirmSync = async () => {
     if (!selectedMTRForSync) return;
-
     try {
       await Promise.all([
-        syncMedicationsMutation.mutateAsync({
+        syncMedicationsMutation.mutateAsync({ 
           patientId,
-          mtrId: selectedMTRForSync,
+          mtrId: selectedMTRForSync}
         }),
-        syncDTPsMutation.mutateAsync({
+        syncDTPsMutation.mutateAsync({ 
           patientId,
-          mtrId: selectedMTRForSync,
+          mtrId: selectedMTRForSync}
         }),
       ]);
     } catch (error) {
@@ -173,7 +142,6 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
       setSelectedMTRForSync(null);
     }
   };
-
   const getStatusIcon = (status: MedicationTherapyReview['status']) => {
     switch (status) {
       case 'completed':
@@ -188,7 +156,6 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
         return <MTRIcon />;
     }
   };
-
   const getPriorityColor = (priority: MedicationTherapyReview['priority']) => {
     switch (priority) {
       case 'high_risk':
@@ -200,38 +167,36 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
         return 'default';
     }
   };
-
   if (isLoading) {
     return (
       <Card>
         <CardHeader
           title={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <div className="">
               <MTRIcon />
-              <Typography variant="h6">Medication Therapy Review</Typography>
-            </Box>
+              <div >Medication Therapy Review</div>
+            </div>}
           }
         />
         <CardContent>
-          <Stack spacing={2}>
+          <div spacing={2}>
             {[...Array(3)].map((_, index) => (
-              <Skeleton key={index} variant="rectangular" height={60} />
+              <Skeleton key={index}  height={60} />
             ))}
-          </Stack>
+          </div>
         </CardContent>
       </Card>
     );
   }
-
   if (isError) {
     return (
       <Card>
         <CardHeader
           title={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <div className="">
               <MTRIcon />
-              <Typography variant="h6">Medication Therapy Review</Typography>
-            </Box>
+              <div >Medication Therapy Review</div>
+            </div>}
           }
         />
         <CardContent>
@@ -242,7 +207,6 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
       </Card>
     );
   }
-
   // Type the dashboard data properly
   interface MTRSummary {
     totalMTRSessions: number;
@@ -250,7 +214,6 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
     activeMTRSessions: number;
     lastMTRDate?: string;
   }
-
   interface MTRSession {
     _id: string;
     reviewNumber: string;
@@ -261,20 +224,17 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
     completionPercentage: number;
     isOverdue?: boolean;
   }
-
   interface PendingAction {
     description: string;
     priority: 'high' | 'medium' | 'low';
     dueDate?: string;
   }
-
   interface DashboardData {
     activeMTRs: MTRSession[];
     recentMTRs: MTRSession[];
     mtrSummary: MTRSummary;
     pendingActions: PendingAction[];
   }
-
   const typedData = dashboardData as DashboardData | undefined;
   const { activeMTRs, recentMTRs, mtrSummary, pendingActions } = typedData || {
     activeMTRs: [],
@@ -286,24 +246,23 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
     },
     pendingActions: [],
   };
-
   return (
     <>
       <Card>
         <CardHeader
           title={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <div className="">
               <MTRIcon />
-              <Typography variant="h6">Medication Therapy Review</Typography>
-            </Box>
+              <div >Medication Therapy Review</div>
+            </div>}
           }
-          action={
-            <Stack direction="row" spacing={1}>
+          action={}
+            <div direction="row" spacing={1}>
               {mtrSummary && mtrSummary.totalMTRSessions > 0 && (
                 <Tooltip title="View MTR History">
                   <IconButton
                     size="small"
-                    onClick={() =>
+                    onClick={() =>}
                       navigate(`/patients/${patientId}/mtr-history`)
                     }
                   >
@@ -313,7 +272,7 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
               )}
               <Button
                 size="small"
-                variant="contained"
+                
                 startIcon={<AddIcon />}
                 onClick={(e) => handleStartMTR(e)}
                 disabled={createMTRMutation.isPending}
@@ -321,85 +280,75 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
               >
                 Start MTR
               </Button>
-            </Stack>
+            </div>
           }
         />
         <CardContent>
-          <Stack spacing={3}>
+          <div spacing={3}>
             {/* MTR Summary Stats */}
             {mtrSummary && (
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: 2,
-                }}
+              <div
+                className=""
               >
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" color="primary">
+                <div className="">
+                  <div  color="primary">
                     {mtrSummary.totalMTRSessions}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Total Sessions
-                  </Typography>
-                </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" color="success.main">
+                  </div>
+                </div>
+                <div className="">
+                  <div  color="success.main">
                     {mtrSummary.completedMTRSessions}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Completed
-                  </Typography>
-                </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" color="warning.main">
+                  </div>
+                </div>
+                <div className="">
+                  <div  color="warning.main">
                     {mtrSummary.activeMTRSessions}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Active
-                  </Typography>
-                </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  </div>
+                </div>
+                <div className="">
+                  <div  className="">
                     {mtrSummary.lastMTRDate
                       ? new Date(mtrSummary.lastMTRDate).toLocaleDateString()
                       : 'Never'}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  </div>
+                  <div  color="text.secondary">
                     Last MTR
-                  </Typography>
-                </Box>
-              </Box>
+                  </div>
+                </div>
+              </div>
             )}
-
             {/* Active MTR Sessions */}
             {activeMTRs && activeMTRs.length > 0 && (
               <>
-                <Divider />
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ mb: 1, fontWeight: 600 }}
+                <Separator />
+                <div>
+                  <div
+                    
+                    className=""
                   >
                     Active MTR Sessions
-                  </Typography>
+                  </div>
                   <List dense>
                     {activeMTRs.map((mtr: MTRSession) => (
-                      <ListItem
+                      <div
                         key={mtr._id as string}
-                        sx={{
-                          border: 1,
-                          borderColor: 'divider',
-                          borderRadius: 1,
-                          mb: 1,
-                        }}
-                        secondaryAction={
-                          <Stack direction="row" spacing={0.5}>
+                        className=""
+                        secondaryAction={}
+                          <div direction="row" spacing={0.5}>
                             <Tooltip title="Sync patient data">
                               <IconButton
                                 size="small"
                                 onClick={() =>
-                                  handleSyncData(mtr._id as string)
+                                  handleSyncData(mtr._id as string)}
                                 }
                               >
                                 <SyncIcon />
@@ -414,10 +363,10 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
                                 <ViewIcon />
                               </IconButton>
                             </Tooltip>
-                          </Stack>
+                          </div>
                         }
                       >
-                        <ListItemIcon>
+                        <div>
                           {getStatusIcon(
                             mtr.status as
                               | 'in_progress'
@@ -425,22 +374,18 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
                               | 'cancelled'
                               | 'on_hold'
                           )}
-                        </ListItemIcon>
-                        <ListItemText
+                        </div>
+                        <div
                           primary={
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                              }}
+                            <div
+                              className=""
                             >
-                              <Typography
-                                variant="body2"
-                                sx={{ fontWeight: 500 }}
-                              >
+                              <div
+                                
+                                className=""
+                              >}
                                 {mtr.reviewNumber as string}
-                              </Typography>
+                              </div>
                               <Chip
                                 size="small"
                                 label={mtr.priority as string}
@@ -448,9 +393,9 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
                                   mtr.priority as
                                     | 'routine'
                                     | 'urgent'
-                                    | 'high_risk'
+                                    | 'high_risk'}
                                 )}
-                                variant="outlined"
+                                
                               />
                               {(mtr.isOverdue as boolean) && (
                                 <Chip
@@ -460,96 +405,94 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
                                   icon={<WarningIcon />}
                                 />
                               )}
-                            </Box>
+                            </div>
                           }
                           secondary={
-                            <Typography
-                              variant="caption"
+                            <div
+                              
                               color="text.secondary"
-                            >
+                            >}
                               Started{' '}
                               {new Date(
                                 mtr.startedAt as string
                               ).toLocaleDateString()}{' '}
                               •{mtr.completionPercentage as number}% complete
-                            </Typography>
+                            </div>
                           }
                         />
-                      </ListItem>
+                      </div>
                     ))}
                   </List>
-                </Box>
+                </div>
               </>
             )}
-
             {/* Pending Actions */}
             {pendingActions && pendingActions.length > 0 && (
               <>
-                <Divider />
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ mb: 1, fontWeight: 600 }}
+                <Separator />
+                <div>
+                  <div
+                    
+                    className=""
                   >
                     Pending Actions
-                  </Typography>
+                  </div>
                   <List dense>
                     {pendingActions
                       .slice(0, 3)
                       .map((action: PendingAction, index: number) => (
-                        <ListItem key={index}>
-                          <ListItemIcon>
+                        <div key={index}>
+                          <div>
                             <ScheduleIcon
                               color={
                                 (action.priority as string) === 'high'
                                   ? 'error'
-                                  : 'warning'
+                                  : 'warning'}
                               }
                             />
-                          </ListItemIcon>
-                          <ListItemText
+                          </div>
+                          <div
                             primary={action.description as string}
                             secondary={
                               action.dueDate && (
-                                <Typography
-                                  variant="caption"
+                                <div
+                                  
                                   color="text.secondary"
-                                >
+                                >}
                                   Due:{' '}
                                   {new Date(
                                     action.dueDate as string
                                   ).toLocaleDateString()}
-                                </Typography>
+                                </div>
                               )
                             }
                           />
-                        </ListItem>
+                        </div>
                       ))}
                   </List>
-                </Box>
+                </div>
               </>
             )}
-
             {/* Recent MTR Sessions */}
             {recentMTRs && recentMTRs.length > 0 && (
               <>
-                <Divider />
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ mb: 1, fontWeight: 600 }}
+                <Separator />
+                <div>
+                  <div
+                    
+                    className=""
                   >
                     Recent MTR Sessions
-                  </Typography>
+                  </div>
                   <List dense>
                     {recentMTRs.slice(0, 3).map((mtr: MTRSession) => (
-                      <ListItem
+                      <div
                         key={mtr._id as string}
                         component="div"
                         onClick={() => handleViewMTR(mtr._id as string)}
-                        sx={{ cursor: 'pointer' }}
+                        className=""
                       >
-                        <ListItemIcon>
+                        <div>
                           {getStatusIcon(
                             mtr.status as
                               | 'in_progress'
@@ -557,71 +500,66 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
                               | 'cancelled'
                               | 'on_hold'
                           )}
-                        </ListItemIcon>
-                        <ListItemText
+                        </div>
+                        <div
                           primary={
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                              }}
+                            <div
+                              className=""
                             >
-                              <Typography variant="body2">
+                              <div >}
                                 {mtr.reviewNumber as string}
-                              </Typography>
+                              </div>
                               <Chip
                                 size="small"
                                 label={mtr.status as string}
                                 color={
                                   (mtr.status as string) === 'completed'
                                     ? 'success'
-                                    : 'default'
+                                    : 'default'}
                                 }
-                                variant="outlined"
+                                
                               />
-                            </Box>
+                            </div>
                           }
                           secondary={
-                            <Typography
-                              variant="caption"
+                            <div
+                              
                               color="text.secondary"
                             >
                               {new Date(
-                                mtr.startedAt as string
+                                mtr.startedAt as string}
                               ).toLocaleDateString()}
                               {mtr.completedAt &&
                                 ` - ${new Date(
                                   mtr.completedAt as string
                                 ).toLocaleDateString()}`}
-                            </Typography>
+                            </div>
                           }
                         />
-                      </ListItem>
+                      </div>
                     ))}
                   </List>
-                </Box>
+                </div>
               </>
             )}
-
             {/* Empty State */}
             {(!mtrSummary || mtrSummary.totalMTRSessions === 0) && (
-              <Box sx={{ textAlign: 'center', py: 3 }}>
+              <div className="">
                 <MTRIcon
-                  sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+                  className=""
                 />
-                <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                <div  color="text.secondary" className="">
                   No MTR Sessions
-                </Typography>
-                <Typography
-                  variant="body2"
+                </div>
+                <div
+                  
                   color="text.secondary"
-                  sx={{ mb: 2 }}
+                  className=""
                 >
                   Start the first medication therapy review for this patient
-                </Typography>
+                </div>
                 <Button
-                  variant="contained"
+                  
                   startIcon={<AddIcon />}
                   onClick={(e) => handleStartMTR(e)}
                   disabled={createMTRMutation.isPending}
@@ -629,37 +567,36 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
                 >
                   Start First MTR
                 </Button>
-              </Box>
+              </div>
             )}
-          </Stack>
+          </div>
         </CardContent>
       </Card>
-
       {/* Sync Data Dialog */}
       <Dialog open={showSyncDialog} onClose={() => setShowSyncDialog(false)}>
         <DialogTitle>Sync Patient Data with MTR</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2 }}>
+          <div  className="">
             This will synchronize the patient's medications and drug therapy
             problems with the selected MTR session. Any conflicts will be
             highlighted for manual resolution.
-          </Typography>
+          </div>
           <Alert severity="info">
-            <Typography variant="body2">
+            <div >
               • Patient medications will be imported into the MTR session
               <br />
               • Existing DTPs will be linked to the MTR
               <br />• Any conflicts will require manual review
-            </Typography>
+            </div>
           </Alert>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowSyncDialog(false)}>Cancel</Button>
           <Button
-            variant="contained"
+            
             onClick={handleConfirmSync}
             disabled={
-              syncMedicationsMutation.isPending || syncDTPsMutation.isPending
+              syncMedicationsMutation.isPending || syncDTPsMutation.isPending}
             }
             startIcon={<SyncIcon />}
           >
@@ -670,5 +607,4 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
     </>
   );
 };
-
 export default PatientMTRWidget;

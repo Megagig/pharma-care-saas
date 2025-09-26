@@ -1,21 +1,3 @@
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  UseQueryResult,
-  UseMutationResult,
-} from '@tanstack/react-query';
-import { drugInfoApi } from '../services/drugInfoApi';
-import {
-  DrugSearchResult,
-  DrugMonograph,
-  DrugInteraction,
-  AdverseEffect,
-  FormularyInfo,
-  TherapyPlan,
-  DrugIndication,
-} from '../types/drugTypes';
-
 // Query keys for drug information
 export const drugQueryKeys = {
   all: ['drugs'] as const,
@@ -37,9 +19,9 @@ export const useDrugSearch = (
   name: string,
   enabled: boolean = true
 ): UseQueryResult<DrugSearchResult, Error> => {
-  return useQuery<DrugSearchResult, Error>({
+  return useQuery<DrugSearchResult, Error>({ 
     queryKey: drugQueryKeys.search(name),
-    queryFn: async () => {
+    queryFn: async () => { })
       console.log(`Making API call to search drugs with name: ${name}`);
       try {
         const result = await drugInfoApi.searchDrugs(name);
@@ -60,11 +42,11 @@ export const useDrugMonograph = (
   id: string,
   enabled: boolean = true
 ): UseQueryResult<DrugMonograph, Error> => {
-  return useQuery<DrugMonograph, Error>({
+  return useQuery<DrugMonograph, Error>({ 
     queryKey: drugQueryKeys.monograph(id),
     queryFn: () => drugInfoApi.getMonograph(id),
     enabled: enabled && !!id,
-    staleTime: 1000 * 60 * 60, // 1 hour
+    staleTime: 1000 * 60 * 60, // 1 hour })
   });
 };
 
@@ -73,11 +55,11 @@ export const useDrugInteractions = (
   rxcui?: string,
   rxcuis?: string[]
 ): UseQueryResult<DrugInteraction, Error> => {
-  return useQuery<DrugInteraction, Error>({
+  return useQuery<DrugInteraction, Error>({ 
     queryKey: drugQueryKeys.interactions(rxcui, rxcuis),
     queryFn: () => drugInfoApi.checkInteractions(rxcui, rxcuis),
     enabled: !!rxcui || (!!rxcuis && rxcuis.length > 0),
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 10, // 10 minutes })
   });
 };
 
@@ -85,12 +67,12 @@ export const useDrugInteractions = (
 export const useDrugIndications = (
   drugId: string | null
 ): UseQueryResult<DrugIndication, Error> => {
-  return useQuery<DrugIndication, Error>({
+  return useQuery<DrugIndication, Error>({ 
     queryKey: drugQueryKeys.indications(drugId),
     queryFn: () => drugInfoApi.getIndications(drugId!),
     enabled: !!drugId,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 1,
+    retry: 1}
   });
 };
 
@@ -99,11 +81,11 @@ export const useAdverseEffects = (
   id: string,
   limit?: number
 ): UseQueryResult<AdverseEffect, Error> => {
-  return useQuery<AdverseEffect, Error>({
+  return useQuery<AdverseEffect, Error>({ 
     queryKey: drugQueryKeys.adverseEffects(id, limit),
     queryFn: () => drugInfoApi.getAdverseEffects(id, limit),
     enabled: !!id,
-    staleTime: 1000 * 60 * 30, // 30 minutes
+    staleTime: 1000 * 60 * 30, // 30 minutes })
   });
 };
 
@@ -112,38 +94,35 @@ export const useFormularyInfo = (
   id: string,
   enabled: boolean = true
 ): UseQueryResult<FormularyInfo, Error> => {
-  return useQuery<FormularyInfo, Error>({
+  return useQuery<FormularyInfo, Error>({ 
     queryKey: drugQueryKeys.formulary(id),
     queryFn: () => drugInfoApi.getFormularyInfo(id),
     enabled: enabled && !!id,
-    staleTime: 1000 * 60 * 60, // 1 hour
+    staleTime: 1000 * 60 * 60, // 1 hour })
   });
 };
 
 // Therapy plans hooks
 export const useTherapyPlans = (): UseQueryResult<TherapyPlan[], Error> => {
-  return useQuery<TherapyPlan[], Error>({
+  return useQuery<TherapyPlan[], Error>({ 
     queryKey: drugQueryKeys.therapyPlans,
     queryFn: drugInfoApi.getTherapyPlans,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes })
   });
 };
 
 export const useTherapyPlan = (
   id: string
 ): UseQueryResult<TherapyPlan, Error> => {
-  return useQuery<TherapyPlan, Error>({
+  return useQuery<TherapyPlan, Error>({ 
     queryKey: drugQueryKeys.therapyPlan(id),
     queryFn: () => drugInfoApi.getTherapyPlan(id),
-    enabled: !!id,
+    enabled: !!id}
   });
 };
 
 // Therapy plan mutations
 export const useCreateTherapyPlan = (): UseMutationResult<
-  TherapyPlan,
-  Error,
-  Omit<TherapyPlan, '_id' | 'createdAt' | 'updatedAt'>,
   unknown
 > => {
   const queryClient = useQueryClient();
@@ -152,17 +131,14 @@ export const useCreateTherapyPlan = (): UseMutationResult<
     TherapyPlan,
     Error,
     Omit<TherapyPlan, '_id' | 'createdAt' | 'updatedAt'>
-  >({
+  >({ 
     mutationFn: drugInfoApi.createTherapyPlan,
-    onSuccess: () => {
+    onSuccess: () => { })
       queryClient.invalidateQueries({ queryKey: drugQueryKeys.therapyPlans });
-    },
-  });
+    }
 };
 
 export const useUpdateTherapyPlan = (): UseMutationResult<
-  TherapyPlan,
-  Error,
   { id: string; plan: Partial<TherapyPlan> },
   unknown
 > => {
@@ -172,29 +148,26 @@ export const useUpdateTherapyPlan = (): UseMutationResult<
     TherapyPlan,
     Error,
     { id: string; plan: Partial<TherapyPlan> }
-  >({
+  >({  })
     mutationFn: ({ id, plan }) => drugInfoApi.updateTherapyPlan(id, plan),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: drugQueryKeys.therapyPlans });
-      queryClient.invalidateQueries({
-        queryKey: drugQueryKeys.therapyPlan(data._id!),
+      queryClient.invalidateQueries({ 
+        queryKey: drugQueryKeys.therapyPlan(data._id!)}
       });
-    },
-  });
+    }
 };
 
 export const useDeleteTherapyPlan = (): UseMutationResult<
   void,
-  Error,
   string,
   unknown
 > => {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, string>({
+  return useMutation<void, Error, string>({ 
     mutationFn: drugInfoApi.deleteTherapyPlan,
-    onSuccess: () => {
+    onSuccess: () => { })
       queryClient.invalidateQueries({ queryKey: drugQueryKeys.therapyPlans });
-    },
-  });
+    }
 };

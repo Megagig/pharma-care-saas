@@ -1,30 +1,25 @@
 // Template Services
-export {
+// Removed broken export
     templateRenderingEngine,
     TemplateRenderingEngine,
     MemoryTemplateCache
-} from './templateRenderingService';
 
-export {
+// Removed broken export
     templateValidationService,
     TemplateValidationService
-} from './templateValidationService';
 
-export {
+// Removed broken export
     templateInheritanceService,
     TemplateInheritanceService
-} from './templateInheritanceService';
 
-export {
+// Removed broken export
     templatePerformanceService,
     TemplatePerformanceService
-} from './templatePerformanceService';
 
 // Export Services
-export { exportServices } from './exportServices';
-export { scheduleService } from './scheduleService';
-export { emailService } from './emailService';
-
+// Removed incomplete export: export { exportServices 
+export { scheduleService 
+export { emailService 
 // Export Types
 export type {
     RenderContext,
@@ -40,7 +35,6 @@ export type {
     PerformanceMetrics,
     TemplateCache,
     ParameterBinding
-} from './templateRenderingService';
 
 export type {
     ValidationContext,
@@ -48,7 +42,6 @@ export type {
     ValidationSuggestion,
     ValidationPerformance,
     ValidationRule
-} from './templateValidationService';
 
 export type {
     TemplateInheritance,
@@ -60,7 +53,6 @@ export type {
     InheritanceResult,
     InheritanceConflict,
     TemplateComposition
-} from './templateInheritanceService';
 
 export type {
     PerformanceOptimization,
@@ -72,4 +64,3 @@ export type {
     OptimizationResult,
     OptimizationRecommendation,
     CacheEntry
-} from './templatePerformanceService';

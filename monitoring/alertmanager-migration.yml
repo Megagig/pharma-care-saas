@@ -1,0 +1,165 @@
+# Alertmanager configuration for migration monitoring
+
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@pharmacare.com'
+  smtp_auth_username: 'alerts@pharmacare.com'
+  smtp_auth_password: 'your-smtp-password'
+
+route:
+  group_by: ['alertname', 'component']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'default'
+  routes:
+    # Critical alerts go to PagerDuty and Slack
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 5m
+
+    # Performance alerts go to development team
+    - match:
+        component: frontend
+      receiver: 'frontend-team'
+      
+    - match:
+        component: performance
+      receiver: 'performance-team'
+
+    # Business metric alerts go to product team
+    - match:
+        component: business
+      receiver: 'product-team'
+
+    # Accessibility alerts go to QA team
+    - match:
+        component: accessibility
+      receiver: 'qa-team'
+
+receivers:
+  # Default receiver for all alerts
+  - name: 'default'
+    email_configs:
+      - to: 'dev-team@pharmacare.com'
+        subject: '[Migration Alert] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+
+  # Critical alerts - multiple channels
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'dev-team@pharmacare.com,ops-team@pharmacare.com'
+        subject: '[CRITICAL] Migration Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          🚨 CRITICAL MIGRATION ALERT 🚨
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Component: {{ .Labels.component }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+          
+          Please investigate immediately and consider rollback if necessary.
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-critical'
+        title: '🚨 Critical Migration Alert'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          Component: {{ .Labels.component }}
+          {{ end }}
+        color: 'danger'
+    
+    pagerduty_configs:
+      - routing_key: 'your-pagerduty-integration-key'
+        description: 'Critical migration alert: {{ .GroupLabels.alertname }}'
+
+  # Frontend team alerts
+  - name: 'frontend-team'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#frontend-alerts'
+        title: 'Frontend Migration Alert'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          {{ end }}
+        color: 'warning'
+
+  # Performance team alerts
+  - name: 'performance-team'
+    email_configs:
+      - to: 'performance-team@pharmacare.com'
+        subject: '[Performance] Migration Alert: {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#performance-alerts'
+        title: 'Performance Migration Alert'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          {{ end }}
+
+  # Product team alerts for business metrics
+  - name: 'product-team'
+    email_configs:
+      - to: 'product-team@pharmacare.com'
+        subject: '[Business Impact] Migration Alert: {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#product-alerts'
+        title: 'Business Impact Alert'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          This may impact user experience and business metrics.
+          {{ end }}
+        color: 'warning'
+
+  # QA team alerts for accessibility
+  - name: 'qa-team'
+    email_configs:
+      - to: 'qa-team@pharmacare.com'
+        subject: '[Accessibility] Migration Alert: {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#qa-alerts'
+        title: 'Accessibility Alert'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          Please review accessibility compliance.
+          {{ end }}
+
+inhibit_rules:
+  # Inhibit warning alerts when critical alerts are firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'component']
+
+  # Inhibit individual component errors when general error rate is high
+  - source_match:
+      alertname: 'HighErrorRate'
+    target_match:
+      alertname: 'ComponentErrors'

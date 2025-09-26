@@ -1,37 +1,26 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { performance } from 'perf_hooks';
-import { ChartComponent } from '../../components/shared/ChartComponent';
-import { ReportsAnalyticsDashboard } from '../../components/ReportsAnalyticsDashboard';
-import { generateMockChartData, mockChartConfig } from '../mocks/mockData';
-
 // Mock performance.now for consistent testing
 const mockPerformanceNow = vi.fn();
 global.performance = { now: mockPerformanceNow } as any;
 
 // Mock stores
-vi.mock('../../stores/reportsStore', () => ({
+vi.mock('../../stores/reportsStore', () => ({ 
     useReportsStore: vi.fn(() => ({
         reportData: null,
         isLoading: false,
         error: null,
-        fetchReportData: vi.fn(),
-    })),
-}));
+        fetchReportData: vi.fn()}
+    }))}
 
-vi.mock('../../stores/filtersStore', () => ({
-    useFiltersStore: vi.fn(() => ({
+vi.mock('../../stores/filtersStore', () => ({ 
+    useFiltersStore: vi.fn(() => ({ })
         filters: {},
-        setFilters: vi.fn(),
-    })),
-}));
+        setFilters: vi.fn()}
 
-vi.mock('../../stores/dashboardStore', () => ({
+vi.mock('../../stores/dashboardStore', () => ({ 
     useDashboardStore: vi.fn(() => ({
         sidebarCollapsed: false,
-        theme: 'light',
-    })),
-}));
+        theme: 'light'}
+    }))}
 
 describe('Performance Tests', () => {
     beforeEach(() => {
@@ -171,13 +160,13 @@ describe('Dashboard Loading Performance', () => {
     });
 
     it('should lazy load report modules', async () => {
-        const mockImport = vi.fn().mockResolvedValue({
-            default: () => <div>Lazy Loaded Component</ div >,
+        const mockImport = vi.fn().mockResolvedValue({ 
+            default: () => <div>Lazy Loaded Component</ div >}
       });
 
     // Mock dynamic import
-    vi.doMock('../../components/reports/PatientOutcomeReport', () => ({
-        PatientOutcomeReport: mockImport,
+    vi.doMock('../../components/reports/PatientOutcomeReport', () => ({ 
+        PatientOutcomeReport: mockImport}
     }));
 
     render(
@@ -304,7 +293,6 @@ describe('Animation Performance', () => {
                 stagger: true,
                 entrance: 'fade',
             },
-        }}
         />
     );
 
@@ -338,23 +326,21 @@ it('should disable animations for large datasets', async () => {
 
 describe('Data Processing Performance', () => {
     it('should process data transformations efficiently', async () => {
-        const rawData = Array(1000).fill(null).map((_, i) => ({
+        const rawData = Array(1000).fill(null).map((_, i) => ({ 
             id: i,
-            value: Math.random() * 100,
+            value: Math.random() * 100}
             category: `Category ${i % 10}`,
-            timestamp: new Date(2024, 0, i % 365),
-        }));
+            timestamp: new Date(2024, 0, i % 365)}
 
         const startTime = performance.now();
 
         // Simulate data transformation
         const processedData = rawData
             .filter(item => item.value > 50)
-            .map(item => ({
+            .map(item => ({ 
                 ...item,
-                formattedValue: item.value.toFixed(2),
-                monthYear: `${item.timestamp.getMonth() + 1}/${item.timestamp.getFullYear()}`,
-            }))
+                formattedValue: item.value.toFixed(2)}
+                monthYear: `${item.timestamp.getMonth() + 1}/${item.timestamp.getFullYear()}`}
             .reduce((acc, item) => {
                 const key = item.monthYear;
                 if (!acc[key]) {
@@ -431,10 +417,9 @@ describe('Network Performance', () => {
         // Mock fetch to track requests
         global.fetch = vi.fn().mockImplementation((url: string) => {
             requests.push(url);
-            return Promise.resolve({
-                ok: true,
-                json: () => Promise.resolve({ data: [] }),
-            });
+            return Promise.resolve({ 
+                ok: true}
+                json: () => Promise.resolve({ data: [] })}
         });
 
         // Simulate multiple rapid filter changes
@@ -467,10 +452,9 @@ describe('Network Performance', () => {
             return response;
         };
 
-        global.fetch = vi.fn().mockResolvedValue({
-            ok: true,
-            json: () => Promise.resolve({ data: [] }),
-        });
+        global.fetch = vi.fn().mockResolvedValue({ 
+            ok: true}
+            json: () => Promise.resolve({ data: [] })}
 
         const url = '/api/reports/patient-outcomes?dateRange=30d';
 

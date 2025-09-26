@@ -21,7 +21,7 @@ export const queryClient = new QueryClient({
       // Retry failed mutations once
       retry: 1,
     },
-  },
+  }
 });
 
 // Query Keys Factory - Centralized query key management for Patient Management
@@ -33,12 +33,12 @@ const createBaseKeys = (entity: string) => ({
   lists: () => [entity, 'list'] as const,
   list: (filters: Record<string, unknown>) => [entity, 'list', { filters }] as const,
   details: () => [entity, 'detail'] as const,
-  detail: (id: string) => [entity, 'detail', id] as const,
+  detail: (id: string) => [entity, 'detail', id] as const
 });
 
 const createPatientRelatedKeys = (entity: string) => ({
   ...createBaseKeys(entity),
-  byPatient: (patientId: string) => [entity, 'patient', patientId] as const,
+  byPatient: (patientId: string) => [entity, 'patient', patientId] as const
 });
 
 export const queryKeys = {

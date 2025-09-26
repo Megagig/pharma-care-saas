@@ -1,6 +1,4 @@
 // Chart Helper Functions
-import { ChartType, ChartConfig, DataPoint, SeriesConfig, ChartTheme } from '../types/charts';
-
 /**
  * Generate default chart configuration based on chart type
  */
@@ -105,28 +103,27 @@ export const transformDataForChart = (
         case 'pie':
         case 'donut':
             // For pie charts, ensure we have name and value fields
-            return data.map((item, index) => ({
-                ...item,
+            return data.map((item, index) => ({ 
+                ...item}
                 name: item.name || item.label || `Item ${index + 1}`,
-                value: typeof item.value === 'number' ? item.value : 0,
-            }));
+                value: typeof item.value === 'number' ? item.value : 0}
 
         case 'treemap':
             // For treemap, ensure hierarchical structure
-            return data.map(item => ({
+            return data.map(item => ({ 
                 ...item,
                 name: item.name || item.label,
                 value: typeof item.value === 'number' ? item.value : 0,
-                children: item.children || [],
+                children: item.children || []}
             }));
 
         case 'heatmap':
             // For heatmap, ensure x, y, value structure
-            return data.map(item => ({
+            return data.map(item => ({ 
                 ...item,
                 x: item.x || item.xAxis,
                 y: item.y || item.yAxis,
-                value: typeof item.value === 'number' ? item.value : 0,
+                value: typeof item.value === 'number' ? item.value : 0}
             }));
 
         default:

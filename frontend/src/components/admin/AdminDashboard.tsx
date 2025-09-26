@@ -1,78 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Paper,
-  Chip,
-  Button,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Alert,
-  Tabs,
-  Tab,
-  Badge,
-  Tooltip,
-  Checkbox,
-  FormControlLabel,
-  Switch,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-} from '@mui/material';
-import {
-  Edit,
-  X,
-  CheckCircle,
-  Download,
-  Users,
-  FileText,
-  BarChart3,
-  Settings,
-  Shield,
-  TrendingUp,
-  ArrowUpDown,
-  Mail,
-  MapPin,
-  ExternalLink,
-  ChevronDown,
-  CheckCircle as PlaylistAddCheck,
-  XCircle,
-} from 'lucide-react';
-import { useUIStore } from '../../stores';
 import LoadingSpinner from '../LoadingSpinner';
 import BulkOperationProgress from '../rbac/BulkOperationProgress';
-import {
-  getAllUsers,
-  updateUserRole,
-  suspendUser,
-  approveLicense,
-  rejectLicense,
-  getAllRoles,
-  bulkAssignRoles,
-  bulkRevokeRoles,
-  getPendingLicenses,
-  getSystemAnalytics,
-} from '../../services/rbacService';
-import type { BulkRoleAssignment, DynamicUser, Role } from '../../types/rbac';
-
 // Import the new admin components
 import SecurityDashboard from './SecurityDashboard';
 import UsageMonitoring from './UsageMonitoring';
@@ -81,6 +9,81 @@ import InvitationManagement from './InvitationManagement';
 import LocationManagement from './LocationManagement';
 import WebhookManagement from './WebhookManagement';
 import AdvancedSubscriptionAnalytics from '../subscription/AdvancedSubscriptionAnalytics';
+
+import {
+  Button,
+  Input,
+  Label,
+  Card,
+  CardContent,
+  Badge,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogHeader,
+  DialogFooter,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  Alert,
+  Switch,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Checkbox
+} from '@/components/ui';
+
+import {
+  ChevronDown,
+  X,
+  CheckCircle,
+  Download,
+  Edit,
+  Users,
+  FileText,
+  BarChart3,
+  Shield,
+  TrendingUp,
+  ArrowUpDown,
+  Mail,
+  MapPin,
+  ExternalLink,
+  Settings,
+  PlaylistAddCheck,
+  XCircle
+} from 'lucide-react';
+
+import {
+  bulkRevokeRoles,
+  bulkAssignRoles,
+  rejectLicense,
+  approveLicense,
+  suspendUser,
+  updateUserRole,
+  getAllRoles,
+  getSystemAnalytics,
+  getPendingLicenses,
+  getAllUsers
+} from '@/services/rbacService';
+import { BulkRoleAssignment, DynamicUser, Role } from '@/types/rbac';
+import { useUIStore } from '@/stores';
 
 interface License {
   _id: string;
@@ -123,7 +126,7 @@ const AdminDashboard: React.FC = () => {
   const [filters, setFilters] = useState({
     role: '',
     status: '',
-    licenseStatus: '',
+    licenseStatus: ''
   });
 
   // Bulk operation states
@@ -132,8 +135,7 @@ const AdminDashboard: React.FC = () => {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [bulkOperationId, setBulkOperationId] = useState<string>('');
-  const [bulkOperationProgressOpen, setBulkOperationProgressOpen] =
-    useState(false);
+  const [bulkOperationProgressOpen, setBulkOperationProgressOpen] = useState(false);
   const [isTemporary, setIsTemporary] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string>('');
   const [assignmentReason, setAssignmentReason] = useState<string>('');
@@ -143,7 +145,6 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, filters]);
 
   useEffect(() => {
@@ -171,7 +172,7 @@ const AdminDashboard: React.FC = () => {
         type: 'error',
         title: 'Error',
         message: 'Failed to load data',
-        duration: 5000,
+        duration: 5000
       });
     } finally {
       setLoading(false);
@@ -183,9 +184,8 @@ const AdminDashboard: React.FC = () => {
       const response = await getAllUsers({
         page: page + 1,
         limit: rowsPerPage,
-        ...filters,
+        ...filters
       });
-
       if (response.success) {
         setUsers(response.data.users);
       }
@@ -197,7 +197,6 @@ const AdminDashboard: React.FC = () => {
   const loadLicenses = async () => {
     try {
       const response = await getPendingLicenses();
-
       if (response.success) {
         setLicenses(response.data.licenses as License[]);
       }
@@ -209,7 +208,6 @@ const AdminDashboard: React.FC = () => {
   const loadAnalytics = async () => {
     try {
       const response = await getSystemAnalytics();
-
       if (response.success) {
         // Convert SystemAnalytics to our Analytics interface
         const convertedAnalytics: Analytics = {
@@ -227,7 +225,7 @@ const AdminDashboard: React.FC = () => {
           licenses: response.data.permissionAnalytics.byCategory.map(
             (item) => ({
               _id: item._id,
-              count: item.count,
+              count: item.count
             })
           ),
           generated: new Date().toISOString(),
@@ -253,13 +251,12 @@ const AdminDashboard: React.FC = () => {
   const handleUpdateUserRole = async (userId: string, role: string) => {
     try {
       const response = await updateUserRole(userId, role);
-
       if (response.success) {
         addNotification({
           type: 'success',
           title: 'Success',
           message: 'User role updated successfully',
-          duration: 5000,
+          duration: 5000
         });
         loadUsers();
         setEditDialogOpen(false);
@@ -269,7 +266,7 @@ const AdminDashboard: React.FC = () => {
         type: 'error',
         title: 'Error',
         message: 'Failed to update user role',
-        duration: 5000,
+        duration: 5000
       });
     }
   };
@@ -277,13 +274,12 @@ const AdminDashboard: React.FC = () => {
   const handleSuspendUser = async (userId: string) => {
     try {
       const response = await suspendUser(userId, 'Administrative action');
-
       if (response.success) {
         addNotification({
           type: 'success',
           title: 'Success',
           message: 'User suspended successfully',
-          duration: 5000,
+          duration: 5000
         });
         loadUsers();
       }
@@ -292,7 +288,7 @@ const AdminDashboard: React.FC = () => {
         type: 'error',
         title: 'Error',
         message: 'Failed to suspend user',
-        duration: 5000,
+        duration: 5000
       });
     }
   };
@@ -300,13 +296,12 @@ const AdminDashboard: React.FC = () => {
   const handleApproveLicense = async (userId: string) => {
     try {
       const response = await approveLicense(userId);
-
       if (response.success) {
         addNotification({
           type: 'success',
           title: 'Success',
           message: 'License approved successfully',
-          duration: 5000,
+          duration: 5000
         });
         loadLicenses();
       }
@@ -315,7 +310,7 @@ const AdminDashboard: React.FC = () => {
         type: 'error',
         title: 'Error',
         message: 'Failed to approve license',
-        duration: 5000,
+        duration: 5000
       });
     }
   };
@@ -323,13 +318,12 @@ const AdminDashboard: React.FC = () => {
   const handleRejectLicense = async (userId: string, reason: string) => {
     try {
       const response = await rejectLicense(userId, reason);
-
       if (response.success) {
         addNotification({
           type: 'success',
           title: 'Success',
           message: 'License rejected',
-          duration: 5000,
+          duration: 5000
         });
         loadLicenses();
         setLicenseDialogOpen(false);
@@ -339,7 +333,7 @@ const AdminDashboard: React.FC = () => {
         type: 'error',
         title: 'Error',
         message: 'Failed to reject license',
-        duration: 5000,
+        duration: 5000
       });
     }
   };
@@ -351,7 +345,7 @@ const AdminDashboard: React.FC = () => {
         type: 'error',
         title: 'Error',
         message: 'Please select at least one user and one role',
-        duration: 5000,
+        duration: 5000
       });
       return;
     }
@@ -379,14 +373,14 @@ const AdminDashboard: React.FC = () => {
           type: 'success',
           title: 'Bulk Operation Started',
           message: 'Bulk role assignment has been initiated',
-          duration: 5000,
+          duration: 5000
         });
       } else {
         addNotification({
           type: 'error',
           title: 'Error',
           message: response.message || 'Failed to start bulk role assignment',
-          duration: 5000,
+          duration: 5000
         });
       }
     } catch (error) {
@@ -395,7 +389,7 @@ const AdminDashboard: React.FC = () => {
         type: 'error',
         title: 'Error',
         message: 'Failed to start bulk role assignment',
-        duration: 5000,
+        duration: 5000
       });
     }
   };
@@ -406,14 +400,13 @@ const AdminDashboard: React.FC = () => {
         type: 'error',
         title: 'Error',
         message: 'Please select at least one user and one role',
-        duration: 5000,
+        duration: 5000
       });
       return;
     }
 
     try {
       const response = await bulkRevokeRoles(selectedUsers, selectedRoles[0]);
-
       if (response.success) {
         setBulkOperationId('');
         setBulkOperationProgressOpen(true);
@@ -422,14 +415,14 @@ const AdminDashboard: React.FC = () => {
           type: 'success',
           title: 'Bulk Operation Started',
           message: 'Bulk role revocation has been initiated',
-          duration: 5000,
+          duration: 5000
         });
       } else {
         addNotification({
           type: 'error',
           title: 'Error',
           message: response.message || 'Failed to start bulk role revocation',
-          duration: 5000,
+          duration: 5000
         });
       }
     } catch (error) {
@@ -438,7 +431,7 @@ const AdminDashboard: React.FC = () => {
         type: 'error',
         title: 'Error',
         message: 'Failed to start bulk role revocation',
-        duration: 5000,
+        duration: 5000
       });
     }
   };
@@ -475,55 +468,37 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const getStatusColor = (
-    status: string
-  ):
-    | 'default'
-    | 'primary'
-    | 'secondary'
-    | 'error'
-    | 'info'
-    | 'success'
-    | 'warning' => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'success';
+        return 'bg-green-100 text-green-800';
       case 'pending':
-        return 'warning';
+        return 'bg-yellow-100 text-yellow-800';
       case 'suspended':
-        return 'error';
+        return 'bg-red-100 text-red-800';
       case 'approved':
-        return 'success';
+        return 'bg-green-100 text-green-800';
       case 'rejected':
-        return 'error';
+        return 'bg-red-100 text-red-800';
       default:
-        return 'default';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getRoleColor = (
-    role: string
-  ):
-    | 'default'
-    | 'primary'
-    | 'secondary'
-    | 'error'
-    | 'info'
-    | 'success'
-    | 'warning' => {
+  const getRoleColor = (role: string) => {
     switch (role) {
       case 'super_admin':
-        return 'error';
+        return 'bg-red-100 text-red-800';
       case 'pharmacy_outlet':
-        return 'primary';
+        return 'bg-blue-100 text-blue-800';
       case 'pharmacy_team':
-        return 'secondary';
+        return 'bg-purple-100 text-purple-800';
       case 'pharmacist':
-        return 'info';
+        return 'bg-indigo-100 text-indigo-800';
       case 'intern_pharmacist':
-        return 'warning';
+        return 'bg-orange-100 text-orange-800';
       default:
-        return 'default';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -532,161 +507,152 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        Admin Dashboard
-      </Typography>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs
-          value={activeTab}
-          onChange={(_, newValue) => setActiveTab(newValue)}
-          variant="scrollable"
-          scrollButtons="auto"
-        >
-          <Tab
-            icon={<Users size={20} />}
-            label="User Management"
-            iconPosition="start"
-          />
-          <Tab
-            icon={
-              <Badge badgeContent={licenses.length} color="error">
-                <FileText size={20} />
-              </Badge>
-            }
-            label="License Verification"
-            iconPosition="start"
-          />
-          <Tab
-            icon={<BarChart3 size={20} />}
-            label="Analytics"
-            iconPosition="start"
-          />
-          <Tab icon={<Shield size={20} />} label="Security" iconPosition="start" />
-          <Tab
-            icon={<TrendingUp size={20} />}
-            label="Usage Monitoring"
-            iconPosition="start"
-          />
-          <Tab
-            icon={<ArrowUpDown size={20} />}
-            label="Migrations"
-            iconPosition="start"
-          />
-          <Tab icon={<Mail size={20} />} label="Invitations" iconPosition="start" />
-          <Tab
-            icon={<MapPin size={20} />}
-            label="Locations"
-            iconPosition="start"
-          />
-          <Tab icon={<ExternalLink size={20} />} label="Webhooks" iconPosition="start" />
-          <Tab
-            icon={<Settings size={20} />}
-            label="System Settings"
-            iconPosition="start"
-          />
-        </Tabs>
-      </Box>
+      <Tabs value={activeTab.toString()} onValueChange={(value) => setActiveTab(parseInt(value))}>
+        <TabsList className="grid w-full grid-cols-10">
+          <TabsTrigger value="0" className="flex items-center gap-2">
+            <Users size={16} />
+            User Management
+          </TabsTrigger>
+          <TabsTrigger value="1" className="flex items-center gap-2">
+            <div className="relative">
+              <FileText size={16} />
+              {licenses.length > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs">
+                  {licenses.length}
+                </Badge>
+              )}
+            </div>
+            License Verification
+          </TabsTrigger>
+          <TabsTrigger value="2" className="flex items-center gap-2">
+            <BarChart3 size={16} />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="3" className="flex items-center gap-2">
+            <Shield size={16} />
+            Security
+          </TabsTrigger>
+          <TabsTrigger value="4" className="flex items-center gap-2">
+            <TrendingUp size={16} />
+            Usage Monitoring
+          </TabsTrigger>
+          <TabsTrigger value="5" className="flex items-center gap-2">
+            <ArrowUpDown size={16} />
+            Migrations
+          </TabsTrigger>
+          <TabsTrigger value="6" className="flex items-center gap-2">
+            <Mail size={16} />
+            Invitations
+          </TabsTrigger>
+          <TabsTrigger value="7" className="flex items-center gap-2">
+            <MapPin size={16} />
+            Locations
+          </TabsTrigger>
+          <TabsTrigger value="8" className="flex items-center gap-2">
+            <ExternalLink size={16} />
+            Webhooks
+          </TabsTrigger>
+          <TabsTrigger value="9" className="flex items-center gap-2">
+            <Settings size={16} />
+            System Settings
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Users Tab */}
-      {activeTab === 0 && (
-        <>
+        {/* Users Tab */}
+        <TabsContent value="0">
           {/* Bulk Actions */}
-          <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+          <div className="flex gap-4 mb-6">
             <Button
-              variant="contained"
-              startIcon={<PlaylistAddCheck size={16} />}
               onClick={() => setBulkAssignDialogOpen(true)}
               disabled={selectedUsers.length === 0}
+              className="flex items-center gap-2"
             >
+              <PlaylistAddCheck size={16} />
               Bulk Assign Roles ({selectedUsers.length})
             </Button>
             <Button
-              variant="outlined"
-              color="error"
-              startIcon={<XCircle size={16} />}
+              variant="destructive"
               onClick={() => setBulkRevokeDialogOpen(true)}
               disabled={selectedUsers.length === 0}
+              className="flex items-center gap-2"
             >
+              <XCircle size={16} />
               Bulk Revoke Roles ({selectedUsers.length})
             </Button>
-          </Box>
+          </div>
 
           {/* Filters */}
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <FormControl fullWidth>
-                <InputLabel>Role</InputLabel>
-                <Select
-                  value={filters.role}
-                  onChange={(e) =>
-                    setFilters({ ...filters, role: e.target.value })
-                  }
-                >
-                  <MenuItem value="">All Roles</MenuItem>
-                  <MenuItem value="pharmacist">Pharmacist</MenuItem>
-                  <MenuItem value="pharmacy_team">Pharmacy Team</MenuItem>
-                  <MenuItem value="pharmacy_outlet">Pharmacy Outlet</MenuItem>
-                  <MenuItem value="intern_pharmacist">
-                    Intern Pharmacist
-                  </MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={filters.status}
-                  onChange={(e) =>
-                    setFilters({ ...filters, status: e.target.value })
-                  }
-                >
-                  <MenuItem value="">All Statuses</MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="suspended">Suspended</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <Label>Role</Label>
+              <Select
+                value={filters.role}
+                onValueChange={(value) => setFilters({ ...filters, role: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Roles</SelectItem>
+                  <SelectItem value="pharmacist">Pharmacist</SelectItem>
+                  <SelectItem value="pharmacy_team">Pharmacy Team</SelectItem>
+                  <SelectItem value="pharmacy_outlet">Pharmacy Outlet</SelectItem>
+                  <SelectItem value="intern_pharmacist">Intern Pharmacist</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => setFilters({ ...filters, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {/* Users Table */}
-          <TableContainer component={Paper}>
+          <div className="border rounded-lg">
             <Table>
-              <TableHead>
+              <TableHeader>
                 <TableRow>
-                  <TableCell padding="checkbox">
+                  <TableHead className="w-12">
                     <Checkbox
                       checked={
-                        selectedUsers.length === users.length &&
-                        users.length > 0
+                        selectedUsers.length === users.length && users.length > 0
                       }
-                      indeterminate={
-                        selectedUsers.length > 0 &&
-                        selectedUsers.length < users.length
-                      }
-                      onChange={(e) => handleSelectAllUsers(e.target.checked)}
+                      onCheckedChange={handleSelectAllUsers}
                     />
-                  </TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>License Status</TableCell>
-                  <TableCell>Subscription</TableCell>
-                  <TableCell>Actions</TableCell>
+                  </TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>License Status</TableHead>
+                  <TableHead>Subscription</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              </TableHead>
+              </TableHeader>
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user._id}>
-                    <TableCell padding="checkbox">
+                    <TableCell>
                       <Checkbox
                         checked={selectedUsers.includes(user._id)}
-                        onChange={(e) =>
-                          handleUserSelection(user._id, e.target.checked)
+                        onCheckedChange={(checked) =>
+                          handleUserSelection(user._id, checked as boolean)
                         }
                       />
                     </TableCell>
@@ -695,530 +661,343 @@ const AdminDashboard: React.FC = () => {
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Chip
-                        label={user.systemRole.replace('_', ' ')}
-                        color={getRoleColor(user.systemRole)}
-                        size="small"
-                      />
+                      <Badge className={getRoleColor(user.systemRole)}>
+                        {user.systemRole.replace('_', ' ')}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={user.status}
-                        color={getStatusColor(user.status)}
-                        size="small"
-                      />
+                      <Badge className={getStatusColor(user.status)}>
+                        {user.status}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label="not_required"
-                        color={getStatusColor('not_required')}
-                        size="small"
-                      />
+                      <Badge className={getStatusColor('not_required')}>
+                        not_required
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label="free_trial"
-                        variant="outlined"
-                        size="small"
-                      />
+                      <Badge className="bg-blue-100 text-blue-800">
+                        free_trial
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      <Tooltip title="Edit User">
-                        <IconButton
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setEditDialogOpen(true);
-                          }}
-                        >
-                          <Edit size={16} />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Suspend User">
-                        <IconButton
-                          onClick={() => handleSuspendUser(user._id)}
-                          disabled={user.status === 'suspended'}
-                        >
-                          <X size={16} />
-                        </IconButton>
-                      </Tooltip>
+                      <div className="flex gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setEditDialogOpen(true);
+                                }}
+                              >
+                                <Edit size={16} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Edit User</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSuspendUser(user._id)}
+                                disabled={user.status === 'suspended'}
+                              >
+                                <X size={16} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Suspend User</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-            <TablePagination
-              component="div"
-              count={-1}
-              page={page}
-              onPageChange={(_, newPage) => setPage(newPage)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) =>
-                setRowsPerPage(parseInt(e.target.value))
-              }
-            />
-          </TableContainer>
-        </>
-      )}
+          </div>
+        </TabsContent>
 
-      {/* Licenses Tab */}
-      {activeTab === 1 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>License Number</TableCell>
-                <TableCell>Document</TableCell>
-                <TableCell>Submitted</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {licenses.map((license) => (
-                <TableRow key={license._id}>
-                  <TableCell>
-                    {license.firstName} {license.lastName}
-                  </TableCell>
-                  <TableCell>{license.email}</TableCell>
-                  <TableCell>{license.licenseNumber}</TableCell>
-                  <TableCell>
-                    <Button
-                      startIcon={<Download size={16} />}
-                      size="small"
-                      onClick={() => {
-                        window.open(
-                          `/api/license/document/${license._id}`,
-                          '_blank'
-                        );
-                      }}
-                    >
-                      {license.licenseDocument.fileName}
-                    </Button>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(license.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip title="Approve License">
-                      <IconButton
-                        onClick={() => handleApproveLicense(license._id)}
-                        color="success"
-                      >
-                        <CheckCircle size={16} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Reject License">
-                      <IconButton
-                        onClick={() => {
-                          setSelectedLicense(license);
-                          setLicenseDialogOpen(true);
-                        }}
-                        color="error"
-                      >
-                        <X size={16} />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
+        {/* Licenses Tab */}
+        <TabsContent value="1">
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>License Number</TableHead>
+                  <TableHead>Document</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-
-      {/* Analytics Tab */}
-      {activeTab === 2 && analytics && (
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  User Statistics
-                </Typography>
-                {analytics.users.map((stat) => (
-                  <Box
-                    key={stat._id}
-                    display="flex"
-                    justifyContent="space-between"
-                    mb={1}
-                  >
-                    <Typography variant="body2">{stat._id}:</Typography>
-                    <Typography variant="body2">
-                      {stat.active}/{stat.count}
-                    </Typography>
-                  </Box>
+              </TableHeader>
+              <TableBody>
+                {licenses.map((license) => (
+                  <TableRow key={license._id}>
+                    <TableCell>
+                      {license.firstName} {license.lastName}
+                    </TableCell>
+                    <TableCell>{license.email}</TableCell>
+                    <TableCell>{license.licenseNumber}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          window.open(
+                            `/api/license/document/${license._id}`,
+                            '_blank'
+                          );
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Download size={16} />
+                        {license.licenseDocument.fileName}
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(license.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleApproveLicense(license._id)}
+                                className="text-green-600 hover:text-green-700"
+                              >
+                                <CheckCircle size={16} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Approve License</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedLicense(license);
+                                  setLicenseDialogOpen(true);
+                                }}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <X size={16} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Reject License</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </CardContent>
-            </Card>
-          </Grid>
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
 
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Subscription Statistics
-                </Typography>
-                {analytics.subscriptions.map((stat) => (
-                  <Box key={stat._id} sx={{ mb: 1 }}>
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2">{stat._id}:</Typography>
-                      <Typography variant="body2">{stat.count}</Typography>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Revenue: ₦{stat.revenue?.toLocaleString()}
-                    </Typography>
-                  </Box>
-                ))}
-              </CardContent>
-            </Card>
-          </Grid>
+        {/* Analytics Tab */}
+        <TabsContent value="2">
+          {analytics && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">User Statistics</h3>
+                  {analytics.users.map((stat) => (
+                    <div
+                      key={stat._id}
+                      className="flex justify-between items-center mb-2"
+                    >
+                      <span className="text-sm">{stat._id}:</span>
+                      <span className="font-medium">
+                        {stat.active}/{stat.count}
+                      </span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
 
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  License Statistics
-                </Typography>
-                {analytics.licenses.map((stat) => (
-                  <Box
-                    key={stat._id}
-                    display="flex"
-                    justifyContent="space-between"
-                    mb={1}
-                  >
-                    <Typography variant="body2">{stat._id}:</Typography>
-                    <Typography variant="body2">{stat.count}</Typography>
-                  </Box>
-                ))}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Subscription Statistics</h3>
+                  {analytics.subscriptions.map((stat) => (
+                    <div key={stat._id} className="mb-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">{stat._id}:</span>
+                        <span className="font-medium">{stat.count}</span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Revenue: ₦{stat.revenue?.toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
 
-      {/* Security Dashboard Tab */}
-      {activeTab === 3 && <SecurityDashboard />}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">License Statistics</h3>
+                  {analytics.licenses.map((stat) => (
+                    <div
+                      key={stat._id}
+                      className="flex justify-between items-center mb-2"
+                    >
+                      <span className="text-sm">{stat._id}:</span>
+                      <span className="font-medium">{stat.count}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
 
-      {/* Usage Monitoring Tab */}
-      {activeTab === 4 && <UsageMonitoring />}
+        {/* Security Dashboard Tab */}
+        <TabsContent value="3">
+          <SecurityDashboard />
+        </TabsContent>
 
-      {/* Migration Dashboard Tab */}
-      {activeTab === 5 && <MigrationDashboard />}
+        {/* Usage Monitoring Tab */}
+        <TabsContent value="4">
+          <UsageMonitoring />
+        </TabsContent>
 
-      {/* Invitation Management Tab */}
-      {activeTab === 6 && <InvitationManagement />}
+        {/* Migration Dashboard Tab */}
+        <TabsContent value="5">
+          <MigrationDashboard />
+        </TabsContent>
 
-      {/* Location Management Tab */}
-      {activeTab === 7 && <LocationManagement />}
+        {/* Invitation Management Tab */}
+        <TabsContent value="6">
+          <InvitationManagement />
+        </TabsContent>
 
-      {/* Webhook Management Tab */}
-      {activeTab === 8 && <WebhookManagement />}
+        {/* Location Management Tab */}
+        <TabsContent value="7">
+          <LocationManagement />
+        </TabsContent>
 
-      {/* Advanced Subscription Analytics Tab */}
-      {activeTab === 9 && <AdvancedSubscriptionAnalytics />}
+        {/* Webhook Management Tab */}
+        <TabsContent value="8">
+          <WebhookManagement />
+        </TabsContent>
 
-      {/* System Settings Tab */}
-      {activeTab === 10 && (
-        <Alert severity="info">
-          System settings panel will be available in the next update.
-        </Alert>
-      )}
+        {/* Advanced Subscription Analytics Tab */}
+        <TabsContent value="9">
+          <AdvancedSubscriptionAnalytics />
+        </TabsContent>
+      </Tabs>
 
       {/* Edit User Dialog */}
-      <Dialog
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Edit User Role</DialogTitle>
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User Role</DialogTitle>
+          </DialogHeader>
           {selectedUser && (
-            <Box pt={1}>
-              <Typography variant="body1" gutterBottom>
+            <div className="py-4">
+              <p className="mb-4">
                 User: {selectedUser.firstName} {selectedUser.lastName}
-              </Typography>
-              <FormControl fullWidth>
-                <InputLabel>Role</InputLabel>
+              </p>
+              <div>
+                <Label>Role</Label>
                 <Select
                   value={selectedUser.systemRole}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     setSelectedUser({
                       ...selectedUser,
-                      systemRole: e.target.value,
+                      systemRole: value as any
                     })
                   }
                 >
-                  <MenuItem value="pharmacist">Pharmacist</MenuItem>
-                  <MenuItem value="pharmacy_team">Pharmacy Team</MenuItem>
-                  <MenuItem value="pharmacy_outlet">Pharmacy Outlet</MenuItem>
-                  <MenuItem value="intern_pharmacist">
-                    Intern Pharmacist
-                  </MenuItem>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pharmacist">Pharmacist</SelectItem>
+                    <SelectItem value="pharmacy_team">Pharmacy Team</SelectItem>
+                    <SelectItem value="pharmacy_outlet">Pharmacy Outlet</SelectItem>
+                    <SelectItem value="intern_pharmacist">Intern Pharmacist</SelectItem>
+                  </SelectContent>
                 </Select>
-              </FormControl>
-            </Box>
+              </div>
+            </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                selectedUser &&
+                handleUpdateUserRole(selectedUser._id, selectedUser.systemRole)
+              }
+            >
+              Update Role
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={() =>
-              selectedUser &&
-              handleUpdateUserRole(selectedUser._id, selectedUser.systemRole)
-            }
-            variant="contained"
-          >
-            Update Role
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* License Rejection Dialog */}
-      <Dialog
-        open={licenseDialogOpen}
-        onClose={() => setLicenseDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Reject License</DialogTitle>
+      <Dialog open={licenseDialogOpen} onOpenChange={setLicenseDialogOpen}>
         <DialogContent>
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label="Rejection Reason"
-            placeholder="Please provide a reason for rejecting this license..."
-            margin="normal"
-            id="rejection-reason"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setLicenseDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={() => {
-              const reason = (
-                document.getElementById('rejection-reason') as HTMLInputElement
-              )?.value;
-              if (selectedLicense && reason) {
-                handleRejectLicense(selectedLicense._id, reason);
-              }
-            }}
-            variant="contained"
-            color="error"
-          >
-            Reject License
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Bulk Assign Roles Dialog */}
-      <Dialog
-        open={bulkAssignDialogOpen}
-        onClose={() => setBulkAssignDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>Bulk Assign Roles</DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Selected Users ({selectedUsers.length})
-            </Typography>
-            <Box sx={{ mb: 3, maxHeight: 150, overflow: 'auto' }}>
-              {users
-                .filter((user) => selectedUsers.includes(user._id))
-                .map((user) => (
-                  <Chip
-                    key={user._id}
-                    label={`${user.firstName} ${user.lastName}`}
-                    sx={{ m: 0.5 }}
-                  />
-                ))}
-            </Box>
-
-            <Typography variant="subtitle1" gutterBottom>
-              Select Roles
-            </Typography>
-            <Box sx={{ mb: 3 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={
-                      selectedRoles.length === roles.length && roles.length > 0
-                    }
-                    indeterminate={
-                      selectedRoles.length > 0 &&
-                      selectedRoles.length < roles.length
-                    }
-                    onChange={(e) => handleSelectAllRoles(e.target.checked)}
-                  />
-                }
-                label="Select All Roles"
-              />
-              <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
-                {roles.map((role) => (
-                  <FormControlLabel
-                    key={role._id}
-                    control={
-                      <Checkbox
-                        checked={selectedRoles.includes(role._id)}
-                        onChange={(e) =>
-                          handleRoleSelection(role._id, e.target.checked)
-                        }
-                      />
-                    }
-                    label={role.displayName}
-                  />
-                ))}
-              </Box>
-            </Box>
-
-            <Accordion>
-              <AccordionSummary expandIcon={<ChevronDown size={16} />}>
-                <Typography>Advanced Options</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={isTemporary}
-                        onChange={(e) => setIsTemporary(e.target.checked)}
-                      />
-                    }
-                    label="Temporary Assignment"
-                  />
-                  {isTemporary && (
-                    <TextField
-                      fullWidth
-                      label="Expiration Date"
-                      type="datetime-local"
-                      value={expiresAt}
-                      onChange={(e) => setExpiresAt(e.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                    />
-                  )}
-                  <TextField
-                    fullWidth
-                    label="Assignment Reason (Optional)"
-                    value={assignmentReason}
-                    onChange={(e) => setAssignmentReason(e.target.value)}
-                    multiline
-                    rows={2}
-                  />
-                </Box>
-              </AccordionDetails>
-            </Accordion>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBulkAssignDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleBulkAssignRoles}
-            variant="contained"
-            disabled={selectedRoles.length === 0}
-          >
-            Assign Roles
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Bulk Revoke Roles Dialog */}
-      <Dialog
-        open={bulkRevokeDialogOpen}
-        onClose={() => setBulkRevokeDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>Bulk Revoke Roles</DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Selected Users ({selectedUsers.length})
-            </Typography>
-            <Box sx={{ mb: 3, maxHeight: 150, overflow: 'auto' }}>
-              {users
-                .filter((user) => selectedUsers.includes(user._id))
-                .map((user) => (
-                  <Chip
-                    key={user._id}
-                    label={`${user.firstName} ${user.lastName}`}
-                    sx={{ m: 0.5 }}
-                  />
-                ))}
-            </Box>
-
-            <Typography variant="subtitle1" gutterBottom>
-              Select Roles to Revoke
-            </Typography>
-            <Box sx={{ mb: 3 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={
-                      selectedRoles.length === roles.length && roles.length > 0
-                    }
-                    indeterminate={
-                      selectedRoles.length > 0 &&
-                      selectedRoles.length < roles.length
-                    }
-                    onChange={(e) => handleSelectAllRoles(e.target.checked)}
-                  />
-                }
-                label="Select All Roles"
-              />
-              <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
-                {roles.map((role) => (
-                  <FormControlLabel
-                    key={role._id}
-                    control={
-                      <Checkbox
-                        checked={selectedRoles.includes(role._id)}
-                        onChange={(e) =>
-                          handleRoleSelection(role._id, e.target.checked)
-                        }
-                      />
-                    }
-                    label={role.displayName}
-                  />
-                ))}
-              </Box>
-            </Box>
-
-            <TextField
-              fullWidth
-              label="Revocation Reason (Optional)"
-              value={revocationReason}
-              onChange={(e) => setRevocationReason(e.target.value)}
-              multiline
-              rows={2}
+          <DialogHeader>
+            <DialogTitle>Reject License</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="rejection-reason">Rejection Reason</Label>
+            <Input
+              id="rejection-reason"
+              placeholder="Please provide a reason for rejecting this license..."
+              className="mt-2"
             />
-          </Box>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLicenseDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                const reason = (
+                  document.getElementById('rejection-reason') as HTMLInputElement
+                )?.value;
+                if (selectedLicense && reason) {
+                  handleRejectLicense(selectedLicense._id, reason);
+                }
+              }}
+            >
+              Reject License
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBulkRevokeDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleBulkRevokeRoles}
-            variant="contained"
-            color="error"
-            disabled={selectedRoles.length === 0}
-          >
-            Revoke Roles
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Bulk Operation Progress Dialog */}
       <BulkOperationProgress
         open={bulkOperationProgressOpen}
-        onClose={() => {
-          setBulkOperationProgressOpen(false);
-          setSelectedUsers([]);
-          setSelectedRoles([]);
-          loadData();
-        }}
+        onClose={() => setBulkOperationProgressOpen(false)}
         operationId={bulkOperationId}
         initialData={{
           type: 'role_assignment',
@@ -1237,7 +1016,7 @@ const AdminDashboard: React.FC = () => {
           },
         }}
       />
-    </Box>
+    </div>
   );
 };
 

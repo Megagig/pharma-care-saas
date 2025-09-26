@@ -1,43 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Snackbar,
-  Alert,
-  AlertTitle,
-  Typography,
-  IconButton,
-  Collapse,
-  Chip,
-  Button,
-  LinearProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-  Card,
-  CardContent,
-  Stack,
-  Tooltip,
-} from '@mui/material';
-import {
-  CloudOff as CloudOffIcon,
-  Cloud as CloudIcon,
-  Sync as SyncIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Info as InfoIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Refresh as RefreshIcon,
-  Storage as StorageIcon,
-  Schedule as ScheduleIcon,
-} from '@mui/icons-material';
+import { Button, Card, CardContent, Dialog, DialogContent, DialogTitle, Tooltip, Progress, Alert, AlertTitle } from '@/components/ui/button';
 
 interface ClinicalNotesOfflineIndicatorProps {
   position?: 'top' | 'bottom';
@@ -45,7 +6,6 @@ interface ClinicalNotesOfflineIndicatorProps {
   onSyncComplete?: () => void;
   onSyncError?: (error: Error) => void;
 }
-
 interface OfflineData {
   pendingNotes: number;
   draftNotes: number;
@@ -53,7 +13,6 @@ interface OfflineData {
   lastSyncTime: Date | null;
   totalOfflineSize: number;
 }
-
 interface SyncStatus {
   isOnline: boolean;
   isSyncing: boolean;
@@ -61,11 +20,8 @@ interface SyncStatus {
   syncError: string | null;
   offlineData: OfflineData;
 }
-
-const ClinicalNotesOfflineIndicator: React.FC<
-  ClinicalNotesOfflineIndicatorProps
-> = ({ position = 'top', showDetails = true, onSyncComplete, onSyncError }) => {
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+const ClinicalNotesOfflineIndicator: React.FC = ({ position = 'top', showDetails = true, onSyncComplete, onSyncError }) => {
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({ 
     isOnline: navigator.onLine,
     isSyncing: false,
     syncProgress: 0,
@@ -75,24 +31,20 @@ const ClinicalNotesOfflineIndicator: React.FC<
       draftNotes: 0,
       queuedUploads: 0,
       lastSyncTime: null,
-      totalOfflineSize: 0,
-    },
-  });
-
+      totalOfflineSize: 0}
+    }
   const [showOfflineAlert, setShowOfflineAlert] = useState(false);
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
   const [showSyncDialog, setShowSyncDialog] = useState(false);
-
   // Monitor online/offline status
   useEffect(() => {
     const handleOnline = () => {
-      setSyncStatus((prev) => ({
+      setSyncStatus((prev) => ({ 
         ...prev,
         isOnline: true,
-        syncError: null,
+        syncError: null}
       }));
       setShowOfflineAlert(false);
-
       // Auto-sync when coming back online if there's pending data
       if (
         syncStatus.offlineData.pendingNotes > 0 ||
@@ -101,21 +53,17 @@ const ClinicalNotesOfflineIndicator: React.FC<
         handleAutoSync();
       }
     };
-
     const handleOffline = () => {
       setSyncStatus((prev) => ({ ...prev, isOnline: false }));
       setShowOfflineAlert(true);
     };
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, [syncStatus.offlineData]);
-
   // Load offline data statistics
   useEffect(() => {
     const loadOfflineStats = async () => {
@@ -138,60 +86,51 @@ const ClinicalNotesOfflineIndicator: React.FC<
             localStorage.getItem('clinical-notes-size') || '0'
           ),
         };
-
         setSyncStatus((prev) => ({ ...prev, offlineData }));
       } catch (error) {
         console.error('Failed to load offline stats:', error);
       }
     };
-
     loadOfflineStats();
-
     // Refresh stats every 30 seconds
     const interval = setInterval(loadOfflineStats, 30000);
     return () => clearInterval(interval);
   }, []);
-
   // Auto-sync when coming back online
   const handleAutoSync = useCallback(async () => {
     if (!syncStatus.isOnline || syncStatus.isSyncing) return;
-
     try {
-      setSyncStatus((prev) => ({
+      setSyncStatus((prev) => ({ 
         ...prev,
         isSyncing: true,
         syncProgress: 0,
-        syncError: null,
+        syncError: null}
       }));
-
       // Simulate sync progress
       const totalItems =
         syncStatus.offlineData.pendingNotes +
         syncStatus.offlineData.queuedUploads;
       let completed = 0;
-
       // Sync pending notes
       for (let i = 0; i < syncStatus.offlineData.pendingNotes; i++) {
         // Simulate API call delay
         await new Promise((resolve) => setTimeout(resolve, 500));
         completed++;
-        setSyncStatus((prev) => ({
+        setSyncStatus((prev) => ({ 
           ...prev,
-          syncProgress: Math.round((completed / totalItems) * 100),
+          syncProgress: Math.round((completed / totalItems) * 100)}
         }));
       }
-
       // Sync queued uploads
       for (let i = 0; i < syncStatus.offlineData.queuedUploads; i++) {
         // Simulate upload delay
         await new Promise((resolve) => setTimeout(resolve, 1000));
         completed++;
-        setSyncStatus((prev) => ({
+        setSyncStatus((prev) => ({ 
           ...prev,
-          syncProgress: Math.round((completed / totalItems) * 100),
+          syncProgress: Math.round((completed / totalItems) * 100)}
         }));
       }
-
       // Update offline data after successful sync
       const updatedOfflineData: OfflineData = {
         ...syncStatus.offlineData,
@@ -199,14 +138,12 @@ const ClinicalNotesOfflineIndicator: React.FC<
         queuedUploads: 0,
         lastSyncTime: new Date(),
       };
-
-      setSyncStatus((prev) => ({
+      setSyncStatus((prev) => ({ 
         ...prev,
         isSyncing: false,
         syncProgress: 100,
-        offlineData: updatedOfflineData,
+        offlineData: updatedOfflineData}
       }));
-
       // Update localStorage
       localStorage.setItem('clinical-notes-pending', '0');
       localStorage.setItem('clinical-notes-uploads', '0');
@@ -214,19 +151,17 @@ const ClinicalNotesOfflineIndicator: React.FC<
         'clinical-notes-last-sync',
         new Date().toISOString()
       );
-
       if (onSyncComplete) {
         onSyncComplete();
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Sync failed';
-      setSyncStatus((prev) => ({
+      setSyncStatus((prev) => ({ 
         ...prev,
         isSyncing: false,
-        syncError: errorMessage,
+        syncError: errorMessage}
       }));
-
       if (onSyncError && error instanceof Error) {
         onSyncError(error);
       }
@@ -238,14 +173,12 @@ const ClinicalNotesOfflineIndicator: React.FC<
     onSyncComplete,
     onSyncError,
   ]);
-
   // Manual sync
   const handleManualSync = useCallback(async () => {
     setShowSyncDialog(true);
     await handleAutoSync();
     setTimeout(() => setShowSyncDialog(false), 1000);
   }, [handleAutoSync]);
-
   // Get status configuration
   const getStatusConfig = () => {
     if (!syncStatus.isOnline) {
@@ -256,16 +189,14 @@ const ClinicalNotesOfflineIndicator: React.FC<
         description: 'Working offline - changes will sync when connected',
       };
     }
-
     if (syncStatus.isSyncing) {
       return {
         color: 'info' as const,
-        icon: <SyncIcon sx={{ animation: 'spin 1s linear infinite' }} />,
+        icon: <SyncIcon className="" />,
         message: 'Syncing...',
         description: `Syncing clinical notes (${syncStatus.syncProgress}%)`,
       };
     }
-
     if (syncStatus.syncError) {
       return {
         color: 'error' as const,
@@ -274,11 +205,9 @@ const ClinicalNotesOfflineIndicator: React.FC<
         description: syncStatus.syncError,
       };
     }
-
     const hasPendingData =
       syncStatus.offlineData.pendingNotes > 0 ||
       syncStatus.offlineData.queuedUploads > 0;
-
     if (hasPendingData) {
       return {
         color: 'warning' as const,
@@ -290,7 +219,6 @@ const ClinicalNotesOfflineIndicator: React.FC<
         } items pending`,
       };
     }
-
     return {
       color: 'success' as const,
       icon: <CheckCircleIcon />,
@@ -298,19 +226,17 @@ const ClinicalNotesOfflineIndicator: React.FC<
       description: 'All clinical notes are up to date',
     };
   };
-
   const statusConfig = getStatusConfig();
   const hasPendingData =
     syncStatus.offlineData.pendingNotes > 0 ||
     syncStatus.offlineData.queuedUploads > 0 ||
     syncStatus.offlineData.draftNotes > 0;
-
   return (
     <>
       {/* Offline Alert Snackbar */}
       <Snackbar
         open={showOfflineAlert}
-        anchorOrigin={{ vertical: position, horizontal: 'center' }}
+        
         autoHideDuration={null}
       >
         <Alert
@@ -319,9 +245,9 @@ const ClinicalNotesOfflineIndicator: React.FC<
           action={
             showDetails && (
               <IconButton
-                size="small"
+                size="small"}
                 onClick={() => setShowDetailsPanel(!showDetailsPanel)}
-                sx={{ color: 'inherit' }}
+                className=""
               >
                 {showDetailsPanel ? <ExpandLessIcon /> : <ExpandMoreIcon />}
               </IconButton>
@@ -329,31 +255,22 @@ const ClinicalNotesOfflineIndicator: React.FC<
           }
         >
           <AlertTitle>Working Offline</AlertTitle>
-          <Typography variant="body2">
+          <div >
             Clinical notes will be saved locally and synced when connection is
             restored
-          </Typography>
+          </div>
           {hasPendingData && (
-            <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+            <div  display="block" className="">
               {syncStatus.offlineData.pendingNotes +
                 syncStatus.offlineData.queuedUploads}{' '}
               items pending sync
-            </Typography>
+            </div>
           )}
         </Alert>
       </Snackbar>
-
       {/* Status Indicator */}
-      <Box
-        sx={{
-          position: 'fixed',
-          [position]: 16,
-          right: 16,
-          zIndex: 1300,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-        }}
+      <div
+        className=""
       >
         <Tooltip title={statusConfig.description}>
           <Chip
@@ -364,169 +281,139 @@ const ClinicalNotesOfflineIndicator: React.FC<
             onClick={
               showDetails
                 ? () => setShowDetailsPanel(!showDetailsPanel)
-                : undefined
+                : undefined}
             }
-            sx={{
-              cursor: showDetails ? 'pointer' : 'default',
-              '& .MuiChip-icon': {
-                '@keyframes spin': {
-                  '0%': { transform: 'rotate(0deg)' },
+            className=""
                   '100%': { transform: 'rotate(360deg)' },
                 },
               },
-            }}
           />
         </Tooltip>
-
         {hasPendingData && (
           <Chip
             label={
               syncStatus.offlineData.pendingNotes +
-              syncStatus.offlineData.queuedUploads
+              syncStatus.offlineData.queuedUploads}
             }
             size="small"
             color="warning"
-            variant="outlined"
+            
           />
         )}
-      </Box>
-
+      </div>
       {/* Details Panel */}
       {showDetails && (
         <Collapse in={showDetailsPanel}>
           <Card
-            sx={{
-              position: 'fixed',
-              [position]: position === 'top' ? 60 : 60,
-              right: 16,
-              zIndex: 1299,
-              minWidth: 320,
-              maxWidth: 400,
-              boxShadow: 3,
-            }}
+            className=""
           >
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <div  gutterBottom>
                 Clinical Notes Sync Status
-              </Typography>
-
+              </div>
               {/* Connection Status */}
-              <Box
-                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}
+              <div
+                className=""
               >
                 {statusConfig.icon}
-                <Typography variant="body2" fontWeight="medium">
+                <div  fontWeight="medium">
                   {statusConfig.message}
-                </Typography>
-              </Box>
-
+                </div>
+              </div>
               {/* Sync Progress */}
               {syncStatus.isSyncing && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography
-                    variant="caption"
+                <div className="">
+                  <div
+                    
                     color="text.secondary"
                     gutterBottom
                   >
                     Syncing clinical notes...
-                  </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={syncStatus.syncProgress}
-                    sx={{ mt: 0.5, mb: 1 }}
+                  </div>
+                  <Progress
+                    
+                    className=""
                   />
-                  <Typography variant="caption" color="text.secondary">
+                  <div  color="text.secondary">
                     {syncStatus.syncProgress}% complete
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               )}
-
               {/* Offline Data Summary */}
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
+              <div className="">
+                <div  gutterBottom>
                   Offline Data:
-                </Typography>
+                </div>
                 <List dense>
-                  <ListItem sx={{ py: 0.25, px: 0 }}>
-                    <ListItemIcon sx={{ minWidth: 32 }}>
+                  <div className="">
+                    <div className="">
                       <ScheduleIcon fontSize="small" color="warning" />
-                    </ListItemIcon>
-                    <ListItemText
+                    </div>
+                    <div
                       primary={`${syncStatus.offlineData.pendingNotes} pending notes`}
-                      primaryTypographyProps={{ variant: 'body2' }}
+                      
                     />
-                  </ListItem>
-
-                  <ListItem sx={{ py: 0.25, px: 0 }}>
-                    <ListItemIcon sx={{ minWidth: 32 }}>
+                  </div>
+                  <div className="">
+                    <div className="">
                       <StorageIcon fontSize="small" color="info" />
-                    </ListItemIcon>
-                    <ListItemText
+                    </div>
+                    <div
                       primary={`${syncStatus.offlineData.draftNotes} draft notes`}
-                      primaryTypographyProps={{ variant: 'body2' }}
+                      
                     />
-                  </ListItem>
-
-                  <ListItem sx={{ py: 0.25, px: 0 }}>
-                    <ListItemIcon sx={{ minWidth: 32 }}>
+                  </div>
+                  <div className="">
+                    <div className="">
                       <CloudIcon fontSize="small" color="primary" />
-                    </ListItemIcon>
-                    <ListItemText
+                    </div>
+                    <div
                       primary={`${syncStatus.offlineData.queuedUploads} queued uploads`}
-                      primaryTypographyProps={{ variant: 'body2' }}
+                      
                     />
-                  </ListItem>
+                  </div>
                 </List>
-              </Box>
-
+              </div>
               {/* Last Sync Time */}
               {syncStatus.offlineData.lastSyncTime && (
-                <Typography
-                  variant="caption"
+                <div
+                  
                   color="text.secondary"
-                  sx={{ mb: 2, display: 'block' }}
+                  className=""
                 >
                   Last sync:{' '}
                   {syncStatus.offlineData.lastSyncTime.toLocaleString()}
-                </Typography>
+                </div>
               )}
-
               {/* Error Message */}
               {syncStatus.syncError && (
-                <Alert severity="error" size="small" sx={{ mb: 2 }}>
+                <Alert severity="error" size="small" className="">
                   {syncStatus.syncError}
                 </Alert>
               )}
-
               {/* Actions */}
-              <Stack direction="row" spacing={1}>
+              <div direction="row" spacing={1}>
                 <Button
                   size="small"
-                  variant="contained"
+                  
                   startIcon={<SyncIcon />}
                   onClick={handleManualSync}
                   disabled={!syncStatus.isOnline || syncStatus.isSyncing}
                 >
                   Sync Now
                 </Button>
-
                 <Button
                   size="small"
-                  variant="outlined"
+                  
                   startIcon={<InfoIcon />}
-                  onClick={() => {
-                    // Show help dialog or navigate to help page
-                    console.log('Show offline help');
-                  }}
-                >
+                  >
                   Help
                 </Button>
-              </Stack>
+              </div>
             </CardContent>
           </Card>
         </Collapse>
       )}
-
       {/* Sync Progress Dialog */}
       <Dialog
         open={showSyncDialog}
@@ -536,30 +423,25 @@ const ClinicalNotesOfflineIndicator: React.FC<
       >
         <DialogTitle>Syncing Clinical Notes</DialogTitle>
         <DialogContent>
-          <Box sx={{ py: 2 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+          <div className="">
+            <div  color="text.secondary" gutterBottom>
               Syncing your offline clinical notes and uploads...
-            </Typography>
-
-            <LinearProgress
-              variant="determinate"
-              value={syncStatus.syncProgress}
-              sx={{ mt: 2, mb: 1 }}
+            </div>
+            <Progress
+              
+              className=""
             />
-
-            <Typography variant="caption" color="text.secondary">
+            <div  color="text.secondary">
               {syncStatus.syncProgress}% complete
-            </Typography>
-
+            </div>
             {syncStatus.syncProgress === 100 && (
-              <Alert severity="success" sx={{ mt: 2 }}>
-                <CheckCircleIcon sx={{ mr: 1 }} />
+              <Alert severity="success" className="">
+                <CheckCircleIcon className="" />
                 Sync completed successfully!
               </Alert>
             )}
-          </Box>
+          </div>
         </DialogContent>
-
         {syncStatus.syncProgress === 100 && (
           <DialogActions>
             <Button onClick={() => setShowSyncDialog(false)}>Close</Button>
@@ -569,5 +451,4 @@ const ClinicalNotesOfflineIndicator: React.FC<
     </>
   );
 };
-
 export default ClinicalNotesOfflineIndicator;

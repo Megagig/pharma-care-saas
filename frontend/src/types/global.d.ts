@@ -1,3 +1,5 @@
+import { Card } from '@/components/ui/card';
+
 /* Global type declarations for the project */
 
 // Vite environment variables
@@ -113,19 +115,6 @@ declare module '@stripe/react-stripe-js' {
   export const CardElement: React.ComponentType<CardElementProps>;
   export function useStripe(): StripeInstance | null;
   export function useElements(): StripeElements | null;
-}
-
-// Fix for MUI Grid component type issues
-declare module '@mui/material/Grid' {
-  interface GridProps {
-    item?: boolean;
-    container?: boolean;
-    xs?: number;
-    sm?: number;
-    md?: number;
-    lg?: number;
-    xl?: number;
-  }
 }
 
 // Generic API response types

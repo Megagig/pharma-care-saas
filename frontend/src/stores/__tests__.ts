@@ -1,13 +1,6 @@
 // Simple test to validate Zustand store implementation
 // This file demonstrates how the stores work and can be used for testing
 
-import { 
-  usePatientStore, 
-  useMedicationStore, 
-  useClinicalNoteStore, 
-  useUIStore 
-} from '../stores';
-
 // Test patient store functionality
 export const testPatientStore = () => {
   console.log('Testing Patient Store...');
@@ -109,10 +102,10 @@ export const testUIStore = () => {
   const uiStore = useUIStore.getState();
   
   // Test adding a notification
-  uiStore.addNotification({
+  uiStore.addNotification({ 
     type: 'success',
     title: 'Test Notification',
-    message: 'This is a test notification',
+    message: 'This is a test notification'}
   });
   
   const { notifications } = useUIStore.getState();

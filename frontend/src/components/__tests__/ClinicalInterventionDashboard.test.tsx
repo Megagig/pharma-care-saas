@@ -1,42 +1,34 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { QueryClient, QueryProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
 import ClinicalInterventionDashboard from '../ClinicalInterventionDashboard';
-import * as clinicalInterventionService from '../../services/clinicalInterventionService';
 
+import * as clinicalInterventionService from '../../services/clinicalInterventionService';
 // Mock the service
 vi.mock('../../services/clinicalInterventionService');
 
 // Mock the hooks
-vi.mock('../../hooks/useAuth', () => ({
+vi.mock('../../hooks/useAuth', () => ({ 
   useAuth: () => ({
     user: {
       id: 'user-1',
       firstName: 'Test',
       lastName: 'User',
-      role: 'pharmacist',
+      role: 'pharmacist'}
     },
-    isAuthenticated: true,
-  }),
-}));
+    isAuthenticated: true}
 
-vi.mock('../../hooks/useErrorHandling', () => ({
+vi.mock('../../hooks/useErrorHandling', () => ({ 
   useErrorHandling: () => ({
     handleError: vi.fn(),
     clearError: vi.fn(),
-    error: null,
-  }),
-}));
+    error: null}
+  })}
 
 // Test wrapper component
 const TestWrapper = ({ children }: { children: React.ReactNode }) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
+  const queryClient = new QueryClient({ 
+    defaultOptions: { })
       queries: { retry: false },
       mutations: { retry: false },
-    },
-  });
+    }
 
   return (
     <QueryProvider client={queryClient}>
@@ -111,7 +103,7 @@ describe('ClinicalInterventionDashboard', () => {
     vi.clearAllMocks();
 
     // Mock service methods
-    vi.mocked(clinicalInterventionService.getInterventions).mockResolvedValue({
+    vi.mocked(clinicalInterventionService.getInterventions).mockResolvedValue({ 
       data: mockInterventions,
       pagination: {
         page: 1,
@@ -119,9 +111,8 @@ describe('ClinicalInterventionDashboard', () => {
         total: 2,
         pages: 1,
         hasNext: false,
-        hasPrev: false,
-      },
-    });
+        hasPrev: false}
+      }
 
     vi.mocked(
       clinicalInterventionService.getDashboardMetrics
@@ -178,8 +169,8 @@ describe('ClinicalInterventionDashboard', () => {
 
     await waitFor(() => {
       expect(clinicalInterventionService.getInterventions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: 'in_progress',
+        expect.objectContaining({ 
+          status: 'in_progress'}
         })
       );
     });
@@ -204,8 +195,8 @@ describe('ClinicalInterventionDashboard', () => {
 
     await waitFor(() => {
       expect(clinicalInterventionService.getInterventions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          priority: 'critical',
+        expect.objectContaining({ 
+          priority: 'critical'}
         })
       );
     });
@@ -234,8 +225,8 @@ describe('ClinicalInterventionDashboard', () => {
         expect(
           clinicalInterventionService.getInterventions
         ).toHaveBeenCalledWith(
-          expect.objectContaining({
-            search: 'CI-202412-0001',
+          expect.objectContaining({ 
+            search: 'CI-202412-0001'}
           })
         );
       },
@@ -245,7 +236,7 @@ describe('ClinicalInterventionDashboard', () => {
 
   it('should handle pagination', async () => {
     // Mock paginated response
-    vi.mocked(clinicalInterventionService.getInterventions).mockResolvedValue({
+    vi.mocked(clinicalInterventionService.getInterventions).mockResolvedValue({ 
       data: mockInterventions,
       pagination: {
         page: 1,
@@ -253,9 +244,8 @@ describe('ClinicalInterventionDashboard', () => {
         total: 25,
         pages: 3,
         hasNext: true,
-        hasPrev: false,
-      },
-    });
+        hasPrev: false}
+      }
 
     render(
       <TestWrapper>
@@ -278,8 +268,8 @@ describe('ClinicalInterventionDashboard', () => {
 
     await waitFor(() => {
       expect(clinicalInterventionService.getInterventions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          page: 2,
+        expect.objectContaining({ 
+          page: 2}
         })
       );
     });
@@ -375,7 +365,7 @@ describe('ClinicalInterventionDashboard', () => {
 
   it('should handle empty state', async () => {
     // Mock empty response
-    vi.mocked(clinicalInterventionService.getInterventions).mockResolvedValue({
+    vi.mocked(clinicalInterventionService.getInterventions).mockResolvedValue({ 
       data: [],
       pagination: {
         page: 1,
@@ -383,9 +373,8 @@ describe('ClinicalInterventionDashboard', () => {
         total: 0,
         pages: 0,
         hasNext: false,
-        hasPrev: false,
-      },
-    });
+        hasPrev: false}
+      }
 
     render(
       <TestWrapper>
@@ -472,9 +461,9 @@ describe('ClinicalInterventionDashboard', () => {
 
     await waitFor(() => {
       expect(clinicalInterventionService.getInterventions).toHaveBeenCalledWith(
-        expect.objectContaining({
+        expect.objectContaining({ 
           dateFrom: '2024-12-01',
-          dateTo: '2024-12-31',
+          dateTo: '2024-12-31'}
         })
       );
     });
@@ -499,9 +488,9 @@ describe('ClinicalInterventionDashboard', () => {
 
     await waitFor(() => {
       expect(clinicalInterventionService.getInterventions).toHaveBeenCalledWith(
-        expect.objectContaining({
+        expect.objectContaining({ 
           sortBy: 'priority',
-          sortOrder: 'asc',
+          sortOrder: 'asc'}
         })
       );
     });
@@ -511,9 +500,9 @@ describe('ClinicalInterventionDashboard', () => {
 
     await waitFor(() => {
       expect(clinicalInterventionService.getInterventions).toHaveBeenCalledWith(
-        expect.objectContaining({
+        expect.objectContaining({ 
           sortBy: 'priority',
-          sortOrder: 'desc',
+          sortOrder: 'desc'}
         })
       );
     });

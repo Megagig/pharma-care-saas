@@ -1,78 +1,32 @@
 // Regulatory Compliance Reports Module Component
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-  Avatar,
-} from '@mui/material';
-import {
-  Security,
-  Gavel,
-  Assignment,
-  Timeline,
-  CheckCircle,
-  Warning,
-  Error,
-  Schedule,
-  Person,
-  Description,
-  TrendingUp,
-  TrendingDown,
-  Assessment,
-} from '@mui/icons-material';
 import ChartComponent from '../shared/ChartComponent';
-import { ChartData } from '../../types/charts';
-import { RegulatoryComplianceFilters } from '../../types/filters';
-import { useCurrentFilters } from '../../stores/filtersStore';
-import { ReportType } from '../../types/reports';
+
+import { Card, CardContent, Alert, Avatar, Tabs, Separator } from '@/components/ui/button';
 
 interface RegulatoryComplianceReportProps {
   filters: RegulatoryComplianceFilters;
   onFilterChange?: (filters: RegulatoryComplianceFilters) => void;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    {value === index && <div className="">{children}</div>}
   </div>
 );
-
-const RegulatoryComplianceReport: React.FC<RegulatoryComplianceReportProps> = ({
+const RegulatoryComplianceReport: React.FC<RegulatoryComplianceReportProps> = ({ 
   filters,
-  onFilterChange,
+  onFilterChange
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   // Mock data - in real implementation, this would come from API
   const mockData = useMemo(
-    () => ({
+    () => ({ 
       // KPI Cards Data
       kpiData: [
         {
@@ -82,7 +36,7 @@ const RegulatoryComplianceReport: React.FC<RegulatoryComplianceReportProps> = ({
           trend: {
             direction: 'up' as const,
             value: 3.2,
-            period: 'vs last quarter',
+            period: 'vs last quarter'}
           },
           status: 'success' as const,
           target: { value: 95, label: '%' },
@@ -121,7 +75,6 @@ const RegulatoryComplianceReport: React.FC<RegulatoryComplianceReportProps> = ({
           status: 'warning' as const,
         },
       ],
-
       // Compliance Issues List
       complianceIssues: [
         {
@@ -161,7 +114,6 @@ const RegulatoryComplianceReport: React.FC<RegulatoryComplianceReportProps> = ({
           category: 'Data Security',
         },
       ],
-
       // Audit Trail Activities
       auditTrailActivities: [
         {
@@ -192,25 +144,20 @@ const RegulatoryComplianceReport: React.FC<RegulatoryComplianceReportProps> = ({
           status: 'pending' as const,
           details: 'Awaiting supervisor review',
         },
-      ],
-    }),
+      ], },
     []
   );
-
   // Simulate data loading
   useEffect(() => {
     setLoading(true);
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [filters]);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   const getSeverityColor = (
     severity: 'low' | 'medium' | 'high' | 'critical'
   ) => {
@@ -227,7 +174,6 @@ const RegulatoryComplianceReport: React.FC<RegulatoryComplianceReportProps> = ({
         return 'default';
     }
   };
-
   const getStatusColor = (
     status: 'open' | 'in-progress' | 'resolved' | 'compliant' | 'pending'
   ) => {
@@ -245,64 +191,59 @@ const RegulatoryComplianceReport: React.FC<RegulatoryComplianceReportProps> = ({
         return 'default';
     }
   };
-
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        <Typography variant="h6" gutterBottom>
+      <Alert severity="error" className="">
+        <div  gutterBottom>
           Error Loading Regulatory Compliance Data
-        </Typography>
-        <Typography variant="body2">{error}</Typography>
+        </div>
+        <div >{error}</div>
       </Alert>
     );
   }
-
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="">
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
+      <div className="">
+        <div
+          
           component="h1"
           gutterBottom
-          sx={{ display: 'flex', alignItems: 'center' }}
+          className=""
         >
-          <Security sx={{ mr: 2, color: 'primary.main' }} />
+          <Security className="" />
           Regulatory Compliance Reports
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </div>
+        <div  color="text.secondary">
           Comprehensive compliance monitoring with audit trails, issue tracking,
           and regulatory reporting capabilities with predictive analytics.
-        </Typography>
-      </Box>
-
+        </div>
+      </div>
       {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div container spacing={3} className="">
         {mockData.kpiData.map((kpi, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <div item xs={12} sm={6} md={3} key={index}>
             <ChartComponent
-              data={{
+              data={{}
                 id: `kpi-${index}`,
                 title: '',
                 type: 'kpi-card',
                 data: [kpi],
                 config: {} as any,
-              }}
               height={180}
               loading={loading}
             />
-          </Grid>
+          </div>
         ))}
-      </Grid>
-
+      </div>
       {/* Tabs for different views */}
-      <Card sx={{ mb: 3 }}>
+      <Card className="">
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant="scrollable"
+          
           scrollButtons="auto"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          className=""
         >
           <Tab
             icon={<Assessment />}
@@ -321,84 +262,82 @@ const RegulatoryComplianceReport: React.FC<RegulatoryComplianceReportProps> = ({
             iconPosition="start"
           />
         </Tabs>
-
         {/* Tab Panels */}
         <TabPanel value={activeTab} index={0}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Compliance Metrics Overview
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography
-                          variant="h4"
+                  </div>
+                  <div container spacing={2}>
+                    <div item xs={12} sm={6} md={3}>
+                      <div className="">
+                        <div
+                          
                           color="success.main"
                           gutterBottom
                         >
                           94.7%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Overall Compliance
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography variant="h4" color="info.main" gutterBottom>
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div className="">
+                        <div  color="info.main" gutterBottom>
                           96.8%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Documentation
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography
-                          variant="h4"
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div className="">
+                        <div
+                          
                           color="primary.main"
                           gutterBottom
                         >
                           98.5%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Audit Trail
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Paper sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography
-                          variant="h4"
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} sm={6} md={3}>
+                      <div className="">
+                        <div
+                          
                           color="warning.main"
                           gutterBottom
                         >
                           12
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Open Issues
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                  </Grid>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Recent Audit Trail Activities
-                  </Typography>
+                  </div>
                   <TableContainer>
                     <Table>
                       <TableHead>
@@ -418,14 +357,14 @@ const RegulatoryComplianceReport: React.FC<RegulatoryComplianceReportProps> = ({
                                 {activity.timestamp.toLocaleString()}
                               </TableCell>
                               <TableCell>
-                                <Box
-                                  sx={{ display: 'flex', alignItems: 'center' }}
+                                <div
+                                  className=""
                                 >
-                                  <Avatar sx={{ width: 32, height: 32, mr: 1 }}>
+                                  <Avatar className="">
                                     <Person />
                                   </Avatar>
                                   {activity.user}
-                                </Box>
+                                </div>
                               </TableCell>
                               <TableCell>{activity.activity}</TableCell>
                               <TableCell>
@@ -444,141 +383,134 @@ const RegulatoryComplianceReport: React.FC<RegulatoryComplianceReportProps> = ({
                   </TableContainer>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Compliance Issues Tracking
-                  </Typography>
+                  </div>
                   <List>
                     {mockData.complianceIssues.map((issue, index) => (
                       <React.Fragment key={issue.id}>
-                        <ListItem>
-                          <ListItemIcon>
+                        <div>
+                          <div>
                             <Chip
                               label={issue.severity}
                               color={getSeverityColor(issue.severity) as any}
                               size="small"
                             />
-                          </ListItemIcon>
-                          <ListItemText
+                          </div>
+                          <div
                             primary={
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                }}
+                              <div
+                                className=""
                               >
-                                <Typography
-                                  variant="body1"
-                                  sx={{ fontWeight: 500 }}
-                                >
+                                <div
+                                  
+                                  className=""
+                                >}
                                   {issue.issue}
-                                </Typography>
+                                </div>
                                 <Chip
                                   label={issue.status}
                                   color={getStatusColor(issue.status) as any}
                                   size="small"
-                                  variant="outlined"
+                                  
                                 />
-                              </Box>
+                              </div>
                             }
                             secondary={
-                              <Box sx={{ mt: 1 }}>
-                                <Typography
-                                  variant="caption"
+                              <div className="">
+                                <div
+                                  
                                   color="text.secondary"
-                                >
+                                >}
                                   ID: {issue.id} | Category: {issue.category} |
                                   Assigned to: {issue.assignedTo} | Due:{' '}
                                   {issue.dueDate.toLocaleDateString()}
-                                </Typography>
-                              </Box>
+                                </div>
+                              </div>
                             }
                           />
-                        </ListItem>
+                        </div>
                         {index < mockData.complianceIssues.length - 1 && (
-                          <Divider />
+                          <Separator />
                         )}
                       </React.Fragment>
                     ))}
                   </List>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
-
         <TabPanel value={activeTab} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <div container spacing={3}>
+            <div item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Compliance Trend Analysis
-                  </Typography>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography
-                          variant="h3"
+                  </div>
+                  <div container spacing={3}>
+                    <div item xs={12} md={4}>
+                      <div className="">
+                        <div
+                          
                           color="success.main"
                           gutterBottom
                         >
                           +3.9%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Overall Improvement
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography variant="h3" color="info.main" gutterBottom>
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={4}>
+                      <div className="">
+                        <div  color="info.main" gutterBottom>
                           95.3%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Predicted Next Month
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography
-                          variant="h3"
+                        </div>
+                      </div>
+                    </div>
+                    <div item xs={12} md={4}>
+                      <div className="">
+                        <div
+                          
                           color="primary.main"
                           gutterBottom
                         >
                           98.1%
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </div>
+                        <div  color="text.secondary">
                           Audit Trail Score
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="body2" color="text.secondary">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <Separator className="" />
+                  <div  color="text.secondary">
                     Compliance trends show consistent improvement across all
                     categories. Predictive analytics indicate continued positive
                     trajectory with documentation and regulatory reporting
                     showing the most significant gains.
-                  </Typography>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default RegulatoryComplianceReport;

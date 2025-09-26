@@ -1,22 +1,5 @@
-import React from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  TextField,
-  Alert,
-  Chip,
-  InputAdornment,
-  FormHelperText,
-  Tooltip,
-} from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
-import WarningIcon from '@mui/icons-material/Warning';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import type { VitalSignsInputProps } from '../types';
 
+import { Input, Card, CardContent, Tooltip, Alert } from '@/components/ui/button';
 // Normal ranges for vital signs
 const VITAL_RANGES = {
   bloodPressure: {
@@ -49,7 +32,6 @@ const VITAL_RANGES = {
     description: 'Respiratory rate',
   },
 };
-
 interface VitalSignsFormData {
   bloodPressure: string;
   heartRate: number | '';
@@ -57,30 +39,26 @@ interface VitalSignsFormData {
   bloodGlucose: number | '';
   respiratoryRate: number | '';
 }
-
-const VitalSignsInput: React.FC<VitalSignsInputProps> = ({
+const VitalSignsInput: React.FC<VitalSignsInputProps> = ({ 
   value,
   onChange,
   error,
-  disabled = false,
+  disabled = false
 }) => {
   const {
     control,
     watch,
     setValue,
     formState: { errors },
-  } = useForm<VitalSignsFormData>({
+  } = useForm<VitalSignsFormData>({ 
     defaultValues: {
       bloodPressure: value?.bloodPressure || '',
       heartRate: value?.heartRate || '',
       temperature: value?.temperature || '',
       bloodGlucose: value?.bloodGlucose || '',
-      respiratoryRate: value?.respiratoryRate || '',
-    },
-  });
-
+      respiratoryRate: value?.respiratoryRate || ''}
+    }
   // Update form when value prop changes (controlled component)
-  React.useEffect(() => {
     if (value) {
       setValue('bloodPressure', value.bloodPressure || '');
       setValue('heartRate', value.heartRate || '');
@@ -89,11 +67,8 @@ const VitalSignsInput: React.FC<VitalSignsInputProps> = ({
       setValue('respiratoryRate', value.respiratoryRate || '');
     }
   }, [value, setValue]);
-
   const watchedValues = watch();
-
   // Update parent component when form values change
-  React.useEffect(() => {
     const vitals = {
       bloodPressure: watchedValues.bloodPressure || undefined,
       heartRate: watchedValues.heartRate || undefined,
@@ -101,102 +76,75 @@ const VitalSignsInput: React.FC<VitalSignsInputProps> = ({
       bloodGlucose: watchedValues.bloodGlucose || undefined,
       respiratoryRate: watchedValues.respiratoryRate || undefined,
     };
-
     // Only include defined values
     const filteredVitals = Object.fromEntries(
       Object.entries(vitals).filter(([_, v]) => v !== undefined && v !== '')
     );
-
     onChange(
       Object.keys(filteredVitals).length > 0 ? filteredVitals : undefined
     );
   }, [watchedValues, onChange]);
-
   // Validation functions
   const validateBloodPressure = (bp: string): string | true => {
     if (!bp) return true; // Optional field
-
     const bpRegex = /^(\d{2,3})\/(\d{2,3})$/;
     const match = bp.match(bpRegex);
-
     if (!match) {
       return 'Format: XXX/XX (e.g., 120/80)';
     }
-
     const systolic = parseInt(match[1]);
     const diastolic = parseInt(match[2]);
-
     if (systolic < 70 || systolic > 250) {
       return 'Systolic pressure should be between 70-250 mmHg';
     }
-
     if (diastolic < 40 || diastolic > 150) {
       return 'Diastolic pressure should be between 40-150 mmHg';
     }
-
     if (systolic <= diastolic) {
       return 'Systolic pressure should be higher than diastolic';
     }
-
     return true;
   };
-
   const validateHeartRate = (hr: number): string | true => {
     if (!hr) return true; // Optional field
-
     if (hr < 30 || hr > 220) {
       return 'Heart rate should be between 30-220 bpm';
     }
-
     return true;
   };
-
   const validateTemperature = (temp: number): string | true => {
     if (!temp) return true; // Optional field
-
     if (temp < 32 || temp > 45) {
       return 'Temperature should be between 32-45°C';
     }
-
     return true;
   };
-
   const validateBloodGlucose = (bg: number): string | true => {
     if (!bg) return true; // Optional field
-
     if (bg < 20 || bg > 600) {
       return 'Blood glucose should be between 20-600 mg/dL';
     }
-
     return true;
   };
-
   const validateRespiratoryRate = (rr: number): string | true => {
     if (!rr) return true; // Optional field
-
     if (rr < 5 || rr > 60) {
       return 'Respiratory rate should be between 5-60 breaths/min';
     }
-
     return true;
   };
-
   // Status indicators
   const getBloodPressureStatus = (bp: string) => {
     const match = bp.match(/^(\d{2,3})\/(\d{2,3})$/);
     if (!match) return null;
-
     const systolic = parseInt(match[1]);
     const diastolic = parseInt(match[2]);
-
     if (systolic < 90 || diastolic < 60) {
       return { status: 'low', color: 'warning', text: 'Low BP' };
     }
-
     if (systolic > 140 || diastolic > 90) {
       return { status: 'high', color: 'error', text: 'High BP' };
     }
-
     if (
       systolic >= 120 &&
       systolic <= 140 &&
@@ -205,108 +153,87 @@ const VitalSignsInput: React.FC<VitalSignsInputProps> = ({
     ) {
       return { status: 'elevated', color: 'warning', text: 'Elevated' };
     }
-
     return { status: 'normal', color: 'success', text: 'Normal' };
   };
-
   const getVitalStatus = (
     value: number,
     range: { min: number; max: number }
   ) => {
     if (!value) return null;
-
     if (value < range.min) {
       return { status: 'low', color: 'warning', text: 'Low' };
     }
-
     if (value > range.max) {
       return { status: 'high', color: 'error', text: 'High' };
     }
-
     return { status: 'normal', color: 'success', text: 'Normal' };
   };
-
   const getBloodGlucoseStatus = (bg: number) => {
     if (!bg) return null;
-
     // Assuming random glucose for simplicity
     if (bg < 70) {
       return { status: 'low', color: 'error', text: 'Hypoglycemia' };
     }
-
     if (bg > 200) {
       return { status: 'high', color: 'error', text: 'Hyperglycemia' };
     }
-
     if (bg > 140) {
       return { status: 'elevated', color: 'warning', text: 'Elevated' };
     }
-
     return { status: 'normal', color: 'success', text: 'Normal' };
   };
-
   const StatusChip = ({ status }: { status: any }) => {
     if (!status) return null;
-
     const Icon = status.status === 'normal' ? CheckCircleIcon : WarningIcon;
-
     return (
       <Chip
-        icon={<Icon sx={{ fontSize: 16 }} />}
+        icon={<Icon className="" />}
         label={status.text}
         size="small"
         color={status.color}
-        variant="outlined"
-        sx={{ ml: 1 }}
+        
+        className=""
       />
     );
   };
-
   return (
     <Card>
       <CardContent>
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+        <div className="">
+          <div  className="">
             Vital Signs
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Record current vital signs and physiological measurements
-          </Typography>
-        </Box>
-
+          </div>
+        </div>
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" className="">
             {error}
           </Alert>
         )}
-
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-            gap: 3,
-          }}
-        >
+        <div
+          className="">
           {/* Blood Pressure */}
-          <Box>
+          <div>
             <Controller
               name="bloodPressure"
               control={control}
-              rules={{ validate: validateBloodPressure }}
-              render={({ field }) => (
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              
+              render={({  field  }) => (
+                <div>
+                  <div className="">
+                    <div  className="">
                       Blood Pressure
-                    </Typography>
+                    </div>
                     <Tooltip title="Normal: 90-140/60-90 mmHg">
                       <InfoIcon
-                        sx={{ ml: 1, fontSize: 16, color: 'text.secondary' }}
+                        className=""
                       />
                     </Tooltip>
                     <StatusChip status={getBloodPressureStatus(field.value)} />
-                  </Box>
-                  <TextField
+                  </div>
+                  <Input
                     {...field}
                     fullWidth
                     label="Blood Pressure"
@@ -315,46 +242,43 @@ const VitalSignsInput: React.FC<VitalSignsInputProps> = ({
                     error={!!errors.bloodPressure}
                     helperText={
                       errors.bloodPressure?.message ||
-                      'Format: systolic/diastolic (e.g., 120/80)'
+                      'Format: systolic/diastolic (e.g., 120/80)'}
                     }
                     slotProps={{
                       input: {
                         endAdornment: (
-                          <InputAdornment position="end">mmHg</InputAdornment>
-                        ),
+                          <InputAdornment position="">mmHg</InputAdornment>),}
                       },
-                    }}
                   />
-                </Box>
+                </div>
               )}
             />
-          </Box>
-
+          </div>
           {/* Heart Rate */}
-          <Box>
+          <div>
             <Controller
               name="heartRate"
               control={control}
-              rules={{ validate: validateHeartRate }}
-              render={({ field }) => (
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              
+              render={({  field  }) => (
+                <div>
+                  <div className="">
+                    <div  className="">
                       Heart Rate
-                    </Typography>
+                    </div>
                     <Tooltip title="Normal: 60-100 bpm (resting)">
                       <InfoIcon
-                        sx={{ ml: 1, fontSize: 16, color: 'text.secondary' }}
+                        className=""
                       />
                     </Tooltip>
                     <StatusChip
                       status={getVitalStatus(
                         Number(field.value),
-                        VITAL_RANGES.heartRate
+                        VITAL_RANGES.heartRate}
                       )}
                     />
-                  </Box>
-                  <TextField
+                  </div>
+                  <Input
                     {...field}
                     fullWidth
                     type="number"
@@ -363,52 +287,49 @@ const VitalSignsInput: React.FC<VitalSignsInputProps> = ({
                     disabled={disabled}
                     error={!!errors.heartRate}
                     helperText={
-                      errors.heartRate?.message || 'Resting heart rate'
+                      errors.heartRate?.message || 'Resting heart rate'}
                     }
                     slotProps={{
                       input: {
                         endAdornment: (
-                          <InputAdornment position="end">bpm</InputAdornment>
-                        ),
+                          <InputAdornment position="">bpm</InputAdornment>),}
                       },
                       htmlInput: { min: 30, max: 220, step: 1 },
-                    }}
                     onChange={(e) =>
                       field.onChange(
                         e.target.value ? Number(e.target.value) : ''
-                      )
+                      )}
                     }
                   />
-                </Box>
+                </div>
               )}
             />
-          </Box>
-
+          </div>
           {/* Temperature */}
-          <Box>
+          <div>
             <Controller
               name="temperature"
               control={control}
-              rules={{ validate: validateTemperature }}
-              render={({ field }) => (
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              
+              render={({  field  }) => (
+                <div>
+                  <div className="">
+                    <div  className="">
                       Temperature
-                    </Typography>
+                    </div>
                     <Tooltip title="Normal: 36.1-37.2°C">
                       <InfoIcon
-                        sx={{ ml: 1, fontSize: 16, color: 'text.secondary' }}
+                        className=""
                       />
                     </Tooltip>
                     <StatusChip
                       status={getVitalStatus(
                         Number(field.value),
-                        VITAL_RANGES.temperature
+                        VITAL_RANGES.temperature}
                       )}
                     />
-                  </Box>
-                  <TextField
+                  </div>
+                  <Input
                     {...field}
                     fullWidth
                     type="number"
@@ -417,52 +338,49 @@ const VitalSignsInput: React.FC<VitalSignsInputProps> = ({
                     disabled={disabled}
                     error={!!errors.temperature}
                     helperText={
-                      errors.temperature?.message || 'Body temperature'
+                      errors.temperature?.message || 'Body temperature'}
                     }
                     slotProps={{
                       input: {
                         endAdornment: (
-                          <InputAdornment position="end">°C</InputAdornment>
-                        ),
+                          <InputAdornment position="">°C</InputAdornment>),}
                       },
                       htmlInput: { min: 32, max: 45, step: 0.1 },
-                    }}
                     onChange={(e) =>
                       field.onChange(
                         e.target.value ? Number(e.target.value) : ''
-                      )
+                      )}
                     }
                   />
-                </Box>
+                </div>
               )}
             />
-          </Box>
-
+          </div>
           {/* Respiratory Rate */}
-          <Box>
+          <div>
             <Controller
               name="respiratoryRate"
               control={control}
-              rules={{ validate: validateRespiratoryRate }}
-              render={({ field }) => (
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              
+              render={({  field  }) => (
+                <div>
+                  <div className="">
+                    <div  className="">
                       Respiratory Rate
-                    </Typography>
+                    </div>
                     <Tooltip title="Normal: 12-20 breaths/min">
                       <InfoIcon
-                        sx={{ ml: 1, fontSize: 16, color: 'text.secondary' }}
+                        className=""
                       />
                     </Tooltip>
                     <StatusChip
                       status={getVitalStatus(
                         Number(field.value),
-                        VITAL_RANGES.respiratoryRate
+                        VITAL_RANGES.respiratoryRate}
                       )}
                     />
-                  </Box>
-                  <TextField
+                  </div>
+                  <Input
                     {...field}
                     fullWidth
                     type="number"
@@ -471,51 +389,47 @@ const VitalSignsInput: React.FC<VitalSignsInputProps> = ({
                     disabled={disabled}
                     error={!!errors.respiratoryRate}
                     helperText={
-                      errors.respiratoryRate?.message || 'Breaths per minute'
+                      errors.respiratoryRate?.message || 'Breaths per minute'}
                     }
                     slotProps={{
                       input: {
                         endAdornment: (
-                          <InputAdornment position="end">
-                            breaths/min
-                          </InputAdornment>
-                        ),
+                          <InputAdornment position="">breaths/min
+                          </InputAdornment>),}
                       },
                       htmlInput: { min: 5, max: 60, step: 1 },
-                    }}
                     onChange={(e) =>
                       field.onChange(
                         e.target.value ? Number(e.target.value) : ''
-                      )
+                      )}
                     }
                   />
-                </Box>
+                </div>
               )}
             />
-          </Box>
-
+          </div>
           {/* Blood Glucose */}
-          <Box>
+          <div>
             <Controller
               name="bloodGlucose"
               control={control}
-              rules={{ validate: validateBloodGlucose }}
-              render={({ field }) => (
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              
+              render={({  field  }) => (
+                <div>
+                  <div className="">
+                    <div  className="">
                       Blood Glucose
-                    </Typography>
+                    </div>
                     <Tooltip title="Normal: 70-140 mg/dL (random), 70-100 mg/dL (fasting)">
                       <InfoIcon
-                        sx={{ ml: 1, fontSize: 16, color: 'text.secondary' }}
+                        className=""
                       />
                     </Tooltip>
                     <StatusChip
                       status={getBloodGlucoseStatus(Number(field.value))}
                     />
-                  </Box>
-                  <TextField
+                  </div>
+                  <Input
                     {...field}
                     fullWidth
                     type="number"
@@ -525,34 +439,31 @@ const VitalSignsInput: React.FC<VitalSignsInputProps> = ({
                     error={!!errors.bloodGlucose}
                     helperText={
                       errors.bloodGlucose?.message ||
-                      'Random or fasting glucose level'
+                      'Random or fasting glucose level'}
                     }
                     slotProps={{
                       input: {
                         endAdornment: (
-                          <InputAdornment position="end">mg/dL</InputAdornment>
-                        ),
+                          <InputAdornment position="">mg/dL</InputAdornment>),}
                       },
                       htmlInput: { min: 20, max: 600, step: 1 },
-                    }}
                     onChange={(e) =>
                       field.onChange(
                         e.target.value ? Number(e.target.value) : ''
-                      )
+                      )}
                     }
                   />
-                </Box>
+                </div>
               )}
             />
-          </Box>
-        </Box>
-
+          </div>
+        </div>
         {/* Reference Ranges Info */}
-        <Alert severity="info" sx={{ mt: 3 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+        <Alert severity="info" className="">
+          <div  className="">
             Normal Reference Ranges:
-          </Typography>
-          <Typography variant="body2" component="div">
+          </div>
+          <div  component="div">
             • Blood Pressure: 90-140/60-90 mmHg
             <br />
             • Heart Rate: 60-100 bpm (resting)
@@ -561,9 +472,8 @@ const VitalSignsInput: React.FC<VitalSignsInputProps> = ({
             <br />
             • Respiratory Rate: 12-20 breaths/min
             <br />• Blood Glucose: 70-100 mg/dL (fasting), 70-140 mg/dL (random)
-          </Typography>
+          </div>
         </Alert>
-
         {/* Critical Values Warning */}
         {((watchedValues.heartRate &&
           (Number(watchedValues.heartRate) < 50 ||
@@ -577,16 +487,15 @@ const VitalSignsInput: React.FC<VitalSignsInputProps> = ({
           (watchedValues.respiratoryRate &&
             (Number(watchedValues.respiratoryRate) < 10 ||
               Number(watchedValues.respiratoryRate) > 30))) && (
-          <Alert severity="warning" sx={{ mt: 2 }}>
-            <Typography variant="body2">
+          <Alert severity="warning" className="">
+            <div >
               <strong>Critical Values Detected:</strong> Some vital signs are
               outside normal ranges and may require immediate attention.
-            </Typography>
+            </div>
           </Alert>
         )}
       </CardContent>
     </Card>
   );
 };
-
 export default VitalSignsInput;

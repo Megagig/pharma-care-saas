@@ -1,9 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useMTRStore } from '../mtrStore';
-import type { MTRMedication, DrugTherapyProblem, TherapyPlan } from '../mtrStore';
-
 // Mock the API service
-vi.mock('../../services/mtrService', () => ({
+vi.mock('../../services/mtrService', () => ({ 
     mtrService: {
         createMTRSession: vi.fn(),
         getMTRSession: vi.fn(),
@@ -22,16 +18,15 @@ vi.mock('../../services/mtrService', () => ({
         updateIntervention: vi.fn(),
         scheduleFollowUp: vi.fn(),
         completeFollowUp: vi.fn(),
-        checkDrugInteractions: vi.fn(),
-    },
-}));
+        checkDrugInteractions: vi.fn()}
+    }
 
 describe('MTRStore', () => {
     beforeEach(() => {
         // Reset store state before each test
-        useMTRStore.setState({
+        useMTRStore.setState({ 
             currentReview: null,
-            currentStep: 0,
+            currentStep: 0}
             stepData: {},
             selectedPatient: null,
             medications: [],
@@ -40,8 +35,7 @@ describe('MTRStore', () => {
             interventions: [],
             followUps: [],
             loading: {},
-            errors: {},
-        });
+            errors: {}
         vi.clearAllMocks();
     });
 
@@ -386,7 +380,7 @@ describe('MTRStore', () => {
             expect(validateStep(0)).toContain('Patient selection is required');
 
             // Test medication history step
-            useMTRStore.setState({
+            useMTRStore.setState({  })
                 selectedPatient: { _id: 'patient-1' } as unknown,
                 medications: []
             });
@@ -399,11 +393,10 @@ describe('MTRStore', () => {
             const { clearStore } = useMTRStore.getState();
 
             // Set some data first
-            useMTRStore.setState({
+            useMTRStore.setState({  })
                 selectedPatient: { _id: 'patient-1' } as unknown,
                 medications: [{ id: 'med-1' } as unknown],
-                identifiedProblems: [{ _id: 'problem-1' } as unknown],
-            });
+                identifiedProblems: [{ _id: 'problem-1' } as unknown]}
 
             clearStore();
 

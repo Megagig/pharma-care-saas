@@ -1,6 +1,4 @@
 // MTR (Medication Therapy Review) Types
-import { ApiResponse } from './patientManagement';
-
 // Base MTR interfaces matching backend models
 export interface MTRMedicationEntry {
     drugName: string;

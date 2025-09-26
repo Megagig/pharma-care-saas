@@ -1,56 +1,12 @@
-import React, {
   useState,
   useCallback,
   useMemo,
   useRef,
   useEffect,
-} from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Button,
-  TextField,
-  InputAdornment,
-  Chip,
-  IconButton,
-  Menu,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  SelectChangeEvent,
-  Alert,
-  Snackbar,
-  Card,
-  CardContent,
-  Stack,
-  Switch,
-  FormControlLabel,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Add as AddIcon,
-  FilterList as FilterIcon,
-  Clear as ClearIcon,
-  ViewModule as ViewModuleIcon,
-  ViewList as ViewListIcon,
-  Tune as TuneIcon,
-} from '@mui/icons-material';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { useDebounce } from '../hooks/useDebounce';
-import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
+
 import VirtualizedClinicalNotesList from './VirtualizedClinicalNotesList';
-import { useEnhancedClinicalNoteStore } from '../stores/enhancedClinicalNoteStore';
-import { useClinicalNotes } from '../queries/clinicalNoteQueries';
-import {
-  ClinicalNote,
-  ClinicalNoteFilters,
-  NOTE_TYPES,
-  NOTE_PRIORITIES,
-} from '../types/clinicalNote';
+
+import { Button, Input, Label, Card, CardContent, Select, Alert, Switch } from '@/components/ui/button';
 
 interface OptimizedClinicalNotesDashboardProps {
   patientId?: string;
@@ -62,10 +18,7 @@ interface OptimizedClinicalNotesDashboardProps {
   enableVirtualization?: boolean;
   itemHeight?: number;
 }
-
-const OptimizedClinicalNotesDashboard: React.FC<
-  OptimizedClinicalNotesDashboardProps
-> = ({
+const OptimizedClinicalNotesDashboard: React.FC = ({ 
   patientId,
   embedded = false,
   maxHeight,
@@ -73,16 +26,14 @@ const OptimizedClinicalNotesDashboard: React.FC<
   onNoteEdit,
   onNoteCreate,
   enableVirtualization = true,
-  itemHeight = 160,
+  itemHeight = 160
 }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
   // Refs for performance optimization
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
   // Store state
   const {
     notes,
@@ -98,7 +49,6 @@ const OptimizedClinicalNotesDashboard: React.FC<
     deleteNote,
     bulkDeleteNotes,
   } = useEnhancedClinicalNoteStore();
-
   // Local state
   const [searchInput, setSearchInput] = useState(searchQuery);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -106,50 +56,33 @@ const OptimizedClinicalNotesDashboard: React.FC<
     null
   );
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'success' | 'error' | 'warning' | 'info';
-  }>({
-    open: false,
-    message: '',
-    severity: 'info',
-  });
-
   // Debounced search for performance
   const debouncedSearchQuery = useDebounce(searchInput, 300);
-
   // Current filters with patient context
   const currentFilters = useMemo(
-    () => ({
-      ...filters,
+    () => ({ 
+      ...filters}
       ...(patientId && { patientId }),
-      search: debouncedSearchQuery,
-    }),
+      search: debouncedSearchQuery, },
     [filters, patientId, debouncedSearchQuery]
   );
-
   // React Query for data fetching
   const { data, isLoading, error, refetch, isFetching } =
     useClinicalNotes(currentFilters);
-
   // Memoized notes list for performance
   const memoizedNotes = useMemo(() => {
     return data?.notes || [];
   }, [data?.notes]);
-
   // Update search query when debounced value changes
   useEffect(() => {
     if (debouncedSearchQuery !== searchQuery) {
       setSearchQuery(debouncedSearchQuery);
     }
   }, [debouncedSearchQuery, searchQuery, setSearchQuery]);
-
   // Intersection observer for infinite scrolling
-  const { targetRef, isIntersecting } = useIntersectionObserver({
-    threshold: 0.1,
+  const { targetRef, isIntersecting } = useIntersectionObserver({ 
+    threshold: 0.1}
   });
-
   // Load more data when reaching the bottom
   useEffect(() => {
     if (
@@ -159,13 +92,12 @@ const OptimizedClinicalNotesDashboard: React.FC<
       data &&
       data.currentPage < data.totalPages
     ) {
-      setFilters({
+      setFilters({ 
         ...currentFilters,
-        page: data.currentPage + 1,
+        page: data.currentPage + 1}
       });
     }
   }, [isIntersecting, isLoading, isFetching, data, currentFilters, setFilters]);
-
   // Handle search input change
   const handleSearchInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,7 +105,6 @@ const OptimizedClinicalNotesDashboard: React.FC<
     },
     []
   );
-
   // Handle filter changes
   const handleFilterChange = useCallback(
     (key: keyof ClinicalNoteFilters, value: any) => {
@@ -182,19 +113,17 @@ const OptimizedClinicalNotesDashboard: React.FC<
     },
     [filters, setFilters]
   );
-
   // Clear all filters
   const handleClearFilters = useCallback(() => {
-    setFilters({
+    setFilters({ 
       page: 1,
       limit: 20,
       sortBy: 'createdAt',
-      sortOrder: 'desc',
+      sortOrder: 'desc'}
     });
     setSearchInput('');
     setSearchQuery('');
   }, [setFilters, setSearchQuery]);
-
   // Handle note actions
   const handleViewNote = useCallback(
     (note: ClinicalNote) => {
@@ -208,7 +137,6 @@ const OptimizedClinicalNotesDashboard: React.FC<
     },
     [onNoteSelect, embedded, navigate]
   );
-
   const handleEditNote = useCallback(
     (note: ClinicalNote) => {
       if (onNoteEdit) {
@@ -219,60 +147,39 @@ const OptimizedClinicalNotesDashboard: React.FC<
     },
     [onNoteEdit, navigate]
   );
-
   const handleDeleteNote = useCallback(
     async (note: ClinicalNote) => {
       try {
         await deleteNote(note._id);
-        setSnackbar({
-          open: true,
-          message: 'Note deleted successfully',
-          severity: 'success',
-        });
+        toast.success('Note deleted successfully');
       } catch (error) {
-        setSnackbar({
-          open: true,
-          message: 'Failed to delete note',
-          severity: 'error',
-        });
+        toast.error('Failed to delete note');
       }
     },
     [deleteNote]
   );
-
   const handleNoteSelect = useCallback(
     (noteId: string) => {
       toggleNoteSelection(noteId);
     },
     [toggleNoteSelection]
   );
-
   // Bulk operations
   const handleBulkDelete = useCallback(async () => {
     try {
       await bulkDeleteNotes(selectedNotes);
-      setSnackbar({
-        open: true,
-        message: `Successfully deleted ${selectedNotes.length} notes`,
-        severity: 'success',
-      });
+      toast.success(`Successfully deleted ${selectedNotes.length} notes`);
       clearSelection();
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Failed to delete notes',
-        severity: 'error',
-      });
+      toast.error('Failed to delete notes');
     }
   }, [bulkDeleteNotes, selectedNotes, clearSelection]);
-
   // Calculate container height for virtualization
   const containerHeight = useMemo(() => {
     if (maxHeight) return maxHeight;
     if (embedded) return 600;
     return window.innerHeight - 300; // Account for header and toolbar
   }, [maxHeight, embedded]);
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -281,44 +188,40 @@ const OptimizedClinicalNotesDashboard: React.FC<
         event.preventDefault();
         searchInputRef.current?.focus();
       }
-
       // Escape to clear selection
       if (event.key === 'Escape') {
         clearSelection();
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [clearSelection]);
-
   return (
-    <Box ref={containerRef} sx={{ height: '100%', width: '100%' }}>
+    <div ref={containerRef} className="">
       {!embedded && (
-        <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="h4"
+        <div className="">
+          <div
+            
             component="h1"
-            sx={{ fontWeight: 600, mb: 1 }}
+            className=""
           >
             Clinical Notes
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
+          </div>
+          <div  color="text.secondary">
             Manage SOAP notes and clinical documentation
-          </Typography>
-        </Box>
+          </div>
+        </div>
       )}
-
       {/* Optimized Toolbar */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent sx={{ pb: 2 }}>
-          <Stack
+      <Card className="">
+        <CardContent className="">
+          <div
             direction={isMobile ? 'column' : 'row'}
             spacing={2}
             alignItems={isMobile ? 'stretch' : 'center'}
           >
             {/* Search */}
-            <TextField
+            <Input
               ref={searchInputRef}
               placeholder="Search notes... (Ctrl+K)"
               value={searchInput}
@@ -330,20 +233,18 @@ const OptimizedClinicalNotesDashboard: React.FC<
                   </InputAdornment>
                 ),
                 endAdornment: searchInput && (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setSearchInput('')}>
+                  <InputAdornment position="end">}
+                    <IconButton size="small" onClick={() =>setSearchInput('')}>
                       <ClearIcon />
                     </IconButton>
                   </InputAdornment>
                 ),
-              }}
-              sx={{ flex: 1, minWidth: isMobile ? 'auto' : 300 }}
+              className=""
               size="small"
             />
-
             {/* View Mode Toggle */}
             {!isMobile && (
-              <Stack direction="row" spacing={0}>
+              <div direction="row" spacing={0}>
                 <IconButton
                   size="small"
                   onClick={() => setViewMode('list')}
@@ -358,66 +259,61 @@ const OptimizedClinicalNotesDashboard: React.FC<
                 >
                   <ViewModuleIcon />
                 </IconButton>
-              </Stack>
+              </div>
             )}
-
             {/* Filters */}
             <Button
               startIcon={<FilterIcon />}
               onClick={(e) => setFilterMenuAnchor(e.currentTarget)}
-              variant="outlined"
+              
               size="small"
             >
               Filters
             </Button>
-
             {/* Advanced Filters Toggle */}
             <FormControlLabel
               control={
-                <Switch
+                <Switch}
                   checked={showAdvancedFilters}
                   onChange={(e) => setShowAdvancedFilters(e.target.checked)}
                   size="small"
                 />
               }
               label="Advanced"
-              sx={{ ml: 0 }}
+              className=""
             />
-
             {/* Create Note */}
             <Button
               startIcon={<AddIcon />}
               onClick={() => onNoteCreate?.() || navigate('/notes/new')}
-              variant="contained"
+              
               size="small"
             >
               New Note
             </Button>
-
             {/* Bulk Actions */}
             {selectedNotes.length > 0 && (
               <Button
                 onClick={handleBulkDelete}
-                variant="outlined"
+                
                 color="error"
                 size="small"
               >
                 Delete ({selectedNotes.length})
               </Button>
             )}
-          </Stack>
-
+          </div>
           {/* Active Filters Display */}
           {(filters.type ||
             filters.priority ||
             filters.dateFrom ||
             filters.dateTo) && (
-            <Box sx={{ mt: 2 }}>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
+            <div className="">
+              <div direction="row" spacing={1} flexWrap="wrap">
                 {filters.type && (
                   <Chip
                     label={`Type: ${
-                      NOTE_TYPES.find((t) => t.value === filters.type)?.label
+                      NOTE_TYPES.find((t) => t.value === filters.type)?.label}
                     }`}
                     onDelete={() => handleFilterChange('type', undefined)}
                     size="small"
@@ -427,7 +323,7 @@ const OptimizedClinicalNotesDashboard: React.FC<
                   <Chip
                     label={`Priority: ${
                       NOTE_PRIORITIES.find((p) => p.value === filters.priority)
-                        ?.label
+                        ?.label}
                     }`}
                     onDelete={() => handleFilterChange('priority', undefined)}
                     size="small"
@@ -436,26 +332,25 @@ const OptimizedClinicalNotesDashboard: React.FC<
                 <Button
                   startIcon={<ClearIcon />}
                   onClick={handleClearFilters}
-                  variant="text"
+                  
                   size="small"
                   color="secondary"
                 >
                   Clear All
                 </Button>
-              </Stack>
-            </Box>
+              </div>
+            </div>
           )}
-
           {/* Advanced Filters */}
           {showAdvancedFilters && (
-            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
-              <Stack direction="row" spacing={2} flexWrap="wrap">
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>Type</InputLabel>
+            <div className="">
+              <div direction="row" spacing={2} flexWrap="wrap">
+                <div size="small" className="">
+                  <Label>Type</Label>
                   <Select
                     value={filters.type || ''}
                     onChange={(e) =>
-                      handleFilterChange('type', e.target.value || undefined)
+                      handleFilterChange('type', e.target.value || undefined)}
                     }
                     label="Type"
                   >
@@ -466,17 +361,16 @@ const OptimizedClinicalNotesDashboard: React.FC<
                       </MenuItem>
                     ))}
                   </Select>
-                </FormControl>
-
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>Priority</InputLabel>
+                </div>
+                <div size="small" className="">
+                  <Label>Priority</Label>
                   <Select
                     value={filters.priority || ''}
                     onChange={(e) =>
                       handleFilterChange(
                         'priority',
                         e.target.value || undefined
-                      )
+                      )}
                     }
                     label="Priority"
                   >
@@ -487,29 +381,26 @@ const OptimizedClinicalNotesDashboard: React.FC<
                       </MenuItem>
                     ))}
                   </Select>
-                </FormControl>
-              </Stack>
-            </Box>
+                </div>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
-
       {/* Loading State */}
       {isLoading && memoizedNotes.length === 0 && (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography variant="body1" color="text.secondary">
+        <div className="">
+          <div  color="text.secondary">
             Loading clinical notes...
-          </Typography>
-        </Box>
+          </div>
+        </div>
       )}
-
       {/* Error State */}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" className="">
           Failed to load clinical notes. Please try again.
         </Alert>
       )}
-
       {/* Notes List */}
       {enableVirtualization && memoizedNotes.length > 10 ? (
         <VirtualizedClinicalNotesList
@@ -524,53 +415,46 @@ const OptimizedClinicalNotesDashboard: React.FC<
           loading={isLoading}
         />
       ) : (
-        <Box sx={{ height: containerHeight, overflow: 'auto' }}>
+        <div className="">
           {memoizedNotes.map((note) => (
             <Card
               key={note._id}
-              sx={{
-                mb: 2,
-                cursor: 'pointer',
-                border: selectedNotes.includes(note._id)
-                  ? `2px solid ${theme.palette.primary.main}`
+              className=""`
                   : '1px solid #e0e0e0',
                 '&:hover': {
                   boxShadow: theme.shadows[4],
                 },
-              }}
               onClick={() => handleNoteSelect(note._id)}
             >
               <CardContent>
-                <Typography variant="h6" component="h3" sx={{ mb: 1 }}>
+                <div  component="h3" className="">
                   {note.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Patient: {note.patient.firstName} {note.patient.lastName}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </div>
+                <div  color="text.secondary">
                   Created: {new Date(note.createdAt).toLocaleDateString()}
-                </Typography>
+                </div>
               </CardContent>
             </Card>
           ))}
-
           {/* Infinite scroll trigger */}
           {data && data.currentPage < data.totalPages && (
-            <div ref={targetRef} style={{ height: 20, margin: '20px 0' }}>
+            <div ref={targetRef} >
               {isFetching && (
-                <Typography
-                  variant="body2"
+                <div
+                  
                   color="text.secondary"
                   textAlign="center"
                 >
                   Loading more notes...
-                </Typography>
+                </div>
               )}
             </div>
           )}
-        </Box>
+        </div>
       )}
-
       {/* Filter Menu */}
       <Menu
         anchorEl={filterMenuAnchor}
@@ -578,30 +462,15 @@ const OptimizedClinicalNotesDashboard: React.FC<
         onClose={() => setFilterMenuAnchor(null)}
       >
         <MenuItem onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}>
-          <TuneIcon sx={{ mr: 1 }} />
+          <TuneIcon className="" />
           Advanced Filters
         </MenuItem>
         <MenuItem onClick={handleClearFilters}>
-          <ClearIcon sx={{ mr: 1 }} />
+          <ClearIcon className="" />
           Clear All Filters
         </MenuItem>
       </Menu>
-
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+    </div>
   );
 };
-
 export default React.memo(OptimizedClinicalNotesDashboard);

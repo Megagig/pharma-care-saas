@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import Joi from "joi";
 import { AuthRequest } from "../types/auth";
-export declare const conversationValidationSchema: Joi.ObjectSchema<any>;
-export declare const messageValidationSchema: Joi.ObjectSchema<any>;
-export declare const notificationValidationSchema: Joi.ObjectSchema<any>;
-export declare const auditLogValidationSchema: Joi.ObjectSchema<any>;
+export declare const conversationValidationSchema: any;
+export declare const messageValidationSchema: any;
+export declare const notificationValidationSchema: any;
+export declare const auditLogValidationSchema: any;
 export declare const validateConversation: (req: Request, res: Response, next: NextFunction) => void;
 export declare const validateMessage: (req: Request, res: Response, next: NextFunction) => void;
 export declare const validateNotification: (req: Request, res: Response, next: NextFunction) => void;

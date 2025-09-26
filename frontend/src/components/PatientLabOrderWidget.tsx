@@ -1,58 +1,34 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  Typography,
-  Button,
-  IconButton,
-  Chip,
-  Stack,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemSecondaryAction,
-  Avatar,
-  Skeleton,
-  Alert,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Autocomplete,
-  FormControlLabel,
-  Checkbox,
-  Divider,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import ScienceIcon from '@mui/icons-material/Science';
-import AddIcon from '@mui/icons-material/Add';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import DownloadIcon from '@mui/icons-material/Download';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PendingIcon from '@mui/icons-material/Pending';
-import WarningIcon from '@mui/icons-material/Warning';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import CloseIcon from '@mui/icons-material/Close';
+import React, { useState, useEffect } from 'react';
 
+import { Button } from '@/components/ui/button';
+
+import { Input } from '@/components/ui/input';
+
+import { Card } from '@/components/ui/card';
+
+import { CardContent } from '@/components/ui/card';
+
+import { CardHeader } from '@/components/ui/card';
+
+import { Dialog } from '@/components/ui/dialog';
+
+import { DialogContent } from '@/components/ui/dialog';
+
+import { DialogTitle } from '@/components/ui/dialog';
+
+import { Tooltip } from '@/components/ui/tooltip';
+
+import { Alert } from '@/components/ui/alert';
+
+import { Skeleton } from '@/components/ui/skeleton';
+
+import { Avatar } from '@/components/ui/avatar';
+
+import { Separator } from '@/components/ui/separator';
 import {
   usePatientLabOrders,
   useCreateManualLabOrder,
-} from '../hooks/useManualLabOrders';
-import {
-  ManualLabOrder,
-  LAB_ORDER_STATUSES,
-  TEST_CATEGORIES,
-  LabTest,
-  CreateOrderRequest,
-} from '../types/manualLabOrder';
-import { formatDate } from '../utils/formatters';
+} from '@/hooks/useLabOrders';
 
 interface PatientLabOrderWidgetProps {
   patientId: string;
@@ -120,12 +96,12 @@ const COMMON_LAB_TESTS: LabTest[] = [
   },
 ];
 
-const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({
+const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({ 
   patientId,
   maxOrders = 3,
   onViewOrder,
   onViewResults,
-  onViewAllOrders,
+  onViewAllOrders
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -228,11 +204,11 @@ const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({
       <Card>
         <CardHeader title="Lab Orders" />
         <CardContent>
-          <Stack spacing={2}>
+          <div spacing={2}>
             {[...Array(3)].map((_, index) => (
-              <Skeleton key={index} variant="rectangular" height={60} />
+              <Skeleton key={index}  height={60} />
             ))}
-          </Stack>
+          </div>
         </CardContent>
       </Card>
     );
@@ -244,15 +220,15 @@ const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({
         <CardHeader title="Lab Orders" />
         <CardContent>
           <Alert severity="error">
-            <Typography variant="body2">
+            <div >
               Failed to load lab orders:{' '}
               {error instanceof Error ? error.message : 'Unknown error'}
-            </Typography>
+            </div>
             <Button
               size="small"
               startIcon={<RefreshIcon />}
               onClick={() => refetch()}
-              sx={{ mt: 1 }}
+              className=""
             >
               Retry
             </Button>
@@ -267,62 +243,62 @@ const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({
       <Card>
         <CardHeader
           title={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ScienceIcon color="primary" />
-              <Typography variant="h6" fontWeight={600}>
+            <div className="">
+              <ScienceIcon color="primary" />}
+              <div  fontWeight={600}>
                 Lab Orders
-              </Typography>
+              </div>
               {orders.length > 0 && (
                 <Chip label={orders.length} size="small" color="primary" />
               )}
-            </Box>
+            </div>
           }
           action={
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <div className="">
               <Button
-                size="small"
+                size="small"}
                 startIcon={<AddIcon />}
                 onClick={() => setShowQuickOrderDialog(true)}
-                variant="outlined"
+                
               >
                 Quick Order
               </Button>
               <IconButton size="small" onClick={() => refetch()}>
                 <RefreshIcon />
               </IconButton>
-            </Box>
+            </div>
           }
         />
         <CardContent>
           {recentOrders.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 3 }}>
+            <div className="">
               <ScienceIcon
-                sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
+                className=""
               />
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <div  color="text.secondary" gutterBottom>
                 No lab orders yet
-              </Typography>
+              </div>
               <Button
                 startIcon={<AddIcon />}
                 onClick={() => setShowQuickOrderDialog(true)}
-                variant="contained"
+                
                 size="small"
               >
                 Create First Order
               </Button>
-            </Box>
+            </div>
           ) : (
             <>
               <List dense>
                 {recentOrders.map((order, index) => (
                   <React.Fragment key={order.orderId}>
-                    <ListItem
-                      sx={{ px: 0 }}
+                    <div
+                      className=""
                       secondaryAction={
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <div className="">
                           <Tooltip title="Download PDF">
                             <IconButton
-                              size="small"
+                              size="small"}
                               onClick={() => handleDownloadPdf(order.orderId)}
                             >
                               <DownloadIcon fontSize="small" />
@@ -338,76 +314,67 @@ const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({
                               </IconButton>
                             </Tooltip>
                           )}
-                        </Box>
+                        </div>
                       }
                     >
-                      <ListItemIcon>
+                      <div>
                         <Avatar
-                          sx={{
-                            width: 32,
-                            height: 32,
-                            bgcolor: 'primary.main',
-                          }}
+                          className=""
                         >
                           {getStatusIcon(order.status)}
                         </Avatar>
-                      </ListItemIcon>
-                      <ListItemText
+                      </div>
+                      <div
                         primary={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                              flexWrap: 'wrap',
-                            }}
-                          >
-                            <Typography variant="body2" fontWeight={600}>
+                          <div
+                            className=""
+                          >}
+                            <div  fontWeight={600}>
                               {order.orderId}
-                            </Typography>
+                            </div>
                             <Chip
                               label={
-                                LAB_ORDER_STATUSES[order.status] || order.status
+                                LAB_ORDER_STATUSES[order.status] || order.status}
                               }
                               size="small"
                               color={getStatusColor(order.status)}
                             />
-                          </Box>
+                          </div>
                         }
                         secondary={
-                          <Box>
-                            <Typography
-                              variant="caption"
+                          <div>
+                            <div
+                              
                               color="text.secondary"
-                            >
+                            >}
                               {order.tests.length} test
                               {order.tests.length !== 1 ? 's' : ''} •{' '}
                               {formatDate(order.createdAt)}
-                            </Typography>
-                            <Typography
-                              variant="caption"
+                            </div>
+                            <div
+                              
                               display="block"
                               color="text.secondary"
                             >
                               {order.indication.length > 40
                                 ? `${order.indication.substring(0, 40)}...`
                                 : order.indication}
-                            </Typography>
-                          </Box>
+                            </div>
+                          </div>
                         }
                       />
-                    </ListItem>
-                    {index < recentOrders.length - 1 && <Divider />}
+                    </div>
+                    {index < recentOrders.length - 1 && <Separator />}
                   </React.Fragment>
                 ))}
               </List>
 
               {orders.length > maxOrders && (
-                <Box sx={{ textAlign: 'center', mt: 2 }}>
-                  <Button size="small" onClick={onViewAllOrders} variant="text">
+                <div className="">
+                  <Button size="small" onClick={onViewAllOrders} >
                     View All {orders.length} Orders
                   </Button>
-                </Box>
+                </div>
               )}
             </>
           )}
@@ -423,21 +390,17 @@ const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({
         fullScreen={isMobile}
       >
         <DialogTitle>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
+          <div
+            className=""
           >
-            <Typography variant="h6">Quick Lab Order</Typography>
+            <div >Quick Lab Order</div>
             <IconButton onClick={() => setShowQuickOrderDialog(false)}>
               <CloseIcon />
             </IconButton>
-          </Box>
+          </div>
         </DialogTitle>
         <DialogContent>
-          <Stack spacing={3} sx={{ mt: 1 }}>
+          <div spacing={3} className="">
             {/* Test Selection */}
             <Autocomplete
               multiple
@@ -446,7 +409,7 @@ const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({
               value={selectedTests}
               onChange={(_, newValue) => setSelectedTests(newValue)}
               renderInput={(params) => (
-                <TextField
+                <Input}
                   {...params}
                   label="Select Tests"
                   placeholder="Choose lab tests..."
@@ -456,30 +419,30 @@ const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({
               renderTags={(value, getTagProps) =>
                 value.map((option, index) => (
                   <Chip
-                    variant="outlined"
+                    }
                     label={`${option.name} (${option.code})`}
                     {...getTagProps({ index })}
                     key={option.code}
                   />
                 ))
               }
-              renderOption={(props, option) => (
-                <Box component="li" {...props}>
-                  <Box>
-                    <Typography variant="body2" fontWeight={600}>
+              renderOption={(props, option) => (}
+                <div component="li" {...props}>
+                  <div>
+                    <div  fontWeight={600}>
                       {option.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </div>
+                    <div  color="text.secondary">
                       Code: {option.code} • Specimen: {option.specimenType} •
                       Category: {option.category}
-                    </Typography>
-                  </Box>
-                </Box>
+                    </div>
+                  </div>
+                </div>
               )}
             />
 
             {/* Indication */}
-            <TextField
+            <Input
               label="Clinical Indication"
               multiline
               rows={3}
@@ -493,7 +456,7 @@ const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({
             {/* Consent */}
             <FormControlLabel
               control={
-                <Checkbox
+                <Checkbox}
                   checked={consentObtained}
                   onChange={(e) => setConsentObtained(e.target.checked)}
                   required
@@ -504,35 +467,35 @@ const PatientLabOrderWidget: React.FC<PatientLabOrderWidgetProps> = ({
 
             {/* Selected Tests Summary */}
             {selectedTests.length > 0 && (
-              <Box>
-                <Typography variant="subtitle2" gutterBottom>
+              <div>
+                <div  gutterBottom>
                   Selected Tests ({selectedTests.length}):
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                </div>
+                <div className="">
                   {selectedTests.map((test) => (
                     <Chip
                       key={test.code}
                       label={`${test.name} (${test.code})`}
                       size="small"
-                      variant="outlined"
+                      
                       color="primary"
                     />
                   ))}
-                </Box>
-              </Box>
+                </div>
+              </div>
             )}
-          </Stack>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowQuickOrderDialog(false)}>Cancel</Button>
           <Button
             onClick={handleQuickOrderSubmit}
-            variant="contained"
+            
             disabled={
               selectedTests.length === 0 ||
               !indication.trim() ||
               !consentObtained ||
-              createOrderMutation.isPending
+              createOrderMutation.isPending}
             }
           >
             {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}

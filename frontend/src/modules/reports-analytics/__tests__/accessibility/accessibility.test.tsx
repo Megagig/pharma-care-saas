@@ -1,44 +1,32 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { axe, toHaveNoViolations } from 'jest-axe';
-import { ChartComponent } from '../../components/shared/ChartComponent';
-import { FilterPanel } from '../../components/shared/FilterPanel';
-import { ReportsAnalyticsDashboard } from '../../components/ReportsAnalyticsDashboard';
-import { mockChartData, mockChartConfig, mockFilters } from '../mocks/mockData';
-import { ReportType } from '../../types';
-
 // Extend Jest matchers
 expect.extend(toHaveNoViolations);
 
 // Mock stores for accessibility tests
-vi.mock('../../stores/reportsStore', () => ({
+vi.mock('../../stores/reportsStore', () => ({ 
   useReportsStore: vi.fn(() => ({
     activeReport: ReportType.PATIENT_OUTCOMES,
     reportData: null,
     isLoading: false,
     error: null,
     setActiveReport: vi.fn(),
-    fetchReportData: vi.fn(),
-  })),
-}));
+    fetchReportData: vi.fn()}
+  }))}
 
-vi.mock('../../stores/filtersStore', () => ({
+vi.mock('../../stores/filtersStore', () => ({ 
   useFiltersStore: vi.fn(() => ({
     filters: mockFilters,
     setFilters: vi.fn(),
     resetFilters: vi.fn(),
-    isLoading: false,
-  })),
-}));
+    isLoading: false}
+  }))}
 
-vi.mock('../../stores/dashboardStore', () => ({
+vi.mock('../../stores/dashboardStore', () => ({ 
   useDashboardStore: vi.fn(() => ({
     sidebarCollapsed: false,
     setSidebarCollapsed: vi.fn(),
     theme: 'light',
-    setTheme: vi.fn(),
-  })),
-}));
+    setTheme: vi.fn()}
+  }))}
 
 describe('Accessibility Tests', () => {
   describe('ChartComponent', () => {
@@ -213,13 +201,13 @@ describe('Accessibility Tests', () => {
       // Mock loading state
       vi.mocked(
         require('../../stores/reportsStore').useReportsStore
-      ).mockReturnValue({
+      ).mockReturnValue({ 
         activeReport: ReportType.PATIENT_OUTCOMES,
         reportData: null,
         isLoading: true,
         error: null,
         setActiveReport: vi.fn(),
-        fetchReportData: vi.fn(),
+        fetchReportData: vi.fn()}
       });
 
       render(<ReportsAnalyticsDashboard {...dashboardProps} />);
@@ -232,13 +220,13 @@ describe('Accessibility Tests', () => {
       // Mock error state
       vi.mocked(
         require('../../stores/reportsStore').useReportsStore
-      ).mockReturnValue({
+      ).mockReturnValue({ 
         activeReport: ReportType.PATIENT_OUTCOMES,
         reportData: null,
         isLoading: false,
         error: 'Failed to load report data',
         setActiveReport: vi.fn(),
-        fetchReportData: vi.fn(),
+        fetchReportData: vi.fn()}
       });
 
       render(<ReportsAnalyticsDashboard {...dashboardProps} />);
@@ -321,7 +309,7 @@ describe('Accessibility Tests', () => {
     it('should support tab navigation through all interactive elements', () => {
       render(
         <ReportsAnalyticsDashboard
-          {...{ workspaceId: 'test', userPermissions: [] }}
+          {...{ workspaceId: 'test', userPermissions: []
         />
       );
 

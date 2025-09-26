@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Snackbar, Alert, Backdrop } from '@mui/material';
 import toast from 'react-hot-toast';
-import ClinicalNotesErrorBoundary from './ClinicalNotesErrorBoundary';
+
+// import ClinicalNotesErrorBoundary from './ClinicalNotesErrorBoundary';
+
 import ClinicalNotesOfflineIndicator from './ClinicalNotesOfflineIndicator';
-import { ClinicalNotesLoadingState } from './ClinicalNotesLoadingStates';
-import { useClinicalNotesErrorHandling } from '../hooks/useClinicalNotesErrorHandling';
+
+import { Alert } from '@/components/ui/button';
 
 interface ClinicalNotesUXEnhancerProps {
   children: React.ReactNode;
@@ -12,73 +12,63 @@ interface ClinicalNotesUXEnhancerProps {
   showGlobalLoading?: boolean;
   context?: string;
 }
-
 interface GlobalState {
   isLoading: boolean;
   loadingMessage: string;
   hasNetworkError: boolean;
   isRecovering: boolean;
 }
-
-const ClinicalNotesUXEnhancer: React.FC<ClinicalNotesUXEnhancerProps> = ({
+const ClinicalNotesUXEnhancer: React.FC<ClinicalNotesUXEnhancerProps> = ({ 
   children,
   showOfflineIndicator = true,
   showGlobalLoading = true,
-  context = 'clinical-notes-app',
+  context = 'clinical-notes-app'
 }) => {
-  const [globalState, setGlobalState] = useState<GlobalState>({
+  const [globalState, setGlobalState] = useState<GlobalState>({ 
     isLoading: false,
     loadingMessage: '',
     hasNetworkError: false,
     isRecovering: false,
   });
-
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-
   const { getErrors, hasErrors } = useClinicalNotesErrorHandling();
-
   // Monitor global loading states
   useEffect(() => {
     const handleLoadingStart = (event: CustomEvent) => {
-      setGlobalState((prev) => ({
+      setGlobalState((prev) => ({ 
         ...prev,
         isLoading: true,
-        loadingMessage: event.detail?.message || 'Loading...',
+        loadingMessage: event.detail?.message || 'Loading...'}
       }));
     };
-
     const handleLoadingEnd = () => {
-      setGlobalState((prev) => ({
+      setGlobalState((prev) => ({ 
         ...prev,
         isLoading: false,
-        loadingMessage: '',
+        loadingMessage: ''}
       }));
     };
-
     const handleNetworkError = () => {
-      setGlobalState((prev) => ({
+      setGlobalState((prev) => ({ 
         ...prev,
-        hasNetworkError: true,
+        hasNetworkError: true}
       }));
     };
-
     const handleNetworkRecovery = () => {
-      setGlobalState((prev) => ({
+      setGlobalState((prev) => ({ 
         ...prev,
         hasNetworkError: false,
-        isRecovering: true,
+        isRecovering: true}
       }));
-
       // Clear recovery state after a delay
       setTimeout(() => {
-        setGlobalState((prev) => ({
+        setGlobalState((prev) => ({ 
           ...prev,
-          isRecovering: false,
+          isRecovering: false}
         }));
       }, 3000);
     };
-
     // Listen for custom events
     window.addEventListener(
       'clinical-notes-loading-start',
@@ -90,7 +80,6 @@ const ClinicalNotesUXEnhancer: React.FC<ClinicalNotesUXEnhancerProps> = ({
       'clinical-notes-network-recovery',
       handleNetworkRecovery
     );
-
     return () => {
       window.removeEventListener(
         'clinical-notes-loading-start',
@@ -110,7 +99,6 @@ const ClinicalNotesUXEnhancer: React.FC<ClinicalNotesUXEnhancerProps> = ({
       );
     };
   }, []);
-
   // Monitor online/offline status
   useEffect(() => {
     const handleOnline = () => {
@@ -121,49 +109,39 @@ const ClinicalNotesUXEnhancer: React.FC<ClinicalNotesUXEnhancerProps> = ({
         showSuccessToast('Connection restored. Syncing data...');
       }
     };
-
     const handleOffline = () => {
       window.dispatchEvent(new CustomEvent('clinical-notes-network-error'));
     };
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, [globalState.hasNetworkError]);
-
   // Handle sync completion
   const handleSyncComplete = useCallback(() => {
     showSuccessToast('Clinical notes synced successfully');
   }, []);
-
   // Handle sync errors
   const handleSyncError = useCallback((error: Error) => {
     toast.error(`Sync failed: ${error.message}`);
   }, []);
-
   // Show success toast
   const showSuccessToast = (message: string) => {
     setSuccessMessage(message);
     setShowSuccessMessage(true);
   };
-
   // Utility functions for child components
   const triggerGlobalLoading = useCallback((message: string = 'Loading...') => {
     window.dispatchEvent(
       new CustomEvent('clinical-notes-loading-start', {
-        detail: { message },
-      })
+        detail: { message }}
     );
   }, []);
-
   const stopGlobalLoading = useCallback(() => {
     window.dispatchEvent(new CustomEvent('clinical-notes-loading-end'));
   }, []);
-
   // Provide context to child components
   const contextValue = {
     triggerGlobalLoading,
@@ -171,7 +149,6 @@ const ClinicalNotesUXEnhancer: React.FC<ClinicalNotesUXEnhancerProps> = ({
     showSuccessToast,
     globalState,
   };
-
   return (
     <ClinicalNotesErrorBoundary
       context={context}
@@ -180,22 +157,15 @@ const ClinicalNotesUXEnhancer: React.FC<ClinicalNotesUXEnhancerProps> = ({
         console.error('Clinical Notes UX Error:', {
           error,
           errorInfo,
-          context,
-        });
-      }}
-    >
+          context,}
+        });>
       <ClinicalNotesUXContext.Provider value={contextValue}>
-        <Box sx={{ position: 'relative', minHeight: '100%' }}>
+        <div className="">
           {children}
-
           {/* Global Loading Overlay */}
           {showGlobalLoading && (
             <Backdrop
-              sx={{
-                color: '#fff',
-                zIndex: (theme) => theme.zIndex.drawer + 1,
-                backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              }}
+              className=""
               open={globalState.isLoading}
             >
               <ClinicalNotesLoadingState
@@ -205,7 +175,6 @@ const ClinicalNotesUXEnhancer: React.FC<ClinicalNotesUXEnhancerProps> = ({
               />
             </Backdrop>
           )}
-
           {/* Offline Indicator */}
           {showOfflineIndicator && (
             <ClinicalNotesOfflineIndicator
@@ -213,39 +182,34 @@ const ClinicalNotesUXEnhancer: React.FC<ClinicalNotesUXEnhancerProps> = ({
               onSyncError={handleSyncError}
             />
           )}
-
           {/* Success Message Snackbar */}
           <Snackbar
             open={showSuccessMessage}
             autoHideDuration={4000}
             onClose={() => setShowSuccessMessage(false)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-          >
+            >
             <Alert
               onClose={() => setShowSuccessMessage(false)}
               severity="success"
-              variant="filled"
+              
             >
               {successMessage}
             </Alert>
           </Snackbar>
-
           {/* Network Recovery Message */}
           <Snackbar
             open={globalState.isRecovering}
             autoHideDuration={3000}
-            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-          >
-            <Alert severity="info" variant="filled">
+            >
+            <Alert severity="info" >
               Connection restored. Syncing clinical notes...
             </Alert>
           </Snackbar>
-        </Box>
+        </div>
       </ClinicalNotesUXContext.Provider>
     </ClinicalNotesErrorBoundary>
   );
 };
-
 // Context for child components to access UX utilities
 const ClinicalNotesUXContext = React.createContext<{
   triggerGlobalLoading: (message?: string) => void;
@@ -253,7 +217,6 @@ const ClinicalNotesUXContext = React.createContext<{
   showSuccessToast: (message: string) => void;
   globalState: GlobalState;
 } | null>(null);
-
 // Hook for child components to use UX utilities
 export const useClinicalNotesUX = () => {
   const context = React.useContext(ClinicalNotesUXContext);
@@ -264,10 +227,8 @@ export const useClinicalNotesUX = () => {
   }
   return context;
 };
-
 // Higher-order component for easy wrapping
 export const withClinicalNotesUX = <P extends object>(
-  Component: React.ComponentType<P>,
   options?: {
     showOfflineIndicator?: boolean;
     showGlobalLoading?: boolean;
@@ -279,12 +240,8 @@ export const withClinicalNotesUX = <P extends object>(
       <Component {...props} />
     </ClinicalNotesUXEnhancer>
   );
-
-  WrappedComponent.displayName = `withClinicalNotesUX(${
     Component.displayName || Component.name
   })`;
-
   return WrappedComponent;
 };
-
 export default ClinicalNotesUXEnhancer;

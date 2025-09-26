@@ -1,41 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  Button,
-  TextField,
-  Alert,
-  CircularProgress,
-  LinearProgress,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-} from '@mui/material';
-import {
-  Download as DownloadIcon,
-  CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-  TrendingUp as TrendingUpIcon,
-  Assessment as AssessmentIcon,
-  Security as SecurityIcon,
-  Lightbulb as LightbulbIcon,
-} from '@mui/icons-material';
-import { format, subDays } from 'date-fns';
-import { clinicalInterventionService } from '../services/clinicalInterventionService';
+import { Button, Input, Card, CardContent, Spinner, Progress, Alert, Separator } from '@/components/ui/button';
 
 interface ComplianceData {
   summary: {
@@ -54,7 +17,6 @@ interface ComplianceData {
   }>;
   recommendations: string[];
 }
-
 const ClinicalInterventionComplianceReport: React.FC = () => {
   const [complianceData, setComplianceData] = useState<ComplianceData | null>(
     null
@@ -66,37 +28,31 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
   );
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [includeDetails, setIncludeDetails] = useState(false);
-
   useEffect(() => {
     generateReport();
   }, []);
-
   const generateReport = async () => {
     try {
       setLoading(true);
       setError(null);
-
       // TODO: Replace with actual API call when compliance reporting is implemented
-      // const response = await clinicalInterventionService.getComplianceReport({
+      // const response = await clinicalInterventionService.getComplianceReport({ 
       //   startDate,
       //   endDate,
-      //   includeDetails,
+      //   includeDetails}
       // });
-
       // if (response.success && response.data) {
       //   setComplianceData(response.data);
       // } else {
       //   setError(response.message || 'Failed to generate compliance report');
       // }
-
       // For now, show that the feature is not yet implemented
       // Try to fetch compliance data from API
-      const response = await clinicalInterventionService.getComplianceReport({
+      const response = await clinicalInterventionService.getComplianceReport({ 
         startDate: format(startDate, 'yyyy-MM-dd'),
         endDate: format(endDate, 'yyyy-MM-dd'),
-        includeDetails: true,
+        includeDetails: true}
       });
-
       if (response.success && response.data) {
         setComplianceData(response.data);
       } else {
@@ -112,16 +68,14 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
       setLoading(false);
     }
   };
-
   const handleExportReport = async () => {
     try {
-      const blob = await clinicalInterventionService.exportAuditData({
+      const blob = await clinicalInterventionService.exportAuditData({ 
         format: 'pdf',
         startDate,
         endDate,
-        includeDetails: true,
+        includeDetails: true}
       });
-
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -138,13 +92,11 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
       setError(err.message || 'Failed to export compliance report');
     }
   };
-
   const getComplianceColor = (score: number) => {
     if (score >= 90) return 'success';
     if (score >= 70) return 'warning';
     return 'error';
   };
-
   const getComplianceStatusColor = (status: string) => {
     switch (status) {
       case 'compliant':
@@ -157,7 +109,6 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
         return 'default';
     }
   };
-
   const getRiskLevelColor = (riskLevel: string) => {
     switch (riskLevel) {
       case 'critical':
@@ -171,208 +122,201 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
         return 'success';
     }
   };
-
   if (loading) {
     return (
-      <Box
+      <div
         display="flex"
         justifyContent="center"
         alignItems="center"
         minHeight={400}
       >
-        <CircularProgress />
-      </Box>
+        <Spinner />
+      </div>
     );
   }
-
   return (
-    <Box>
+    <div>
       <Card>
         <CardContent>
-          <Box
+          <div
             display="flex"
             justifyContent="space-between"
             alignItems="center"
             mb={3}
           >
-            <Typography variant="h5" component="h1">
+            <div  component="h1">
               Clinical Interventions Compliance Report
-            </Typography>
+            </div>
             <Button
-              variant="outlined"
+              
               startIcon={<DownloadIcon />}
               onClick={handleExportReport}
               disabled={!complianceData}
             >
               Export PDF
             </Button>
-          </Box>
-
+          </div>
           {/* Date Range Selection */}
-          <Grid container spacing={2} mb={3}>
-            <Grid item xs={12} sm={4}>
-              <TextField
+          <div container spacing={2} mb={3}>
+            <div item xs={12} sm={4}>
+              <Input
                 label="Start Date"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
+                
                 fullWidth
                 size="small"
               />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
+            </div>
+            <div item xs={12} sm={4}>
+              <Input
                 label="End Date"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
+                
                 fullWidth
                 size="small"
               />
-            </Grid>
-            <Grid item xs={12} sm={4}>
+            </div>
+            <div item xs={12} sm={4}>
               <Button
-                variant="contained"
+                
                 onClick={generateReport}
                 fullWidth
                 disabled={loading}
               >
                 Generate Report
               </Button>
-            </Grid>
-          </Grid>
-
+            </div>
+          </div>
           {error && (
-            <Alert severity="info" sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
+            <Alert severity="info" className="">
+              <div  gutterBottom>
                 No Compliance Data Available
-              </Typography>
-              <Typography variant="body2">
+              </div>
+              <div >
                 The compliance reporting functionality is currently being
                 developed. Once clinical interventions are created and audit
                 trails are established, comprehensive compliance reports will be
                 available including:
-              </Typography>
-              <Box component="ul" sx={{ mt: 1, mb: 0 }}>
+              </div>
+              <div component="ul" className="">
                 <li>Compliance score tracking</li>
                 <li>Risk activity monitoring</li>
                 <li>Audit trail analysis</li>
                 <li>Regulatory compliance metrics</li>
                 <li>Automated compliance recommendations</li>
-              </Box>
+              </div>
             </Alert>
           )}
-
           {complianceData && (
             <>
               {/* Summary Cards */}
-              <Grid container spacing={3} mb={4}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card variant="outlined">
+              <div container spacing={3} mb={4}>
+                <div item xs={12} sm={6} md={3}>
+                  <Card >
                     <CardContent>
-                      <Box display="flex" alignItems="center" mb={1}>
-                        <AssessmentIcon color="primary" sx={{ mr: 1 }} />
-                        <Typography color="textSecondary" variant="body2">
+                      <div display="flex" alignItems="center" mb={1}>
+                        <AssessmentIcon color="primary" className="" />
+                        <div color="textSecondary" >
                           Total Interventions
-                        </Typography>
-                      </Box>
-                      <Typography variant="h4">
+                        </div>
+                      </div>
+                      <div >
                         {complianceData?.summary?.totalInterventions || 0}
-                      </Typography>
+                      </div>
                     </CardContent>
                   </Card>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card variant="outlined">
+                </div>
+                <div item xs={12} sm={6} md={3}>
+                  <Card >
                     <CardContent>
-                      <Box display="flex" alignItems="center" mb={1}>
-                        <TrendingUpIcon color="primary" sx={{ mr: 1 }} />
-                        <Typography color="textSecondary" variant="body2">
+                      <div display="flex" alignItems="center" mb={1}>
+                        <TrendingUpIcon color="primary" className="" />
+                        <div color="textSecondary" >
                           Audited Actions
-                        </Typography>
-                      </Box>
-                      <Typography variant="h4">
+                        </div>
+                      </div>
+                      <div >
                         {complianceData?.summary?.auditedActions || 0}
-                      </Typography>
+                      </div>
                     </CardContent>
                   </Card>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card variant="outlined">
+                </div>
+                <div item xs={12} sm={6} md={3}>
+                  <Card >
                     <CardContent>
-                      <Box display="flex" alignItems="center" mb={1}>
+                      <div display="flex" alignItems="center" mb={1}>
                         <CheckCircleIcon
                           color={
                             getComplianceColor(
                               complianceData?.summary?.complianceScore || 0
-                            ) as any
+                            ) as any}
                           }
-                          sx={{ mr: 1 }}
+                          className=""
                         />
-                        <Typography color="textSecondary" variant="body2">
+                        <div color="textSecondary" >
                           Compliance Score
-                        </Typography>
-                      </Box>
-                      <Typography
-                        variant="h4"
+                        </div>
+                      </div>
+                      <div
+                        
                         color={getComplianceColor(
-                          complianceData?.summary?.complianceScore || 0
+                          complianceData?.summary?.complianceScore || 0}
                         )}
                       >
                         {complianceData?.summary?.complianceScore || 0}%
-                      </Typography>
-                      <LinearProgress
-                        variant="determinate"
-                        value={complianceData?.summary?.complianceScore || 0}
+                      </div>
+                      <Progress
+                        
                         color={
                           getComplianceColor(
                             complianceData.summary.complianceScore
-                          ) as any
+                          ) as any}
                         }
-                        sx={{ mt: 1 }}
+                        className=""
                       />
                     </CardContent>
                   </Card>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card variant="outlined">
+                </div>
+                <div item xs={12} sm={6} md={3}>
+                  <Card >
                     <CardContent>
-                      <Box display="flex" alignItems="center" mb={1}>
+                      <div display="flex" alignItems="center" mb={1}>
                         <SecurityIcon
                           color={
                             (complianceData?.summary?.riskActivities || 0) > 0
                               ? 'error'
-                              : 'success'
+                              : 'success'}
                           }
-                          sx={{ mr: 1 }}
+                          className=""
                         />
-                        <Typography color="textSecondary" variant="body2">
+                        <div color="textSecondary" >
                           Risk Activities
-                        </Typography>
-                      </Box>
-                      <Typography
-                        variant="h4"
+                        </div>
+                      </div>
+                      <div
+                        
                         color={
                           (complianceData?.summary?.riskActivities || 0) > 0
                             ? 'error'
-                            : 'success'
+                            : 'success'}
                         }
                       >
                         {complianceData?.summary?.riskActivities || 0}
-                      </Typography>
+                      </div>
                     </CardContent>
                   </Card>
-                </Grid>
-              </Grid>
-
+                </div>
+              </div>
               {/* Intervention Compliance Table */}
-              <Card variant="outlined" sx={{ mb: 3 }}>
+              <Card  className="">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <div  gutterBottom>
                     Intervention Compliance Details
-                  </Typography>
+                  </div>
                   <TableContainer>
                     <Table>
                       <TableHead>
@@ -389,32 +333,32 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                           (intervention) => (
                             <TableRow key={intervention.interventionId} hover>
                               <TableCell>
-                                <Typography variant="body2" fontWeight="medium">
+                                <div  fontWeight="medium">
                                   {intervention.interventionNumber}
-                                </Typography>
+                                </div>
                               </TableCell>
                               <TableCell>
-                                <Typography variant="body2">
+                                <div >
                                   {intervention.auditCount}
-                                </Typography>
+                                </div>
                               </TableCell>
                               <TableCell>
-                                <Typography variant="body2">
+                                <div >
                                   {format(
                                     new Date(intervention.lastAudit),
                                     'MMM dd, yyyy HH:mm'
                                   )}
-                                </Typography>
+                                </div>
                               </TableCell>
                               <TableCell>
                                 <Chip
                                   label={intervention.complianceStatus
-                                    .replace('-', ' ')
+                                    .replace('-', ' ')}
                                     .toUpperCase()}
                                   color={
                                     getComplianceStatusColor(
                                       intervention.complianceStatus
-                                    ) as any
+                                    ) as any}
                                   }
                                   size="small"
                                   icon={
@@ -426,7 +370,7 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                                       <WarningIcon />
                                     ) : (
                                       <ErrorIcon />
-                                    )
+                                    )}
                                   }
                                 />
                               </TableCell>
@@ -436,7 +380,7 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                                   color={
                                     getRiskLevelColor(
                                       intervention.riskLevel
-                                    ) as any
+                                    ) as any}
                                   }
                                   size="small"
                                 />
@@ -447,44 +391,42 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
                       </TableBody>
                     </Table>
                   </TableContainer>
-
                   {(complianceData?.interventionCompliance?.length || 0) ===
                     0 && (
-                    <Box textAlign="center" py={4}>
-                      <Typography color="textSecondary">
+                    <div textAlign="center" py={4}>
+                      <div color="textSecondary">
                         No interventions found for the selected date range.
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                   )}
                 </CardContent>
               </Card>
-
               {/* Recommendations */}
               {(complianceData?.recommendations?.length || 0) > 0 && (
-                <Card variant="outlined">
+                <Card >
                   <CardContent>
-                    <Box display="flex" alignItems="center" mb={2}>
-                      <LightbulbIcon color="primary" sx={{ mr: 1 }} />
-                      <Typography variant="h6">
+                    <div display="flex" alignItems="center" mb={2}>
+                      <LightbulbIcon color="primary" className="" />
+                      <div >
                         Compliance Recommendations
-                      </Typography>
-                    </Box>
+                      </div>
+                    </div>
                     <List>
                       {(complianceData?.recommendations || []).map(
                         (recommendation, index) => (
                           <React.Fragment key={index}>
-                            <ListItem>
-                              <ListItemIcon>
+                            <div>
+                              <div>
                                 <LightbulbIcon color="primary" />
-                              </ListItemIcon>
-                              <ListItemText
+                              </div>
+                              <div
                                 primary={recommendation}
-                                primaryTypographyProps={{ variant: 'body2' }}
+                                
                               />
-                            </ListItem>
+                            </div>
                             {index <
                               (complianceData?.recommendations?.length || 0) -
-                                1 && <Divider />}
+                                1 && <Separator />}
                           </React.Fragment>
                         )
                       )}
@@ -496,8 +438,7 @@ const ClinicalInterventionComplianceReport: React.FC = () => {
           )}
         </CardContent>
       </Card>
-    </Box>
+    </div>
   );
 };
-
 export default ClinicalInterventionComplianceReport;

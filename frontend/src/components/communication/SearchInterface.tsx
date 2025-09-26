@@ -1,12 +1,8 @@
-import React, { useState } from 'react';
-import { Box, Paper, Tabs, Tab, Typography, useTheme } from '@mui/material';
-import {
-  Search as SearchIcon,
-  Message as MessageIcon,
-  Chat as ChatIcon,
-} from '@mui/icons-material';
 import MessageSearch from './MessageSearch';
+
 import ConversationSearch from './ConversationSearch';
+
+import { Tabs } from '@/components/ui/button';
 
 interface SearchInterfaceProps {
   height?: string;
@@ -16,18 +12,16 @@ interface SearchInterfaceProps {
   showSavedSearches?: boolean;
   showSuggestions?: boolean;
 }
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
-const TabPanel: React.FC<TabPanelProps> = ({
+const TabPanel: React.FC<TabPanelProps> = ({ 
   children,
   value,
   index,
-  ...other
+  ...other })
 }) => {
   return (
     <div
@@ -36,28 +30,24 @@ const TabPanel: React.FC<TabPanelProps> = ({
       id={`search-tabpanel-${index}`}
       aria-labelledby={`search-tab-${index}`}
       {...other}
-      style={{ height: '100%' }}
-    >
-      {value === index && <Box sx={{ height: '100%' }}>{children}</Box>}
+      >
+      {value === index && <div className="">{children}</div>}
     </div>
   );
 };
-
-const SearchInterface: React.FC<SearchInterfaceProps> = ({
+const SearchInterface: React.FC<SearchInterfaceProps> = ({ 
   height = '600px',
   defaultTab = 'messages',
   onMessageSelect,
   onConversationSelect,
   showSavedSearches = true,
-  showSuggestions = true,
+  showSuggestions = true
 }) => {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState(defaultTab === 'messages' ? 0 : 1);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
-
   const handleMessageResultSelect = (result: any) => {
     onMessageSelect?.(result);
     // Also navigate to the conversation if callback is provided
@@ -65,70 +55,45 @@ const SearchInterface: React.FC<SearchInterfaceProps> = ({
       onConversationSelect(result.conversation._id);
     }
   };
-
   return (
-    <Paper
-      elevation={1}
-      sx={{
-        height,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
+    <div
+      className=""
     >
       {/* Header with Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Box sx={{ p: 2, pb: 0 }}>
-          <Typography
-            variant="h5"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              mb: 2,
-              fontWeight: 'medium',
-            }}
+      <div className="">
+        <div className="">
+          <div
+            
+            className=""
           >
             <SearchIcon />
             Communication Search
-          </Typography>
-        </Box>
-
+          </div>
+        </div>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
           aria-label="search tabs"
-          sx={{ px: 2 }}
+          className=""
         >
           <Tab
             icon={<MessageIcon />}
             label="Messages"
             id="search-tab-0"
             aria-controls="search-tabpanel-0"
-            sx={{
-              minHeight: 48,
-              textTransform: 'none',
-              fontSize: '0.9rem',
-              fontWeight: 'medium',
-            }}
+            className=""
           />
           <Tab
             icon={<ChatIcon />}
             label="Conversations"
             id="search-tab-1"
             aria-controls="search-tabpanel-1"
-            sx={{
-              minHeight: 48,
-              textTransform: 'none',
-              fontSize: '0.9rem',
-              fontWeight: 'medium',
-            }}
+            className=""
           />
         </Tabs>
-      </Box>
-
+      </div>
       {/* Tab Content */}
-      <Box sx={{ flex: 1, overflow: 'hidden' }}>
+      <div className="">
         <TabPanel value={activeTab} index={0}>
           <MessageSearch
             height="100%"
@@ -138,7 +103,6 @@ const SearchInterface: React.FC<SearchInterfaceProps> = ({
             showSuggestions={showSuggestions}
           />
         </TabPanel>
-
         <TabPanel value={activeTab} index={1}>
           <ConversationSearch
             height="100%"
@@ -146,9 +110,8 @@ const SearchInterface: React.FC<SearchInterfaceProps> = ({
             showSavedSearches={showSavedSearches}
           />
         </TabPanel>
-      </Box>
-    </Paper>
+      </div>
+    </div>
   );
 };
-
 export default SearchInterface;

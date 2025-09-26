@@ -1,6 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { socketService } from '../socketService';
-
 // Mock socket.io-client
 const mockSocket = {
     id: 'test-socket-id',
@@ -12,19 +9,17 @@ const mockSocket = {
     auth: {},
 };
 
-vi.mock('socket.io-client', () => ({
-    io: vi.fn(() => mockSocket),
+vi.mock('socket.io-client', () => ({ 
+    io: vi.fn(() => mockSocket)}
 }));
 
 // Mock auth service
-vi.mock('../authService', () => ({
+vi.mock('../authService', () => ({ 
     authService: {
         getCurrentUser: vi.fn().mockResolvedValue({
-            success: true,
-            user: { id: 'test-user', email: 'test@example.com' },
-        }),
-    },
-}));
+            success: true}
+            user: { id: 'test-user', email: 'test@example.com' }, },
+    }
 
 describe('SocketService - Basic Functionality', () => {
     beforeEach(() => {

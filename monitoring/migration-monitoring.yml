@@ -1,0 +1,92 @@
+# Migration Monitoring Configuration
+# This file configures monitoring and alerting for the MUI to shadcn/ui migration
+
+version: '3.8'
+
+services:
+  # Performance monitoring service
+  performance-monitor:
+    image: prom/prometheus:latest
+    container_name: migration-performance-monitor
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus-migration.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Grafana dashboard for migration metrics
+  grafana:
+    image: grafana/grafana:latest
+    container_name: migration-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana-datasources:/etc/grafana/provisioning/datasources
+    restart: unless-stopped
+
+  # Alert manager for migration alerts
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: migration-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager-migration.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    restart: unless-stopped
+
+  # Node exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: migration-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+
+  # Custom migration metrics collector
+  migration-metrics:
+    build: ./migration-metrics-collector
+    container_name: migration-metrics-collector
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_URL=https://app.pharmacare.com
+      - METRICS_INTERVAL=30s
+      - PROMETHEUS_ENDPOINT=http://performance-monitor:9090
+    volumes:
+      - ./migration-metrics-config.yml:/app/config.yml
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  alertmanager-data:
+
+networks:
+  default:
+    name: migration-monitoring

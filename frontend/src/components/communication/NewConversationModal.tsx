@@ -1,45 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
-  Box,
-  Typography,
-  Autocomplete,
-  Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Divider,
-  Alert,
-  Stepper,
-  Step,
-  StepLabel,
-  Paper,
-} from '@mui/material';
-import {
-  Add,
-  Remove,
-  Person,
-  Group,
-  QuestionAnswer,
-  LocalHospital,
-  Medication,
-} from '@mui/icons-material';
-import { useCommunicationStore } from '../../stores/communicationStore';
-import { usePatients } from '../../queries/usePatients';
-import { CreateConversationData, Conversation } from '../../stores/types';
+import { Button, Input, Label, Dialog, DialogContent, DialogTitle, Select, Alert, Avatar, Separator } from '@/components/ui/button';
 
 interface NewConversationModalProps {
   open: boolean;
@@ -47,7 +6,6 @@ interface NewConversationModalProps {
   patientId?: string;
   onConversationCreated?: (conversation: Conversation) => void;
 }
-
 interface ParticipantOption {
   userId: string;
   firstName: string;
@@ -56,46 +14,37 @@ interface ParticipantOption {
   role: 'pharmacist' | 'doctor' | 'patient';
   avatar?: string;
 }
-
 interface SelectedParticipant {
   userId: string;
   role: 'pharmacist' | 'doctor' | 'patient';
   permissions?: string[];
 }
-
-const NewConversationModal: React.FC<NewConversationModalProps> = ({
+const NewConversationModal: React.FC<NewConversationModalProps> = ({ 
   open,
   onClose,
   patientId,
-  onConversationCreated,
+  onConversationCreated
 }) => {
   const { createConversation, loading, errors } = useCommunicationStore();
   const { data: patientsResponse } = usePatients() || { data: null };
-
   // Extract patients array from the response, handling different possible structures
   const patients = React.useMemo(() => {
     if (!patientsResponse) return [];
-
     // Handle different response structures
     if (Array.isArray(patientsResponse)) {
       return patientsResponse;
     }
-
     if (patientsResponse.data && Array.isArray(patientsResponse.data)) {
       return patientsResponse.data;
     }
-
     if (patientsResponse.results && Array.isArray(patientsResponse.results)) {
       return patientsResponse.results;
     }
-
     if (patientsResponse.patients && Array.isArray(patientsResponse.patients)) {
       return patientsResponse.patients;
     }
-
     return [];
   }, [patientsResponse]);
-
   // Form state
   const [activeStep, setActiveStep] = useState(0);
   const [conversationType, setConversationType] = useState<
@@ -114,7 +63,6 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
   const [tags, setTags] = useState<string[]>([]);
   const [caseId, setCaseId] = useState('');
   const [participantSearch, setParticipantSearch] = useState('');
-
   // Mock data for healthcare providers (in real app, this would come from API)
   const mockHealthcareProviders: ParticipantOption[] = [
     {
@@ -146,22 +94,18 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
       role: 'doctor',
     },
   ];
-
   // Convert patients to participant options
-  const patientOptions: ParticipantOption[] = patients.map((patient) => ({
+  const patientOptions: ParticipantOption[] = patients.map((patient) => ({ 
     userId: patient._id,
     firstName: patient.firstName,
     lastName: patient.lastName,
     email: patient.email || '',
-    role: 'patient' as const,
+    role: 'patient' as const}
   }));
-
   // All available participants
   const allParticipants = [...mockHealthcareProviders, ...patientOptions];
-
   // Steps for the wizard
   const steps = ['Type & Details', 'Participants', 'Settings'];
-
   // Reset form when modal opens/closes
   useEffect(() => {
     if (open) {
@@ -176,7 +120,6 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
       setParticipantSearch('');
     }
   }, [open, patientId]);
-
   // Handle participant selection
   const handleAddParticipant = (participant: ParticipantOption) => {
     const isAlreadySelected = selectedParticipants.some(
@@ -193,12 +136,10 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
       ]);
     }
   };
-
   // Handle participant removal
   const handleRemoveParticipant = (userId: string) => {
     setSelectedParticipants((prev) => prev.filter((p) => p.userId !== userId));
   };
-
   // Get default permissions for role
   const getDefaultPermissions = (role: string): string[] => {
     switch (role) {
@@ -212,7 +153,6 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
         return ['read'];
     }
   };
-
   // Get participant display name
   const getParticipantName = (userId: string): string => {
     const participant = allParticipants.find((p) => p.userId === userId);
@@ -220,13 +160,11 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
       ? `${participant.firstName} ${participant.lastName}`
       : 'Unknown';
   };
-
   // Get participant role
   const getParticipantRole = (userId: string): string => {
     const participant = allParticipants.find((p) => p.userId === userId);
     return participant?.role || 'unknown';
   };
-
   // Validate current step
   const isStepValid = (step: number): boolean => {
     switch (step) {
@@ -243,21 +181,18 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
         return false;
     }
   };
-
   // Handle next step
   const handleNext = () => {
     if (activeStep < steps.length - 1) {
       setActiveStep((prev) => prev + 1);
     }
   };
-
   // Handle previous step
   const handleBack = () => {
     if (activeStep > 0) {
       setActiveStep((prev) => prev - 1);
     }
   };
-
   // Handle form submission
   const handleSubmit = async () => {
     try {
@@ -270,9 +205,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
         priority,
         tags: tags.length > 0 ? tags : undefined,
       };
-
       const newConversation = await createConversation(conversationData);
-
       if (newConversation) {
         onConversationCreated?.(newConversation);
         onClose();
@@ -281,150 +214,141 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
       console.error('Failed to create conversation:', error);
     }
   };
-
   // Filter participants based on search
   const filteredParticipants = allParticipants.filter((participant) => {
     const searchLower = participantSearch.toLowerCase();
     const fullName =
       `${participant.firstName} ${participant.lastName}`.toLowerCase();
     const email = participant.email.toLowerCase();
-
     return (
       fullName.includes(searchLower) ||
       email.includes(searchLower) ||
       participant.role.includes(searchLower)
     );
   });
-
   // Render step content
   const renderStepContent = (step: number) => {
     switch (step) {
       case 0:
         return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div className="">
             {/* Conversation Type */}
-            <FormControl fullWidth>
-              <InputLabel>Conversation Type</InputLabel>
+            <div fullWidth>
+              <Label>Conversation Type</Label>
               <Select
                 value={conversationType}
                 label="Conversation Type"
                 onChange={(e) => setConversationType(e.target.value as any)}
               >
                 <MenuItem value="direct">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <div className="">
                     <Person />
-                    <Box>
-                      <Typography>Direct Message</Typography>
-                      <Typography variant="caption" color="text.secondary">
+                    <div>
+                      <div>Direct Message</div>
+                      <div  color="text.secondary">
                         One-on-one conversation
-                      </Typography>
-                    </Box>
-                  </Box>
+                      </div>
+                    </div>
+                  </div>
                 </MenuItem>
                 <MenuItem value="group">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <div className="">
                     <Group />
-                    <Box>
-                      <Typography>Group Chat</Typography>
-                      <Typography variant="caption" color="text.secondary">
+                    <div>
+                      <div>Group Chat</div>
+                      <div  color="text.secondary">
                         Multi-participant conversation
-                      </Typography>
-                    </Box>
-                  </Box>
+                      </div>
+                    </div>
+                  </div>
                 </MenuItem>
                 <MenuItem value="patient_query">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <div className="">
                     <QuestionAnswer />
-                    <Box>
-                      <Typography>Patient Query</Typography>
-                      <Typography variant="caption" color="text.secondary">
+                    <div>
+                      <div>Patient Query</div>
+                      <div  color="text.secondary">
                         Patient-initiated conversation
-                      </Typography>
-                    </Box>
-                  </Box>
+                      </div>
+                    </div>
+                  </div>
                 </MenuItem>
               </Select>
-            </FormControl>
-
+            </div>
             {/* Conversation Title */}
-            <TextField
+            <Input
               fullWidth
               label="Conversation Title (Optional)"
               value={conversationTitle}
               onChange={(e) => setConversationTitle(e.target.value)}
               placeholder="Enter a descriptive title..."
             />
-
             {/* Patient Selection (for patient queries) */}
             {conversationType === 'patient_query' && (
               <Autocomplete
                 options={patientOptions}
-                getOptionLabel={(option) =>
+                getOptionLabel={(option) =>}
                   `${option.firstName} ${option.lastName}`
                 }
                 value={
                   patientOptions.find((p) => p.userId === selectedPatient) ||
-                  null
+                  null}
                 }
                 onChange={(_, newValue) =>
-                  setSelectedPatient(newValue?.userId || '')
+                  setSelectedPatient(newValue?.userId || '')}
                 }
-                renderInput={(params) => (
-                  <TextField {...params} label="Select Patient" required />
+                renderInput={(params) => (}
+                  <Input {...params} label="Select Patient" required />
                 )}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                renderOption={(props, option) => (}
+                  <div component="li" {...props}>
+                    <Avatar className="">
                       <Person />
                     </Avatar>
-                    <Box>
-                      <Typography>
+                    <div>
+                      <div>
                         {option.firstName} {option.lastName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      </div>
+                      <div  color="text.secondary">
                         {option.email}
-                      </Typography>
-                    </Box>
-                  </Box>
+                      </div>
+                    </div>
+                  </div>
                 )}
               />
             )}
-
             {/* Case ID */}
-            <TextField
+            <Input
               fullWidth
               label="Case ID (Optional)"
               value={caseId}
               onChange={(e) => setCaseId(e.target.value)}
               placeholder="Link to clinical case..."
             />
-          </Box>
+          </div>
         );
-
       case 1:
         return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div className="">
             {/* Participant Search */}
-            <TextField
+            <Input
               fullWidth
               label="Search participants"
               value={participantSearch}
               onChange={(e) => setParticipantSearch(e.target.value)}
               placeholder="Search by name, email, or role..."
             />
-
             {/* Available Participants */}
-            <Paper variant="outlined" sx={{ maxHeight: 300, overflow: 'auto' }}>
+            <div  className="">
               <List>
                 {filteredParticipants.map((participant) => {
                   const isSelected = selectedParticipants.some(
                     (p) => p.userId === participant.userId
                   );
-
                   return (
-                    <ListItem key={participant.userId}>
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                    <div key={participant.userId}>
+                      <divAvatar>
+                        <Avatar className="">
                           {participant.role === 'doctor' ? (
                             <LocalHospital />
                           ) : participant.role === 'pharmacist' ? (
@@ -434,48 +358,47 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
                           )}
                         </Avatar>
                       </ListItemAvatar>
-                      <ListItemText
+                      <div
                         primary={`${participant.firstName} ${participant.lastName}`}
                         secondary={
-                          <Box>
-                            <Typography variant="caption" display="block">
+                          <div>
+                            <div  display="block">}
                               {participant.email}
-                            </Typography>
+                            </div>
                             <Chip
                               label={participant.role}
                               size="small"
-                              sx={{ mt: 0.5 }}
+                              className=""
                             />
-                          </Box>
+                          </div>
                         }
                       />
-                      <ListItemSecondaryAction>
+                      <divSecondaryAction>
                         <IconButton
                           edge="end"
                           onClick={() =>
                             isSelected
                               ? handleRemoveParticipant(participant.userId)
-                              : handleAddParticipant(participant)
+                              : handleAddParticipant(participant)}
                           }
                           color={isSelected ? 'error' : 'primary'}
                         >
                           {isSelected ? <Remove /> : <Add />}
                         </IconButton>
                       </ListItemSecondaryAction>
-                    </ListItem>
+                    </div>
                   );
                 })}
               </List>
-            </Paper>
-
+            </div>
             {/* Selected Participants */}
             {selectedParticipants.length > 0 && (
               <>
-                <Divider />
-                <Typography variant="subtitle2">
+                <Separator />
+                <div >
                   Selected Participants ({selectedParticipants.length})
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                </div>
+                <div className="">
                   {selectedParticipants.map((participant) => (
                     <Chip
                       key={participant.userId}
@@ -483,10 +406,10 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
                         participant.role
                       })`}
                       onDelete={() =>
-                        handleRemoveParticipant(participant.userId)
+                        handleRemoveParticipant(participant.userId)}
                       }
                       avatar={
-                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                        <Avatar className="">
                           {getParticipantRole(participant.userId) ===
                           'doctor' ? (
                             <LocalHospital />
@@ -494,24 +417,23 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
                             'pharmacist' ? (
                             <Medication />
                           ) : (
-                            <Person />
+                            <Person />}
                           )}
                         </Avatar>
                       }
                     />
                   ))}
-                </Box>
+                </div>
               </>
             )}
-          </Box>
+          </div>
         );
-
       case 2:
         return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div className="">
             {/* Priority */}
-            <FormControl fullWidth>
-              <InputLabel>Priority</InputLabel>
+            <div fullWidth>
+              <Label>Priority</Label>
               <Select
                 value={priority}
                 label="Priority"
@@ -522,8 +444,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
                 <MenuItem value="high">High</MenuItem>
                 <MenuItem value="urgent">Urgent</MenuItem>
               </Select>
-            </FormControl>
-
+            </div>
             {/* Tags */}
             <Autocomplete
               multiple
@@ -532,107 +453,97 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
                 'medication-review',
                 'therapy-consultation',
                 'follow-up',
-                'urgent-care',
+                'urgent-care',}
               ]}
               value={tags}
               onChange={(_, newValue) => setTags(newValue)}
               renderTags={(value, getTagProps) =>
                 value.map((option, index) => (
                   <Chip
-                    variant="outlined"
+                    }
                     label={option}
                     {...getTagProps({ index })}
                   />
                 ))
               }
               renderInput={(params) => (
-                <TextField
+                <Input}
                   {...params}
                   label="Tags (Optional)"
                   placeholder="Add tags..."
                 />
               )}
             />
-
             {/* Summary */}
-            <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
+            <div  className="">
+              <div  gutterBottom>
                 Conversation Summary
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              </div>
+              <div  color="text.secondary" gutterBottom>
                 <strong>Type:</strong> {conversationType.replace('_', ' ')}
-              </Typography>
+              </div>
               {conversationTitle && (
-                <Typography variant="body2" color="text.secondary" gutterBottom>
+                <div  color="text.secondary" gutterBottom>
                   <strong>Title:</strong> {conversationTitle}
-                </Typography>
+                </div>
               )}
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <div  color="text.secondary" gutterBottom>
                 <strong>Participants:</strong> {selectedParticipants.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              </div>
+              <div  color="text.secondary" gutterBottom>
                 <strong>Priority:</strong> {priority}
-              </Typography>
+              </div>
               {tags.length > 0 && (
-                <Typography variant="body2" color="text.secondary">
+                <div  color="text.secondary">
                   <strong>Tags:</strong> {tags.join(', ')}
-                </Typography>
+                </div>
               )}
-            </Paper>
-          </Box>
+            </div>
+          </div>
         );
-
       default:
         return null;
     }
   };
-
   return (
     <Dialog
       open={open}
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{
+      PaperProps={{}
         sx: { minHeight: 600 },
-      }}
-    >
+      >
       <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <div className="">
           <Group />
           New Conversation
-        </Box>
+        </div>
       </DialogTitle>
-
       <DialogContent>
         {/* Stepper */}
-        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+        <Stepper activeStep={activeStep} className="">
           {steps.map((label) => (
             <Step key={label}>
               <StepLabel>{label}</StepLabel>
             </Step>
           ))}
         </Stepper>
-
         {/* Error Display */}
         {errors.createConversation && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" className="">
             {errors.createConversation}
           </Alert>
         )}
-
         {/* Step Content */}
         {renderStepContent(activeStep)}
       </DialogContent>
-
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-
         {activeStep > 0 && <Button onClick={handleBack}>Back</Button>}
-
         {activeStep < steps.length - 1 ? (
           <Button
-            variant="contained"
+            
             onClick={handleNext}
             disabled={!isStepValid(activeStep)}
           >
@@ -640,7 +551,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
           </Button>
         ) : (
           <Button
-            variant="contained"
+            
             onClick={handleSubmit}
             disabled={!isStepValid(activeStep) || loading.createConversation}
           >
@@ -651,5 +562,4 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
     </Dialog>
   );
 };
-
 export default NewConversationModal;

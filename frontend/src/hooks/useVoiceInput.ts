@@ -1,5 +1,3 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-
 interface VoiceInputOptions {
     language?: string;
     continuous?: boolean;
@@ -44,12 +42,12 @@ export const useVoiceInput = (options: VoiceInputOptions = {}): UseVoiceInputRet
         onEnd,
     } = options;
 
-    const [state, setState] = useState<VoiceInputState>({
+    const [state, setState] = useState<VoiceInputState>({ 
         isListening: false,
         isSupported: false,
         transcript: '',
         confidence: 0,
-        error: null,
+        error: null}
     });
 
     const recognitionRef = useRef<any>(null);
@@ -99,10 +97,10 @@ export const useVoiceInput = (options: VoiceInputOptions = {}): UseVoiceInputRet
 
                 const currentTranscript = finalTranscript || interimTranscript;
 
-                setState(prev => ({
+                setState(prev => ({ 
                     ...prev,
                     transcript: currentTranscript,
-                    confidence: bestConfidence,
+                    confidence: bestConfidence}
                 }));
 
                 if (finalTranscript) {
@@ -112,10 +110,10 @@ export const useVoiceInput = (options: VoiceInputOptions = {}): UseVoiceInputRet
 
             recognition.onerror = (event: any) => {
                 const errorMessage = getErrorMessage(event.error);
-                setState(prev => ({
+                setState(prev => ({ 
                     ...prev,
                     isListening: false,
-                    error: errorMessage,
+                    error: errorMessage}
                 }));
                 onError?.(errorMessage);
             };
@@ -127,10 +125,10 @@ export const useVoiceInput = (options: VoiceInputOptions = {}): UseVoiceInputRet
 
             recognitionRef.current = recognition;
         } else {
-            setState(prev => ({
+            setState(prev => ({ 
                 ...prev,
                 isSupported: false,
-                error: 'Speech recognition not supported in this browser'
+                error: 'Speech recognition not supported in this browser' })
             }));
         }
 
@@ -158,11 +156,11 @@ export const useVoiceInput = (options: VoiceInputOptions = {}): UseVoiceInputRet
 
         try {
             // Reset previous state
-            setState(prev => ({
+            setState(prev => ({ 
                 ...prev,
                 transcript: '',
                 confidence: 0,
-                error: null,
+                error: null}
             }));
 
             recognitionRef.current.start();
@@ -199,11 +197,11 @@ export const useVoiceInput = (options: VoiceInputOptions = {}): UseVoiceInputRet
 
     const reset = useCallback(() => {
         stop();
-        setState(prev => ({
+        setState(prev => ({ 
             ...prev,
             transcript: '',
             confidence: 0,
-            error: null,
+            error: null}
         }));
     }, [stop]);
 
@@ -247,9 +245,9 @@ function getErrorMessage(error: string): string {
  * Returns a simplified interface for basic voice input needs
  */
 export const useSimpleVoiceInput = () => {
-    const [{ isListening, isSupported, transcript, error }, { start, stop, reset }] = useVoiceInput({
+    const [{ isListening, isSupported, transcript, error }, { start, stop, reset }] = useVoiceInput({ 
         continuous: false,
-        interimResults: false,
+        interimResults: false}
     });
 
     return {
@@ -267,10 +265,10 @@ export const useSimpleVoiceInput = () => {
  * Hook for continuous voice input with real-time results
  */
 export const useContinuousVoiceInput = (onTranscript?: (text: string) => void) => {
-    const [state, controls] = useVoiceInput({
+    const [state, controls] = useVoiceInput({ 
         continuous: true,
         interimResults: true,
-        onResult: onTranscript,
+        onResult: onTranscript}
     });
 
     return [state, controls] as const;
@@ -282,7 +280,7 @@ export const useContinuousVoiceInput = (onTranscript?: (text: string) => void) =
 export const useVoiceCommands = (commands: Record<string, () => void>) => {
     const commandKeys = Object.keys(commands);
 
-    const [{ isListening, isSupported, error }, { start, stop, toggle }] = useVoiceInput({
+    const [{ isListening, isSupported, error }, { start, stop, toggle }] = useVoiceInput({ 
         continuous: true,
         interimResults: false,
         onResult: (transcript) => {
@@ -295,10 +293,9 @@ export const useVoiceCommands = (commands: Record<string, () => void>) => {
 
             if (matchedCommand) {
                 commands[matchedCommand]();
-                stop(); // Stop listening after command execution
+                stop(); // Stop listening after command execution })
             }
-        },
-    });
+        }
 
     return {
         isListening,
