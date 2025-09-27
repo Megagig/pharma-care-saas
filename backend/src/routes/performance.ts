@@ -67,4 +67,39 @@ router.post('/cache/warm', performanceController.warmCache.bind(performanceContr
  */
 router.post('/database/optimize', performanceController.initializeDatabaseOptimizations.bind(performanceController));
 
+/**
+ * @route GET /api/admin/performance/latency
+ * @desc Get API latency metrics
+ * @access Admin
+ */
+router.get('/latency', performanceController.getLatencyMetrics.bind(performanceController));
+
+/**
+ * @route GET /api/admin/performance/database/profile
+ * @desc Get database profiling data
+ * @access Admin
+ */
+router.get('/database/profile', performanceController.getDatabaseProfile.bind(performanceController));
+
+/**
+ * @route POST /api/admin/performance/database/profiling/enable
+ * @desc Enable database profiling
+ * @access Admin
+ */
+router.post('/database/profiling/enable', performanceController.enableDatabaseProfiling.bind(performanceController));
+
+/**
+ * @route POST /api/admin/performance/database/profiling/disable
+ * @desc Disable database profiling
+ * @access Admin
+ */
+router.post('/database/profiling/disable', performanceController.disableDatabaseProfiling.bind(performanceController));
+
+/**
+ * @route POST /api/admin/performance/database/indexes/optimize
+ * @desc Create optimal database indexes
+ * @access Admin
+ */
+router.post('/database/indexes/optimize', performanceController.optimizeDatabaseIndexes.bind(performanceController));
+
 export default router;

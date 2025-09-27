@@ -57,6 +57,7 @@ import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
 import diagnosticRoutes from './routes/diagnosticRoutes';
 import communicationRoutes from './routes/communicationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -132,6 +133,10 @@ app.use(hpp()); // Against HTTP Parameter Pollution
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// Performance monitoring middleware
+import { latencyMeasurementMiddleware } from './middlewares/latencyMeasurement';
+app.use('/api/', latencyMeasurementMiddleware);
 
 // Health check routes
 app.get('/api/health', (req: Request, res: Response) => {
@@ -210,6 +215,9 @@ app.get('/api/health/cache', async (req: Request, res: Response) => {
 // Public API routes (no authentication required)
 app.use('/api/public', publicApiRoutes);
 app.use('/api/public/drugs', publicDrugDetailsRoutes);
+
+// Analytics routes (no authentication required for Web Vitals collection)
+app.use('/api/analytics', analyticsRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);

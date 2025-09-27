@@ -23,7 +23,14 @@
     "test:e2e:load": "playwright test communication-hub-load-testing.spec.ts",
     "test:e2e:accessibility": "playwright test communication-hub-accessibility.spec.ts",
     "test:e2e:cross-browser": "playwright test communication-hub-cross-browser.spec.ts",
-    "test:e2e:coverage": "node e2e/generate-coverage-report.cjs"
+    "test:e2e:coverage": "node e2e/generate-coverage-report.cjs",
+    "lighthouse": "lhci autorun",
+    "lighthouse:collect": "lhci collect",
+    "lighthouse:assert": "lhci assert",
+    "lighthouse:upload": "lhci upload",
+    "analyze": "ANALYZE=true npm run build",
+    "bundle:analyze": "npm run analyze",
+    "bundle:size": "node scripts/bundle-size-check.js"
   },
   "dependencies": {
     "@date-io/date-fns": "^3.2.1",
@@ -60,12 +67,14 @@
     "react-window-infinite-loader": "^2.0.0",
     "recharts": "^3.2.0",
     "socket.io-client": "^4.8.1",
+    "web-vitals": "^5.1.0",
     "yup": "^1.7.0",
     "zod": "^4.1.8",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.55.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
@@ -82,6 +91,7 @@
     "globals": "^15.9.0",
     "jsdom": "^26.1.0",
     "postcss": "^8.4.35",
+    "rollup-plugin-visualizer": "^6.0.3",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.3.0",
