@@ -2,7 +2,7 @@ import express from 'express';
 import { query, validationResult } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 import { performanceMonitoringService } from '../services/PerformanceMonitoringService';
-import { auth } from '../middlewares/auth';
+import { auth, AuthRequest } from '../middlewares/auth';
 
 const router = express.Router();
 
@@ -19,11 +19,11 @@ router.use(monitoringRateLimit);
 router.use(auth); // Require authentication for all monitoring endpoints
 
 // Get performance overview
-router.get('/overview', async (req, res) => {
+router.get('/overview', async (req: AuthRequest, res) => {
   try {
-    const workspaceId = req.user?.workspaceId;
+    const workspaceId = (req.user as any)?.workplaceId;
     const overview = await performanceMonitoringService.getPerformanceOverview(workspaceId);
-    
+
     res.json({
       success: true,
       overview,
@@ -42,7 +42,7 @@ router.get('/overview', async (req, res) => {
 // Get performance trends
 router.get('/trends', [
   query('period').optional().isIn(['24h', '7d', '30d']).withMessage('Invalid period'),
-], async (req, res) => {
+], async (req: AuthRequest, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -50,13 +50,13 @@ router.get('/trends', [
     }
 
     const { period = '7d' } = req.query;
-    const workspaceId = req.user?.workspaceId;
-    
+    const workspaceId = (req.user as any)?.workplaceId;
+
     const trends = await performanceMonitoringService.getPerformanceTrends(
       period as '24h' | '7d' | '30d',
       workspaceId
     );
-    
+
     res.json({
       success: true,
       trends,
@@ -76,7 +76,7 @@ router.get('/trends', [
 // Generate performance report
 router.get('/report', [
   query('period').optional().isIn(['24h', '7d', '30d']).withMessage('Invalid period'),
-], async (req, res) => {
+], async (req: AuthRequest, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -84,13 +84,13 @@ router.get('/report', [
     }
 
     const { period = '7d' } = req.query;
-    const workspaceId = req.user?.workspaceId;
-    
+    const workspaceId = (req.user as any)?.workplaceId;
+
     const report = await performanceMonitoringService.generatePerformanceReport(
       period as '24h' | '7d' | '30d',
       workspaceId
     );
-    
+
     res.json({
       success: true,
       report,
@@ -109,7 +109,7 @@ router.get('/report', [
 router.get('/alerts', [
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Invalid limit'),
   query('resolved').optional().isBoolean().withMessage('Invalid resolved filter'),
-], async (req, res) => {
+], async (req: AuthRequest, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -117,13 +117,13 @@ router.get('/alerts', [
     }
 
     const { limit = 50 } = req.query;
-    const workspaceId = req.user?.workspaceId;
-    
+    const workspaceId = (req.user as any)?.workplaceId;
+
     const alerts = await performanceMonitoringService.getPerformanceAlerts(
       workspaceId,
       parseInt(limit as string)
     );
-    
+
     res.json({
       success: true,
       alerts,
@@ -143,9 +143,9 @@ router.get('/alerts', [
 router.post('/alerts/:alertId/resolve', async (req, res) => {
   try {
     const { alertId } = req.params;
-    
+
     const resolved = await performanceMonitoringService.resolveAlert(alertId);
-    
+
     if (!resolved) {
       return res.status(404).json({
         success: false,
@@ -170,7 +170,7 @@ router.post('/alerts/:alertId/resolve', async (req, res) => {
 // Get performance metrics summary for dashboard
 router.get('/metrics/summary', [
   query('period').optional().isIn(['1h', '24h', '7d']).withMessage('Invalid period'),
-], async (req, res) => {
+], async (req: AuthRequest, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -178,8 +178,8 @@ router.get('/metrics/summary', [
     }
 
     const { period = '24h' } = req.query;
-    const workspaceId = req.user?.workspaceId;
-    
+    const workspaceId = (req.user as any)?.workplaceId;
+
     // Get overview and trends for summary
     const [overview, trends] = await Promise.all([
       performanceMonitoringService.getPerformanceOverview(workspaceId),
@@ -189,8 +189,8 @@ router.get('/metrics/summary', [
     // Calculate summary metrics
     const summary = {
       webVitals: {
-        score: overview.webVitals.summary.budgetStatus ? 
-          Object.values(overview.webVitals.summary.budgetStatus).filter(s => s === 'good').length / 
+        score: overview.webVitals.summary.budgetStatus ?
+          Object.values(overview.webVitals.summary.budgetStatus).filter(s => s === 'good').length /
           Object.keys(overview.webVitals.summary.budgetStatus).length * 100 : 0,
         violations: overview.webVitals.recentViolations,
         trend: overview.webVitals.trendDirection,
@@ -215,7 +215,7 @@ router.get('/metrics/summary', [
         critical: overview.alerts.criticalAlerts,
       },
     };
-    
+
     res.json({
       success: true,
       summary,
@@ -233,13 +233,13 @@ router.get('/metrics/summary', [
 });
 
 // Get performance recommendations
-router.get('/recommendations', async (req, res) => {
+router.get('/recommendations', async (req: AuthRequest, res) => {
   try {
-    const workspaceId = req.user?.workspaceId;
-    
+    const workspaceId = (req.user as any)?.workplaceId;
+
     // Get overview to generate recommendations
     const overview = await performanceMonitoringService.getPerformanceOverview(workspaceId);
-    
+
     res.json({
       success: true,
       recommendations: overview.recommendations,

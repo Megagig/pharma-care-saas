@@ -2,7 +2,7 @@ import express from 'express';
 import { body, query, validationResult } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 import { performanceBudgetService } from '../services/PerformanceBudgetService';
-import { auth } from '../middlewares/auth';
+import { auth, AuthRequest } from '../middlewares/auth';
 
 const router = express.Router();
 
@@ -28,7 +28,7 @@ router.post('/', [
   body('budgets.bundleSize').isObject().withMessage('Bundle size budgets are required'),
   body('budgets.apiLatency').isObject().withMessage('API latency budgets are required'),
   body('alerting').optional().isObject(),
-], async (req, res) => {
+], async (req: AuthRequest, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -37,11 +37,11 @@ router.post('/', [
 
     const budgetData = {
       ...req.body,
-      workspaceId: req.user?.workspaceId,
+      workspaceId: (req.user as any)?.workplaceId,
     };
 
     const budget = await performanceBudgetService.createBudget(budgetData);
-    
+
     res.status(201).json({
       success: true,
       message: 'Performance budget created successfully',
@@ -58,10 +58,10 @@ router.post('/', [
 });
 
 // Get performance budgets
-router.get('/', async (req, res) => {
+router.get('/', async (req: AuthRequest, res) => {
   try {
-    const budgets = await performanceBudgetService.getBudgets(req.user?.workspaceId);
-    
+    const budgets = await performanceBudgetService.getBudgets((req.user as any)?.workplaceId);
+
     res.json({
       success: true,
       budgets,
@@ -78,11 +78,11 @@ router.get('/', async (req, res) => {
 });
 
 // Get specific performance budget
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const budget = await performanceBudgetService.getBudget(id);
-    
+
     if (!budget) {
       return res.status(404).json({
         success: false,
@@ -91,7 +91,7 @@ router.get('/:id', async (req, res) => {
     }
 
     // Check if user has access to this budget
-    if (budget.workspaceId && budget.workspaceId !== req.user?.workspaceId) {
+    if (budget.workspaceId && budget.workspaceId !== (req.user as any)?.workplaceId) {
       return res.status(403).json({
         success: false,
         message: 'Access denied',
@@ -119,7 +119,7 @@ router.put('/:id', [
   body('budgets').optional().isObject(),
   body('alerting').optional().isObject(),
   body('isActive').optional().isBoolean(),
-], async (req, res) => {
+], async (req: AuthRequest, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -127,7 +127,7 @@ router.put('/:id', [
     }
 
     const { id } = req.params;
-    
+
     // Check if budget exists and user has access
     const existingBudget = await performanceBudgetService.getBudget(id);
     if (!existingBudget) {
@@ -137,7 +137,7 @@ router.put('/:id', [
       });
     }
 
-    if (existingBudget.workspaceId && existingBudget.workspaceId !== req.user?.workspaceId) {
+    if (existingBudget.workspaceId && existingBudget.workspaceId !== (req.user as any)?.workplaceId) {
       return res.status(403).json({
         success: false,
         message: 'Access denied',
@@ -145,7 +145,7 @@ router.put('/:id', [
     }
 
     const updatedBudget = await performanceBudgetService.updateBudget(id, req.body);
-    
+
     if (!updatedBudget) {
       return res.status(404).json({
         success: false,
@@ -169,10 +169,10 @@ router.put('/:id', [
 });
 
 // Delete performance budget
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
-    
+
     // Check if budget exists and user has access
     const existingBudget = await performanceBudgetService.getBudget(id);
     if (!existingBudget) {
@@ -182,7 +182,7 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    if (existingBudget.workspaceId && existingBudget.workspaceId !== req.user?.workspaceId) {
+    if (existingBudget.workspaceId && existingBudget.workspaceId !== (req.user as any)?.workplaceId) {
       return res.status(403).json({
         success: false,
         message: 'Access denied',
@@ -190,7 +190,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     const deleted = await performanceBudgetService.deleteBudget(id);
-    
+
     if (!deleted) {
       return res.status(404).json({
         success: false,
@@ -215,7 +215,7 @@ router.delete('/:id', async (req, res) => {
 // Get budget report
 router.get('/:id/report', [
   query('period').optional().isIn(['24h', '7d', '30d']).withMessage('Invalid period'),
-], async (req, res) => {
+], async (req: AuthRequest, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -224,7 +224,7 @@ router.get('/:id/report', [
 
     const { id } = req.params;
     const { period = '7d' } = req.query;
-    
+
     // Check if budget exists and user has access
     const existingBudget = await performanceBudgetService.getBudget(id);
     if (!existingBudget) {
@@ -234,7 +234,7 @@ router.get('/:id/report', [
       });
     }
 
-    if (existingBudget.workspaceId && existingBudget.workspaceId !== req.user?.workspaceId) {
+    if (existingBudget.workspaceId && existingBudget.workspaceId !== (req.user as any)?.workplaceId) {
       return res.status(403).json({
         success: false,
         message: 'Access denied',
@@ -245,7 +245,7 @@ router.get('/:id/report', [
       id,
       period as '24h' | '7d' | '30d'
     );
-    
+
     res.json({
       success: true,
       report,
@@ -267,7 +267,7 @@ router.post('/check/lighthouse', [
   body('metrics').optional().isObject(),
   body('url').isURL().withMessage('Valid URL is required'),
   body('branch').optional().isString(),
-], async (req, res) => {
+], async (req: AuthRequest, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -275,15 +275,15 @@ router.post('/check/lighthouse', [
     }
 
     const { scores, metrics = {}, url, branch } = req.body;
-    
+
     const violations = await performanceBudgetService.checkLighthouseBudgets({
       scores,
       metrics,
       url,
       branch,
-      workspaceId: req.user?.workspaceId,
+      workspaceId: (req.user as any)?.workplaceId,
     });
-    
+
     res.json({
       success: true,
       violations,
@@ -306,7 +306,7 @@ router.post('/check/web-vitals', [
   body('url').isURL().withMessage('Valid URL is required'),
   body('userAgent').optional().isString(),
   body('deviceType').optional().isString(),
-], async (req, res) => {
+], async (req: AuthRequest, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -314,17 +314,17 @@ router.post('/check/web-vitals', [
     }
 
     const { metrics, url, userAgent, deviceType } = req.body;
-    
+
     const violations = await performanceBudgetService.checkWebVitalsBudgets(
       metrics,
       {
         url,
-        workspaceId: req.user?.workspaceId,
+        workspaceId: (req.user as any)?.workplaceId,
         userAgent,
         deviceType,
       }
     );
-    
+
     res.json({
       success: true,
       violations,
@@ -346,7 +346,7 @@ router.post('/check/bundle-size', [
   body('bundleData').isObject().withMessage('Bundle data object is required'),
   body('branch').optional().isString(),
   body('commit').optional().isString(),
-], async (req, res) => {
+], async (req: AuthRequest, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -354,16 +354,16 @@ router.post('/check/bundle-size', [
     }
 
     const { bundleData, branch, commit } = req.body;
-    
+
     const violations = await performanceBudgetService.checkBundleSizeBudgets(
       bundleData,
       {
         branch,
         commit,
-        workspaceId: req.user?.workspaceId,
+        workspaceId: (req.user as any)?.workplaceId,
       }
     );
-    
+
     res.json({
       success: true,
       violations,
@@ -384,7 +384,7 @@ router.post('/check/bundle-size', [
 router.post('/check/api-latency', [
   body('latencyData').isObject().withMessage('Latency data object is required'),
   body('endpoint').optional().isString(),
-], async (req, res) => {
+], async (req: AuthRequest, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -392,15 +392,15 @@ router.post('/check/api-latency', [
     }
 
     const { latencyData, endpoint } = req.body;
-    
+
     const violations = await performanceBudgetService.checkAPILatencyBudgets(
       latencyData,
       {
         endpoint,
-        workspaceId: req.user?.workspaceId,
+        workspaceId: (req.user as any)?.workplaceId,
       }
     );
-    
+
     res.json({
       success: true,
       violations,
@@ -418,9 +418,9 @@ router.post('/check/api-latency', [
 });
 
 // Create default budget for workspace
-router.post('/default', async (req, res) => {
+router.post('/default', async (req: AuthRequest, res) => {
   try {
-    const workspaceId = req.user?.workspaceId;
+    const workspaceId = (req.user as any)?.workplaceId;
     if (!workspaceId) {
       return res.status(400).json({
         success: false,
@@ -429,7 +429,7 @@ router.post('/default', async (req, res) => {
     }
 
     const budget = await performanceBudgetService.createDefaultBudget(workspaceId);
-    
+
     res.status(201).json({
       success: true,
       message: 'Default performance budget created successfully',
