@@ -344,7 +344,7 @@ ReportAuditLogSchema.virtual('eventSummary').get(function () {
 // Pre-save middleware for risk calculation
 ReportAuditLogSchema.pre('save', function (next) {
     if (this.isNew || this.isModified('eventDetails') || this.isModified('compliance')) {
-        this.riskScore = this.calculateRiskScore();
+        this.riskScore = (this as any).calculateRiskScore();
 
         // Auto-flag high-risk events
         if (this.riskScore >= 70) {

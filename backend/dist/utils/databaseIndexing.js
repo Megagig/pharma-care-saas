@@ -491,5 +491,5 @@ class DatabaseIndexingService {
     }
 }
 exports.DatabaseIndexingService = DatabaseIndexingService;
-exports.default = DatabaseIndexingService.getInstance();
+exports.default = DatabaseIndexingService;
 //# sourceMappingURL=databaseIndexing.js.map

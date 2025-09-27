@@ -116,7 +116,7 @@ export const preloadComponent = (importFn: () => Promise<any>) => {
   });
 };
 
-// Route-based preloading hook
+// Route-based preloading hook (enhanced)
 export const useRoutePreloading = () => {
   React.useEffect(() => {
     // Preload critical routes after initial render
@@ -135,6 +135,17 @@ export const useRoutePreloading = () => {
       preloadComponent(() => import('../pages/ClinicalNotes'));
       preloadComponent(() => import('../pages/Medications'));
     }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  React.useEffect(() => {
+    // Preload additional routes based on user role/permissions
+    const timer = setTimeout(() => {
+      // These can be loaded later as they're less frequently accessed
+      preloadComponent(() => import('../modules/reports-analytics/components/ReportsAnalyticsDashboard'));
+      preloadComponent(() => import('../pages/MedicationTherapyReview'));
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, []);

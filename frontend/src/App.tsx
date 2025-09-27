@@ -14,7 +14,8 @@ import { AuthProvider } from './context/AuthContext';
 import { FeatureFlagProvider } from './context/FeatureFlagContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { initializeStores } from './stores';
-import { queryClient } from './lib/queryClient';
+import { queryClient, queryPrefetcher } from './lib/queryClient';
+import { initializeQueryDevtools } from './lib/queryDevtools';
 import { useTheme as useThemeStore } from './stores/themeStore';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -66,6 +67,7 @@ import {
 } from './components/LazyComponents';
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
+import { useRoutePrefetching, useBackgroundSync, useCacheWarming } from './hooks/useRoutePrefetching';
 import {
   DashboardSkeleton,
   PatientListSkeleton,
@@ -95,6 +97,12 @@ function App(): JSX.Element {
   // Initialize Zustand stores on app startup
   useEffect(() => {
     initializeStores();
+    
+    // Initialize query devtools in development
+    initializeQueryDevtools(queryClient);
+    
+    // Prefetch likely routes on app load
+    queryPrefetcher.prefetchLikelyRoutes().catch(console.error);
   }, []);
 
   // Get current theme from store
@@ -106,8 +114,11 @@ function App(): JSX.Element {
     [resolvedTheme]
   );
 
-  // Use route preloading hook
+  // Use route preloading and prefetching hooks
   useRoutePreloading();
+  useRoutePrefetching();
+  useBackgroundSync();
+  useCacheWarming();
 
   return (
     <ErrorBoundary>
@@ -150,6 +161,14 @@ function App(): JSX.Element {
                             },
                           }}
                         />
+                        {/* React Query DevTools - only in development */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <ReactQueryDevtools
+                            initialIsOpen={false}
+                            position="bottom-right"
+                          />
+                        )}
+                        
                         <Routes>
                           {/* Public Routes */}
                           <Route path="/" element={<Landing />} />

@@ -661,4 +661,4 @@ export class DatabaseIndexingService {
     }
 }
 
-export default DatabaseIndexingService.getInstance();
+export default DatabaseIndexingService;

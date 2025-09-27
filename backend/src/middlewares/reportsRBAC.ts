@@ -94,7 +94,7 @@ export const requireReportAccess = (reportType?: string) => {
                     reportType: targetReportType,
                     userId: req.user!._id,
                     workplaceId: req.user!.workplaceId,
-                    sessionId: req.sessionID,
+                    sessionId: req.sessionId,
                     ipAddress: req.ip,
                     userAgent: req.get('User-Agent'),
                     eventDetails: {
@@ -132,7 +132,7 @@ export const requireReportAccess = (reportType?: string) => {
                 reportType: targetReportType,
                 userId: req.user!._id,
                 workplaceId: req.user!.workplaceId,
-                sessionId: req.sessionID,
+                sessionId: req.sessionId,
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
                 eventDetails: {
@@ -241,7 +241,7 @@ export const requireTemplateAccess = (action: 'view' | 'edit' | 'delete' | 'clon
                     templateId: template._id,
                     userId: req.user!._id,
                     workplaceId: req.user!.workplaceId,
-                    sessionId: req.sessionID,
+                    sessionId: req.sessionId,
                     ipAddress: req.ip,
                     userAgent: req.get('User-Agent'),
                     eventDetails: {
@@ -280,7 +280,7 @@ export const requireTemplateAccess = (action: 'view' | 'edit' | 'delete' | 'clon
                 templateId: template._id,
                 userId: req.user!._id,
                 workplaceId: req.user!.workplaceId,
-                sessionId: req.sessionID,
+                sessionId: req.sessionId,
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
                 eventDetails: {
@@ -301,7 +301,7 @@ export const requireTemplateAccess = (action: 'view' | 'edit' | 'delete' | 'clon
 
             // Increment view count for view actions
             if (action === 'view') {
-                await template.incrementViewCount();
+                await (template as any).incrementViewCount();
             }
 
             // Attach template to request for downstream use
@@ -393,7 +393,7 @@ export const requireScheduleAccess = (action: 'view' | 'edit' | 'delete' | 'exec
                     scheduleId: schedule._id,
                     userId: req.user!._id,
                     workplaceId: req.user!.workplaceId,
-                    sessionId: req.sessionID,
+                    sessionId: req.sessionId,
                     ipAddress: req.ip,
                     userAgent: req.get('User-Agent'),
                     eventDetails: {
@@ -432,7 +432,7 @@ export const requireScheduleAccess = (action: 'view' | 'edit' | 'delete' | 'exec
                 scheduleId: schedule._id,
                 userId: req.user!._id,
                 workplaceId: req.user!.workplaceId,
-                sessionId: req.sessionID,
+                sessionId: req.sessionId,
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
                 eventDetails: {
@@ -501,7 +501,7 @@ export const requireExportPermission = (req: AuthRequest, res: Response, next: N
             reportType,
             userId: req.user!._id,
             workplaceId: req.user!.workplaceId,
-            sessionId: req.sessionID,
+            sessionId: req.sessionId,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
             eventDetails: {
@@ -598,7 +598,7 @@ export const validateDataAccess = async (req: AuthRequest, res: Response, next: 
             reportType,
             userId: req.user!._id,
             workplaceId: req.user!.workplaceId,
-            sessionId: req.sessionID,
+            sessionId: req.sessionId,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
             eventDetails: {
@@ -646,11 +646,11 @@ export const enforceWorkspaceIsolation = (req: AuthRequest, res: Response, next:
     // Ensure workspace isolation by adding workplaceId to filters
     req.query = {
         ...originalQuery,
-        workplaceId: req.user!.workplaceId
+        workplaceId: req.user!.workplaceId.toString()
     };
 
     // Override any attempt to access different workspace data
-    if (originalQuery.workplaceId && originalQuery.workplaceId !== req.user!.workplaceId) {
+    if (originalQuery.workplaceId && originalQuery.workplaceId.toString() !== req.user!.workplaceId.toString()) {
         logger.warn('Attempted cross-workspace data access', {
             userId: req.user!._id,
             userWorkspace: req.user!.workplaceId,
@@ -663,7 +663,7 @@ export const enforceWorkspaceIsolation = (req: AuthRequest, res: Response, next:
             eventType: 'UNAUTHORIZED_ACCESS',
             userId: req.user!._id,
             workplaceId: req.user!.workplaceId,
-            sessionId: req.sessionID,
+            sessionId: req.sessionId,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
             eventDetails: {

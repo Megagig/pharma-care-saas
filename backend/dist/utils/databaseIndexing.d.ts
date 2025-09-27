@@ -38,6 +38,5 @@ export declare class DatabaseIndexingService {
     dropUnusedIndexes(): Promise<void>;
     getIndexStats(): Promise<any[]>;
 }
-declare const _default: DatabaseIndexingService;
-export default _default;
+export default DatabaseIndexingService;
 //# sourceMappingURL=databaseIndexing.d.ts.map

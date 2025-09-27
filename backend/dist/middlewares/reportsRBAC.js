@@ -65,7 +65,7 @@ const requireReportAccess = (reportType) => {
                     reportType: targetReportType,
                     userId: req.user._id,
                     workplaceId: req.user.workplaceId,
-                    sessionId: req.sessionID,
+                    sessionId: req.sessionId,
                     ipAddress: req.ip,
                     userAgent: req.get('User-Agent'),
                     eventDetails: {
@@ -100,7 +100,7 @@ const requireReportAccess = (reportType) => {
                 reportType: targetReportType,
                 userId: req.user._id,
                 workplaceId: req.user.workplaceId,
-                sessionId: req.sessionID,
+                sessionId: req.sessionId,
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
                 eventDetails: {
@@ -189,7 +189,7 @@ const requireTemplateAccess = (action = 'view') => {
                     templateId: template._id,
                     userId: req.user._id,
                     workplaceId: req.user.workplaceId,
-                    sessionId: req.sessionID,
+                    sessionId: req.sessionId,
                     ipAddress: req.ip,
                     userAgent: req.get('User-Agent'),
                     eventDetails: {
@@ -225,7 +225,7 @@ const requireTemplateAccess = (action = 'view') => {
                 templateId: template._id,
                 userId: req.user._id,
                 workplaceId: req.user.workplaceId,
-                sessionId: req.sessionID,
+                sessionId: req.sessionId,
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
                 eventDetails: {
@@ -315,7 +315,7 @@ const requireScheduleAccess = (action = 'view') => {
                     scheduleId: schedule._id,
                     userId: req.user._id,
                     workplaceId: req.user.workplaceId,
-                    sessionId: req.sessionID,
+                    sessionId: req.sessionId,
                     ipAddress: req.ip,
                     userAgent: req.get('User-Agent'),
                     eventDetails: {
@@ -351,7 +351,7 @@ const requireScheduleAccess = (action = 'view') => {
                 scheduleId: schedule._id,
                 userId: req.user._id,
                 workplaceId: req.user.workplaceId,
-                sessionId: req.sessionID,
+                sessionId: req.sessionId,
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
                 eventDetails: {
@@ -406,7 +406,7 @@ const requireExportPermission = (req, res, next) => {
             reportType,
             userId: req.user._id,
             workplaceId: req.user.workplaceId,
-            sessionId: req.sessionID,
+            sessionId: req.sessionId,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
             eventDetails: {
@@ -484,7 +484,7 @@ const validateDataAccess = async (req, res, next) => {
             reportType,
             userId: req.user._id,
             workplaceId: req.user.workplaceId,
-            sessionId: req.sessionID,
+            sessionId: req.sessionId,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
             eventDetails: {
@@ -523,9 +523,9 @@ const enforceWorkspaceIsolation = (req, res, next) => {
     const originalQuery = req.query;
     req.query = {
         ...originalQuery,
-        workplaceId: req.user.workplaceId
+        workplaceId: req.user.workplaceId.toString()
     };
-    if (originalQuery.workplaceId && originalQuery.workplaceId !== req.user.workplaceId) {
+    if (originalQuery.workplaceId && originalQuery.workplaceId.toString() !== req.user.workplaceId.toString()) {
         logger_1.default.warn('Attempted cross-workspace data access', {
             userId: req.user._id,
             userWorkspace: req.user.workplaceId,
@@ -536,7 +536,7 @@ const enforceWorkspaceIsolation = (req, res, next) => {
             eventType: 'UNAUTHORIZED_ACCESS',
             userId: req.user._id,
             workplaceId: req.user.workplaceId,
-            sessionId: req.sessionID,
+            sessionId: req.sessionId,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
             eventDetails: {

@@ -183,7 +183,7 @@ export async function getMedicationInventoryDataOptimized(workplaceId: string, f
                 patientCount: { $size: '$uniquePatients' },
             },
         },
-        { $sort: { totalUsage: -1 } },
+        { $sort: { totalUsage: -1 as const } },
         { $limit: 50 }, // Top 50 medications
     ];
 
@@ -235,7 +235,7 @@ export async function getPatientDemographicsDataOptimized(workplaceId: string, f
                     avgSeverity: { $avg: '$conditions.severity' },
                 },
             },
-            { $sort: { count: -1 } },
+            { $sort: { count: -1 as const } },
             { $limit: 20 },
         ],
     };
@@ -270,7 +270,7 @@ export async function getAdverseEventsDataOptimized(workplaceId: string, filters
                 },
             },
         },
-        { $sort: { count: -1 } },
+        { $sort: { count: -1 as const } },
     ];
 
     const result = await aggregationService.executeAggregation(
