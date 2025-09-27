@@ -30,7 +30,12 @@
     "lighthouse:upload": "lhci upload",
     "analyze": "ANALYZE=true npm run build",
     "bundle:analyze": "npm run analyze",
-    "bundle:size": "node scripts/bundle-size-check.js"
+    "bundle:size": "node scripts/bundle-size-check.js",
+    "test:theme": "node scripts/run-theme-tests.js",
+    "test:theme:performance": "vitest run src/__tests__/theme/ThemePerformance*.test.tsx --reporter=verbose",
+    "test:theme:cls": "vitest run src/__tests__/theme/ThemeCLS*.test.tsx --reporter=verbose",
+    "test:theme:visual": "vitest run src/__tests__/theme/ThemeVisual*.test.tsx --reporter=verbose",
+    "test:theme:benchmark": "vitest run src/__tests__/theme/ThemePerformanceBenchmark*.test.tsx --reporter=verbose --timeout=60000"
   },
   "dependencies": {
     "@date-io/date-fns": "^3.2.1",
