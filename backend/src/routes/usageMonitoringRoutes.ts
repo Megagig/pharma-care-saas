@@ -19,34 +19,34 @@ router.use(authWithWorkspace);
  * @desc Get current workspace usage statistics
  * @access Private (All workspace members)
  */
-router.get('/stats', getWorkspaceUsageStats);
+router.get('/stats', getWorkspaceUsageStats as any);
 
 /**
  * @route GET /api/usage/analytics
  * @desc Get detailed usage analytics (owners only)
  * @access Private (Workspace owners only)
  */
-router.get('/analytics', requirePermission('workspace.analytics'), getUsageAnalytics);
+router.get('/analytics', requirePermission('workspace.analytics') as any, getUsageAnalytics as any);
 
 /**
  * @route GET /api/usage/alerts
  * @desc Get usage alerts and warnings
  * @access Private (All workspace members)
  */
-router.get('/alerts', getUsageAlerts);
+router.get('/alerts', getUsageAlerts as any);
 
 /**
  * @route POST /api/usage/recalculate
  * @desc Manually trigger usage statistics recalculation
  * @access Private (Workspace owners only)
  */
-router.post('/recalculate', requirePermission('workspace.manage'), recalculateUsageStats);
+router.post('/recalculate', requirePermission('workspace.manage') as any, recalculateUsageStats as any);
 
 /**
  * @route GET /api/usage/comparison
  * @desc Get usage comparison with available plans
  * @access Private (All workspace members)
  */
-router.get('/comparison', getUsageComparison);
+router.get('/comparison', getUsageComparison as any);
 
 export default router;

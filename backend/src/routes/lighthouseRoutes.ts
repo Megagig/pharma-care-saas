@@ -36,7 +36,7 @@ router.post('/results', [
     }
 
     const result = await lighthouseCIService.storeLighthouseResult(req.body);
-    
+
     res.status(201).json({
       success: true,
       message: 'Lighthouse result stored successfully',
@@ -71,7 +71,7 @@ router.get('/results', [
     }
 
     const { branch, url, limit, startDate, endDate } = req.query;
-    
+
     const filters: any = {};
     if (branch) filters.branch = branch;
     if (url) filters.url = url;
@@ -80,7 +80,7 @@ router.get('/results', [
     if (endDate) filters.endDate = new Date(endDate as string);
 
     const results = await lighthouseCIService.getLighthouseResults(filters);
-    
+
     res.json({
       success: true,
       results,
@@ -113,7 +113,7 @@ router.get('/compare/:currentRunId', [
       currentRunId,
       baselineRunId as string
     );
-    
+
     res.json({
       success: true,
       comparison,
@@ -121,14 +121,14 @@ router.get('/compare/:currentRunId', [
 
   } catch (error) {
     console.error('Error comparing Lighthouse results:', error);
-    
+
     if (error.message.includes('not found')) {
       return res.status(404).json({
         success: false,
         message: error.message,
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -155,7 +155,7 @@ router.get('/trends', [
       url as string,
       parseInt(days as string)
     );
-    
+
     res.json({
       success: true,
       trends,
@@ -188,7 +188,7 @@ router.get('/report', [
       branch as string,
       parseInt(days as string)
     );
-    
+
     res.json({
       success: true,
       report,
@@ -242,8 +242,10 @@ router.post('/webhook', [
       runId,
       branch,
       commit,
+      workspaceId: req.body.workspaceId || 'default', // Provide default workspaceId
       scores,
       metrics,
+      budgetStatus: {}, // Will be calculated by the service
       reportUrl: req.body.reportUrl,
       rawResult: lhr,
     });

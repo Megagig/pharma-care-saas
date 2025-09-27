@@ -16,6 +16,7 @@ export interface FeatureFlagEvaluation {
   rolloutPercentage: number;
   userPercentile?: number;
   override?: boolean;
+  lastEvaluated: Date;
 }
 
 export interface FeatureFlagMetrics {
@@ -43,7 +44,7 @@ class FeatureFlagService {
       // Check cache first
       const cacheKey = `${featureName}:${userId}:${workspaceId}`;
       const cached = this.cache.get(cacheKey);
-      if (cached && Date.now() - cached.lastEvaluated < this.cacheTimeout) {
+      if (cached && Date.now() - cached.lastEvaluated.getTime() < this.cacheTimeout) {
         this.updateMetrics(featureName, cached.enabled);
         return cached;
       }
@@ -51,7 +52,7 @@ class FeatureFlagService {
       // Get global feature flag configuration
       const globalFlags = getPerformanceFeatureFlags();
       const isGloballyEnabled = this.getGlobalFeatureFlag(globalFlags, featureName);
-      
+
       if (!isGloballyEnabled) {
         const result = {
           enabled: false,
@@ -130,10 +131,10 @@ class FeatureFlagService {
       if (globalFlags.rolloutPercentage < 100) {
         const userPercentile = this.getUserPercentile(userId, workspaceId, featureName);
         const enabled = userPercentile < globalFlags.rolloutPercentage;
-        
+
         const result = {
           enabled,
-          reason: enabled 
+          reason: enabled
             ? `Rollout: user in ${globalFlags.rolloutPercentage}% (percentile: ${userPercentile})`
             : `Rollout: user not in ${globalFlags.rolloutPercentage}% (percentile: ${userPercentile})`,
           rolloutPercentage: globalFlags.rolloutPercentage,
@@ -158,7 +159,7 @@ class FeatureFlagService {
 
     } catch (error) {
       logger.error('Feature flag evaluation error:', error);
-      
+
       // Fail safe: return false for unknown features
       const result = {
         enabled: false,
@@ -214,8 +215,8 @@ class FeatureFlagService {
           { expiresAt: { $gt: new Date() } }
         ]
       });
-      
-      return override ? override.enabled : null;
+
+      return override ? override.isActive : null;
     } catch (error) {
       logger.error('Error getting user feature override:', error);
       return null;
@@ -235,8 +236,8 @@ class FeatureFlagService {
           { expiresAt: { $gt: new Date() } }
         ]
       });
-      
-      return override ? override.enabled : null;
+
+      return override ? override.isActive : null;
     } catch (error) {
       logger.error('Error getting workspace feature override:', error);
       return null;

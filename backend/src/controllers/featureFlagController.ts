@@ -2,12 +2,7 @@ import { Request, Response } from 'express';
 import { FeatureFlag } from '../models/FeatureFlag';
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
-import { IUser } from '../models/User';
-
-// Extend the Express Request type to include user
-interface AuthRequest extends Request {
-  user?: IUser;
-}
+import { AuthRequest, isExtendedUser } from '../types/auth';
 
 /**
  * @desc    Get all feature flags
@@ -20,7 +15,7 @@ export const getAllFeatureFlags = async (req: AuthRequest, res: Response) => {
     let query: { isActive?: boolean } = { isActive: true };
 
     // Super admins can see all flags including inactive ones
-    if (user && user.role === 'super_admin') {
+    if (user && isExtendedUser(user) && user.role === 'super_admin') {
       query = {}; // Empty query to get all flags
     }
 
@@ -76,7 +71,7 @@ export const getFeatureFlagById = async (req: AuthRequest, res: Response) => {
     };
 
     // Regular users can only see active flags
-    if (!user || user.role !== 'super_admin') {
+    if (!user || !isExtendedUser(user) || user.role !== 'super_admin') {
       query.isActive = true;
     }
 

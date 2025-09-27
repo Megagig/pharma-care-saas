@@ -30,7 +30,9 @@ export class WebVitalsMonitor {
     performanceBudgets?: Record<string, number>;
     enabled?: boolean;
   } = {}) {
-    this.apiEndpoint = options.apiEndpoint || '/api/analytics/web-vitals';
+    // Use backend URL for API endpoints
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    this.apiEndpoint = options.apiEndpoint || `${backendUrl}/api/analytics/web-vitals`;
     this.performanceBudgets = options.performanceBudgets || {
       CLS: 0.1,
       FID: 100,
@@ -83,7 +85,7 @@ export class WebVitalsMonitor {
       this.checkPerformanceBudgets(entry);
       
       // Log to console in development
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.log(`Web Vitals - ${metric.name}:`, metric.value);
       }
     } catch (error) {
@@ -152,7 +154,8 @@ export class WebVitalsMonitor {
         connectionType: entry.connectionType,
       };
 
-      fetch('/api/alerts/performance', {
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      fetch(`${backendUrl}/api/alerts/performance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(alertData),

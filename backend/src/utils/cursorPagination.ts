@@ -53,10 +53,10 @@ export class CursorPagination {
     try {
       // Parse cursor if provided
       const cursorInfo = cursor ? this.parseCursor(cursor) : null;
-      
+
       // Build query
       let query = model.find(filters);
-      
+
       // Apply cursor-based filtering
       if (cursorInfo) {
         query = this.applyCursorFilter(query, cursorInfo, sortField, sortOrder);
@@ -77,11 +77,11 @@ export class CursorPagination {
       const resultItems = hasNextPage ? items.slice(0, limit) : items;
 
       // Generate cursors
-      const startCursor = resultItems.length > 0 
+      const startCursor = resultItems.length > 0
         ? this.generateCursor(resultItems[0], sortField, 'forward')
         : null;
-      
-      const endCursor = resultItems.length > 0 
+
+      const endCursor = resultItems.length > 0
         ? this.generateCursor(resultItems[resultItems.length - 1], sortField, 'forward')
         : null;
 
@@ -116,7 +116,7 @@ export class CursorPagination {
     options: CursorPaginationOptions = {}
   ): Promise<CursorPaginationResult<T>> {
     const result = await this.paginate(model, options);
-    
+
     try {
       // Get total count (expensive operation)
       const totalCount = await model.countDocuments(options.filters || {});
@@ -161,12 +161,12 @@ export class CursorPagination {
   /**
    * Apply cursor-based filtering to a query
    */
-  private static applyCursorFilter<T>(
-    query: mongoose.Query<T[], T>,
+  private static applyCursorFilter<T extends Document>(
+    query: any,
     cursorInfo: CursorInfo,
     sortField: string,
     sortOrder: 'asc' | 'desc'
-  ): mongoose.Query<T[], T> {
+  ): any {
     const { id, sortValue, direction } = cursorInfo;
 
     if (direction === 'forward') {
@@ -221,11 +221,11 @@ export class CursorPagination {
     const { nextCursor, prevCursor, pageInfo, totalCount } = result;
 
     // Build next/prev URLs
-    const nextUrl = nextCursor 
+    const nextUrl = nextCursor
       ? `${baseUrl}?${new URLSearchParams({ ...queryParams, cursor: nextCursor }).toString()}`
       : null;
 
-    const prevUrl = prevCursor 
+    const prevUrl = prevCursor
       ? `${baseUrl}?${new URLSearchParams({ ...queryParams, cursor: prevCursor }).toString()}`
       : null;
 
@@ -296,9 +296,9 @@ export const convertSkipLimitToCursor = (
 ): { limit: number; skip?: number } => {
   // This is a transitional helper - in practice, you'd want to eliminate skip entirely
   // But this can help during migration from skip/limit to cursor-based pagination
-  
+
   logger.warn('Using skip/limit pagination - consider migrating to cursor-based pagination for better performance');
-  
+
   return {
     limit,
     skip: (page - 1) * limit,

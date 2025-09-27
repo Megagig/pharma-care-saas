@@ -71,10 +71,10 @@ class PerformanceCacheService {
     try {
       // Try to reuse existing CacheManager connection
       const cacheManager = CacheManager.getInstance();
-      
+
       // Create our own Redis connection for performance caching
       const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      
+
       this.redis = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         lazyConnect: true,
@@ -103,7 +103,7 @@ class PerformanceCacheService {
 
       // Test connection
       await this.redis.ping();
-      
+
     } catch (error) {
       logger.error('Failed to initialize performance cache service:', error);
       this.redis = null;
@@ -126,15 +126,15 @@ class PerformanceCacheService {
     try {
       const { ttl = this.DEFAULT_TTL, compress = true, tags = [] } = options;
       const cacheKey = `${this.PREFIXES.API_RESPONSE}${key}`;
-      
+
       let serializedData = JSON.stringify(data);
-      
+
       // Compress large payloads
       if (compress && serializedData.length > this.COMPRESSION_THRESHOLD) {
         const zlib = await import('zlib');
         const compressed = zlib.gzipSync(Buffer.from(serializedData));
         serializedData = compressed.toString('base64');
-        
+
         // Store metadata about compression
         await this.redis.hset(`${cacheKey}:meta`, {
           compressed: 'true',
@@ -153,12 +153,12 @@ class PerformanceCacheService {
       }
 
       await this.redis.setex(cacheKey, ttl, serializedData);
-      
+
       // Set expiration for metadata
       await this.redis.expire(`${cacheKey}:meta`, ttl);
-      
+
       this.stats.sets++;
-      
+
       logger.debug(`Cached API response: ${key}`, {
         size: serializedData.length,
         ttl,
@@ -166,7 +166,7 @@ class PerformanceCacheService {
       });
 
       return true;
-      
+
     } catch (error) {
       logger.error('Error caching API response:', error);
       return false;
@@ -207,7 +207,7 @@ class PerformanceCacheService {
       this.stats.hits++;
 
       return result;
-      
+
     } catch (error) {
       logger.error('Error getting cached API response:', error);
       this.stats.misses++;
@@ -225,9 +225,9 @@ class PerformanceCacheService {
     ttl: number = 300
   ): Promise<boolean> {
     const key = `${this.PREFIXES.DASHBOARD}${workspaceId}:${userId}`;
-    return this.cacheApiResponse(key, data, { 
-      ttl, 
-      tags: ['dashboard', 'user-specific'] 
+    return this.cacheApiResponse(key, data, {
+      ttl,
+      tags: ['dashboard', 'user-specific']
     });
   }
 
@@ -251,9 +251,9 @@ class PerformanceCacheService {
     ttl: number = 600
   ): Promise<boolean> {
     const key = `${this.PREFIXES.USER_PROFILE}${userId}`;
-    return this.cacheApiResponse(key, data, { 
-      ttl, 
-      tags: ['user-profile'] 
+    return this.cacheApiResponse(key, data, {
+      ttl,
+      tags: ['user-profile']
     });
   }
 
@@ -276,9 +276,9 @@ class PerformanceCacheService {
   ): Promise<boolean> {
     const filterHash = this.hashFilters(filters);
     const key = `${this.PREFIXES.PATIENT_LIST}${workspaceId}:${filterHash}`;
-    return this.cacheApiResponse(key, data, { 
-      ttl, 
-      tags: ['patients', 'list'] 
+    return this.cacheApiResponse(key, data, {
+      ttl,
+      tags: ['patients', 'list']
     });
   }
 
@@ -303,9 +303,9 @@ class PerformanceCacheService {
     ttl: number = 300
   ): Promise<boolean> {
     const key = `${this.PREFIXES.CLINICAL_NOTES}${patientId}`;
-    return this.cacheApiResponse(key, data, { 
-      ttl, 
-      tags: ['clinical-notes', 'patient-specific'] 
+    return this.cacheApiResponse(key, data, {
+      ttl,
+      tags: ['clinical-notes', 'patient-specific']
     });
   }
 
@@ -329,9 +329,9 @@ class PerformanceCacheService {
   ): Promise<boolean> {
     const queryHash = this.hashQuery(query);
     const key = `${this.PREFIXES.SEARCH_RESULTS}${type}:${workspaceId}:${queryHash}`;
-    return this.cacheApiResponse(key, data, { 
-      ttl, 
-      tags: ['search', type] 
+    return this.cacheApiResponse(key, data, {
+      ttl,
+      tags: ['search', type]
     });
   }
 
@@ -359,9 +359,9 @@ class PerformanceCacheService {
   ): Promise<boolean> {
     const paramsHash = this.hashFilters(params);
     const key = `${this.PREFIXES.AGGREGATIONS}${name}:${paramsHash}`;
-    return this.cacheApiResponse(key, data, { 
-      ttl, 
-      tags: ['aggregation', name] 
+    return this.cacheApiResponse(key, data, {
+      ttl,
+      tags: ['aggregation', name]
     });
   }
 
@@ -387,16 +387,16 @@ class PerformanceCacheService {
 
     try {
       let deletedCount = 0;
-      
+
       // Find all keys with metadata
       const metaKeys = await this.redis.keys('*:meta');
-      
+
       for (const metaKey of metaKeys) {
         const metadata = await this.redis.hgetall(metaKey);
         if (metadata.tags) {
           const keyTags = JSON.parse(metadata.tags);
           const hasMatchingTag = tags.some(tag => keyTags.includes(tag));
-          
+
           if (hasMatchingTag) {
             const dataKey = metaKey.replace(':meta', '');
             await Promise.all([
@@ -410,9 +410,9 @@ class PerformanceCacheService {
 
       this.stats.deletes += deletedCount;
       logger.debug(`Invalidated ${deletedCount} cache entries by tags:`, tags);
-      
+
       return deletedCount;
-      
+
     } catch (error) {
       logger.error('Error invalidating cache by tags:', error);
       return 0;
@@ -432,20 +432,20 @@ class PerformanceCacheService {
       if (keys.length > 0) {
         await this.redis.del(...keys);
         this.stats.deletes += keys.length;
-        
+
         // Also delete associated metadata
         const metaKeys = keys.map(key => `${key}:meta`);
         const existingMetaKeys = await this.redis.exists(...metaKeys);
         if (existingMetaKeys > 0) {
           await this.redis.del(...metaKeys);
         }
-        
+
         logger.debug(`Invalidated ${keys.length} cache entries by pattern: ${pattern}`);
         return keys.length;
       }
-      
+
       return 0;
-      
+
     } catch (error) {
       logger.error('Error invalidating cache by pattern:', error);
       return 0;
@@ -492,12 +492,12 @@ class PerformanceCacheService {
 
       // Calculate hit rate
       const totalOperations = this.stats.hits + this.stats.misses;
-      this.stats.hitRate = totalOperations > 0 
-        ? (this.stats.hits / totalOperations) * 100 
+      this.stats.hitRate = totalOperations > 0
+        ? (this.stats.hits / totalOperations) * 100
         : 0;
 
       return { ...this.stats };
-      
+
     } catch (error) {
       logger.error('Error getting cache stats:', error);
       return this.stats;
@@ -516,7 +516,7 @@ class PerformanceCacheService {
       await this.redis.flushdb();
       this.resetStats();
       logger.info('Performance cache cleared');
-      
+
     } catch (error) {
       logger.error('Error clearing performance cache:', error);
     }
@@ -564,6 +564,27 @@ class PerformanceCacheService {
       this.isConnected = false;
       logger.info('Performance cache service connection closed');
     }
+  }
+
+  /**
+   * Generic get method for backward compatibility
+   */
+  public async get<T = any>(key: string): Promise<T | null> {
+    return this.getCachedApiResponse(key);
+  }
+
+  /**
+   * Generic set method for backward compatibility
+   */
+  public async set<T = any>(key: string, value: T, ttl: number): Promise<boolean> {
+    return this.cacheApiResponse(key, value, { ttl });
+  }
+
+  /**
+   * Generic invalidate method for backward compatibility
+   */
+  public async invalidate(pattern: string): Promise<number> {
+    return this.invalidateByPattern(pattern);
   }
 }
 

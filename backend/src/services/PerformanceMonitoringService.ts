@@ -1,7 +1,7 @@
 import { WebVitalsService } from './WebVitalsService';
 import { LighthouseCIService } from './LighthouseCIService';
 import { PerformanceBudgetService } from './PerformanceBudgetService';
-import { PerformanceCacheService } from './PerformanceCacheService';
+import PerformanceCacheService from './PerformanceCacheService';
 import { performanceAlertService } from './PerformanceAlertService';
 
 export interface PerformanceOverview {
@@ -98,12 +98,12 @@ export class PerformanceMonitoringService {
     this.webVitalsService = new WebVitalsService();
     this.lighthouseService = new LighthouseCIService();
     this.budgetService = new PerformanceBudgetService();
-    this.cacheService = new PerformanceCacheService();
+    this.cacheService = PerformanceCacheService.getInstance();
   }
 
   async getPerformanceOverview(workspaceId?: string): Promise<PerformanceOverview> {
     const cacheKey = `performance-overview:${workspaceId || 'global'}`;
-    
+
     const cached = await this.cacheService.get<PerformanceOverview>(cacheKey);
     if (cached) {
       return cached;
@@ -112,7 +112,7 @@ export class PerformanceMonitoringService {
     try {
       // Get Web Vitals summary
       const webVitalsSummary = await this.webVitalsService.getWebVitalsSummary('24h', { workspaceId });
-      
+
       // Get recent Lighthouse results
       const lighthouseResults = await this.lighthouseService.getLighthouseResults({
         limit: 10,
@@ -202,10 +202,10 @@ export class PerformanceMonitoringService {
         trends.push({
           metric,
           category: 'webVitals',
-          current: trend.current || 0,
-          previous: trend.previous || 0,
+          current: 0, // trend object doesn't have current/previous properties
+          previous: 0, // trend object doesn't have current/previous properties
           change: trend.change || 0,
-          changePercent: ((trend.change || 0) / (trend.previous || 1)) * 100,
+          changePercent: trend.change || 0, // Simplified since previous doesn't exist
           trend: Math.abs(trend.change || 0) < 5 ? 'stable' : (trend.change || 0) > 0 ? 'degrading' : 'improving',
           timestamp: new Date(),
         });
@@ -216,11 +216,11 @@ export class PerformanceMonitoringService {
       if (lighthouseTrends.length >= 2) {
         const latest = lighthouseTrends[lighthouseTrends.length - 1];
         const previous = lighthouseTrends[lighthouseTrends.length - 2];
-        
+
         Object.entries(latest.scores).forEach(([metric, current]) => {
           const prev = previous.scores[metric] || 0;
           const change = current - prev;
-          
+
           trends.push({
             metric,
             category: 'lighthouse',
@@ -289,25 +289,25 @@ export class PerformanceMonitoringService {
 
   private calculateTrendDirection(trends: any): 'improving' | 'degrading' | 'stable' {
     if (!trends) return 'stable';
-    
+
     const trendValues = Object.values(trends).map((t: any) => t.change || 0);
     const avgChange = trendValues.reduce((sum: number, val: number) => sum + val, 0) / trendValues.length;
-    
+
     if (Math.abs(avgChange) < 5) return 'stable';
     return avgChange > 0 ? 'degrading' : 'improving'; // For Web Vitals, higher is worse
   }
 
   private calculateLighthouseTrend(results: any[]): 'improving' | 'degrading' | 'stable' {
     if (results.length < 2) return 'stable';
-    
+
     const latest = results[0];
     const previous = results[1];
-    
-    const latestAvg = Object.values(latest.scores).reduce((sum: number, val: number) => sum + val, 0) / Object.keys(latest.scores).length;
-    const previousAvg = Object.values(previous.scores).reduce((sum: number, val: number) => sum + val, 0) / Object.keys(previous.scores).length;
-    
+
+    const latestAvg = (Object.values(latest.scores) as number[]).reduce((sum: number, val: number) => sum + val, 0) / Object.keys(latest.scores).length;
+    const previousAvg = (Object.values(previous.scores) as number[]).reduce((sum: number, val: number) => sum + val, 0) / Object.keys(previous.scores).length;
+
     const change = latestAvg - previousAvg;
-    
+
     if (Math.abs(change) < 2) return 'stable';
     return change > 0 ? 'improving' : 'degrading'; // For Lighthouse, higher is better
   }

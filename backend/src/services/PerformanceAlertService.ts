@@ -406,6 +406,33 @@ export class PerformanceAlertService {
   getConfiguration(): AlertConfiguration {
     return { ...this.alertConfig };
   }
+
+  // Static method for ContinuousMonitoringService
+  static async sendAlert(alertData: {
+    type: string;
+    severity: string;
+    message: string;
+    data?: any;
+  }): Promise<void> {
+    const service = new PerformanceAlertService();
+
+    // Convert to PerformanceAlert format
+    const alert: PerformanceAlert = {
+      type: alertData.type as any,
+      severity: alertData.severity as any,
+      metric: alertData.data?.metric || 'unknown',
+      value: alertData.data?.value || 0,
+      threshold: alertData.data?.threshold,
+      url: alertData.data?.url || 'https://app.pharmacare.com',
+      timestamp: new Date(),
+      userAgent: alertData.data?.userAgent,
+      deviceType: alertData.data?.deviceType,
+      workspaceId: alertData.data?.workspaceId,
+      additionalData: alertData.data,
+    };
+
+    await service.sendAlert(alert);
+  }
 }
 
 // Export singleton instance

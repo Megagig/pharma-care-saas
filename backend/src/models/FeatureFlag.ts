@@ -108,4 +108,6 @@ FeatureFlagSchema.pre('save', function (next) {
   next();
 });
 
-export const FeatureFlag = mongoose.model<IFeatureFlag>('FeatureFlag', FeatureFlagSchema);
+const FeatureFlag = mongoose.model<IFeatureFlag>('FeatureFlag', FeatureFlagSchema);
+export default FeatureFlag;
+export { FeatureFlag };

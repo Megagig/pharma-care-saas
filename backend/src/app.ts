@@ -8,9 +8,7 @@ import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 
-// Import custom types
-import './types/express.d';
-
+// Import custom types (automatically loaded from src/types/)
 import errorHandler from './middlewares/errorHandler';
 import memoryManagementService from './services/MemoryManagementService';
 import logger from './utils/logger';

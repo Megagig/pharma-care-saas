@@ -1,14 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import PerformanceCacheService from '../services/PerformanceCacheService';
 import logger from '../utils/logger';
+import { AuthRequest } from '../types/auth';
 
 export interface CacheMiddlewareOptions {
   ttl?: number; // Time to live in seconds
-  keyGenerator?: (req: Request) => string; // Custom key generator
-  condition?: (req: Request) => boolean; // Condition to cache
-  tags?: string[] | ((req: Request) => string[]); // Cache tags
+  keyGenerator?: (req: AuthRequest) => string; // Custom key generator
+  condition?: (req: AuthRequest) => boolean; // Condition to cache
+  tags?: string[] | ((req: AuthRequest) => string[]); // Cache tags
   varyBy?: string[]; // Headers/params to vary cache by
-  skipCache?: (req: Request) => boolean; // Skip cache condition
+  skipCache?: (req: AuthRequest) => boolean; // Skip cache condition
 }
 
 /**
@@ -17,7 +18,7 @@ export interface CacheMiddlewareOptions {
  */
 export const cacheMiddleware = (options: CacheMiddlewareOptions = {}) => {
   const cacheService = PerformanceCacheService.getInstance();
-  
+
   const {
     ttl = 300, // 5 minutes default
     keyGenerator,
@@ -27,7 +28,7 @@ export const cacheMiddleware = (options: CacheMiddlewareOptions = {}) => {
     skipCache,
   } = options;
 
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
     // Skip caching for non-GET requests by default
     if (req.method !== 'GET') {
       return next();
@@ -45,23 +46,23 @@ export const cacheMiddleware = (options: CacheMiddlewareOptions = {}) => {
 
     try {
       // Generate cache key
-      const cacheKey = keyGenerator 
+      const cacheKey = keyGenerator
         ? keyGenerator(req)
         : generateDefaultCacheKey(req, varyBy);
 
       // Try to get cached response
       const cachedResponse = await cacheService.getCachedApiResponse(cacheKey);
-      
+
       if (cachedResponse) {
         logger.debug(`Cache hit for key: ${cacheKey}`);
-        
+
         // Set cache headers
         res.set({
           'X-Cache': 'HIT',
           'X-Cache-Key': cacheKey,
           'Cache-Control': `public, max-age=${ttl}`,
         });
-        
+
         return res.json(cachedResponse);
       }
 
@@ -69,9 +70,9 @@ export const cacheMiddleware = (options: CacheMiddlewareOptions = {}) => {
 
       // Store original res.json method
       const originalJson = res.json.bind(res);
-      
+
       // Override res.json to cache the response
-      res.json = function(data: any) {
+      res.json = function (data: any) {
         // Cache the response asynchronously
         setImmediate(async () => {
           try {
@@ -98,7 +99,7 @@ export const cacheMiddleware = (options: CacheMiddlewareOptions = {}) => {
       };
 
       next();
-      
+
     } catch (error) {
       logger.error('Cache middleware error:', error);
       next(); // Continue without caching on error
@@ -109,7 +110,7 @@ export const cacheMiddleware = (options: CacheMiddlewareOptions = {}) => {
 /**
  * Generate default cache key from request
  */
-function generateDefaultCacheKey(req: Request, varyBy: string[]): string {
+function generateDefaultCacheKey(req: AuthRequest, varyBy: string[]): string {
   const parts = [
     req.method,
     req.path,
@@ -138,9 +139,9 @@ function generateDefaultCacheKey(req: Request, varyBy: string[]): string {
   if (req.user?.id) {
     parts.push(`user:${req.user.id}`);
   }
-  
-  if (req.user?.workspaceId) {
-    parts.push(`workspace:${req.user.workspaceId}`);
+
+  if (req.user?.workplaceId) {
+    parts.push(`workspace:${req.user.workplaceId}`);
   }
 
   return parts.join('|');
@@ -168,26 +169,26 @@ export const patientListCacheMiddleware = cacheMiddleware({
   varyBy: ['workspace'],
   keyGenerator: (req) => {
     const { page, limit, search, filters } = req.query;
-    const workspaceId = req.user?.workspaceId || 'unknown';
-    
+    const workspaceId = req.user?.workplaceId || 'unknown';
+
     const keyParts = [
       'patient-list',
       workspaceId,
       `page:${page || 1}`,
       `limit:${limit || 10}`,
     ];
-    
+
     if (search) {
       keyParts.push(`search:${search}`);
     }
-    
+
     if (filters) {
-      const filterStr = typeof filters === 'string' 
-        ? filters 
+      const filterStr = typeof filters === 'string'
+        ? filters
         : JSON.stringify(filters);
       keyParts.push(`filters:${filterStr}`);
     }
-    
+
     return keyParts.join('|');
   },
 });
@@ -204,7 +205,7 @@ export const userProfileCacheMiddleware = cacheMiddleware({
   },
   condition: (req) => {
     // Only cache if user is accessing their own profile or has permission
-    return !!req.user && (req.user.id === req.params.userId || req.user.role === 'admin');
+    return !!req.user && (req.user.id === req.params.userId || req.user.role === 'super_admin' || req.user.role === 'owner');
   },
 });
 
@@ -231,15 +232,15 @@ export const medicationCacheMiddleware = cacheMiddleware({
     const patientId = req.params.patientId;
     const { active, type } = req.query;
     const keyParts = [`medications:${patientId}`];
-    
+
     if (active !== undefined) {
       keyParts.push(`active:${active}`);
     }
-    
+
     if (type) {
       keyParts.push(`type:${type}`);
     }
-    
+
     return keyParts.join('|');
   },
 });
@@ -252,19 +253,19 @@ export const searchCacheMiddleware = cacheMiddleware({
   tags: (req) => ['search', req.params.type || 'general'],
   keyGenerator: (req) => {
     const { q, type, filters } = req.query;
-    const workspaceId = req.user?.workspaceId || 'unknown';
-    
+    const workspaceId = req.user?.workplaceId || 'unknown';
+
     const keyParts = [
       'search',
       workspaceId,
       `query:${q}`,
       `type:${type || 'general'}`,
     ];
-    
+
     if (filters) {
       keyParts.push(`filters:${JSON.stringify(filters)}`);
     }
-    
+
     return keyParts.join('|');
   },
 });
@@ -277,19 +278,19 @@ export const reportsCacheMiddleware = cacheMiddleware({
   tags: ['reports', 'analytics'],
   keyGenerator: (req) => {
     const { reportType, dateRange, filters } = req.query;
-    const workspaceId = req.user?.workspaceId || 'unknown';
-    
+    const workspaceId = req.user?.workplaceId || 'unknown';
+
     const keyParts = [
       'reports',
       workspaceId,
       `type:${reportType}`,
       `range:${dateRange}`,
     ];
-    
+
     if (filters) {
       keyParts.push(`filters:${JSON.stringify(filters)}`);
     }
-    
+
     return keyParts.join('|');
   },
 });

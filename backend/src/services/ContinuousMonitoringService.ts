@@ -5,7 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
-import cron from 'node-cron';
+import * as cron from 'node-cron';
 import logger from '../utils/logger';
 import { WebVitalsService } from './WebVitalsService';
 import { LighthouseCIService } from './LighthouseCIService';
@@ -460,8 +460,8 @@ class ContinuousMonitoringService extends EventEmitter {
 
     for (const metric of metrics) {
       const values = data.map(d => ({ timestamp: new Date(d.timestamp), value: d[metric] }))
-                        .filter(d => d.value != null)
-                        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        .filter(d => d.value != null)
+        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
       if (values.length < 2) continue;
 
@@ -545,7 +545,7 @@ class ContinuousMonitoringService extends EventEmitter {
    */
   private calculateRegressionSeverity(changePercentage: number): 'low' | 'medium' | 'high' | 'critical' {
     const absChange = Math.abs(changePercentage);
-    
+
     if (absChange > 50) return 'critical';
     if (absChange > 25) return 'high';
     if (absChange > 10) return 'medium';
@@ -559,7 +559,7 @@ class ContinuousMonitoringService extends EventEmitter {
     // This would integrate with your analytics system
     // For now, simulate based on metric type
     const baseUsers = 1000;
-    
+
     switch (metric) {
       case 'LCP':
       case 'FID':
@@ -642,7 +642,7 @@ class ContinuousMonitoringService extends EventEmitter {
    */
   private async generateDailyReport(): Promise<void> {
     logger.info('Generating daily performance report');
-    
+
     try {
       // This would generate a comprehensive daily report
       const report = {
@@ -653,7 +653,7 @@ class ContinuousMonitoringService extends EventEmitter {
 
       // Send report to configured recipients
       await this.sendReport('Daily Performance Report', report);
-      
+
     } catch (error) {
       logger.error('Error generating daily report:', error);
     }
@@ -664,7 +664,7 @@ class ContinuousMonitoringService extends EventEmitter {
    */
   private async generateWeeklyReport(): Promise<void> {
     logger.info('Generating weekly performance report');
-    
+
     try {
       // This would generate a comprehensive weekly report
       const report = {
@@ -675,7 +675,7 @@ class ContinuousMonitoringService extends EventEmitter {
 
       // Send report to configured recipients
       await this.sendReport('Weekly Performance Report', report);
-      
+
     } catch (error) {
       logger.error('Error generating weekly report:', error);
     }
@@ -686,7 +686,7 @@ class ContinuousMonitoringService extends EventEmitter {
    */
   private async generateMonthlyReport(): Promise<void> {
     logger.info('Generating monthly performance report');
-    
+
     try {
       // This would generate a comprehensive monthly report
       const report = {
@@ -697,7 +697,7 @@ class ContinuousMonitoringService extends EventEmitter {
 
       // Send report to configured recipients
       await this.sendReport('Monthly Performance Report', report);
-      
+
     } catch (error) {
       logger.error('Error generating monthly report:', error);
     }
@@ -790,12 +790,12 @@ class ContinuousMonitoringService extends EventEmitter {
    */
   async updateConfig(newConfig: Partial<MonitoringConfig>): Promise<void> {
     this.config = { ...this.config, ...newConfig };
-    
+
     if (this.isRunning) {
       await this.stop();
       await this.start(this.config);
     }
-    
+
     logger.info('Monitoring configuration updated');
   }
 }

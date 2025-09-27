@@ -12,14 +12,14 @@ export interface PerformanceFeatureFlags {
   apiCaching: boolean;
   databaseOptimization: boolean;
   performanceMonitoring: boolean;
-  
+
   // Advanced features
   cursorPagination: boolean;
   backgroundJobs: boolean;
   serviceWorker: boolean;
   virtualization: boolean;
   reactQueryOptimization: boolean;
-  
+
   // Rollout configuration
   rolloutPercentage: number;
   internalTesting: boolean;
@@ -46,14 +46,14 @@ export const getPerformanceFeatureFlags = (): PerformanceFeatureFlags => {
     apiCaching: process.env.FEATURE_API_CACHING === 'true',
     databaseOptimization: process.env.FEATURE_DATABASE_OPTIMIZATION === 'true',
     performanceMonitoring: process.env.FEATURE_PERFORMANCE_MONITORING === 'true',
-    
+
     // Advanced features
     cursorPagination: process.env.FEATURE_CURSOR_PAGINATION === 'true',
     backgroundJobs: process.env.FEATURE_BACKGROUND_JOBS === 'true',
     serviceWorker: process.env.FEATURE_SERVICE_WORKER === 'true',
     virtualization: process.env.FEATURE_VIRTUALIZATION === 'true',
     reactQueryOptimization: process.env.FEATURE_REACT_QUERY_OPTIMIZATION === 'true',
-    
+
     // Rollout configuration
     rolloutPercentage: parseInt(process.env.FEATURE_ROLLOUT_PERCENTAGE || '0', 10),
     internalTesting: process.env.FEATURE_INTERNAL_TESTING === 'true',
@@ -66,25 +66,25 @@ export const getPerformanceFeatureFlags = (): PerformanceFeatureFlags => {
  */
 export const validateFeatureFlags = (flags: PerformanceFeatureFlags): string[] => {
   const errors: string[] = [];
-  
+
   // Rollout percentage validation
   if (flags.rolloutPercentage < 0 || flags.rolloutPercentage > 100) {
     errors.push('Rollout percentage must be between 0 and 100');
   }
-  
+
   // Dependency validation
   if (flags.apiCaching && !flags.performanceMonitoring) {
     errors.push('API caching requires performance monitoring to be enabled');
   }
-  
+
   if (flags.backgroundJobs && !flags.apiCaching) {
     errors.push('Background jobs require API caching to be enabled');
   }
-  
+
   if (flags.cursorPagination && !flags.databaseOptimization) {
     errors.push('Cursor pagination requires database optimization to be enabled');
   }
-  
+
   return errors;
 };
 
@@ -94,7 +94,7 @@ export const validateFeatureFlags = (flags: PerformanceFeatureFlags): string[] =
 export const getFeatureFlagStatus = () => {
   const flags = getPerformanceFeatureFlags();
   const errors = validateFeatureFlags(flags);
-  
+
   return {
     flags,
     valid: errors.length === 0,
@@ -124,7 +124,7 @@ export const getDefaultFeatureFlags = (environment: string): Partial<Performance
         internalTesting: true,
         betaUsers: false,
       };
-      
+
     case 'staging':
       return {
         themeOptimization: true,
@@ -141,7 +141,7 @@ export const getDefaultFeatureFlags = (environment: string): Partial<Performance
         internalTesting: false,
         betaUsers: true,
       };
-      
+
     case 'production':
       return {
         themeOptimization: false,
@@ -158,7 +158,7 @@ export const getDefaultFeatureFlags = (environment: string): Partial<Performance
         internalTesting: false,
         betaUsers: false,
       };
-      
+
     default:
       return {
         performanceMonitoring: true,
@@ -191,3 +191,56 @@ export const FEATURE_FLAG_CATEGORIES = {
   backend: ['apiCaching', 'databaseOptimization', 'cursorPagination', 'backgroundJobs'],
   frontend: ['virtualization', 'reactQueryOptimization', 'serviceWorker'],
 } as const;
+
+// Import the FeatureFlagService for export
+import FeatureFlagService from '../services/FeatureFlagService';
+export { FeatureFlagService };
+
+// Middleware functions for feature flag injection and requirement
+import { Request, Response, NextFunction } from 'express';
+
+/**
+ * Inject feature flags into the request object
+ */
+export const injectFeatureFlags = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const flags = getPerformanceFeatureFlags();
+    req.featureFlags = flags;
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Middleware to require a specific feature flag
+ */
+export const requireFeatureFlag = (featureName: string) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const flags = req.featureFlags || getPerformanceFeatureFlags();
+
+      // Check if the feature is enabled
+      if (flags[featureName as keyof PerformanceFeatureFlags]) {
+        next();
+      } else {
+        res.status(403).json({
+          success: false,
+          message: `Feature '${featureName}' is not enabled`,
+          code: 'FEATURE_NOT_ENABLED'
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+// Extend Express Request type to include featureFlags
+declare global {
+  namespace Express {
+    interface Request {
+      featureFlags?: PerformanceFeatureFlags;
+    }
+  }
+}

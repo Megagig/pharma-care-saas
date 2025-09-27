@@ -1,5 +1,21 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest, PermissionResult } from '../types/auth';
+import {
+    AuthRequest,
+    PermissionResult,
+    getUserRole,
+    getUserWorkplaceRole,
+    getUserStatus,
+    getUserAssignedRoles,
+    getUserCachedPermissions,
+    getUserLastPermissionCheck,
+    getWorkplaceId,
+    hasUserRole,
+    hasWorkplaceRole,
+    hasUserStatus,
+    hasAssignedRoles,
+    hasCachedPermissions,
+    hasLastPermissionCheck
+} from '../types/auth';
 import PermissionService from '../services/PermissionService';
 import DynamicPermissionService, { DynamicPermissionResult, PermissionContext } from '../services/DynamicPermissionService';
 import { auditOperations } from './auditLogging';
@@ -69,7 +85,7 @@ export const requireDynamicPermission = (action: string, options: {
 
             // Check permission with dynamic resolution
             const result: DynamicPermissionResult = await dynamicPermissionService.checkPermission(
-                req.user,
+                req.user as any,
                 action,
                 req.workspaceContext,
                 permissionContext
@@ -83,7 +99,7 @@ export const requireDynamicPermission = (action: string, options: {
                     const legacyPermissionService = PermissionService.getInstance();
                     const legacyResult: PermissionResult = await legacyPermissionService.checkPermission(
                         req.workspaceContext,
-                        req.user,
+                        req.user as any,
                         action
                     );
 
@@ -153,9 +169,9 @@ export const requireDynamicPermission = (action: string, options: {
                 // Add user context for debugging
                 errorResponse.userContext = {
                     userId: req.user._id,
-                    systemRole: req.user.role,
-                    workplaceRole: req.user.workplaceRole,
-                    status: req.user.status
+                    systemRole: getUserRole(req.user),
+                    workplaceRole: getUserWorkplaceRole(req.user),
+                    status: getUserStatus(req.user)
                 };
 
                 res.status(statusCode).json(errorResponse);
@@ -208,7 +224,7 @@ export const requireDynamicPermission = (action: string, options: {
                     const legacyPermissionService = PermissionService.getInstance();
                     const legacyResult: PermissionResult = await legacyPermissionService.checkPermission(
                         req.workspaceContext!,
-                        req.user!,
+                        req.user! as any,
                         action
                     );
 
@@ -266,7 +282,8 @@ export const requirePermission = (action: string, options: {
             }
 
             // Super admin bypasses all permission checks
-            if (req.user.role === 'super_admin') {
+            const userRole = getUserRole(req.user);
+            if (userRole === 'super_admin') {
                 req.permissionContext = {
                     action,
                     source: 'super_admin'
@@ -296,7 +313,7 @@ export const requirePermission = (action: string, options: {
                     };
 
                     result = await dynamicPermissionService.checkPermission(
-                        req.user,
+                        req.user as any,
                         action,
                         req.workspaceContext,
                         permissionContext
@@ -324,7 +341,7 @@ export const requirePermission = (action: string, options: {
                     const permissionService = PermissionService.getInstance();
                     result = await permissionService.checkPermission(
                         req.workspaceContext,
-                        req.user,
+                        req.user as any,
                         action
                     );
                     permissionSource = 'legacy_fallback';
@@ -334,7 +351,7 @@ export const requirePermission = (action: string, options: {
                 const permissionService = PermissionService.getInstance();
                 result = await permissionService.checkPermission(
                     req.workspaceContext,
-                    req.user,
+                    req.user as any,
                     action
                 );
             }
@@ -353,8 +370,8 @@ export const requirePermission = (action: string, options: {
                     requiredRoles: result.requiredRoles,
                     requiredFeatures: result.requiredFeatures,
                     upgradeRequired: result.upgradeRequired || false,
-                    userRole: req.user.role,
-                    workplaceRole: req.user.workplaceRole,
+                    userRole: getUserRole(req.user),
+                    workplaceRole: getUserWorkplaceRole(req.user),
                     source: permissionSource
                 };
 
@@ -398,7 +415,8 @@ export const requireRole = (...roles: string[]) => {
             }
 
             // Super admin bypasses role checks
-            if (req.user.role === 'super_admin') {
+            const userRole = getUserRole(req.user);
+            if (userRole === 'super_admin') {
                 req.permissionContext = {
                     action: `role:${roles.join('|')}`,
                     source: 'super_admin'
@@ -411,20 +429,21 @@ export const requireRole = (...roles: string[]) => {
             let roleSource = 'static';
 
             // Check static role first (backward compatibility)
-            if (req.user.role && roles.includes(req.user.role)) {
+            if (userRole && roles.includes(userRole)) {
                 hasRole = true;
-                matchedRole = req.user.role;
+                matchedRole = userRole;
                 roleSource = 'static';
             }
 
             // Check dynamic role assignments if static check fails
-            if (!hasRole && req.user.assignedRoles && req.user.assignedRoles.length > 0) {
+            const userAssignedRoles = getUserAssignedRoles(req.user);
+            if (!hasRole && userAssignedRoles && userAssignedRoles.length > 0) {
                 try {
                     const dynamicPermissionService = DynamicPermissionService.getInstance();
 
                     // Get user's effective roles including inherited ones
                     const userPermissions = await dynamicPermissionService.resolveUserPermissions(
-                        req.user,
+                        req.user as any,
                         req.workspaceContext || {} as any
                     );
 
@@ -459,8 +478,8 @@ export const requireRole = (...roles: string[]) => {
                     success: false,
                     message: 'Insufficient role permissions',
                     requiredRoles: roles,
-                    userRole: req.user.role,
-                    userAssignedRoles: req.user.assignedRoles || [],
+                    userRole: getUserRole(req.user),
+                    userAssignedRoles: getUserAssignedRoles(req.user) || [],
                     source: roleSource
                 });
                 return;
@@ -499,7 +518,8 @@ export const requireWorkplaceRole = (...roles: string[]) => {
             }
 
             // Super admin bypasses role checks
-            if (req.user.role === 'super_admin') {
+            const userRole = getUserRole(req.user);
+            if (userRole === 'super_admin') {
                 req.permissionContext = {
                     action: `workplace_role:${roles.join('|')}`,
                     source: 'super_admin'
@@ -512,9 +532,10 @@ export const requireWorkplaceRole = (...roles: string[]) => {
             let roleSource = 'static';
 
             // Check static workplace role first (backward compatibility)
-            if (req.user.workplaceRole && roles.includes(req.user.workplaceRole)) {
+            const userWorkplaceRole = getUserWorkplaceRole(req.user);
+            if (userWorkplaceRole && roles.includes(userWorkplaceRole)) {
                 hasWorkplaceRole = true;
-                matchedRole = req.user.workplaceRole;
+                matchedRole = userWorkplaceRole;
                 roleSource = 'static';
             }
 
@@ -525,7 +546,7 @@ export const requireWorkplaceRole = (...roles: string[]) => {
 
                     // Get user's effective permissions to check for workplace role permissions
                     const userPermissions = await dynamicPermissionService.resolveUserPermissions(
-                        req.user,
+                        req.user as any,
                         req.workspaceContext
                     );
 
@@ -583,7 +604,7 @@ export const requireWorkplaceRole = (...roles: string[]) => {
                     success: false,
                     message: 'Insufficient workplace role permissions',
                     requiredWorkplaceRoles: roles,
-                    userWorkplaceRole: req.user.workplaceRole,
+                    userWorkplaceRole: getUserWorkplaceRole(req.user),
                     workspaceId: req.workspaceContext?.workspace?._id,
                     source: roleSource
                 });
@@ -629,7 +650,8 @@ export const requireFeature = (...features: string[]) => {
         }
 
         // Super admin bypasses feature checks
-        if (req.user.role === 'super_admin') {
+        const userRole = getUserRole(req.user);
+        if (userRole === 'super_admin') {
             return next();
         }
 
@@ -675,7 +697,8 @@ export const requirePlanTier = (...tiers: string[]) => {
         }
 
         // Super admin bypasses tier checks
-        if (req.user.role === 'super_admin') {
+        const userRole = getUserRole(req.user);
+        if (userRole === 'super_admin') {
             return next();
         }
 
@@ -720,7 +743,8 @@ export const requireWorkspaceOwner = (
     }
 
     // Super admin bypasses ownership checks
-    if (req.user.role === 'super_admin') {
+    const userRole = getUserRole(req.user);
+    if (userRole === 'super_admin') {
         return next();
     }
 
@@ -752,11 +776,12 @@ export const requireSuperAdmin = (
         return;
     }
 
-    if (req.user.role !== 'super_admin') {
+    const userRole = getUserRole(req.user);
+    if (userRole !== 'super_admin') {
         res.status(403).json({
             success: false,
             message: 'Super administrator access required',
-            userRole: req.user.role,
+            userRole: userRole,
         });
         return;
     }
@@ -792,7 +817,8 @@ export const requireAllPermissions = (...actions: string[]) => {
             }
 
             // Super admin bypasses all permission checks
-            if (req.user.role === 'super_admin') {
+            const userRole = getUserRole(req.user);
+            if (userRole === 'super_admin') {
                 req.permissionContext = {
                     action: `all:${actions.join('|')}`,
                     source: 'super_admin'
@@ -816,7 +842,7 @@ export const requireAllPermissions = (...actions: string[]) => {
 
                     for (const action of actions) {
                         const result: DynamicPermissionResult = await dynamicPermissionService.checkPermission(
-                            req.user,
+                            req.user as any,
                             action,
                             req.workspaceContext,
                             permissionContext
@@ -841,7 +867,7 @@ export const requireAllPermissions = (...actions: string[]) => {
                 for (const action of actions) {
                     const result: PermissionResult = await permissionService.checkPermission(
                         req.workspaceContext,
-                        req.user,
+                        req.user as any,
                         action
                     );
 
@@ -917,7 +943,8 @@ export const requireAnyPermission = (...actions: string[]) => {
             }
 
             // Super admin bypasses all permission checks
-            if (req.user.role === 'super_admin') {
+            const userRole = getUserRole(req.user);
+            if (userRole === 'super_admin') {
                 req.permissionContext = {
                     action: `any:${actions.join('|')}`,
                     source: 'super_admin'
@@ -942,7 +969,7 @@ export const requireAnyPermission = (...actions: string[]) => {
 
                     for (const action of actions) {
                         const result: DynamicPermissionResult = await dynamicPermissionService.checkPermission(
-                            req.user,
+                            req.user as any,
                             action,
                             req.workspaceContext,
                             permissionContext
@@ -968,7 +995,7 @@ export const requireAnyPermission = (...actions: string[]) => {
                 for (const action of actions) {
                     const result: PermissionResult = await permissionService.checkPermission(
                         req.workspaceContext,
-                        req.user,
+                        req.user as any,
                         action
                     );
 
@@ -1040,7 +1067,8 @@ export const requireActiveSubscription = (
     }
 
     // Super admin bypasses subscription checks
-    if (req.user.role === 'super_admin') {
+    const userRole = getUserRole(req.user);
+    if (userRole === 'super_admin') {
         return next();
     }
 
@@ -1082,7 +1110,8 @@ export const requireSubscriptionOrTrial = (
     }
 
     // Super admin bypasses subscription checks
-    if (req.user.role === 'super_admin') {
+    const userRole = getUserRole(req.user);
+    if (userRole === 'super_admin') {
         return next();
     }
 
@@ -1134,7 +1163,8 @@ export const validateSessionPermissions = (options: {
             }
 
             // Super admin bypasses session validation
-            if (req.user.role === 'super_admin') {
+            const userRole = getUserRole(req.user);
+            if (userRole === 'super_admin') {
                 return next();
             }
 
@@ -1167,7 +1197,7 @@ export const validateSessionPermissions = (options: {
 
                         // Get fresh permissions from database
                         const freshPermissions = await dynamicPermissionService.resolveUserPermissions(
-                            req.user,
+                            req.user as any,
                             req.workspaceContext
                         );
 
@@ -1220,7 +1250,7 @@ export const validateSessionPermissions = (options: {
                         }
 
                         // Update cached permissions and last check time
-                        await req.user.updateOne({
+                        await (req.user as any).updateOne({
                             $set: {
                                 'cachedPermissions.permissions': freshPermissions.permissions,
                                 'cachedPermissions.lastUpdated': currentTime,
@@ -1233,7 +1263,7 @@ export const validateSessionPermissions = (options: {
             } else {
                 // First permission check for this session
                 req.user.lastPermissionCheck = currentTime;
-                await req.user.save();
+                await (req.user as any).save();
             }
 
             next();
@@ -1302,22 +1332,22 @@ async function handlePermissionChangeResponse(req: AuthRequest, body: any) {
             if (isPermissionChange && req.user) {
                 // Invalidate user's permission cache
                 const dynamicPermissionService = DynamicPermissionService.getInstance();
-                await dynamicPermissionService.invalidateUserCache(req.user._id);
+                await dynamicPermissionService.invalidateUserCache((req.user as any)._id);
 
                 // Send real-time notification to affected users
                 // This would integrate with your WebSocket/Socket.IO implementation
                 logger.info('Permission change detected, cache invalidated', {
-                    userId: req.user._id,
+                    userId: (req.user as any)._id,
                     action: req.method,
                     url: req.originalUrl,
                     timestamp: new Date()
                 });
 
                 // TODO: Implement WebSocket notification
-                // socketService.notifyPermissionChange(req.user._id, {
+                // socketService.notifyPermissionChange((req.user as any)._id, {
                 //     type: 'permission_change',
                 //     timestamp: new Date(),
-                //     affectedUser: req.user._id
+                //     affectedUser: (req.user as any)._id
                 // });
             }
         }
@@ -1356,7 +1386,7 @@ export const gracefulPermissionHandling = () => {
                     if (isCriticalAction) {
                         const dynamicPermissionService = DynamicPermissionService.getInstance();
                         const revalidationResult = await dynamicPermissionService.checkPermission(
-                            req.user,
+                            req.user as any,
                             initialPermissionContext.action,
                             req.workspaceContext
                         );

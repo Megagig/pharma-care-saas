@@ -3,33 +3,94 @@ import mongoose from "mongoose";
 import User from "../models/User";
 import Conversation from "../models/Conversation";
 import Message from "../models/Message";
-
-interface IUser {
-  _id: mongoose.Types.ObjectId;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  avatar?: string;
-}
-
-interface AuthenticatedRequest extends Request {
-  user?: IUser;
-  workplaceId?: mongoose.Types.ObjectId;
-}
+import { AuthRequest } from '../types/auth';
 
 /**
  * Get user suggestions for mentions with role-based filtering
  */
 export const getUserSuggestions = async (
-  req: AuthenticatedRequest,
+  req: AuthRequest,
   res: Response,
 ): Promise<void> => {
   try {
     const { conversationId } = req.params;
     const { query, limit = 10 } = req.query;
     const currentUserId = req.user?._id;
-    const workplaceId = req.workplaceId;
+    const workplaceId = req.user?.workplaceId;
+
+    if (!workplaceId) {
+      res.status(400).json({
+        success: false,
+        message: "Workplace context required",
+      });
+      return;
+    }
+
+    // Verify user has access to the conversation
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      workplaceId,
+      "participants.userId": currentUserId,
+    });
+
+    if (!conversation) {
+      res.status(404).json({
+        success: false,
+        message: "Conversation not found or access denied",
+      });
+      return;
+    }
+
+    // Get user suggestions based on query
+    let userQuery: any = {
+      workplaceId,
+      _id: { $ne: currentUserId }, // Exclude current user
+    };
+
+    if (query) {
+      userQuery.$or = [
+        { firstName: { $regex: query, $options: 'i' } },
+        { lastName: { $regex: query, $options: 'i' } },
+        { email: { $regex: query, $options: 'i' } },
+      ];
+    }
+
+    const users = await User.find(userQuery)
+      .select('firstName lastName email role avatar')
+      .limit(Number(limit))
+      .sort({ firstName: 1, lastName: 1 });
+
+    res.json({
+      success: true,
+      users: users.map(user => ({
+        id: user._id,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        role: user.role,
+        avatar: (user as any).avatar,
+      })),
+    });
+  } catch (error) {
+    console.error('Error getting user suggestions:', error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get user suggestions",
+    });
+  }
+};
+
+/**
+ * Search messages by mentions
+ */
+export const searchMessagesByMentions = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { conversationId } = req.params;
+    const { userId, limit = 50, page = 1 } = req.query;
+    const currentUserId = req.user?._id;
+    const workplaceId = req.user?.workplaceId;
 
     if (!workplaceId) {
       res.status(400).json({
@@ -62,8 +123,9 @@ export const getUserSuggestions = async (
     };
 
     // Add text search if query provided
-    if (query && typeof query === "string") {
-      const searchRegex = new RegExp(query, "i");
+    const searchQueryParam = req.query.query as string;
+    if (searchQueryParam && typeof searchQueryParam === "string") {
+      const searchRegex = new RegExp(searchQueryParam, "i");
       searchQuery.$or = [
         { firstName: searchRegex },
         { lastName: searchRegex },
@@ -120,17 +182,17 @@ export const getUserSuggestions = async (
 };
 
 /**
- * Search messages by mentions
+ * Search messages by mentions - V2
  */
-export const searchMessagesByMentions = async (
-  req: AuthenticatedRequest,
+export const searchMessagesByMentionsV2 = async (
+  req: AuthRequest,
   res: Response,
 ): Promise<void> => {
   try {
     const { conversationId } = req.params;
     const { userId, limit = 50, page = 1 } = req.query;
     const currentUserId = req.user?._id;
-    const workplaceId = req.workplaceId;
+    const workplaceId = req.user?.workplaceId;
 
     if (!workplaceId) {
       res.status(400).json({
@@ -240,13 +302,13 @@ export const searchMessagesByMentions = async (
  * Get mention statistics for a conversation
  */
 export const getMentionStats = async (
-  req: AuthenticatedRequest,
+  req: AuthRequest,
   res: Response,
 ): Promise<void> => {
   try {
     const { conversationId } = req.params;
     const currentUserId = req.user?._id;
-    const workplaceId = req.workplaceId;
+    const workplaceId = req.user?.workplaceId;
 
     if (!workplaceId) {
       res.status(400).json({
@@ -372,13 +434,13 @@ export const getMentionStats = async (
  * Get users mentioned in a conversation
  */
 export const getMentionedUsers = async (
-  req: AuthenticatedRequest,
+  req: AuthRequest,
   res: Response,
 ): Promise<void> => {
   try {
     const { conversationId } = req.params;
     const currentUserId = req.user?._id;
-    const workplaceId = req.workplaceId;
+    const workplaceId = req.user?.workplaceId;
 
     if (!workplaceId) {
       res.status(400).json({

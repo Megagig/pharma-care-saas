@@ -1,14 +1,10 @@
 import 'express';
+import { BaseUser, ExtendedUser } from './auth';
 
 declare global {
     namespace Express {
         interface Request {
-            user?: {
-                id?: string;
-                _id?: string;
-                workplaceId?: string;
-                // Add other user properties as needed
-            };
+            user?: BaseUser | ExtendedUser;
             sessionId?: string;
         }
     }

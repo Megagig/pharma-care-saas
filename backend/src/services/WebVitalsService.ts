@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { PerformanceCacheService } from './PerformanceCacheService';
+import PerformanceCacheService from './PerformanceCacheService';
 import { performanceAlertService, PerformanceAlert } from './PerformanceAlertService';
 import { performanceBudgetService } from './PerformanceBudgetService';
 
@@ -87,7 +87,7 @@ export class WebVitalsService {
   private performanceBudgets: PerformanceBudgets;
 
   constructor() {
-    this.cacheService = new PerformanceCacheService();
+    this.cacheService = PerformanceCacheService.getInstance();
     this.performanceBudgets = {
       FCP: { good: 1800, poor: 3000 },
       LCP: { good: 2500, poor: 4000 },
@@ -116,7 +116,7 @@ export class WebVitalsService {
 
       // Check performance budgets and trigger alerts if needed
       await this.checkPerformanceBudgets(enhancedEntry);
-      
+
       // Check against configured performance budgets
       await performanceBudgetService.checkWebVitalsBudgets(
         { [enhancedEntry.name]: enhancedEntry.value },
@@ -144,7 +144,7 @@ export class WebVitalsService {
     } = {}
   ): Promise<WebVitalsSummary> {
     const cacheKey = `web-vitals-summary:${period}:${JSON.stringify(filters)}`;
-    
+
     // Try to get from cache first
     const cached = await this.cacheService.get<WebVitalsSummary>(cacheKey);
     if (cached) {
@@ -160,7 +160,7 @@ export class WebVitalsService {
 
       // Get current period data
       const currentData = await WebVitalsModel.find(query).lean();
-      
+
       // Get previous period data for trend analysis
       const previousStartTime = this.getPreviousPeriodStartTime(period, startTime);
       const previousQuery = {
@@ -171,7 +171,7 @@ export class WebVitalsService {
 
       // Calculate metrics for current period
       const metrics = this.calculateMetrics(currentData);
-      
+
       // Calculate trends
       const previousMetrics = this.calculateMetrics(previousData);
       const trends = this.calculateTrends(metrics, previousMetrics);
@@ -205,7 +205,7 @@ export class WebVitalsService {
     filters: any = {}
   ): Promise<Array<{ timestamp: Date; value: number; count: number }>> {
     const cacheKey = `web-vitals-timeseries:${metric}:${period}:${interval}:${JSON.stringify(filters)}`;
-    
+
     const cached = await this.cacheService.get<Array<{ timestamp: Date; value: number; count: number }>>(cacheKey);
     if (cached) {
       return cached;
@@ -238,7 +238,7 @@ export class WebVitalsService {
           }
         },
         {
-          $sort: { _id: 1 }
+          $sort: { _id: 1 as const }
         },
         {
           $project: {
@@ -251,10 +251,10 @@ export class WebVitalsService {
       ];
 
       const result = await WebVitalsModel.aggregate(pipeline);
-      
+
       // Cache for 2 minutes
       await this.cacheService.set(cacheKey, result, 120);
-      
+
       return result;
     } catch (error) {
       console.error('Error getting Web Vitals time series:', error);
@@ -285,17 +285,17 @@ export class WebVitalsService {
       }).lean();
 
       const previousHourMetrics = this.calculateMetrics(previousHourData);
-      
+
       const regressions = [];
       const currentValue = currentHour.metrics[metric]?.p95 || 0;
       const previousValue = previousHourMetrics[metric]?.p95 || 0;
 
       if (previousValue > 0) {
         const change = (currentValue - previousValue) / previousValue;
-        
+
         if (change > threshold) {
           const severity = change > 0.5 ? 'high' : change > 0.3 ? 'medium' : 'low';
-          
+
           regressions.push({
             metric,
             currentValue,
@@ -316,7 +316,7 @@ export class WebVitalsService {
 
   private calculateMetrics(data: any[]): { [key: string]: any } {
     const metrics: { [key: string]: any } = {};
-    
+
     // Group by metric name
     const groupedData = data.reduce((acc, entry) => {
       if (!acc[entry.name]) {
@@ -372,7 +372,7 @@ export class WebVitalsService {
 
     Object.entries(this.performanceBudgets).forEach(([metric, budgets]) => {
       const p75Value = metrics[metric]?.p75 || 0;
-      
+
       if (p75Value <= budgets.good) {
         status[metric] = 'good';
       } else if (p75Value <= budgets.poor) {
@@ -468,7 +468,7 @@ export class WebVitalsService {
     if (exceeded) {
       // Trigger alert (implement your alerting logic here)
       console.warn(`Performance budget exceeded: ${entry.name} = ${entry.value} (${severity} severity)`);
-      
+
       // You could send to alerting service, Slack, email, etc.
       await this.sendPerformanceAlert({
         type: 'performance_budget_exceeded',
@@ -500,4 +500,29 @@ export class WebVitalsService {
 
     await performanceAlertService.sendAlert(alert);
   }
+
+  // Static methods for ContinuousMonitoringService
+  static async getRecentMetrics(timeRangeMs: number): Promise<any[]> {
+    const service = new WebVitalsService();
+    const startTime = new Date(Date.now() - timeRangeMs);
+
+    const data = await WebVitalsModel.find({
+      timestamp: { $gte: startTime }
+    }).lean();
+
+    return data;
+  }
+
+  static async getMetricsInRange(startDate: Date, endDate: Date): Promise<any[]> {
+    const service = new WebVitalsService();
+
+    const data = await WebVitalsModel.find({
+      timestamp: { $gte: startDate, $lte: endDate }
+    }).lean();
+
+    return data;
+  }
 }
+
+// Export singleton instance
+export const webVitalsService = new WebVitalsService();

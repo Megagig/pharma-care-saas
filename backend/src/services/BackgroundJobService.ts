@@ -2,7 +2,7 @@
 import Bull, { Queue, Job, JobOptions } from 'bull';
 import { performance } from 'perf_hooks';
 import logger from '../utils/logger';
-import { sendTemplatedEmail as sendEmail } from '../utils/emailHelpers';
+import { sendTemplatedEmail } from '../utils/emailHelpers';
 import { generatePDFReport, generateExcelReport, generateCSVReport } from '../utils/exportHelpers';
 import * as path from 'path';
 
@@ -514,7 +514,7 @@ export class BackgroundJobService {
 
     private async sendExportNotification(email: string, fileName: string, filePath: string, format: string): Promise<void> {
         try {
-            await sendEmail({
+            await sendTemplatedEmail({
                 to: email,
                 subject: `Report Export Ready: ${fileName}`,
                 template: 'export-ready',
@@ -531,7 +531,7 @@ export class BackgroundJobService {
 
     private async sendExportFailureNotification(email: string, fileName: string, error: string): Promise<void> {
         try {
-            await sendEmail({
+            await sendTemplatedEmail({
                 to: email,
                 subject: `Report Export Failed: ${fileName}`,
                 template: 'export-failed',
@@ -557,7 +557,7 @@ export class BackgroundJobService {
             }));
 
             for (const recipient of recipients) {
-                await sendEmail({
+                await sendTemplatedEmail({
                     to: recipient,
                     subject: `Scheduled Report: ${reportType}`,
                     template: 'scheduled-report',
@@ -581,7 +581,7 @@ export class BackgroundJobService {
     ): Promise<void> {
         try {
             for (const recipient of recipients) {
-                await sendEmail({
+                await sendTemplatedEmail({
                     to: recipient,
                     subject: `Scheduled Report Failed: ${reportType}`,
                     template: 'scheduled-report-failed',

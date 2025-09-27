@@ -38,12 +38,12 @@ const router = express.Router();
  */
 router.post(
   '/:id/visits',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('create'),
-  validateRequest(visitParamsSchema.pick({ id: true }), 'params'),
-  validateRequest(createVisitSchema, 'body'),
-  createVisit
+  auth as any,
+  checkPharmacyAccess as any,
+  requirePatientPermission('create') as any,
+  validateRequest(visitParamsSchema.pick({ id: true }), 'params') as any,
+  validateRequest(createVisitSchema, 'body') as any,
+  createVisit as any
 );
 
 /**
@@ -53,12 +53,12 @@ router.post(
  */
 router.get(
   '/:id/visits',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('read'),
-  validateRequest(visitParamsSchema.pick({ id: true }), 'params'),
-  validateRequest(paginationSchema, 'query'),
-  getVisits
+  auth as any,
+  checkPharmacyAccess as any,
+  requirePatientPermission('read') as any,
+  validateRequest(visitParamsSchema.pick({ id: true }), 'params') as any,
+  validateRequest(paginationSchema, 'query') as any,
+  getVisits as any
 );
 
 // ===============================
@@ -71,11 +71,11 @@ router.get(
  */
 router.get(
   '/visits/:visitId',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('read'),
-  validateRequest(visitParamsSchema.pick({ visitId: true }), 'params'),
-  getVisit
+  auth as any,
+  checkPharmacyAccess as any,
+  requirePatientPermission('read') as any,
+  validateRequest(visitParamsSchema.pick({ visitId: true }), 'params') as any,
+  getVisit as any
 );
 
 /**
@@ -84,12 +84,12 @@ router.get(
  */
 router.patch(
   '/visits/:visitId',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('update'),
-  validateRequest(visitParamsSchema.pick({ visitId: true }), 'params'),
-  validateRequest(updateVisitSchema, 'body'),
-  updateVisit
+  auth as any,
+  checkPharmacyAccess as any,
+  requirePatientPermission('update') as any,
+  validateRequest(visitParamsSchema.pick({ visitId: true }), 'params') as any,
+  validateRequest(updateVisitSchema, 'body') as any,
+  updateVisit as any
 );
 
 /**
@@ -98,12 +98,12 @@ router.patch(
  */
 router.post(
   '/visits/:visitId/attachments',
-  auth,
-  checkPharmacyAccess,
-  requirePatientPermission('create'),
-  validateRequest(visitParamsSchema.pick({ visitId: true }), 'params'),
-  validateRequest(attachmentSchema, 'body'),
-  addVisitAttachment
+  auth as any,
+  checkPharmacyAccess as any,
+  requirePatientPermission('create') as any,
+  validateRequest(visitParamsSchema.pick({ visitId: true }), 'params') as any,
+  validateRequest(attachmentSchema, 'body') as any,
+  addVisitAttachment as any
 );
 
 export default router;
