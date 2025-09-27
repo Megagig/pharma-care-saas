@@ -138,6 +138,19 @@ if (process.env.NODE_ENV === 'development') {
 import { latencyMeasurementMiddleware } from './middlewares/latencyMeasurement';
 app.use('/api/', latencyMeasurementMiddleware);
 
+// Compression middleware for API responses
+import { 
+  intelligentCompressionMiddleware, 
+  responseSizeMonitoringMiddleware,
+  adaptiveCompressionMiddleware 
+} from './middlewares/compressionMiddleware';
+app.use('/api/', adaptiveCompressionMiddleware());
+app.use('/api/', intelligentCompressionMiddleware({
+  threshold: 1024, // 1KB minimum
+  level: 6, // Balanced compression
+}));
+app.use('/api/', responseSizeMonitoringMiddleware());
+
 // Health check routes
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({

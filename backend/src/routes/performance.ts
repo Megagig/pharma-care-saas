@@ -102,4 +102,81 @@ router.post('/database/profiling/disable', performanceController.disableDatabase
  */
 router.post('/database/indexes/optimize', performanceController.optimizeDatabaseIndexes.bind(performanceController));
 
+/**
+ * @route POST /api/admin/performance/cache/invalidate
+ * @desc Invalidate cache by tags
+ * @access Admin
+ */
+router.post('/cache/invalidate', performanceController.invalidateCacheByTags.bind(performanceController));
+
+/**
+ * @route GET /api/admin/performance/cache/stats
+ * @desc Get performance cache statistics
+ * @access Admin
+ */
+router.get('/cache/stats', performanceController.getPerformanceCacheStats.bind(performanceController));
+
+/**
+ * @route POST /api/admin/performance/cache/warm-performance
+ * @desc Warm performance cache for common operations
+ * @access Admin
+ */
+router.post('/cache/warm-performance', performanceController.warmPerformanceCache.bind(performanceController));
+
+/**
+ * @route POST /api/admin/performance/database/indexes/create-optimized
+ * @desc Create optimized database indexes for all collections
+ * @access Admin
+ */
+router.post('/database/indexes/create-optimized', performanceController.createOptimizedIndexes.bind(performanceController));
+
+/**
+ * @route GET /api/admin/performance/database/indexes/analyze
+ * @desc Analyze existing database indexes
+ * @access Admin
+ */
+router.get('/database/indexes/analyze', performanceController.analyzeExistingIndexes.bind(performanceController));
+
+/**
+ * @route POST /api/admin/performance/database/indexes/cleanup
+ * @desc Clean up unused database indexes
+ * @access Admin
+ */
+router.post('/database/indexes/cleanup', performanceController.cleanupUnusedIndexes.bind(performanceController));
+
+/**
+ * @route POST /api/admin/performance/jobs/ai-analysis
+ * @desc Queue AI analysis background job
+ * @access Admin
+ */
+router.post('/jobs/ai-analysis', performanceController.queueAIAnalysisJob.bind(performanceController));
+
+/**
+ * @route POST /api/admin/performance/jobs/data-export
+ * @desc Queue data export background job
+ * @access Admin
+ */
+router.post('/jobs/data-export', performanceController.queueDataExportJob.bind(performanceController));
+
+/**
+ * @route POST /api/admin/performance/jobs/cache-warmup
+ * @desc Queue cache warmup background job
+ * @access Admin
+ */
+router.post('/jobs/cache-warmup', performanceController.queueCacheWarmupJob.bind(performanceController));
+
+/**
+ * @route POST /api/admin/performance/jobs/database-maintenance
+ * @desc Queue database maintenance background job
+ * @access Admin
+ */
+router.post('/jobs/database-maintenance', performanceController.queueDatabaseMaintenanceJob.bind(performanceController));
+
+/**
+ * @route GET /api/admin/performance/jobs/statistics
+ * @desc Get background job statistics
+ * @access Admin
+ */
+router.get('/jobs/statistics', performanceController.getJobStatistics.bind(performanceController));
+
 export default router;

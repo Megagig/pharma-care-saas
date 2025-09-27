@@ -2,6 +2,7 @@ import express from 'express';
 import { adminDashboardController } from '../controllers/adminDashboardController';
 import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import { requireRole } from '../middlewares/rbac';
+import { dashboardCacheMiddleware } from '../middlewares/cacheMiddleware';
 
 const router = express.Router();
 
@@ -14,14 +15,14 @@ router.use(requireRole('super_admin'));
  * @desc Get admin dashboard overview
  * @access Private (Super Admin only)
  */
-router.get('/overview', adminDashboardController.getDashboardOverview.bind(adminDashboardController));
+router.get('/overview', dashboardCacheMiddleware, adminDashboardController.getDashboardOverview.bind(adminDashboardController));
 
 /**
  * @route GET /api/admin/dashboard/workspaces
  * @desc Get workspace management data
  * @access Private (Super Admin only)
  */
-router.get('/workspaces', adminDashboardController.getWorkspaceManagement.bind(adminDashboardController));
+router.get('/workspaces', dashboardCacheMiddleware, adminDashboardController.getWorkspaceManagement.bind(adminDashboardController));
 
 /**
  * @route PUT /api/admin/dashboard/workspaces/:workspaceId/subscription
@@ -49,6 +50,6 @@ router.delete('/invitations/:invitationId', adminDashboardController.cancelInvit
  * @desc Get system health and statistics
  * @access Private (Super Admin only)
  */
-router.get('/system-health', adminDashboardController.getSystemHealth.bind(adminDashboardController));
+router.get('/system-health', dashboardCacheMiddleware, adminDashboardController.getSystemHealth.bind(adminDashboardController));
 
 export default router;
