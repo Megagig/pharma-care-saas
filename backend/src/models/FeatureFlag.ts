@@ -1,104 +1,69 @@
+/**
+ * Feature Flag Model
+ * 
+ * Stores feature flag overrides for users and workspaces
+ */
+
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IFeatureFlag extends Document {
-  name: string;
-  key: string;
-  description: string;
-  isActive: boolean;
-  allowedTiers: string[];
-  allowedRoles: string[];
-  customRules?: {
-    maxUsers?: number;
-    requiredLicense?: boolean;
-    customLogic?: string;
-  };
-  metadata: {
-    category: string;
-    priority: 'low' | 'medium' | 'high' | 'critical';
-    tags: string[];
-  };
-  createdBy: mongoose.Types.ObjectId;
-  updatedBy: mongoose.Types.ObjectId;
+  featureName: string;
+  userId?: string;
+  workspaceId?: string;
+  enabled: boolean;
+  reason?: string;
+  expiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const featureFlagSchema = new Schema({
-  name: {
+const FeatureFlagSchema = new Schema<IFeatureFlag>({
+  featureName: {
     type: String,
     required: true,
-    trim: true
+    index: true,
   },
-  key: {
+  userId: {
     type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true,
-    match: /^[a-z_]+$/,
-    index: true
+    sparse: true,
+    index: true,
   },
-  description: {
+  workspaceId: {
     type: String,
-    required: true
+    sparse: true,
+    index: true,
   },
-  isActive: {
+  enabled: {
     type: Boolean,
-    default: true,
-    index: true
+    required: true,
   },
-  allowedTiers: [{
+  reason: {
     type: String,
-    enum: ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'],
-    index: true
-  }],
-  allowedRoles: [{
-    type: String,
-    enum: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'super_admin', 'owner'],
-    index: true
-  }],
-  customRules: {
-    maxUsers: {
-      type: Number,
-      min: 1
-    },
-    requiredLicense: {
-      type: Boolean,
-      default: false
-    },
-    customLogic: {
-      type: String // For future JavaScript evaluation
-    }
+    maxlength: 500,
   },
-  metadata: {
-    category: {
-      type: String,
-      required: true,
-      enum: ['core', 'analytics', 'collaboration', 'integration', 'reporting', 'compliance', 'administration'],
-      index: true
-    },
-    priority: {
-      type: String,
-      enum: ['low', 'medium', 'high', 'critical'],
-      default: 'medium'
-    },
-    tags: [String]
+  expiresAt: {
+    type: Date,
+    index: { expireAfterSeconds: 0 }, // TTL index
   },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    index: true,
   },
-  updatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  }
-}, { timestamps: true });
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
 // Compound indexes for efficient queries
-featureFlagSchema.index({ isActive: 1, allowedTiers: 1 });
-featureFlagSchema.index({ isActive: 1, allowedRoles: 1 });
-featureFlagSchema.index({ 'metadata.category': 1, isActive: 1 });
+FeatureFlagSchema.index({ featureName: 1, userId: 1 }, { unique: true, sparse: true });
+FeatureFlagSchema.index({ featureName: 1, workspaceId: 1 }, { unique: true, sparse: true });
 
-export default mongoose.model<IFeatureFlag>('FeatureFlag', featureFlagSchema);
+// Update the updatedAt field on save
+FeatureFlagSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
+
+export const FeatureFlag = mongoose.model<IFeatureFlag>('FeatureFlag', FeatureFlagSchema);
