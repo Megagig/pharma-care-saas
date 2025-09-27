@@ -23,6 +23,7 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import { NotificationProvider } from './components/common/NotificationSystem';
 import CustomThemeProvider from './components/providers/ThemeProvider';
+import ServiceWorkerUpdateNotification from './components/ServiceWorkerUpdateNotification';
 
 // Import theme styles
 import './styles/theme.css';
@@ -68,6 +69,9 @@ import {
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
 import { useRoutePrefetching, useBackgroundSync, useCacheWarming } from './hooks/useRoutePrefetching';
+import { modulePreloader } from './utils/modulePreloader';
+import { compressionUtils } from './utils/compressionUtils';
+import { registerSW } from './utils/serviceWorkerRegistration';
 import {
   DashboardSkeleton,
   PatientListSkeleton,
@@ -100,6 +104,18 @@ function App(): JSX.Element {
     
     // Initialize query devtools in development
     initializeQueryDevtools(queryClient);
+    
+    // Initialize module preloader and compression utils
+    modulePreloader.initialize();
+    compressionUtils.preloadCriticalAssets().catch(console.error);
+    
+    // Register service worker for caching
+    registerSW({
+      onSuccess: () => console.log('Service worker registered successfully'),
+      onUpdate: () => console.log('Service worker update available'),
+      onOfflineReady: () => console.log('App ready to work offline'),
+      onNeedRefresh: () => console.log('App needs refresh for updates'),
+    });
     
     // Prefetch likely routes on app load
     queryPrefetcher.prefetchLikelyRoutes().catch(console.error);
@@ -168,6 +184,9 @@ function App(): JSX.Element {
                             position="bottom-right"
                           />
                         )}
+                        
+                        {/* Service Worker Update Notifications */}
+                        <ServiceWorkerUpdateNotification />
                         
                         <Routes>
                           {/* Public Routes */}
