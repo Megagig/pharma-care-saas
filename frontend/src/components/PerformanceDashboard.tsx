@@ -3,9 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import PerformanceOverview from './PerformanceOverview';
 import WebVitalsDashboard from './WebVitalsDashboard';
+import LighthouseDashboard from './LighthouseDashboard';
+import PerformanceBudgetDashboard from './PerformanceBudgetDashboard';
 import BundleSizeMonitor from './BundleSizeMonitor';
-import { Activity, Database, Globe, Package, Server, TrendingUp } from 'lucide-react';
+import { Activity, Database, Server, TrendingUp } from 'lucide-react';
 
 interface LatencyStats {
   count: number;
@@ -155,12 +158,15 @@ const PerformanceDashboard: React.FC = () => {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="web-vitals">Web Vitals</TabsTrigger>
+          <TabsTrigger value="lighthouse">Lighthouse CI</TabsTrigger>
+          <TabsTrigger value="budgets">Performance Budgets</TabsTrigger>
           <TabsTrigger value="bundle-size">Bundle Size</TabsTrigger>
           <TabsTrigger value="api-latency">API Latency</TabsTrigger>
           <TabsTrigger value="database">Database</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          <PerformanceOverview />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* API Latency Overview */}
             <Card>
@@ -255,6 +261,14 @@ const PerformanceDashboard: React.FC = () => {
 
         <TabsContent value="web-vitals">
           <WebVitalsDashboard />
+        </TabsContent>
+
+        <TabsContent value="lighthouse">
+          <LighthouseDashboard />
+        </TabsContent>
+
+        <TabsContent value="budgets">
+          <PerformanceBudgetDashboard />
         </TabsContent>
 
         <TabsContent value="bundle-size">

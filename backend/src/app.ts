@@ -58,6 +58,9 @@ import diagnosticRoutes from './routes/diagnosticRoutes';
 import communicationRoutes from './routes/communicationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import lighthouseRoutes from './routes/lighthouseRoutes';
+import performanceBudgetRoutes from './routes/performanceBudgetRoutes';
+import performanceMonitoringRoutes from './routes/performanceMonitoringRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -231,6 +234,9 @@ app.use('/api/public/drugs', publicDrugDetailsRoutes);
 
 // Analytics routes (no authentication required for Web Vitals collection)
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/lighthouse', lighthouseRoutes);
+app.use('/api/performance-budgets', performanceBudgetRoutes);
+app.use('/api/performance-monitoring', performanceMonitoringRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);
