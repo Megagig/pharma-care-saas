@@ -6,7 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.performanceController = exports.PerformanceController = void 0;
 const DynamicPermissionService_1 = __importDefault(require("../services/DynamicPermissionService"));
 const CacheManager_1 = __importDefault(require("../services/CacheManager"));
+const PerformanceCacheService_1 = __importDefault(require("../services/PerformanceCacheService"));
 const DatabaseOptimizationService_1 = __importDefault(require("../services/DatabaseOptimizationService"));
+const PerformanceDatabaseOptimizer_1 = __importDefault(require("../services/PerformanceDatabaseOptimizer"));
+const PerformanceJobService_1 = __importDefault(require("../services/PerformanceJobService"));
 const DatabaseProfiler_1 = __importDefault(require("../services/DatabaseProfiler"));
 const latencyMeasurement_1 = require("../middlewares/latencyMeasurement");
 const logger_1 = __importDefault(require("../utils/logger"));
@@ -14,15 +17,30 @@ class PerformanceController {
     constructor() {
         this.dynamicPermissionService = DynamicPermissionService_1.default.getInstance();
         this.cacheManager = CacheManager_1.default.getInstance();
+        this.performanceCacheService = PerformanceCacheService_1.default.getInstance();
         this.dbOptimizationService = DatabaseOptimizationService_1.default.getInstance();
+        this.performanceDatabaseOptimizer = PerformanceDatabaseOptimizer_1.default.getInstance();
+        this.performanceJobService = PerformanceJobService_1.default.getInstance();
     }
     async getCacheMetrics(req, res) {
         try {
-            const metrics = await this.cacheManager.getMetrics();
+            const [rbacMetrics, performanceMetrics] = await Promise.all([
+                this.cacheManager.getMetrics(),
+                this.performanceCacheService.getStats()
+            ]);
             res.json({
                 success: true,
                 data: {
-                    metrics,
+                    rbacCache: rbacMetrics,
+                    performanceCache: performanceMetrics,
+                    combined: {
+                        totalHits: rbacMetrics.hits + performanceMetrics.hits,
+                        totalMisses: rbacMetrics.misses + performanceMetrics.misses,
+                        overallHitRate: ((rbacMetrics.hits + performanceMetrics.hits) /
+                            (rbacMetrics.totalOperations + performanceMetrics.hits + performanceMetrics.misses)) * 100,
+                        totalMemoryUsage: rbacMetrics.memoryUsage + performanceMetrics.memoryUsage,
+                        totalKeys: rbacMetrics.keyCount + performanceMetrics.keyCount
+                    },
                     timestamp: new Date()
                 }
             });
@@ -109,10 +127,22 @@ class PerformanceController {
     }
     async clearCache(req, res) {
         try {
-            await this.cacheManager.clearAll();
+            const { type } = req.body;
+            if (type === 'rbac') {
+                await this.cacheManager.clearAll();
+            }
+            else if (type === 'performance') {
+                await this.performanceCacheService.clearAll();
+            }
+            else {
+                await Promise.all([
+                    this.cacheManager.clearAll(),
+                    this.performanceCacheService.clearAll()
+                ]);
+            }
             res.json({
                 success: true,
-                message: 'Cache cleared successfully'
+                message: `Cache cleared successfully${type ? ` (${type})` : ' (all)'}`
             });
         }
         catch (error) {
@@ -288,6 +318,325 @@ class PerformanceController {
             res.status(500).json({
                 success: false,
                 message: 'Error optimizing database indexes',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async invalidateCacheByTags(req, res) {
+        try {
+            const { tags } = req.body;
+            if (!tags || !Array.isArray(tags)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Tags array is required'
+                });
+            }
+            const deletedCount = await this.performanceCacheService.invalidateByTags(tags);
+            res.json({
+                success: true,
+                message: `Invalidated ${deletedCount} cache entries`,
+                data: {
+                    deletedCount,
+                    tags
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error invalidating cache by tags:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error invalidating cache',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async getPerformanceCacheStats(req, res) {
+        try {
+            const stats = await this.performanceCacheService.getStats();
+            res.json({
+                success: true,
+                data: {
+                    stats,
+                    timestamp: new Date()
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error getting performance cache stats:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error retrieving performance cache statistics',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async warmPerformanceCache(req, res) {
+        try {
+            const { operations = [] } = req.body;
+            logger_1.default.info('Performance cache warming requested for operations:', operations);
+            res.json({
+                success: true,
+                message: 'Performance cache warming initiated',
+                data: {
+                    operations,
+                    timestamp: new Date()
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error warming performance cache:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error warming performance cache',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async createOptimizedIndexes(req, res) {
+        try {
+            logger_1.default.info('Creating optimized database indexes');
+            const result = await this.performanceDatabaseOptimizer.createAllOptimizedIndexes();
+            res.json({
+                success: true,
+                message: 'Database indexes optimization completed',
+                data: {
+                    totalIndexes: result.totalIndexes,
+                    successfulIndexes: result.successfulIndexes,
+                    failedIndexes: result.failedIndexes,
+                    executionTime: result.executionTime,
+                    timestamp: result.timestamp,
+                    summary: result.results.reduce((acc, r) => {
+                        if (!acc[r.collection]) {
+                            acc[r.collection] = { attempted: 0, created: 0, failed: 0 };
+                        }
+                        acc[r.collection].attempted++;
+                        if (r.created) {
+                            acc[r.collection].created++;
+                        }
+                        else {
+                            acc[r.collection].failed++;
+                        }
+                        return acc;
+                    }, {})
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error creating optimized indexes:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error creating optimized database indexes',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async analyzeExistingIndexes(req, res) {
+        try {
+            const analysis = await this.performanceDatabaseOptimizer.analyzeExistingIndexes();
+            res.json({
+                success: true,
+                data: {
+                    analysis,
+                    timestamp: new Date()
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error analyzing existing indexes:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error analyzing existing database indexes',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async cleanupUnusedIndexes(req, res) {
+        try {
+            const { dryRun = true } = req.body;
+            const result = await this.performanceDatabaseOptimizer.dropUnusedIndexes(dryRun);
+            res.json({
+                success: true,
+                message: dryRun ? 'Unused indexes analysis completed' : 'Unused indexes cleanup completed',
+                data: {
+                    droppedIndexes: result.droppedIndexes,
+                    errors: result.errors,
+                    dryRun,
+                    timestamp: new Date()
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error cleaning up unused indexes:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error cleaning up unused database indexes',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async queueAIAnalysisJob(req, res) {
+        try {
+            const { type, patientId, parameters, priority = 'medium' } = req.body;
+            if (!type || !patientId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Type and patientId are required'
+                });
+            }
+            const job = await this.performanceJobService.queueAIAnalysis({
+                type,
+                patientId,
+                workspaceId: req.user?.workplaceId?.toString() || '',
+                userId: req.user?.id?.toString() || '',
+                parameters: parameters || {},
+                priority,
+            });
+            res.json({
+                success: true,
+                message: 'AI analysis job queued successfully',
+                data: {
+                    jobId: job.id,
+                    type,
+                    priority,
+                    timestamp: new Date()
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error queuing AI analysis job:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error queuing AI analysis job',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async queueDataExportJob(req, res) {
+        try {
+            const { type, filters, format, fileName, includeAttachments = false } = req.body;
+            if (!type || !format || !fileName) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Type, format, and fileName are required'
+                });
+            }
+            const job = await this.performanceJobService.queueDataExport({
+                type,
+                workspaceId: req.user?.workplaceId?.toString() || '',
+                userId: req.user?.id?.toString() || '',
+                userEmail: req.user?.email || '',
+                filters: filters || {},
+                format,
+                fileName,
+                includeAttachments,
+            });
+            res.json({
+                success: true,
+                message: 'Data export job queued successfully',
+                data: {
+                    jobId: job.id,
+                    type,
+                    format,
+                    fileName,
+                    timestamp: new Date()
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error queuing data export job:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error queuing data export job',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async queueCacheWarmupJob(req, res) {
+        try {
+            const { type, targetUsers, priority = 'low' } = req.body;
+            if (!type) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Type is required'
+                });
+            }
+            const job = await this.performanceJobService.queueCacheWarmup({
+                type,
+                workspaceId: req.user?.workplaceId?.toString() || '',
+                targetUsers,
+                priority,
+            });
+            res.json({
+                success: true,
+                message: 'Cache warmup job queued successfully',
+                data: {
+                    jobId: job.id,
+                    type,
+                    priority,
+                    targetUsers: targetUsers?.length || 'all',
+                    timestamp: new Date()
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error queuing cache warmup job:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error queuing cache warmup job',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async queueDatabaseMaintenanceJob(req, res) {
+        try {
+            const { type, parameters = {} } = req.body;
+            if (!type) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Type is required'
+                });
+            }
+            const job = await this.performanceJobService.queueDatabaseMaintenance({
+                type,
+                workspaceId: req.user?.workplaceId?.toString(),
+                parameters,
+            });
+            res.json({
+                success: true,
+                message: 'Database maintenance job queued successfully',
+                data: {
+                    jobId: job.id,
+                    type,
+                    parameters: Object.keys(parameters),
+                    timestamp: new Date()
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error queuing database maintenance job:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error queuing database maintenance job',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async getJobStatistics(req, res) {
+        try {
+            const statistics = await this.performanceJobService.getJobStatistics();
+            res.json({
+                success: true,
+                data: {
+                    statistics,
+                    timestamp: new Date()
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error getting job statistics:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error retrieving job statistics',
                 error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }

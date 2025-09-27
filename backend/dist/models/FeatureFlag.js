@@ -33,81 +33,51 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.FeatureFlag = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const featureFlagSchema = new mongoose_1.Schema({
-    name: {
+const FeatureFlagSchema = new mongoose_1.Schema({
+    featureName: {
         type: String,
         required: true,
-        trim: true
+        index: true,
     },
-    key: {
+    userId: {
         type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true,
-        match: /^[a-z_]+$/,
-        index: true
+        sparse: true,
+        index: true,
     },
-    description: {
+    workspaceId: {
         type: String,
-        required: true
+        sparse: true,
+        index: true,
     },
-    isActive: {
+    enabled: {
         type: Boolean,
-        default: true,
-        index: true
+        required: true,
     },
-    allowedTiers: [{
-            type: String,
-            enum: ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'],
-            index: true
-        }],
-    allowedRoles: [{
-            type: String,
-            enum: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'super_admin', 'owner'],
-            index: true
-        }],
-    customRules: {
-        maxUsers: {
-            type: Number,
-            min: 1
-        },
-        requiredLicense: {
-            type: Boolean,
-            default: false
-        },
-        customLogic: {
-            type: String
-        }
+    reason: {
+        type: String,
+        maxlength: 500,
     },
-    metadata: {
-        category: {
-            type: String,
-            required: true,
-            enum: ['core', 'analytics', 'collaboration', 'integration', 'reporting', 'compliance', 'administration'],
-            index: true
-        },
-        priority: {
-            type: String,
-            enum: ['low', 'medium', 'high', 'critical'],
-            default: 'medium'
-        },
-        tags: [String]
+    expiresAt: {
+        type: Date,
+        index: { expireAfterSeconds: 0 },
     },
-    createdBy: {
-        type: mongoose_1.default.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+    createdAt: {
+        type: Date,
+        default: Date.now,
+        index: true,
     },
-    updatedBy: {
-        type: mongoose_1.default.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    }
-}, { timestamps: true });
-featureFlagSchema.index({ isActive: 1, allowedTiers: 1 });
-featureFlagSchema.index({ isActive: 1, allowedRoles: 1 });
-featureFlagSchema.index({ 'metadata.category': 1, isActive: 1 });
-exports.default = mongoose_1.default.model('FeatureFlag', featureFlagSchema);
+    updatedAt: {
+        type: Date,
+        default: Date.now,
+    },
+});
+FeatureFlagSchema.index({ featureName: 1, userId: 1 }, { unique: true, sparse: true });
+FeatureFlagSchema.index({ featureName: 1, workspaceId: 1 }, { unique: true, sparse: true });
+FeatureFlagSchema.pre('save', function (next) {
+    this.updatedAt = new Date();
+    next();
+});
+exports.FeatureFlag = mongoose_1.default.model('FeatureFlag', FeatureFlagSchema);
 //# sourceMappingURL=FeatureFlag.js.map

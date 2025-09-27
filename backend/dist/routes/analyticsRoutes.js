@@ -6,7 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const express_validator_1 = require("express-validator");
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const WebVitalsService_1 = require("../services/WebVitalsService");
 const router = express_1.default.Router();
+const webVitalsService = new WebVitalsService_1.WebVitalsService();
 const analyticsRateLimit = (0, express_rate_limit_1.default)({
     windowMs: 1 * 60 * 1000,
     max: 100,
@@ -29,7 +31,7 @@ router.post('/web-vitals', [
             return res.status(400).json({ errors: errors.array() });
         }
         const { name, value, id, timestamp, url, userAgent, connectionType } = req.body;
-        console.log('Web Vitals Data:', {
+        await webVitalsService.storeWebVitalsEntry({
             name,
             value,
             id,
@@ -38,6 +40,8 @@ router.post('/web-vitals', [
             userAgent,
             connectionType,
             ip: req.ip,
+            userId: req.user?.id,
+            workspaceId: req.user?.workspaceId,
         });
         res.status(200).json({
             success: true,
@@ -92,31 +96,88 @@ router.post('/alerts/performance', [
         });
     }
 });
-router.get('/web-vitals/summary', async (req, res) => {
+router.get('/web-vitals/summary', [
+    (0, express_validator_1.query)('period').optional().isIn(['1h', '24h', '7d', '30d']).withMessage('Invalid period'),
+    (0, express_validator_1.query)('workspaceId').optional().isString(),
+    (0, express_validator_1.query)('url').optional().isURL(),
+    (0, express_validator_1.query)('deviceType').optional().isIn(['mobile', 'tablet', 'desktop']),
+], async (req, res) => {
     try {
-        const summary = {
-            period: '24h',
-            metrics: {
-                FCP: { p50: 1200, p75: 1800, p95: 2400 },
-                LCP: { p50: 1800, p75: 2200, p95: 3000 },
-                CLS: { p50: 0.05, p75: 0.08, p95: 0.15 },
-                FID: { p50: 50, p75: 80, p95: 150 },
-                TTFB: { p50: 400, p75: 600, p95: 900 },
-            },
-            budgetStatus: {
-                FCP: 'good',
-                LCP: 'needs-improvement',
-                CLS: 'good',
-                FID: 'good',
-                TTFB: 'good',
-            },
-            totalSamples: 1250,
-            lastUpdated: new Date().toISOString(),
-        };
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        const { period = '24h', workspaceId, url, deviceType } = req.query;
+        const filters = {};
+        if (workspaceId)
+            filters.workspaceId = workspaceId;
+        if (url)
+            filters.url = url;
+        if (deviceType)
+            filters.deviceType = deviceType;
+        const summary = await webVitalsService.getWebVitalsSummary(period, filters);
         res.json(summary);
     }
     catch (error) {
         console.error('Error getting Web Vitals summary:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+});
+router.get('/web-vitals/timeseries', [
+    (0, express_validator_1.query)('metric').isIn(['FCP', 'LCP', 'CLS', 'FID', 'TTFB', 'INP']).withMessage('Invalid metric name'),
+    (0, express_validator_1.query)('period').optional().isIn(['1h', '24h', '7d', '30d']).withMessage('Invalid period'),
+    (0, express_validator_1.query)('interval').optional().isIn(['1m', '5m', '1h', '1d']).withMessage('Invalid interval'),
+], async (req, res) => {
+    try {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        const { metric, period = '24h', interval = '1h', workspaceId, url, deviceType } = req.query;
+        const filters = {};
+        if (workspaceId)
+            filters.workspaceId = workspaceId;
+        if (url)
+            filters.url = url;
+        if (deviceType)
+            filters.deviceType = deviceType;
+        const timeSeries = await webVitalsService.getWebVitalsTimeSeries(metric, period, interval, filters);
+        res.json(timeSeries);
+    }
+    catch (error) {
+        console.error('Error getting Web Vitals time series:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+});
+router.get('/web-vitals/regressions', [
+    (0, express_validator_1.query)('metric').optional().isIn(['FCP', 'LCP', 'CLS', 'FID', 'TTFB', 'INP']),
+    (0, express_validator_1.query)('threshold').optional().isFloat({ min: 0, max: 1 }),
+], async (req, res) => {
+    try {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        const { metric, threshold = 0.2 } = req.query;
+        let regressions;
+        if (metric) {
+            regressions = await webVitalsService.detectRegressions(metric, Number(threshold));
+        }
+        else {
+            const metrics = ['FCP', 'LCP', 'CLS', 'FID', 'TTFB', 'INP'];
+            const allRegressions = await Promise.all(metrics.map(m => webVitalsService.detectRegressions(m, Number(threshold))));
+            regressions = allRegressions.flat();
+        }
+        res.json({ regressions });
+    }
+    catch (error) {
+        console.error('Error detecting regressions:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'

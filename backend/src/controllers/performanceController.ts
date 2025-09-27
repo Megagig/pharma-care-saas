@@ -9,35 +9,6 @@ import DatabaseProfiler from '../services/DatabaseProfiler';
 import { latencyTracker } from '../middlewares/latencyMeasurement';
 import { AuthRequest } from '../middlewares/auth';
 import logger from '../utils/logger';
-import { type } from 'os';
-import { any } from 'zod';
-import { any } from 'zod';
-import { type } from 'os';
-import { type } from 'os';
-import { type } from 'os';
-import { any } from 'zod';
-import { any } from 'zod';
-import { type } from 'os';
-import { type } from 'os';
-import { type } from 'os';
-import { any } from 'zod';
-import { any } from 'zod';
-import { format } from 'path';
-import { type } from 'os';
-import { format } from 'path';
-import { type } from 'os';
-import { format } from 'path';
-import { format } from 'path';
-import { type } from 'os';
-import { type } from 'os';
-import { any } from 'zod';
-import { any } from 'zod';
-import { type } from 'os';
-import { type } from 'os';
-import { type } from 'os';
-import { type } from 'os';
-import { any } from 'zod';
-import { any } from 'zod';
 
 export class PerformanceController {
     private dynamicPermissionService: DynamicPermissionService;
@@ -75,8 +46,8 @@ export class PerformanceController {
                     combined: {
                         totalHits: rbacMetrics.hits + performanceMetrics.hits,
                         totalMisses: rbacMetrics.misses + performanceMetrics.misses,
-                        overallHitRate: ((rbacMetrics.hits + performanceMetrics.hits) / 
-                                       (rbacMetrics.totalOperations + performanceMetrics.hits + performanceMetrics.misses)) * 100,
+                        overallHitRate: ((rbacMetrics.hits + performanceMetrics.hits) /
+                            (rbacMetrics.totalOperations + performanceMetrics.hits + performanceMetrics.misses)) * 100,
                         totalMemoryUsage: rbacMetrics.memoryUsage + performanceMetrics.memoryUsage,
                         totalKeys: rbacMetrics.keyCount + performanceMetrics.keyCount
                     },
@@ -196,7 +167,7 @@ export class PerformanceController {
     async clearCache(req: AuthRequest, res: Response): Promise<any> {
         try {
             const { type } = req.body;
-            
+
             if (type === 'rbac') {
                 await this.cacheManager.clearAll();
             } else if (type === 'performance') {
@@ -309,7 +280,7 @@ export class PerformanceController {
     async getLatencyMetrics(req: AuthRequest, res: Response): Promise<any> {
         try {
             const { endpoint } = req.query;
-            
+
             const stats = latencyTracker.getStats(endpoint as string);
             const topEndpoints = latencyTracker.getTopEndpoints(10);
             const recentMetrics = latencyTracker.getMetrics(endpoint as string, 100);
@@ -371,7 +342,7 @@ export class PerformanceController {
     async enableDatabaseProfiling(req: AuthRequest, res: Response): Promise<any> {
         try {
             const { slowMs = 100 } = req.body;
-            
+
             await DatabaseProfiler.enableProfiling(slowMs);
 
             res.json({
@@ -445,7 +416,7 @@ export class PerformanceController {
     async invalidateCacheByTags(req: AuthRequest, res: Response): Promise<any> {
         try {
             const { tags } = req.body;
-            
+
             if (!tags || !Array.isArray(tags)) {
                 return res.status(400).json({
                     success: false,
@@ -507,7 +478,7 @@ export class PerformanceController {
     async warmPerformanceCache(req: AuthRequest, res: Response): Promise<any> {
         try {
             const { operations = [] } = req.body;
-            
+
             // This would implement cache warming for common operations
             // For now, just acknowledge the request
             logger.info('Performance cache warming requested for operations:', operations);
@@ -538,7 +509,7 @@ export class PerformanceController {
     async createOptimizedIndexes(req: AuthRequest, res: Response): Promise<any> {
         try {
             logger.info('Creating optimized database indexes');
-            
+
             const result = await this.performanceDatabaseOptimizer.createAllOptimizedIndexes();
 
             res.json({
@@ -608,7 +579,7 @@ export class PerformanceController {
     async cleanupUnusedIndexes(req: AuthRequest, res: Response): Promise<any> {
         try {
             const { dryRun = true } = req.body;
-            
+
             const result = await this.performanceDatabaseOptimizer.dropUnusedIndexes(dryRun);
 
             res.json({
@@ -631,17 +602,15 @@ export class PerformanceController {
             });
         }
     }
-}
 
-export const performanceController = new PerformanceController();    /**
-
+    /**
      * Queue AI analysis job
      * POST /api/admin/performance/jobs/ai-analysis
      */
     async queueAIAnalysisJob(req: AuthRequest, res: Response): Promise<any> {
         try {
             const { type, patientId, parameters, priority = 'medium' } = req.body;
-            
+
             if (!type || !patientId) {
                 return res.status(400).json({
                     success: false,
@@ -652,8 +621,8 @@ export const performanceController = new PerformanceController();    /**
             const job = await this.performanceJobService.queueAIAnalysis({
                 type,
                 patientId,
-                workspaceId: req.user?.workspaceId || '',
-                userId: req.user?.id || '',
+                workspaceId: req.user?.workplaceId?.toString() || '',
+                userId: req.user?.id?.toString() || '',
                 parameters: parameters || {},
                 priority,
             });
@@ -686,7 +655,7 @@ export const performanceController = new PerformanceController();    /**
     async queueDataExportJob(req: AuthRequest, res: Response): Promise<any> {
         try {
             const { type, filters, format, fileName, includeAttachments = false } = req.body;
-            
+
             if (!type || !format || !fileName) {
                 return res.status(400).json({
                     success: false,
@@ -696,8 +665,8 @@ export const performanceController = new PerformanceController();    /**
 
             const job = await this.performanceJobService.queueDataExport({
                 type,
-                workspaceId: req.user?.workspaceId || '',
-                userId: req.user?.id || '',
+                workspaceId: req.user?.workplaceId?.toString() || '',
+                userId: req.user?.id?.toString() || '',
                 userEmail: req.user?.email || '',
                 filters: filters || {},
                 format,
@@ -734,7 +703,7 @@ export const performanceController = new PerformanceController();    /**
     async queueCacheWarmupJob(req: AuthRequest, res: Response): Promise<any> {
         try {
             const { type, targetUsers, priority = 'low' } = req.body;
-            
+
             if (!type) {
                 return res.status(400).json({
                     success: false,
@@ -744,7 +713,7 @@ export const performanceController = new PerformanceController();    /**
 
             const job = await this.performanceJobService.queueCacheWarmup({
                 type,
-                workspaceId: req.user?.workspaceId || '',
+                workspaceId: req.user?.workplaceId?.toString() || '',
                 targetUsers,
                 priority,
             });
@@ -778,7 +747,7 @@ export const performanceController = new PerformanceController();    /**
     async queueDatabaseMaintenanceJob(req: AuthRequest, res: Response): Promise<any> {
         try {
             const { type, parameters = {} } = req.body;
-            
+
             if (!type) {
                 return res.status(400).json({
                     success: false,
@@ -788,7 +757,7 @@ export const performanceController = new PerformanceController();    /**
 
             const job = await this.performanceJobService.queueDatabaseMaintenance({
                 type,
-                workspaceId: req.user?.workspaceId,
+                workspaceId: req.user?.workplaceId?.toString(),
                 parameters,
             });
 
@@ -838,3 +807,6 @@ export const performanceController = new PerformanceController();    /**
             });
         }
     }
+}
+
+export const performanceController = new PerformanceController();

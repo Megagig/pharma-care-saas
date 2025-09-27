@@ -83,6 +83,9 @@ const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
 const locationDataRoutes_1 = __importDefault(require("./routes/locationDataRoutes"));
 const legacyApiRoutes_1 = __importDefault(require("./routes/legacyApiRoutes"));
 const migrationDashboardRoutes_1 = __importDefault(require("./routes/migrationDashboardRoutes"));
+const deploymentRoutes_1 = __importDefault(require("./routes/deploymentRoutes"));
+const productionValidationRoutes_1 = __importDefault(require("./routes/productionValidationRoutes"));
+const continuousMonitoringRoutes_1 = __importDefault(require("./routes/continuousMonitoringRoutes"));
 const emailWebhookRoutes_1 = __importDefault(require("./routes/emailWebhookRoutes"));
 const drugRoutes_1 = __importDefault(require("./modules/drug-info/routes/drugRoutes"));
 const mentionRoutes_1 = __importDefault(require("./routes/mentionRoutes"));
@@ -93,6 +96,9 @@ const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"))
 const communicationRoutes_1 = __importDefault(require("./routes/communicationRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 const analyticsRoutes_1 = __importDefault(require("./routes/analyticsRoutes"));
+const lighthouseRoutes_1 = __importDefault(require("./routes/lighthouseRoutes"));
+const performanceBudgetRoutes_1 = __importDefault(require("./routes/performanceBudgetRoutes"));
+const performanceMonitoringRoutes_1 = __importDefault(require("./routes/performanceMonitoringRoutes"));
 const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
 const systemIntegration = systemIntegrationService_1.default.getInstance();
@@ -142,6 +148,13 @@ if (process.env.NODE_ENV === 'development') {
 }
 const latencyMeasurement_1 = require("./middlewares/latencyMeasurement");
 app.use('/api/', latencyMeasurement_1.latencyMeasurementMiddleware);
+const compressionMiddleware_1 = require("./middlewares/compressionMiddleware");
+app.use('/api/', (0, compressionMiddleware_1.adaptiveCompressionMiddleware)());
+app.use('/api/', (0, compressionMiddleware_1.intelligentCompressionMiddleware)({
+    threshold: 1024,
+    level: 6,
+}));
+app.use('/api/', (0, compressionMiddleware_1.responseSizeMonitoringMiddleware)());
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
@@ -212,6 +225,12 @@ app.get('/api/health/cache', async (req, res) => {
 app.use('/api/public', publicApiRoutes_1.default);
 app.use('/api/public/drugs', publicDrugDetailsRoutes_1.default);
 app.use('/api/analytics', analyticsRoutes_1.default);
+app.use('/api/lighthouse', lighthouseRoutes_1.default);
+app.use('/api/performance-budgets', performanceBudgetRoutes_1.default);
+app.use('/api/performance-monitoring', performanceMonitoringRoutes_1.default);
+app.use('/api/deployment', deploymentRoutes_1.default);
+app.use('/api/production-validation', productionValidationRoutes_1.default);
+app.use('/api/continuous-monitoring', continuousMonitoringRoutes_1.default);
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api/subscriptions', subscriptionRoutes_1.default);
 app.use('/api/patients', patientRoutes_1.default);

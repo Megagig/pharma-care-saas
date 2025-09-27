@@ -21,5 +21,16 @@ router.get('/database/profile', performanceController_1.performanceController.ge
 router.post('/database/profiling/enable', performanceController_1.performanceController.enableDatabaseProfiling.bind(performanceController_1.performanceController));
 router.post('/database/profiling/disable', performanceController_1.performanceController.disableDatabaseProfiling.bind(performanceController_1.performanceController));
 router.post('/database/indexes/optimize', performanceController_1.performanceController.optimizeDatabaseIndexes.bind(performanceController_1.performanceController));
+router.post('/cache/invalidate', performanceController_1.performanceController.invalidateCacheByTags.bind(performanceController_1.performanceController));
+router.get('/cache/stats', performanceController_1.performanceController.getPerformanceCacheStats.bind(performanceController_1.performanceController));
+router.post('/cache/warm-performance', performanceController_1.performanceController.warmPerformanceCache.bind(performanceController_1.performanceController));
+router.post('/database/indexes/create-optimized', performanceController_1.performanceController.createOptimizedIndexes.bind(performanceController_1.performanceController));
+router.get('/database/indexes/analyze', performanceController_1.performanceController.analyzeExistingIndexes.bind(performanceController_1.performanceController));
+router.post('/database/indexes/cleanup', performanceController_1.performanceController.cleanupUnusedIndexes.bind(performanceController_1.performanceController));
+router.post('/jobs/ai-analysis', performanceController_1.performanceController.queueAIAnalysisJob.bind(performanceController_1.performanceController));
+router.post('/jobs/data-export', performanceController_1.performanceController.queueDataExportJob.bind(performanceController_1.performanceController));
+router.post('/jobs/cache-warmup', performanceController_1.performanceController.queueCacheWarmupJob.bind(performanceController_1.performanceController));
+router.post('/jobs/database-maintenance', performanceController_1.performanceController.queueDatabaseMaintenanceJob.bind(performanceController_1.performanceController));
+router.get('/jobs/statistics', performanceController_1.performanceController.getJobStatistics.bind(performanceController_1.performanceController));
 exports.default = router;
 //# sourceMappingURL=performance.js.map
