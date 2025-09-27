@@ -152,11 +152,19 @@ export const latencyMeasurementMiddleware = (req: Request, res: Response, next: 
       ip: req.ip,
     };
 
-    // Add to tracker
-    latencyTracker.addMetric(metric);
+    // Add to tracker (do this after calling original end)
+    setImmediate(() => {
+      latencyTracker.addMetric(metric);
+    });
 
-    // Add response header
-    res.set('X-Response-Time', `${duration.toFixed(2)}ms`);
+    // Try to add response header only if headers haven't been sent
+    try {
+      if (!res.headersSent) {
+        res.set('X-Response-Time', `${duration.toFixed(2)}ms`);
+      }
+    } catch (error) {
+      // Ignore header setting errors
+    }
 
     // Call original end method and return its result
     return originalEnd.call(this, chunk, encoding);

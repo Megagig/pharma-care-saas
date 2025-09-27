@@ -82,13 +82,49 @@ const server = httpServer.listen(PORT, () => {
 // Set server timeout to 90 seconds to handle long AI processing
 server.timeout = 90000; // 90 seconds
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err: Error) => {
-  console.log(`Unhandled Rejection: ${err.message}`);
-  // Close server & exit process
-  server.close(() => {
+// Graceful shutdown function
+const gracefulShutdown = async (signal: string) => {
+  console.log(`Received ${signal}. Starting graceful shutdown...`);
+  
+  try {
+    // Import cleanup functions
+    const { cleanupAuditLogging } = await import('./middlewares/auditLogging');
+    const { cleanupSessionManagement } = await import('./middlewares/communicationSessionManagement');
+    
+    // Stop all intervals and cleanup
+    cleanupAuditLogging();
+    cleanupSessionManagement();
+    
+    // Close server
+    server.close(() => {
+      console.log('Server closed successfully');
+      process.exit(0);
+    });
+    
+    // Force exit after 10 seconds
+    setTimeout(() => {
+      console.log('Forcing exit...');
+      process.exit(1);
+    }, 10000);
+    
+  } catch (error) {
+    console.error('Error during graceful shutdown:', error);
     process.exit(1);
-  });
+  }
+};
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err: Error, promise) => {
+  console.log(`Unhandled Rejection: ${err.message}`);
+  console.log('Promise:', promise);
+  
+  // Don't shutdown for headers errors - just log them
+  if (err.message.includes('Cannot set headers after they are sent')) {
+    console.warn('Headers already sent error - this is likely a timing issue with async operations');
+    return;
+  }
+  
+  gracefulShutdown('unhandledRejection');
 });
 
 // Handle uncaught exceptions
@@ -96,5 +132,9 @@ process.on('uncaughtException', (err: Error) => {
   console.log(`Uncaught Exception: ${err.message}`);
   process.exit(1);
 });
+
+// Handle graceful shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export default server;

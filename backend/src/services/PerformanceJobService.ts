@@ -68,6 +68,12 @@ export class PerformanceJobService {
   private queueEvents: Map<string, QueueEvents> = new Map();
 
   private constructor() {
+    // Check if performance jobs are disabled
+    if (process.env.DISABLE_PERFORMANCE_JOBS === 'true') {
+      logger.info('Performance job service is disabled via environment variable');
+      return;
+    }
+
     this.initializeQueues();
     this.initializeWorkers();
     this.setupEventHandlers();
@@ -85,12 +91,13 @@ export class PerformanceJobService {
    * Initialize BullMQ queues
    */
   private initializeQueues(): void {
-    const connection = {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
-      db: parseInt(process.env.REDIS_JOB_DB || '2'), // Use different DB for performance jobs
-    };
+    try {
+      const connection = {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD,
+        db: parseInt(process.env.REDIS_JOB_DB || '2'), // Use different DB for performance jobs
+      };
 
     // Initialize queues with different priorities and settings
     this.aiAnalysisQueue = new Queue('ai-analysis', {
@@ -141,22 +148,29 @@ export class PerformanceJobService {
       },
     });
 
-    // Initialize queue events for monitoring
-    ['ai-analysis', 'data-export', 'cache-warmup', 'database-maintenance'].forEach(queueName => {
-      this.queueEvents.set(queueName, new QueueEvents(queueName, { connection }));
-    });
+      // Initialize queue events for monitoring
+      ['ai-analysis', 'data-export', 'cache-warmup', 'database-maintenance'].forEach(queueName => {
+        this.queueEvents.set(queueName, new QueueEvents(queueName, { connection }));
+      });
+      
+      logger.info('Performance job queues initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize performance job queues:', error);
+      logger.warn('Performance job service will be disabled. Install and start Redis to enable job processing.');
+    }
   }
 
   /**
    * Initialize BullMQ workers
    */
   private initializeWorkers(): void {
-    const connection = {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
-      db: parseInt(process.env.REDIS_JOB_DB || '2'),
-    };
+    try {
+      const connection = {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD,
+        db: parseInt(process.env.REDIS_JOB_DB || '2'),
+      };
 
     // AI Analysis Worker (CPU intensive, limited concurrency)
     this.aiAnalysisWorker = new Worker<AIAnalysisJobData>(
@@ -189,32 +203,48 @@ export class PerformanceJobService {
     );
 
     // Database Maintenance Worker (Critical operations, single concurrency)
-    this.databaseMaintenanceWorker = new Worker<DatabaseMaintenanceJobData>(
-      'database-maintenance',
-      async (job: Job<DatabaseMaintenanceJobData>) => this.processDatabaseMaintenanceJob(job),
-      {
-        connection,
-        concurrency: 1, // Only one database maintenance job at a time
-      }
-    );
+      this.databaseMaintenanceWorker = new Worker<DatabaseMaintenanceJobData>(
+        'database-maintenance',
+        async (job: Job<DatabaseMaintenanceJobData>) => this.processDatabaseMaintenanceJob(job),
+        {
+          connection,
+          concurrency: 1, // Only one database maintenance job at a time
+        }
+      );
+      
+      logger.info('Performance job workers initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize performance job workers:', error);
+      logger.warn('Performance job workers will be disabled. Install and start Redis to enable job processing.');
+    }
   }
 
   /**
    * Queue AI analysis job
    */
-  async queueAIAnalysis(data: AIAnalysisJobData): Promise<Job<AIAnalysisJobData>> {
-    const priority = this.getPriority(data.priority);
-    
-    logger.info(`Queuing AI analysis job: ${data.type}`, {
-      patientId: data.patientId,
-      workspaceId: data.workspaceId,
-      priority: data.priority,
-    });
+  async queueAIAnalysis(data: AIAnalysisJobData): Promise<Job<AIAnalysisJobData> | null> {
+    try {
+      if (!this.aiAnalysisQueue) {
+        logger.warn('AI analysis queue not available - Redis connection failed');
+        return null;
+      }
 
-    return this.aiAnalysisQueue.add('ai-analysis', data, {
-      priority,
-      delay: data.priority === 'urgent' ? 0 : 1000, // Urgent jobs start immediately
-    });
+      const priority = this.getPriority(data.priority);
+      
+      logger.info(`Queuing AI analysis job: ${data.type}`, {
+        patientId: data.patientId,
+        workspaceId: data.workspaceId,
+        priority: data.priority,
+      });
+
+      return this.aiAnalysisQueue.add('ai-analysis', data, {
+        priority,
+        delay: data.priority === 'urgent' ? 0 : 1000, // Urgent jobs start immediately
+      });
+    } catch (error) {
+      logger.error('Failed to queue AI analysis job:', error);
+      return null;
+    }
   }
 
   /**

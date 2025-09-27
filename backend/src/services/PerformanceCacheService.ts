@@ -54,7 +54,9 @@ class PerformanceCacheService {
   };
 
   private constructor() {
-    this.initializeRedis();
+    // Don't initialize Redis immediately - do it lazily
+    this.redis = null;
+    this.isConnected = false;
   }
 
   public static getInstance(): PerformanceCacheService {
@@ -112,6 +114,21 @@ class PerformanceCacheService {
   }
 
   /**
+   * Ensure Redis connection is initialized
+   */
+  private async ensureConnection(): Promise<boolean> {
+    if (this.isConnected && this.redis) {
+      return true;
+    }
+
+    if (!this.redis) {
+      await this.initializeRedis();
+    }
+
+    return this.isConnected;
+  }
+
+  /**
    * Cache API response with automatic compression for large payloads
    */
   public async cacheApiResponse(
@@ -119,7 +136,7 @@ class PerformanceCacheService {
     data: any,
     options: CacheOptions = {}
   ): Promise<boolean> {
-    if (!this.isConnected || !this.redis) {
+    if (!(await this.ensureConnection())) {
       return false;
     }
 
@@ -177,7 +194,7 @@ class PerformanceCacheService {
    * Get cached API response with automatic decompression
    */
   public async getCachedApiResponse<T = any>(key: string): Promise<T | null> {
-    if (!this.isConnected || !this.redis) {
+    if (!(await this.ensureConnection())) {
       this.stats.misses++;
       return null;
     }
@@ -478,7 +495,7 @@ class PerformanceCacheService {
    * Get cache statistics
    */
   public async getStats(): Promise<CacheStats> {
-    if (!this.isConnected || !this.redis) {
+    if (!(await this.ensureConnection())) {
       return this.stats;
     }
 

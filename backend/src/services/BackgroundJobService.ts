@@ -49,25 +49,45 @@ export class BackgroundJobService {
     private cleanupQueue: Queue;
 
     constructor() {
-        const redisConfig = {
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379'),
-            password: process.env.REDIS_PASSWORD,
-            db: parseInt(process.env.REDIS_JOB_DB || '1'), // Use different DB for jobs
-        };
+        // Check if background jobs are disabled
+        if (process.env.DISABLE_BACKGROUND_JOBS === 'true') {
+            logger.info('Background job service is disabled via environment variable');
+            return;
+        }
 
-        // Initialize queues
-        this.exportQueue = new Bull('report-exports', { redis: redisConfig });
-        this.reportQueue = new Bull('scheduled-reports', { redis: redisConfig });
-        this.cleanupQueue = new Bull('cleanup-jobs', { redis: redisConfig });
+        try {
+            const redisConfig = {
+                host: process.env.REDIS_HOST || 'localhost',
+                port: parseInt(process.env.REDIS_PORT || '6379'),
+                password: process.env.REDIS_PASSWORD,
+                db: parseInt(process.env.REDIS_JOB_DB || '1'), // Use different DB for jobs
+            };
 
-        this.setupJobProcessors();
-        this.setupEventHandlers();
-        this.scheduleCleanupJobs();
+            // Initialize queues with error handling
+            this.exportQueue = new Bull('report-exports', { redis: redisConfig });
+            this.reportQueue = new Bull('scheduled-reports', { redis: redisConfig });
+            this.cleanupQueue = new Bull('cleanup-jobs', { redis: redisConfig });
+
+            this.setupJobProcessors();
+            this.setupEventHandlers();
+            this.scheduleCleanupJobs();
+            
+            logger.info('Background job service initialized successfully');
+        } catch (error) {
+            logger.error('Failed to initialize background job service:', error);
+            logger.warn('Background job service will be disabled. Install and start Redis to enable job processing.');
+        }
     }
 
     static getInstance(): BackgroundJobService {
         if (!BackgroundJobService.instance) {
+            // Check if background jobs are disabled
+            if (process.env.DISABLE_BACKGROUND_JOBS === 'true') {
+                logger.info('Background jobs are disabled via environment variable');
+                // Return a mock instance that doesn't do anything
+                BackgroundJobService.instance = new BackgroundJobService();
+                return BackgroundJobService.instance;
+            }
             BackgroundJobService.instance = new BackgroundJobService();
         }
         return BackgroundJobService.instance;
@@ -79,26 +99,36 @@ export class BackgroundJobService {
     async queueExportJob(
         data: ExportJobData,
         options: JobOptions = {}
-    ): Promise<Job<ExportJobData>> {
-        const defaultOptions: JobOptions = {
-            attempts: 3,
-            backoff: {
-                type: 'exponential',
-                delay: 2000,
-            },
-            removeOnComplete: 10, // Keep last 10 completed jobs
-            removeOnFail: 5, // Keep last 5 failed jobs
-            timeout: 10 * 60 * 1000, // 10 minutes timeout
-            ...options,
-        };
+    ): Promise<Job<ExportJobData> | null> {
+        try {
+            if (!this.exportQueue) {
+                logger.warn('Export queue not available - Redis connection failed');
+                return null;
+            }
 
-        logger.info(`Queuing export job for ${data.reportType}`, {
-            workplaceId: data.workplaceId,
-            userId: data.userId,
-            format: data.format,
-        });
+            const defaultOptions: JobOptions = {
+                attempts: 3,
+                backoff: {
+                    type: 'exponential',
+                    delay: 2000,
+                },
+                removeOnComplete: 10, // Keep last 10 completed jobs
+                removeOnFail: 5, // Keep last 5 failed jobs
+                timeout: 10 * 60 * 1000, // 10 minutes timeout
+                ...options,
+            };
 
-        return this.exportQueue.add('export-report', data, defaultOptions);
+            logger.info(`Queuing export job for ${data.reportType}`, {
+                workplaceId: data.workplaceId,
+                userId: data.userId,
+                format: data.format,
+            });
+
+            return this.exportQueue.add('export-report', data, defaultOptions);
+        } catch (error) {
+            logger.error('Failed to queue export job:', error);
+            return null;
+        }
     }
 
     /**
@@ -107,26 +137,36 @@ export class BackgroundJobService {
     async queueScheduledReport(
         data: ReportGenerationJobData,
         options: JobOptions = {}
-    ): Promise<Job<ReportGenerationJobData>> {
-        const defaultOptions: JobOptions = {
-            attempts: 2,
-            backoff: {
-                type: 'fixed',
-                delay: 5000,
-            },
-            removeOnComplete: 20,
-            removeOnFail: 10,
-            timeout: 15 * 60 * 1000, // 15 minutes timeout
-            ...options,
-        };
+    ): Promise<Job<ReportGenerationJobData> | null> {
+        try {
+            if (!this.reportQueue) {
+                logger.warn('Report queue not available - Redis connection failed');
+                return null;
+            }
 
-        logger.info(`Queuing scheduled report for ${data.reportType}`, {
-            workplaceId: data.workplaceId,
-            scheduleId: data.scheduleId,
-            recipients: data.recipients.length,
-        });
+            const defaultOptions: JobOptions = {
+                attempts: 2,
+                backoff: {
+                    type: 'fixed',
+                    delay: 5000,
+                },
+                removeOnComplete: 20,
+                removeOnFail: 10,
+                timeout: 15 * 60 * 1000, // 15 minutes timeout
+                ...options,
+            };
 
-        return this.reportQueue.add('generate-scheduled-report', data, defaultOptions);
+            logger.info(`Queuing scheduled report for ${data.reportType}`, {
+                workplaceId: data.workplaceId,
+                scheduleId: data.scheduleId,
+                recipients: data.recipients.length,
+            });
+
+            return this.reportQueue.add('generate-scheduled-report', data, defaultOptions);
+        } catch (error) {
+            logger.error('Failed to queue scheduled report:', error);
+            return null;
+        }
     }
 
     /**

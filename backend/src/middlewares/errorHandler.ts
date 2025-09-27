@@ -22,6 +22,12 @@ interface AuthenticatedRequest extends Request {
 }
 
 const errorHandler = (err: CustomError | MTRError, req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+  // Check if response has already been sent
+  if (res.headersSent) {
+    console.warn('Error occurred after response was sent:', err.message);
+    return;
+  }
+
   // Handle MTR-specific errors
   if (isMTRError(err)) {
     const severity = getMTRErrorSeverity(err);
