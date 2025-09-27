@@ -1,4 +1,4 @@
-import { getCLS, getFID, getFCP, getLCP, getTTFB, onINP, Metric } from 'web-vitals';
+import { onCLS, onFCP, onLCP, onTTFB, onINP, Metric } from 'web-vitals';
 
 export interface WebVitalsMetrics {
   FCP: number; // First Contentful Paint
@@ -49,11 +49,10 @@ export class WebVitalsMonitor {
   private initializeMetrics(): void {
     try {
       // Collect Core Web Vitals
-      getCLS(this.handleMetric.bind(this));
-      getFID(this.handleMetric.bind(this));
-      getFCP(this.handleMetric.bind(this));
-      getLCP(this.handleMetric.bind(this));
-      getTTFB(this.handleMetric.bind(this));
+      onCLS(this.handleMetric.bind(this));
+      onFCP(this.handleMetric.bind(this));
+      onLCP(this.handleMetric.bind(this));
+      onTTFB(this.handleMetric.bind(this));
       
       // Collect INP (Interaction to Next Paint) - newer metric
       onINP(this.handleMetric.bind(this));

@@ -29,8 +29,8 @@ export declare class FileUploadService {
     };
 }
 export declare const uploadMiddleware: multer.Multer;
-export declare const deleteFile: typeof FileUploadService.deleteFile;
-export declare const getFileUrl: typeof FileUploadService.getFileUrl;
-export declare const fileExists: typeof FileUploadService.fileExists;
+export declare const deleteFile: any;
+export declare const getFileUrl: any;
+export declare const fileExists: any;
 export default FileUploadService;
 //# sourceMappingURL=fileUploadService.d.ts.map

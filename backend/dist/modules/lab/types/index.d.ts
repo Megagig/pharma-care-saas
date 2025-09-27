@@ -204,8 +204,8 @@ export interface ManualLabAIRequest {
 export declare class ManualLabError extends Error {
     code: string;
     statusCode: number;
-    details?: any | undefined;
-    constructor(message: string, code: string, statusCode?: number, details?: any | undefined);
+    details?: any;
+    constructor(message: string, code: string, statusCode?: number, details?: any);
 }
 export declare class ValidationError extends ManualLabError {
     constructor(message: string, field?: string);

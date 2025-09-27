@@ -71,15 +71,7 @@ declare class EmailService {
         userName: string;
         licenseNumber: string;
         submittedAt: Date;
-    }): Promise<({
-        success: boolean;
-        messageId: any;
-        error?: undefined;
-    } | {
-        success: boolean;
-        error: string;
-        messageId?: undefined;
-    })[]>;
+    }): Promise<any[]>;
     sendRoleUpdateNotification(email: string, data: {
         firstName: string;
         newRole: string;

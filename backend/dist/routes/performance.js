@@ -16,5 +16,10 @@ router.post('/cache/check', performanceController_1.performanceController.checkC
 router.post('/cache/clear', performanceController_1.performanceController.clearCache.bind(performanceController_1.performanceController));
 router.post('/cache/warm', performanceController_1.performanceController.warmCache.bind(performanceController_1.performanceController));
 router.post('/database/optimize', performanceController_1.performanceController.initializeDatabaseOptimizations.bind(performanceController_1.performanceController));
+router.get('/latency', performanceController_1.performanceController.getLatencyMetrics.bind(performanceController_1.performanceController));
+router.get('/database/profile', performanceController_1.performanceController.getDatabaseProfile.bind(performanceController_1.performanceController));
+router.post('/database/profiling/enable', performanceController_1.performanceController.enableDatabaseProfiling.bind(performanceController_1.performanceController));
+router.post('/database/profiling/disable', performanceController_1.performanceController.disableDatabaseProfiling.bind(performanceController_1.performanceController));
+router.post('/database/indexes/optimize', performanceController_1.performanceController.optimizeDatabaseIndexes.bind(performanceController_1.performanceController));
 exports.default = router;
 //# sourceMappingURL=performance.js.map

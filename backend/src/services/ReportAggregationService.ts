@@ -1,18 +1,14 @@
 // Optimized MongoDB Aggregation Service for Reports
-import mongoose from 'mongoose';
+import mongoose, { PipelineStage, AggregateOptions } from 'mongoose';
 import { performance } from 'perf_hooks';
 import logger from '../utils/logger';
 
-interface AggregationOptions {
+interface AggregationOptions extends Omit<AggregateOptions, 'collation'> {
     allowDiskUse?: boolean;
     maxTimeMS?: number;
     hint?: string | object;
-    collation?: object;
+    collation?: any;
     batchSize?: number;
-}
-
-interface PipelineStage {
-    [key: string]: any;
 }
 
 interface AggregationResult<T = any> {
@@ -276,7 +272,7 @@ export class ReportAggregationService {
     buildFacetedAggregation(
         workplaceId: string,
         filters: any,
-        facets: Record<string, PipelineStage[]>
+        facets: Record<string, any[]>
     ): PipelineStage[] {
         const matchStage = this.buildOptimizedMatchStage(workplaceId, filters);
 
@@ -443,4 +439,4 @@ export class ReportAggregationService {
     }
 }
 
-export default ReportAggregationService.getInstance();
+export default ReportAggregationService;

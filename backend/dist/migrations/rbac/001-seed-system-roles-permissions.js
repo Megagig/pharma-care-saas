@@ -39,8 +39,9 @@ class SystemRolePermissionSeeder {
                 logger_1.default.warn(`Invalid action format: ${action}`);
                 continue;
             }
+            const dbAction = `${resource}:${operation}`;
             permissions.push({
-                action,
+                action: dbAction,
                 displayName: this.generateDisplayName(action),
                 description: this.generateDescription(action, config),
                 category: this.categorizePermission(resource),
@@ -410,27 +411,32 @@ class SystemRolePermissionSeeder {
     }
     extractDependencies(action) {
         const dependencyMap = {
-            'patient.update': ['patient.read'],
-            'patient.delete': ['patient.read', 'patient.update'],
-            'clinical_notes.update': ['clinical_notes.read'],
-            'clinical_notes.delete': ['clinical_notes.read'],
-            'medication.update': ['medication.read'],
-            'medication.delete': ['medication.read']
+            'patient:update': ['patient:read'],
+            'patient:delete': ['patient:read', 'patient:update'],
+            'clinical_notes:update': ['clinical_notes:read'],
+            'clinical_notes:delete': ['clinical_notes:read'],
+            'medication:update': ['medication:read'],
+            'medication:delete': ['medication:read']
         };
-        return dependencyMap[action] || [];
+        const colonAction = action.replace('.', ':');
+        const dependencies = dependencyMap[colonAction] || [];
+        return dependencies;
     }
     extractConflicts(action) {
         const conflictMap = {
-            'workspace.delete': ['workspace.transfer'],
-            'subscription.cancel': ['subscription.upgrade']
+            'workspace:delete': ['workspace:transfer'],
+            'subscription:cancel': ['subscription:upgrade']
         };
-        return conflictMap[action] || [];
+        const colonAction = action.replace('.', ':');
+        const conflicts = conflictMap[colonAction] || [];
+        return conflicts;
     }
     getPermissionsForSystemRole(role) {
         const permissions = [];
         for (const [action, config] of Object.entries(permissionMatrix_1.PERMISSION_MATRIX)) {
             if (config.systemRoles?.includes(role)) {
-                permissions.push(action);
+                const dbAction = action.replace('.', ':');
+                permissions.push(dbAction);
             }
         }
         return permissions;
@@ -439,7 +445,8 @@ class SystemRolePermissionSeeder {
         const permissions = [];
         for (const [action, config] of Object.entries(permissionMatrix_1.PERMISSION_MATRIX)) {
             if (config.workplaceRoles?.includes(role)) {
-                permissions.push(action);
+                const dbAction = action.replace('.', ':');
+                permissions.push(dbAction);
             }
         }
         return permissions;

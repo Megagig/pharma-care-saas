@@ -33,7 +33,7 @@ export declare const createLabOrderSchema: z.ZodObject<{
         urgent: "urgent";
         stat: "stat";
     }>>;
-    expectedDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    expectedDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     externalOrderId: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export declare const updateLabOrderSchema: z.ZodObject<{
@@ -61,7 +61,7 @@ export declare const updateLabOrderSchema: z.ZodObject<{
         processing: "processing";
         collected: "collected";
     }>>;
-    expectedDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    expectedDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     externalOrderId: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export declare const labOrderParamsSchema: z.ZodObject<{
@@ -82,8 +82,8 @@ export declare const labOrderQuerySchema: z.ZodObject<{
         stat: "stat";
     }>>;
     orderedBy: z.ZodOptional<z.ZodString>;
-    fromDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
-    toDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    fromDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
+    toDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     page: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     limit: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
 }, z.core.$strip>;
@@ -112,7 +112,7 @@ export declare const createLabResultSchema: z.ZodObject<{
         abnormal: "abnormal";
     }>>;
     flags: z.ZodDefault<z.ZodArray<z.ZodString>>;
-    performedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string | undefined>>;
+    performedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     externalResultId: z.ZodOptional<z.ZodString>;
     loincCode: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
@@ -134,7 +134,7 @@ export declare const updateLabResultSchema: z.ZodObject<{
         abnormal: "abnormal";
     }>>;
     flags: z.ZodOptional<z.ZodArray<z.ZodString>>;
-    performedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    performedAt: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     externalResultId: z.ZodOptional<z.ZodString>;
     loincCode: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
@@ -152,8 +152,8 @@ export declare const labResultQuerySchema: z.ZodObject<{
         normal: "normal";
         abnormal: "abnormal";
     }>>;
-    fromDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
-    toDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    fromDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
+    toDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     page: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     limit: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
 }, z.core.$strip>;
@@ -221,8 +221,8 @@ export declare const syncFHIRParamsSchema: z.ZodObject<{
     patientId: z.ZodString;
 }, z.core.$strip>;
 export declare const syncFHIRBodySchema: z.ZodObject<{
-    fromDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
-    toDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    fromDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
+    toDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
 }, z.core.$strip>;
 export declare const fhirConfigSchema: z.ZodObject<{
     id: z.ZodString;
@@ -242,8 +242,8 @@ export declare const fhirConfigSchema: z.ZodObject<{
     auth: z.ZodOptional<z.ZodObject<{
         type: z.ZodEnum<{
             basic: "basic";
-            none: "none";
             oauth2: "oauth2";
+            none: "none";
             bearer: "bearer";
         }>;
         tokenUrl: z.ZodOptional<z.ZodString>;

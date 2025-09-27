@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -13,6 +46,8 @@ const express_mongo_sanitize_1 = __importDefault(require("express-mongo-sanitize
 const xss_clean_1 = __importDefault(require("xss-clean"));
 const hpp_1 = __importDefault(require("hpp"));
 const errorHandler_1 = __importDefault(require("./middlewares/errorHandler"));
+const MemoryManagementService_1 = __importDefault(require("./services/MemoryManagementService"));
+const logger_1 = __importDefault(require("./utils/logger"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const subscriptionRoutes_1 = __importDefault(require("./routes/subscriptionRoutes"));
 const patientRoutes_1 = __importDefault(require("./routes/patientRoutes"));
@@ -57,9 +92,14 @@ const publicDrugDetailsRoutes_1 = __importDefault(require("./routes/publicDrugDe
 const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"));
 const communicationRoutes_1 = __importDefault(require("./routes/communicationRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
+const analyticsRoutes_1 = __importDefault(require("./routes/analyticsRoutes"));
 const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
 const systemIntegration = systemIntegrationService_1.default.getInstance();
+if (process.env.MEMORY_MONITORING_ENABLED === 'true') {
+    MemoryManagementService_1.default.startMonitoring();
+    logger_1.default.info('Memory management service started');
+}
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
     origin: [
@@ -100,6 +140,8 @@ app.use((0, hpp_1.default)());
 if (process.env.NODE_ENV === 'development') {
     app.use((0, morgan_1.default)('dev'));
 }
+const latencyMeasurement_1 = require("./middlewares/latencyMeasurement");
+app.use('/api/', latencyMeasurement_1.latencyMeasurementMiddleware);
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
@@ -125,8 +167,51 @@ app.get('/api/health/integration', async (req, res) => {
     }
 });
 app.use('/api/health/feature-flags', healthRoutes_1.default);
+app.get('/api/health/memory', (req, res) => {
+    try {
+        const memoryReport = MemoryManagementService_1.default.getMemoryReport();
+        res.json({
+            status: 'OK',
+            timestamp: new Date().toISOString(),
+            memory: memoryReport
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            status: 'ERROR',
+            timestamp: new Date().toISOString(),
+            error: 'Failed to get memory health'
+        });
+    }
+});
+app.get('/api/health/cache', async (req, res) => {
+    try {
+        const CacheManager = (await Promise.resolve().then(() => __importStar(require('./services/CacheManager')))).default;
+        const cacheManager = CacheManager.getInstance();
+        const cacheMetrics = await cacheManager.getMetrics();
+        res.json({
+            status: 'OK',
+            timestamp: new Date().toISOString(),
+            cache: {
+                metrics: cacheMetrics,
+                connected: true
+            }
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            status: 'ERROR',
+            timestamp: new Date().toISOString(),
+            error: 'Failed to get cache health',
+            cache: {
+                connected: false
+            }
+        });
+    }
+});
 app.use('/api/public', publicApiRoutes_1.default);
 app.use('/api/public/drugs', publicDrugDetailsRoutes_1.default);
+app.use('/api/analytics', analyticsRoutes_1.default);
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api/subscriptions', subscriptionRoutes_1.default);
 app.use('/api/patients', patientRoutes_1.default);

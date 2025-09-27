@@ -13,6 +13,11 @@ export declare class PerformanceController {
     clearCache(req: AuthRequest, res: Response): Promise<any>;
     warmCache(req: AuthRequest, res: Response): Promise<any>;
     getPerformanceOverview(req: AuthRequest, res: Response): Promise<any>;
+    getLatencyMetrics(req: AuthRequest, res: Response): Promise<any>;
+    getDatabaseProfile(req: AuthRequest, res: Response): Promise<any>;
+    enableDatabaseProfiling(req: AuthRequest, res: Response): Promise<any>;
+    disableDatabaseProfiling(req: AuthRequest, res: Response): Promise<any>;
+    optimizeDatabaseIndexes(req: AuthRequest, res: Response): Promise<any>;
 }
 export declare const performanceController: PerformanceController;
 //# sourceMappingURL=performanceController.d.ts.map

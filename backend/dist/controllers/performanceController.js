@@ -7,6 +7,8 @@ exports.performanceController = exports.PerformanceController = void 0;
 const DynamicPermissionService_1 = __importDefault(require("../services/DynamicPermissionService"));
 const CacheManager_1 = __importDefault(require("../services/CacheManager"));
 const DatabaseOptimizationService_1 = __importDefault(require("../services/DatabaseOptimizationService"));
+const DatabaseProfiler_1 = __importDefault(require("../services/DatabaseProfiler"));
+const latencyMeasurement_1 = require("../middlewares/latencyMeasurement");
 const logger_1 = __importDefault(require("../utils/logger"));
 class PerformanceController {
     constructor() {
@@ -182,6 +184,110 @@ class PerformanceController {
             res.status(500).json({
                 success: false,
                 message: 'Error retrieving performance overview',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async getLatencyMetrics(req, res) {
+        try {
+            const { endpoint } = req.query;
+            const stats = latencyMeasurement_1.latencyTracker.getStats(endpoint);
+            const topEndpoints = latencyMeasurement_1.latencyTracker.getTopEndpoints(10);
+            const recentMetrics = latencyMeasurement_1.latencyTracker.getMetrics(endpoint, 100);
+            res.json({
+                success: true,
+                data: {
+                    stats,
+                    topEndpoints,
+                    recentMetrics,
+                    timestamp: new Date()
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error getting latency metrics:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error retrieving latency metrics',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async getDatabaseProfile(req, res) {
+        try {
+            const stats = await DatabaseProfiler_1.default.getDatabaseStats();
+            const slowQueries = DatabaseProfiler_1.default.getSlowQueries(50);
+            const queryAnalysis = await DatabaseProfiler_1.default.analyzeSlowQueries();
+            res.json({
+                success: true,
+                data: {
+                    stats,
+                    slowQueries,
+                    queryAnalysis,
+                    timestamp: new Date()
+                }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error getting database profile:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error retrieving database profile',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async enableDatabaseProfiling(req, res) {
+        try {
+            const { slowMs = 100 } = req.body;
+            await DatabaseProfiler_1.default.enableProfiling(slowMs);
+            res.json({
+                success: true,
+                message: `Database profiling enabled for operations slower than ${slowMs}ms`,
+                timestamp: new Date()
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error enabling database profiling:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error enabling database profiling',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async disableDatabaseProfiling(req, res) {
+        try {
+            await DatabaseProfiler_1.default.disableProfiling();
+            res.json({
+                success: true,
+                message: 'Database profiling disabled',
+                timestamp: new Date()
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error disabling database profiling:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error disabling database profiling',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    async optimizeDatabaseIndexes(req, res) {
+        try {
+            await DatabaseProfiler_1.default.createOptimalIndexes();
+            res.json({
+                success: true,
+                message: 'Database indexes optimized successfully',
+                timestamp: new Date()
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error optimizing database indexes:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error optimizing database indexes',
                 error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }

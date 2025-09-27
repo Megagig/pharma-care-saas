@@ -4,6 +4,7 @@ import { performance } from 'perf_hooks';
 import logger from '../utils/logger';
 import { sendEmail } from '../utils/emailHelpers';
 import { generatePDFReport, generateExcelReport, generateCSVReport } from '../utils/exportHelpers';
+import * as path from 'path';
 
 interface ExportJobData {
     reportType: string;
@@ -611,4 +612,4 @@ export class BackgroundJobService {
     }
 }
 
-export default BackgroundJobService.getInstance();
+export default BackgroundJobService;

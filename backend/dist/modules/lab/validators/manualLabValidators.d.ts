@@ -66,8 +66,8 @@ export declare const orderQuerySchema: z.ZodObject<{
     }>>;
     orderedBy: z.ZodOptional<z.ZodString>;
     locationId: z.ZodOptional<z.ZodString>;
-    dateFrom: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
-    dateTo: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    dateFrom: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
+    dateTo: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     search: z.ZodOptional<z.ZodString>;
     page: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     limit: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;

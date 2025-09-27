@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import Redis from 'ioredis';
-export declare const initializeRedisCache: () => Redis | null;
+export declare const initializeRedisCache: () => Redis;
 export declare const getRedisClient: () => Redis | null;
 export interface CacheOptions {
     ttl?: number;
@@ -89,7 +89,7 @@ export declare class QueryOptimizer {
                 $group?: undefined;
             } | {
                 $group: {
-                    _id: null;
+                    _id: any;
                     avgResolutionTime: {
                         $avg: string;
                     };
@@ -179,7 +179,7 @@ export declare class QueryOptimizer {
                             $eq?: undefined;
                             $ne?: undefined;
                         } | {
-                            $ne: (string | null)[];
+                            $ne: string[];
                             $eq?: undefined;
                             $in?: undefined;
                         })[];
