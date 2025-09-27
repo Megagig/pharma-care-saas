@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { WebhookClient } from '@slack/webhook';
+import { IncomingWebhook } from '@slack/webhook';
 
 export interface PerformanceAlert {
   type: 'performance_budget_exceeded' | 'regression_detected' | 'lighthouse_failure';
@@ -36,7 +36,7 @@ export class PerformanceAlertService {
   private alertConfig: AlertConfiguration;
   private alertCooldowns: Map<string, Date> = new Map();
   private emailTransporter: nodemailer.Transporter | null = null;
-  private slackWebhook: WebhookClient | null = null;
+  private slackWebhook: IncomingWebhook | null = null;
 
   constructor(config?: Partial<AlertConfiguration>) {
     this.alertConfig = {
@@ -85,7 +85,7 @@ export class PerformanceAlertService {
     const emailChannel = this.alertConfig.channels.find(c => c.type === 'email');
     if (emailChannel?.enabled) {
       try {
-        this.emailTransporter = nodemailer.createTransporter(emailChannel.config);
+        this.emailTransporter = nodemailer.createTransport(emailChannel.config);
       } catch (error) {
         console.error('Failed to initialize email transporter:', error);
       }
@@ -95,7 +95,7 @@ export class PerformanceAlertService {
     const slackChannel = this.alertConfig.channels.find(c => c.type === 'slack');
     if (slackChannel?.enabled) {
       try {
-        this.slackWebhook = new WebhookClient(slackChannel.config.webhookUrl);
+        this.slackWebhook = new IncomingWebhook(slackChannel.config.webhookUrl);
       } catch (error) {
         console.error('Failed to initialize Slack webhook:', error);
       }
@@ -214,7 +214,7 @@ export class PerformanceAlertService {
               short: false,
             },
           ],
-          ts: Math.floor(alert.timestamp.getTime() / 1000),
+          ts: Math.floor(alert.timestamp.getTime() / 1000).toString(),
         },
       ],
     });
@@ -285,8 +285,8 @@ export class PerformanceAlertService {
     const thresholdText = alert.threshold ? ` (threshold: ${this.formatMetricValue(alert.metric, alert.threshold)})` : '';
 
     return `Performance issue detected on ${new URL(alert.url).hostname}\n` +
-           `${alert.metric}: ${formattedValue}${thresholdText}\n` +
-           `Device: ${alert.deviceType || 'Unknown'} | Time: ${alert.timestamp.toLocaleString()}`;
+      `${alert.metric}: ${formattedValue}${thresholdText}\n` +
+      `Device: ${alert.deviceType || 'Unknown'} | Time: ${alert.timestamp.toLocaleString()}`;
   }
 
   private generateRecommendations(alert: PerformanceAlert): string {
@@ -325,7 +325,7 @@ export class PerformanceAlertService {
     };
 
     const metricRecommendations = recommendations[alert.metric] || ['Review performance optimization strategies'];
-    
+
     return '<ul>' + metricRecommendations.map(rec => `<li>${rec}</li>`).join('') + '</ul>';
   }
 

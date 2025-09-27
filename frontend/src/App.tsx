@@ -97,6 +97,17 @@ import SaasSettings from './pages/SaasSettings';
 import SidebarTest from './components/SidebarTest';
 import TrialExpiryHandler from './components/TrialExpiryHandler';
 
+// Component to handle hooks that require Router context
+function AppHooks() {
+  // Use route preloading and prefetching hooks inside Router context
+  useRoutePreloading();
+  useRoutePrefetching();
+  useBackgroundSync();
+  useCacheWarming();
+  
+  return null; // This component doesn't render anything
+}
+
 function App(): JSX.Element {
   // Initialize Zustand stores on app startup
   useEffect(() => {
@@ -130,12 +141,6 @@ function App(): JSX.Element {
     [resolvedTheme]
   );
 
-  // Use route preloading and prefetching hooks
-  useRoutePreloading();
-  useRoutePrefetching();
-  useBackgroundSync();
-  useCacheWarming();
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -147,6 +152,7 @@ function App(): JSX.Element {
                 <FeatureFlagProvider>
                   <NotificationProvider>
                     <Router>
+                      <AppHooks />
                       <Box
                         sx={{
                           minHeight: '100vh',
@@ -178,7 +184,7 @@ function App(): JSX.Element {
                           }}
                         />
                         {/* React Query DevTools - only in development */}
-                        {process.env.NODE_ENV === 'development' && (
+                        {import.meta.env.DEV && (
                           <ReactQueryDevtools
                             initialIsOpen={false}
                             position="bottom-right"

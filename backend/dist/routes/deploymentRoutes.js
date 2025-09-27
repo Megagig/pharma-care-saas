@@ -5,12 +5,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middlewares/auth");
-const rbac_1 = require("../middlewares/rbac");
+const rbac_1 = __importDefault(require("../middlewares/rbac"));
 const DeploymentMonitoringService_1 = __importDefault(require("../services/DeploymentMonitoringService"));
 const FeatureFlagService_1 = __importDefault(require("../services/FeatureFlagService"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const router = (0, express_1.Router)();
-router.post('/start', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/start', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager'), async (req, res) => {
     try {
         const { deploymentId, rolloutPercentage, thresholds } = req.body;
         if (!deploymentId) {
@@ -51,7 +51,7 @@ router.post('/start', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manage
         });
     }
 });
-router.get('/:deploymentId/status', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/:deploymentId/status', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
     try {
         const { deploymentId } = req.params;
         const deployment = DeploymentMonitoringService_1.default.getDeploymentStatus(deploymentId);
@@ -75,7 +75,7 @@ router.get('/:deploymentId/status', auth_1.auth, (0, rbac_1.rbac)(['admin', 'dep
         });
     }
 });
-router.get('/active', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/active', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
     try {
         const deployments = DeploymentMonitoringService_1.default.getActiveDeployments();
         res.json({
@@ -92,7 +92,7 @@ router.get('/active', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manage
         });
     }
 });
-router.put('/:deploymentId/rollout', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager']), async (req, res) => {
+router.put('/:deploymentId/rollout', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager'), async (req, res) => {
     try {
         const { deploymentId } = req.params;
         const { percentage } = req.body;
@@ -120,7 +120,7 @@ router.put('/:deploymentId/rollout', auth_1.auth, (0, rbac_1.rbac)(['admin', 'de
         });
     }
 });
-router.post('/:deploymentId/rollback', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/:deploymentId/rollback', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager'), async (req, res) => {
     try {
         const { deploymentId } = req.params;
         const { reason } = req.body;
@@ -148,7 +148,7 @@ router.post('/:deploymentId/rollback', auth_1.auth, (0, rbac_1.rbac)(['admin', '
         });
     }
 });
-router.post('/:deploymentId/complete', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/:deploymentId/complete', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager'), async (req, res) => {
     try {
         const { deploymentId } = req.params;
         await DeploymentMonitoringService_1.default.completeDeployment(deploymentId);
@@ -169,7 +169,7 @@ router.post('/:deploymentId/complete', auth_1.auth, (0, rbac_1.rbac)(['admin', '
         });
     }
 });
-router.get('/:deploymentId/metrics', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/:deploymentId/metrics', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
     try {
         const { deploymentId } = req.params;
         const { limit = 50, offset = 0 } = req.query;
@@ -202,7 +202,7 @@ router.get('/:deploymentId/metrics', auth_1.auth, (0, rbac_1.rbac)(['admin', 'de
         });
     }
 });
-router.get('/feature-flags/metrics', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/feature-flags/metrics', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
     try {
         const metrics = FeatureFlagService_1.default.getMetrics();
         res.json({
@@ -219,7 +219,7 @@ router.get('/feature-flags/metrics', auth_1.auth, (0, rbac_1.rbac)(['admin', 'de
         });
     }
 });
-router.post('/feature-flags/override', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/feature-flags/override', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager'), async (req, res) => {
     try {
         const { featureName, userId, workspaceId, enabled, expiresAt, reason } = req.body;
         if (!featureName || typeof enabled !== 'boolean') {
@@ -255,7 +255,7 @@ router.post('/feature-flags/override', auth_1.auth, (0, rbac_1.rbac)(['admin', '
         });
     }
 });
-router.delete('/feature-flags/override', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager']), async (req, res) => {
+router.delete('/feature-flags/override', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager'), async (req, res) => {
     try {
         const { featureName, userId, workspaceId } = req.body;
         if (!featureName) {
@@ -280,7 +280,7 @@ router.delete('/feature-flags/override', auth_1.auth, (0, rbac_1.rbac)(['admin',
         });
     }
 });
-router.get('/feature-flags/overrides', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/feature-flags/overrides', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
     try {
         const { featureName } = req.query;
         const overrides = await FeatureFlagService_1.default.getFeatureOverrides(featureName);
@@ -298,7 +298,7 @@ router.get('/feature-flags/overrides', auth_1.auth, (0, rbac_1.rbac)(['admin', '
         });
     }
 });
-router.post('/cleanup', auth_1.auth, (0, rbac_1.rbac)(['admin']), async (req, res) => {
+router.post('/cleanup', auth_1.auth, rbac_1.default.requireRole('admin'), async (req, res) => {
     try {
         DeploymentMonitoringService_1.default.cleanup();
         logger_1.default.info(`Deployment cleanup executed by user ${req.user.id}`);

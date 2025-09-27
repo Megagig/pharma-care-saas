@@ -5,11 +5,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middlewares/auth");
-const rbac_1 = require("../middlewares/rbac");
+const rbac_1 = __importDefault(require("../middlewares/rbac"));
 const ContinuousMonitoringService_1 = __importDefault(require("../services/ContinuousMonitoringService"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const router = (0, express_1.Router)();
-router.post('/start', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/start', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager'), async (req, res) => {
     try {
         const { config } = req.body;
         await ContinuousMonitoringService_1.default.start(config);
@@ -30,7 +30,7 @@ router.post('/start', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manage
         });
     }
 });
-router.post('/stop', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/stop', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager'), async (req, res) => {
     try {
         await ContinuousMonitoringService_1.default.stop();
         logger_1.default.info(`Continuous monitoring stopped by user ${req.user.id}`);
@@ -48,7 +48,7 @@ router.post('/stop', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager
         });
     }
 });
-router.get('/status', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/status', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
     try {
         const status = ContinuousMonitoringService_1.default.getStatus();
         res.json({
@@ -65,7 +65,7 @@ router.get('/status', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manage
         });
     }
 });
-router.put('/config', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager']), async (req, res) => {
+router.put('/config', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager'), async (req, res) => {
     try {
         const { config } = req.body;
         if (!config) {
@@ -92,7 +92,7 @@ router.put('/config', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manage
         });
     }
 });
-router.get('/default-config', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/default-config', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
     try {
         const defaultConfig = {
             webVitals: {

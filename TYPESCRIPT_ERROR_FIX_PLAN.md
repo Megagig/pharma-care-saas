@@ -2,61 +2,89 @@
 
 ## Error Categories
 
-### 1. Singleton Pattern Issues (Multiple files)
-- **Files affected**: `optimizedReportHelpers.ts`, `reportsController.ts`, `initializeReportIndexes.ts`
-- **Issue**: Services calling `getInstance()` but method doesn't exist or isn't static
-- **Services**: `ReportAggregationService`, `BackgroundJobService`, `ConnectionPoolService`, `DatabaseIndexingService`
+### 1. Import/Export Issues (Multiple files)
+- FeatureFlag default export issues
+- PerformanceCacheService import issues
+- RBAC middleware export issues
+- FeatureFlagService import issues
 
-### 2. File Casing Issue
-- **File**: `reportsController.ts`
-- **Issue**: Import path casing mismatch `ConnectionPoolService.ts` vs `connectionPoolService.ts`
+### 2. Missing Dependencies
+- @slack/webhook module
+- bullmq module
+- compression module
+- cron namespace
 
-### 3. Missing Model Methods
-- **Files affected**: `reportsRBAC.ts`, `ReportAuditLog.ts`, `ReportSchedule.ts`
-- **Missing methods**: `logEvent`, `calculateRiskScore`, `calculateNextRun`, `incrementViewCount`
+### 3. Property/Method Missing Errors
+- nodemailer.createTransporter → createTransport
+- Various service methods missing
+- Request.user property missing
+- Model properties missing
 
-### 4. Missing Type Definitions
-- **Files affected**: `jsonSchemaValidator.ts`, `BackgroundJobService.ts`
-- **Missing modules**: `ajv`, `ajv-formats`, `bull`
+### 4. Type Definition Issues
+- MongoDB aggregation pipeline types
+- Object value arithmetic operations
+- Trend analysis properties
 
-### 5. Missing Imports
-- **Files affected**: `BackgroundJobService.ts`
-- **Missing imports**: `path`, `emailHelpers`, `exportHelpers`
+## Fix Strategy
 
-### 6. Type Mismatches
-- **Files affected**: `reportsRBAC.ts`, `ReportAggregationService.ts`
-- **Issues**: `ObjectId` vs `string`, `PipelineStage` type conflicts
+### Phase 1: Dependency Installation
+- Install missing npm packages
+- Update type definitions
 
-### 7. Invalid Mongoose Options
-- **File**: `ConnectionPoolService.ts`
-- **Issue**: `bufferMaxEntries` doesn't exist in ConnectOptions
+### Phase 2: Import/Export Fixes
+- Fix FeatureFlag model exports
+- Fix PerformanceCacheService imports
+- Fix RBAC middleware exports
+- Fix feature flag service imports
 
-## Fix Implementation Order
+### Phase 3: Method/Property Fixes
+- Fix nodemailer method call
+- Add missing service methods
+- Fix Request.user type definitions
+- Fix model property definitions
 
-1. **Install missing dependencies** (ajv, ajv-formats, bull)
-2. **Fix file casing issue** (simplest fix first)
-3. **Fix singleton pattern implementations** (most widespread issue)
-4. **Add missing model methods**
-5. **Fix type mismatches**
-6. **Fix mongoose options**
-7. **Add missing imports**
-8. **Verify all fixes**
+### Phase 4: Type Definition Corrections
+- Fix MongoDB aggregation types
+- Fix arithmetic operation types
+- Fix trend analysis interface
 
-## Detailed Checklist
+## Files to Fix (32 files)
+1. src/controllers/featureFlagController.ts
+2. src/controllers/subscriptionController.ts
+3. src/middlewares/auth.ts
+4. src/middlewares/cacheMiddleware.ts
+5. src/middlewares/compressionMiddleware.ts
+6. src/middlewares/featureFlagMiddleware.ts
+7. src/middlewares/reportsRBAC.ts
+8. src/migrations/rbac/003-migration-validation-rollback.ts
+9. src/migrations/rbac/migration-orchestrator.ts
+10. src/modules/lab/routes/manualLabRoutes.ts
+11. src/routes/continuousMonitoringRoutes.ts
+12. src/routes/deploymentRoutes.ts
+13. src/routes/lighthouseRoutes.ts
+14. src/routes/performanceBudgetRoutes.ts
+15. src/routes/performanceMonitoringRoutes.ts
+16. src/routes/productionValidationRoutes.ts
+17. src/scripts/addDiagnosticFeatureFlags.ts
+18. src/scripts/testDiagnosticEndToEnd.ts
+19. src/services/BackwardCompatibilityService.ts
+20. src/services/ContinuousMonitoringService.ts
+21. src/services/DeploymentMonitoringService.ts
+22. src/services/FeatureFlagService.ts
+23. src/services/LighthouseCIService.ts
+24. src.services/PerformanceAlertService.ts
+25. src/services/PerformanceBudgetService.ts
+26. src/services/PerformanceJobService.ts
+27. src/services/PerformanceMonitoringService.ts
+28. src/services/ProductionValidationService.ts
+29. src/services/WebVitalsService.ts
+30. src/services/systemIntegrationService.ts
+31. src/utils/cursorPagination.ts
+32. src/utils/dataSeeder.ts
 
-- [ ] Install missing dependencies: ajv, ajv-formats, bull
-- [ ] Fix ConnectionPoolService import path casing
-- [ ] Fix ReportAggregationService singleton pattern
-- [ ] Fix BackgroundJobService singleton pattern
-- [ ] Fix ConnectionPoolService singleton pattern
-- [ ] Fix DatabaseIndexingService singleton pattern
-- [ ] Add ReportAuditLog.logEvent static method
-- [ ] Add ReportAuditLog calculateRiskScore instance method
-- [ ] Add ReportSchedule calculateNextRun instance method
-- [ ] Add ReportTemplate incrementViewCount instance method
-- [ ] Fix AuthRequest sessionID type definition
-- [ ] Fix ObjectId to string conversion in reportsRBAC
-- [ ] Fix PipelineStage type import in ReportAggregationService
-- [ ] Remove bufferMaxEntries from ConnectionPoolService
-- [ ] Add missing imports to BackgroundJobService (path, emailHelpers, exportHelpers)
+## Progress Tracking
+- [ ] Phase 1: Install missing dependencies
+- [ ] Phase 2: Fix import/export issues
+- [ ] Phase 3: Fix method/property issues
+- [ ] Phase 4: Fix type definition issues
 - [ ] Verify all errors are resolved

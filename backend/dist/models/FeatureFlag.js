@@ -36,32 +36,60 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FeatureFlag = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const FeatureFlagSchema = new mongoose_1.Schema({
-    featureName: {
+    name: {
         type: String,
         required: true,
-        index: true,
+        trim: true,
     },
-    userId: {
+    key: {
         type: String,
-        sparse: true,
-        index: true,
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true,
     },
-    workspaceId: {
+    description: {
         type: String,
-        sparse: true,
-        index: true,
+        trim: true,
     },
-    enabled: {
+    isActive: {
         type: Boolean,
-        required: true,
+        default: true,
+        index: true,
     },
-    reason: {
-        type: String,
-        maxlength: 500,
+    allowedTiers: [{
+            type: String,
+            trim: true,
+        }],
+    allowedRoles: [{
+            type: String,
+            trim: true,
+        }],
+    customRules: {
+        type: mongoose_1.Schema.Types.Mixed,
+        default: {},
     },
-    expiresAt: {
-        type: Date,
-        index: { expireAfterSeconds: 0 },
+    metadata: {
+        category: {
+            type: String,
+            default: 'core',
+        },
+        priority: {
+            type: String,
+            default: 'medium',
+        },
+        tags: [{
+                type: String,
+                trim: true,
+            }],
+    },
+    createdBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    updatedBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
     },
     createdAt: {
         type: Date,
@@ -73,8 +101,9 @@ const FeatureFlagSchema = new mongoose_1.Schema({
         default: Date.now,
     },
 });
-FeatureFlagSchema.index({ featureName: 1, userId: 1 }, { unique: true, sparse: true });
-FeatureFlagSchema.index({ featureName: 1, workspaceId: 1 }, { unique: true, sparse: true });
+FeatureFlagSchema.index({ key: 1, isActive: 1 });
+FeatureFlagSchema.index({ 'metadata.category': 1, isActive: 1 });
+FeatureFlagSchema.index({ allowedTiers: 1, isActive: 1 });
 FeatureFlagSchema.pre('save', function (next) {
     this.updatedAt = new Date();
     next();

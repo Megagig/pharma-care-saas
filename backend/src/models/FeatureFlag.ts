@@ -1,49 +1,90 @@
 /**
  * Feature Flag Model
  * 
- * Stores feature flag overrides for users and workspaces
+ * Stores feature flag configuration for the application
  */
 
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IFeatureFlag extends Document {
-  featureName: string;
-  userId?: string;
-  workspaceId?: string;
-  enabled: boolean;
-  reason?: string;
-  expiresAt?: Date;
+  name: string;
+  key: string;
+  description?: string;
+  isActive: boolean;
+  allowedTiers: string[];
+  allowedRoles: string[];
+  customRules?: {
+    requiredLicense?: boolean;
+    maxUsers?: number;
+    [key: string]: any;
+  };
+  metadata?: {
+    category: string;
+    priority: string;
+    tags: string[];
+    [key: string]: any;
+  };
+  createdBy?: mongoose.Types.ObjectId;
+  updatedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const FeatureFlagSchema = new Schema<IFeatureFlag>({
-  featureName: {
+  name: {
     type: String,
     required: true,
-    index: true,
+    trim: true,
   },
-  userId: {
+  key: {
     type: String,
-    sparse: true,
-    index: true,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
   },
-  workspaceId: {
+  description: {
     type: String,
-    sparse: true,
-    index: true,
+    trim: true,
   },
-  enabled: {
+  isActive: {
     type: Boolean,
-    required: true,
+    default: true,
+    index: true,
   },
-  reason: {
+  allowedTiers: [{
     type: String,
-    maxlength: 500,
+    trim: true,
+  }],
+  allowedRoles: [{
+    type: String,
+    trim: true,
+  }],
+  customRules: {
+    type: Schema.Types.Mixed,
+    default: {},
   },
-  expiresAt: {
-    type: Date,
-    index: { expireAfterSeconds: 0 }, // TTL index
+  metadata: {
+    category: {
+      type: String,
+      default: 'core',
+    },
+    priority: {
+      type: String,
+      default: 'medium',
+    },
+    tags: [{
+      type: String,
+      trim: true,
+    }],
+  },
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  updatedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
   },
   createdAt: {
     type: Date,
@@ -57,11 +98,12 @@ const FeatureFlagSchema = new Schema<IFeatureFlag>({
 });
 
 // Compound indexes for efficient queries
-FeatureFlagSchema.index({ featureName: 1, userId: 1 }, { unique: true, sparse: true });
-FeatureFlagSchema.index({ featureName: 1, workspaceId: 1 }, { unique: true, sparse: true });
+FeatureFlagSchema.index({ key: 1, isActive: 1 });
+FeatureFlagSchema.index({ 'metadata.category': 1, isActive: 1 });
+FeatureFlagSchema.index({ allowedTiers: 1, isActive: 1 });
 
 // Update the updatedAt field on save
-FeatureFlagSchema.pre('save', function(next) {
+FeatureFlagSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });

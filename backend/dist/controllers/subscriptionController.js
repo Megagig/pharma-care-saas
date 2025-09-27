@@ -40,7 +40,7 @@ exports.subscriptionController = exports.SubscriptionController = void 0;
 const User_1 = __importDefault(require("../models/User"));
 const Subscription_1 = __importDefault(require("../models/Subscription"));
 const SubscriptionPlan_1 = __importDefault(require("../models/SubscriptionPlan"));
-const FeatureFlag_1 = __importDefault(require("../models/FeatureFlag"));
+const FeatureFlag_1 = require("../models/FeatureFlag");
 const Payment_1 = __importDefault(require("../models/Payment"));
 const emailService_1 = require("../utils/emailService");
 const paystackService_1 = require("../services/paystackService");
@@ -117,7 +117,7 @@ class SubscriptionController {
                     },
                 });
             }
-            const availableFeatures = await FeatureFlag_1.default.find({
+            const availableFeatures = await FeatureFlag_1.FeatureFlag.find({
                 isActive: true,
                 allowedTiers: subscription.tier,
             }).select('key name description metadata.category');
@@ -654,7 +654,7 @@ class SubscriptionController {
                 'Enterprise Yearly': 'enterprise',
             };
             const newTier = tierMapping[newPlan.name] || 'basic';
-            const features = await FeatureFlag_1.default.find({
+            const features = await FeatureFlag_1.FeatureFlag.find({
                 isActive: true,
                 allowedTiers: newTier,
             });

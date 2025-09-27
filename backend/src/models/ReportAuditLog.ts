@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Model } from 'mongoose';
 
 export interface IReportAuditLog extends Document {
     _id: string;
@@ -67,6 +67,13 @@ export interface IReportAuditLog extends Document {
     tags: string[];
     createdAt: Date;
     updatedAt: Date;
+}
+
+export interface IReportAuditLogModel extends Model<IReportAuditLog> {
+    logEvent(eventData: Partial<IReportAuditLog>): Promise<IReportAuditLog>;
+    getSecuritySummary(workplaceId: string, days?: number): Promise<any>;
+    getUserActivity(userId: string, workplaceId: string, days?: number): Promise<IReportAuditLog[]>;
+    getComplianceReport(workplaceId: string, startDate: Date, endDate: Date): Promise<any>;
 }
 
 const ReportAuditLogSchema = new Schema<IReportAuditLog>({
@@ -532,4 +539,4 @@ ReportAuditLogSchema.statics.getComplianceReport = function (workplaceId: string
     ]);
 };
 
-export default mongoose.model<IReportAuditLog>('ReportAuditLog', ReportAuditLogSchema);
+export default mongoose.model<IReportAuditLog, IReportAuditLogModel>('ReportAuditLog', ReportAuditLogSchema);

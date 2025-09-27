@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.dataSeeder = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const dotenv_1 = require("dotenv");
-const FeatureFlag_1 = __importDefault(require("../models/FeatureFlag"));
+const FeatureFlag_1 = require("../models/FeatureFlag");
 const SubscriptionPlan_1 = __importDefault(require("../models/SubscriptionPlan"));
 const User_1 = __importDefault(require("../models/User"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
@@ -666,7 +666,7 @@ class DataSeeder {
     async seedFeatureFlags() {
         try {
             console.log('Seeding feature flags...');
-            await FeatureFlag_1.default.deleteMany({});
+            await FeatureFlag_1.FeatureFlag.deleteMany({});
             let adminUser = await User_1.default.findOne({ role: 'super_admin' });
             if (!adminUser) {
                 const enterprisePlan = await SubscriptionPlan_1.default.findOne({
@@ -696,7 +696,7 @@ class DataSeeder {
                 createdBy: adminUser._id,
                 updatedBy: adminUser._id,
             }));
-            await FeatureFlag_1.default.insertMany(featureFlags);
+            await FeatureFlag_1.FeatureFlag.insertMany(featureFlags);
             console.log(`✅ Created ${featureFlags.length} feature flags`);
         }
         catch (error) {

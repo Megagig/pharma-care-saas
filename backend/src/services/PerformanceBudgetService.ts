@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { PerformanceCacheService } from './PerformanceCacheService';
+import PerformanceCacheService from './PerformanceCacheService';
 import { performanceAlertService, PerformanceAlert } from './PerformanceAlertService';
 
 export interface PerformanceBudget {
@@ -167,7 +167,7 @@ export class PerformanceBudgetService {
   private cacheService: PerformanceCacheService;
 
   constructor() {
-    this.cacheService = new PerformanceCacheService();
+    this.cacheService = PerformanceCacheService.getInstance();
   }
 
   async createBudget(budget: Omit<PerformanceBudget, 'id' | 'createdAt' | 'updatedAt'>): Promise<PerformanceBudget> {
@@ -216,8 +216,8 @@ export class PerformanceBudgetService {
 
   async getBudgets(workspaceId?: string): Promise<PerformanceBudget[]> {
     const cacheKey = `performance-budgets:${workspaceId || 'global'}`;
-    
-    const cached = await this.cacheService.get<PerformanceBudget[]>(cacheKey);
+
+    const cached = await this.cacheService.getCachedApiResponse<PerformanceBudget[]>(cacheKey);
     if (cached) {
       return cached;
     }
@@ -229,10 +229,10 @@ export class PerformanceBudgetService {
       }
 
       const budgets = await PerformanceBudgetModel.find(query).lean();
-      
+
       // Cache for 10 minutes
-      await this.cacheService.set(cacheKey, budgets, 600);
-      
+      await this.cacheService.cacheApiResponse(cacheKey, budgets, { ttl: 600 });
+
       return budgets;
     } catch (error) {
       console.error('Error getting performance budgets:', error);
@@ -492,7 +492,7 @@ export class PerformanceBudgetService {
       }
 
       const startTime = this.getPeriodStartTime(period);
-      
+
       // Get violations for the period
       const violations = await BudgetViolationModel.find({
         budgetId,
@@ -538,8 +538,8 @@ export class PerformanceBudgetService {
     target: number,
     higherIsBad: boolean = false
   ): 'low' | 'medium' | 'high' | 'critical' {
-    const deviation = higherIsBad 
-      ? (value - budget) / budget 
+    const deviation = higherIsBad
+      ? (value - budget) / budget
       : (budget - value) / budget;
 
     if (deviation > 0.5) return 'critical';
@@ -606,7 +606,7 @@ export class PerformanceBudgetService {
       budgetId,
       timestamp: { $gte: startTime },
     });
-    
+
     // Assume violations represent ~10% of total checks (rough estimate)
     return Math.max(violations * 10, violations);
   }
@@ -614,7 +614,7 @@ export class PerformanceBudgetService {
   private calculateAverageScores(violations: BudgetViolation[]): { [key: string]: number } {
     // Placeholder implementation
     const scores: { [key: string]: number } = {};
-    
+
     violations.forEach(violation => {
       if (!scores[violation.metric]) {
         scores[violation.metric] = violation.value;
@@ -633,7 +633,7 @@ export class PerformanceBudgetService {
 
   private generateBudgetRecommendations(violations: BudgetViolation[], budget: PerformanceBudget): string[] {
     const recommendations: string[] = [];
-    
+
     const violationsByCategory = violations.reduce((acc, violation) => {
       if (!acc[violation.category]) acc[violation.category] = [];
       acc[violation.category].push(violation);
@@ -642,7 +642,7 @@ export class PerformanceBudgetService {
 
     Object.entries(violationsByCategory).forEach(([category, categoryViolations]) => {
       const count = categoryViolations.length;
-      
+
       switch (category) {
         case 'lighthouse':
           recommendations.push(`${count} Lighthouse score violations detected. Focus on optimizing critical rendering path and reducing JavaScript execution time.`);
@@ -668,7 +668,7 @@ export class PerformanceBudgetService {
     ];
 
     for (const pattern of patterns) {
-      await this.cacheService.invalidate(pattern);
+      await this.cacheService.invalidateByPattern(pattern);
     }
   }
 

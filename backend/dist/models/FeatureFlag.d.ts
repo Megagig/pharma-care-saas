@@ -1,11 +1,24 @@
 import mongoose, { Document } from 'mongoose';
 export interface IFeatureFlag extends Document {
-    featureName: string;
-    userId?: string;
-    workspaceId?: string;
-    enabled: boolean;
-    reason?: string;
-    expiresAt?: Date;
+    name: string;
+    key: string;
+    description?: string;
+    isActive: boolean;
+    allowedTiers: string[];
+    allowedRoles: string[];
+    customRules?: {
+        requiredLicense?: boolean;
+        maxUsers?: number;
+        [key: string]: any;
+    };
+    metadata?: {
+        category: string;
+        priority: string;
+        tags: string[];
+        [key: string]: any;
+    };
+    createdBy?: mongoose.Types.ObjectId;
+    updatedBy?: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }

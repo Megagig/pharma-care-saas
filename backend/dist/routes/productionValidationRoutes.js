@@ -5,11 +5,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middlewares/auth");
-const rbac_1 = require("../middlewares/rbac");
+const rbac_1 = __importDefault(require("../middlewares/rbac"));
 const ProductionValidationService_1 = __importDefault(require("../services/ProductionValidationService"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const router = (0, express_1.Router)();
-router.post('/validate', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/validate', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager'), async (req, res) => {
     try {
         const { baseline, targets } = req.body;
         if (!baseline) {
@@ -34,7 +34,7 @@ router.post('/validate', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_man
         });
     }
 });
-router.post('/validate-segments', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/validate-segments', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager'), async (req, res) => {
     try {
         const result = await ProductionValidationService_1.default.validateAcrossUserSegments();
         logger_1.default.info(`Segment validation executed by user ${req.user.id}: Overall ${result.overall.passed ? 'PASSED' : 'FAILED'}`);
@@ -52,7 +52,7 @@ router.post('/validate-segments', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deplo
         });
     }
 });
-router.get('/targets', auth_1.auth, (0, rbac_1.rbac)(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/targets', auth_1.auth, rbac_1.default.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
     try {
         const targets = {
             lighthouse: {

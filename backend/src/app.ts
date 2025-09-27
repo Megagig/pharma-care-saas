@@ -8,6 +8,9 @@ import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 
+// Import custom types
+import './types/express.d';
+
 import errorHandler from './middlewares/errorHandler';
 import memoryManagementService from './services/MemoryManagementService';
 import logger from './utils/logger';
@@ -101,11 +104,11 @@ import {
   detectAnomalies,
 } from './middlewares/securityMonitoring';
 app.use(blockSuspiciousIPs);
-app.use(detectAnomalies);
+app.use(detectAnomalies as any);
 
 // System integration middleware for backward compatibility
 app.use(systemIntegration.backwardCompatibilityMiddleware());
-app.use(systemIntegration.gradualRolloutMiddleware());
+app.use(systemIntegration.gradualRolloutMiddleware() as any);
 
 // Rate limiting - more lenient for development
 const limiter = rateLimit({
@@ -145,10 +148,10 @@ import { latencyMeasurementMiddleware } from './middlewares/latencyMeasurement';
 app.use('/api/', latencyMeasurementMiddleware);
 
 // Compression middleware for API responses
-import { 
-  intelligentCompressionMiddleware, 
+import {
+  intelligentCompressionMiddleware,
   responseSizeMonitoringMiddleware,
-  adaptiveCompressionMiddleware 
+  adaptiveCompressionMiddleware
 } from './middlewares/compressionMiddleware';
 app.use('/api/', adaptiveCompressionMiddleware());
 app.use('/api/', intelligentCompressionMiddleware({

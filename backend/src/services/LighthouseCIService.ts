@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { PerformanceCacheService } from './PerformanceCacheService';
+import PerformanceCacheService from './PerformanceCacheService';
 import { performanceAlertService, PerformanceAlert } from './PerformanceAlertService';
 import { performanceBudgetService } from './PerformanceBudgetService';
 
@@ -9,6 +9,7 @@ export interface LighthouseResult {
   runId: string;
   branch: string;
   commit: string;
+  workspaceId: string;
   scores: {
     performance: number;
     accessibility: number;
@@ -59,6 +60,7 @@ const lighthouseResultSchema = new Schema({
   runId: { type: String, required: true, unique: true },
   branch: { type: String, required: true },
   commit: { type: String, required: true },
+  workspaceId: { type: String, required: true },
   scores: {
     performance: { type: Number, required: true },
     accessibility: { type: Number, required: true },
@@ -83,6 +85,7 @@ const lighthouseResultSchema = new Schema({
     { branch: 1, timestamp: -1 },
     { url: 1, timestamp: -1 },
     { runId: 1 },
+    { workspaceId: 1 },
   ]
 });
 
@@ -93,7 +96,7 @@ export class LighthouseCIService {
   private performanceBudgets: { [key: string]: number };
 
   constructor() {
-    this.cacheService = new PerformanceCacheService();
+    this.cacheService = PerformanceCacheService.getInstance();
     this.performanceBudgets = {
       performance: 90,
       accessibility: 90,
@@ -112,7 +115,7 @@ export class LighthouseCIService {
     try {
       // Calculate budget status
       const budgetStatus = this.calculateBudgetStatus(result);
-      
+
       const enhancedResult = {
         ...result,
         timestamp: new Date(),
@@ -154,7 +157,7 @@ export class LighthouseCIService {
     } = {}
   ): Promise<LighthouseResult[]> {
     const cacheKey = `lighthouse-results:${JSON.stringify(filters)}`;
-    
+
     const cached = await this.cacheService.get<LighthouseResult[]>(cacheKey);
     if (cached) {
       return cached;
@@ -162,7 +165,7 @@ export class LighthouseCIService {
 
     try {
       const query: any = {};
-      
+
       if (filters.branch) query.branch = filters.branch;
       if (filters.url) query.url = filters.url;
       if (filters.startDate || filters.endDate) {
@@ -198,7 +201,7 @@ export class LighthouseCIService {
       }
 
       let baseline: LighthouseResult;
-      
+
       if (baselineRunId) {
         const baselineResult = await LighthouseResultModel.findOne({ runId: baselineRunId }).lean();
         if (!baselineResult) {
@@ -215,7 +218,7 @@ export class LighthouseCIService {
           })
           .sort({ timestamp: -1 })
           .lean();
-        
+
         if (!baselineResult) {
           throw new Error('No baseline result found for comparison');
         }
@@ -224,7 +227,7 @@ export class LighthouseCIService {
 
       // Calculate trends
       const trends = this.calculateTrends(current, baseline);
-      
+
       // Detect regressions
       const regressions = this.detectRegressions(current, baseline);
 
@@ -250,7 +253,7 @@ export class LighthouseCIService {
     metrics: { [key: string]: number };
   }>> {
     const cacheKey = `lighthouse-trends:${branch}:${url}:${days}`;
-    
+
     const cached = await this.cacheService.get<any[]>(cacheKey);
     if (cached) {
       return cached;
@@ -262,7 +265,7 @@ export class LighthouseCIService {
         branch,
         timestamp: { $gte: startDate },
       };
-      
+
       if (url) query.url = url;
 
       const results = await LighthouseResultModel
@@ -272,10 +275,10 @@ export class LighthouseCIService {
 
       // Group by day and calculate averages
       const dailyData = new Map();
-      
+
       results.forEach(result => {
         const dateKey = result.timestamp.toISOString().split('T')[0];
-        
+
         if (!dailyData.has(dateKey)) {
           dailyData.set(dateKey, {
             date: new Date(dateKey),
@@ -283,7 +286,7 @@ export class LighthouseCIService {
             metrics: [],
           });
         }
-        
+
         const dayData = dailyData.get(dateKey);
         dayData.scores.push(result.scores);
         dayData.metrics.push(result.metrics);
@@ -322,7 +325,7 @@ export class LighthouseCIService {
   }> {
     try {
       const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      
+
       const results = await LighthouseResultModel
         .find({
           branch,
@@ -334,7 +337,7 @@ export class LighthouseCIService {
       // Calculate summary statistics
       const totalRuns = results.length;
       const averageScores = this.calculateAverages(results.map(r => r.scores));
-      
+
       const budgetViolations = results.reduce((count, result) => {
         return count + Object.values(result.budgetStatus).filter(status => status === 'failed').length;
       }, 0);
@@ -394,7 +397,7 @@ export class LighthouseCIService {
       if (baselineValue !== undefined) {
         const change = currentValue - baselineValue;
         const changePercent = (change / baselineValue) * 100;
-        
+
         trends.push({
           metric,
           current: currentValue,
@@ -412,7 +415,7 @@ export class LighthouseCIService {
       if (baselineValue !== undefined && currentValue !== undefined) {
         const change = currentValue - baselineValue;
         const changePercent = (change / baselineValue) * 100;
-        
+
         trends.push({
           metric,
           current: currentValue,
@@ -447,7 +450,7 @@ export class LighthouseCIService {
       const baselineValue = baseline.scores[metric as keyof typeof baseline.scores];
       if (baselineValue !== undefined) {
         const change = ((currentValue - baselineValue) / baselineValue) * 100;
-        
+
         if (change < -5) { // 5% decrease
           const severity = change < -15 ? 'high' : change < -10 ? 'medium' : 'low';
           regressions.push({
@@ -466,7 +469,7 @@ export class LighthouseCIService {
       const baselineValue = baseline.metrics[metric as keyof typeof baseline.metrics];
       if (baselineValue !== undefined && currentValue !== undefined) {
         const change = ((currentValue - baselineValue) / baselineValue) * 100;
-        
+
         if (change > 10) { // 10% increase
           const severity = change > 30 ? 'high' : change > 20 ? 'medium' : 'low';
           regressions.push({
@@ -498,7 +501,7 @@ export class LighthouseCIService {
       if (!previousResult) return;
 
       const regressions = this.detectRegressions(result, previousResult);
-      
+
       // Send alerts for significant regressions
       for (const regression of regressions) {
         if (regression.severity === 'high' || regression.severity === 'medium') {
@@ -590,7 +593,7 @@ export class LighthouseCIService {
     ];
 
     for (const pattern of patterns) {
-      await this.cacheService.invalidate(pattern);
+      await this.cacheService.invalidateByPattern(pattern);
     }
   }
 }

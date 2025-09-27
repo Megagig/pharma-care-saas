@@ -54,7 +54,7 @@ class PerformanceAlertService {
         const emailChannel = this.alertConfig.channels.find(c => c.type === 'email');
         if (emailChannel?.enabled) {
             try {
-                this.emailTransporter = nodemailer_1.default.createTransporter(emailChannel.config);
+                this.emailTransporter = nodemailer_1.default.createTransport(emailChannel.config);
             }
             catch (error) {
                 console.error('Failed to initialize email transporter:', error);
@@ -63,7 +63,7 @@ class PerformanceAlertService {
         const slackChannel = this.alertConfig.channels.find(c => c.type === 'slack');
         if (slackChannel?.enabled) {
             try {
-                this.slackWebhook = new webhook_1.WebhookClient(slackChannel.config.webhookUrl);
+                this.slackWebhook = new webhook_1.IncomingWebhook(slackChannel.config.webhookUrl);
             }
             catch (error) {
                 console.error('Failed to initialize Slack webhook:', error);
@@ -166,7 +166,7 @@ class PerformanceAlertService {
                             short: false,
                         },
                     ],
-                    ts: Math.floor(alert.timestamp.getTime() / 1000),
+                    ts: Math.floor(alert.timestamp.getTime() / 1000).toString(),
                 },
             ],
         });

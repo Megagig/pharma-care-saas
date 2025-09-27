@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import FeatureFlag from '../models/FeatureFlag';
+import { FeatureFlag } from '../models/FeatureFlag';
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import { IUser } from '../models/User';
@@ -350,9 +350,8 @@ export const toggleFeatureFlagStatus = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: `Feature flag ${
-        featureFlag.isActive ? 'enabled' : 'disabled'
-      } successfully`,
+      message: `Feature flag ${featureFlag.isActive ? 'enabled' : 'disabled'
+        } successfully`,
       data: featureFlag,
     });
   } catch (error) {

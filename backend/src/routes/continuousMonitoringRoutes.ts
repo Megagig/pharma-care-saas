@@ -6,8 +6,9 @@
 
 import { Router } from 'express';
 import { auth } from '../middlewares/auth';
-import { rbac } from '../middlewares/rbac';
+import rbac from '../middlewares/rbac';
 import ContinuousMonitoringService from '../services/ContinuousMonitoringService';
+import { AuthRequest } from '../types/auth';
 import logger from '../utils/logger';
 
 const router = Router();
@@ -16,7 +17,7 @@ const router = Router();
  * Start continuous monitoring
  * POST /api/continuous-monitoring/start
  */
-router.post('/start', auth, rbac(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/start', auth, rbac.requireRole('admin', 'deployment_manager'), async (req: AuthRequest, res) => {
   try {
     const { config } = req.body;
 
@@ -46,7 +47,7 @@ router.post('/start', auth, rbac(['admin', 'deployment_manager']), async (req, r
  * Stop continuous monitoring
  * POST /api/continuous-monitoring/stop
  */
-router.post('/stop', auth, rbac(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/stop', auth, rbac.requireRole('admin', 'deployment_manager'), async (req: AuthRequest, res) => {
   try {
     await ContinuousMonitoringService.stop();
 
@@ -71,7 +72,7 @@ router.post('/stop', auth, rbac(['admin', 'deployment_manager']), async (req, re
  * Get monitoring status
  * GET /api/continuous-monitoring/status
  */
-router.get('/status', auth, rbac(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/status', auth, rbac.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
   try {
     const status = ContinuousMonitoringService.getStatus();
 
@@ -94,7 +95,7 @@ router.get('/status', auth, rbac(['admin', 'deployment_manager', 'viewer']), asy
  * Update monitoring configuration
  * PUT /api/continuous-monitoring/config
  */
-router.put('/config', auth, rbac(['admin', 'deployment_manager']), async (req, res) => {
+router.put('/config', auth, rbac.requireRole('admin', 'deployment_manager'), async (req: AuthRequest, res) => {
   try {
     const { config } = req.body;
 
@@ -131,7 +132,7 @@ router.put('/config', auth, rbac(['admin', 'deployment_manager']), async (req, r
  * Get default monitoring configuration
  * GET /api/continuous-monitoring/default-config
  */
-router.get('/default-config', auth, rbac(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/default-config', auth, rbac.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
   try {
     const defaultConfig = {
       webVitals: {

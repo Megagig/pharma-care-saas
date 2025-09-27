@@ -4,7 +4,7 @@ import { Request, Response, NextFunction } from 'express';
 import User, { IUser } from '../models/User';
 import SubscriptionPlan from '../models/SubscriptionPlan';
 import Subscription, { ISubscription } from '../models/Subscription';
-import FeatureFlag from '../models/FeatureFlag';
+import { FeatureFlag } from '../models/FeatureFlag';
 
 // Export AuthRequest interface for backward compatibility
 export interface AuthRequest extends Request {

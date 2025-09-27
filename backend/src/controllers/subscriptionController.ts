@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import User from '../models/User';
 import Subscription from '../models/Subscription';
 import SubscriptionPlan from '../models/SubscriptionPlan';
-import FeatureFlag from '../models/FeatureFlag';
+import { FeatureFlag } from '../models/FeatureFlag';
 import Payment from '../models/Payment';
 import { emailService } from '../utils/emailService';
 import { paystackService, PaystackService } from '../services/paystackService';

@@ -28,7 +28,7 @@ interface SendEmailOptions {
 /**
  * Send email with template support for background job notifications
  */
-export const sendEmail = async (options: SendEmailOptions): Promise<any> => {
+export const sendTemplatedEmail = async (options: SendEmailOptions): Promise<any> => {
     try {
         let htmlContent: string | undefined;
         let textContent: string | undefined;
@@ -129,7 +129,7 @@ export const sendBulkEmails = async (recipients: string[], options: Omit<SendEma
 
     for (const recipient of recipients) {
         try {
-            const result = await sendEmail({
+            const result = await sendTemplatedEmail({
                 ...options,
                 to: recipient
             });
@@ -165,3 +165,14 @@ export const sanitizeEmailContent = (content: string): string => {
         .replace(/"/g, '"')
         .replace(/'/g, '&#39;');
 };
+
+/**
+ * Simple sendEmail function for backward compatibility
+ */
+export async function sendEmail(to: string, subject: string, body: string): Promise<void> {
+    await sendTemplatedEmail({
+        to,
+        subject,
+        text: body,
+    });
+}

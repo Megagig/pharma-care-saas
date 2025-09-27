@@ -6,8 +6,9 @@
 
 import { Router } from 'express';
 import { auth } from '../middlewares/auth';
-import { rbac } from '../middlewares/rbac';
+import rbac from '../middlewares/rbac';
 import ProductionValidationService from '../services/ProductionValidationService';
+import { AuthRequest } from '../types/auth';
 import logger from '../utils/logger';
 
 const router = Router();
@@ -16,7 +17,7 @@ const router = Router();
  * Run production performance validation
  * POST /api/production-validation/validate
  */
-router.post('/validate', auth, rbac(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/validate', auth, rbac.requireRole('admin', 'deployment_manager'), async (req: AuthRequest, res) => {
   try {
     const { baseline, targets } = req.body;
 
@@ -50,7 +51,7 @@ router.post('/validate', auth, rbac(['admin', 'deployment_manager']), async (req
  * Validate performance across user segments
  * POST /api/production-validation/validate-segments
  */
-router.post('/validate-segments', auth, rbac(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/validate-segments', auth, rbac.requireRole('admin', 'deployment_manager'), async (req: AuthRequest, res) => {
   try {
     const result = await ProductionValidationService.validateAcrossUserSegments();
 
@@ -75,7 +76,7 @@ router.post('/validate-segments', auth, rbac(['admin', 'deployment_manager']), a
  * Get validation targets
  * GET /api/production-validation/targets
  */
-router.get('/targets', auth, rbac(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/targets', auth, rbac.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
   try {
     const targets = {
       lighthouse: {

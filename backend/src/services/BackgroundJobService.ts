@@ -2,7 +2,7 @@
 import Bull, { Queue, Job, JobOptions } from 'bull';
 import { performance } from 'perf_hooks';
 import logger from '../utils/logger';
-import { sendEmail } from '../utils/emailHelpers';
+import { sendTemplatedEmail as sendEmail } from '../utils/emailHelpers';
 import { generatePDFReport, generateExcelReport, generateCSVReport } from '../utils/exportHelpers';
 import * as path from 'path';
 

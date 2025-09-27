@@ -28,7 +28,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const initDuration = endTime - startTime;
     
     // Log initialization performance in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`Theme system initialized in ${initDuration.toFixed(2)}ms`);
       
       // Log performance report after a short delay
@@ -41,7 +41,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         }
       }, 1000);
     }
-  }, [initializeTheme, getPerformanceReport, isPerformanceOptimal]);
+  }, []); // Empty dependency array - only run once on mount
 
   // Sync with inline script theme application (avoid duplicate DOM manipulation)
   useEffect(() => {
@@ -69,7 +69,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   // Performance monitoring in development
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && isInitialized) {
+    if (import.meta.env.DEV && isInitialized) {
       // Monitor theme performance every 30 seconds
       const interval = setInterval(() => {
         const report = getPerformanceReport();
@@ -91,7 +91,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       
       return () => clearInterval(interval);
     }
-  }, [isInitialized, getPerformanceReport]);
+  }, [isInitialized]); // Remove getPerformanceReport from dependencies
 
   return <>{children}</>;
 };

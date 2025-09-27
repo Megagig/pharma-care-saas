@@ -4,12 +4,13 @@
  * API endpoints for managing deployment monitoring and rollback
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { auth } from '../middlewares/auth';
-import { rbac } from '../middlewares/rbac';
+import rbac from '../middlewares/rbac';
 import DeploymentMonitoringService from '../services/DeploymentMonitoringService';
 import FeatureFlagService from '../services/FeatureFlagService';
 import logger from '../utils/logger';
+import { AuthRequest } from '../types/auth';
 
 const router = Router();
 
@@ -17,7 +18,7 @@ const router = Router();
  * Start deployment monitoring
  * POST /api/deployment/start
  */
-router.post('/start', auth, rbac(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/start', auth, rbac.requireRole('admin', 'deployment_manager'), async (req: AuthRequest, res: Response) => {
   try {
     const { deploymentId, rolloutPercentage, thresholds } = req.body;
 
@@ -75,7 +76,7 @@ router.post('/start', auth, rbac(['admin', 'deployment_manager']), async (req, r
  * Get deployment status
  * GET /api/deployment/:deploymentId/status
  */
-router.get('/:deploymentId/status', auth, rbac(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/:deploymentId/status', auth, rbac.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
   try {
     const { deploymentId } = req.params;
 
@@ -107,7 +108,7 @@ router.get('/:deploymentId/status', auth, rbac(['admin', 'deployment_manager', '
  * Get all active deployments
  * GET /api/deployment/active
  */
-router.get('/active', auth, rbac(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/active', auth, rbac.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
   try {
     const deployments = DeploymentMonitoringService.getActiveDeployments();
 
@@ -130,7 +131,7 @@ router.get('/active', auth, rbac(['admin', 'deployment_manager', 'viewer']), asy
  * Update rollout percentage
  * PUT /api/deployment/:deploymentId/rollout
  */
-router.put('/:deploymentId/rollout', auth, rbac(['admin', 'deployment_manager']), async (req, res) => {
+router.put('/:deploymentId/rollout', auth, rbac.requireRole('admin', 'deployment_manager'), async (req: AuthRequest, res: Response) => {
   try {
     const { deploymentId } = req.params;
     const { percentage } = req.body;
@@ -168,7 +169,7 @@ router.put('/:deploymentId/rollout', auth, rbac(['admin', 'deployment_manager'])
  * Force rollback
  * POST /api/deployment/:deploymentId/rollback
  */
-router.post('/:deploymentId/rollback', auth, rbac(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/:deploymentId/rollback', auth, rbac.requireRole('admin', 'deployment_manager'), async (req: AuthRequest, res) => {
   try {
     const { deploymentId } = req.params;
     const { reason } = req.body;
@@ -206,7 +207,7 @@ router.post('/:deploymentId/rollback', auth, rbac(['admin', 'deployment_manager'
  * Complete deployment
  * POST /api/deployment/:deploymentId/complete
  */
-router.post('/:deploymentId/complete', auth, rbac(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/:deploymentId/complete', auth, rbac.requireRole('admin', 'deployment_manager'), async (req: AuthRequest, res) => {
   try {
     const { deploymentId } = req.params;
 
@@ -236,7 +237,7 @@ router.post('/:deploymentId/complete', auth, rbac(['admin', 'deployment_manager'
  * Get deployment metrics
  * GET /api/deployment/:deploymentId/metrics
  */
-router.get('/:deploymentId/metrics', auth, rbac(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/:deploymentId/metrics', auth, rbac.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
   try {
     const { deploymentId } = req.params;
     const { limit = 50, offset = 0 } = req.query;
@@ -278,7 +279,7 @@ router.get('/:deploymentId/metrics', auth, rbac(['admin', 'deployment_manager', 
  * Get feature flag metrics
  * GET /api/deployment/feature-flags/metrics
  */
-router.get('/feature-flags/metrics', auth, rbac(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/feature-flags/metrics', auth, rbac.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
   try {
     const metrics = FeatureFlagService.getMetrics();
 
@@ -301,7 +302,7 @@ router.get('/feature-flags/metrics', auth, rbac(['admin', 'deployment_manager', 
  * Set feature flag override
  * POST /api/deployment/feature-flags/override
  */
-router.post('/feature-flags/override', auth, rbac(['admin', 'deployment_manager']), async (req, res) => {
+router.post('/feature-flags/override', auth, rbac.requireRole('admin', 'deployment_manager'), async (req: AuthRequest, res) => {
   try {
     const { featureName, userId, workspaceId, enabled, expiresAt, reason } = req.body;
 
@@ -358,7 +359,7 @@ router.post('/feature-flags/override', auth, rbac(['admin', 'deployment_manager'
  * Remove feature flag override
  * DELETE /api/deployment/feature-flags/override
  */
-router.delete('/feature-flags/override', auth, rbac(['admin', 'deployment_manager']), async (req, res) => {
+router.delete('/feature-flags/override', auth, rbac.requireRole('admin', 'deployment_manager'), async (req: AuthRequest, res) => {
   try {
     const { featureName, userId, workspaceId } = req.body;
 
@@ -392,7 +393,7 @@ router.delete('/feature-flags/override', auth, rbac(['admin', 'deployment_manage
  * Get feature flag overrides
  * GET /api/deployment/feature-flags/overrides
  */
-router.get('/feature-flags/overrides', auth, rbac(['admin', 'deployment_manager', 'viewer']), async (req, res) => {
+router.get('/feature-flags/overrides', auth, rbac.requireRole('admin', 'deployment_manager', 'viewer'), async (req, res) => {
   try {
     const { featureName } = req.query;
 
@@ -417,7 +418,7 @@ router.get('/feature-flags/overrides', auth, rbac(['admin', 'deployment_manager'
  * Cleanup old deployments
  * POST /api/deployment/cleanup
  */
-router.post('/cleanup', auth, rbac(['admin']), async (req, res) => {
+router.post('/cleanup', auth, rbac.requireRole('admin'), async (req: AuthRequest, res) => {
   try {
     DeploymentMonitoringService.cleanup();
 

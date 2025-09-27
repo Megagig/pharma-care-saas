@@ -32,10 +32,13 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.performanceBudgetService = exports.PerformanceBudgetService = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const PerformanceCacheService_1 = require("./PerformanceCacheService");
+const PerformanceCacheService_1 = __importDefault(require("./PerformanceCacheService"));
 const PerformanceAlertService_1 = require("./PerformanceAlertService");
 const performanceBudgetSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
@@ -109,7 +112,7 @@ const PerformanceBudgetModel = mongoose_1.default.model('PerformanceBudget', per
 const BudgetViolationModel = mongoose_1.default.model('BudgetViolation', budgetViolationSchema);
 class PerformanceBudgetService {
     constructor() {
-        this.cacheService = new PerformanceCacheService_1.PerformanceCacheService();
+        this.cacheService = PerformanceCacheService_1.default.getInstance();
     }
     async createBudget(budget) {
         try {
@@ -151,7 +154,7 @@ class PerformanceBudgetService {
     }
     async getBudgets(workspaceId) {
         const cacheKey = `performance-budgets:${workspaceId || 'global'}`;
-        const cached = await this.cacheService.get(cacheKey);
+        const cached = await this.cacheService.getCachedApiResponse(cacheKey);
         if (cached) {
             return cached;
         }
@@ -161,7 +164,7 @@ class PerformanceBudgetService {
                 query.$or = [{ workspaceId }, { workspaceId: { $exists: false } }];
             }
             const budgets = await PerformanceBudgetModel.find(query).lean();
-            await this.cacheService.set(cacheKey, budgets, 600);
+            await this.cacheService.cacheApiResponse(cacheKey, budgets, { ttl: 600 });
             return budgets;
         }
         catch (error) {
@@ -503,7 +506,7 @@ class PerformanceBudgetService {
             'performance-budgets:*',
         ];
         for (const pattern of patterns) {
-            await this.cacheService.invalidate(pattern);
+            await this.cacheService.invalidateByPattern(pattern);
         }
     }
     async createDefaultBudget(workspaceId) {
