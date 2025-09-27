@@ -37,7 +37,17 @@
     "test:theme:performance": "vitest run src/__tests__/theme/ThemePerformance*.test.tsx --reporter=verbose",
     "test:theme:cls": "vitest run src/__tests__/theme/ThemeCLS*.test.tsx --reporter=verbose",
     "test:theme:visual": "vitest run src/__tests__/theme/ThemeVisual*.test.tsx --reporter=verbose",
-    "test:theme:benchmark": "vitest run src/__tests__/theme/ThemePerformanceBenchmark*.test.tsx --reporter=verbose --timeout=60000"
+    "test:theme:benchmark": "vitest run src/__tests__/theme/ThemePerformanceBenchmark*.test.tsx --reporter=verbose --timeout=60000",
+    "test:performance": "node scripts/run-performance-tests.js",
+    "test:performance:suite": "vitest run src/__tests__/performance/PerformanceTestSuite.test.tsx --reporter=verbose --timeout=60000",
+    "test:performance:ci": "npm run test:performance -- --ci",
+    "test:visual": "../scripts/run-visual-tests.sh",
+    "test:visual:update": "../scripts/run-visual-tests.sh --update-snapshots",
+    "test:visual:chromium": "../scripts/run-visual-tests.sh --browsers chromium",
+    "test:load": "../scripts/run-load-tests.sh",
+    "test:load:api": "../scripts/run-load-tests.sh api",
+    "test:load:database": "../scripts/run-load-tests.sh database",
+    "test:load:redis": "../scripts/run-load-tests.sh redis"
   },
   "dependencies": {
     "@date-io/date-fns": "^3.2.1",
