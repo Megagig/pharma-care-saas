@@ -32,6 +32,7 @@ import {
   Badge,
   useTheme,
   useMediaQuery,
+  Container,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -238,6 +239,41 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
     return NOTE_PRIORITIES.find((p) => p.value === priority);
   };
 
+  // Helper function for priority colors
+  const getPriorityColor = (priority: ClinicalNote['priority']) => {
+    switch (priority) {
+      case 'high':
+        return {
+          bg: '#fef2f2',
+          text: '#dc2626',
+          border: '#fecaca',
+        };
+      case 'medium':
+        return {
+          bg: '#fffbeb',
+          text: '#d97706',
+          border: '#fed7aa',
+        };
+      case 'low':
+        return {
+          bg: '#f0fdf4',
+          text: '#16a34a',
+          border: '#bbf7d0',
+        };
+      default:
+        return {
+          bg: '#f8fafc',
+          text: '#64748b',
+          border: '#e2e8f0',
+        };
+    }
+  };
+
+  // Helper function to get user initials
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
+
   // Check permissions
   const canEdit =
     !readonly &&
@@ -291,160 +327,365 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   const priorityInfo = getPriorityInfo(note.priority);
 
   return (
-    <Box
+    <Container
+      maxWidth="xl"
       sx={{
-        maxWidth: embedded ? '100%' : 1200,
-        mx: 'auto',
-        p: embedded ? 0 : 2,
+        py: embedded ? 0 : 3,
+        px: embedded ? 0 : { xs: 2, sm: 3 },
       }}
     >
-      {/* Header */}
+      {/* Modern Header */}
       {!embedded && (
-        <Box sx={{ mb: 3 }}>
-          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+        <Box sx={{ mb: 4 }}>
+          {/* Enhanced Breadcrumbs */}
+          <Breadcrumbs
+            aria-label="breadcrumb"
+            sx={{
+              mb: 3,
+              '& .MuiBreadcrumbs-separator': {
+                mx: 1.5,
+                color: 'text.secondary',
+              },
+            }}
+          >
             <Link
               component="button"
               variant="body2"
               onClick={handleBack}
-              sx={{ display: 'flex', alignItems: 'center' }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                color: 'primary.main',
+                textDecoration: 'none',
+                fontWeight: 500,
+                '&:hover': {
+                  textDecoration: 'underline',
+                },
+              }}
             >
               Clinical Notes
             </Link>
-            <Typography variant="body2" color="text.primary">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
+            >
               {note.title}
             </Typography>
           </Breadcrumbs>
 
-          <Stack
-            direction={isMobile ? 'column' : 'row'}
-            justifyContent="space-between"
-            alignItems={isMobile ? 'stretch' : 'center'}
-            spacing={2}
+          {/* Modern Header Card */}
+          <Card
+            elevation={1}
+            sx={{
+              p: 3,
+              background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
           >
-            <Box>
-              <Typography
-                variant="h4"
-                component="h1"
-                sx={{ fontWeight: 600, mb: 1 }}
-              >
-                {note.title}
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                <Chip
-                  label={typeInfo?.label || note.type}
-                  size="small"
-                  variant="outlined"
-                  color="primary"
-                />
-                <Chip
-                  label={priorityInfo?.label || note.priority}
-                  size="small"
+            <Stack
+              direction={isMobile ? 'column' : 'row'}
+              justifyContent="space-between"
+              alignItems={isMobile ? 'stretch' : 'flex-start'}
+              spacing={3}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="h4"
+                  component="h1"
                   sx={{
-                    backgroundColor: priorityInfo?.color || '#757575',
-                    color: 'white',
-                    fontWeight: 500,
+                    fontWeight: 700,
+                    mb: 2,
+                    fontSize: { xs: '1.75rem', md: '2rem' },
+                    color: 'text.primary',
                   }}
-                />
-                {note.isConfidential && (
+                >
+                  {note.title}
+                </Typography>
+
+                {/* Enhanced Badge Stack */}
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  flexWrap="wrap"
+                  sx={{ gap: 1 }}
+                >
                   <Chip
-                    icon={<SecurityIcon />}
-                    label="Confidential"
-                    size="small"
-                    color="warning"
+                    label={typeInfo?.label || note.type}
+                    size="medium"
+                    sx={{
+                      backgroundColor: 'primary.50',
+                      color: 'primary.700',
+                      fontWeight: 600,
+                      border: '1px solid',
+                      borderColor: 'primary.200',
+                      '&:hover': {
+                        backgroundColor: 'primary.100',
+                      },
+                    }}
                   />
+                  <Chip
+                    label={priorityInfo?.label || note.priority}
+                    size="medium"
+                    sx={{
+                      backgroundColor: getPriorityColor(note.priority).bg,
+                      color: getPriorityColor(note.priority).text,
+                      fontWeight: 600,
+                      border: '1px solid',
+                      borderColor: getPriorityColor(note.priority).border,
+                    }}
+                  />
+                  {note.isConfidential && (
+                    <Chip
+                      icon={<SecurityIcon sx={{ fontSize: '16px !important' }} />}
+                      label="Confidential"
+                      size="medium"
+                      sx={{
+                        backgroundColor: 'warning.50',
+                        color: 'warning.700',
+                        fontWeight: 600,
+                        border: '1px solid',
+                        borderColor: 'warning.200',
+                      }}
+                    />
+                  )}
+                  {note.followUpRequired && (
+                    <Chip
+                      icon={<ScheduleIcon sx={{ fontSize: '16px !important' }} />}
+                      label="Follow-up Required"
+                      size="medium"
+                      sx={{
+                        backgroundColor: 'info.50',
+                        color: 'info.700',
+                        fontWeight: 600,
+                        border: '1px solid',
+                        borderColor: 'info.200',
+                      }}
+                    />
+                  )}
+                </Stack>
+              </Box>
+
+              {/* Enhanced Action Buttons */}
+              <Stack
+                direction={isMobile ? 'row' : 'row'}
+                spacing={1.5}
+                sx={{
+                  flexShrink: 0,
+                  justifyContent: isMobile ? 'flex-end' : 'flex-start',
+                }}
+              >
+                {!embedded && (
+                  <Button
+                    startIcon={<ArrowBackIcon />}
+                    onClick={handleBack}
+                    variant="outlined"
+                    sx={{
+                      borderRadius: 2,
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 600,
+                      borderColor: 'grey.300',
+                      color: 'text.secondary',
+                      '&:hover': {
+                        borderColor: 'grey.400',
+                        backgroundColor: 'grey.50',
+                      },
+                    }}
+                  >
+                    Back
+                  </Button>
                 )}
-                {note.followUpRequired && (
-                  <Chip
-                    icon={<ScheduleIcon />}
-                    label="Follow-up Required"
-                    size="small"
-                    color="info"
-                  />
+                {canEdit && (
+                  <Button
+                    startIcon={<EditIcon />}
+                    onClick={handleEdit}
+                    variant="contained"
+                    sx={{
+                      borderRadius: 2,
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 600,
+                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.2)',
+                      '&:hover': {
+                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+                        transform: 'translateY(-1px)',
+                      },
+                      transition: 'all 0.2s ease-in-out',
+                    }}
+                  >
+                    Edit
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    startIcon={<DeleteIcon />}
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                    variant="outlined"
+                    color="error"
+                    sx={{
+                      borderRadius: 2,
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 600,
+                      '&:hover': {
+                        backgroundColor: 'error.50',
+                        transform: 'translateY(-1px)',
+                      },
+                      transition: 'all 0.2s ease-in-out',
+                    }}
+                  >
+                    Delete
+                  </Button>
                 )}
               </Stack>
-            </Box>
-
-            <Stack direction="row" spacing={1}>
-              {!embedded && (
-                <Button
-                  startIcon={<ArrowBackIcon />}
-                  onClick={handleBack}
-                  variant="outlined"
-                >
-                  Back
-                </Button>
-              )}
-              {canEdit && (
-                <Button
-                  startIcon={<EditIcon />}
-                  onClick={handleEdit}
-                  variant="contained"
-                  color="primary"
-                >
-                  Edit
-                </Button>
-              )}
-              {canDelete && (
-                <Button
-                  startIcon={<DeleteIcon />}
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  variant="outlined"
-                  color="error"
-                >
-                  Delete
-                </Button>
-              )}
             </Stack>
-          </Stack>
+          </Card>
         </Box>
       )}
 
       <Grid container spacing={3}>
         {/* Main Content */}
         <Grid item xs={12} md={8}>
-          {/* Patient and Clinician Information */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
+          {/* Enhanced Patient and Clinician Information */}
+          <Card
+            elevation={1}
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
               <Typography
                 variant="h6"
-                sx={{ mb: 2, display: 'flex', alignItems: 'center' }}
+                sx={{
+                  mb: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '1.125rem',
+                  fontWeight: 600,
+                  color: 'text.primary',
+                }}
               >
-                <PersonIcon sx={{ mr: 1 }} />
+                <PersonIcon sx={{ mr: 1.5, color: 'primary.main' }} />
                 Patient & Clinician Information
               </Typography>
 
               <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
-                  <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      bgcolor: 'grey.50',
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'grey.200',
+                      height: '100%',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Avatar
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          bgcolor: 'primary.main',
+                          mr: 2,
+                          fontSize: '1.1rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {getInitials(note.patient.firstName, note.patient.lastName)}
+                      </Avatar>
+                      <Box>
+                        <Typography
+                          variant="subtitle2"
+                          color="primary.main"
+                          sx={{ mb: 0.5, fontWeight: 600, fontSize: '0.875rem' }}
+                        >
+                          Patient
+                        </Typography>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: '1.1rem',
+                            color: 'text.primary',
+                          }}
+                        >
+                          {formatPatientName(note.patient)}
+                        </Typography>
+                      </Box>
+                    </Box>
                     <Typography
-                      variant="subtitle2"
-                      color="primary"
-                      sx={{ mb: 1 }}
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                      }}
                     >
-                      Patient
-                    </Typography>
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      {formatPatientName(note.patient)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
                       MRN: {note.patient.mrn}
                     </Typography>
                   </Paper>
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      bgcolor: 'grey.50',
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'grey.200',
+                      height: '100%',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Avatar
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          bgcolor: 'secondary.main',
+                          mr: 2,
+                          fontSize: '1.1rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {getInitials(note.pharmacist.firstName, note.pharmacist.lastName)}
+                      </Avatar>
+                      <Box>
+                        <Typography
+                          variant="subtitle2"
+                          color="secondary.main"
+                          sx={{ mb: 0.5, fontWeight: 600, fontSize: '0.875rem' }}
+                        >
+                          Pharmacist
+                        </Typography>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: '1.1rem',
+                            color: 'text.primary',
+                          }}
+                        >
+                          {formatPharmacistName(note.pharmacist)}
+                        </Typography>
+                      </Box>
+                    </Box>
                     <Typography
-                      variant="subtitle2"
-                      color="primary"
-                      sx={{ mb: 1 }}
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                      }}
                     >
-                      Pharmacist
-                    </Typography>
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      {formatPharmacistName(note.pharmacist)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
                       Role: {note.pharmacist.role}
                     </Typography>
                   </Paper>
@@ -453,27 +694,59 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
             </CardContent>
           </Card>
 
-          {/* SOAP Note Content */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
+          {/* Enhanced SOAP Note Content */}
+          <Card
+            elevation={1}
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
+          >
+            <CardContent sx={{ p: 0 }}>
+              {/* Modern Collapsible Header */}
               <Box
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  mb: 2,
+                  p: 3,
+                  pb: expandedSections.content ? 2 : 3,
+                  background: expandedSections.content
+                    ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'
+                    : 'transparent',
+                  borderRadius: expandedSections.content ? '12px 12px 0 0' : '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: expandedSections.content ? 'transparent' : 'grey.50',
+                  },
                 }}
+                onClick={() => toggleSection('content')}
               >
                 <Typography
                   variant="h6"
-                  sx={{ display: 'flex', alignItems: 'center' }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '1.125rem',
+                    fontWeight: 600,
+                    color: expandedSections.content ? 'primary.main' : 'text.primary',
+                  }}
                 >
-                  <AssignmentIcon sx={{ mr: 1 }} />
+                  <AssignmentIcon sx={{ mr: 1.5, fontSize: 24 }} />
                   SOAP Note Content
                 </Typography>
                 <IconButton
-                  onClick={() => toggleSection('content')}
                   size="small"
+                  sx={{
+                    backgroundColor: expandedSections.content ? 'primary.100' : 'grey.100',
+                    color: expandedSections.content ? 'primary.main' : 'text.secondary',
+                    '&:hover': {
+                      backgroundColor: expandedSections.content ? 'primary.200' : 'grey.200',
+                    },
+                  }}
                 >
                   {expandedSections.content ? (
                     <ExpandLessIcon />
@@ -484,107 +757,226 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
               </Box>
 
               <Collapse in={expandedSections.content}>
-                <Stack spacing={3}>
-                  {note.content.subjective && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <MedicalIcon sx={{ mr: 1, fontSize: 20 }} />
-                        Subjective
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                <Box sx={{ px: 3, pb: 3 }}>
+                  <Stack spacing={3}>
+                    {note.content.subjective && (
+                      <Box>
                         <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 600,
+                            color: 'primary.main',
+                            mb: 2,
+                            fontSize: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
                         >
-                          {note.content.subjective}
+                          <MedicalIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                          Subjective
                         </Typography>
-                      </Paper>
-                    </Box>
-                  )}
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            bgcolor: 'grey.50',
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'grey.200',
+                          }}
+                        >
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              whiteSpace: 'pre-wrap',
+                              lineHeight: 1.6,
+                              fontSize: '0.95rem',
+                            }}
+                          >
+                            {note.content.subjective}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    )}
 
-                  {note.content.objective && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <VisibilityIcon sx={{ mr: 1, fontSize: 20 }} />
-                        Objective
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    {note.content.objective && (
+                      <Box>
                         <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 600,
+                            color: 'primary.main',
+                            mb: 2,
+                            fontSize: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
                         >
-                          {note.content.objective}
+                          <VisibilityIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                          Objective
                         </Typography>
-                      </Paper>
-                    </Box>
-                  )}
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            bgcolor: 'grey.50',
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'grey.200',
+                          }}
+                        >
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              whiteSpace: 'pre-wrap',
+                              lineHeight: 1.6,
+                              fontSize: '0.95rem',
+                            }}
+                          >
+                            {note.content.objective}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    )}
 
-                  {note.content.assessment && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <AssessmentIcon sx={{ mr: 1, fontSize: 20 }} />
-                        Assessment
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    {note.content.assessment && (
+                      <Box>
                         <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 600,
+                            color: 'primary.main',
+                            mb: 2,
+                            fontSize: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
                         >
-                          {note.content.assessment}
+                          <AssessmentIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                          Assessment
                         </Typography>
-                      </Paper>
-                    </Box>
-                  )}
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            bgcolor: 'grey.50',
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'grey.200',
+                          }}
+                        >
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              whiteSpace: 'pre-wrap',
+                              lineHeight: 1.6,
+                              fontSize: '0.95rem',
+                            }}
+                          >
+                            {note.content.assessment}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    )}
 
-                  {note.content.plan && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <PlanIcon sx={{ mr: 1, fontSize: 20 }} />
-                        Plan
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    {note.content.plan && (
+                      <Box>
                         <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 600,
+                            color: 'primary.main',
+                            mb: 2,
+                            fontSize: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
                         >
-                          {note.content.plan}
+                          <PlanIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                          Plan
                         </Typography>
-                      </Paper>
-                    </Box>
-                  )}
-                </Stack>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            bgcolor: 'grey.50',
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'grey.200',
+                          }}
+                        >
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              whiteSpace: 'pre-wrap',
+                              lineHeight: 1.6,
+                              fontSize: '0.95rem',
+                            }}
+                          >
+                            {note.content.plan}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    )}
+                  </Stack>
+                </Box>
               </Collapse>
             </CardContent>
           </Card>
 
-          {/* Vital Signs */}
+          {/* Enhanced Vital Signs */}
           {note.vitalSigns && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
+            <Card
+              elevation={1}
+              sx={{
+                mb: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'grey.200',
+              }}
+            >
+              <CardContent sx={{ p: 0 }}>
                 <Box
                   sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 2,
+                    p: 3,
+                    pb: expandedSections.vitals ? 2 : 3,
+                    background: expandedSections.vitals
+                      ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)'
+                      : 'transparent',
+                    borderRadius: expandedSections.vitals ? '12px 12px 0 0' : '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: expandedSections.vitals ? 'transparent' : 'grey.50',
+                    },
                   }}
+                  onClick={() => toggleSection('vitals')}
                 >
-                  <Typography variant="h6">Vital Signs</Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      color: expandedSections.vitals ? 'success.main' : 'text.primary',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <MedicalIcon sx={{ mr: 1.5, fontSize: 24 }} />
+                    Vital Signs
+                  </Typography>
                   <IconButton
-                    onClick={() => toggleSection('vitals')}
                     size="small"
+                    sx={{
+                      backgroundColor: expandedSections.vitals ? 'success.100' : 'grey.100',
+                      color: expandedSections.vitals ? 'success.main' : 'text.secondary',
+                      '&:hover': {
+                        backgroundColor: expandedSections.vitals ? 'success.200' : 'grey.200',
+                      },
+                    }}
                   >
                     {expandedSections.vitals ? (
                       <ExpandLessIcon />
@@ -595,28 +987,67 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 </Box>
 
                 <Collapse in={expandedSections.vitals}>
-                  <VitalSignsDisplay vitalSigns={note.vitalSigns} />
+                  <Box sx={{ px: 3, pb: 3 }}>
+                    <VitalSignsDisplay vitalSigns={note.vitalSigns} />
+                  </Box>
                 </Collapse>
               </CardContent>
             </Card>
           )}
 
-          {/* Lab Results */}
+          {/* Enhanced Lab Results */}
           {note.laborResults && note.laborResults.length > 0 && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
+            <Card
+              elevation={1}
+              sx={{
+                mb: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'grey.200',
+              }}
+            >
+              <CardContent sx={{ p: 0 }}>
                 <Box
                   sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 2,
+                    p: 3,
+                    pb: expandedSections.labs ? 2 : 3,
+                    background: expandedSections.labs
+                      ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
+                      : 'transparent',
+                    borderRadius: expandedSections.labs ? '12px 12px 0 0' : '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: expandedSections.labs ? 'transparent' : 'grey.50',
+                    },
                   }}
+                  onClick={() => toggleSection('labs')}
                 >
-                  <Typography variant="h6">Laboratory Results</Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      color: expandedSections.labs ? 'warning.main' : 'text.primary',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <AssessmentIcon sx={{ mr: 1.5, fontSize: 24 }} />
+                    Laboratory Results
+                  </Typography>
                   <IconButton
-                    onClick={() => toggleSection('labs')}
                     size="small"
+                    sx={{
+                      backgroundColor: expandedSections.labs ? 'warning.100' : 'grey.100',
+                      color: expandedSections.labs ? 'warning.main' : 'text.secondary',
+                      '&:hover': {
+                        backgroundColor: expandedSections.labs ? 'warning.200' : 'grey.200',
+                      },
+                    }}
                   >
                     {expandedSections.labs ? (
                       <ExpandLessIcon />
@@ -627,28 +1058,67 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 </Box>
 
                 <Collapse in={expandedSections.labs}>
-                  <LabResultsDisplay labResults={note.laborResults} />
+                  <Box sx={{ px: 3, pb: 3 }}>
+                    <LabResultsDisplay labResults={note.laborResults} />
+                  </Box>
                 </Collapse>
               </CardContent>
             </Card>
           )}
 
-          {/* Recommendations */}
+          {/* Enhanced Recommendations */}
           {note.recommendations && note.recommendations.length > 0 && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
+            <Card
+              elevation={1}
+              sx={{
+                mb: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'grey.200',
+              }}
+            >
+              <CardContent sx={{ p: 0 }}>
                 <Box
                   sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 2,
+                    p: 3,
+                    pb: expandedSections.recommendations ? 2 : 3,
+                    background: expandedSections.recommendations
+                      ? 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)'
+                      : 'transparent',
+                    borderRadius: expandedSections.recommendations ? '12px 12px 0 0' : '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: expandedSections.recommendations ? 'transparent' : 'grey.50',
+                    },
                   }}
+                  onClick={() => toggleSection('recommendations')}
                 >
-                  <Typography variant="h6">Recommendations</Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      color: expandedSections.recommendations ? 'secondary.main' : 'text.primary',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <PlanIcon sx={{ mr: 1.5, fontSize: 24 }} />
+                    Recommendations
+                  </Typography>
                   <IconButton
-                    onClick={() => toggleSection('recommendations')}
                     size="small"
+                    sx={{
+                      backgroundColor: expandedSections.recommendations ? 'secondary.100' : 'grey.100',
+                      color: expandedSections.recommendations ? 'secondary.main' : 'text.secondary',
+                      '&:hover': {
+                        backgroundColor: expandedSections.recommendations ? 'secondary.200' : 'grey.200',
+                      },
+                    }}
                   >
                     {expandedSections.recommendations ? (
                       <ExpandLessIcon />
@@ -659,52 +1129,150 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 </Box>
 
                 <Collapse in={expandedSections.recommendations}>
-                  <List>
-                    {note.recommendations.map((recommendation, index) => (
-                      <ListItem key={index}>
-                        <ListItemText
-                          primary={recommendation}
-                          primaryTypographyProps={{ variant: 'body1' }}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
+                  <Box sx={{ px: 3, pb: 3 }}>
+                    <List sx={{ p: 0 }}>
+                      {note.recommendations.map((recommendation, index) => (
+                        <ListItem
+                          key={index}
+                          sx={{
+                            px: 0,
+                            py: 1.5,
+                            borderBottom: index < note.recommendations.length - 1 ? '1px solid' : 'none',
+                            borderColor: 'grey.200',
+                          }}
+                        >
+                          <ListItemIcon sx={{ minWidth: 36 }}>
+                            <Box
+                              sx={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: '50%',
+                                backgroundColor: 'secondary.100',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: 'secondary.main',
+                                  fontSize: '0.75rem',
+                                }}
+                              >
+                                {index + 1}
+                              </Typography>
+                            </Box>
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={recommendation}
+                            primaryTypographyProps={{
+                              variant: 'body1',
+                              sx: {
+                                lineHeight: 1.6,
+                                fontSize: '0.95rem',
+                              },
+                            }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
                 </Collapse>
               </CardContent>
             </Card>
           )}
         </Grid>
 
-        {/* Sidebar */}
+        {/* Enhanced Sidebar */}
         <Grid item xs={12} md={4}>
-          {/* Note Metadata */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
+          {/* Enhanced Note Metadata */}
+          <Card
+            elevation={1}
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  mb: 3,
+                  fontSize: '1.125rem',
+                  fontWeight: 600,
+                  color: 'text.primary',
+                }}
+              >
                 Note Information
               </Typography>
 
-              <Stack spacing={2}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
+              <Stack spacing={3}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      backgroundColor: 'primary.50',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mr: 2,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <CalendarIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontWeight: 500, mb: 0.5 }}
+                    >
                       Created
                     </Typography>
-                    <Typography variant="body1">
+                    <Typography
+                      variant="body1"
+                      sx={{ fontWeight: 600, fontSize: '0.95rem' }}
+                    >
                       {formatDate(note.createdAt)}
                     </Typography>
                   </Box>
                 </Box>
 
                 {note.updatedAt !== note.createdAt && (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        backgroundColor: 'info.50',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mr: 2,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <CalendarIcon sx={{ fontSize: 20, color: 'info.main' }} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontWeight: 500, mb: 0.5 }}
+                      >
                         Last Updated
                       </Typography>
-                      <Typography variant="body1">
+                      <Typography
+                        variant="body1"
+                        sx={{ fontWeight: 600, fontSize: '0.95rem' }}
+                      >
                         {formatDate(note.updatedAt)}
                       </Typography>
                     </Box>
@@ -712,13 +1280,35 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 )}
 
                 {note.followUpRequired && note.followUpDate && (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <ScheduleIcon sx={{ mr: 1, color: 'warning.main' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        backgroundColor: 'warning.50',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mr: 2,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <ScheduleIcon sx={{ fontSize: 20, color: 'warning.main' }} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontWeight: 500, mb: 0.5 }}
+                      >
                         Follow-up Date
                       </Typography>
-                      <Typography variant="body1" color="warning.main">
+                      <Typography
+                        variant="body1"
+                        color="warning.main"
+                        sx={{ fontWeight: 600, fontSize: '0.95rem' }}
+                      >
                         {formatDate(note.followUpDate)}
                       </Typography>
                     </Box>
@@ -730,17 +1320,25 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ mb: 1 }}
+                      sx={{ mb: 2, fontWeight: 500 }}
                     >
                       Tags
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1 }}>
                       {note.tags.map((tag, index) => (
                         <Chip
                           key={index}
                           label={tag}
                           size="small"
-                          variant="outlined"
+                          sx={{
+                            backgroundColor: 'grey.100',
+                            color: 'text.primary',
+                            fontWeight: 500,
+                            borderRadius: 2,
+                            '&:hover': {
+                              backgroundColor: 'grey.200',
+                            },
+                          }}
                         />
                       ))}
                     </Stack>
@@ -750,28 +1348,59 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
             </CardContent>
           </Card>
 
-          {/* Attachments */}
+          {/* Enhanced Attachments */}
           {note.attachments && note.attachments.length > 0 && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
+            <Card
+              elevation={1}
+              sx={{
+                mb: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'grey.200',
+              }}
+            >
+              <CardContent sx={{ p: 0 }}>
                 <Box
                   sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 2,
+                    p: 3,
+                    pb: expandedSections.attachments ? 2 : 3,
+                    background: expandedSections.attachments
+                      ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
+                      : 'transparent',
+                    borderRadius: expandedSections.attachments ? '12px 12px 0 0' : '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: expandedSections.attachments ? 'transparent' : 'grey.50',
+                    },
                   }}
+                  onClick={() => toggleSection('attachments')}
                 >
                   <Typography
                     variant="h6"
-                    sx={{ display: 'flex', alignItems: 'center' }}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      color: expandedSections.attachments ? 'info.main' : 'text.primary',
+                    }}
                   >
-                    <AttachFileIcon sx={{ mr: 1 }} />
+                    <AttachFileIcon sx={{ mr: 1.5, fontSize: 24 }} />
                     Attachments ({note.attachments.length})
                   </Typography>
                   <IconButton
-                    onClick={() => toggleSection('attachments')}
                     size="small"
+                    sx={{
+                      backgroundColor: expandedSections.attachments ? 'info.100' : 'grey.100',
+                      color: expandedSections.attachments ? 'info.main' : 'text.secondary',
+                      '&:hover': {
+                        backgroundColor: expandedSections.attachments ? 'info.200' : 'grey.200',
+                      },
+                    }}
                   >
                     {expandedSections.attachments ? (
                       <ExpandLessIcon />
@@ -782,44 +1411,78 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 </Box>
 
                 <Collapse in={expandedSections.attachments}>
-                  <AttachmentsDisplay
-                    attachments={note.attachments}
-                    onDownload={handleDownloadAttachment}
-                    onDelete={canEdit ? handleDeleteAttachment : undefined}
-                  />
+                  <Box sx={{ px: 3, pb: 3 }}>
+                    <AttachmentsDisplay
+                      attachments={note.attachments}
+                      onDownload={handleDownloadAttachment}
+                      onDelete={canEdit ? handleDeleteAttachment : undefined}
+                    />
+                  </Box>
                 </Collapse>
               </CardContent>
             </Card>
           )}
 
-          {/* Audit Trail */}
-          <Card>
-            <CardContent>
+          {/* Enhanced Audit Trail */}
+          <Card
+            elevation={1}
+            sx={{
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
+          >
+            <CardContent sx={{ p: 0 }}>
               <Box
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  mb: 2,
+                  p: 3,
+                  pb: showAuditTrail ? 2 : 3,
+                  background: showAuditTrail
+                    ? 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)'
+                    : 'transparent',
+                  borderRadius: showAuditTrail ? '12px 12px 0 0' : '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: showAuditTrail ? 'transparent' : 'grey.50',
+                  },
                 }}
+                onClick={() => setShowAuditTrail(!showAuditTrail)}
               >
                 <Typography
                   variant="h6"
-                  sx={{ display: 'flex', alignItems: 'center' }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '1.125rem',
+                    fontWeight: 600,
+                    color: showAuditTrail ? 'text.primary' : 'text.primary',
+                  }}
                 >
-                  <HistoryIcon sx={{ mr: 1 }} />
+                  <HistoryIcon sx={{ mr: 1.5, fontSize: 24 }} />
                   Audit Trail
                 </Typography>
                 <IconButton
-                  onClick={() => setShowAuditTrail(!showAuditTrail)}
                   size="small"
+                  sx={{
+                    backgroundColor: showAuditTrail ? 'grey.200' : 'grey.100',
+                    color: 'text.secondary',
+                    '&:hover': {
+                      backgroundColor: showAuditTrail ? 'grey.300' : 'grey.200',
+                    },
+                  }}
                 >
                   {showAuditTrail ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
               </Box>
 
               <Collapse in={showAuditTrail}>
-                <AuditTrailDisplay note={note} />
+                <Box sx={{ px: 3, pb: 3 }}>
+                  <AuditTrailDisplay note={note} />
+                </Box>
               </Collapse>
             </CardContent>
           </Card>
@@ -891,7 +1554,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </Container>
   );
 };
 
@@ -908,15 +1571,42 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
     <Grid container spacing={2}>
       {vitalSigns.bloodPressure && (
         <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              textAlign: 'center',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'grey.200',
+              backgroundColor: 'grey.50',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'grey.100',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              },
+            }}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500, mb: 1 }}
+            >
               Blood Pressure
             </Typography>
-            <Typography variant="h6">
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+            >
               {vitalSigns.bloodPressure.systolic}/
               {vitalSigns.bloodPressure.diastolic}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
+            >
               mmHg
             </Typography>
           </Paper>
@@ -925,12 +1615,41 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
 
       {vitalSigns.heartRate && (
         <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              textAlign: 'center',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'grey.200',
+              backgroundColor: 'grey.50',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'grey.100',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              },
+            }}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500, mb: 1 }}
+            >
               Heart Rate
             </Typography>
-            <Typography variant="h6">{vitalSigns.heartRate}</Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+            >
+              {vitalSigns.heartRate}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
+            >
               bpm
             </Typography>
           </Paper>
@@ -939,33 +1658,108 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
 
       {vitalSigns.temperature && (
         <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              textAlign: 'center',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'grey.200',
+              backgroundColor: 'grey.50',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'grey.100',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              },
+            }}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500, mb: 1 }}
+            >
               Temperature
             </Typography>
-            <Typography variant="h6">{vitalSigns.temperature}°C</Typography>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+            >
+              {vitalSigns.temperature}°C
+            </Typography>
           </Paper>
         </Grid>
       )}
 
       {vitalSigns.weight && (
         <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              textAlign: 'center',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'grey.200',
+              backgroundColor: 'grey.50',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'grey.100',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              },
+            }}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500, mb: 1 }}
+            >
               Weight
             </Typography>
-            <Typography variant="h6">{vitalSigns.weight} kg</Typography>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+            >
+              {vitalSigns.weight} kg
+            </Typography>
           </Paper>
         </Grid>
       )}
 
       {vitalSigns.height && (
         <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              textAlign: 'center',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'grey.200',
+              backgroundColor: 'grey.50',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'grey.100',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              },
+            }}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500, mb: 1 }}
+            >
               Height
             </Typography>
-            <Typography variant="h6">{vitalSigns.height} cm</Typography>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+            >
+              {vitalSigns.height} cm
+            </Typography>
           </Paper>
         </Grid>
       )}
