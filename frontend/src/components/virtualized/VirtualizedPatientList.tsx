@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, forwardRef } from 'react';
 import { FixedSizeList as List } from 'react-window';
-import InfiniteLoader from 'react-window-infinite-loader';
+import { InfiniteLoader } from 'react-window-infinite-loader';
 import {
   Box,
   Card,
@@ -14,12 +14,10 @@ import {
   Button,
   Tooltip,
 } from '@mui/material';
-import {
-  Visibility as VisibilityIcon,
-  Edit as EditIcon,
-  LocalHospital as LocalHospitalIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import WarningIcon from '@mui/icons-material/Warning';
 import type { Patient } from '../../types/patientManagement';
 
 interface VirtualizedPatientListProps {
@@ -311,7 +309,7 @@ export const VirtualizedPatientList: React.FC<VirtualizedPatientListProps> = ({
 
   // Load more items if needed
   const loadMoreItems = useCallback(
-    async (startIndex: number, stopIndex: number) => {
+    async (_startIndex: number, _stopIndex: number) => {
       if (loadNextPage && !isNextPageLoading) {
         await loadNextPage();
       }
@@ -333,11 +331,11 @@ export const VirtualizedPatientList: React.FC<VirtualizedPatientListProps> = ({
   );
 
   // Inner element type for react-window
-  const innerElementType = forwardRef<HTMLDivElement>(({ style, ...rest }, ref) => (
+  const innerElementType = forwardRef<HTMLDivElement>(({ style: elementStyle, ...rest }: any, ref: any) => (
     <div
       ref={ref}
       style={{
-        ...style,
+        ...elementStyle,
         paddingTop: 8,
         paddingBottom: 8,
       }}
@@ -398,19 +396,22 @@ export const VirtualizedPatientList: React.FC<VirtualizedPatientListProps> = ({
   return (
     <Box sx={{ height, width: '100%' }}>
       <InfiniteLoader
-        isItemLoaded={isItemLoaded}
-        itemCount={itemCount}
-        loadMoreItems={loadMoreItems}
+        isRowLoaded={isItemLoaded}
+        rowCount={itemCount}
+        loadMoreRows={loadMoreItems}
         threshold={5} // Start loading when 5 items from the end
       >
-        {({ onItemsRendered, ref }) => (
+        {({ onRowsRendered, ref }: any) => (
           <List
             ref={ref}
+            width="100%"
             height={height}
             itemCount={itemCount}
             itemSize={itemHeight}
             itemData={itemData}
-            onItemsRendered={onItemsRendered}
+            onItemsRendered={({ visibleStartIndex, visibleStopIndex }: any) =>
+              onRowsRendered({ startIndex: visibleStartIndex, stopIndex: visibleStopIndex })
+            }
             innerElementType={innerElementType}
             overscanCount={5} // Render 5 extra items for smooth scrolling
           >

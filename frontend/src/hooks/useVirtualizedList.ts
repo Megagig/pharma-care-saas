@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { useInfiniteQuery, type UseInfiniteQueryResult } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 
 interface VirtualizedListOptions<T> {
   queryKey: string[];
@@ -12,7 +12,7 @@ interface VirtualizedListOptions<T> {
   pageSize?: number;
   enabled?: boolean;
   staleTime?: number;
-  cacheTime?: number;
+  gcTime?: number; // Renamed from cacheTime in newer TanStack Query versions
   keepPreviousData?: boolean;
   refetchOnWindowFocus?: boolean;
 }
@@ -21,22 +21,22 @@ interface VirtualizedListResult<T> {
   // Data
   items: T[];
   totalCount: number;
-  
+
   // Loading states
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
   error: Error | null;
-  
+
   // Pagination
   hasNextPage: boolean;
   isLoadingNextPage: boolean;
   loadNextPage: () => Promise<void>;
-  
+
   // Utilities
   refresh: () => void;
   invalidate: () => void;
-  
+
   // Performance metrics
   metrics: {
     totalItems: number;
@@ -49,16 +49,16 @@ interface VirtualizedListResult<T> {
 export const useVirtualizedList = <T>({
   queryKey,
   queryFn,
-  pageSize = 50,
   enabled = true,
   staleTime = 5 * 60 * 1000, // 5 minutes
-  cacheTime = 10 * 60 * 1000, // 10 minutes
+  gcTime = 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
   keepPreviousData = true,
   refetchOnWindowFocus = false,
 }: VirtualizedListOptions<T>): VirtualizedListResult<T> => {
   const [cacheHits, setCacheHits] = useState(0);
   const [totalRequests, setTotalRequests] = useState(0);
   const loadStartTime = useRef<number>(Date.now());
+  const queryClient = useQueryClient();
 
   // Use React Query's infinite query
   const {
@@ -71,39 +71,34 @@ export const useVirtualizedList = <T>({
     isFetchingNextPage,
     fetchNextPage,
     refetch,
-    remove,
-  }: UseInfiniteQueryResult<{
-    data: T[];
-    nextCursor?: string | number;
-    hasNextPage?: boolean;
-    total?: number;
-  }> = useInfiniteQuery({
+  } = useInfiniteQuery({
     queryKey,
-    queryFn: async ({ pageParam }) => {
+    queryFn: async ({ pageParam }: { pageParam?: string | number }) => {
       const startTime = Date.now();
       setTotalRequests(prev => prev + 1);
-      
+
       try {
         const result = await queryFn({ pageParam });
-        
+
         // Track cache performance (simplified - in real app you'd check if data came from cache)
         const responseTime = Date.now() - startTime;
         if (responseTime < 50) { // Assume fast responses are cache hits
           setCacheHits(prev => prev + 1);
         }
-        
+
         return result;
       } catch (err) {
         throw err;
       }
     },
-    getNextPageParam: (lastPage) => {
-      return lastPage.hasNextPage ? lastPage.nextCursor : undefined;
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: any) => {
+      return lastPage?.hasNextPage ? lastPage?.nextCursor : undefined;
     },
     enabled,
     staleTime,
-    cacheTime,
-    keepPreviousData,
+    gcTime,
+    placeholderData: keepPreviousData ? (previousData: any) => previousData : undefined,
     refetchOnWindowFocus,
     retry: (failureCount, error: any) => {
       // Don't retry on 4xx errors
@@ -117,12 +112,12 @@ export const useVirtualizedList = <T>({
   // Flatten all pages into a single array
   const items = useMemo(() => {
     if (!data?.pages) return [];
-    return data.pages.flatMap(page => page.data);
+    return data.pages.flatMap((page: any) => page?.data || []);
   }, [data?.pages]);
 
   // Calculate total count from the first page response
   const totalCount = useMemo(() => {
-    return data?.pages?.[0]?.total ?? items.length;
+    return (data?.pages?.[0] as any)?.total ?? items.length;
   }, [data?.pages, items.length]);
 
   // Load next page with error handling
@@ -144,8 +139,8 @@ export const useVirtualizedList = <T>({
 
   // Invalidate and remove from cache
   const invalidate = useCallback(() => {
-    remove();
-  }, [remove]);
+    queryClient.removeQueries({ queryKey });
+  }, [queryClient, queryKey]);
 
   // Performance metrics
   const metrics = useMemo(() => {
@@ -166,7 +161,7 @@ export const useVirtualizedList = <T>({
   useEffect(() => {
     if (items.length > 0 && loadStartTime.current) {
       const loadTime = Date.now() - loadStartTime.current;
-      
+
       // Log performance metrics in development
       if (process.env.NODE_ENV === 'development') {
         console.log('Virtualized List Performance:', {
@@ -184,22 +179,22 @@ export const useVirtualizedList = <T>({
     // Data
     items,
     totalCount,
-    
+
     // Loading states
     isLoading,
     isFetching,
     isError,
     error: error as Error | null,
-    
+
     // Pagination
     hasNextPage: !!hasNextPage,
     isLoadingNextPage: isFetchingNextPage,
     loadNextPage,
-    
+
     // Utilities
     refresh,
     invalidate,
-    
+
     // Performance metrics
     metrics,
   };
@@ -210,20 +205,33 @@ export const useVirtualizedPatients = (searchParams: any = {}) => {
   return useVirtualizedList({
     queryKey: ['patients', 'virtualized', searchParams],
     queryFn: async ({ pageParam = 1 }) => {
-      // This would be replaced with your actual API call
-      const response = await fetch(`/api/patients?page=${pageParam}&limit=50&${new URLSearchParams(searchParams)}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch patients');
-      }
-      
-      const result = await response.json();
-      
+      // Import the API client
+      const { default: api } = await import('../services/api');
+
+      // Build query parameters
+      const params: any = {
+        page: pageParam,
+        limit: 50,
+        useCursor: false, // Use legacy pagination for now
+        ...searchParams
+      };
+
+      // Remove undefined/null/empty values
+      Object.keys(params).forEach(key => {
+        if (params[key] === undefined || params[key] === null || params[key] === '') {
+          delete params[key];
+        }
+      });
+
+      const response = await api.get('/patients', { params });
+      const result = response.data;
+
+      // Handle the backend response structure
       return {
-        data: result.data?.results || [],
-        nextCursor: result.data?.hasNextPage ? (pageParam as number) + 1 : undefined,
-        hasNextPage: result.data?.hasNextPage || false,
-        total: result.meta?.total || 0,
+        data: result.data || [],
+        nextCursor: result.pagination?.hasNextPage ? (pageParam as number) + 1 : undefined,
+        hasNextPage: result.pagination?.hasNextPage || false,
+        total: result.pagination?.total || result.total || 0,
       };
     },
     pageSize: 50,
@@ -237,13 +245,13 @@ export const useVirtualizedClinicalNotes = (patientId: string) => {
     queryKey: ['clinical-notes', 'virtualized', patientId],
     queryFn: async ({ pageParam = 1 }) => {
       const response = await fetch(`/api/patients/${patientId}/clinical-notes?page=${pageParam}&limit=30`);
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch clinical notes');
       }
-      
+
       const result = await response.json();
-      
+
       return {
         data: result.data?.results || [],
         nextCursor: result.data?.hasNextPage ? (pageParam as number) + 1 : undefined,
@@ -262,13 +270,13 @@ export const useVirtualizedMedications = (patientId: string) => {
     queryKey: ['medications', 'virtualized', patientId],
     queryFn: async ({ pageParam = 1 }) => {
       const response = await fetch(`/api/patients/${patientId}/medications?page=${pageParam}&limit=40`);
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch medications');
       }
-      
+
       const result = await response.json();
-      
+
       return {
         data: result.data?.results || [],
         nextCursor: result.data?.hasNextPage ? (pageParam as number) + 1 : undefined,

@@ -22,7 +22,7 @@ export interface CacheStats {
  * Performance-focused caching service for API responses and expensive operations
  * Extends the existing CacheManager with general-purpose caching capabilities
  */
-class PerformanceCacheService {
+export default class PerformanceCacheService {
   private static instance: PerformanceCacheService;
   private redis: Redis | null = null;
   private isConnected = false;
@@ -604,5 +604,3 @@ class PerformanceCacheService {
     return this.invalidateByPattern(pattern);
   }
 }
-
-export default PerformanceCacheService;

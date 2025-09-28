@@ -68,6 +68,9 @@ export const getPatients = asyncHandler(
     // Build filters
     const filters: any = {};
 
+    // Always filter out deleted patients
+    filters.isDeleted = { $ne: true };
+
     // Tenant filtering
     if (!context.isAdmin) {
       filters.workplaceId = context.workplaceId;
@@ -77,12 +80,12 @@ export const getPatients = asyncHandler(
     if (q) {
       const searchRegex = new RegExp(q, 'i');
       filters.$or = [
-        { 'personalInfo.firstName': searchRegex },
-        { 'personalInfo.lastName': searchRegex },
-        { 'personalInfo.otherNames': searchRegex },
-        { 'medicalInfo.medicalRecordNumber': searchRegex },
-        { 'contactInfo.phone': searchRegex },
-        { 'contactInfo.email': searchRegex },
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { otherNames: searchRegex },
+        { mrn: searchRegex },
+        { phone: searchRegex },
+        { email: searchRegex },
       ];
     }
 
@@ -90,17 +93,17 @@ export const getPatients = asyncHandler(
     if (name) {
       const nameRegex = new RegExp(name, 'i');
       filters.$or = [
-        { 'personalInfo.firstName': nameRegex },
-        { 'personalInfo.lastName': nameRegex },
-        { 'personalInfo.otherNames': nameRegex },
+        { firstName: nameRegex },
+        { lastName: nameRegex },
+        { otherNames: nameRegex },
       ];
     }
 
-    if (mrn) filters['medicalInfo.medicalRecordNumber'] = new RegExp(mrn, 'i');
-    if (phone) filters['contactInfo.phone'] = new RegExp(phone.replace('+', '\\+'), 'i');
-    if (state) filters['contactInfo.address.state'] = state;
-    if (bloodGroup) filters['medicalInfo.bloodGroup'] = bloodGroup;
-    if (genotype) filters['medicalInfo.genotype'] = genotype;
+    if (mrn) filters.mrn = new RegExp(mrn, 'i');
+    if (phone) filters.phone = new RegExp(phone.replace('+', '\\+'), 'i');
+    if (state) filters.state = state;
+    if (bloodGroup) filters.bloodGroup = bloodGroup;
+    if (genotype) filters.genotype = genotype;
 
     // Use cursor-based pagination by default, fall back to skip/limit for legacy support
     if (useCursor === 'true' && !page) {
@@ -120,11 +123,18 @@ export const getPatients = asyncHandler(
         { limit: parsedLimit, sortField, sortOrder, ...req.query }
       );
 
-      res.json({
-        success: true,
-        message: `Found ${result.items.length} patients`,
-        ...response,
-      });
+      return sendSuccess(
+        res,
+        { results: response.data },
+        `Found ${response.data.length} patients`,
+        200,
+        {
+          total: response.pagination.totalCount,
+          limit: parsedLimit,
+          hasNext: response.pagination.pageInfo.hasNextPage,
+          nextCursor: response.pagination.cursors.next,
+        }
+      );
     } else {
       // Legacy skip/limit pagination (for backward compatibility)
       const parsedPage = Math.max(1, parseInt(page as string) || 1);

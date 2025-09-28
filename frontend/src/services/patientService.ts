@@ -50,15 +50,17 @@ class PatientService {
     options: RequestOptions = {}
   ): Promise<T> {
     try {
-      const response = await axios({
-        url: `${API_BASE_URL}${url}`,
+      // Import the configured API client
+      const { default: api } = await import('./api');
+
+      const response = await api({
+        url: url,
         method: options.method || 'GET',
         data: options.body ? JSON.parse(options.body as string) : undefined,
         headers: {
           'Content-Type': 'application/json',
           ...(options.headers || {}),
         },
-        withCredentials: true, // Include httpOnly cookies
       });
 
       return response.data as T;
@@ -66,9 +68,9 @@ class PatientService {
       console.error('API Request failed:', error);
       throw new Error(
         error.response?.data?.error?.message ||
-          error.response?.data?.message ||
-          error.message ||
-          'An error occurred'
+        error.response?.data?.message ||
+        error.message ||
+        'An error occurred'
       );
     }
   }
@@ -91,9 +93,23 @@ class PatientService {
       }
     });
 
-    return this.makeRequest<PaginatedResponse<Patient>>(
-      `/patients?${searchParams.toString()}`
-    );
+    try {
+      const result = await this.makeRequest<any>(
+        `/patients?${searchParams.toString()}`
+      );
+
+      // Debug logging
+      console.log('PatientService.getPatients response:', result);
+      console.log('PatientService.getPatients response type:', typeof result);
+      console.log('PatientService.getPatients response keys:', Object.keys(result || {}));
+
+      // Handle the backend response structure
+      // Backend returns: { success: true, data: { results: [...] }, meta: {...} }
+      return result;
+    } catch (error) {
+      console.error('PatientService.getPatients error:', error);
+      throw error;
+    }
   }
 
   /**
@@ -174,13 +190,53 @@ class PatientService {
       // Debug the response structure
       console.log('Search response structure:', {
         result,
-        hasPatients: result?.data?.patients || result?.patients,
+        hasPatients: (result as any)?.data?.patients || (result as any)?.patients,
         responseType: typeof result,
         isArray: Array.isArray(result),
         keys: result ? Object.keys(result) : [],
       });
 
       return result;
+    } catch (error) {
+      console.error('Search error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search patients with query string - typed version
+   */
+  async searchPatientsTyped(query: string): Promise<{ patients: any[]; total: number; query: string }> {
+    try {
+      if (!query || query.trim().length < 2) {
+        return { patients: [], total: 0, query: '' };
+      }
+
+      // Log the search request
+      console.log('Searching for patients with query:', query);
+
+      const result = await this.makeRequest<any>(
+        `/patients/search?q=${encodeURIComponent(query)}`
+      );
+
+      // Debug the response structure
+      console.log('Search response structure:', {
+        result,
+        hasPatients: (result as any)?.data?.patients || (result as any)?.patients,
+        responseType: typeof result,
+        isArray: Array.isArray(result),
+        keys: result ? Object.keys(result) : [],
+      });
+
+      // Handle different response structures
+      const patients = (result as any)?.data?.patients || (result as any)?.patients || [];
+      const total = (result as any)?.data?.total || (result as any)?.total || patients.length;
+
+      return {
+        patients,
+        total,
+        query,
+      };
     } catch (error) {
       console.error('Search error:', error);
       throw error;
@@ -300,9 +356,8 @@ class PatientService {
       // Add defensive URL encoding for patientId
       const encodedPatientId = encodeURIComponent(patientId);
       const queryString = searchParams.toString();
-      const url = `/patients/${encodedPatientId}/conditions${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/patients/${encodedPatientId}/conditions${queryString ? `?${queryString}` : ''
+        }`;
 
       console.log('Fetching conditions with URL:', url);
       return await this.makeRequest<PaginatedResponse<Condition>>(url);
@@ -829,6 +884,26 @@ class PatientService {
       throw new Error(
         error.response?.data?.error?.message || 'File upload failed'
       );
+    }
+  }
+
+  /**
+   * Get patients for dashboard with proper typing
+   */
+  async getDashboardPatients(limit = 10): Promise<{ patients: Patient[]; total: number }> {
+    try {
+      const result = await this.getPatients({ limit, page: 1 });
+
+      return {
+        patients: result.data?.results || [],
+        total: result.meta?.total || 0,
+      };
+    } catch (error) {
+      console.error('Error fetching dashboard patients:', error);
+      return {
+        patients: [],
+        total: 0,
+      };
     }
   }
 }

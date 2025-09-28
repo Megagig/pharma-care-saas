@@ -345,15 +345,15 @@ const Patients = () => {
             {isForMedications
               ? 'Select a Patient for Medications'
               : isForDiagnostics
-              ? 'Select a Patient for Diagnostic Case'
-              : 'Patient Management'}
+                ? 'Select a Patient for Diagnostic Case'
+                : 'Patient Management'}
           </Typography>
           <Typography component="div" variant="body1" color="text.secondary">
             {isForMedications
               ? 'Click on any patient to manage their medications'
               : isForDiagnostics
-              ? 'Click on any patient to create a diagnostic case'
-              : 'Comprehensive patient care and medical records management'}
+                ? 'Click on any patient to create a diagnostic case'
+                : 'Comprehensive patient care and medical records management'}
             {totalPatients > 0 && (
               <Chip
                 label={`${totalPatients} total patients`}
@@ -624,7 +624,7 @@ const Patients = () => {
                       <Typography variant="caption" color="text.secondary">
                         {patient.gender
                           ? patient.gender.charAt(0).toUpperCase() +
-                            patient.gender.slice(1)
+                          patient.gender.slice(1)
                           : 'Unknown'}
                       </Typography>
                     </TableCell>

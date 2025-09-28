@@ -71,7 +71,7 @@ export class BackgroundJobService {
             this.setupJobProcessors();
             this.setupEventHandlers();
             this.scheduleCleanupJobs();
-            
+
             logger.info('Background job service initialized successfully');
         } catch (error) {
             logger.error('Failed to initialize background job service:', error);
