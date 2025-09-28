@@ -99,13 +99,41 @@ class PatientService {
       );
 
       // Debug logging
-      console.log('PatientService.getPatients response:', result);
-      console.log('PatientService.getPatients response type:', typeof result);
-      console.log('PatientService.getPatients response keys:', Object.keys(result || {}));
+      console.log('PatientService.getPatients raw response:', result);
+      console.log('PatientService.getPatients response structure:', {
+        hasSuccess: !!result.success,
+        hasData: !!result.data,
+        dataKeys: result.data ? Object.keys(result.data) : [],
+        hasResults: !!(result.data && result.data.results),
+        resultsCount: result.data && result.data.results ? result.data.results.length : 0,
+        hasMeta: !!result.meta,
+        metaKeys: result.meta ? Object.keys(result.meta) : []
+      });
 
       // Handle the backend response structure
       // Backend returns: { success: true, data: { results: [...] }, meta: {...} }
-      return result;
+      // We need to restructure this to match our expected PaginatedResponse format
+      const response = {
+        data: result.data || { results: [] },
+        meta: result.meta || {
+          total: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
+        success: result.success || false,
+        timestamp: result.timestamp || new Date().toISOString(),
+      };
+
+      console.log('PatientService.getPatients structured response:', {
+        dataResultsCount: response.data.results ? response.data.results.length : 0,
+        metaTotal: response.meta.total,
+        success: response.success
+      });
+
+      return response;
     } catch (error) {
       console.error('PatientService.getPatients error:', error);
       throw error;
@@ -183,20 +211,32 @@ class PatientService {
       // Log the search request
       console.log('Searching for patients with query:', query);
 
-      const result = await this.makeRequest<unknown>(
+      const result = await this.makeRequest<any>(
         `/patients/search?q=${encodeURIComponent(query)}`
       );
 
       // Debug the response structure
       console.log('Search response structure:', {
         result,
-        hasPatients: (result as any)?.data?.patients || (result as any)?.patients,
+        hasData: !!result?.data,
+        hasPatients: !!(result?.data?.patients),
+        patientsCount: result?.data?.patients ? result.data.patients.length : 0,
         responseType: typeof result,
-        isArray: Array.isArray(result),
         keys: result ? Object.keys(result) : [],
       });
 
-      return result;
+      // Handle the backend response structure
+      // Backend returns: { success: true, data: { patients: [...], total: X, query: "..." } }
+      // Return the data portion directly for the search hook to process
+      const searchData = result.data || { patients: [], total: 0, query: query };
+      
+      console.log('Search data being returned:', {
+        patientsCount: searchData.patients ? searchData.patients.length : 0,
+        total: searchData.total,
+        query: searchData.query
+      });
+
+      return searchData;
     } catch (error) {
       console.error('Search error:', error);
       throw error;

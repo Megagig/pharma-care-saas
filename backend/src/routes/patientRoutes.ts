@@ -41,11 +41,13 @@ router.get(
   '/',
   requirePatientRead,
   validateRequest(searchSchema, 'query'),
-  responseOptimizationMiddleware(
-    OptimizationPresets.list.projection,
-    OptimizationPresets.list.optimization
-  ),
-  patientListCacheMiddleware,
+  // Temporarily disable optimization middleware - it was causing empty responses
+  // responseOptimizationMiddleware(
+  //   OptimizationPresets.list.projection,
+  //   OptimizationPresets.list.optimization
+  // ),
+  // Temporarily disable cache middleware - it was returning empty results
+  // patientListCacheMiddleware,
   getPatients
 );
 
