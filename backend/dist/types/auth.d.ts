@@ -55,6 +55,7 @@ export interface AuthRequest extends Request {
         roleName?: string;
         inheritedFrom?: string;
     };
+    sessionId?: string;
 }
 export interface UsageLimitResult {
     allowed: boolean;

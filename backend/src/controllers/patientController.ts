@@ -27,6 +27,7 @@ import {
   createAuditLog,
   createPaginationMeta,
 } from '../utils/responseHelpers';
+import { CursorPagination } from '../utils/cursorPagination';
 
 /**
  * Patient Management Controller
@@ -44,8 +45,10 @@ import {
 export const getPatients = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const {
-      page = 1,
-      limit = 10,
+      cursor,
+      limit = 20,
+      sortField = 'createdAt',
+      sortOrder = 'desc',
       q,
       name,
       mrn,
@@ -53,29 +56,30 @@ export const getPatients = asyncHandler(
       state,
       bloodGroup,
       genotype,
-      sort,
+      // Legacy support for page-based pagination
+      page,
+      useCursor = 'true',
     } = req.query as any;
     const context = getRequestContext(req);
 
-    // Parse pagination parameters
-    const parsedPage = Math.max(1, parseInt(page as string) || 1);
-    const parsedLimit = Math.min(
-      50,
-      Math.max(1, parseInt(limit as string) || 10)
-    );
+    // Parse limit
+    const parsedLimit = Math.min(50, Math.max(1, parseInt(limit as string) || 20));
 
-    // Build query
-    const query: any = {};
+    // Build filters
+    const filters: any = {};
 
-    // Tenant filtering (automatic via tenancy guard, but explicit for admin cross-tenant)
+    // Always filter out deleted patients
+    filters.isDeleted = { $ne: true };
+
+    // Tenant filtering
     if (!context.isAdmin) {
-      query.workplaceId = context.workplaceId;
+      filters.workplaceId = context.workplaceId;
     }
 
     // Search functionality
     if (q) {
       const searchRegex = new RegExp(q, 'i');
-      query.$or = [
+      filters.$or = [
         { firstName: searchRegex },
         { lastName: searchRegex },
         { otherNames: searchRegex },
@@ -88,38 +92,72 @@ export const getPatients = asyncHandler(
     // Specific filters
     if (name) {
       const nameRegex = new RegExp(name, 'i');
-      query.$or = [
+      filters.$or = [
         { firstName: nameRegex },
         { lastName: nameRegex },
         { otherNames: nameRegex },
       ];
     }
 
-    if (mrn) query.mrn = new RegExp(mrn, 'i');
-    if (phone) query.phone = new RegExp(phone.replace('+', '\\+'), 'i');
-    if (state) query.state = state;
-    if (bloodGroup) query.bloodGroup = bloodGroup;
-    if (genotype) query.genotype = genotype;
+    if (mrn) filters.mrn = new RegExp(mrn, 'i');
+    if (phone) filters.phone = new RegExp(phone.replace('+', '\\+'), 'i');
+    if (state) filters.state = state;
+    if (bloodGroup) filters.bloodGroup = bloodGroup;
+    if (genotype) filters.genotype = genotype;
 
-    // Execute query with pagination
-    const [patients, total] = await Promise.all([
-      Patient.find(query)
-        .sort(sort || '-createdAt')
-        .limit(parsedLimit)
-        .skip((parsedPage - 1) * parsedLimit)
-        .select('-__v')
-        .lean(),
-      Patient.countDocuments(query),
-    ]);
+    // Use cursor-based pagination by default, fall back to skip/limit for legacy support
+    if (useCursor === 'true' && !page) {
+      // Cursor-based pagination (recommended)
+      const result = await CursorPagination.paginate(Patient, {
+        limit: parsedLimit,
+        cursor,
+        sortField,
+        sortOrder: sortOrder as 'asc' | 'desc',
+        filters,
+      });
 
-    respondWithPaginatedResults(
-      res,
-      patients,
-      total,
-      parsedPage,
-      parsedLimit,
-      `Found ${total} patients`
-    );
+      // Create paginated response
+      const response = CursorPagination.createPaginatedResponse(
+        result,
+        `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`,
+        { limit: parsedLimit, sortField, sortOrder, ...req.query }
+      );
+
+      return sendSuccess(
+        res,
+        { results: response.data },
+        `Found ${response.data.length} patients`,
+        200,
+        {
+          total: response.pagination.totalCount,
+          limit: parsedLimit,
+          hasNext: response.pagination.pageInfo.hasNextPage,
+          nextCursor: response.pagination.cursors.next,
+        }
+      );
+    } else {
+      // Legacy skip/limit pagination (for backward compatibility)
+      const parsedPage = Math.max(1, parseInt(page as string) || 1);
+      
+      const [patients, total] = await Promise.all([
+        Patient.find(filters)
+          .sort({ [sortField]: sortOrder === 'asc' ? 1 : -1 })
+          .limit(parsedLimit)
+          .skip((parsedPage - 1) * parsedLimit)
+          .select('-__v')
+          .lean(),
+        Patient.countDocuments(filters),
+      ]);
+
+      respondWithPaginatedResults(
+        res,
+        patients,
+        total,
+        parsedPage,
+        parsedLimit,
+        `Found ${total} patients`
+      );
+    }
   }
 );
 

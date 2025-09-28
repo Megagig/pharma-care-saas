@@ -33,7 +33,7 @@ export declare const createMentionNotifications: (messageId: mongoose.Types.Obje
         email: boolean;
         sms: boolean;
     };
-    workplaceId: mongoose.Types.ObjectId | undefined;
-}[] | undefined>;
+    workplaceId: mongoose.Types.ObjectId;
+}[]>;
 export {};
 //# sourceMappingURL=mentionController.d.ts.map

@@ -4,11 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import User, { IUser } from '../models/User';
 import { emailService } from '../utils/emailService';
-
-interface AuthRequest extends Request {
-  user?: IUser;
-  subscription?: any;
-}
+import { AuthRequest } from '../types/auth';
 
 // Configure multer for license document uploads with improved validation
 const storage = multer.diskStorage({
@@ -19,13 +15,14 @@ const storage = multer.diskStorage({
     }
     cb(null, uploadPath);
   },
-  filename: (req: AuthRequest, file, cb) => {
-    if (!req.user) {
+  filename: (req: Request, file, cb) => {
+    const authReq = req as unknown as AuthRequest;
+    if (!authReq.user) {
       return cb(new Error('User not authenticated'), '');
     }
 
     // Use user ID in filename for better organization and security
-    const userId = req.user._id;
+    const userId = authReq.user._id;
     const uniqueSuffix = Date.now();
     const extension = path.extname(file.originalname);
     cb(null, `license-${userId}-${uniqueSuffix}${extension}`);

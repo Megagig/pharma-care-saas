@@ -11,5 +11,7 @@ export declare const getPrescriptionPatternAnalytics: (req: AuthRequest, res: Re
 export declare const getMedicationInteractionAnalytics: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const getMedicationCostAnalytics: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const getDashboardAnalytics: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getPatientDemographicsAnalytics: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getMedicationInventoryAnalytics: (req: AuthRequest, res: Response) => Promise<void>;
 export {};
 //# sourceMappingURL=medicationAnalyticsController.d.ts.map

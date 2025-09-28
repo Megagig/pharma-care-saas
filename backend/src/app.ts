@@ -8,6 +8,7 @@ import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 
+// Import custom types (automatically loaded from src/types/)
 import errorHandler from './middlewares/errorHandler';
 import memoryManagementService from './services/MemoryManagementService';
 import logger from './utils/logger';
@@ -48,6 +49,9 @@ import locationRoutes from './routes/locationRoutes';
 import locationDataRoutes from './routes/locationDataRoutes';
 import legacyApiRoutes from './routes/legacyApiRoutes';
 import migrationDashboardRoutes from './routes/migrationDashboardRoutes';
+import deploymentRoutes from './routes/deploymentRoutes';
+import productionValidationRoutes from './routes/productionValidationRoutes';
+import continuousMonitoringRoutes from './routes/continuousMonitoringRoutes';
 import emailWebhookRoutes from './routes/emailWebhookRoutes';
 import drugRoutes from './modules/drug-info/routes/drugRoutes';
 import mentionRoutes from './routes/mentionRoutes';
@@ -57,6 +61,10 @@ import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
 import diagnosticRoutes from './routes/diagnosticRoutes';
 import communicationRoutes from './routes/communicationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
+import lighthouseRoutes from './routes/lighthouseRoutes';
+import performanceBudgetRoutes from './routes/performanceBudgetRoutes';
+import performanceMonitoringRoutes from './routes/performanceMonitoringRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -94,11 +102,11 @@ import {
   detectAnomalies,
 } from './middlewares/securityMonitoring';
 app.use(blockSuspiciousIPs);
-app.use(detectAnomalies);
+app.use(detectAnomalies as any);
 
 // System integration middleware for backward compatibility
 app.use(systemIntegration.backwardCompatibilityMiddleware());
-app.use(systemIntegration.gradualRolloutMiddleware());
+app.use(systemIntegration.gradualRolloutMiddleware() as any);
 
 // Rate limiting - more lenient for development
 const limiter = rateLimit({
@@ -132,6 +140,23 @@ app.use(hpp()); // Against HTTP Parameter Pollution
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// Performance monitoring middleware
+import { latencyMeasurementMiddleware } from './middlewares/latencyMeasurement';
+app.use('/api/', latencyMeasurementMiddleware);
+
+// Compression middleware for API responses
+import {
+  intelligentCompressionMiddleware,
+  responseSizeMonitoringMiddleware,
+  adaptiveCompressionMiddleware
+} from './middlewares/compressionMiddleware';
+app.use('/api/', adaptiveCompressionMiddleware());
+app.use('/api/', intelligentCompressionMiddleware({
+  threshold: 1024, // 1KB minimum
+  level: 6, // Balanced compression
+}));
+app.use('/api/', responseSizeMonitoringMiddleware());
 
 // Health check routes
 app.get('/api/health', (req: Request, res: Response) => {
@@ -210,6 +235,21 @@ app.get('/api/health/cache', async (req: Request, res: Response) => {
 // Public API routes (no authentication required)
 app.use('/api/public', publicApiRoutes);
 app.use('/api/public/drugs', publicDrugDetailsRoutes);
+
+// Analytics routes (no authentication required for Web Vitals collection)
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/lighthouse', lighthouseRoutes);
+app.use('/api/performance-budgets', performanceBudgetRoutes);
+app.use('/api/performance-monitoring', performanceMonitoringRoutes);
+
+// Deployment monitoring routes (admin only)
+app.use('/api/deployment', deploymentRoutes);
+
+// Production validation routes (admin only)
+app.use('/api/production-validation', productionValidationRoutes);
+
+// Continuous monitoring routes (admin only)
+app.use('/api/continuous-monitoring', continuousMonitoringRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);

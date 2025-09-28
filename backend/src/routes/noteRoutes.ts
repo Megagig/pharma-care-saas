@@ -23,6 +23,7 @@ import {
 import { uploadMiddleware } from '../services/fileUploadService';
 import { auditMiddleware } from '../middlewares/auditLogging';
 import clinicalNoteRBAC from '../middlewares/clinicalNoteRBAC';
+import { clinicalNotesCacheMiddleware, searchCacheMiddleware } from '../middlewares/cacheMiddleware';
 
 const router = express.Router();
 
@@ -58,6 +59,7 @@ router
     clinicalNoteRBAC.canReadClinicalNote,
     clinicalNoteRBAC.enforceTenancyIsolation,
     auditMiddleware({ action: 'LIST_CLINICAL_NOTES', category: 'data_access' }),
+    clinicalNotesCacheMiddleware,
     getNotes
   )
   .post(
@@ -80,6 +82,7 @@ router.get(
     category: 'data_access',
     severity: 'medium',
   }),
+  searchCacheMiddleware,
   searchNotes
 );
 

@@ -384,7 +384,7 @@ ReportScheduleSchema.pre('save', function (next) {
 
     // Calculate next run if this is a new schedule or frequency changed
     if (this.isNew || this.isModified('frequency')) {
-        this.nextRun = this.calculateNextRun();
+        this.nextRun = (this as any).calculateNextRun();
     }
 
     // Limit execution history to last 100 entries
@@ -493,7 +493,7 @@ ReportScheduleSchema.methods.addExecutionRecord = function (record: any) {
 
     // Calculate next run for recurring schedules
     if (this.frequency.type !== 'once') {
-        this.nextRun = this.calculateNextRun();
+        this.nextRun = (this as any).calculateNextRun();
     } else {
         this.isActive = false; // Deactivate one-time schedules after execution
     }
@@ -508,7 +508,7 @@ ReportScheduleSchema.methods.pause = function () {
 
 ReportScheduleSchema.methods.resume = function () {
     this.isActive = true;
-    this.nextRun = this.calculateNextRun();
+    this.nextRun = (this as any).calculateNextRun();
     return this.save();
 };
 
@@ -518,7 +518,7 @@ ReportScheduleSchema.methods.clone = function (newName: string, userId: mongoose
         _id: undefined,
         name: newName,
         createdBy: userId,
-        nextRun: this.calculateNextRun(),
+        nextRun: (this as any).calculateNextRun(),
         lastRun: undefined,
         lastRunStatus: undefined,
         lastRunDetails: undefined,

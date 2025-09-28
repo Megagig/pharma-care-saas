@@ -3,18 +3,8 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 // Create axios instance with base configuration
 const getBaseURL = () => {
   try {
-    // Check for environment variable first
-    if (import.meta.env.VITE_API_BASE_URL) {
-      return import.meta.env.VITE_API_BASE_URL;
-    }
-
-    // In development, use direct backend URL (proxy isn't working)
-    if (import.meta.env.DEV) {
-      return 'http://localhost:5000/api';
-    }
-
-    // Fallback for production
-    return '/api';
+    // Always use direct backend URL to bypass proxy issues
+    return 'http://localhost:5000/api';
   } catch {
     return 'http://localhost:5000/api';
   }

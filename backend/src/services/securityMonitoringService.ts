@@ -803,9 +803,21 @@ class SecurityMonitoringService {
 // Export singleton instance
 export const securityMonitoringService = SecurityMonitoringService.getInstance();
 
-// Schedule cleanup every hour
-setInterval(() => {
-    securityMonitoringService.cleanup();
-}, 60 * 60 * 1000);
+// Schedule cleanup every hour (only in production)
+let securityCleanupInterval: NodeJS.Timeout | null = null;
+
+if (process.env.NODE_ENV === 'production') {
+    securityCleanupInterval = setInterval(() => {
+        securityMonitoringService.cleanup();
+    }, 60 * 60 * 1000);
+}
+
+// Cleanup function for graceful shutdown
+export const cleanupSecurityMonitoring = () => {
+    if (securityCleanupInterval) {
+        clearInterval(securityCleanupInterval);
+        securityCleanupInterval = null;
+    }
+};
 
 export default securityMonitoringService;

@@ -2,27 +2,27 @@ import mongoose, { Document } from 'mongoose';
 export interface IFeatureFlag extends Document {
     name: string;
     key: string;
-    description: string;
+    description?: string;
     isActive: boolean;
     allowedTiers: string[];
     allowedRoles: string[];
     customRules?: {
-        maxUsers?: number;
         requiredLicense?: boolean;
-        customLogic?: string;
+        maxUsers?: number;
+        [key: string]: any;
     };
-    metadata: {
+    metadata?: {
         category: string;
-        priority: 'low' | 'medium' | 'high' | 'critical';
+        priority: string;
         tags: string[];
+        [key: string]: any;
     };
-    createdBy: mongoose.Types.ObjectId;
-    updatedBy: mongoose.Types.ObjectId;
+    createdBy?: mongoose.Types.ObjectId;
+    updatedBy?: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
-declare const _default: mongoose.Model<IFeatureFlag, {}, {}, {}, mongoose.Document<unknown, {}, IFeatureFlag> & IFeatureFlag & {
+export declare const FeatureFlag: mongoose.Model<IFeatureFlag, {}, {}, {}, mongoose.Document<unknown, {}, IFeatureFlag> & IFeatureFlag & {
     _id: mongoose.Types.ObjectId;
 }, any>;
-export default _default;
 //# sourceMappingURL=FeatureFlag.d.ts.map

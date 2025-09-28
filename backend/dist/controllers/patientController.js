@@ -14,54 +14,72 @@ const DrugTherapyProblem_1 = __importDefault(require("../models/DrugTherapyProbl
 const CarePlan_1 = __importDefault(require("../models/CarePlan"));
 const Visit_1 = __importDefault(require("../models/Visit"));
 const responseHelpers_1 = require("../utils/responseHelpers");
+const cursorPagination_1 = require("../utils/cursorPagination");
 exports.getPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const { page = 1, limit = 10, q, name, mrn, phone, state, bloodGroup, genotype, sort, } = req.query;
+    const { cursor, limit = 20, sortField = 'createdAt', sortOrder = 'desc', q, name, mrn, phone, state, bloodGroup, genotype, page, useCursor = 'true', } = req.query;
     const context = (0, responseHelpers_1.getRequestContext)(req);
-    const parsedPage = Math.max(1, parseInt(page) || 1);
-    const parsedLimit = Math.min(50, Math.max(1, parseInt(limit) || 10));
-    const query = {};
+    const parsedLimit = Math.min(50, Math.max(1, parseInt(limit) || 20));
+    const filters = {};
     if (!context.isAdmin) {
-        query.workplaceId = context.workplaceId;
+        filters.workplaceId = context.workplaceId;
     }
     if (q) {
         const searchRegex = new RegExp(q, 'i');
-        query.$or = [
-            { firstName: searchRegex },
-            { lastName: searchRegex },
-            { otherNames: searchRegex },
-            { mrn: searchRegex },
-            { phone: searchRegex },
-            { email: searchRegex },
+        filters.$or = [
+            { 'personalInfo.firstName': searchRegex },
+            { 'personalInfo.lastName': searchRegex },
+            { 'personalInfo.otherNames': searchRegex },
+            { 'medicalInfo.medicalRecordNumber': searchRegex },
+            { 'contactInfo.phone': searchRegex },
+            { 'contactInfo.email': searchRegex },
         ];
     }
     if (name) {
         const nameRegex = new RegExp(name, 'i');
-        query.$or = [
-            { firstName: nameRegex },
-            { lastName: nameRegex },
-            { otherNames: nameRegex },
+        filters.$or = [
+            { 'personalInfo.firstName': nameRegex },
+            { 'personalInfo.lastName': nameRegex },
+            { 'personalInfo.otherNames': nameRegex },
         ];
     }
     if (mrn)
-        query.mrn = new RegExp(mrn, 'i');
+        filters['medicalInfo.medicalRecordNumber'] = new RegExp(mrn, 'i');
     if (phone)
-        query.phone = new RegExp(phone.replace('+', '\\+'), 'i');
+        filters['contactInfo.phone'] = new RegExp(phone.replace('+', '\\+'), 'i');
     if (state)
-        query.state = state;
+        filters['contactInfo.address.state'] = state;
     if (bloodGroup)
-        query.bloodGroup = bloodGroup;
+        filters['medicalInfo.bloodGroup'] = bloodGroup;
     if (genotype)
-        query.genotype = genotype;
-    const [patients, total] = await Promise.all([
-        Patient_1.default.find(query)
-            .sort(sort || '-createdAt')
-            .limit(parsedLimit)
-            .skip((parsedPage - 1) * parsedLimit)
-            .select('-__v')
-            .lean(),
-        Patient_1.default.countDocuments(query),
-    ]);
-    (0, responseHelpers_1.respondWithPaginatedResults)(res, patients, total, parsedPage, parsedLimit, `Found ${total} patients`);
+        filters['medicalInfo.genotype'] = genotype;
+    if (useCursor === 'true' && !page) {
+        const result = await cursorPagination_1.CursorPagination.paginate(Patient_1.default, {
+            limit: parsedLimit,
+            cursor,
+            sortField,
+            sortOrder: sortOrder,
+            filters,
+        });
+        const response = cursorPagination_1.CursorPagination.createPaginatedResponse(result, `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`, { limit: parsedLimit, sortField, sortOrder, ...req.query });
+        res.json({
+            success: true,
+            message: `Found ${result.items.length} patients`,
+            ...response,
+        });
+    }
+    else {
+        const parsedPage = Math.max(1, parseInt(page) || 1);
+        const [patients, total] = await Promise.all([
+            Patient_1.default.find(filters)
+                .sort({ [sortField]: sortOrder === 'asc' ? 1 : -1 })
+                .limit(parsedLimit)
+                .skip((parsedPage - 1) * parsedLimit)
+                .select('-__v')
+                .lean(),
+            Patient_1.default.countDocuments(filters),
+        ]);
+        (0, responseHelpers_1.respondWithPaginatedResults)(res, patients, total, parsedPage, parsedLimit, `Found ${total} patients`);
+    }
 });
 exports.getPatient = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;

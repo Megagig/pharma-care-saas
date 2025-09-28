@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, Suspense } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -14,7 +14,8 @@ import { AuthProvider } from './context/AuthContext';
 import { FeatureFlagProvider } from './context/FeatureFlagContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { initializeStores } from './stores';
-import { queryClient } from './lib/queryClient';
+import { queryClient, queryPrefetcher } from './lib/queryClient';
+import { initializeQueryDevtools } from './lib/queryDevtools';
 import { useTheme as useThemeStore } from './stores/themeStore';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -22,11 +23,65 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import { NotificationProvider } from './components/common/NotificationSystem';
 import CustomThemeProvider from './components/providers/ThemeProvider';
+import ServiceWorkerUpdateNotification from './components/ServiceWorkerUpdateNotification';
 
 // Import theme styles
 import './styles/theme.css';
 import './styles/dark-mode-overrides.css';
 
+// Lazy loading components and utilities
+import {
+  LazyModernDashboard,
+  LazyPatients,
+  LazyClinicalNotes,
+  LazyClinicalNoteDetail,
+  LazyClinicalNoteForm,
+  LazyMedications,
+  LazyMedicationTherapyReview,
+  LazyCommunicationHub,
+  LazyDrugInformationCenter,
+  LazyClinicalDecisionSupport,
+  LazyPharmacyReports,
+  LazyPharmacyUserManagement,
+  LazyDiagnosticDashboard,
+  LazyCaseIntakePage,
+  LazyCaseResultsPage,
+  LazyResultsReviewPage,
+  LazyComponentDemo,
+  LazyReportsAnalyticsDashboard,
+  LazyAdminDashboard,
+  LazyFeatureFlagsPage,
+  LazyPatientForm,
+  LazyPatientManagement,
+  LazyMedicationsManagementDashboard,
+  LazyPatientMedicationsPage,
+  LazyClinicalInterventionsLayout,
+  LazySubscriptions,
+  LazySubscriptionManagement,
+  LazySubscriptionSuccess,
+  LazySettings,
+  LazySettingsTheme,
+  LazyHelp,
+  LazyMTRHelp,
+  LazyLicenseUpload,
+  preloadCriticalRoutes,
+} from './components/LazyComponents';
+
+import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
+import { useRoutePrefetching, useBackgroundSync, useCacheWarming } from './hooks/useRoutePrefetching';
+import { modulePreloader } from './utils/modulePreloader';
+import { compressionUtils } from './utils/compressionUtils';
+import { registerSW } from './utils/serviceWorkerRegistration';
+import {
+  DashboardSkeleton,
+  PatientListSkeleton,
+  ClinicalNotesSkeleton,
+  FormSkeleton,
+  ChartSkeleton,
+  PageSkeleton,
+} from './components/skeletons/LoadingSkeletons';
+
+// Keep lightweight public pages as regular imports
 import Landing from './pages/Landing';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -36,70 +91,45 @@ import MultiStepRegister from './pages/MultiStepRegister';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-// Modern Dashboard is now the default dashboard
-import ModernDashboardPage from './pages/ModernDashboardPage';
-import Patients from './pages/Patients';
-// Lazy load Clinical Notes components for better performance
-// Lazy loading components is handled directly in routes
-// import {
-//   LazyClinicalNotesDashboard,
-//   LazyClinicalNoteDetail,
-//   LazyClinicalNoteForm,
-//   preloadClinicalNotesComponents,
-// } from './components/ClinicalNotesLazy';
 
-// Keep original imports as fallback
-import ClinicalNotes from './pages/ClinicalNotes';
-import ClinicalNoteDetailPage from './pages/ClinicalNoteDetailPage';
-import ClinicalNoteFormPage from './pages/ClinicalNoteFormPage';
-import Medications from './pages/Medications';
-import MedicationsManagementDashboard from './components/medications/MedicationsManagementDashboard';
-import PatientMedicationsPage from './components/medications/PatientMedicationsPage';
-import Subscriptions from './pages/Subscriptions';
+// Keep lightweight components as regular imports
 import SaasSettings from './pages/SaasSettings';
-import FeatureFlagsPage from './pages/FeatureFlags';
-import Settings from './pages/Settings';
-import SettingsTheme from './pages/SettingsTheme';
-import Help from './pages/Help';
-import MTRHelp from './pages/MTRHelp';
-
-// Pharmacy Module Components
-import MedicationTherapyReview from './pages/MedicationTherapyReview';
-import ClinicalInterventionsLayout from './components/ClinicalInterventionsLayout';
-import CommunicationHub from './pages/CommunicationHub';
-import DrugInformationCenter from './pages/DrugInformationCenter';
-import ClinicalDecisionSupport from './pages/ClinicalDecisionSupport';
-import PharmacyReports from './pages/PharmacyReports';
-import PharmacyUserManagement from './pages/PharmacyUserManagement';
-
-// Diagnostic Module Components
-import DiagnosticDashboard from './modules/diagnostics/pages/DiagnosticDashboard';
-import CaseIntakePage from './modules/diagnostics/pages/CaseIntakePage';
-import CaseResultsPage from './modules/diagnostics/pages/CaseResultsPage';
-import ResultsReviewPage from './modules/diagnostics/pages/ResultsReviewPage';
-import ComponentDemo from './modules/diagnostics/pages/ComponentDemo';
-
-// Test Components
 import SidebarTest from './components/SidebarTest';
-
-// Patient Management Components
-import PatientForm from './components/PatientForm';
-import PatientManagement from './components/PatientManagement';
-
-// RBAC and Enhanced Components
-import AdminDashboard from './components/admin/AdminDashboard';
-import LicenseUpload from './components/license/LicenseUpload';
-import SubscriptionManagementNew from './pages/SubscriptionManagement';
-import SubscriptionSuccessNew from './pages/SubscriptionSuccess';
 import TrialExpiryHandler from './components/TrialExpiryHandler';
 
-// Reports & Analytics Module
-import ReportsAnalyticsDashboard from './modules/reports-analytics/components/ReportsAnalyticsDashboard';
+// Component to handle hooks that require Router context
+function AppHooks() {
+  // Use route preloading and prefetching hooks inside Router context
+  useRoutePreloading();
+  useRoutePrefetching();
+  useBackgroundSync();
+  useCacheWarming();
+  
+  return null; // This component doesn't render anything
+}
 
 function App(): JSX.Element {
   // Initialize Zustand stores on app startup
   useEffect(() => {
     initializeStores();
+    
+    // Initialize query devtools in development
+    initializeQueryDevtools(queryClient);
+    
+    // Initialize module preloader and compression utils
+    modulePreloader.initialize();
+    compressionUtils.preloadCriticalAssets().catch(console.error);
+    
+    // Register service worker for caching
+    registerSW({
+      onSuccess: () => console.log('Service worker registered successfully'),
+      onUpdate: () => console.log('Service worker update available'),
+      onOfflineReady: () => console.log('App ready to work offline'),
+      onNeedRefresh: () => console.log('App needs refresh for updates'),
+    });
+    
+    // Prefetch likely routes on app load
+    queryPrefetcher.prefetchLikelyRoutes().catch(console.error);
   }, []);
 
   // Get current theme from store
@@ -122,6 +152,7 @@ function App(): JSX.Element {
                 <FeatureFlagProvider>
                   <NotificationProvider>
                     <Router>
+                      <AppHooks />
                       <Box
                         sx={{
                           minHeight: '100vh',
@@ -152,6 +183,17 @@ function App(): JSX.Element {
                             },
                           }}
                         />
+                        {/* React Query DevTools - only in development */}
+                        {import.meta.env.DEV && (
+                          <ReactQueryDevtools
+                            initialIsOpen={false}
+                            position="bottom-right"
+                          />
+                        )}
+                        
+                        {/* Service Worker Update Notifications */}
+                        <ServiceWorkerUpdateNotification />
+                        
                         <Routes>
                           {/* Public Routes */}
                           <Route path="/" element={<Landing />} />
@@ -181,7 +223,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute>
                                 <AppLayout>
-                                  <ModernDashboardPage />
+                                  <LazyWrapper fallback={DashboardSkeleton}>
+                                    <LazyModernDashboard />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -195,7 +239,9 @@ function App(): JSX.Element {
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <Patients />
+                                  <LazyWrapper fallback={PatientListSkeleton}>
+                                    <LazyPatients />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -208,7 +254,9 @@ function App(): JSX.Element {
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <PatientForm />
+                                  <LazyWrapper fallback={FormSkeleton}>
+                                    <LazyPatientForm />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -220,7 +268,9 @@ function App(): JSX.Element {
                                 requiredFeature="patient_management"
                                 requiresActiveSubscription
                               >
-                                <PatientManagement />
+                                <LazyWrapper fallback={PageSkeleton}>
+                                  <LazyPatientManagement />
+                                </LazyWrapper>
                               </ProtectedRoute>
                             }
                           />
@@ -232,7 +282,9 @@ function App(): JSX.Element {
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <PatientMedicationsPage />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyPatientMedicationsPage />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -245,7 +297,9 @@ function App(): JSX.Element {
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <PatientForm />
+                                  <LazyWrapper fallback={FormSkeleton}>
+                                    <LazyPatientForm />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -259,7 +313,9 @@ function App(): JSX.Element {
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <ClinicalNotes />
+                                  <LazyWrapper fallback={ClinicalNotesSkeleton}>
+                                    <LazyClinicalNotes />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -273,7 +329,9 @@ function App(): JSX.Element {
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <ClinicalNoteFormPage />
+                                  <LazyWrapper fallback={FormSkeleton}>
+                                    <LazyClinicalNoteForm />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -287,7 +345,9 @@ function App(): JSX.Element {
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <ClinicalNoteDetailPage />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyClinicalNoteDetail />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -301,7 +361,9 @@ function App(): JSX.Element {
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <ClinicalNoteFormPage />
+                                  <LazyWrapper fallback={FormSkeleton}>
+                                    <LazyClinicalNoteForm />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -314,7 +376,9 @@ function App(): JSX.Element {
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <Medications />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyMedications />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -327,7 +391,9 @@ function App(): JSX.Element {
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <MedicationsManagementDashboard />
+                                  <LazyWrapper fallback={DashboardSkeleton}>
+                                    <LazyMedicationsManagementDashboard />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -337,7 +403,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute>
                                 <AppLayout>
-                                  <Subscriptions />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazySubscriptions />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -352,10 +420,12 @@ function App(): JSX.Element {
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
-                                  <ReportsAnalyticsDashboard
-                                    workspaceId="current-workspace"
-                                    userPermissions={[]}
-                                  />
+                                  <LazyWrapper fallback={ChartSkeleton}>
+                                    <LazyReportsAnalyticsDashboard
+                                      workspaceId="current-workspace"
+                                      userPermissions={[]}
+                                    />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -367,7 +437,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <MedicationTherapyReview />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyMedicationTherapyReview />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -377,7 +449,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <MedicationTherapyReview />
+                                  <LazyWrapper fallback={FormSkeleton}>
+                                    <LazyMedicationTherapyReview />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -387,7 +461,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <MedicationTherapyReview />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyMedicationTherapyReview />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -397,7 +473,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <MedicationTherapyReview />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyMedicationTherapyReview />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -407,7 +485,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <MedicationTherapyReview />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyMedicationTherapyReview />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -417,7 +497,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <MedicationTherapyReview />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyMedicationTherapyReview />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -427,7 +509,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <ClinicalInterventionsLayout />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyClinicalInterventionsLayout />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -437,7 +521,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <DiagnosticDashboard />
+                                  <LazyWrapper fallback={DashboardSkeleton}>
+                                    <LazyDiagnosticDashboard />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -447,7 +533,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <CaseIntakePage />
+                                  <LazyWrapper fallback={FormSkeleton}>
+                                    <LazyCaseIntakePage />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -457,7 +545,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <ResultsReviewPage />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyResultsReviewPage />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -467,7 +557,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <CaseResultsPage />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyCaseResultsPage />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -477,7 +569,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <ComponentDemo />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyComponentDemo />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -487,7 +581,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <CommunicationHub />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyCommunicationHub />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -497,7 +593,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <DrugInformationCenter />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyDrugInformationCenter />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -507,7 +605,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <ClinicalDecisionSupport />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyClinicalDecisionSupport />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -517,7 +617,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <PharmacyReports />
+                                  <LazyWrapper fallback={ChartSkeleton}>
+                                    <LazyPharmacyReports />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -527,7 +629,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiresActiveSubscription>
                                 <AppLayout>
-                                  <PharmacyUserManagement />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyPharmacyUserManagement />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -539,7 +643,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiredRole="super_admin">
                                 <AppLayout>
-                                  <AdminDashboard />
+                                  <LazyWrapper fallback={DashboardSkeleton}>
+                                    <LazyAdminDashboard />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -550,7 +656,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiredRole="super_admin">
                                 <AppLayout>
-                                  <FeatureFlagsPage />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyFeatureFlagsPage />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -561,7 +669,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute>
                                 <AppLayout>
-                                  <LicenseUpload />
+                                  <LazyWrapper fallback={FormSkeleton}>
+                                    <LazyLicenseUpload />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -572,7 +682,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute>
                                 <AppLayout>
-                                  <SubscriptionManagementNew />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazySubscriptionManagement />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -582,7 +694,9 @@ function App(): JSX.Element {
                             path="/subscription/success"
                             element={
                               <AppLayout>
-                                <SubscriptionSuccessNew />
+                                <LazyWrapper fallback={PageSkeleton}>
+                                  <LazySubscriptionSuccess />
+                                </LazyWrapper>
                               </AppLayout>
                             }
                           />
@@ -592,7 +706,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute>
                                 <AppLayout>
-                                  <SubscriptionManagementNew />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazySubscriptionManagement />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -602,7 +718,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute>
                                 <AppLayout>
-                                  <SubscriptionManagementNew />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazySubscriptionManagement />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -622,7 +740,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute>
                                 <AppLayout>
-                                  <Settings />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazySettings />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -633,7 +753,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute>
                                 <AppLayout>
-                                  <SettingsTheme />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazySettingsTheme />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -644,7 +766,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute>
                                 <AppLayout>
-                                  <Help />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyHelp />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }
@@ -655,7 +779,9 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute requiredFeature="medication_therapy_review">
                                 <AppLayout>
-                                  <MTRHelp />
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyMTRHelp />
+                                  </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
                             }

@@ -51,6 +51,10 @@ router.get('/reports/pharmacists', mtrValidators_1.reportsQuerySchema, mtrValida
 router.get('/reports/quality', mtrValidators_1.reportsQuerySchema, mtrValidation_1.mtrValidationMiddleware.handleValidationErrors, mtrReportsController_1.getQualityAssuranceReport);
 router.get('/reports/outcomes', mtrValidators_1.reportsQuerySchema, mtrValidation_1.mtrValidationMiddleware.handleValidationErrors, mtrReportsController_1.getOutcomeMetricsReport);
 router.get('/reports/audit', mtrValidators_1.reportsQuerySchema, mtrValidation_1.mtrValidationMiddleware.handleValidationErrors, mtrController_1.getMTRAuditTrail);
+router.get('/reports/patient-outcomes', mtrValidators_1.reportsQuerySchema, mtrValidation_1.mtrValidationMiddleware.handleValidationErrors, mtrReportsController_1.getPatientOutcomeAnalytics);
+router.get('/reports/cost-effectiveness', mtrValidators_1.reportsQuerySchema, mtrValidation_1.mtrValidationMiddleware.handleValidationErrors, mtrReportsController_1.getCostEffectivenessAnalysis);
+router.get('/reports/operational-efficiency', mtrValidators_1.reportsQuerySchema, mtrValidation_1.mtrValidationMiddleware.handleValidationErrors, mtrReportsController_1.getOperationalEfficiencyMetrics);
+router.get('/reports/trend-forecasting', mtrValidators_1.reportsQuerySchema, mtrValidation_1.mtrValidationMiddleware.handleValidationErrors, mtrReportsController_1.getTrendForecastingAnalytics);
 router.post('/check-interactions', mtrValidators_1.drugInteractionSchema, mtrValidation_1.mtrValidationMiddleware.handleValidationErrors, mtrController_1.checkDrugInteractions);
 router.post('/check-duplicates', mtrValidators_1.drugInteractionSchema, mtrValidation_1.mtrValidationMiddleware.handleValidationErrors, mtrController_1.checkDuplicateTherapies);
 exports.default = router;

@@ -41,8 +41,8 @@ export declare class ClinicalInterventionError extends Error {
     toJSON(): {
         success: boolean;
         error: {
-            technicalMessage?: string | undefined;
-            stack?: string | undefined;
+            technicalMessage: string;
+            stack: string;
             type: ClinicalInterventionErrorType;
             message: string;
             severity: ErrorSeverity;

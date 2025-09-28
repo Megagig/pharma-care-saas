@@ -27,6 +27,8 @@ import {
   searchSchema,
 } from '../validators/patientValidators';
 import { patientManagementErrorHandler } from '../utils/responseHelpers';
+import { patientListCacheMiddleware, searchCacheMiddleware } from '../middlewares/cacheMiddleware';
+import { responseOptimizationMiddleware, OptimizationPresets } from '../utils/payloadOptimization';
 
 const router = express.Router();
 
@@ -39,11 +41,26 @@ router.get(
   '/',
   requirePatientRead,
   validateRequest(searchSchema, 'query'),
+  // Temporarily disable optimization middleware - it was causing empty responses
+  // responseOptimizationMiddleware(
+  //   OptimizationPresets.list.projection,
+  //   OptimizationPresets.list.optimization
+  // ),
+  // Temporarily disable cache middleware - it was returning empty results
+  // patientListCacheMiddleware,
   getPatients
 );
 
 // GET /api/patients/search - Search patients
-router.get('/search', requirePatientRead, searchPatients);
+router.get('/search', 
+  requirePatientRead, 
+  responseOptimizationMiddleware(
+    OptimizationPresets.mobile.projection,
+    OptimizationPresets.mobile.optimization
+  ),
+  searchCacheMiddleware, 
+  searchPatients
+);
 
 // GET /api/patients/search-with-interventions - Search patients with intervention context
 router.get('/search-with-interventions', requirePatientRead, searchPatientsWithInterventions);

@@ -63,7 +63,6 @@ export class ConnectionPoolService {
                     maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
                     serverSelectionTimeoutMS: 5000, // How long to try selecting a server
                     socketTimeoutMS: 45000, // How long a send or receive on a socket can take
-                    bufferMaxEntries: 0, // Disable mongoose buffering
                     bufferCommands: false, // Disable mongoose buffering
                     heartbeatFrequencyMS: 10000, // Frequency of heartbeat checks
                     retryWrites: true,
@@ -95,7 +94,6 @@ export class ConnectionPoolService {
                         maxIdleTimeMS: 30000,
                         serverSelectionTimeoutMS: 5000,
                         socketTimeoutMS: 45000,
-                        bufferMaxEntries: 0,
                         bufferCommands: false,
                         heartbeatFrequencyMS: 10000,
                         retryWrites: false, // Read-only replica
@@ -123,7 +121,6 @@ export class ConnectionPoolService {
                         maxIdleTimeMS: 60000, // Longer idle time for analytics
                         serverSelectionTimeoutMS: 10000,
                         socketTimeoutMS: 60000, // Longer timeout for complex queries
-                        bufferMaxEntries: 0,
                         bufferCommands: false,
                         heartbeatFrequencyMS: 15000,
                         retryWrites: true,
@@ -502,4 +499,4 @@ export class ConnectionPoolService {
     }
 }
 
-export default ConnectionPoolService.getInstance();
+export default ConnectionPoolService;

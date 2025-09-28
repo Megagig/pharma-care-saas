@@ -50,48 +50,60 @@ const SESSION_CONFIG = {
   deviceFingerprintRequired: true,
 };
 
-// Clean up expired sessions every 10 minutes
-setInterval(() => {
-  const now = Date.now();
+// Clean up expired sessions every 10 minutes (only in production)
+let sessionCleanupInterval: NodeJS.Timeout | null = null;
 
-  for (const [userId, sessions] of activeSessionsStore.entries()) {
-    const activeSessions: UserSessions = {};
-    let hasActiveSessions = false;
+if (process.env.NODE_ENV === 'production') {
+  sessionCleanupInterval = setInterval(() => {
+    const now = Date.now();
 
-    for (const [sessionId, session] of Object.entries(sessions)) {
-      const isExpired =
-        now - session.lastActivity > SESSION_CONFIG.sessionTimeout;
-      const isInactive =
-        now - session.lastActivity > SESSION_CONFIG.inactivityTimeout;
+    for (const [userId, sessions] of activeSessionsStore.entries()) {
+      const activeSessions: UserSessions = {};
+      let hasActiveSessions = false;
 
-      if (!isExpired && !isInactive && session.isActive) {
-        activeSessions[sessionId] = session;
-        hasActiveSessions = true;
+      for (const [sessionId, session] of Object.entries(sessions)) {
+        const isExpired =
+          now - session.lastActivity > SESSION_CONFIG.sessionTimeout;
+        const isInactive =
+          now - session.lastActivity > SESSION_CONFIG.inactivityTimeout;
+
+        if (!isExpired && !isInactive && session.isActive) {
+          activeSessions[sessionId] = session;
+          hasActiveSessions = true;
+        } else {
+          logger.info('Session expired/inactive', {
+            userId,
+            sessionId,
+            reason: isExpired ? 'expired' : 'inactive',
+            lastActivity: new Date(session.lastActivity).toISOString(),
+            service: 'communication-session',
+          });
+        }
+      }
+
+      if (hasActiveSessions) {
+        activeSessionsStore.set(userId, activeSessions);
       } else {
-        logger.info('Session expired/inactive', {
-          userId,
-          sessionId,
-          reason: isExpired ? 'expired' : 'inactive',
-          lastActivity: new Date(session.lastActivity).toISOString(),
-          service: 'communication-session',
-        });
+        activeSessionsStore.delete(userId);
       }
     }
 
-    if (hasActiveSessions) {
-      activeSessionsStore.set(userId, activeSessions);
-    } else {
-      activeSessionsStore.delete(userId);
+    // Clean up security store
+    for (const [userId, security] of sessionSecurityStore.entries()) {
+      if (security.lockExpires && now > security.lockExpires) {
+        sessionSecurityStore.delete(userId);
+      }
     }
-  }
+  }, 10 * 60 * 1000);
+}
 
-  // Clean up security store
-  for (const [userId, security] of sessionSecurityStore.entries()) {
-    if (security.lockExpires && now > security.lockExpires) {
-      sessionSecurityStore.delete(userId);
-    }
+// Cleanup function for graceful shutdown
+export const cleanupSessionManagement = () => {
+  if (sessionCleanupInterval) {
+    clearInterval(sessionCleanupInterval);
+    sessionCleanupInterval = null;
   }
-}, 10 * 60 * 1000);
+};
 
 /**
  * Generate device fingerprint from request headers

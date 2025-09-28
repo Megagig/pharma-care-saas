@@ -10,6 +10,7 @@ const workspaceContext_1 = require("../middlewares/workspaceContext");
 const fileUploadService_1 = require("../services/fileUploadService");
 const auditLogging_1 = require("../middlewares/auditLogging");
 const clinicalNoteRBAC_1 = __importDefault(require("../middlewares/clinicalNoteRBAC"));
+const cacheMiddleware_1 = require("../middlewares/cacheMiddleware");
 const router = express_1.default.Router();
 router.use((req, res, next) => {
     console.log(`
@@ -32,7 +33,7 @@ router.use((0, auditLogging_1.auditMiddleware)({
 }));
 router
     .route('/')
-    .get(clinicalNoteRBAC_1.default.canReadClinicalNote, clinicalNoteRBAC_1.default.enforceTenancyIsolation, (0, auditLogging_1.auditMiddleware)({ action: 'LIST_CLINICAL_NOTES', category: 'data_access' }), noteController_1.getNotes)
+    .get(clinicalNoteRBAC_1.default.canReadClinicalNote, clinicalNoteRBAC_1.default.enforceTenancyIsolation, (0, auditLogging_1.auditMiddleware)({ action: 'LIST_CLINICAL_NOTES', category: 'data_access' }), cacheMiddleware_1.clinicalNotesCacheMiddleware, noteController_1.getNotes)
     .post(clinicalNoteRBAC_1.default.canCreateClinicalNote, clinicalNoteRBAC_1.default.validatePatientAccess, (0, auditLogging_1.auditMiddleware)({
     action: 'CREATE_CLINICAL_NOTE',
     category: 'data_access',
@@ -41,7 +42,7 @@ router.get('/search', clinicalNoteRBAC_1.default.canReadClinicalNote, clinicalNo
     action: 'SEARCH_CLINICAL_NOTES',
     category: 'data_access',
     severity: 'medium',
-}), noteController_1.searchNotes);
+}), cacheMiddleware_1.searchCacheMiddleware, noteController_1.searchNotes);
 router.get('/filter', clinicalNoteRBAC_1.default.canReadClinicalNote, clinicalNoteRBAC_1.default.enforceTenancyIsolation, (0, auditLogging_1.auditMiddleware)({ action: 'FILTER_CLINICAL_NOTES', category: 'data_access' }), noteController_1.getNotesWithFilters);
 router.get('/statistics', clinicalNoteRBAC_1.default.canReadClinicalNote, clinicalNoteRBAC_1.default.enforceTenancyIsolation, (0, auditLogging_1.auditMiddleware)({ action: 'VIEW_NOTE_STATISTICS', category: 'data_access' }), noteController_1.getNoteStatistics);
 router.post('/bulk/update', clinicalNoteRBAC_1.default.canUpdateClinicalNote, clinicalNoteRBAC_1.default.validateBulkNoteAccess, (0, auditLogging_1.auditMiddleware)({

@@ -8,7 +8,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const User_1 = __importDefault(require("../models/User"));
 const Subscription_1 = __importDefault(require("../models/Subscription"));
-const FeatureFlag_1 = __importDefault(require("../models/FeatureFlag"));
+const FeatureFlag_1 = require("../models/FeatureFlag");
 const ROLE_HIERARCHY = {
     super_admin: [
         'super_admin',
@@ -262,7 +262,7 @@ const requireFeature = (featureKey) => {
                 res.status(401).json({ message: 'Access denied.' });
                 return;
             }
-            const featureFlag = await FeatureFlag_1.default.findOne({
+            const featureFlag = await FeatureFlag_1.FeatureFlag.findOne({
                 key: featureKey,
                 isActive: true,
             });

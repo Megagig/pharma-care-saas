@@ -63,30 +63,42 @@ interface SystemAuditLog {
 const auditLogs: SystemAuditLog[] = [];
 const MAX_MEMORY_LOGS = 10000;
 
-// Clean up old logs periodically
-setInterval(() => {
-  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days
-  const initialLength = auditLogs.length;
+// Clean up old logs periodically (only in production)
+let cleanupInterval: NodeJS.Timeout | null = null;
 
-  // Remove old logs
-  for (let i = auditLogs.length - 1; i >= 0; i--) {
-    const log = auditLogs[i];
-    if (log && log.timestamp < cutoff) {
-      auditLogs.splice(i, 1);
+if (process.env.NODE_ENV === 'production') {
+  cleanupInterval = setInterval(() => {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days
+    const initialLength = auditLogs.length;
+
+    // Remove old logs
+    for (let i = auditLogs.length - 1; i >= 0; i--) {
+      const log = auditLogs[i];
+      if (log && log.timestamp < cutoff) {
+        auditLogs.splice(i, 1);
+      }
     }
-  }
 
-  // Keep only recent logs if memory is full
-  if (auditLogs.length > MAX_MEMORY_LOGS) {
+    // Keep only recent logs if memory is full
+    if (auditLogs.length > MAX_MEMORY_LOGS) {
     auditLogs.splice(0, auditLogs.length - MAX_MEMORY_LOGS);
   }
 
-  if (initialLength !== auditLogs.length) {
-    logger.info(
-      `Cleaned up ${initialLength - auditLogs.length} old audit logs`
-    );
+    if (initialLength !== auditLogs.length) {
+      logger.info(
+        `Cleaned up ${initialLength - auditLogs.length} old audit logs`
+      );
+    }
+  }, 60 * 60 * 1000); // Run every hour
+}
+
+// Cleanup function for graceful shutdown
+export const cleanupAuditLogging = () => {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
   }
-}, 60 * 60 * 1000); // Run every hour
+};
 
 /**
  * Create audit log entry
@@ -150,12 +162,20 @@ export const createAuditLog = async (
 
     // Trigger alerts for high-severity events
     if (auditLog.severity === 'critical' || auditLog.severity === 'high') {
-      await triggerSecurityAlert(auditLog);
+      try {
+        await triggerSecurityAlert(auditLog);
+      } catch (alertError) {
+        logger.error('Failed to trigger security alert', { error: alertError });
+      }
     }
 
     // Detect suspicious patterns
     if (auditLog.suspicious || (auditLog.riskScore && auditLog.riskScore > 7)) {
-      await detectSuspiciousActivity(auditLog);
+      try {
+        await detectSuspiciousActivity(auditLog);
+      } catch (suspiciousError) {
+        logger.error('Failed to detect suspicious activity', { error: suspiciousError });
+      }
     }
   } catch (error: any) {
     logger.error('Failed to create audit log', {

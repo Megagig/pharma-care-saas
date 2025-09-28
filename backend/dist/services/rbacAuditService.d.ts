@@ -82,8 +82,8 @@ declare class RBACSecurityAuditService extends AuditService {
             action: string;
             timestamp: Date;
             user: mongoose.Types.ObjectId;
-            riskScore: number | undefined;
-            reason: string | undefined;
+            riskScore: number;
+            reason: string;
         }[];
     }>;
     private static triggerSecurityAlert;

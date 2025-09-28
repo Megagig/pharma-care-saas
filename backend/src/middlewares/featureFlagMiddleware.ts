@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import FeatureFlag, { IFeatureFlag } from '../models/FeatureFlag';
+import { FeatureFlag, IFeatureFlag } from '../models/FeatureFlag';
 import { IUser } from '../models/User';
 import { ISubscription } from '../models/Subscription';
 
