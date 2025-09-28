@@ -6,22 +6,22 @@ import {
   Breadcrumbs,
   Link,
   Button,
-  Paper,
   Container,
   Fade,
+  Card,
+  useTheme,
 } from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  Home as HomeIcon,
-  Note as NoteIcon,
-  Edit as EditIcon,
-} from '@mui/icons-material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import HomeIcon from '@mui/icons-material/Home';
+import NoteIcon from '@mui/icons-material/Note';
+import EditIcon from '@mui/icons-material/Edit';
 import { Link as RouterLink } from 'react-router-dom';
 import ClinicalNoteDetail from '../components/ClinicalNoteDetail';
 import { useClinicalNoteStore } from '../stores/clinicalNoteStore';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const ClinicalNoteDetailPage: React.FC = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
@@ -155,13 +155,15 @@ const ClinicalNoteDetailPage: React.FC = () => {
         <Box sx={{ mb: 4 }}>
           {renderBreadcrumbs()}
 
-          <Card 
+          <Card
             elevation={1}
-            sx={{ 
+            sx={{
               p: 3,
-              background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+              background: theme.palette.mode === 'dark' 
+                ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.6) 100%)'
+                : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
               border: '1px solid',
-              borderColor: 'grey.200',
+              borderColor: 'divider',
               borderRadius: 3,
             }}
           >

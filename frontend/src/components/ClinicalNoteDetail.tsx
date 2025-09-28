@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
   Card,
   CardContent,
-  CardActions,
   Button,
   IconButton,
   Chip,
   Stack,
-  Divider,
   Grid,
   Paper,
   Dialog,
@@ -29,32 +27,49 @@ import {
   ListItemText,
   ListItemIcon,
   Collapse,
-  Badge,
   useTheme,
   useMediaQuery,
   Container,
 } from '@mui/material';
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  ArrowBack as ArrowBackIcon,
-  Security as SecurityIcon,
-  Schedule as ScheduleIcon,
-  AttachFile as AttachFileIcon,
-  Person as PersonIcon,
-  LocalPharmacy as PharmacyIcon,
-  CalendarToday as CalendarIcon,
-  Priority as PriorityIcon,
-  Visibility as VisibilityIcon,
-  Download as DownloadIcon,
-  History as HistoryIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  MedicalServices as MedicalIcon,
-  Assignment as AssignmentIcon,
-  Assessment as AssessmentIcon,
-  PlaylistAddCheck as PlanIcon,
-} from '@mui/icons-material';
+import Edit from '@mui/icons-material/Edit';
+import Delete from '@mui/icons-material/Delete';
+import ArrowBack from '@mui/icons-material/ArrowBack';
+import Security from '@mui/icons-material/Security';
+import Schedule from '@mui/icons-material/Schedule';
+import AttachFile from '@mui/icons-material/AttachFile';
+import Person from '@mui/icons-material/Person';
+import LocalPharmacy from '@mui/icons-material/LocalPharmacy';
+import CalendarToday from '@mui/icons-material/CalendarToday';
+import PriorityHigh from '@mui/icons-material/PriorityHigh';
+import Visibility from '@mui/icons-material/Visibility';
+import Download from '@mui/icons-material/Download';
+import History from '@mui/icons-material/History';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import MedicalServices from '@mui/icons-material/MedicalServices';
+import Assignment from '@mui/icons-material/Assignment';
+import Assessment from '@mui/icons-material/Assessment';
+import PlaylistAddCheck from '@mui/icons-material/PlaylistAddCheck';
+
+const EditIcon = Edit;
+const DeleteIcon = Delete;
+const ArrowBackIcon = ArrowBack;
+const SecurityIcon = Security;
+const ScheduleIcon = Schedule;
+const AttachFileIcon = AttachFile;
+const PersonIcon = Person;
+const PharmacyIcon = LocalPharmacy;
+const CalendarIcon = CalendarToday;
+const PriorityIcon = PriorityHigh;
+const VisibilityIcon = Visibility;
+const DownloadIcon = Download;
+const HistoryIcon = History;
+const ExpandMoreIcon = ExpandMore;
+const ExpandLessIcon = ExpandLess;
+const MedicalIcon = MedicalServices;
+const AssignmentIcon = Assignment;
+const AssessmentIcon = Assessment;
+const PlanIcon = PlaylistAddCheck;
 import { format, parseISO } from 'date-fns';
 import { useClinicalNote } from '../queries/clinicalNoteQueries';
 import { useEnhancedClinicalNoteStore } from '../stores/enhancedClinicalNoteStore';
@@ -116,7 +131,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   });
 
   // Store actions
-  const { deleteNote, downloadAttachment, deleteAttachment, loading, errors } =
+  const { deleteNote, downloadAttachment, deleteAttachment, loading } =
     useEnhancedClinicalNoteStore();
 
   // Fetch note data
@@ -239,32 +254,34 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
     return NOTE_PRIORITIES.find((p) => p.value === priority);
   };
 
-  // Helper function for priority colors
+  // Helper function for priority colors (theme-aware)
   const getPriorityColor = (priority: ClinicalNote['priority']) => {
+    const isDark = theme.palette.mode === 'dark';
+
     switch (priority) {
       case 'high':
         return {
-          bg: '#fef2f2',
-          text: '#dc2626',
-          border: '#fecaca',
+          bg: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+          text: isDark ? '#fca5a5' : '#dc2626',
+          border: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fecaca',
         };
       case 'medium':
         return {
-          bg: '#fffbeb',
-          text: '#d97706',
-          border: '#fed7aa',
+          bg: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb',
+          text: isDark ? '#fbbf24' : '#d97706',
+          border: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fed7aa',
         };
       case 'low':
         return {
-          bg: '#f0fdf4',
-          text: '#16a34a',
-          border: '#bbf7d0',
+          bg: isDark ? 'rgba(34, 197, 94, 0.1)' : '#f0fdf4',
+          text: isDark ? '#4ade80' : '#16a34a',
+          border: isDark ? 'rgba(34, 197, 94, 0.2)' : '#bbf7d0',
         };
       default:
         return {
-          bg: '#f8fafc',
-          text: '#64748b',
-          border: '#e2e8f0',
+          bg: isDark ? 'rgba(100, 116, 139, 0.1)' : '#f8fafc',
+          text: isDark ? '#94a3b8' : '#64748b',
+          border: isDark ? 'rgba(100, 116, 139, 0.2)' : '#e2e8f0',
         };
     }
   };
@@ -272,6 +289,50 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   // Helper function to get user initials
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
+
+  // Helper function for theme-aware backgrounds
+  const getThemeBackground = (lightColor: string, darkOpacity = 0.3) => {
+    return theme.palette.mode === 'dark'
+      ? `rgba(51, 65, 85, ${darkOpacity})`
+      : lightColor;
+  };
+
+  // Helper function for theme-aware gradients
+  const getThemeGradient = (section: string, isExpanded: boolean) => {
+    if (!isExpanded) return 'transparent';
+
+    if (theme.palette.mode === 'dark') {
+      switch (section) {
+        case 'content':
+          return 'linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%)';
+        case 'vitals':
+          return 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)';
+        case 'labs':
+          return 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%)';
+        case 'recommendations':
+          return 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)';
+        case 'attachments':
+          return 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)';
+        default:
+          return 'linear-gradient(135deg, rgba(100, 116, 139, 0.1) 0%, rgba(100, 116, 139, 0.05) 100%)';
+      }
+    } else {
+      switch (section) {
+        case 'content':
+          return 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)';
+        case 'vitals':
+          return 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';
+        case 'labs':
+          return 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
+        case 'recommendations':
+          return 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)';
+        case 'attachments':
+          return 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)';
+        default:
+          return 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)';
+      }
+    }
   };
 
   // Check permissions
@@ -379,9 +440,11 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
             elevation={1}
             sx={{
               p: 3,
-              background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+              background: theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.6) 100%)'
+                : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
               border: '1px solid',
-              borderColor: 'grey.200',
+              borderColor: 'divider',
             }}
           >
             <Stack
@@ -415,13 +478,21 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                     label={typeInfo?.label || note.type}
                     size="medium"
                     sx={{
-                      backgroundColor: 'primary.50',
-                      color: 'primary.700',
+                      backgroundColor: theme.palette.mode === 'dark'
+                        ? 'rgba(37, 99, 235, 0.2)'
+                        : 'primary.50',
+                      color: theme.palette.mode === 'dark'
+                        ? 'primary.200'
+                        : 'primary.700',
                       fontWeight: 600,
                       border: '1px solid',
-                      borderColor: 'primary.200',
+                      borderColor: theme.palette.mode === 'dark'
+                        ? 'rgba(37, 99, 235, 0.3)'
+                        : 'primary.200',
                       '&:hover': {
-                        backgroundColor: 'primary.100',
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(37, 99, 235, 0.3)'
+                          : 'primary.100',
                       },
                     }}
                   />
@@ -442,11 +513,17 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                       label="Confidential"
                       size="medium"
                       sx={{
-                        backgroundColor: 'warning.50',
-                        color: 'warning.700',
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(245, 158, 11, 0.2)'
+                          : 'warning.50',
+                        color: theme.palette.mode === 'dark'
+                          ? 'warning.200'
+                          : 'warning.700',
                         fontWeight: 600,
                         border: '1px solid',
-                        borderColor: 'warning.200',
+                        borderColor: theme.palette.mode === 'dark'
+                          ? 'rgba(245, 158, 11, 0.3)'
+                          : 'warning.200',
                       }}
                     />
                   )}
@@ -456,11 +533,17 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                       label="Follow-up Required"
                       size="medium"
                       sx={{
-                        backgroundColor: 'info.50',
-                        color: 'info.700',
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(59, 130, 246, 0.2)'
+                          : 'info.50',
+                        color: theme.palette.mode === 'dark'
+                          ? 'info.200'
+                          : 'info.700',
                         fontWeight: 600,
                         border: '1px solid',
-                        borderColor: 'info.200',
+                        borderColor: theme.palette.mode === 'dark'
+                          ? 'rgba(59, 130, 246, 0.3)'
+                          : 'info.200',
                       }}
                     />
                   )}
@@ -490,7 +573,9 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                       color: 'text.secondary',
                       '&:hover': {
                         borderColor: 'grey.400',
-                        backgroundColor: 'grey.50',
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.1)'
+                          : 'grey.50',
                       },
                     }}
                   >
@@ -530,7 +615,9 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                       py: 1.5,
                       fontWeight: 600,
                       '&:hover': {
-                        backgroundColor: 'error.50',
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(239, 68, 68, 0.1)'
+                          : 'error.50',
                         transform: 'translateY(-1px)',
                       },
                       transition: 'all 0.2s ease-in-out',
@@ -580,10 +667,10 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                     elevation={0}
                     sx={{
                       p: 3,
-                      bgcolor: 'grey.50',
+                      bgcolor: getThemeBackground('grey.50', 0.3),
                       borderRadius: 2,
                       border: '1px solid',
-                      borderColor: 'grey.200',
+                      borderColor: 'divider',
                       height: '100%',
                     }}
                   >
@@ -638,10 +725,10 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                     elevation={0}
                     sx={{
                       p: 3,
-                      bgcolor: 'grey.50',
+                      bgcolor: getThemeBackground('grey.50', 0.3),
                       borderRadius: 2,
                       border: '1px solid',
-                      borderColor: 'grey.200',
+                      borderColor: 'divider',
                       height: '100%',
                     }}
                   >
@@ -713,14 +800,14 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                   alignItems: 'center',
                   p: 3,
                   pb: expandedSections.content ? 2 : 3,
-                  background: expandedSections.content
-                    ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'
-                    : 'transparent',
+                  background: getThemeGradient('content', expandedSections.content),
                   borderRadius: expandedSections.content ? '12px 12px 0 0' : '12px',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease-in-out',
                   '&:hover': {
-                    backgroundColor: expandedSections.content ? 'transparent' : 'grey.50',
+                    backgroundColor: expandedSections.content
+                      ? 'transparent'
+                      : getThemeBackground('grey.50', 0.1),
                   },
                 }}
                 onClick={() => toggleSection('content')}
@@ -741,10 +828,22 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 <IconButton
                   size="small"
                   sx={{
-                    backgroundColor: expandedSections.content ? 'primary.100' : 'grey.100',
+                    backgroundColor: expandedSections.content
+                      ? theme.palette.mode === 'dark'
+                        ? 'rgba(37, 99, 235, 0.2)'
+                        : 'primary.100'
+                      : theme.palette.mode === 'dark'
+                        ? 'rgba(100, 116, 139, 0.2)'
+                        : 'grey.100',
                     color: expandedSections.content ? 'primary.main' : 'text.secondary',
                     '&:hover': {
-                      backgroundColor: expandedSections.content ? 'primary.200' : 'grey.200',
+                      backgroundColor: expandedSections.content
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(37, 99, 235, 0.3)'
+                          : 'primary.200'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.3)'
+                          : 'grey.200',
                     },
                   }}
                 >
@@ -779,10 +878,10 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                           elevation={0}
                           sx={{
                             p: 3,
-                            bgcolor: 'grey.50',
+                            bgcolor: getThemeBackground('grey.50', 0.3),
                             borderRadius: 2,
                             border: '1px solid',
-                            borderColor: 'grey.200',
+                            borderColor: 'divider',
                           }}
                         >
                           <Typography
@@ -819,10 +918,10 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                           elevation={0}
                           sx={{
                             p: 3,
-                            bgcolor: 'grey.50',
+                            bgcolor: getThemeBackground('grey.50', 0.3),
                             borderRadius: 2,
                             border: '1px solid',
-                            borderColor: 'grey.200',
+                            borderColor: 'divider',
                           }}
                         >
                           <Typography
@@ -859,10 +958,10 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                           elevation={0}
                           sx={{
                             p: 3,
-                            bgcolor: 'grey.50',
+                            bgcolor: getThemeBackground('grey.50', 0.3),
                             borderRadius: 2,
                             border: '1px solid',
-                            borderColor: 'grey.200',
+                            borderColor: 'divider',
                           }}
                         >
                           <Typography
@@ -899,10 +998,10 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                           elevation={0}
                           sx={{
                             p: 3,
-                            bgcolor: 'grey.50',
+                            bgcolor: getThemeBackground('grey.50', 0.3),
                             borderRadius: 2,
                             border: '1px solid',
-                            borderColor: 'grey.200',
+                            borderColor: 'divider',
                           }}
                         >
                           <Typography
@@ -943,14 +1042,14 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                     alignItems: 'center',
                     p: 3,
                     pb: expandedSections.vitals ? 2 : 3,
-                    background: expandedSections.vitals
-                      ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)'
-                      : 'transparent',
+                    background: getThemeGradient('vitals', expandedSections.vitals),
                     borderRadius: expandedSections.vitals ? '12px 12px 0 0' : '12px',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease-in-out',
                     '&:hover': {
-                      backgroundColor: expandedSections.vitals ? 'transparent' : 'grey.50',
+                      backgroundColor: expandedSections.vitals
+                        ? 'transparent'
+                        : getThemeBackground('grey.50', 0.1),
                     },
                   }}
                   onClick={() => toggleSection('vitals')}
@@ -971,10 +1070,22 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                   <IconButton
                     size="small"
                     sx={{
-                      backgroundColor: expandedSections.vitals ? 'success.100' : 'grey.100',
+                      backgroundColor: expandedSections.vitals
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(34, 197, 94, 0.2)'
+                          : 'success.100'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.2)'
+                          : 'grey.100',
                       color: expandedSections.vitals ? 'success.main' : 'text.secondary',
                       '&:hover': {
-                        backgroundColor: expandedSections.vitals ? 'success.200' : 'grey.200',
+                        backgroundColor: expandedSections.vitals
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(34, 197, 94, 0.3)'
+                            : 'success.200'
+                          : theme.palette.mode === 'dark'
+                            ? 'rgba(100, 116, 139, 0.3)'
+                            : 'grey.200',
                       },
                     }}
                   >
@@ -1014,14 +1125,14 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                     alignItems: 'center',
                     p: 3,
                     pb: expandedSections.labs ? 2 : 3,
-                    background: expandedSections.labs
-                      ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
-                      : 'transparent',
+                    background: getThemeGradient('labs', expandedSections.labs),
                     borderRadius: expandedSections.labs ? '12px 12px 0 0' : '12px',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease-in-out',
                     '&:hover': {
-                      backgroundColor: expandedSections.labs ? 'transparent' : 'grey.50',
+                      backgroundColor: expandedSections.labs
+                        ? 'transparent'
+                        : getThemeBackground('grey.50', 0.1),
                     },
                   }}
                   onClick={() => toggleSection('labs')}
@@ -1042,10 +1153,22 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                   <IconButton
                     size="small"
                     sx={{
-                      backgroundColor: expandedSections.labs ? 'warning.100' : 'grey.100',
+                      backgroundColor: expandedSections.labs
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(245, 158, 11, 0.2)'
+                          : 'warning.100'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.2)'
+                          : 'grey.100',
                       color: expandedSections.labs ? 'warning.main' : 'text.secondary',
                       '&:hover': {
-                        backgroundColor: expandedSections.labs ? 'warning.200' : 'grey.200',
+                        backgroundColor: expandedSections.labs
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(245, 158, 11, 0.3)'
+                            : 'warning.200'
+                          : theme.palette.mode === 'dark'
+                            ? 'rgba(100, 116, 139, 0.3)'
+                            : 'grey.200',
                       },
                     }}
                   >
@@ -1085,14 +1208,14 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                     alignItems: 'center',
                     p: 3,
                     pb: expandedSections.recommendations ? 2 : 3,
-                    background: expandedSections.recommendations
-                      ? 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)'
-                      : 'transparent',
+                    background: getThemeGradient('recommendations', expandedSections.recommendations),
                     borderRadius: expandedSections.recommendations ? '12px 12px 0 0' : '12px',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease-in-out',
                     '&:hover': {
-                      backgroundColor: expandedSections.recommendations ? 'transparent' : 'grey.50',
+                      backgroundColor: expandedSections.recommendations
+                        ? 'transparent'
+                        : getThemeBackground('grey.50', 0.1),
                     },
                   }}
                   onClick={() => toggleSection('recommendations')}
@@ -1113,10 +1236,22 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                   <IconButton
                     size="small"
                     sx={{
-                      backgroundColor: expandedSections.recommendations ? 'secondary.100' : 'grey.100',
+                      backgroundColor: expandedSections.recommendations
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(16, 185, 129, 0.2)'
+                          : 'secondary.100'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.2)'
+                          : 'grey.100',
                       color: expandedSections.recommendations ? 'secondary.main' : 'text.secondary',
                       '&:hover': {
-                        backgroundColor: expandedSections.recommendations ? 'secondary.200' : 'grey.200',
+                        backgroundColor: expandedSections.recommendations
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(16, 185, 129, 0.3)'
+                            : 'secondary.200'
+                          : theme.palette.mode === 'dark'
+                            ? 'rgba(100, 116, 139, 0.3)'
+                            : 'grey.200',
                       },
                     }}
                   >
@@ -1331,12 +1466,16 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                           label={tag}
                           size="small"
                           sx={{
-                            backgroundColor: 'grey.100',
+                            backgroundColor: theme.palette.mode === 'dark'
+                              ? 'rgba(100, 116, 139, 0.3)'
+                              : 'grey.100',
                             color: 'text.primary',
                             fontWeight: 500,
                             borderRadius: 2,
                             '&:hover': {
-                              backgroundColor: 'grey.200',
+                              backgroundColor: theme.palette.mode === 'dark'
+                                ? 'rgba(100, 116, 139, 0.4)'
+                                : 'grey.200',
                             },
                           }}
                         />
@@ -1367,14 +1506,14 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                     alignItems: 'center',
                     p: 3,
                     pb: expandedSections.attachments ? 2 : 3,
-                    background: expandedSections.attachments
-                      ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
-                      : 'transparent',
+                    background: getThemeGradient('attachments', expandedSections.attachments),
                     borderRadius: expandedSections.attachments ? '12px 12px 0 0' : '12px',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease-in-out',
                     '&:hover': {
-                      backgroundColor: expandedSections.attachments ? 'transparent' : 'grey.50',
+                      backgroundColor: expandedSections.attachments
+                        ? 'transparent'
+                        : getThemeBackground('grey.50', 0.1),
                     },
                   }}
                   onClick={() => toggleSection('attachments')}
@@ -1395,10 +1534,22 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                   <IconButton
                     size="small"
                     sx={{
-                      backgroundColor: expandedSections.attachments ? 'info.100' : 'grey.100',
+                      backgroundColor: expandedSections.attachments
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(59, 130, 246, 0.2)'
+                          : 'info.100'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.2)'
+                          : 'grey.100',
                       color: expandedSections.attachments ? 'info.main' : 'text.secondary',
                       '&:hover': {
-                        backgroundColor: expandedSections.attachments ? 'info.200' : 'grey.200',
+                        backgroundColor: expandedSections.attachments
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(59, 130, 246, 0.3)'
+                            : 'info.200'
+                          : theme.palette.mode === 'dark'
+                            ? 'rgba(100, 116, 139, 0.3)'
+                            : 'grey.200',
                       },
                     }}
                   >
@@ -1440,14 +1591,14 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                   alignItems: 'center',
                   p: 3,
                   pb: showAuditTrail ? 2 : 3,
-                  background: showAuditTrail
-                    ? 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)'
-                    : 'transparent',
+                  background: getThemeGradient('audit', showAuditTrail),
                   borderRadius: showAuditTrail ? '12px 12px 0 0' : '12px',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease-in-out',
                   '&:hover': {
-                    backgroundColor: showAuditTrail ? 'transparent' : 'grey.50',
+                    backgroundColor: showAuditTrail
+                      ? 'transparent'
+                      : getThemeBackground('grey.50', 0.1),
                   },
                 }}
                 onClick={() => setShowAuditTrail(!showAuditTrail)}
@@ -1468,10 +1619,22 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 <IconButton
                   size="small"
                   sx={{
-                    backgroundColor: showAuditTrail ? 'grey.200' : 'grey.100',
+                    backgroundColor: showAuditTrail
+                      ? theme.palette.mode === 'dark'
+                        ? 'rgba(100, 116, 139, 0.3)'
+                        : 'grey.200'
+                      : theme.palette.mode === 'dark'
+                        ? 'rgba(100, 116, 139, 0.2)'
+                        : 'grey.100',
                     color: 'text.secondary',
                     '&:hover': {
-                      backgroundColor: showAuditTrail ? 'grey.300' : 'grey.200',
+                      backgroundColor: showAuditTrail
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.4)'
+                          : 'grey.300'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.3)'
+                          : 'grey.200',
                     },
                   }}
                 >
@@ -1567,26 +1730,36 @@ interface VitalSignsDisplayProps {
 const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
   vitalSigns,
 }) => {
+  const theme = useTheme();
+
+  const getVitalCardStyles = () => ({
+    p: 3,
+    textAlign: 'center',
+    borderRadius: 2,
+    border: '1px solid',
+    borderColor: 'divider',
+    backgroundColor: theme.palette.mode === 'dark'
+      ? 'rgba(51, 65, 85, 0.3)'
+      : 'grey.50',
+    transition: 'all 0.2s ease-in-out',
+    '&:hover': {
+      backgroundColor: theme.palette.mode === 'dark'
+        ? 'rgba(51, 65, 85, 0.4)'
+        : 'grey.100',
+      transform: 'translateY(-2px)',
+      boxShadow: theme.palette.mode === 'dark'
+        ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+        : '0 4px 12px rgba(0, 0, 0, 0.1)',
+    },
+  });
+
   return (
     <Grid container spacing={2}>
       {vitalSigns.bloodPressure && (
         <Grid item xs={6} sm={4}>
           <Paper
             elevation={0}
-            sx={{
-              p: 3,
-              textAlign: 'center',
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'grey.200',
-              backgroundColor: 'grey.50',
-              transition: 'all 0.2s ease-in-out',
-              '&:hover': {
-                backgroundColor: 'grey.100',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-              },
-            }}
+            sx={getVitalCardStyles()}
           >
             <Typography
               variant="body2"
@@ -1617,20 +1790,7 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
         <Grid item xs={6} sm={4}>
           <Paper
             elevation={0}
-            sx={{
-              p: 3,
-              textAlign: 'center',
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'grey.200',
-              backgroundColor: 'grey.50',
-              transition: 'all 0.2s ease-in-out',
-              '&:hover': {
-                backgroundColor: 'grey.100',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-              },
-            }}
+            sx={getVitalCardStyles()}
           >
             <Typography
               variant="body2"
@@ -1660,20 +1820,7 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
         <Grid item xs={6} sm={4}>
           <Paper
             elevation={0}
-            sx={{
-              p: 3,
-              textAlign: 'center',
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'grey.200',
-              backgroundColor: 'grey.50',
-              transition: 'all 0.2s ease-in-out',
-              '&:hover': {
-                backgroundColor: 'grey.100',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-              },
-            }}
+            sx={getVitalCardStyles()}
           >
             <Typography
               variant="body2"
@@ -1696,20 +1843,7 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
         <Grid item xs={6} sm={4}>
           <Paper
             elevation={0}
-            sx={{
-              p: 3,
-              textAlign: 'center',
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'grey.200',
-              backgroundColor: 'grey.50',
-              transition: 'all 0.2s ease-in-out',
-              '&:hover': {
-                backgroundColor: 'grey.100',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-              },
-            }}
+            sx={getVitalCardStyles()}
           >
             <Typography
               variant="body2"
@@ -1732,20 +1866,7 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
         <Grid item xs={6} sm={4}>
           <Paper
             elevation={0}
-            sx={{
-              p: 3,
-              textAlign: 'center',
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'grey.200',
-              backgroundColor: 'grey.50',
-              transition: 'all 0.2s ease-in-out',
-              '&:hover': {
-                backgroundColor: 'grey.100',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-              },
-            }}
+            sx={getVitalCardStyles()}
           >
             <Typography
               variant="body2"
