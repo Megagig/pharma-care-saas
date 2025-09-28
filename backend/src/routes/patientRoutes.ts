@@ -52,13 +52,13 @@ router.get(
 );
 
 // GET /api/patients/search - Search patients
-router.get('/search', 
-  requirePatientRead, 
+router.get('/search',
+  requirePatientRead,
   responseOptimizationMiddleware(
     OptimizationPresets.mobile.projection,
     OptimizationPresets.mobile.optimization
   ),
-  searchCacheMiddleware, 
+  searchCacheMiddleware,
   searchPatients
 );
 

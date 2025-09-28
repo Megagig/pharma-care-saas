@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Patient, LoadingState, ErrorState } from './types';
+import { StorePatient } from '../utils/patientUtils';
 // Import from our proxy which handles all the TypeScript issues
 import { mtrService } from '../services/mtrServiceProxy';
 import type {
@@ -14,6 +15,15 @@ import type {
   TherapyGoal,
   ClinicalOutcomes,
   MTRMedicationEntry,
+} from '../types/mtr';
+
+// Re-export types for easier importing
+export type {
+  DrugTherapyProblem,
+  MTRIntervention,
+  MTRFollowUp,
+  TherapyPlan,
+  MedicationTherapyReview,
 } from '../types/mtr';
 
 // MTR-specific types based on backend models
@@ -156,7 +166,7 @@ interface MTRStore {
   stepData: Record<string, Record<string, unknown>>;
 
   // Patient and medications
-  selectedPatient: Patient | null;
+  selectedPatient: StorePatient | null;
   medications: MTRMedication[];
 
   // Assessment results
@@ -181,6 +191,7 @@ interface MTRStore {
   saveReview: () => Promise<void>;
   completeReview: (reviewId?: string) => Promise<MedicationTherapyReview>;
   cancelReview: () => Promise<void>;
+  setCurrentReview: (review: MedicationTherapyReview | null | ((prev: MedicationTherapyReview | null) => MedicationTherapyReview | null)) => void;
 
   // Step navigation actions
   goToStep: (step: number) => void;
@@ -189,7 +200,7 @@ interface MTRStore {
   getCurrentStepName: () => string;
 
   // Patient selection actions
-  selectPatient: (patient: Patient) => void;
+  selectPatient: (patient: StorePatient) => void;
   searchPatients: (query: string) => Promise<Patient[]>;
   createNewPatient: (patientData: Partial<Patient>) => Promise<Patient | null>;
 
@@ -1429,6 +1440,14 @@ export const useMTRStore = create<MTRStore>()(
         }
       },
 
+      setCurrentReview: (review) => {
+        if (typeof review === 'function') {
+          set((state) => ({ currentReview: review(state.currentReview) }));
+        } else {
+          set({ currentReview: review });
+        }
+      },
+
       // Step navigation actions
       goToStep: (step: number) => {
         const { currentReview } = get();
@@ -1538,7 +1557,7 @@ export const useMTRStore = create<MTRStore>()(
       },
 
       // Patient selection actions
-      selectPatient: (patient: Patient) => {
+      selectPatient: (patient: StorePatient) => {
         set({ selectedPatient: patient });
       },
 
