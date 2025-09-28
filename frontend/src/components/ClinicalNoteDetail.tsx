@@ -9,7 +9,6 @@ import {
   IconButton,
   Chip,
   Stack,
-  Grid,
   Paper,
   Dialog,
   DialogTitle,
@@ -38,9 +37,7 @@ import Security from '@mui/icons-material/Security';
 import Schedule from '@mui/icons-material/Schedule';
 import AttachFile from '@mui/icons-material/AttachFile';
 import Person from '@mui/icons-material/Person';
-import LocalPharmacy from '@mui/icons-material/LocalPharmacy';
 import CalendarToday from '@mui/icons-material/CalendarToday';
-import PriorityHigh from '@mui/icons-material/PriorityHigh';
 import Visibility from '@mui/icons-material/Visibility';
 import Download from '@mui/icons-material/Download';
 import History from '@mui/icons-material/History';
@@ -58,9 +55,7 @@ const SecurityIcon = Security;
 const ScheduleIcon = Schedule;
 const AttachFileIcon = AttachFile;
 const PersonIcon = Person;
-const PharmacyIcon = LocalPharmacy;
 const CalendarIcon = CalendarToday;
-const PriorityIcon = PriorityHigh;
 const VisibilityIcon = Visibility;
 const DownloadIcon = Download;
 const HistoryIcon = History;
@@ -632,9 +627,9 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
         </Box>
       )}
 
-      <Grid container spacing={3}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
         {/* Main Content */}
-        <Grid item xs={12} md={8}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           {/* Enhanced Patient and Clinician Information */}
           <Card
             elevation={1}
@@ -661,8 +656,8 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 Patient & Clinician Information
               </Typography>
 
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                <Box sx={{ width: { xs: '100%', sm: '50%' } }}>
                   <Paper
                     elevation={0}
                     sx={{
@@ -718,9 +713,9 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                       MRN: {note.patient.mrn}
                     </Typography>
                   </Paper>
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} sm={6}>
+                <Box sx={{ width: { xs: '100%', sm: '50%' } }}>
                   <Paper
                     elevation={0}
                     sx={{
@@ -776,8 +771,8 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                       Role: {note.pharmacist.role}
                     </Typography>
                   </Paper>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
 
@@ -1318,10 +1313,10 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
               </CardContent>
             </Card>
           )}
-        </Grid>
+        </Box>
 
         {/* Enhanced Sidebar */}
-        <Grid item xs={12} md={4}>
+        <Box sx={{ width: { xs: '100%', md: '33.333%' }, flexShrink: 0 }}>
           {/* Enhanced Note Metadata */}
           <Card
             elevation={1}
@@ -1649,8 +1644,8 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
               </Collapse>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* Edit Modal */}
       <Dialog
@@ -1717,7 +1712,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+    </Container >
   );
 };
 
@@ -1754,9 +1749,9 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
   });
 
   return (
-    <Grid container spacing={2}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
       {vitalSigns.bloodPressure && (
-        <Grid item xs={6} sm={4}>
+        <Box sx={{ width: { xs: '50%', sm: '33.333%' } }}>
           <Paper
             elevation={0}
             sx={getVitalCardStyles()}
@@ -1783,11 +1778,11 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
               mmHg
             </Typography>
           </Paper>
-        </Grid>
+        </Box>
       )}
 
       {vitalSigns.heartRate && (
-        <Grid item xs={6} sm={4}>
+        <Box sx={{ width: { xs: '50%', sm: '33.333%' } }}>
           <Paper
             elevation={0}
             sx={getVitalCardStyles()}
@@ -1813,11 +1808,11 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
               bpm
             </Typography>
           </Paper>
-        </Grid>
+        </Box>
       )}
 
       {vitalSigns.temperature && (
-        <Grid item xs={6} sm={4}>
+        <Box sx={{ width: { xs: '50%', sm: '33.333%' } }}>
           <Paper
             elevation={0}
             sx={getVitalCardStyles()}
@@ -1836,11 +1831,11 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
               {vitalSigns.temperature}°C
             </Typography>
           </Paper>
-        </Grid>
+        </Box>
       )}
 
       {vitalSigns.weight && (
-        <Grid item xs={6} sm={4}>
+        <Box sx={{ width: { xs: '50%', sm: '33.333%' } }}>
           <Paper
             elevation={0}
             sx={getVitalCardStyles()}
@@ -1859,11 +1854,11 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
               {vitalSigns.weight} kg
             </Typography>
           </Paper>
-        </Grid>
+        </Box>
       )}
 
       {vitalSigns.height && (
-        <Grid item xs={6} sm={4}>
+        <Box sx={{ width: { xs: '50%', sm: '33.333%' } }}>
           <Paper
             elevation={0}
             sx={getVitalCardStyles()}
@@ -1882,9 +1877,9 @@ const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
               {vitalSigns.height} cm
             </Typography>
           </Paper>
-        </Grid>
+        </Box>
       )}
-    </Grid>
+    </Box>
   );
 };
 
