@@ -944,12 +944,51 @@ export const useMTRStore = create<MTRStore>()(
               updatedAt: new Date().toISOString(),
             };
 
-            // Clean up localStorage for this session
+            // Keep completed session in localStorage but mark as completed
             try {
-              localStorage.removeItem(`mtr_session_${currentReview._id}`);
-              localStorage.removeItem('mtr_last_session_id');
+              const sessionData = {
+                currentReview: completedReview,
+                currentStep: get().currentStep,
+                stepData: get().stepData,
+                medications: get().medications,
+                identifiedProblems: get().identifiedProblems,
+                therapyPlan: get().therapyPlan,
+                interventions: get().interventions,
+                followUps: get().followUps,
+                selectedPatient: get().selectedPatient,
+                savedAt: new Date().toISOString(),
+                completedAt: new Date().toISOString(),
+              };
+              
+              localStorage.setItem(`mtr_session_${currentReview._id}`, JSON.stringify(sessionData));
+              
+              // Also add to completed sessions list
+              const completedSessions = JSON.parse(localStorage.getItem('mtr_completed_sessions') || '[]');
+              const sessionSummary = {
+                _id: currentReview._id,
+                patientId: currentReview.patientId,
+                reviewNumber: currentReview.reviewNumber,
+                status: 'completed',
+                createdAt: currentReview.createdAt,
+                completedAt: new Date().toISOString(),
+                reviewType: currentReview.reviewType,
+                priority: currentReview.priority,
+              };
+              
+              // Add to completed sessions if not already there
+              if (!completedSessions.find((s: any) => s._id === currentReview._id)) {
+                completedSessions.unshift(sessionSummary); // Add to beginning
+                localStorage.setItem('mtr_completed_sessions', JSON.stringify(completedSessions));
+              }
+              
+              // Trigger custom event to notify other components
+              window.dispatchEvent(new CustomEvent('mtr-session-completed', {
+                detail: { sessionId: currentReview._id, patientId: currentReview.patientId }
+              }));
+              
+              console.log('✅ Completed session saved to localStorage');
             } catch (error) {
-              console.error('Failed to clean up localStorage:', error);
+              console.error('Failed to save completed session:', error);
             }
           } else {
             // Handle real session completion via API
