@@ -1358,8 +1358,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                         sx={{
                             position: 'fixed',
                             bottom: 80,
-                            left: 16,
-                            width: 300,
+                            right: 16,
                             zIndex: 999,
                             display: { xs: 'none', md: 'block' },
                         }}

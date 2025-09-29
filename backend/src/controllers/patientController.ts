@@ -138,7 +138,7 @@ export const getPatients = asyncHandler(
     } else {
       // Legacy skip/limit pagination (for backward compatibility)
       const parsedPage = Math.max(1, parseInt(page as string) || 1);
-      
+
       const [patients, total] = await Promise.all([
         Patient.find(filters)
           .sort({ [sortField]: sortOrder === 'asc' ? 1 : -1 })
