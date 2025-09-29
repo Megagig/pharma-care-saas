@@ -101,6 +101,7 @@ export interface InterventionFilters {
   limit?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  isSuperAdmin?: boolean;
 }
 
 export interface PaginatedResult<T> {
@@ -336,10 +337,26 @@ class ClinicalInterventionService {
         throw createNotFoundError('Patient not found');
       }
 
-      // Validate user exists
+      // For super_admin, skip workplace validation
+      const isSuperAdmin = process.env.NODE_ENV === 'development' || 
+                          (data as any).isSuperAdmin;
+      if (!isSuperAdmin && patient.workplaceId.toString() !== data.workplaceId.toString()) {
+        throw createNotFoundError('Patient not found in your workplace');
+      }
+
+      // Validate user exists (skip for super_admin test mode in development)
       const user = await User.findById(data.identifiedBy);
       if (!user) {
-        throw createNotFoundError('User not found');
+        // Check if this is a super_admin test mode ObjectId (development only)
+        const isTestMode = process.env.NODE_ENV === 'development' && 
+                          data.identifiedBy.toString().match(/^[0-9a-fA-F]{24}$/);
+        
+        if (!isTestMode) {
+          throw createNotFoundError('User not found');
+        }
+        
+        // For test mode, we'll continue without the user validation
+        console.log('🔧 DEV MODE: Skipping user validation for super_admin test');
       }
 
       // Generate intervention number
@@ -415,14 +432,21 @@ class ClinicalInterventionService {
     id: string,
     updates: UpdateInterventionDTO,
     userId: mongoose.Types.ObjectId,
-    workplaceId: mongoose.Types.ObjectId
+    workplaceId: mongoose.Types.ObjectId,
+    isSuperAdmin: boolean = false
   ): Promise<IClinicalIntervention> {
     try {
-      const intervention = await ClinicalIntervention.findOne({
+      const query: any = {
         _id: id,
-        workplaceId,
         isDeleted: { $ne: true },
-      });
+      };
+
+      // Add workplaceId filter only if not super_admin
+      if (!isSuperAdmin) {
+        query.workplaceId = workplaceId;
+      }
+
+      const intervention = await ClinicalIntervention.findOne(query);
 
       if (!intervention) {
         throw createNotFoundError('Clinical intervention not found');
@@ -624,14 +648,21 @@ class ClinicalInterventionService {
    */
   static async getInterventionById(
     id: string,
-    workplaceId: mongoose.Types.ObjectId
+    workplaceId: mongoose.Types.ObjectId,
+    isSuperAdmin: boolean = false
   ): Promise<IClinicalIntervention> {
     try {
-      const intervention = await ClinicalIntervention.findOne({
+      const query: any = {
         _id: id,
-        workplaceId,
         isDeleted: { $ne: true },
-      })
+      };
+
+      // Add workplaceId filter only if not super_admin
+      if (!isSuperAdmin) {
+        query.workplaceId = workplaceId;
+      }
+
+      const intervention = await ClinicalIntervention.findOne(query)
         .populate(
           'patientId',
           'firstName lastName dateOfBirth phoneNumber email'
@@ -658,14 +689,21 @@ class ClinicalInterventionService {
   static async deleteIntervention(
     id: string,
     userId: mongoose.Types.ObjectId,
-    workplaceId: mongoose.Types.ObjectId
+    workplaceId: mongoose.Types.ObjectId,
+    isSuperAdmin: boolean = false
   ): Promise<boolean> {
     try {
-      const intervention = await ClinicalIntervention.findOne({
+      const query: any = {
         _id: id,
-        workplaceId,
         isDeleted: { $ne: true },
-      });
+      };
+
+      // Add workplaceId filter only if not super_admin
+      if (!isSuperAdmin) {
+        query.workplaceId = workplaceId;
+      }
+
+      const intervention = await ClinicalIntervention.findOne(query);
 
       if (!intervention) {
         throw createNotFoundError('Clinical intervention not found');

@@ -352,40 +352,36 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
 
                     if (response.success && response.data) {
                         set({
-                            interventions: response.data.data || response.data,
+                            interventions: response.data.data || [],
                             pagination: response.data.pagination || {
                                 page: currentFilters.page || 1,
                                 limit: currentFilters.limit || 20,
-                                total: response.data.length || 0,
-                                pages: Math.ceil((response.data.length || 0) / (currentFilters.limit || 20)),
+                                total: 0,
+                                pages: 0,
                                 hasNext: false,
                                 hasPrev: false,
                             },
                         });
                     } else {
                         setError('fetchInterventions', response.message || 'Failed to fetch interventions');
-
-                        // For super_admin users, provide mock data if API fails
-                        if (response.message?.includes('401') || response.message?.includes('Authentication')) {
-                            console.log('Using mock data for super_admin access');
-                            set({
-                                interventions: [],
-                                pagination: {
-                                    page: 1,
-                                    limit: 20,
-                                    total: 0,
-                                    pages: 0,
-                                    hasNext: false,
-                                    hasPrev: false,
-                                },
-                            });
-                        }
+                        // Set empty state on error
+                        set({
+                            interventions: [],
+                            pagination: {
+                                page: 1,
+                                limit: 20,
+                                total: 0,
+                                pages: 0,
+                                hasNext: false,
+                                hasPrev: false,
+                            },
+                        });
                     }
                 } catch (error) {
                     console.error('Error fetching interventions:', error);
                     setError('fetchInterventions', error instanceof Error ? error.message : 'An unexpected error occurred');
 
-                    // Provide empty state for super_admin
+                    // Set empty state on error
                     set({
                         interventions: [],
                         pagination: {
@@ -692,44 +688,12 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
                         set({ dashboardMetrics: response.data });
                     } else {
                         setError('fetchDashboardMetrics', response.message || 'Failed to fetch dashboard metrics');
-
-                        // Provide mock dashboard data for super_admin access
-                        const mockDashboardMetrics: DashboardMetrics = {
-                            totalInterventions: 0,
-                            activeInterventions: 0,
-                            completedInterventions: 0,
-                            overdueInterventions: 0,
-                            successRate: 0,
-                            averageResolutionTime: 0,
-                            totalCostSavings: 0,
-                            categoryDistribution: [],
-                            priorityDistribution: [],
-                            monthlyTrends: [],
-                            recentInterventions: []
-                        };
-
-                        set({ dashboardMetrics: mockDashboardMetrics });
+                        set({ dashboardMetrics: null });
                     }
                 } catch (error) {
                     console.error('Error fetching dashboard metrics:', error);
                     setError('fetchDashboardMetrics', error instanceof Error ? error.message : 'An unexpected error occurred');
-
-                    // Provide mock dashboard data for super_admin access
-                    const mockDashboardMetrics: DashboardMetrics = {
-                        totalInterventions: 0,
-                        activeInterventions: 0,
-                        completedInterventions: 0,
-                        overdueInterventions: 0,
-                        successRate: 0,
-                        averageResolutionTime: 0,
-                        totalCostSavings: 0,
-                        categoryDistribution: [],
-                        priorityDistribution: [],
-                        monthlyTrends: [],
-                        recentInterventions: []
-                    };
-
-                    set({ dashboardMetrics: mockDashboardMetrics });
+                    set({ dashboardMetrics: null });
                 } finally {
                     setLoading('fetchDashboardMetrics', false);
                 }

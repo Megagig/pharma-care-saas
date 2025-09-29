@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clinical Intervention Form Debug</title>
+    <script>
+        // Simple test to simulate form submission
+        async function testFormSubmission() {
+            const API_URL = 'http://localhost:5000/api';
+            
+            // Test data that matches what the form would send
+            const formData = {
+                patientId: '68cd7e0774e838f4e850c4c6',
+                category: 'drug_therapy_problem',
+                priority: 'medium',
+                issueDescription: 'Test from debug form - patient experiencing side effects',
+                strategies: [],
+                estimatedDuration: 7,
+                relatedDTPIds: []
+            };
+            
+            console.log('🔍 Submitting form data:', formData);
+            
+            try {
+                const response = await fetch(`${API_URL}/clinical-interventions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Super-Admin-Test': 'true'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(formData)
+                });
+                
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                const data = await response.json();
+                console.log('📄 Response data:', data);
+                
+                if (data.success) {
+                    console.log('✅ SUCCESS: Intervention created!');
+                    console.log('   ID:', data.data._id);
+                    console.log('   Number:', data.data.interventionNumber);
+                    
+                    // Test if it appears in the list
+                    const listResponse = await fetch(`${API_URL}/clinical-interventions`, {
+                        headers: {
+                            'X-Super-Admin-Test': 'true'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    const listData = await listResponse.json();
+                    console.log('📋 List response:', listData);
+                    console.log('   Count:', listData.data?.data?.length || 0);
+                    
+                } else {
+                    console.log('❌ FAILED:', data.error?.message || data.message);
+                }
+                
+            } catch (error) {
+                console.error('💥 Network error:', error);
+            }
+        }
+        
+        // Test authentication
+        async function testAuth() {
+            const API_URL = 'http://localhost:5000/api';
+            
+            try {
+                const response = await fetch(`${API_URL}/clinical-interventions/health`, {
+                    headers: {
+                        'X-Super-Admin-Test': 'true'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                console.log('🏥 Health check:', data);
+                
+            } catch (error) {
+                console.error('💥 Health check failed:', error);
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Clinical Intervention Form Debug</h1>
+    <p>Open browser console and click buttons to test</p>
+    
+    <button onclick="testAuth()">Test Authentication</button>
+    <button onclick="testFormSubmission()">Test Form Submission</button>
+    
+    <div id="results"></div>
+</body>
+</html>
