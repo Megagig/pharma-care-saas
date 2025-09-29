@@ -183,6 +183,7 @@ interface MTRStore {
   completeStep: (step: number, data: Record<string, unknown>) => Promise<void>;
   getNextStep: () => number | null;
   getCurrentStepName: () => string;
+  markOptionalStepCompleted: (stepIndex: number, stepName: string) => Promise<void>;
 
   // Patient selection actions
   selectPatient: (patient: Patient) => void;
@@ -269,7 +270,7 @@ const checkMTRPermissions = async (): Promise<boolean> => {
 
   try {
     const { authService } = await import('../services/authService');
-    
+
     // Get current user to check authentication and permissions
     const userResponse = await authService.getCurrentUser();
     console.log('👤 Current user response for MTR permission check:', userResponse);
@@ -346,6 +347,46 @@ export const useMTRStore = create<MTRStore>()(
 
       // Session management actions
       initializeSession: () => {
+        // Try to recover last session first
+        try {
+          const lastSessionId = localStorage.getItem('mtr_last_session_id');
+          if (lastSessionId) {
+            const sessionData = localStorage.getItem(`mtr_session_${lastSessionId}`);
+            if (sessionData) {
+              const parsed = JSON.parse(sessionData);
+              const savedAt = new Date(parsed.savedAt);
+              const now = new Date();
+              const hoursSinceLastSave = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
+
+              // Recover session if it's less than 24 hours old
+              if (hoursSinceLastSave < 24) {
+                console.log('🔄 Recovering previous MTR session:', lastSessionId);
+
+                set({
+                  currentReview: parsed.currentReview,
+                  currentStep: parsed.currentStep || 0,
+                  stepData: parsed.stepData || {},
+                  selectedPatient: parsed.selectedPatient,
+                  medications: parsed.medications || [],
+                  identifiedProblems: parsed.identifiedProblems || [],
+                  therapyPlan: parsed.therapyPlan,
+                  interventions: parsed.interventions || [],
+                  followUps: parsed.followUps || [],
+                });
+
+                console.log('✅ MTR session recovered successfully');
+                return;
+              } else {
+                // Clean up old session
+                localStorage.removeItem(`mtr_session_${lastSessionId}`);
+                localStorage.removeItem('mtr_last_session_id');
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Failed to recover session:', error);
+        }
+
         // Initialize a basic MTR session for patient selection
         const basicReview: MedicationTherapyReview = {
           _id: `temp-${Date.now()}`,
@@ -400,13 +441,13 @@ export const useMTRStore = create<MTRStore>()(
 
       createReview: async (patientId: string) => {
         const { setLoading, setError } = get();
-        
+
         // Prevent multiple simultaneous calls
         if (get().loading.createReview) {
           console.log('🔄 MTR creation already in progress, skipping...');
           return;
         }
-        
+
         setLoading('createReview', true);
         setError('createReview', null);
 
@@ -446,14 +487,14 @@ export const useMTRStore = create<MTRStore>()(
           try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
-            
+
             const testResponse = await fetch('http://localhost:5000/api/health', {
               method: 'GET',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
               signal: controller.signal
             });
-            
+
             clearTimeout(timeoutId);
             backendAccessible = testResponse.ok;
             console.log('🏥 Backend health check:', testResponse.status);
@@ -471,9 +512,9 @@ export const useMTRStore = create<MTRStore>()(
               throw new Error('Backend server is not accessible. Please ensure the server is running.');
             }
           }
-          
+
           console.log('📡 Backend accessible, calling MTR service with data:', createData);
-          
+
           // Add shorter timeout for MTR creation
           const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('MTR creation timeout after 10 seconds')), 10000);
@@ -508,7 +549,7 @@ export const useMTRStore = create<MTRStore>()(
           console.error('❌ Failed to create MTR review:', error);
 
           let errorMessage = 'Failed to create MTR review';
-          
+
           if (error instanceof Error) {
             if (error.message.includes('timeout')) {
               errorMessage = 'MTR creation timed out. Please check your connection and try again.';
@@ -522,19 +563,19 @@ export const useMTRStore = create<MTRStore>()(
               errorMessage = error.message;
             }
           }
-          
+
           // In development mode, create a temporary MTR session as fallback
           const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
-          
-          if (isDevelopment && (error instanceof Error && 
-              (error.message.includes('Backend not accessible') ||
-               error.message.includes('Backend server is not accessible') || 
-               error.message.includes('timeout') ||
-               error.message.includes('Network Error') ||
-               error.message.includes('ECONNABORTED')))) {
-            
+
+          if (isDevelopment && (error instanceof Error &&
+            (error.message.includes('Backend not accessible') ||
+              error.message.includes('Backend server is not accessible') ||
+              error.message.includes('timeout') ||
+              error.message.includes('Network Error') ||
+              error.message.includes('ECONNABORTED')))) {
+
             console.warn('🔧 Development mode: Creating temporary MTR session as fallback');
-            
+
             // Create a temporary MTR session for development
             const tempId = `temp-mtr-${Date.now()}`;
             const tempReview = {
@@ -575,7 +616,7 @@ export const useMTRStore = create<MTRStore>()(
 
             // Clear the error immediately before setting the session
             setError('createReview', null);
-            
+
             set({
               currentReview: tempReview,
               currentStep: 0,
@@ -586,11 +627,11 @@ export const useMTRStore = create<MTRStore>()(
               interventions: [],
               followUps: [],
             });
-            
+
             console.log('✅ Temporary MTR session created for development');
             return; // Don't throw error, session was created successfully
           }
-          
+
           setError('createReview', errorMessage);
           throw error; // Re-throw to let the UI handle it
         } finally {
@@ -604,7 +645,40 @@ export const useMTRStore = create<MTRStore>()(
         setError('loadReview', null);
 
         try {
-          // Import the mtrService
+          // Handle temporary sessions
+          if (reviewId.startsWith('temp-')) {
+            console.log('🔄 Loading temporary MTR session from localStorage:', reviewId);
+            
+            try {
+              const sessionData = localStorage.getItem(`mtr_session_${reviewId}`);
+              if (sessionData) {
+                const parsed = JSON.parse(sessionData);
+                
+                set({
+                  currentReview: parsed.currentReview,
+                  currentStep: parsed.currentStep || 0,
+                  stepData: parsed.stepData || {},
+                  selectedPatient: parsed.selectedPatient,
+                  medications: parsed.medications || [],
+                  identifiedProblems: parsed.identifiedProblems || [],
+                  therapyPlan: parsed.therapyPlan,
+                  interventions: parsed.interventions || [],
+                  followUps: parsed.followUps || [],
+                });
+                
+                console.log('✅ Temporary MTR session loaded from localStorage');
+                return;
+              } else {
+                throw new Error('Temporary session not found in localStorage');
+              }
+            } catch (error) {
+              console.error('❌ Failed to load temporary session:', error);
+              setError('loadReview', 'Temporary session not found or corrupted');
+              return;
+            }
+          }
+
+          // Import the mtrService for real sessions
           const { mtrService } = await import('../services/mtrService');
 
           // Load MTR session from API
@@ -705,7 +779,7 @@ export const useMTRStore = create<MTRStore>()(
           }
         } catch (error) {
           console.error('Failed to load in-progress MTR review:', error);
-          
+
           // Don't set error for timeout - just return null to allow creating new review
           if (error instanceof Error && error.message.includes('timeout')) {
             console.log('Load in-progress review timed out, will create new review');
@@ -715,7 +789,7 @@ export const useMTRStore = create<MTRStore>()(
               error instanceof Error ? error.message : 'Failed to load in-progress review'
             );
           }
-          
+
           set({ currentReview: null });
           return null;
         } finally {
@@ -736,24 +810,46 @@ export const useMTRStore = create<MTRStore>()(
         } = get();
         if (!currentReview) return;
 
-        // Skip saving for temporary sessions (they start with 'temp-')
+        // Handle temporary sessions with localStorage persistence
         if (currentReview._id.startsWith('temp-')) {
-          console.log('🔧 Skipping save for temporary MTR session:', currentReview._id);
-          
-          // Just update the local state for temporary sessions
-          set({
-            currentReview: {
-              ...currentReview,
-              medications: medications.map(convertMTRMedicationToEntry),
-              problems: identifiedProblems,
-              plan: therapyPlan || undefined,
+          console.log('🔧 Saving temporary MTR session to localStorage:', currentReview._id);
+
+          // Update the local state for temporary sessions
+          const updatedReview = {
+            ...currentReview,
+            medications: medications.map(convertMTRMedicationToEntry),
+            problems: identifiedProblems,
+            plan: therapyPlan || undefined,
+            interventions,
+            followUps,
+            updatedAt: new Date().toISOString(),
+          };
+
+          set({ currentReview: updatedReview });
+
+          // Persist to localStorage for session recovery
+          try {
+            const sessionData = {
+              currentReview: updatedReview,
+              currentStep: get().currentStep,
+              stepData: get().stepData,
+              medications,
+              identifiedProblems,
+              therapyPlan,
               interventions,
               followUps,
-              updatedAt: new Date().toISOString(),
-            },
-          });
-          
-          console.log('✅ Temporary MTR session updated locally');
+              selectedPatient: get().selectedPatient,
+              savedAt: new Date().toISOString(),
+            };
+
+            localStorage.setItem(`mtr_session_${currentReview._id}`, JSON.stringify(sessionData));
+            localStorage.setItem('mtr_last_session_id', currentReview._id);
+
+            console.log('✅ Temporary MTR session saved to localStorage');
+          } catch (error) {
+            console.error('Failed to save session to localStorage:', error);
+          }
+
           return;
         }
 
@@ -835,27 +931,47 @@ export const useMTRStore = create<MTRStore>()(
         setError('completeReview', null);
 
         try {
-          // Import the mtrService
-          const { mtrService } = await import('../services/mtrService');
+          let completedReview;
 
-          // Update review status to completed
-          const updateData = {
-            status: 'completed' as const,
-            completedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
+          if (currentReview._id.startsWith('temp-')) {
+            // Handle temporary session completion
+            console.log('Completing temporary MTR session:', currentReview._id);
 
-          const response = await mtrService.updateMTRSession(
-            currentReview._id,
-            updateData
-          );
+            completedReview = {
+              ...currentReview,
+              status: 'completed' as const,
+              completedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
 
-          // Update the store with completed review
-          const completedReview = {
-            ...response.review,
-            status: 'completed' as const,
-            completedAt: new Date().toISOString(),
-          };
+            // Clean up localStorage for this session
+            try {
+              localStorage.removeItem(`mtr_session_${currentReview._id}`);
+              localStorage.removeItem('mtr_last_session_id');
+            } catch (error) {
+              console.error('Failed to clean up localStorage:', error);
+            }
+          } else {
+            // Handle real session completion via API
+            const { mtrService } = await import('../services/mtrService');
+
+            const updateData = {
+              status: 'completed' as const,
+              completedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+
+            const response = await mtrService.updateMTRSession(
+              currentReview._id,
+              updateData
+            );
+
+            completedReview = {
+              ...response.review,
+              status: 'completed' as const,
+              completedAt: new Date().toISOString(),
+            };
+          }
 
           set({ currentReview: completedReview });
 
@@ -901,13 +1017,29 @@ export const useMTRStore = create<MTRStore>()(
 
       // Step navigation actions
       goToStep: (step: number) => {
-        const { currentReview } = get();
+        const { currentReview, saveReview } = get();
         if (!currentReview) return;
 
         // Validate step number
         if (step < 0 || step > 5) return;
 
+        // Auto-save current progress before navigating
+        saveReview().catch(error => {
+          console.error('Auto-save failed during step navigation:', error);
+        });
+
         set({ currentStep: step });
+      },
+
+      // Helper function to mark optional steps as completed (for skipping)
+      markOptionalStepCompleted: async (stepIndex: number, stepName: string) => {
+        const { completeStep } = get();
+        await completeStep(stepIndex, {
+          completedAt: new Date().toISOString(),
+          stepName,
+          skipped: true,
+          reason: 'No data to enter for this step',
+        });
       },
 
       completeStep: async (step: number, data: Record<string, unknown>) => {
@@ -951,7 +1083,7 @@ export const useMTRStore = create<MTRStore>()(
           });
 
           // Auto-save after completing step
-          await saveReview();
+          await get().saveReview();
         } catch (error) {
           setError(
             'completeStep',
@@ -1020,7 +1152,7 @@ export const useMTRStore = create<MTRStore>()(
           // Import patient service dynamically
           const { patientService } = await import('../services/patientService');
           const response = await patientService.searchPatients(query);
-          
+
           // Handle the response structure
           if (response && typeof response === 'object' && 'patients' in response) {
             return (response as any).patients || [];
@@ -1047,7 +1179,7 @@ export const useMTRStore = create<MTRStore>()(
           // Import patient service dynamically
           const { patientService } = await import('../services/patientService');
           const response = await patientService.createPatient(patientData as any);
-          
+
           // Handle the response structure
           if (response && typeof response === 'object' && 'data' in response) {
             const data = (response as any).data;
@@ -1106,7 +1238,7 @@ export const useMTRStore = create<MTRStore>()(
           // Import patient service to get patient medications
           const { patientService } = await import('../services/patientService');
           const response = await patientService.getPatient(patientId);
-          
+
           // Handle the response structure
           let patientData = null;
           if (response && typeof response === 'object' && 'data' in response) {
@@ -1117,7 +1249,7 @@ export const useMTRStore = create<MTRStore>()(
               patientData = data;
             }
           }
-          
+
           if (patientData?.currentMedications) {
             // Convert patient medications to MTR medications format
             const medications = patientData.currentMedications.map((med: any) => ({
@@ -1136,7 +1268,7 @@ export const useMTRStore = create<MTRStore>()(
               indication: med.indication || '',
               isManual: false
             }));
-            
+
             set({ medications });
           }
         } catch (error) {
@@ -1231,13 +1363,13 @@ export const useMTRStore = create<MTRStore>()(
           // In a real implementation, this would call a drug interaction service
           // For now, return empty array until drug interaction service is implemented
           console.log('Checking drug interactions for medications:', medications.map(m => m.drugName));
-          
+
           // TODO: Implement actual drug interaction checking
           // This could call an external drug database API like:
           // - FDA Drug Interaction API
           // - RxNorm API
           // - Custom drug interaction database
-          
+
           return [];
         } catch (error) {
           console.error('Failed to check drug interactions:', error);
@@ -1301,7 +1433,7 @@ export const useMTRStore = create<MTRStore>()(
 
       // Intervention actions
       recordIntervention: async (intervention: MTRIntervention) => {
-        const { setLoading, setError } = get();
+        const { setLoading, setError, currentReview, completeStep } = get();
         setLoading('recordIntervention', true);
         setError('recordIntervention', null);
 
@@ -1316,7 +1448,17 @@ export const useMTRStore = create<MTRStore>()(
             interventions: [...state.interventions, newIntervention],
           }));
 
-          console.log('Recorded intervention');
+          // Automatically mark the Interventions step as completed when an intervention is recorded
+          if (currentReview) {
+            await completeStep(4, { // Interventions is step 4 (0-indexed)
+              completedAt: new Date().toISOString(),
+              stepName: 'Interventions',
+              interventionRecorded: true,
+              interventionId: newIntervention._id,
+            });
+          }
+
+          console.log('Recorded intervention and marked step as completed');
         } catch (error) {
           setError(
             'recordIntervention',
@@ -1353,7 +1495,7 @@ export const useMTRStore = create<MTRStore>()(
 
       // Follow-up actions
       scheduleFollowUp: async (followUp: MTRFollowUp) => {
-        const { setLoading, setError } = get();
+        const { setLoading, setError, currentReview, completeStep } = get();
         setLoading('scheduleFollowUp', true);
         setError('scheduleFollowUp', null);
 
@@ -1367,7 +1509,17 @@ export const useMTRStore = create<MTRStore>()(
             followUps: [...state.followUps, newFollowUp],
           }));
 
-          console.log('Scheduled follow-up');
+          // Automatically mark the Follow-Up step as completed when a follow-up is scheduled
+          if (currentReview) {
+            await completeStep(5, { // Follow-Up is step 5 (0-indexed)
+              completedAt: new Date().toISOString(),
+              stepName: 'Follow-Up',
+              followUpScheduled: true,
+              followUpId: newFollowUp._id,
+            });
+          }
+
+          console.log('Scheduled follow-up and marked step as completed');
         } catch (error) {
           setError(
             'scheduleFollowUp',
@@ -1521,20 +1673,86 @@ export const useMTRStore = create<MTRStore>()(
       },
 
       canCompleteReview: () => {
-        const { currentReview, followUps } = get();
-        if (!currentReview) return false;
-        if (!currentReview.steps) return false;
+        const { currentReview } = get();
+        if (!currentReview) {
+          return false;
+        }
+        if (!currentReview.steps) {
+          return false;
+        }
 
         try {
-          // Check if all steps are completed
-          const allStepsCompleted = Object.values(currentReview.steps).every(
-            (step) => step && step.completed
-          );
+          // Check if all required steps are completed
+          const requiredSteps = [
+            'patientSelection',
+            'medicationHistory',
+            'therapyAssessment',
+            'planDevelopment'
+          ];
 
-          // Check if at least one follow-up is scheduled
-          const hasFollowUp = followUps.length > 0;
+          const stepStatus = requiredSteps.map(stepName => {
+            const step = currentReview.steps[stepName as keyof typeof currentReview.steps];
+            const isCompleted = step && step.completed;
+            return { stepName, isCompleted, step };
+          });
 
-          return allStepsCompleted && hasFollowUp;
+          const requiredStepsCompleted = stepStatus.every(({ isCompleted }) => isCompleted);
+
+          // Optional steps (interventions and followUp) don't block completion
+          // but if they exist, they should be marked complete
+          const optionalSteps = ['interventions', 'followUp'];
+          const optionalStepStatus = optionalSteps.map(stepName => {
+            const step = currentReview.steps[stepName as keyof typeof currentReview.steps];
+            // If step doesn't exist, it's valid (optional)
+            // If step exists, it must be completed
+            const isValid = !step || step.completed === true;
+            return { stepName, isValid, step, exists: !!step, completed: step?.completed };
+          });
+
+          const optionalStepsValid = optionalStepStatus.every(({ isValid }) => isValid);
+
+          // Only log if there are issues (reduce console spam)
+          if (!requiredStepsCompleted || !optionalStepsValid) {
+            console.log('Review completion check:', {
+              requiredStepsCompleted,
+              optionalStepsValid,
+              requiredStepStatus: stepStatus,
+              optionalStepStatus: optionalStepStatus,
+              allSteps: currentReview.steps
+            });
+          }
+
+          const canComplete = requiredStepsCompleted && optionalStepsValid;
+
+          if (!canComplete) {
+            const missingRequired = stepStatus.filter(({ isCompleted }) => !isCompleted).map(({ stepName }) => stepName);
+            const invalidOptional = optionalStepStatus.filter(({ isValid }) => !isValid);
+            
+            console.log('Cannot complete review. Missing required steps:', missingRequired);
+            console.log('Invalid optional steps:', invalidOptional.map(({ stepName, step, exists, completed }) => ({ 
+              stepName, 
+              exists, 
+              completed 
+            })));
+            
+            // Auto-fix incomplete optional steps
+            invalidOptional.forEach(({ stepName, step, exists }) => {
+              if (exists && !step?.completed) {
+                console.log(`🔧 Auto-fixing incomplete optional step: ${stepName}`);
+                const stepIndex = stepName === 'interventions' ? 4 : 5;
+                get().completeStep(stepIndex, {
+                  completedAt: new Date().toISOString(),
+                  stepName: stepName === 'interventions' ? 'Interventions' : 'Follow-Up',
+                  autoCompleted: true,
+                  reason: 'Auto-completed for review completion'
+                }).catch(error => {
+                  console.error(`Failed to auto-complete ${stepName}:`, error);
+                });
+              }
+            });
+          }
+
+          return canComplete;
         } catch (error) {
           console.error('Error checking if review can be completed:', error);
           return false;

@@ -227,10 +227,9 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         checkUserPermissions();
     }, []); // Remove checkPermissions from dependency array to prevent infinite loop
 
-    // Initialize MTR session - only for existing reviewId
+    // Initialize MTR session - handle existing reviewId or session recovery
     useEffect(() => {
         const initializeSession = async () => {
-            // Only handle existing reviewId, not patientId (that's handled in patient selection)
             if (reviewId) {
                 console.log('🔄 Loading existing MTR review:', reviewId);
                 const hasPermissions = await checkPermissions();
@@ -239,6 +238,10 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                     return;
                 }
                 await loadReview(reviewId);
+            } else if (!currentReview) {
+                // Try to recover previous session if no current review and no specific reviewId
+                console.log('🔄 Attempting to recover previous MTR session...');
+                initializeSession();
             }
         };
 
@@ -292,9 +295,9 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
             return;
         }
 
-        console.log('Setting up auto-save for review:', { 
-            id: currentReview._id, 
-            status: currentReview.status 
+        console.log('Setting up auto-save for review:', {
+            id: currentReview._id,
+            status: currentReview.status
         });
 
         const autoSaveInterval = setInterval(async () => {
@@ -480,7 +483,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     const handlePatientSelect = useCallback(
         async (patient: Patient) => {
             console.log('🔍 handlePatientSelect called with patient:', patient);
-            
+
             try {
                 // Convert patientManagement.Patient to stores/types.Patient
                 const storePatient: StorePatient = {
@@ -506,23 +509,23 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                     createdAt: patient.createdAt,
                     updatedAt: patient.updatedAt,
                 };
-                
+
                 // Always select the patient first
                 selectPatient(storePatient);
-                
+
                 // Get patient ID
                 const patientId = patient._id || (patient as any).mrn;
                 if (!patientId) {
                     throw new Error('Patient ID is missing');
                 }
-                
+
                 // Check if we need to create a new review
                 if (!currentReview || currentReview.patientId !== patientId) {
                     console.log('✅ Creating MTR review for patient:', patientId);
-                    
+
                     // First check for existing in-progress review
                     const inProgressReview = await loadInProgressReview(patientId);
-                    
+
                     if (!inProgressReview) {
                         // No existing review, create new one
                         await createReview(patientId);
@@ -737,7 +740,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                             onPatientSelect={async (patient: Patient) => {
                                 try {
                                     console.log('🔍 Patient selected:', patient);
-                                    
+
                                     // Get patient ID
                                     const patientId = patient._id || (patient as any).mrn;
                                     if (!patientId) {
@@ -770,14 +773,14 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                                         createdAt: patient.createdAt,
                                         updatedAt: patient.updatedAt,
                                     };
-                                    
+
                                     // Select patient first
                                     selectPatient(storePatient);
 
                                     // Check for existing in-progress review first
                                     console.log('🔍 Checking for existing MTR review...');
                                     const inProgressReview = await loadInProgressReview(patientId);
-                                    
+
                                     if (!inProgressReview) {
                                         console.log('✅ Creating new MTR review for patient:', patientId);
                                         await createReview(patientId);
@@ -1226,17 +1229,51 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                                     Next
                                 </Button>
                             ) : (
-                                <Button
-                                    variant="contained"
-                                    color="success"
-                                    startIcon={<CheckIcon />}
-                                    onClick={handleComplete}
-                                    disabled={!canCompleteReview() || loading.completeReview}
-                                    size={isMobile ? 'large' : 'medium'}
-                                    sx={{ minWidth: isMobile ? 140 : 'auto' }}
-                                >
-                                    {loading.completeReview ? 'Completing...' : 'Complete Review'}
-                                </Button>
+                                <>
+                                    {/* Debug info for completion status */}
+                                    {import.meta.env.DEV && (
+                                        <Box sx={{ mb: 1 }}>
+                                            <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+                                                Debug: Can complete = {canCompleteReview().toString()}
+                                                {currentReview && (
+                                                    <span> | Steps: {Object.entries(currentReview.steps || {}).map(([key, step]) =>
+                                                        `${key}:${step?.completed ? '✓' : '✗'}`
+                                                    ).join(', ')}</span>
+                                                )}
+                                            </Typography>
+                                            {currentReview && !canCompleteReview() && (
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    onClick={async () => {
+                                                        // Mark optional steps as completed if they're not
+                                                        const steps = currentReview.steps || {};
+                                                        if (steps.interventions && !steps.interventions.completed) {
+                                                            await completeStep(4, { stepName: 'Interventions', skipped: true });
+                                                        }
+                                                        if (steps.followUp && !steps.followUp.completed) {
+                                                            await completeStep(5, { stepName: 'Follow-Up', skipped: true });
+                                                        }
+                                                    }}
+                                                    sx={{ mt: 0.5 }}
+                                                >
+                                                    Fix Completion
+                                                </Button>
+                                            )}
+                                        </Box>
+                                    )}
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        startIcon={<CheckIcon />}
+                                        onClick={handleComplete}
+                                        disabled={!canCompleteReview() || loading.completeReview}
+                                        size={isMobile ? 'large' : 'medium'}
+                                        sx={{ minWidth: isMobile ? 140 : 'auto' }}
+                                    >
+                                        {loading.completeReview ? 'Completing...' : 'Complete Review'}
+                                    </Button>
+                                </>
                             )}
                         </Box>
                     </Box>
