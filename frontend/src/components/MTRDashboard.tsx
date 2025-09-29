@@ -197,28 +197,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
   // Auto-save functionality
   const autoSave = useCallback(async () => {
-    if (!autoSaveEnabled) {
-      console.log('Auto-save disabled');
-      return;
-    }
-
-    if (!currentReview) {
-      console.error('Auto-save skipped: No current review');
-      return;
-    }
-
-    if (loading.saveReview) {
-      console.log('Auto-save skipped: Save already in progress');
-      return;
-    }
-
-    // Enhanced validation for review ID
-    if (!currentReview._id || currentReview._id.trim() === '') {
-      console.error('Auto-save skipped: Review ID is missing or invalid', {
-        hasReview: !!currentReview,
-        reviewId: currentReview._id,
-        reviewKeys: Object.keys(currentReview || {}),
-      });
+    if (!autoSaveEnabled || !currentReview || loading.saveReview) {
       return;
     }
 
@@ -230,7 +209,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     } catch (error) {
       console.error('Auto-save failed:', error);
     }
-  }, [autoSaveEnabled, currentReview, loading.saveReview, saveReview]);
+  }, [autoSaveEnabled, currentReview?._id, loading.saveReview, saveReview]);
 
   // Auto-save timer
   useEffect(() => {
@@ -334,8 +313,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       } catch (error) {
         console.error('Error initializing MTR session:', error);
         setSnackbarMessage(
-          `Failed to initialize MTR session: ${
-            error instanceof Error ? error.message : 'Unknown error'
+          `Failed to initialize MTR session: ${error instanceof Error ? error.message : 'Unknown error'
           }`
         );
         setSnackbarSeverity('error');
@@ -378,41 +356,17 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
   // Auto-save functionality
   useEffect(() => {
-    if (!currentReview) {
-      console.log('Auto-save skipped: No current review');
+    if (!currentReview || currentReview.status === 'completed') {
       return;
     }
 
-    if (currentReview.status === 'completed') {
-      console.log('Auto-save skipped: Review already completed');
-      return;
-    }
-
-    console.log(
-      'Setting up auto-save for review:',
-      JSON.stringify({
-        id: currentReview._id,
-        status: currentReview.status,
-      })
-    );
+    console.log('Setting up auto-save for review:', currentReview._id);
 
     const autoSaveInterval = setInterval(async () => {
       try {
-        // Always re-check if currentReview is available and has ID
-        const { currentReview } = useMTRStore.getState();
+        const { currentReview, loading } = useMTRStore.getState();
 
-        if (!currentReview) {
-          console.error('Auto-save skipped: No current review available');
-          return;
-        }
-
-        // Enhanced validation for review ID
-        if (!currentReview._id || currentReview._id.trim() === '') {
-          console.error('Auto-save skipped: Review ID is missing or invalid', {
-            hasReview: !!currentReview,
-            reviewId: currentReview._id,
-            reviewKeys: Object.keys(currentReview || {}),
-          });
+        if (!currentReview || loading.saveReview) {
           return;
         }
 
@@ -425,7 +379,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     }, 30000); // Auto-save every 30 seconds
 
     return () => clearInterval(autoSaveInterval);
-  }, [currentReview, saveReview]);
+  }, [currentReview?._id, saveReview]);
 
   // Session state persistence
   useEffect(() => {
@@ -538,35 +492,12 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
   const handleSave = async () => {
     try {
-      // Check if currentReview exists and has an ID before saving
       if (!currentReview) {
         setSnackbarMessage('Cannot save - No active review');
         setSnackbarSeverity('error');
         setSnackbarOpen(true);
         return;
       }
-
-      if (!currentReview._id) {
-        setSnackbarMessage('Cannot save - Review ID is missing');
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
-        console.error('Cannot save review - ID is missing', currentReview);
-        return;
-      }
-
-      // Debug logging to understand the current state
-      console.log('🔍 Manual save triggered - Current review state:', {
-        id: currentReview._id,
-        status: currentReview.status,
-        stepsCompleted: currentReview.steps
-          ? Object.entries(currentReview.steps).map(([key, step]) => ({
-              step: key,
-              completed: step.completed,
-            }))
-          : 'No steps',
-        canComplete: canCompleteReview(),
-        loadingSave: loading.saveReview,
-      });
 
       await saveReview();
       setLastSaved(new Date());
@@ -576,8 +507,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     } catch (error) {
       console.error('Save error:', error);
       setSnackbarMessage(
-        `Failed to save review: ${
-          error instanceof Error ? error.message : 'Unknown error'
+        `Failed to save review: ${error instanceof Error ? error.message : 'Unknown error'
         }`
       );
       setSnackbarSeverity('error');
@@ -595,7 +525,6 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       return;
     }
 
-    // Check if currentReview exists and has an ID before completing
     if (!currentReview) {
       setSnackbarMessage('Cannot complete - No active review');
       setSnackbarSeverity('error');
@@ -603,143 +532,25 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       return;
     }
 
-    // Create a local variable for the review we'll complete - initialized with the current review
-    let reviewToComplete = currentReview;
-
-    // Log detailed information about the current review
-    console.log('Current review for completion:', {
-      hasReview: !!currentReview,
-      reviewId: currentReview?._id,
-      steps: !!currentReview?.steps,
-      urlReviewId: reviewId,
-    });
-
-    // Check if we're missing an ID but have a review with steps and other data
-    if (
-      (!currentReview._id || currentReview._id === '') &&
-      currentReview.steps
-    ) {
-      setSnackbarMessage('Attempting to recover review ID...');
-      setSnackbarSeverity('info');
-      setSnackbarOpen(true);
-      console.warn(
-        'Review missing ID but has data - attempting recovery',
-        currentReview
-      );
-
-      // First try to get the latest review from the store
-      try {
-        const { currentReview: latestReview } = useMTRStore.getState();
-
-        // If the store has a review with ID, use that
-        if (latestReview && latestReview._id) {
-          console.log('Found review ID in store:', latestReview._id);
-
-          // Update our local reference to use this review with ID
-          reviewToComplete = latestReview;
-        } else if (reviewId) {
-          // If we have a reviewId from URL params, try to reload the review
-          console.log('Attempting to reload review using URL ID:', reviewId);
-
-          try {
-            await loadReview(reviewId);
-            const { currentReview: reloadedReview } = useMTRStore.getState();
-
-            if (reloadedReview && reloadedReview._id) {
-              console.log(
-                'Successfully reloaded review with ID:',
-                reloadedReview._id
-              );
-              reviewToComplete = reloadedReview;
-            } else {
-              console.error('Failed to reload review with valid ID');
-              setSnackbarMessage(
-                'Cannot complete - Unable to recover review ID'
-              );
-              setSnackbarSeverity('error');
-              setSnackbarOpen(true);
-              return;
-            }
-          } catch (loadError) {
-            console.error('Error reloading review:', loadError);
-            setSnackbarMessage('Cannot complete - Failed to reload review');
-            setSnackbarSeverity('error');
-            setSnackbarOpen(true);
-            return;
-          }
-        } else {
-          console.error('Could not recover review ID from store or URL');
-          setSnackbarMessage(
-            'Cannot complete - Review ID is missing and cannot be recovered'
-          );
-          setSnackbarSeverity('error');
-          setSnackbarOpen(true);
-          return;
-        }
-      } catch (error) {
-        console.error('Error trying to recover review ID:', error);
-        setSnackbarMessage('Cannot complete - Error during recovery attempt');
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
-        return;
-      }
-    }
-
     try {
-      // First check if our reviewToComplete has an ID
-      if (!reviewToComplete._id) {
-        console.error(
-          'Cannot complete review - ID is missing',
-          reviewToComplete
-        );
-
-        // Last resort attempt - if we have a reviewId from URL params
-        if (reviewId) {
-          console.log(
-            'Last resort recovery: Using reviewId from URL params:',
-            reviewId
-          );
-          reviewToComplete._id = reviewId;
-          console.log(
-            'Updated reviewToComplete with URL ID:',
-            reviewToComplete
-          );
-        } else {
-          setSnackbarMessage(
-            'Cannot complete - Review ID is still missing after recovery attempts'
-          );
-          setSnackbarSeverity('error');
-          setSnackbarOpen(true);
-          return;
-        }
-      }
-
       // Save the review to ensure all data is up to date
-      console.log(
-        'Saving review before completing with ID:',
-        reviewToComplete._id
-      );
       await saveReview();
 
       // Then complete it
-      console.log('Completing review with ID:', reviewToComplete._id);
-      const result = await completeReview(reviewToComplete._id);
+      const result = await completeReview();
 
       if (result) {
         setSnackbarMessage('MTR completed successfully');
         setSnackbarSeverity('success');
         setSnackbarOpen(true);
         if (onComplete) {
-          onComplete(reviewToComplete._id);
+          onComplete(currentReview._id);
         }
-      } else {
-        throw new Error('Complete operation did not return expected result');
       }
     } catch (error) {
       console.error('Failed to complete review:', error);
       setSnackbarMessage(
-        `Failed to complete review: ${
-          error instanceof Error ? error.message : 'Unknown error'
+        `Failed to complete review: ${error instanceof Error ? error.message : 'Unknown error'
         }`
       );
       setSnackbarSeverity('error');
@@ -842,11 +653,11 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
             patientInfo={
               selectedPatient
                 ? {
-                    age: 0, // Will be calculated from dateOfBirth
-                    gender: 'unknown', // Will be loaded from patient data
-                    conditions: [], // Will be loaded from patient conditions
-                    allergies: [], // Will be loaded from patient allergies
-                  }
+                  age: 0, // Will be calculated from dateOfBirth
+                  gender: 'unknown', // Will be loaded from patient data
+                  conditions: [], // Will be loaded from patient conditions
+                  allergies: [], // Will be loaded from patient allergies
+                }
                 : undefined
             }
             onProblemsIdentified={handleProblemsIdentified}
@@ -982,15 +793,15 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
               selectedPatient={
                 selectedPatient
                   ? {
-                      ...selectedPatient,
-                      pharmacyId: 'default-pharmacy',
-                      mrn: selectedPatient._id,
-                      dob: selectedPatient.dateOfBirth,
-                      address: selectedPatient.address?.street || '',
-                      state:
-                        (selectedPatient.address?.state as NigerianState) ||
-                        undefined,
-                    }
+                    ...selectedPatient,
+                    pharmacyId: 'default-pharmacy',
+                    mrn: selectedPatient._id,
+                    dob: selectedPatient.dateOfBirth,
+                    address: selectedPatient.address?.street || '',
+                    state:
+                      (selectedPatient.address?.state as NigerianState) ||
+                      undefined,
+                  }
                   : null
               }
             />
@@ -1044,8 +855,8 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                     status === 'active'
                       ? 'primary.50'
                       : status === 'completed'
-                      ? 'success.50'
-                      : 'transparent',
+                        ? 'success.50'
+                        : 'transparent',
                 }}
               >
                 <ListItemIcon>
@@ -1279,8 +1090,8 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                               status === 'completed'
                                 ? 'success.main'
                                 : status === 'active'
-                                ? 'primary.main'
-                                : 'grey.400',
+                                  ? 'primary.main'
+                                  : 'grey.400',
                           },
                         }}
                       >

@@ -51,46 +51,8 @@ const MTRSummary: React.FC = () => {
   // Load review data
   useEffect(() => {
     if (reviewId && reviewId !== currentReview?._id) {
-      // Check if it's a temporary session first
-      if (reviewId.startsWith('temp-')) {
-        // Try to load from localStorage
-        try {
-          const sessionData = localStorage.getItem(`mtr_session_${reviewId}`);
-          if (sessionData) {
-            const parsed = JSON.parse(sessionData);
-            // Set the store state from localStorage
-            const {
-              currentReview: storedReview,
-              selectedPatient: storedPatient,
-              medications,
-              identifiedProblems: storedProblems,
-              therapyPlan: storedPlan,
-              interventions: storedInterventions,
-              followUps: storedFollowUps
-            } = parsed;
-
-            // Update the store with the loaded data
-            useMTRStore.setState({
-              currentReview: storedReview,
-              selectedPatient: storedPatient,
-              medications: medications || [],
-              identifiedProblems: storedProblems || [],
-              therapyPlan: storedPlan,
-              interventions: storedInterventions || [],
-              followUps: storedFollowUps || [],
-            });
-
-            console.log('✅ Loaded temporary MTR session from localStorage for summary');
-          } else {
-            console.error('❌ Temporary session not found in localStorage:', reviewId);
-          }
-        } catch (error) {
-          console.error('❌ Failed to load temporary session:', error);
-        }
-      } else {
-        // Load real session via API
-        loadReview(reviewId);
-      }
+      // Load session via API only
+      loadReview(reviewId);
     }
   }, [reviewId, currentReview?._id, loadReview]);
 

@@ -188,7 +188,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         } catch (error) {
             console.error('Auto-save failed:', error);
         }
-    }, [autoSaveEnabled, currentReview?.status, loading.saveReview]); // Remove saveReview function dependency
+    }, [autoSaveEnabled, currentReview?._id, loading.saveReview, saveReview]);
 
     // Auto-save timer - removed duplicate, using the one below
 
@@ -227,7 +227,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         checkUserPermissions();
     }, []); // Remove checkPermissions from dependency array to prevent infinite loop
 
-    // Initialize MTR session - handle existing reviewId or session recovery
+    // Initialize MTR session
     useEffect(() => {
         const initializeSession = async () => {
             if (reviewId) {
@@ -238,15 +238,11 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                     return;
                 }
                 await loadReview(reviewId);
-            } else if (!currentReview) {
-                // Try to recover previous session if no current review and no specific reviewId
-                console.log('🔄 Attempting to recover previous MTR session...');
-                initializeSession();
             }
         };
 
         initializeSession();
-    }, [reviewId]); // Only depend on reviewId, not patientId
+    }, [reviewId, loadReview, checkPermissions]);
 
     // Update URL when step changes (one-way sync only)
     useEffect(() => {
@@ -285,25 +281,13 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     // Auto-save functionality
     useEffect(() => {
         if (!currentReview || currentReview.status === 'completed') {
-            console.log('Auto-save skipped: No current review');
             return;
         }
 
-        // Skip auto-save for temporary sessions
-        if (currentReview._id.startsWith('temp-')) {
-            console.log('Auto-save skipped: Temporary session');
-            return;
-        }
-
-        console.log('Setting up auto-save for review:', {
-            id: currentReview._id,
-            status: currentReview.status
-        });
+        console.log('Setting up auto-save for review:', currentReview._id);
 
         const autoSaveInterval = setInterval(async () => {
-            // Check if save is already in progress
             if (loading.saveReview) {
-                console.log('Auto-save skipped: Save already in progress');
                 return;
             }
 
@@ -317,10 +301,9 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         }, 30000); // Auto-save every 30 seconds
 
         return () => {
-            console.log('Clearing auto-save interval for review:', currentReview._id);
             clearInterval(autoSaveInterval);
         };
-    }, [currentReview?._id]); // Only depend on review ID to prevent multiple setups
+    }, [currentReview?._id, loading.saveReview, saveReview]);
 
     // Session state persistence
     useEffect(() => {
@@ -339,7 +322,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [currentReview?.status, autoSaveEnabled]); // Remove autoSave function dependency
+    }, [currentReview, autoSaveEnabled, autoSave]);
 
     // Handle step navigation
     const handleNext = async () => {
@@ -700,7 +683,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                     </Typography>
                     {loading.createReview && (
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                            If this takes too long, a temporary session will be created for development
+                            Please ensure the backend server is running
                         </Typography>
                     )}
                 </Box>
@@ -708,7 +691,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         );
     }
 
-    // Error state - but don't show error if we have a working temporary session
+    // Error state
     if ((errors.createReview || errors.loadReview) && !currentReview) {
         return (
             <Container maxWidth="lg" sx={{ py: 4 }}>

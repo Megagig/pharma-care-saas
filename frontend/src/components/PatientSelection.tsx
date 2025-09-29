@@ -366,36 +366,17 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
         } catch (createError) {
           console.error('Error creating MTR review:', createError);
           
-          // Wait a bit more and check again for temporary session
+          // Wait a bit before rethrowing error
           await new Promise((resolve) => setTimeout(resolve, 1000));
           
-          // Check if a temporary session was created as fallback
-          const { currentReview: fallbackReview } = useMTRStore.getState();
-          if (fallbackReview?._id?.startsWith('temp-')) {
-            console.log('✅ Using temporary MTR session for development:', fallbackReview._id);
-            // Clear any existing errors since we have a working session
-            setError('selectPatient', null);
-            // Continue with temporary session - don't throw error
-            return;
-          } else {
-            throw createError; // Re-throw if no fallback was created
-          }
+          // No fallback - re-throw the error
+          throw createError;
         }
       }
     } catch (error) {
       console.error('Error in handlePatientSelect:', error);
       
-      // Wait a bit and check one more time for temporary session before showing error
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const { currentReview: finalCheck } = useMTRStore.getState();
-      
-      if (finalCheck?._id?.startsWith('temp-')) {
-        console.log('✅ Found temporary MTR session on final check:', finalCheck._id);
-        setError('selectPatient', null);
-        return;
-      }
-      
-      // Only set error if no temporary session was created
+      // Show error - no fallback available
       setError(
         'selectPatient',
         error instanceof Error ? error.message : 'Failed to select patient'

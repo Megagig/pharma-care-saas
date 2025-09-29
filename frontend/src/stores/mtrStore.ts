@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { Patient, LoadingState, ErrorState } from './types';
 import type {
   MedicationTherapyReview,
@@ -299,9 +298,7 @@ const checkMTRPermissions = async (): Promise<boolean> => {
   }
 };
 
-export const useMTRStore = create<MTRStore>()(
-  persist(
-    (set, get) => ({
+export const useMTRStore = create<MTRStore>()((set, get) => ({
       // Initial state
       currentReview: null,
       currentStep: 0,
@@ -347,85 +344,9 @@ export const useMTRStore = create<MTRStore>()(
 
       // Session management actions
       initializeSession: () => {
-        // Try to recover last session first
-        try {
-          const lastSessionId = localStorage.getItem('mtr_last_session_id');
-          if (lastSessionId) {
-            const sessionData = localStorage.getItem(`mtr_session_${lastSessionId}`);
-            if (sessionData) {
-              const parsed = JSON.parse(sessionData);
-              const savedAt = new Date(parsed.savedAt);
-              const now = new Date();
-              const hoursSinceLastSave = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
-
-              // Recover session if it's less than 24 hours old
-              if (hoursSinceLastSave < 24) {
-                console.log('🔄 Recovering previous MTR session:', lastSessionId);
-
-                set({
-                  currentReview: parsed.currentReview,
-                  currentStep: parsed.currentStep || 0,
-                  stepData: parsed.stepData || {},
-                  selectedPatient: parsed.selectedPatient,
-                  medications: parsed.medications || [],
-                  identifiedProblems: parsed.identifiedProblems || [],
-                  therapyPlan: parsed.therapyPlan,
-                  interventions: parsed.interventions || [],
-                  followUps: parsed.followUps || [],
-                });
-
-                console.log('✅ MTR session recovered successfully');
-                return;
-              } else {
-                // Clean up old session
-                localStorage.removeItem(`mtr_session_${lastSessionId}`);
-                localStorage.removeItem('mtr_last_session_id');
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Failed to recover session:', error);
-        }
-
-        // Initialize a basic MTR session for patient selection
-        const basicReview: MedicationTherapyReview = {
-          _id: `temp-${Date.now()}`,
-          workplaceId: 'current-workplace-id', // Would come from auth context
-          patientId: '', // Will be set when patient is selected
-          pharmacistId: 'current-user-id', // Would come from auth context
-          reviewNumber: `MTR-TEMP-${Date.now()}`,
-          status: 'in_progress',
-          priority: 'routine',
-          reviewType: 'initial',
-          steps: {
-            patientSelection: { completed: false },
-            medicationHistory: { completed: false },
-            therapyAssessment: { completed: false },
-            planDevelopment: { completed: false },
-            interventions: { completed: false },
-            followUp: { completed: false },
-          },
-          medications: [],
-          problems: [],
-          interventions: [],
-          followUps: [],
-          clinicalOutcomes: {
-            problemsResolved: 0,
-            medicationsOptimized: 0,
-            adherenceImproved: false,
-            adverseEventsReduced: false,
-          },
-          startedAt: new Date().toISOString(),
-          patientConsent: false,
-          confidentialityAgreed: false,
-          createdBy: 'current-user-id',
-          isDeleted: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
+        // Initialize clean state - no localStorage recovery
         set({
-          currentReview: basicReview,
+          currentReview: null,
           currentStep: 0,
           stepData: {},
           selectedPatient: null,
@@ -436,7 +357,7 @@ export const useMTRStore = create<MTRStore>()(
           followUps: [],
         });
 
-        console.log('Initialized basic MTR session for patient selection');
+        console.log('✅ MTR store initialized - ready for backend session creation');
       },
 
       createReview: async (patientId: string) => {
@@ -503,14 +424,8 @@ export const useMTRStore = create<MTRStore>()(
             backendAccessible = false;
           }
 
-          // If backend is not accessible, immediately go to fallback
           if (!backendAccessible) {
-            if (isDevelopment) {
-              console.warn('🔧 Backend not accessible in development mode, creating temporary session immediately');
-              throw new Error('Backend not accessible - using temporary session');
-            } else {
-              throw new Error('Backend server is not accessible. Please ensure the server is running.');
-            }
+            throw new Error('Backend server is not accessible. Please ensure the server is running.');
           }
 
           console.log('📡 Backend accessible, calling MTR service with data:', createData);
@@ -564,73 +479,7 @@ export const useMTRStore = create<MTRStore>()(
             }
           }
 
-          // In development mode, create a temporary MTR session as fallback
-          const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
-
-          if (isDevelopment && (error instanceof Error &&
-            (error.message.includes('Backend not accessible') ||
-              error.message.includes('Backend server is not accessible') ||
-              error.message.includes('timeout') ||
-              error.message.includes('Network Error') ||
-              error.message.includes('ECONNABORTED')))) {
-
-            console.warn('🔧 Development mode: Creating temporary MTR session as fallback');
-
-            // Create a temporary MTR session for development
-            const tempId = `temp-mtr-${Date.now()}`;
-            const tempReview = {
-              _id: tempId,
-              workplaceId: 'temp-workplace',
-              patientId: patientId,
-              pharmacistId: 'temp-pharmacist',
-              reviewNumber: `MTR-TEMP-${Date.now()}`,
-              status: 'in_progress' as const,
-              priority: 'routine' as const,
-              reviewType: 'initial' as const,
-              steps: {
-                patientSelection: { completed: true, completedAt: new Date().toISOString() },
-                medicationHistory: { completed: false },
-                therapyAssessment: { completed: false },
-                planDevelopment: { completed: false },
-                interventions: { completed: false },
-                followUp: { completed: false },
-              },
-              medications: [],
-              problems: [],
-              interventions: [],
-              followUps: [],
-              clinicalOutcomes: {
-                problemsResolved: 0,
-                medicationsOptimized: 0,
-                adherenceImproved: false,
-                adverseEventsReduced: false,
-              },
-              startedAt: new Date().toISOString(),
-              patientConsent: false,
-              confidentialityAgreed: false,
-              createdBy: 'temp-user',
-              isDeleted: false,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-
-            // Clear the error immediately before setting the session
-            setError('createReview', null);
-
-            set({
-              currentReview: tempReview,
-              currentStep: 0,
-              stepData: {},
-              medications: [],
-              identifiedProblems: [],
-              therapyPlan: null,
-              interventions: [],
-              followUps: [],
-            });
-
-            console.log('✅ Temporary MTR session created for development');
-            return; // Don't throw error, session was created successfully
-          }
+          // No fallback - force proper backend integration
 
           setError('createReview', errorMessage);
           throw error; // Re-throw to let the UI handle it
@@ -645,40 +494,7 @@ export const useMTRStore = create<MTRStore>()(
         setError('loadReview', null);
 
         try {
-          // Handle temporary sessions
-          if (reviewId.startsWith('temp-')) {
-            console.log('🔄 Loading temporary MTR session from localStorage:', reviewId);
-            
-            try {
-              const sessionData = localStorage.getItem(`mtr_session_${reviewId}`);
-              if (sessionData) {
-                const parsed = JSON.parse(sessionData);
-                
-                set({
-                  currentReview: parsed.currentReview,
-                  currentStep: parsed.currentStep || 0,
-                  stepData: parsed.stepData || {},
-                  selectedPatient: parsed.selectedPatient,
-                  medications: parsed.medications || [],
-                  identifiedProblems: parsed.identifiedProblems || [],
-                  therapyPlan: parsed.therapyPlan,
-                  interventions: parsed.interventions || [],
-                  followUps: parsed.followUps || [],
-                });
-                
-                console.log('✅ Temporary MTR session loaded from localStorage');
-                return;
-              } else {
-                throw new Error('Temporary session not found in localStorage');
-              }
-            } catch (error) {
-              console.error('❌ Failed to load temporary session:', error);
-              setError('loadReview', 'Temporary session not found or corrupted');
-              return;
-            }
-          }
-
-          // Import the mtrService for real sessions
+          // Import the mtrService
           const { mtrService } = await import('../services/mtrService');
 
           // Load MTR session from API
@@ -698,12 +514,12 @@ export const useMTRStore = create<MTRStore>()(
               currentStep: get().getNextStep() || 0,
             });
 
-            console.log('Loaded MTR review:', reviewId);
+            console.log('✅ MTR review loaded from backend:', reviewId);
           } else {
-            set({ currentReview: null });
+            throw new Error('Review not found');
           }
         } catch (error) {
-          console.error('Failed to load MTR review:', error);
+          console.error('❌ Failed to load MTR review:', error);
 
           // Handle specific error types
           if (error instanceof Error) {
@@ -808,49 +624,9 @@ export const useMTRStore = create<MTRStore>()(
           interventions,
           followUps,
         } = get();
-        if (!currentReview) return;
-
-        // Handle temporary sessions with localStorage persistence
-        if (currentReview._id.startsWith('temp-')) {
-          console.log('🔧 Saving temporary MTR session to localStorage:', currentReview._id);
-
-          // Update the local state for temporary sessions
-          const updatedReview = {
-            ...currentReview,
-            medications: medications.map(convertMTRMedicationToEntry),
-            problems: identifiedProblems,
-            plan: therapyPlan || undefined,
-            interventions,
-            followUps,
-            updatedAt: new Date().toISOString(),
-          };
-
-          set({ currentReview: updatedReview });
-
-          // Persist to localStorage for session recovery
-          try {
-            const sessionData = {
-              currentReview: updatedReview,
-              currentStep: get().currentStep,
-              stepData: get().stepData,
-              medications,
-              identifiedProblems,
-              therapyPlan,
-              interventions,
-              followUps,
-              selectedPatient: get().selectedPatient,
-              savedAt: new Date().toISOString(),
-            };
-
-            localStorage.setItem(`mtr_session_${currentReview._id}`, JSON.stringify(sessionData));
-            localStorage.setItem('mtr_last_session_id', currentReview._id);
-
-            console.log('✅ Temporary MTR session saved to localStorage');
-          } catch (error) {
-            console.error('Failed to save session to localStorage:', error);
-          }
-
-          return;
+        
+        if (!currentReview) {
+          throw new Error('No current review to save');
         }
 
         setLoading('saveReview', true);
@@ -931,93 +707,37 @@ export const useMTRStore = create<MTRStore>()(
         setError('completeReview', null);
 
         try {
-          let completedReview;
+          // Handle session completion via API only
+          const { mtrService } = await import('../services/mtrService');
 
-          if (currentReview._id.startsWith('temp-')) {
-            // Handle temporary session completion
-            console.log('Completing temporary MTR session:', currentReview._id);
+          const updateData = {
+            status: 'completed' as const,
+            completedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
 
-            completedReview = {
-              ...currentReview,
-              status: 'completed' as const,
-              completedAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
+          const response = await mtrService.updateMTRSession(
+            currentReview._id,
+            updateData
+          );
 
-            // Keep completed session in localStorage but mark as completed
-            try {
-              const sessionData = {
-                currentReview: completedReview,
-                currentStep: get().currentStep,
-                stepData: get().stepData,
-                medications: get().medications,
-                identifiedProblems: get().identifiedProblems,
-                therapyPlan: get().therapyPlan,
-                interventions: get().interventions,
-                followUps: get().followUps,
-                selectedPatient: get().selectedPatient,
-                savedAt: new Date().toISOString(),
-                completedAt: new Date().toISOString(),
-              };
-              
-              localStorage.setItem(`mtr_session_${currentReview._id}`, JSON.stringify(sessionData));
-              
-              // Also add to completed sessions list
-              const completedSessions = JSON.parse(localStorage.getItem('mtr_completed_sessions') || '[]');
-              const sessionSummary = {
-                _id: currentReview._id,
-                patientId: currentReview.patientId,
-                reviewNumber: currentReview.reviewNumber,
-                status: 'completed',
-                createdAt: currentReview.createdAt,
-                completedAt: new Date().toISOString(),
-                reviewType: currentReview.reviewType,
-                priority: currentReview.priority,
-              };
-              
-              // Add to completed sessions if not already there
-              if (!completedSessions.find((s: any) => s._id === currentReview._id)) {
-                completedSessions.unshift(sessionSummary); // Add to beginning
-                localStorage.setItem('mtr_completed_sessions', JSON.stringify(completedSessions));
-              }
-              
-              // Trigger custom event to notify other components
-              window.dispatchEvent(new CustomEvent('mtr-session-completed', {
-                detail: { sessionId: currentReview._id, patientId: currentReview.patientId }
-              }));
-              
-              console.log('✅ Completed session saved to localStorage');
-            } catch (error) {
-              console.error('Failed to save completed session:', error);
-            }
-          } else {
-            // Handle real session completion via API
-            const { mtrService } = await import('../services/mtrService');
-
-            const updateData = {
-              status: 'completed' as const,
-              completedAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-
-            const response = await mtrService.updateMTRSession(
-              currentReview._id,
-              updateData
-            );
-
-            completedReview = {
-              ...response.review,
-              status: 'completed' as const,
-              completedAt: new Date().toISOString(),
-            };
-          }
+          const completedReview = {
+            ...response.review,
+            status: 'completed' as const,
+            completedAt: new Date().toISOString(),
+          };
 
           set({ currentReview: completedReview });
 
-          console.log('MTR review completed successfully:', currentReview._id);
+          // Trigger custom event to notify other components
+          window.dispatchEvent(new CustomEvent('mtr-session-completed', {
+            detail: { sessionId: currentReview._id, patientId: currentReview.patientId }
+          }));
+
+          console.log('✅ MTR review completed successfully via backend API:', currentReview._id);
           return completedReview;
         } catch (error) {
-          console.error('Failed to complete MTR review:', error);
+          console.error('❌ Failed to complete MTR review:', error);
           setError(
             'completeReview',
             error instanceof Error ? error.message : 'Failed to complete review'
@@ -1849,18 +1569,7 @@ export const useMTRStore = create<MTRStore>()(
       checkPermissions: async () => {
         return await checkMTRPermissions();
       },
-    }),
-    {
-      name: 'mtr-store',
-      partialize: (state) => ({
-        currentReview: state.currentReview,
-        currentStep: state.currentStep,
-        stepData: state.stepData,
-        selectedPatient: state.selectedPatient,
-      }),
-    }
-  )
-);
+    }));
 
 // Utility hooks for easier access to specific MTR states
 export const useMTRSession = () =>

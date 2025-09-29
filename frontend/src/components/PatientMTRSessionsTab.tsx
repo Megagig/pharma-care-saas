@@ -38,20 +38,17 @@ const PatientMTRSessionsTab: React.FC<PatientMTRSessionsTabProps> = ({ patientId
   const navigate = useNavigate();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Listen for localStorage changes to refresh the component
+  // Listen for MTR completion events to refresh the component
   useEffect(() => {
-    const handleStorageChange = () => {
+    const handleMTRCompleted = () => {
       setRefreshTrigger(prev => prev + 1);
     };
 
-    window.addEventListener('storage', handleStorageChange);
-
-    // Also listen for custom events when MTR sessions are completed
-    window.addEventListener('mtr-session-completed', handleStorageChange);
+    // Listen for custom events when MTR sessions are completed
+    window.addEventListener('mtr-session-completed', handleMTRCompleted);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('mtr-session-completed', handleStorageChange);
+      window.removeEventListener('mtr-session-completed', handleMTRCompleted);
     };
   }, []);
 
@@ -66,39 +63,23 @@ const PatientMTRSessionsTab: React.FC<PatientMTRSessionsTabProps> = ({ patientId
     !!patientId && patientId.length === 24
   );
 
-  // Extract data with proper typing and include localStorage sessions
+  // Extract data with proper typing - backend API only
   const typedData = dashboardData as any;
   const { activeMTRs = [], recentMTRs = [], mtrSummary } = typedData || {};
-
-  // Get completed sessions from localStorage (refreshes when refreshTrigger changes)
-  const getLocalStorageSessions = () => {
-    try {
-      const completedSessions = JSON.parse(localStorage.getItem('mtr_completed_sessions') || '[]');
-      return completedSessions.filter((session: any) => session.patientId === patientId);
-    } catch (error) {
-      console.error('Failed to load completed sessions from localStorage:', error);
-      return [];
-    }
-  };
-
-  const localStorageSessions = getLocalStorageSessions();
 
   // Force re-calculation when refreshTrigger changes
   useEffect(() => {
     // This effect will cause the component to re-render when refreshTrigger changes
   }, [refreshTrigger]);
 
-  // Calculate statistics including localStorage sessions
-  const localCompletedCount = localStorageSessions.length;
-  const totalSessions = (mtrSummary?.totalMTRSessions || 0) + localCompletedCount;
-  const completedSessions = (mtrSummary?.completedMTRSessions || 0) + localCompletedCount;
+  // Calculate statistics from backend data only
+  const totalSessions = mtrSummary?.totalMTRSessions || 0;
+  const completedSessions = mtrSummary?.completedMTRSessions || 0;
   const activeSessions = mtrSummary?.activeMTRSessions || 0;
-  const lastMTRDate = localStorageSessions.length > 0
-    ? localStorageSessions[0].completedAt
-    : mtrSummary?.lastMTRDate;
+  const lastMTRDate = mtrSummary?.lastMTRDate;
 
-  // Combine all sessions for display
-  const allSessions = [...(activeMTRs || []), ...(recentMTRs || []), ...localStorageSessions];
+  // Use backend sessions only
+  const allSessions = [...(activeMTRs || []), ...(recentMTRs || [])];
 
   const handleStartNewMTR = () => {
     // Navigate directly to new MTR page with patient pre-selected
