@@ -482,23 +482,69 @@ export const searchPatients = asyncHandler(
 
     const patients = await Patient.find(query)
       .select(
-        'firstName lastName otherNames mrn phone dob bloodGroup latestVitals'
+        '_id firstName lastName otherNames mrn phone dob bloodGroup latestVitals'
       )
       .limit(Math.min(parseInt(limit), 50))
       .sort('lastName firstName')
       .lean();
 
-    // Add computed fields
-    const enrichedPatients = patients.map((patient) => ({
-      ...patient,
-      displayName: `${patient.firstName} ${patient.lastName}`,
-      age: patient.dob
-        ? Math.floor(
-          (Date.now() - patient.dob.getTime()) /
-          (1000 * 60 * 60 * 24 * 365.25)
-        )
-        : null,
-    }));
+    // Debug what we get from the database
+    console.log('🔍 Backend - Raw patients from DB:', patients.map(p => ({
+      _id: p._id,
+      hasId: !!p._id,
+      idType: typeof p._id,
+      firstName: p.firstName,
+      mrn: p.mrn,
+    })));
+
+    // Add computed fields and ensure _id is properly included
+    const enrichedPatients = patients.map((patient) => {
+      // Debug logging to see what we're getting from the database
+      console.log('🔍 Backend - Raw patient from DB:', {
+        _id: patient._id,
+        id: patient.id,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        mrn: patient.mrn,
+        keys: Object.keys(patient),
+      });
+
+      const enrichedPatient = {
+        _id: patient._id?.toString() || patient._id || patient.id, // Ensure _id is included and converted to string
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        otherNames: patient.otherNames,
+        mrn: patient.mrn,
+        phone: patient.phone,
+        dob: patient.dob,
+        bloodGroup: patient.bloodGroup,
+        latestVitals: patient.latestVitals,
+        displayName: `${patient.firstName} ${patient.lastName}`,
+        age: patient.dob
+          ? Math.floor(
+            (Date.now() - patient.dob.getTime()) /
+            (1000 * 60 * 60 * 24 * 365.25)
+          )
+          : null,
+      };
+
+      // Final check to ensure _id is present
+      if (!enrichedPatient._id) {
+        console.error('❌ Backend - Patient missing _id after enrichment:', patient);
+        // Use mrn as fallback ID if _id is still missing
+        enrichedPatient._id = patient.mrn;
+      }
+
+      return enrichedPatient;
+    });
+
+    // Debug the final response
+    console.log('🔍 Backend - Enriched patients being sent:', enrichedPatients.map(p => ({
+      _id: p._id,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      mrn: p.mrn,
+    })));
 
     sendSuccess(
       res,

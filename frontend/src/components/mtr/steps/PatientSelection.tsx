@@ -1,141 +1,72 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  TextField,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemButton,
-  Chip,
-  Alert,
-} from '@mui/material';
+import React from 'react';
 import { Patient } from '../../../stores/types';
+import MainPatientSelection from '../../PatientSelection';
+import type { Patient as PatientManagementPatient } from '../../../types/patientManagement';
 
 interface PatientSelectionProps {
   onPatientSelect: (patient: Patient) => void;
   onNext?: () => void;
-  onBack?: () => void;
   selectedPatient?: Patient | null;
 }
 
 const PatientSelection: React.FC<PatientSelectionProps> = ({
   onPatientSelect,
   onNext,
-  onBack,
   selectedPatient,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [patients] = useState<Patient[]>([
-    // Mock patients - replace with actual data
-    {
-      _id: '1',
-      firstName: 'John',
-      lastName: 'Doe',
-      dateOfBirth: '1980-01-01',
-      email: 'john.doe@email.com',
-      phone: '555-0123',
+  const handlePatientSelect = (patient: PatientManagementPatient) => {
+    // Convert from patientManagement.Patient to stores.Patient
+    const storePatient: Patient = {
+      _id: patient._id,
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      email: patient.email,
+      phone: patient.phone || '', // Ensure phone is never undefined
+      dateOfBirth: patient.dob || '', // Map dob to dateOfBirth, ensure it's never undefined
       address: {
-        street: '123 Main St',
-        city: 'Anytown',
-        state: 'CA',
-        zipCode: '12345',
+        street: patient.address || '',
+        city: '',
+        state: patient.state || '',
+        zipCode: '',
       },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      _id: '2',
-      firstName: 'Jane',
-      lastName: 'Smith',
-      dateOfBirth: '1975-05-15',
-      email: 'jane.smith@email.com',
-      phone: '555-0456',
-      address: {
-        street: '456 Oak Ave',
-        city: 'Somewhere',
-        state: 'NY',
-        zipCode: '67890',
+      medicalHistory: '',
+      allergies: [],
+      emergencyContact: {
+        name: '',
+        phone: '',
+        relationship: '',
       },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ]);
-
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.lastName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handlePatientSelect = (patient: Patient) => {
-    onPatientSelect(patient);
+      createdAt: patient.createdAt,
+      updatedAt: patient.updatedAt,
+    };
+    onPatientSelect(storePatient);
   };
 
+  // Convert selectedPatient back to patientManagement.Patient if needed
+  const convertedSelectedPatient: PatientManagementPatient | null = selectedPatient ? {
+    _id: selectedPatient._id,
+    pharmacyId: 'default' as any,
+    firstName: selectedPatient.firstName,
+    lastName: selectedPatient.lastName,
+    otherNames: '',
+    mrn: selectedPatient._id,
+    dob: selectedPatient.dateOfBirth,
+    email: selectedPatient.email,
+    phone: selectedPatient.phone,
+    address: selectedPatient.address?.street || '',
+    state: selectedPatient.address?.state as any,
+    createdAt: selectedPatient.createdAt,
+    updatedAt: selectedPatient.updatedAt,
+    createdBy: '',
+    updatedBy: '',
+  } : null;
+
   return (
-    <Box>
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Select Patient for MTR
-      </Typography>
-
-      <TextField
-        fullWidth
-        label="Search patients"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        sx={{ mb: 2 }}
-      />
-
-      {selectedPatient && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Selected: {selectedPatient.firstName} {selectedPatient.lastName}
-        </Alert>
-      )}
-
-      <Card>
-        <CardContent>
-          <List>
-            {filteredPatients.map((patient) => (
-              <ListItem key={patient._id} disablePadding>
-                <ListItemButton
-                  onClick={() => handlePatientSelect(patient)}
-                  selected={selectedPatient?._id === patient._id}
-                >
-                  <ListItemText
-                    primary={`${patient.firstName} ${patient.lastName}`}
-                    secondary={
-                      <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                        <Chip label={patient.email} size="small" />
-                        <Chip label={patient.phone} size="small" />
-                      </Box>
-                    }
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </CardContent>
-      </Card>
-
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-        {onBack && (
-          <Button onClick={onBack} variant="outlined">
-            Back
-          </Button>
-        )}
-        <Button
-          onClick={onNext}
-          variant="contained"
-          disabled={!selectedPatient}
-          sx={{ ml: 'auto' }}
-        >
-          Next
-        </Button>
-      </Box>
-    </Box>
+    <MainPatientSelection
+      onPatientSelect={handlePatientSelect}
+      selectedPatient={convertedSelectedPatient}
+      onNext={onNext}
+    />
   );
 };
 

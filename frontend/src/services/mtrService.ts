@@ -1,35 +1,31 @@
-import { apiHelpers } from './api';
-import axios from 'axios';
-import { format, addMonths } from 'date-fns';
-import {
+import { apiHelpers, ApiResponse } from './api';
+import type {
   MedicationTherapyReview,
   DrugTherapyProblem,
   MTRIntervention,
-  MTRFollowUp,
-  TherapyPlan,
-  MTRMedicationEntry,
-  CreateMTRData as TypedCreateMTRData,
-  UpdateMTRData as TypedUpdateMTRData,
-  CreateDTPData as TypedCreateDTPData,
-  UpdateDTPData as TypedUpdateDTPData,
-  CreateInterventionData as TypedCreateInterventionData,
-  UpdateInterventionData as TypedUpdateInterventionData,
-  CreateFollowUpData as TypedCreateFollowUpData,
-  UpdateFollowUpData as TypedUpdateFollowUpData,
-  MTRSearchParams as TypedMTRSearchParams,
-  DTPSearchParams as TypedDTPSearchParams,
-  InterventionSearchParams as TypedInterventionSearchParams,
-  FollowUpSearchParams as TypedFollowUpSearchParams,
-  MTRResponse,
-  DTPResponse,
-  InterventionResponse,
-  FollowUpResponse,
+  CreateMTRData,
+  UpdateMTRData,
+  CreateDTPData,
+  UpdateDTPData,
+  CreateInterventionData,
+  UpdateInterventionData,
+  CreateFollowUpData,
+  UpdateFollowUpData,
+  MTRSearchParams,
+  DTPSearchParams,
+  InterventionSearchParams,
+  FollowUpSearchParams,
   MTRListResponse,
+  MTRResponse,
   DTPListResponse,
+  DTPResponse,
   InterventionListResponse,
+  InterventionResponse,
   FollowUpListResponse,
+  FollowUpResponse,
+  MTRMedicationEntry,
+  TherapyPlan,
 } from '../types/mtr';
-import { ApiResponse } from '../types/patientManagement';
 
 // ===============================
 // ERROR HANDLING TYPES
@@ -78,95 +74,34 @@ export class MTRPermissionError extends Error implements MTRServiceError {
 // ===============================
 
 // Type definitions for better type safety
-interface DateTransformable {
-  steps?: Record<
-    string,
-    { completedAt?: string | Date;[key: string]: unknown }
-  >;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-  completedAt?: string | Date;
-  scheduledAt?: string | Date;
-  dueDate?: string | Date;
-  implementedAt?: string | Date;
-  startDate?: string | Date;
-  endDate?: string | Date;
-  identifiedAt?: string | Date;
-  data?: unknown;
-  [key: string]: unknown;
-}
-
-/**
- * Utility function to safely handle API responses with proper typing
- * This helps extract data from nested response structures and apply transformations
- */
-export function handleApiResponse<T>(
-  // Using a more specific type for Axios responses
-  response: { data?: { data?: unknown } } | null | undefined,
-  extractPath?: string[]
-): T {
-  if (!response || !response.data) {
-    throw new Error('Invalid response structure: missing data');
-  }
-
-  // Navigate through the nested path (e.g., ['data', 'intervention'])
-  let result = response.data;
-
-  if (extractPath && extractPath.length > 0) {
-    for (const key of extractPath) {
-      if (
-        result &&
-        typeof result === 'object' &&
-        key in (result as Record<string, unknown>)
-      ) {
-        result = (result as Record<string, unknown>)[key];
-      } else {
-        throw new Error(`Invalid response structure: missing ${key}`);
-      }
-    }
-  }
-
-  return result as T;
-}
-
-// Define session data type
-interface MTRSessionData {
-  review: MedicationTherapyReview;
-}
+type DateTransformable = Record<string, unknown> & {
+  steps?: Record<string, { completedAt?: string | Date }>;
+};
 
 type SearchParamsType = Record<
   string,
   string | number | boolean | string[] | undefined
 >;
 
-// Utility functions for date transformations
-
 /**
  * Transform date strings to Date objects for frontend use
  */
-function _transformDatesForFrontend(obj: unknown): unknown {
-  // Return early for null/undefined or non-objects
-  if (obj === null || obj === undefined || typeof obj !== 'object') {
-    return obj;
-  }
-
-  // Common date fields to transform
+export const transformDatesForFrontend = <T extends DateTransformable>(
+  obj: T
+): T => {
   const dateFields = [
     'createdAt',
     'updatedAt',
+    'startedAt',
     'completedAt',
-    'scheduledAt',
-    'dueDate',
-    'implementedAt',
-    'startDate',
-    'endDate',
+    'scheduledDate',
+    'performedAt',
     'identifiedAt',
   ];
-  // Create a copy to safely modify
-  const transformed = { ...obj } as Record<string, unknown>;
+  const transformed = { ...obj } as T;
 
   dateFields.forEach((field) => {
-    if (field in transformed && typeof transformed[field] === 'string') {
+    if (transformed[field] && typeof transformed[field] === 'string') {
       try {
         transformed[field] = new Date(
           transformed[field] as string
@@ -177,35 +112,32 @@ function _transformDatesForFrontend(obj: unknown): unknown {
     }
   });
 
-  // Transform nested step dates if they exist
-  if (
-    'steps' in transformed &&
-    transformed.steps &&
-    typeof transformed.steps === 'object'
-  ) {
+  // Transform nested step dates
+  if (transformed.steps && typeof transformed.steps === 'object') {
     Object.keys(transformed.steps).forEach((stepKey) => {
-      const step = (
-        transformed.steps as Record<string, Record<string, unknown>>
-      )[stepKey];
+      const step = transformed.steps![stepKey];
       if (step?.completedAt && typeof step.completedAt === 'string') {
         try {
           step.completedAt = new Date(step.completedAt).toISOString();
         } catch (error) {
-          console.warn(`Failed to transform step completedAt date:`, error);
+          console.warn(
+            `Failed to transform step date ${stepKey}.completedAt:`,
+            error
+          );
         }
       }
     });
   }
 
   return transformed;
-}
+};
 
 /**
  * Transform data for API submission (dates to ISO strings)
  */
-function _transformDatesForAPI(
-  obj: Record<string, unknown>
-): Record<string, unknown> {
+export const transformDatesForAPI = <T extends Record<string, unknown>>(
+  obj: T
+): Record<string, unknown> => {
   const transformed = { ...obj } as Record<string, unknown>;
 
   Object.keys(transformed).forEach((key) => {
@@ -217,24 +149,12 @@ function _transformDatesForAPI(
       value !== null &&
       !Array.isArray(value)
     ) {
-      // Prevent infinite recursion by checking if value is actually an object with properties
-      const objValue = value as Record<string, unknown>;
-      if (Object.keys(objValue).length > 0) {
-        transformed[key] = _transformDatesForAPI(objValue);
-      }
+      transformed[key] = transformDatesForAPI(value as Record<string, unknown>);
     }
   });
 
   return transformed;
-}
-
-// Export typed wrapper functions
-export const transformDatesForFrontend = <T>(obj: unknown): T =>
-  _transformDatesForFrontend(obj) as T;
-
-export const transformDatesForAPI = <T extends Record<string, unknown>>(
-  obj: T
-): Record<string, unknown> => _transformDatesForAPI(obj);
+};
 
 /**
  * Validate medication entry data
@@ -290,38 +210,34 @@ export const validateMedicationEntry = (
 /**
  * Validate therapy plan data
  */
-export const validateTherapyPlan = (plan: Partial<TherapyPlan>, strict: boolean = false): string[] => {
+export const validateTherapyPlan = (plan: Partial<TherapyPlan>): string[] => {
   const errors: string[] = [];
 
-  // Only enforce strict validation when explicitly requested (e.g., when completing the plan step)
-  if (strict) {
-    if (!plan.problems || plan.problems.length === 0) {
-      errors.push(
-        'At least one problem must be associated with the therapy plan'
-      );
-    }
-
-    if (!plan.recommendations || plan.recommendations.length === 0) {
-      errors.push('At least one recommendation is required');
-    }
-
-    if (!plan.timeline?.trim()) {
-      errors.push('Timeline is required');
-    }
+  if (!plan.problems || plan.problems.length === 0) {
+    errors.push(
+      'At least one problem must be associated with the therapy plan'
+    );
   }
 
-  // Always validate recommendation structure if recommendations exist
+  if (!plan.recommendations || plan.recommendations.length === 0) {
+    errors.push('At least one recommendation is required');
+  }
+
   plan.recommendations?.forEach((rec, index) => {
-    if (rec.type && !rec.rationale?.trim()) {
-      errors.push(`Recommendation ${index + 1}: Rationale is required when type is specified`);
+    if (!rec.type) {
+      errors.push(`Recommendation ${index + 1}: Type is required`);
     }
-    if (rec.rationale && !rec.type) {
-      errors.push(`Recommendation ${index + 1}: Type is required when rationale is provided`);
+    if (!rec.rationale?.trim()) {
+      errors.push(`Recommendation ${index + 1}: Rationale is required`);
     }
-    if ((rec.type || rec.rationale) && !rec.priority) {
-      errors.push(`Recommendation ${index + 1}: Priority is required for complete recommendations`);
+    if (!rec.priority) {
+      errors.push(`Recommendation ${index + 1}: Priority is required`);
     }
   });
+
+  if (!plan.timeline?.trim()) {
+    errors.push('Timeline is required');
+  }
 
   return errors;
 };
@@ -332,12 +248,6 @@ export const validateTherapyPlan = (plan: Partial<TherapyPlan>, strict: boolean 
 export const calculateCompletionPercentage = (
   mtr: MedicationTherapyReview
 ): number => {
-  // Check if MTR object exists
-  if (!mtr) {
-    console.warn('MTR object is undefined or null, returning 0% completion');
-    return 0;
-  }
-
   // Check if steps object exists and is not null
   if (!mtr.steps) {
     console.warn(
@@ -348,19 +258,9 @@ export const calculateCompletionPercentage = (
 
   try {
     const steps = Object.values(mtr.steps);
-
-    // Additional safety check for steps array
-    if (!Array.isArray(steps) || steps.length === 0) {
-      console.warn(
-        'MTR steps array is empty or invalid, returning 0% completion'
-      );
-      return 0;
-    }
-
     const completedSteps = steps.filter(
-      (step) => step && typeof step === 'object' && step.completed === true
+      (step) => step && step.completed
     ).length;
-
     return Math.round((completedSteps / steps.length) * 100);
   } catch (error) {
     console.error('Error calculating completion percentage:', error);
@@ -388,13 +288,13 @@ export const isOverdue = (mtr: MedicationTherapyReview): boolean => {
     );
 
     // Consider overdue if in progress for more than 7 days for routine, 3 days for urgent, 1 day for high_risk
-    const overdueThresholds: Record<string, number> = {
+    const overdueThresholds = {
       routine: 7,
       urgent: 3,
       high_risk: 1,
     };
 
-    return daysSinceStart > (overdueThresholds[mtr.priority] || 7);
+    return daysSinceStart > overdueThresholds[mtr.priority];
   } catch (error) {
     console.error('Error checking if MTR is overdue:', error);
     return false; // Return not overdue on error
@@ -462,8 +362,8 @@ export const handleMTRError = (error: unknown, context: string): never => {
   // Generic error
   const serviceError = new Error(
     apiError.response?.data?.message ||
-    apiError.message ||
-    'An unexpected error occurred'
+      apiError.message ||
+      'An unexpected error occurred'
   ) as MTRServiceError;
 
   serviceError.code = apiError.response?.data?.code || 'MTR_SERVICE_ERROR';
@@ -484,39 +384,28 @@ export const mtrService = {
   /**
    * Get all MTR sessions with optional filtering
    */
-  async getMTRSessions(params: TypedMTRSearchParams = {}): Promise<{
-    results: MedicationTherapyReview[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
+  async getMTRSessions(
+    params: MTRSearchParams = {}
+  ): Promise<MTRListResponse['data']> {
     try {
       const searchParams = formatSearchParams(params as SearchParamsType);
       const queryString = searchParams.toString();
       const url = `/mtr${queryString ? `?${queryString}` : ''}`;
 
-      // Use a specific response type for reviews
-      const response = await apiHelpers.get<{
-        results: MedicationTherapyReview[];
-        total: number;
-        page: number;
-        limit: number;
-      }>(url);
+      const response = await apiHelpers.get<
+        ApiResponse<MTRListResponse['data']>
+      >(url);
 
-      if (!response?.data?.data) {
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
 
-      const responseData = response.data.data;
-      if (!responseData.results || !Array.isArray(responseData.results)) {
-        throw new Error('Invalid response: missing results array');
-      }
-
       // Transform dates and add computed fields
-      const transformedResults = responseData.results.map(
+      const transformedResults = response.data.data.results.map(
         (mtr: MedicationTherapyReview) => {
-          const transformed =
-            transformDatesForFrontend<MedicationTherapyReview>(mtr);
+          const transformed = transformDatesForFrontend(
+            mtr as DateTransformable
+          ) as MedicationTherapyReview;
           return {
             ...transformed,
             completionPercentage: calculateCompletionPercentage(transformed),
@@ -526,10 +415,8 @@ export const mtrService = {
       );
 
       return {
+        ...response.data.data,
         results: transformedResults,
-        total: responseData.total || 0,
-        page: responseData.page || 1,
-        limit: responseData.limit || 10,
       };
     } catch (error) {
       return handleMTRError(error, 'getMTRSessions');
@@ -539,33 +426,29 @@ export const mtrService = {
   /**
    * Get a single MTR session by ID
    */
-  async getMTRSession(sessionId: string): Promise<MTRSessionData> {
+  async getMTRSession(sessionId: string): Promise<MTRResponse['data']> {
     try {
       if (!sessionId?.trim()) {
         throw new MTRValidationError('Session ID is required');
       }
 
-      const response = await apiHelpers.get<MedicationTherapyReview>(
+      const response = await apiHelpers.get<ApiResponse<MTRResponse['data']>>(
         `/mtr/${sessionId}`
       );
 
-      if (!response?.data?.data?.review) {
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
 
-      // Extract the review data directly from the response structure
-      const reviewData = response.data.data.review;
-
-      // Transform dates
-      const transformed =
-        transformDatesForFrontend<MedicationTherapyReview>(reviewData);
-
-      // Add computed fields
+      // Transform dates and add computed fields
+      const transformed = transformDatesForFrontend(
+        response.data.data.review as DateTransformable
+      ) as MedicationTherapyReview;
       const enhancedReview = {
         ...transformed,
         completionPercentage: calculateCompletionPercentage(transformed),
         isOverdue: isOverdue(transformed),
-      };
+      } as MedicationTherapyReview;
 
       return {
         review: enhancedReview,
@@ -579,8 +462,8 @@ export const mtrService = {
    * Create a new MTR session
    */
   async createMTRSession(
-    sessionData: TypedCreateMTRData
-  ): Promise<MTRSessionData> {
+    sessionData: CreateMTRData
+  ): Promise<MTRResponse['data']> {
     try {
       // Validate required fields
       if (!sessionData.patientId?.trim()) {
@@ -589,50 +472,22 @@ export const mtrService = {
 
       // Transform data for API
       const transformedData = transformDatesForAPI(
-        sessionData as unknown as Record<string, unknown>
+        sessionData as Record<string, unknown>
       );
 
-      const response = await apiHelpers.post<MedicationTherapyReview>(
+      const response = await apiHelpers.post<ApiResponse<MTRResponse['data']>>(
         '/mtr',
         transformedData
       );
 
-      if (!response.data?.data?.review) {
-        console.error('Invalid response structure - expected review in data.data:', {
-          hasData: !!response.data,
-          hasDataData: !!response.data?.data,
-          hasReview: !!response.data?.data?.review,
-          responseKeys: Object.keys(response),
-          dataKeys: response.data ? Object.keys(response.data) : [],
-          dataDataKeys: response.data?.data ? Object.keys(response.data.data) : [],
-          fullResponse: response
-        });
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data.review as unknown as DateTransformable
+        response.data.data.review as DateTransformable
       ) as MedicationTherapyReview;
-
-      // Validate that the transformed object has the required structure
-      if (!transformed) {
-        throw new Error('Failed to transform MTR data');
-      }
-
-      // Initialize steps if not present (for new MTR sessions)
-      if (!transformed.steps) {
-        console.warn('MTR steps not initialized, creating default structure');
-        transformed.steps = {
-          patientSelection: { completed: false, completedAt: null, data: {} },
-          medicationHistory: { completed: false, completedAt: null, data: {} },
-          therapyAssessment: { completed: false, completedAt: null, data: {} },
-          planDevelopment: { completed: false, completedAt: null, data: {} },
-          interventions: { completed: false, completedAt: null, data: {} },
-          followUp: { completed: false, completedAt: null, data: {} },
-        };
-      }
-
       const enhancedReview = {
         ...transformed,
         completionPercentage: calculateCompletionPercentage(transformed),
@@ -652,21 +507,11 @@ export const mtrService = {
    */
   async updateMTRSession(
     sessionId: string,
-    sessionData: TypedUpdateMTRData
-  ): Promise<MTRSessionData> {
+    sessionData: UpdateMTRData
+  ): Promise<MTRResponse['data']> {
     try {
-      console.log(`Updating MTR session, ID: "${sessionId}"`);
-
-      if (!sessionId) {
-        console.error('MTR update failed: session ID is undefined or null');
+      if (!sessionId?.trim()) {
         throw new MTRValidationError('Session ID is required');
-      }
-
-      if (!sessionId.trim()) {
-        console.error('MTR update failed: session ID is empty string');
-        throw new MTRValidationError(
-          'Session ID is required (empty string provided)'
-        );
       }
 
       // Validate medications if provided
@@ -688,9 +533,9 @@ export const mtrService = {
         }
       }
 
-      // Validate therapy plan if provided (non-strict for regular updates)
+      // Validate therapy plan if provided
       if (sessionData.plan) {
-        const planErrors = validateTherapyPlan(sessionData.plan, false);
+        const planErrors = validateTherapyPlan(sessionData.plan);
         if (planErrors.length > 0) {
           throw new MTRValidationError('Therapy plan validation failed', {
             plan: planErrors,
@@ -703,18 +548,18 @@ export const mtrService = {
         sessionData as Record<string, unknown>
       );
 
-      const response = await apiHelpers.put<MedicationTherapyReview>(
+      const response = await apiHelpers.put<ApiResponse<MTRResponse['data']>>(
         `/mtr/${sessionId}`,
         transformedData
       );
 
-      if (!response.data?.data?.review) {
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data.review as unknown as DateTransformable
+        response.data.data.review as DateTransformable
       ) as MedicationTherapyReview;
       const enhancedReview = {
         ...transformed,
@@ -733,18 +578,14 @@ export const mtrService = {
   /**
    * Delete an MTR session
    */
-  async deleteMTRSession(
-    sessionId: string
-  ): Promise<{ success: boolean; message?: string }> {
+  async deleteMTRSession(sessionId: string): Promise<ApiResponse> {
     try {
       if (!sessionId?.trim()) {
         throw new MTRValidationError('Session ID is required');
       }
 
-      const response = await apiHelpers.delete<Record<string, never>>(
-        `/mtr/${sessionId}`
-      );
-      return { success: true, message: 'MTR session deleted successfully' };
+      const response = await apiHelpers.delete(`/mtr/${sessionId}`);
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'deleteMTRSession');
     }
@@ -757,7 +598,7 @@ export const mtrService = {
     sessionId: string,
     stepName: string,
     stepData?: Record<string, unknown>
-  ): Promise<MTRSessionData> {
+  ): Promise<MTRResponse['data']> {
     try {
       if (!sessionId?.trim()) {
         throw new MTRValidationError('Session ID is required');
@@ -783,33 +624,23 @@ export const mtrService = {
         );
       }
 
-      // Special validation for plan development step
-      if (stepName === 'planDevelopment' && stepData?.plan) {
-        const planErrors = validateTherapyPlan(stepData.plan as Partial<TherapyPlan>, true);
-        if (planErrors.length > 0) {
-          throw new MTRValidationError('Cannot complete plan development - validation failed', {
-            plan: planErrors,
-          });
-        }
-      }
-
       // Transform step data for API
       const transformedStepData = stepData
         ? transformDatesForAPI(stepData)
         : undefined;
 
-      const response = await apiHelpers.post<MedicationTherapyReview>(
+      const response = await apiHelpers.post<ApiResponse<MTRResponse['data']>>(
         `/mtr/${sessionId}/steps/${stepName}/complete`,
         { data: transformedStepData }
       );
 
-      if (!response.data?.review) {
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.review as unknown as DateTransformable
+        response.data.data.review as DateTransformable
       ) as MedicationTherapyReview;
       const enhancedReview = {
         ...transformed,
@@ -830,26 +661,12 @@ export const mtrService = {
    */
   async getWorkflowSteps(): Promise<Record<string, unknown>> {
     try {
-      const response = await apiHelpers.get<{
-        steps: Record<
-          string,
-          {
-            title: string;
-            description: string;
-            order: number;
-            requiredFields?: string[];
-          }
-        >;
-      }>('/mtr/workflow/steps');
-
-      // Extract and convert to Record<string, unknown>
-      const result = response.data?.data || response.data;
-      return result as Record<string, unknown>;
+      const response = await apiHelpers.get<
+        ApiResponse<Record<string, unknown>>
+      >('/mtr/workflow/steps');
+      return response.data.data || response.data;
     } catch (error) {
-      return handleMTRError(error, 'getWorkflowSteps') as Record<
-        string,
-        unknown
-      >;
+      return handleMTRError(error, 'getWorkflowSteps');
     }
   },
 
@@ -862,21 +679,12 @@ export const mtrService = {
     data?: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
     try {
-      const response = await apiHelpers.post<Record<string, unknown>>(
-        `/mtr/${sessionId}/steps/${stepName}/validate`,
-        { data }
-      );
-      if (response?.data?.data) {
-        return response.data.data as Record<string, unknown>;
-      } else if (response?.data) {
-        return response.data as unknown as Record<string, unknown>;
-      }
-      return {};
+      const response = await apiHelpers.post<
+        ApiResponse<Record<string, unknown>>
+      >(`/mtr/${sessionId}/steps/${stepName}/validate`, { data });
+      return response.data.data || response.data;
     } catch (error) {
-      return handleMTRError(error, 'validateWorkflowStep') as Record<
-        string,
-        unknown
-      >;
+      return handleMTRError(error, 'validateWorkflowStep');
     }
   },
 
@@ -887,20 +695,12 @@ export const mtrService = {
     sessionId: string
   ): Promise<Record<string, unknown>> {
     try {
-      const response = await apiHelpers.post<Record<string, unknown>>(
-        `/mtr/${sessionId}/interactions/check`
-      );
-      if (response?.data?.data) {
-        return response.data.data as Record<string, unknown>;
-      } else if (response?.data) {
-        return response.data as unknown as Record<string, unknown>;
-      }
-      return {};
+      const response = await apiHelpers.post<
+        ApiResponse<Record<string, unknown>>
+      >(`/mtr/${sessionId}/interactions/check`);
+      return response.data.data || response.data;
     } catch (error) {
-      return handleMTRError(error, 'checkDrugInteractions') as Record<
-        string,
-        unknown
-      >;
+      return handleMTRError(error, 'checkDrugInteractions');
     }
   },
 
@@ -911,25 +711,19 @@ export const mtrService = {
   /**
    * Get drug therapy problems with optional filtering
    */
-  async getDrugTherapyProblems(params: TypedDTPSearchParams = {}): Promise<{
-    results: DrugTherapyProblem[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
+  async getDrugTherapyProblems(
+    params: DTPSearchParams = {}
+  ): Promise<DTPListResponse['data']> {
     try {
       const searchParams = formatSearchParams(params as SearchParamsType);
       const queryString = searchParams.toString();
       const url = `/mtr/problems${queryString ? `?${queryString}` : ''}`;
 
-      const response = await apiHelpers.get<{
-        results: DrugTherapyProblem[];
-        total: number;
-        page: number;
-        limit: number;
-      }>(url);
+      const response = await apiHelpers.get<
+        ApiResponse<DTPListResponse['data']>
+      >(url);
 
-      if (!response.data?.data) {
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
 
@@ -937,7 +731,7 @@ export const mtrService = {
       const transformedResults = response.data.data.results.map(
         (problem: DrugTherapyProblem) =>
           transformDatesForFrontend(
-            problem as unknown as DateTransformable
+            problem as DateTransformable
           ) as DrugTherapyProblem
       );
 
@@ -953,17 +747,15 @@ export const mtrService = {
   /**
    * Get a single drug therapy problem by ID
    */
-  async getDrugTherapyProblem(
-    problemId: string
-  ): Promise<{ problem: DrugTherapyProblem }> {
+  async getDrugTherapyProblem(problemId: string): Promise<DTPResponse['data']> {
     try {
-      const response = await apiHelpers.get<DrugTherapyProblem>(
+      const response = await apiHelpers.get<ApiResponse<DTPResponse['data']>>(
         `/mtr/problems/${problemId}`
       );
-      if (!response.data?.data) {
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return { problem: response.data.data };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'getDrugTherapyProblem');
     }
@@ -973,8 +765,8 @@ export const mtrService = {
    * Create a new drug therapy problem
    */
   async createDrugTherapyProblem(
-    problemData: TypedCreateDTPData
-  ): Promise<{ problem: DrugTherapyProblem }> {
+    problemData: CreateDTPData
+  ): Promise<DTPResponse['data']> {
     try {
       // Validate required fields
       if (!problemData.patientId?.trim()) {
@@ -1004,21 +796,21 @@ export const mtrService = {
 
       // Transform data for API
       const transformedData = transformDatesForAPI(
-        problemData as unknown as Record<string, unknown>
+        problemData as Record<string, unknown>
       );
 
-      const response = await apiHelpers.post<DrugTherapyProblem>(
+      const response = await apiHelpers.post<ApiResponse<DTPResponse['data']>>(
         '/mtr/problems',
         transformedData
       );
 
-      if (!response.data?.data) {
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data as unknown as DateTransformable
+        response.data.data.problem as DateTransformable
       ) as DrugTherapyProblem;
 
       return {
@@ -1034,17 +826,17 @@ export const mtrService = {
    */
   async updateDrugTherapyProblem(
     problemId: string,
-    problemData: TypedUpdateDTPData
-  ): Promise<{ problem: DrugTherapyProblem }> {
+    problemData: UpdateDTPData
+  ): Promise<DTPResponse['data']> {
     try {
-      const response = await apiHelpers.put<DrugTherapyProblem>(
+      const response = await apiHelpers.put<ApiResponse<DTPResponse['data']>>(
         `/mtr/problems/${problemId}`,
         problemData
       );
-      if (!response.data?.data) {
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return { problem: response.data.data };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'updateDrugTherapyProblem');
     }
@@ -1053,15 +845,10 @@ export const mtrService = {
   /**
    * Delete a drug therapy problem
    */
-  async deleteDrugTherapyProblem(
-    problemId: string
-  ): Promise<{ success: boolean; message?: string }> {
+  async deleteDrugTherapyProblem(problemId: string): Promise<ApiResponse> {
     try {
       const response = await apiHelpers.delete(`/mtr/problems/${problemId}`);
-      return {
-        success: true,
-        message: 'Drug therapy problem deleted successfully',
-      };
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'deleteDrugTherapyProblem');
     }
@@ -1073,16 +860,16 @@ export const mtrService = {
   async resolveDrugTherapyProblem(
     problemId: string,
     resolution: { action: string; outcome: string }
-  ): Promise<{ problem: DrugTherapyProblem }> {
+  ): Promise<DTPResponse['data']> {
     try {
-      const response = await apiHelpers.post<DrugTherapyProblem>(
+      const response = await apiHelpers.post<ApiResponse<DTPResponse['data']>>(
         `/mtr/problems/${problemId}/resolve`,
         resolution
       );
-      if (!response.data?.data) {
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return { problem: response.data.data };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'resolveDrugTherapyProblem');
     }
@@ -1093,15 +880,15 @@ export const mtrService = {
    */
   async reopenDrugTherapyProblem(
     problemId: string
-  ): Promise<{ problem: DrugTherapyProblem }> {
+  ): Promise<DTPResponse['data']> {
     try {
-      const response = await apiHelpers.post<DrugTherapyProblem>(
+      const response = await apiHelpers.post<ApiResponse<DTPResponse['data']>>(
         `/mtr/problems/${problemId}/reopen`
       );
-      if (!response.data?.data) {
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return { problem: response.data.data };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'reopenDrugTherapyProblem');
     }
@@ -1114,12 +901,9 @@ export const mtrService = {
   /**
    * Get MTR interventions with optional filtering
    */
-  async getInterventions(params: TypedInterventionSearchParams = {}): Promise<{
-    results: MTRIntervention[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
+  async getInterventions(
+    params: InterventionSearchParams = {}
+  ): Promise<InterventionListResponse['data']> {
     try {
       const searchParams = new URLSearchParams();
 
@@ -1132,13 +916,10 @@ export const mtrService = {
       const queryString = searchParams.toString();
       const url = `/mtr/interventions${queryString ? `?${queryString}` : ''}`;
 
-      const response = await apiHelpers.get<{
-        results: MTRIntervention[];
-        total: number;
-        page: number;
-        limit: number;
-      }>(url);
-      if (!response.data?.data) {
+      const response = await apiHelpers.get<
+        ApiResponse<InterventionListResponse['data']>
+      >(url);
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
       return response.data.data;
@@ -1152,26 +933,15 @@ export const mtrService = {
    */
   async getIntervention(
     interventionId: string
-  ): Promise<{ intervention: MTRIntervention }> {
+  ): Promise<InterventionResponse['data']> {
     try {
-      if (!interventionId?.trim()) {
-        throw new MTRValidationError('Intervention ID is required');
+      const response = await apiHelpers.get<
+        ApiResponse<InterventionResponse['data']>
+      >(`/mtr/interventions/${interventionId}`);
+      if (!response.data.data) {
+        throw new Error('Invalid response structure');
       }
-
-      const response = await apiHelpers.get<MTRIntervention>(
-        `/mtr/interventions/${interventionId}`
-      );
-
-      if (!response.data?.data) {
-        throw new Error('Missing intervention data in response');
-      }
-
-      // Transform dates and return the intervention object
-      const transformed = transformDatesForFrontend<MTRIntervention>(
-        response.data.data
-      );
-
-      return { intervention: transformed };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'getIntervention');
     }
@@ -1181,8 +951,8 @@ export const mtrService = {
    * Create a new intervention
    */
   async createIntervention(
-    interventionData: TypedCreateInterventionData
-  ): Promise<{ intervention: MTRIntervention }> {
+    interventionData: CreateInterventionData
+  ): Promise<InterventionResponse['data']> {
     try {
       // Validate required fields
       if (!interventionData.reviewId?.trim()) {
@@ -1207,24 +977,25 @@ export const mtrService = {
 
       // Transform data for API
       const transformedData = transformDatesForAPI(
-        interventionData as unknown as Record<string, unknown>
+        interventionData as Record<string, unknown>
       );
 
-      const response = await apiHelpers.post<MTRIntervention>(
-        '/mtr/interventions',
-        transformedData
-      );
+      const response = await apiHelpers.post<
+        ApiResponse<InterventionResponse['data']>
+      >('/mtr/interventions', transformedData);
 
-      if (!response.data?.data) {
-        throw new Error('Missing intervention data in response');
+      if (!response.data.data) {
+        throw new Error('Invalid response structure');
       }
 
-      // Transform dates
-      const transformed = transformDatesForFrontend<MTRIntervention>(
-        response.data.data
-      );
+      // Transform response dates
+      const transformed = transformDatesForFrontend(
+        response.data.data.intervention as DateTransformable
+      ) as MTRIntervention;
 
-      return { intervention: transformed };
+      return {
+        intervention: transformed,
+      };
     } catch (error) {
       return handleMTRError(error, 'createIntervention');
     }
@@ -1235,33 +1006,16 @@ export const mtrService = {
    */
   async updateIntervention(
     interventionId: string,
-    interventionData: TypedUpdateInterventionData
-  ): Promise<{ intervention: MTRIntervention }> {
+    interventionData: UpdateInterventionData
+  ): Promise<InterventionResponse['data']> {
     try {
-      if (!interventionId?.trim()) {
-        throw new MTRValidationError('Intervention ID is required');
+      const response = await apiHelpers.put<
+        ApiResponse<InterventionResponse['data']>
+      >(`/mtr/interventions/${interventionId}`, interventionData);
+      if (!response.data.data) {
+        throw new Error('Invalid response structure');
       }
-
-      // Validate intervention data
-      if (Object.keys(interventionData).length === 0) {
-        throw new MTRValidationError('No data provided for update');
-      }
-
-      const response = await apiHelpers.put<MTRIntervention>(
-        `/mtr/interventions/${interventionId}`,
-        interventionData
-      );
-
-      if (!response.data?.data) {
-        throw new Error('Missing intervention data in response');
-      }
-
-      // Transform dates and return
-      const transformed = transformDatesForFrontend<MTRIntervention>(
-        response.data.data
-      );
-
-      return { intervention: transformed };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'updateIntervention');
     }
@@ -1270,22 +1024,12 @@ export const mtrService = {
   /**
    * Delete an intervention
    */
-  async deleteIntervention(
-    interventionId: string
-  ): Promise<{ success: boolean; message?: string }> {
+  async deleteIntervention(interventionId: string): Promise<ApiResponse> {
     try {
-      if (!interventionId?.trim()) {
-        throw new MTRValidationError('Intervention ID is required');
-      }
-
-      const response = await apiHelpers.delete<Record<string, never>>(
+      const response = await apiHelpers.delete(
         `/mtr/interventions/${interventionId}`
       );
-
-      return {
-        success: true,
-        message: 'Intervention deleted successfully',
-      };
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'deleteIntervention');
     }
@@ -1298,16 +1042,15 @@ export const mtrService = {
     interventionId: string,
     outcome: string,
     details?: string
-  ): Promise<{ intervention: MTRIntervention }> {
+  ): Promise<InterventionResponse['data']> {
     try {
-      const response = await apiHelpers.post<MTRIntervention>(
-        `/mtr/interventions/${interventionId}/complete`,
-        { outcome, details }
-      );
-      if (!response.data?.data) {
+      const response = await apiHelpers.post<
+        ApiResponse<InterventionResponse['data']>
+      >(`/mtr/interventions/${interventionId}/complete`, { outcome, details });
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return { intervention: response.data.data };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'completeIntervention');
     }
@@ -1320,12 +1063,9 @@ export const mtrService = {
   /**
    * Get MTR follow-ups with optional filtering
    */
-  async getFollowUps(params: TypedFollowUpSearchParams = {}): Promise<{
-    results: MTRFollowUp[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
+  async getFollowUps(
+    params: FollowUpSearchParams = {}
+  ): Promise<FollowUpListResponse['data']> {
     try {
       const searchParams = new URLSearchParams();
 
@@ -1338,13 +1078,10 @@ export const mtrService = {
       const queryString = searchParams.toString();
       const url = `/mtr/followups${queryString ? `?${queryString}` : ''}`;
 
-      const response = await apiHelpers.get<{
-        results: MTRFollowUp[];
-        total: number;
-        page: number;
-        limit: number;
-      }>(url);
-      if (!response.data?.data) {
+      const response = await apiHelpers.get<
+        ApiResponse<FollowUpListResponse['data']>
+      >(url);
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
       return response.data.data;
@@ -1356,15 +1093,15 @@ export const mtrService = {
   /**
    * Get a single follow-up by ID
    */
-  async getFollowUp(followUpId: string): Promise<{ followUp: MTRFollowUp }> {
+  async getFollowUp(followUpId: string): Promise<FollowUpResponse['data']> {
     try {
-      const response = await apiHelpers.get<MTRFollowUp>(
-        `/mtr/followups/${followUpId}`
-      );
-      if (!response.data?.data) {
+      const response = await apiHelpers.get<
+        ApiResponse<FollowUpResponse['data']>
+      >(`/mtr/followups/${followUpId}`);
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return { followUp: response.data.data };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'getFollowUp');
     }
@@ -1374,17 +1111,16 @@ export const mtrService = {
    * Create a new follow-up
    */
   async createFollowUp(
-    followUpData: TypedCreateFollowUpData
-  ): Promise<{ followUp: MTRFollowUp }> {
+    followUpData: CreateFollowUpData
+  ): Promise<FollowUpResponse['data']> {
     try {
-      const response = await apiHelpers.post<MTRFollowUp>(
-        '/mtr/followups',
-        followUpData
-      );
-      if (!response.data?.followUp) {
+      const response = await apiHelpers.post<
+        ApiResponse<FollowUpResponse['data']>
+      >('/mtr/followups', followUpData);
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return { followUp: response.data.followUp };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'createFollowUp');
     }
@@ -1395,17 +1131,16 @@ export const mtrService = {
    */
   async updateFollowUp(
     followUpId: string,
-    followUpData: TypedUpdateFollowUpData
-  ): Promise<{ followUp: MTRFollowUp }> {
+    followUpData: UpdateFollowUpData
+  ): Promise<FollowUpResponse['data']> {
     try {
-      const response = await apiHelpers.put<MTRFollowUp>(
-        `/mtr/followups/${followUpId}`,
-        followUpData
-      );
-      if (!response.data?.data) {
+      const response = await apiHelpers.put<
+        ApiResponse<FollowUpResponse['data']>
+      >(`/mtr/followups/${followUpId}`, followUpData);
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return { followUp: response.data.data };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'updateFollowUp');
     }
@@ -1414,12 +1149,10 @@ export const mtrService = {
   /**
    * Delete a follow-up
    */
-  async deleteFollowUp(
-    followUpId: string
-  ): Promise<{ success: boolean; message?: string }> {
+  async deleteFollowUp(followUpId: string): Promise<ApiResponse> {
     try {
       const response = await apiHelpers.delete(`/mtr/followups/${followUpId}`);
-      return { success: true, message: 'Follow-up deleted successfully' };
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'deleteFollowUp');
     }
@@ -1439,16 +1172,15 @@ export const mtrService = {
       problemsResolved?: string[];
       newProblemsIdentified?: string[];
     }
-  ): Promise<{ followUp: MTRFollowUp }> {
+  ): Promise<FollowUpResponse['data']> {
     try {
-      const response = await apiHelpers.post<MTRFollowUp>(
-        `/mtr/followups/${followUpId}/complete`,
-        { outcome }
-      );
-      if (!response.data?.data) {
+      const response = await apiHelpers.post<
+        ApiResponse<FollowUpResponse['data']>
+      >(`/mtr/followups/${followUpId}/complete`, { outcome });
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return { followUp: response.data.data };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'completeFollowUp');
     }
@@ -1461,16 +1193,15 @@ export const mtrService = {
     followUpId: string,
     newDate: string,
     reason?: string
-  ): Promise<{ followUp: MTRFollowUp }> {
+  ): Promise<FollowUpResponse['data']> {
     try {
-      const response = await apiHelpers.post<MTRFollowUp>(
-        `/mtr/followups/${followUpId}/reschedule`,
-        { newDate, reason }
-      );
-      if (!response.data?.followUp) {
+      const response = await apiHelpers.post<
+        ApiResponse<FollowUpResponse['data']>
+      >(`/mtr/followups/${followUpId}/reschedule`, { newDate, reason });
+      if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return { followUp: response.data.followUp };
+      return response.data.data;
     } catch (error) {
       return handleMTRError(error, 'rescheduleFollowUp');
     }
@@ -1485,7 +1216,7 @@ export const mtrService = {
    */
   async getMTRSessionsByPatient(
     patientId: string,
-    params: Omit<TypedMTRSearchParams, 'patientId'> = {}
+    params: Omit<MTRSearchParams, 'patientId'> = {}
   ) {
     return this.getMTRSessions({ ...params, patientId });
   },
@@ -1493,19 +1224,17 @@ export const mtrService = {
   /**
    * Get active MTR sessions
    */
-  async getActiveMTRSessions(
-    params: Omit<TypedMTRSearchParams, 'status'> = {}
-  ) {
+  async getActiveMTRSessions(params: Omit<MTRSearchParams, 'status'> = {}) {
     return this.getMTRSessions({ ...params, status: 'in_progress' });
   },
 
   /**
    * Get overdue MTR sessions
    */
-  async getOverdueMTRSessions(): Promise<unknown> {
+  async getOverdueMTRSessions(): Promise<Record<string, unknown>> {
     try {
       const response = await apiHelpers.get('/mtr/overdue');
-      return response.data?.data || response.data;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getOverdueMTRSessions');
     }
@@ -1516,7 +1245,7 @@ export const mtrService = {
    */
   async getDrugTherapyProblemsByPatient(
     patientId: string,
-    params: Omit<TypedDTPSearchParams, 'patientId'> = {}
+    params: Omit<DTPSearchParams, 'patientId'> = {}
   ) {
     return this.getDrugTherapyProblems({ ...params, patientId });
   },
@@ -1525,7 +1254,7 @@ export const mtrService = {
    * Get active drug therapy problems
    */
   async getActiveDrugTherapyProblems(
-    params: Omit<TypedDTPSearchParams, 'status'> = {}
+    params: Omit<DTPSearchParams, 'status'> = {}
   ) {
     return this.getDrugTherapyProblems({
       ...params,
@@ -1538,7 +1267,7 @@ export const mtrService = {
    */
   async getInterventionsByReview(
     reviewId: string,
-    params: Omit<TypedInterventionSearchParams, 'reviewId'> = {}
+    params: Omit<InterventionSearchParams, 'reviewId'> = {}
   ) {
     return this.getInterventions({ ...params, reviewId });
   },
@@ -1547,7 +1276,7 @@ export const mtrService = {
    * Get pending interventions
    */
   async getPendingInterventions(
-    params: Omit<TypedInterventionSearchParams, 'outcome'> = {}
+    params: Omit<InterventionSearchParams, 'outcome'> = {}
   ) {
     return this.getInterventions({ ...params, outcome: 'pending' });
   },
@@ -1555,10 +1284,10 @@ export const mtrService = {
   /**
    * Get overdue follow-ups
    */
-  async getOverdueFollowUps(): Promise<unknown> {
+  async getOverdueFollowUps(): Promise<Record<string, unknown>> {
     try {
       const response = await apiHelpers.get('/mtr/followups/overdue');
-      return response.data?.data || response.data;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getOverdueFollowUps');
     }
@@ -1569,7 +1298,7 @@ export const mtrService = {
    */
   async getFollowUpsByReview(
     reviewId: string,
-    params: Omit<TypedFollowUpSearchParams, 'reviewId'> = {}
+    params: Omit<FollowUpSearchParams, 'reviewId'> = {}
   ) {
     return this.getFollowUps({ ...params, reviewId });
   },
@@ -1578,7 +1307,7 @@ export const mtrService = {
    * Get scheduled follow-ups
    */
   async getScheduledFollowUps(
-    params: Omit<TypedFollowUpSearchParams, 'status'> = {}
+    params: Omit<FollowUpSearchParams, 'status'> = {}
   ) {
     return this.getFollowUps({ ...params, status: 'scheduled' });
   },
@@ -1593,7 +1322,7 @@ export const mtrService = {
   async getMTRStatistics(dateRange?: {
     start: string;
     end: string;
-  }): Promise<unknown> {
+  }): Promise<Record<string, unknown>> {
     try {
       const params = new URLSearchParams();
       if (dateRange) {
@@ -1605,7 +1334,7 @@ export const mtrService = {
       const url = `/mtr/statistics${queryString ? `?${queryString}` : ''}`;
 
       const response = await apiHelpers.get(url);
-      return response.data?.data || response.data;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getMTRStatistics');
     }
@@ -1617,7 +1346,7 @@ export const mtrService = {
   async getDTPStatistics(dateRange?: {
     start: string;
     end: string;
-  }): Promise<unknown> {
+  }): Promise<Record<string, unknown>> {
     try {
       const params = new URLSearchParams();
       if (dateRange) {
@@ -1626,11 +1355,12 @@ export const mtrService = {
       }
 
       const queryString = params.toString();
-      const url = `/mtr/problems/statistics${queryString ? `?${queryString}` : ''
-        }`;
+      const url = `/mtr/problems/statistics${
+        queryString ? `?${queryString}` : ''
+      }`;
 
       const response = await apiHelpers.get(url);
-      return response.data?.data || response.data;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getDTPStatistics');
     }
@@ -1642,7 +1372,7 @@ export const mtrService = {
   async getInterventionStatistics(dateRange?: {
     start: string;
     end: string;
-  }): Promise<unknown> {
+  }): Promise<Record<string, unknown>> {
     try {
       const params = new URLSearchParams();
       if (dateRange) {
@@ -1651,11 +1381,12 @@ export const mtrService = {
       }
 
       const queryString = params.toString();
-      const url = `/mtr/interventions/statistics${queryString ? `?${queryString}` : ''
-        }`;
+      const url = `/mtr/interventions/statistics${
+        queryString ? `?${queryString}` : ''
+      }`;
 
       const response = await apiHelpers.get(url);
-      return response.data?.data || response.data;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getInterventionStatistics');
     }
@@ -1667,7 +1398,7 @@ export const mtrService = {
   async getFollowUpStatistics(dateRange?: {
     start: string;
     end: string;
-  }): Promise<unknown> {
+  }): Promise<Record<string, unknown>> {
     try {
       const params = new URLSearchParams();
       if (dateRange) {
@@ -1676,11 +1407,12 @@ export const mtrService = {
       }
 
       const queryString = params.toString();
-      const url = `/mtr/followups/statistics${queryString ? `?${queryString}` : ''
-        }`;
+      const url = `/mtr/followups/statistics${
+        queryString ? `?${queryString}` : ''
+      }`;
 
       const response = await apiHelpers.get(url);
-      return response.data?.data || response.data;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getFollowUpStatistics');
     }
@@ -1702,14 +1434,14 @@ export const mtrService = {
       endDate?: string;
       limit?: number;
     } = {}
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     try {
       const searchParams = formatSearchParams(params as SearchParamsType);
       const queryString = searchParams.toString();
       const url = `/mtr/audit${queryString ? `?${queryString}` : ''}`;
 
       const response = await apiHelpers.get(url);
-      return response.data?.data || response.data;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getAuditLogs');
     }
@@ -1742,7 +1474,7 @@ export const mtrService = {
     }
 
     if (sessionData.plan) {
-      const planErrors = validateTherapyPlan(sessionData.plan, false);
+      const planErrors = validateTherapyPlan(sessionData.plan);
       errors.push(...planErrors);
     }
 
@@ -1836,14 +1568,14 @@ export const mtrService = {
       reviewType?: string;
       priority?: string;
     } = {}
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     try {
       const searchParams = formatSearchParams(params as SearchParamsType);
       const queryString = searchParams.toString();
       const url = `/mtr/reports/summary${queryString ? `?${queryString}` : ''}`;
 
       const response = await apiHelpers.get(url);
-      return response.data?.data || response.data;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getMTRSummaryReport');
     }
@@ -1859,15 +1591,16 @@ export const mtrService = {
       pharmacistId?: string;
       interventionType?: string;
     } = {}
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     try {
       const searchParams = formatSearchParams(params as SearchParamsType);
       const queryString = searchParams.toString();
-      const url = `/mtr/reports/interventions${queryString ? `?${queryString}` : ''
-        }`;
+      const url = `/mtr/reports/interventions${
+        queryString ? `?${queryString}` : ''
+      }`;
 
       const response = await apiHelpers.get(url);
-      return response.data?.data || response.data;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getInterventionEffectivenessReport');
     }
@@ -1882,15 +1615,16 @@ export const mtrService = {
       endDate?: string;
       pharmacistId?: string;
     } = {}
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     try {
       const searchParams = formatSearchParams(params as SearchParamsType);
       const queryString = searchParams.toString();
-      const url = `/mtr/reports/pharmacists${queryString ? `?${queryString}` : ''
-        }`;
+      const url = `/mtr/reports/pharmacists${
+        queryString ? `?${queryString}` : ''
+      }`;
 
       const response = await apiHelpers.get(url);
-      return response.data?.data || response.data;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getPharmacistPerformanceReport');
     }
@@ -1904,14 +1638,14 @@ export const mtrService = {
       startDate?: string;
       endDate?: string;
     } = {}
-  ): Promise<unknown> {
+  ): Promise<Record<string, unknown>> {
     try {
-      const searchParams = formatSearchParams(params as SearchParamsType);
+      const searchParams = formatSearchParams(params);
       const queryString = searchParams.toString();
       const url = `/mtr/reports/quality${queryString ? `?${queryString}` : ''}`;
 
       const response = await apiHelpers.get(url);
-      return response.data?.data || response.data;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getQualityAssuranceReport');
     }
@@ -1928,14 +1662,14 @@ export const mtrService = {
     } = {}
   ): Promise<Record<string, unknown>> {
     try {
-      const searchParams = formatSearchParams(params as SearchParamsType);
+      const searchParams = formatSearchParams(params);
       const queryString = searchParams.toString();
-      const url = `/mtr/reports/outcomes${queryString ? `?${queryString}` : ''
-        }`;
+      const url = `/mtr/reports/outcomes${
+        queryString ? `?${queryString}` : ''
+      }`;
 
       const response = await apiHelpers.get(url);
-      const responseData = response.data?.data || response.data || {};
-      return responseData as Record<string, unknown>;
+      return response.data;
     } catch (error) {
       return handleMTRError(error, 'getOutcomeMetricsReport');
     }
@@ -1951,7 +1685,7 @@ export const mtrService = {
     includeAuditLog?: boolean;
   }): Promise<Blob> {
     try {
-      const searchParams = formatSearchParams(params as SearchParamsType);
+      const searchParams = formatSearchParams(params);
       const queryString = searchParams.toString();
       const url = `/mtr/export${queryString ? `?${queryString}` : ''}`;
 

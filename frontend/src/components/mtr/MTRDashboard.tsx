@@ -1,124 +1,154 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
-    Container,
     Box,
+    Container,
     Paper,
-    Typography,
-    Button,
     Stepper,
     Step,
     StepLabel,
     StepContent,
-    LinearProgress,
+    Button,
+    Typography,
     Alert,
+    LinearProgress,
+    Card,
+    CardContent,
     Chip,
+    IconButton,
     Dialog,
     DialogTitle,
     DialogContent,
     DialogActions,
-    Snackbar,
-    IconButton,
-    Toolbar,
-    AppBar,
     Fab,
+    Snackbar,
+    SwipeableDrawer,
     List,
     ListItem,
     ListItemIcon,
     ListItemText,
-    SwipeableDrawer,
-    Card,
-    CardContent,
+    AppBar,
+    Toolbar,
 } from '@mui/material';
-import Save from '@mui/icons-material/Save';
-import NavigateBefore from '@mui/icons-material/NavigateBefore';
-import NavigateNext from '@mui/icons-material/NavigateNext';
-import Check from '@mui/icons-material/Check';
-import Timeline from '@mui/icons-material/Timeline';
-
-import { useMTRStore } from '../../stores/mtrStore';
-// import { useAuthStore } from '../../stores/authStore';
-import { useResponsive } from '../../hooks/useResponsive';
-import { useSpacing } from '../../hooks/useSpacing';
-import { Patient } from '../../stores/types';
-import { convertPatientToStoreType, convertStorePatientToPatient } from '../../utils/patientUtils';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import SaveIcon from '@mui/icons-material/Save';
+import CheckIcon from '@mui/icons-material/Check';
+import TimelineIcon from '@mui/icons-material/Timeline';
 
 // Import MTR step components
-import PatientSelection from './steps/PatientSelection';
+import PatientSelection from '../PatientSelection';
 import MedicationHistory from './steps/MedicationHistory';
 import TherapyAssessment from './steps/TherapyAssessment';
 import PlanDevelopment from './steps/PlanDevelopment';
 import Interventions from './steps/Interventions';
 import FollowUp from './steps/FollowUp';
-
-// Import utility components
-import OfflineIndicator from '../../components/common/OfflineIndicator';
 import MTRErrorBoundary from './MTRErrorBoundary';
+import OfflineIndicator from '../common/OfflineIndicator';
 import MTRHelpSystem from './MTRHelpSystem';
 import QuickReference from './QuickReference';
 
-// Import types
+// Import store and types
+import { useMTRStore } from '../../stores/mtrStore';
+import { useResponsive } from '../../hooks/useResponsive';
+import type { Patient, NigerianState } from '../../types/patientManagement';
+import type { Patient as StorePatient } from '../../stores/types';
 import type {
-    MTRMedication,
     DrugTherapyProblem,
-    TherapyPlan,
     MTRIntervention,
     MTRFollowUp,
-} from '../../stores/mtrStore';
+    TherapyPlan,
+} from '../../types/mtr';
+import type { MTRMedication } from '../../stores/mtrStore';
 
-// MTR step configuration
-const MTR_STEPS = [
+// Step configuration
+interface MTRStepConfig {
+    id: number;
+    label: string;
+    description: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: React.ComponentType<any>;
+    icon?: React.ReactNode;
+    optional?: boolean;
+    validationRequired?: boolean;
+}
+
+const MTR_STEPS: MTRStepConfig[] = [
     {
-        id: 'patientSelection',
+        id: 0,
         label: 'Patient Selection',
-        description: 'Select or create a patient for the MTR',
+        description: 'Select or create a patient for medication therapy review',
         component: PatientSelection,
+        validationRequired: true,
     },
     {
-        id: 'medicationHistory',
+        id: 1,
         label: 'Medication History',
-        description: 'Review and document current medications',
+        description: 'Collect comprehensive medication history and current regimen',
         component: MedicationHistory,
+        validationRequired: true,
     },
     {
-        id: 'therapyAssessment',
+        id: 2,
         label: 'Therapy Assessment',
-        description: 'Identify drug therapy problems',
+        description: 'Assess therapy for drug-related problems and interactions',
         component: TherapyAssessment,
+        validationRequired: true,
     },
     {
-        id: 'planDevelopment',
+        id: 3,
         label: 'Plan Development',
-        description: 'Create a therapy plan with recommendations',
+        description: 'Develop therapy recommendations and monitoring plans',
         component: PlanDevelopment,
+        validationRequired: true,
     },
     {
-        id: 'interventions',
+        id: 4,
         label: 'Interventions',
-        description: 'Document interventions performed',
+        description: 'Document interventions and track outcomes',
         component: Interventions,
+        validationRequired: false,
     },
     {
-        id: 'followUp',
+        id: 5,
         label: 'Follow-Up',
-        description: 'Schedule follow-up activities',
+        description: 'Schedule follow-up activities and monitoring',
         component: FollowUp,
+        validationRequired: false,
     },
 ];
 
-const MTRDashboard: React.FC<{
+interface MTRDashboardProps {
+    patientId?: string;
+    reviewId?: string;
     onComplete?: (reviewId: string) => void;
     onCancel?: () => void;
-}> = ({ onComplete, onCancel }) => {
-    // Router and navigation
-    const navigate = useNavigate();
-    const { reviewId } = useParams<{ reviewId: string }>();
+}
 
-    // Responsive design hooks
-    const { isMobile, isTablet, isSmallMobile } = useResponsive();
-    const getSpacing = useSpacing();
+const MTRDashboard: React.FC<MTRDashboardProps> = ({
+    patientId,
+    reviewId,
+    onComplete,
+    onCancel,
+}) => {
+    // Navigation and URL handling
+    const [searchParams, setSearchParams] = useSearchParams();
 
-    // MTR store state and actions
+    // Theme and responsive
+    const { isMobile, isTablet, isSmallMobile, getSpacing } = useResponsive();
+
+    // Local state
+    const [autoSaveEnabled] = useState(true);
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [showExitDialog, setShowExitDialog] = useState(false);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState<
+        'success' | 'error' | 'warning' | 'info'
+    >('info');
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+    // Store
     const {
         currentReview,
         currentStep,
@@ -128,200 +158,272 @@ const MTRDashboard: React.FC<{
         interventions,
         loading,
         errors,
-        initializeSession,
-        createReview,
-        loadReview,
-        loadInProgressReview,
+        goToStep,
+        completeStep,
         saveReview,
         completeReview,
         cancelReview,
-        goToStep,
-        completeStep,
-        getNextStep,
+        createReview,
+        loadReview,
+        loadInProgressReview,
+        getCompletionPercentage,
+        canCompleteReview,
         getCurrentStepName,
+        getNextStep,
+        clearErrors,
         selectPatient,
         setMedications,
         addProblem,
         createPlan,
-        getCompletionPercentage,
-        canCompleteReview,
-        clearErrors,
-        setCurrentReview,
+        checkPermissions,
     } = useMTRStore();
 
-    // Auth store (user available if needed)
-    // const { user } = useAuthStore();
+    // Auto-save functionality
+    const autoSave = useCallback(async () => {
+        if (!autoSaveEnabled || !currentReview || loading.saveReview) return;
 
-    // Local UI state
-    const [lastSaved, setLastSaved] = useState<Date | null>(null);
-    const [showExitDialog, setShowExitDialog] = useState(false);
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('info');
-    const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+        try {
+            await saveReview();
+            setLastSaved(new Date());
+        } catch (error) {
+            console.error('Auto-save failed:', error);
+        }
+    }, [autoSaveEnabled, currentReview?.status, loading.saveReview]); // Remove saveReview function dependency
 
-    // Auto-save effect
+    // Auto-save timer - removed duplicate, using the one below
+
+    // Offline detection (for future use)
     useEffect(() => {
-        const autoSaveInterval = setInterval(() => {
-            if (currentReview && currentReview.status === 'in_progress') {
-                saveReview().then(() => {
-                    setLastSaved(new Date());
-                });
-            }
-        }, 30000); // Auto-save every 30 seconds
+        const handleOnline = () => {
+            // Handle online state if needed
+        };
+        const handleOffline = () => {
+            // Handle offline state if needed
+        };
 
-        return () => clearInterval(autoSaveInterval);
-    }, [currentReview, saveReview]);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
 
-    // Initialize review on component mount
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    // Check permissions first
     useEffect(() => {
-        const initializeReview = async () => {
-            if (reviewId) {
-                console.log('Loading existing MTR review with ID:', reviewId);
-                await loadReview(reviewId);
-            } else {
-                // Check if there's an in-progress review for the selected patient
-                if (selectedPatient) {
-                    console.log('Checking for in-progress MTR review for patient:', selectedPatient._id);
-                    const inProgressReview = await loadInProgressReview(selectedPatient._id);
-                    if (!inProgressReview) {
-                        console.log('No in-progress review found, initializing basic session');
-                        initializeSession();
-                    }
-                } else {
-                    console.log('No review ID or selected patient, initializing basic session');
-                    initializeSession();
-                }
+        const checkUserPermissions = async () => {
+            const hasPermissions = await checkPermissions();
+            if (!hasPermissions) {
+                setSnackbarMessage(
+                    'You do not have permission to access MTR reviews. Please contact your administrator.'
+                );
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+                return;
             }
         };
 
-        initializeReview();
-    }, [reviewId, selectedPatient, loadReview, loadInProgressReview, initializeSession]);
+        checkUserPermissions();
+    }, []); // Remove checkPermissions from dependency array to prevent infinite loop
 
-    // Navigation handlers
-    const handleNext = useCallback(async () => {
-        // Validate current step before proceeding
-        const stepErrors = validateCurrentStep();
-        if (stepErrors.length > 0) {
-            setSnackbarMessage(
-                `Please fix the following issues before proceeding: ${stepErrors.join(', ')}`
-            );
+    // Initialize MTR session - only for existing reviewId
+    useEffect(() => {
+        const initializeSession = async () => {
+            // Only handle existing reviewId, not patientId (that's handled in patient selection)
+            if (reviewId) {
+                console.log('🔄 Loading existing MTR review:', reviewId);
+                const hasPermissions = await checkPermissions();
+                if (!hasPermissions) {
+                    console.error('❌ No permissions to load MTR review');
+                    return;
+                }
+                await loadReview(reviewId);
+            }
+        };
+
+        initializeSession();
+    }, [reviewId]); // Only depend on reviewId, not patientId
+
+    // Update URL when step changes (one-way sync only)
+    useEffect(() => {
+        if (!currentReview) return;
+
+        const stepParam = searchParams.get('step');
+        const urlStep = stepParam ? parseInt(stepParam, 10) : null;
+
+        console.log(
+            'URL sync effect - currentStep:',
+            currentStep,
+            'urlStep:',
+            urlStep
+        );
+
+        // Only update URL if it's different from current step
+        if (urlStep !== currentStep) {
+            console.log('Updating URL to step:', currentStep);
+            const newSearchParams = new URLSearchParams(searchParams);
+            newSearchParams.set('step', currentStep.toString());
+            setSearchParams(newSearchParams, { replace: true });
+        }
+    }, [currentStep, currentReview, searchParams, setSearchParams]); // Only depend on currentStep, not searchParams
+
+    // Clear errors when review is successfully created
+    useEffect(() => {
+        if (currentReview) {
+            // Clear any creation errors since we now have a working review
+            if (errors.createReview) {
+                console.log('Clearing createReview error since review exists:', currentReview._id);
+                clearErrors();
+            }
+        }
+    }, [currentReview?._id, errors.createReview]);
+
+    // Auto-save functionality
+    useEffect(() => {
+        if (!currentReview || currentReview.status === 'completed') {
+            console.log('Auto-save skipped: No current review');
+            return;
+        }
+
+        // Skip auto-save for temporary sessions
+        if (currentReview._id.startsWith('temp-')) {
+            console.log('Auto-save skipped: Temporary session');
+            return;
+        }
+
+        console.log('Setting up auto-save for review:', { 
+            id: currentReview._id, 
+            status: currentReview.status 
+        });
+
+        const autoSaveInterval = setInterval(async () => {
+            // Check if save is already in progress
+            if (loading.saveReview) {
+                console.log('Auto-save skipped: Save already in progress');
+                return;
+            }
+
+            try {
+                console.log('Auto-saving review with ID:', currentReview._id);
+                await saveReview();
+                console.log('Auto-save completed');
+            } catch (error) {
+                console.error('Auto-save failed:', error);
+            }
+        }, 30000); // Auto-save every 30 seconds
+
+        return () => {
+            console.log('Clearing auto-save interval for review:', currentReview._id);
+            clearInterval(autoSaveInterval);
+        };
+    }, [currentReview?._id]); // Only depend on review ID to prevent multiple setups
+
+    // Session state persistence
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (currentReview && autoSaveEnabled) {
+                // Trigger auto-save before page unload
+                autoSave();
+
+                // Show confirmation dialog if there are unsaved changes
+                const message =
+                    'You have unsaved changes. Are you sure you want to leave?';
+                event.returnValue = message;
+                return message;
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [currentReview?.status, autoSaveEnabled]); // Remove autoSave function dependency
+
+    // Handle step navigation
+    const handleNext = async () => {
+        // Simple validation based on current step
+        let hasValidationErrors = false;
+        let validationMessage = '';
+
+        switch (currentStep) {
+            case 0: // Patient Selection
+                if (!selectedPatient) {
+                    hasValidationErrors = true;
+                    validationMessage = 'Please select a patient first';
+                }
+                break;
+            case 1: // Medication History - allow progression without medications for now
+                // Optional: Add medication validation here if needed
+                break;
+            case 2: // Therapy Assessment
+                // Optional: Add assessment validation here if needed
+                break;
+            default:
+                // Allow progression for other steps
+                break;
+        }
+
+        if (hasValidationErrors) {
+            setSnackbarMessage(validationMessage);
             setSnackbarSeverity('warning');
             setSnackbarOpen(true);
             return;
         }
 
-        // Complete current step
-        await completeStep(currentStep, {});
-
         // Move to next step
-        if (currentStep < MTR_STEPS.length - 1) {
-            goToStep(currentStep + 1);
-        }
-    }, [currentStep, completeStep, goToStep]);
-
-    const handleBack = useCallback(() => {
-        if (currentStep > 0) {
-            goToStep(currentStep - 1);
-        }
-    }, [currentStep, goToStep]);
-
-    const handleStepClick = useCallback(
-        (step: number) => {
-            // Only allow navigation to completed steps or the next step
-            const nextStep = getNextStep();
-            if (step <= (nextStep ?? MTR_STEPS.length - 1)) {
-                goToStep(step);
-            }
-        },
-        [goToStep, getNextStep]
-    );
-
-    // Action handlers
-    const handleSave = async () => {
         try {
-            // Check if currentReview exists and has an ID before saving
-            if (!currentReview) {
-                setSnackbarMessage('Cannot save - No active review');
-                setSnackbarSeverity('error');
-                setSnackbarOpen(true);
-                return;
-            }
-
-            // Check if we have a valid ID
-            if (!currentReview._id || currentReview._id === '') {
-                console.error('Cannot save review - ID is missing', currentReview);
-
-                // Try to recover the ID from the URL params if available
-                if (reviewId) {
-                    console.log('Attempting to recover review ID from URL params:', reviewId);
-                    // Update the current review with the ID from URL params
-                    setCurrentReview((prev: any) => prev ? { ...prev, _id: reviewId } : null);
-                    setSnackbarMessage('Recovered review ID. Trying to save again...');
-                    setSnackbarSeverity('info');
-                    setSnackbarOpen(true);
-                    return; // Return and let user try saving again
-                } else {
-                    setSnackbarMessage('Cannot save review - ID is missing and cannot be recovered');
-                    setSnackbarSeverity('error');
-                    setSnackbarOpen(true);
-                    return;
-                }
-            }
-
-            // Debug logging to understand the current state
-            console.log('🔍 Manual save triggered - Current review state:', {
-                id: currentReview._id,
-                status: currentReview.status,
-                stepsCompleted: currentReview.steps
-                    ? Object.entries(currentReview.steps).map(([key, step]) => ({
-                        step: key,
-                        completed: step.completed,
-                    }))
-                    : 'No steps',
-                canComplete: canCompleteReview(),
-                loadingSave: loading.saveReview,
+            // Complete current step with basic data
+            await completeStep(currentStep, {
+                completedAt: new Date().toISOString(),
+                stepName: MTR_STEPS[currentStep]?.label || 'Unknown Step',
             });
 
-            await saveReview();
-            setLastSaved(new Date());
-            setSnackbarMessage('Review saved successfully');
+            // Navigate to next step
+            if (currentStep < MTR_STEPS.length - 1) {
+                const newStep = currentStep + 1;
+                goToStep(newStep);
+            }
+
+            setSnackbarMessage('Step completed successfully');
             setSnackbarSeverity('success');
             setSnackbarOpen(true);
         } catch (error) {
-            console.error('Save error:', error);
-            setSnackbarMessage(
-                `Failed to save review: ${error instanceof Error ? error.message : 'Unknown error'
-                }`
-            );
+            console.error('Error completing step:', error);
+            setSnackbarMessage('Failed to complete step');
             setSnackbarSeverity('error');
             setSnackbarOpen(true);
         }
     };
 
-    const handleCancel = useCallback(() => {
-        setShowExitDialog(true);
-    }, []);
+    const handleBack = () => {
+        if (currentStep > 0) {
+            const newStep = currentStep - 1;
+            goToStep(newStep);
+            // URL will be updated by the synchronization effect
+        }
+    };
 
-    const confirmCancel = useCallback(async () => {
+    const handleStepClick = (stepIndex: number) => {
+        // Allow navigation to completed steps or the next incomplete step
+        const nextStep = getNextStep();
+        if (stepIndex <= (nextStep ?? MTR_STEPS.length - 1)) {
+            goToStep(stepIndex);
+            // URL will be updated by the synchronization effect
+        }
+    };
+
+    const handleSave = async () => {
         try {
-            await cancelReview();
-            setShowExitDialog(false);
-            if (onCancel) {
-                onCancel();
-            } else {
-                navigate('/mtr');
-            }
-        } catch (error) {
-            console.error('Failed to cancel review:', error);
-            setSnackbarMessage(
-                `Failed to cancel review: ${error instanceof Error ? error.message : 'Unknown error'
-                }`
-            );
+            await saveReview();
+            setLastSaved(new Date());
+            setSnackbarMessage('Review saved successfully');
+            setSnackbarSeverity('success');
+            setSnackbarOpen(true);
+        } catch {
+            setSnackbarMessage('Failed to save review');
             setSnackbarSeverity('error');
             setSnackbarOpen(true);
         }
-    }, [cancelReview, onCancel, navigate]);
+    };
 
     const handleComplete = async () => {
         if (!canCompleteReview()) {
@@ -333,88 +435,37 @@ const MTRDashboard: React.FC<{
             return;
         }
 
-        // Check if currentReview exists and has an ID before completing
-        if (!currentReview) {
-            setSnackbarMessage('Cannot complete - No active review');
-            setSnackbarSeverity('error');
-            setSnackbarOpen(true);
-            return;
-        }
-
-        // Check if we have a valid ID
-        if (!currentReview._id || currentReview._id === '') {
-            console.error('Cannot complete review - ID is missing', currentReview);
-
-            // Try to recover the ID from the URL params if available
-            if (reviewId) {
-                console.log('Attempting to recover review ID from URL params for completion:', reviewId);
-                // Update the current review with the ID from URL params
-                setCurrentReview((prev: any) => prev ? { ...prev, _id: reviewId } : null);
-                setSnackbarMessage('Recovered review ID. Trying to complete again...');
-                setSnackbarSeverity('info');
-                setSnackbarOpen(true);
-                return; // Return and let user try completing again
-            } else {
-                setSnackbarMessage('Cannot complete review - ID is missing and cannot be recovered');
-                setSnackbarSeverity('error');
-                setSnackbarOpen(true);
-                return;
-            }
-        }
-
         try {
-            // Save the review to ensure all data is up to date
-            await saveReview();
+            await completeReview();
+            setSnackbarMessage('MTR completed successfully');
+            setSnackbarSeverity('success');
+            setSnackbarOpen(true);
 
-            // Then complete it
-            const result = await completeReview();
-
-            if (result) {
-                setSnackbarMessage('MTR completed successfully');
-                setSnackbarSeverity('success');
-                setSnackbarOpen(true);
-                if (onComplete) {
-                    onComplete(result._id);
-                }
-            } else {
-                throw new Error('Complete operation did not return expected result');
+            if (onComplete && currentReview?._id) {
+                onComplete(currentReview._id);
             }
-        } catch (error) {
-            console.error('Failed to complete review:', error);
-            setSnackbarMessage(
-                `Failed to complete review: ${error instanceof Error ? error.message : 'Unknown error'
-                }`
-            );
+        } catch {
+            setSnackbarMessage('Failed to complete review');
             setSnackbarSeverity('error');
             setSnackbarOpen(true);
         }
     };
 
-    // Validation helper
-    const validateCurrentStep = (): string[] => {
-        switch (currentStep) {
-            case 0: // Patient Selection
-                return selectedPatient ? [] : ['Please select a patient'];
-            case 1: // Medication History
-                return medications.length > 0
-                    ? []
-                    : ['Please add at least one medication'];
-            case 2: // Therapy Assessment
-                return identifiedProblems.length > 0
-                    ? []
-                    : ['Please complete the therapy assessment'];
-            case 3: // Plan Development
-                return currentReview?.plan ? [] : ['Please create a therapy plan'];
-            case 4: // Interventions
-                return interventions.length > 0
-                    ? []
-                    : ['Please document at least one intervention'];
-            case 5: // Follow-Up
-                return currentReview?.followUps && currentReview.followUps.length > 0
-                    ? []
-                    : ['Please schedule a follow-up'];
-            default:
-                return [];
+    const handleCancel = () => {
+        setShowExitDialog(true);
+    };
+
+    const confirmCancel = async () => {
+        try {
+            await cancelReview();
+            setShowExitDialog(false);
+            if (onCancel) {
+                onCancel();
+            }
+        } catch {
+            setSnackbarMessage('Failed to cancel review');
+            setSnackbarSeverity('error');
+            setSnackbarOpen(true);
         }
     };
 
@@ -427,10 +478,67 @@ const MTRDashboard: React.FC<{
     );
 
     const handlePatientSelect = useCallback(
-        (patient: Patient) => {
-            selectPatient(convertPatientToStoreType(patient));
+        async (patient: Patient) => {
+            console.log('🔍 handlePatientSelect called with patient:', patient);
+            
+            try {
+                // Convert patientManagement.Patient to stores/types.Patient
+                const storePatient: StorePatient = {
+                    _id: patient._id,
+                    firstName: patient.firstName,
+                    lastName: patient.lastName,
+                    email: patient.email,
+                    phone: patient.phone || '',
+                    dateOfBirth: patient.dob || '', // Map dob to dateOfBirth
+                    address: {
+                        street: patient.address || '',
+                        city: '',
+                        state: patient.state || '',
+                        zipCode: '',
+                    },
+                    medicalHistory: '',
+                    allergies: [],
+                    emergencyContact: {
+                        name: '',
+                        phone: '',
+                        relationship: '',
+                    },
+                    createdAt: patient.createdAt,
+                    updatedAt: patient.updatedAt,
+                };
+                
+                // Always select the patient first
+                selectPatient(storePatient);
+                
+                // Get patient ID
+                const patientId = patient._id || (patient as any).mrn;
+                if (!patientId) {
+                    throw new Error('Patient ID is missing');
+                }
+                
+                // Check if we need to create a new review
+                if (!currentReview || currentReview.patientId !== patientId) {
+                    console.log('✅ Creating MTR review for patient:', patientId);
+                    
+                    // First check for existing in-progress review
+                    const inProgressReview = await loadInProgressReview(patientId);
+                    
+                    if (!inProgressReview) {
+                        // No existing review, create new one
+                        await createReview(patientId);
+                    }
+                    // If in-progress review found, it's already loaded
+                }
+            } catch (error) {
+                console.error('❌ Error in handlePatientSelect:', error);
+                setSnackbarMessage(
+                    error instanceof Error ? error.message : 'Failed to select patient'
+                );
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+            }
         },
-        [selectPatient]
+        [selectPatient] // Remove unstable function dependencies
     );
 
     const handleProblemsIdentified = useCallback(
@@ -460,6 +568,10 @@ const MTRDashboard: React.FC<{
 
     // Get current step component
     const getCurrentStepComponent = () => {
+        const stepConfig = MTR_STEPS[currentStep];
+        if (!stepConfig) return null;
+
+        const StepComponent = stepConfig.component;
         const commonProps = {
             onNext: handleNext,
             onBack: currentStep > 0 ? handleBack : undefined,
@@ -468,15 +580,15 @@ const MTRDashboard: React.FC<{
         switch (currentStep) {
             case 0: // Patient Selection
                 return (
-                    <PatientSelection
+                    <StepComponent
                         {...commonProps}
                         onPatientSelect={handlePatientSelect}
-                        selectedPatient={selectedPatient ? convertStorePatientToPatient(selectedPatient) : undefined}
+                        selectedPatient={selectedPatient || undefined}
                     />
                 );
             case 1: // Medication History
                 return (
-                    <MedicationHistory
+                    <StepComponent
                         {...commonProps}
                         patientId={selectedPatient?._id}
                         onMedicationsUpdate={handleMedicationsUpdate}
@@ -484,7 +596,7 @@ const MTRDashboard: React.FC<{
                 );
             case 2: // Therapy Assessment
                 return (
-                    <TherapyAssessment
+                    <StepComponent
                         {...commonProps}
                         patientId={selectedPatient?._id}
                         medications={medications}
@@ -503,7 +615,7 @@ const MTRDashboard: React.FC<{
                 );
             case 3: // Plan Development
                 return (
-                    <PlanDevelopment
+                    <StepComponent
                         {...commonProps}
                         patientId={selectedPatient?._id}
                         problems={identifiedProblems}
@@ -512,7 +624,7 @@ const MTRDashboard: React.FC<{
                 );
             case 4: // Interventions
                 return (
-                    <Interventions
+                    <StepComponent
                         {...commonProps}
                         reviewId={currentReview?._id}
                         patientId={selectedPatient?._id}
@@ -521,7 +633,7 @@ const MTRDashboard: React.FC<{
                 );
             case 5: // Follow-Up
                 return (
-                    <FollowUp
+                    <StepComponent
                         {...commonProps}
                         reviewId={currentReview?._id}
                         patientId={selectedPatient?._id}
@@ -583,13 +695,18 @@ const MTRDashboard: React.FC<{
                             ? 'Creating MTR session...'
                             : 'Loading MTR session...'}
                     </Typography>
+                    {loading.createReview && (
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                            If this takes too long, a temporary session will be created for development
+                        </Typography>
+                    )}
                 </Box>
             </Container>
         );
     }
 
-    // Error state
-    if (errors.createReview || errors.loadReview) {
+    // Error state - but don't show error if we have a working temporary session
+    if ((errors.createReview || errors.loadReview) && !currentReview) {
         return (
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 <Alert
@@ -617,37 +734,80 @@ const MTRDashboard: React.FC<{
                 <Card>
                     <CardContent sx={{ p: 3 }}>
                         <PatientSelection
-                            onPatientSelect={(patient: Patient) => {
-                                // Create a new review for the selected patient
-                                console.log('Patient selected:', patient);
-                                selectPatient(convertPatientToStoreType(patient));
-                                createReview(patient._id);
+                            onPatientSelect={async (patient: Patient) => {
+                                try {
+                                    console.log('🔍 Patient selected:', patient);
+                                    
+                                    // Get patient ID
+                                    const patientId = patient._id || (patient as any).mrn;
+                                    if (!patientId) {
+                                        throw new Error('Patient ID is missing. Please try selecting a different patient.');
+                                    }
+
+                                    console.log('🔍 Using patient ID:', patientId);
+
+                                    // Convert patientManagement.Patient to stores/types.Patient
+                                    const storePatient: StorePatient = {
+                                        _id: patient._id,
+                                        firstName: patient.firstName,
+                                        lastName: patient.lastName,
+                                        email: patient.email,
+                                        phone: patient.phone || '',
+                                        dateOfBirth: patient.dob || '',
+                                        address: {
+                                            street: patient.address || '',
+                                            city: '',
+                                            state: patient.state || '',
+                                            zipCode: '',
+                                        },
+                                        medicalHistory: '',
+                                        allergies: [],
+                                        emergencyContact: {
+                                            name: '',
+                                            phone: '',
+                                            relationship: '',
+                                        },
+                                        createdAt: patient.createdAt,
+                                        updatedAt: patient.updatedAt,
+                                    };
+                                    
+                                    // Select patient first
+                                    selectPatient(storePatient);
+
+                                    // Check for existing in-progress review first
+                                    console.log('🔍 Checking for existing MTR review...');
+                                    const inProgressReview = await loadInProgressReview(patientId);
+                                    
+                                    if (!inProgressReview) {
+                                        console.log('✅ Creating new MTR review for patient:', patientId);
+                                        await createReview(patientId);
+                                    } else {
+                                        console.log('✅ Loaded existing MTR review:', inProgressReview._id);
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Error selecting patient:', error);
+                                    alert(error instanceof Error ? error.message : 'Failed to select patient');
+                                }
                             }}
                             onNext={() => {
                                 // Move to next step after patient selection
                                 console.log('Moving to next step');
                                 goToStep(1);
                             }}
-                            selectedPatient={
-                                selectedPatient
-                                    ? {
-                                        _id: selectedPatient._id,
-                                        firstName: selectedPatient.firstName,
-                                        lastName: selectedPatient.lastName,
-                                        email: selectedPatient.email,
-                                        phone: selectedPatient.phone || '',
-                                        dateOfBirth: typeof selectedPatient.dateOfBirth === 'string' 
-                                            ? selectedPatient.dateOfBirth 
-                                            : selectedPatient.dateOfBirth.toISOString().split('T')[0],
-                                        address: selectedPatient.address,
-                                        medicalHistory: selectedPatient.medicalHistory?.[0],
-                                        allergies: selectedPatient.allergies,
-                                        emergencyContact: undefined,
-                                        createdAt: selectedPatient.createdAt,
-                                        updatedAt: selectedPatient.updatedAt,
-                                    }
-                                    : null
-                            }
+                            selectedPatient={selectedPatient ? {
+                                _id: selectedPatient._id,
+                                pharmacyId: 'default' as any,
+                                firstName: selectedPatient.firstName,
+                                lastName: selectedPatient.lastName,
+                                otherNames: '',
+                                mrn: selectedPatient._id,
+                                dob: selectedPatient.dateOfBirth,
+                                email: selectedPatient.email,
+                                phone: selectedPatient.phone || '',
+                                address: selectedPatient.address?.street || '',
+                                createdAt: selectedPatient.createdAt,
+                                updatedAt: selectedPatient.updatedAt,
+                            } as Patient : null}
                         />
                     </CardContent>
                 </Card>
@@ -705,7 +865,7 @@ const MTRDashboard: React.FC<{
                             >
                                 <ListItemIcon>
                                     {status === 'completed' ? (
-                                        <Check color="success" />
+                                        <CheckIcon color="success" />
                                     ) : status === 'active' ? (
                                         <Typography
                                             variant="body2"
@@ -772,7 +932,7 @@ const MTRDashboard: React.FC<{
                             onClick={() => setMobileDrawerOpen(true)}
                             sx={{ mr: 2 }}
                         >
-                            <Timeline />
+                            <TimelineIcon />
                         </IconButton>
                         <Box sx={{ flexGrow: 1 }}>
                             <Typography variant="h6" noWrap>
@@ -1025,7 +1185,7 @@ const MTRDashboard: React.FC<{
                             </Button>
                             <Button
                                 variant="outlined"
-                                startIcon={<Save />}
+                                startIcon={<SaveIcon />}
                                 onClick={handleSave}
                                 disabled={loading.saveReview}
                                 size={isMobile ? 'large' : 'medium'}
@@ -1045,7 +1205,7 @@ const MTRDashboard: React.FC<{
                         >
                             <Button
                                 variant="outlined"
-                                startIcon={<NavigateBefore />}
+                                startIcon={<NavigateBeforeIcon />}
                                 onClick={handleBack}
                                 disabled={currentStep === 0}
                                 size={isMobile ? 'large' : 'medium'}
@@ -1057,7 +1217,7 @@ const MTRDashboard: React.FC<{
                             {currentStep < MTR_STEPS.length - 1 ? (
                                 <Button
                                     variant="contained"
-                                    endIcon={<NavigateNext />}
+                                    endIcon={<NavigateNextIcon />}
                                     onClick={handleNext}
                                     disabled={loading.completeStep}
                                     size={isMobile ? 'large' : 'medium'}
@@ -1069,7 +1229,7 @@ const MTRDashboard: React.FC<{
                                 <Button
                                     variant="contained"
                                     color="success"
-                                    startIcon={<Check />}
+                                    startIcon={<CheckIcon />}
                                     onClick={handleComplete}
                                     disabled={!canCompleteReview() || loading.completeReview}
                                     size={isMobile ? 'large' : 'medium'}
@@ -1097,7 +1257,7 @@ const MTRDashboard: React.FC<{
                             disabled={loading.saveReview}
                             size="medium"
                         >
-                            <Save />
+                            <SaveIcon />
                         </Fab>
 
                         {/* Quick step navigation */}
@@ -1112,7 +1272,7 @@ const MTRDashboard: React.FC<{
                             onClick={() => setMobileDrawerOpen(true)}
                             size="small"
                         >
-                            <Timeline />
+                            <TimelineIcon />
                         </Fab>
                     </>
                 )}
