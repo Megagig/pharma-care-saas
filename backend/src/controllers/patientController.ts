@@ -13,7 +13,6 @@ import CarePlan from '../models/CarePlan';
 import Visit from '../models/Visit';
 
 // Import utilities
-import { generateMRN } from '../utils/tenancyGuard';
 import {
   sendSuccess,
   sendError,
