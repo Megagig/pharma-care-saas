@@ -1139,93 +1139,324 @@ const ClinicalInterventionReports: React.FC = () => {
 
         {activeTab === 2 && (
           <Box>
-            {/* Modern Trend Analysis Charts */}
+            {/* Enhanced Trend Analysis Dashboard */}
+
+            {/* Key Metrics Row */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-8px) scale(1.02)',
+                      boxShadow: '0 20px 40px rgba(102, 126, 234, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 2.5 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 56,
+                        height: 56,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 1.5,
+                      }}
+                    >
+                      <ShowChartIcon sx={{ fontSize: 28 }} />
+                    </Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      {(safeReportData?.trendAnalysis || []).reduce((sum, item) => sum + (item.interventions || 0), 0)}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+                      Total Interventions
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(67, 233, 123, 0.3)',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-8px) scale(1.02)',
+                      boxShadow: '0 20px 40px rgba(67, 233, 123, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 2.5 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 56,
+                        height: 56,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 1.5,
+                      }}
+                    >
+                      <TrendingUpIcon sx={{ fontSize: 28 }} />
+                    </Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      {((safeReportData?.trendAnalysis || []).reduce((sum, item) => sum + (item.successRate || 0), 0) / Math.max((safeReportData?.trendAnalysis || []).length, 1)).toFixed(1)}%
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+                      Avg Success Rate
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(250, 112, 154, 0.3)',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-8px) scale(1.02)',
+                      boxShadow: '0 20px 40px rgba(250, 112, 154, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 2.5 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 56,
+                        height: 56,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 1.5,
+                      }}
+                    >
+                      <AttachMoneyIcon sx={{ fontSize: 28 }} />
+                    </Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      ₦{((safeReportData?.trendAnalysis || []).reduce((sum, item) => sum + (item.costSavings || 0), 0)).toLocaleString()}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+                      Total Savings
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(240, 147, 251, 0.3)',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-8px) scale(1.02)',
+                      boxShadow: '0 20px 40px rgba(240, 147, 251, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 2.5 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 56,
+                        height: 56,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 1.5,
+                      }}
+                    >
+                      <TimelineIcon sx={{ fontSize: 28 }} />
+                    </Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      {((safeReportData?.trendAnalysis || []).reduce((sum, item) => sum + (item.resolutionTime || 0), 0) / Math.max((safeReportData?.trendAnalysis || []).length, 1)).toFixed(1)}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+                      Avg Resolution (days)
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+
+            {/* Main Performance Chart */}
             <Grid container spacing={3}>
               <Grid item xs={12}>
                 <Card
                   sx={{
-                    borderRadius: 3,
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    borderRadius: 4,
+                    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.08)',
                     background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)',
+                    },
                   }}
                 >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                      <Box
-                        sx={{
-                          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                          borderRadius: 2,
-                          p: 1,
-                          mr: 2,
-                        }}
-                      >
-                        <ShowChartIcon sx={{ color: 'white', fontSize: 24 }} />
+                  <CardContent sx={{ p: 4 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Box
+                          sx={{
+                            background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                            borderRadius: 3,
+                            p: 1.5,
+                            mr: 3,
+                            boxShadow: '0 8px 24px rgba(79, 172, 254, 0.3)',
+                          }}
+                        >
+                          <ShowChartIcon sx={{ color: 'white', fontSize: 32 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant="h5" sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>
+                            Performance Trends Over Time
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#64748b' }}>
+                            Comprehensive view of interventions, success rates, and cost savings
+                          </Typography>
+                        </Box>
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Monthly Performance Trends
-                      </Typography>
                     </Box>
-                    <ResponsiveContainer width="100%" height={450}>
+                    <ResponsiveContainer width="100%" height={500}>
                       <ComposedChart
-                        data={reportData?.trendAnalysis || []}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        data={safeReportData?.trendAnalysis || []}
+                        margin={{ top: 30, right: 40, left: 20, bottom: 20 }}
                       >
                         <defs>
-                          <linearGradient id="interventionsGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#667eea" stopOpacity={0.8} />
-                            <stop offset="100%" stopColor="#764ba2" stopOpacity={0.3} />
+                          <linearGradient id="interventionsGradientTrend" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#667eea" stopOpacity={0.9} />
+                            <stop offset="50%" stopColor="#764ba2" stopOpacity={0.6} />
+                            <stop offset="100%" stopColor="#764ba2" stopOpacity={0.2} />
                           </linearGradient>
-                          <linearGradient id="costSavingsGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#fa709a" stopOpacity={0.6} />
+                          <linearGradient id="costSavingsGradientTrend" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#fa709a" stopOpacity={0.8} />
+                            <stop offset="50%" stopColor="#fee140" stopOpacity={0.4} />
                             <stop offset="100%" stopColor="#fee140" stopOpacity={0.1} />
                           </linearGradient>
+                          <filter id="glow">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                            <feMerge>
+                              <feMergeNode in="coloredBlur" />
+                              <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                          </filter>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <CartesianGrid
+                          strokeDasharray="2 4"
+                          stroke="#e2e8f0"
+                          strokeOpacity={0.6}
+                          horizontal={true}
+                          vertical={false}
+                        />
                         <XAxis
                           dataKey="period"
-                          tick={{ fontSize: 12, fill: '#64748b' }}
+                          tick={{ fontSize: 13, fill: '#64748b', fontWeight: 500 }}
+                          axisLine={false}
+                          tickLine={false}
+                          dy={10}
                         />
                         <YAxis
                           yAxisId="left"
                           tick={{ fontSize: 12, fill: '#64748b' }}
+                          axisLine={false}
+                          tickLine={false}
+                          dx={-10}
                         />
                         <YAxis
                           yAxisId="right"
                           orientation="right"
                           tick={{ fontSize: 12, fill: '#64748b' }}
+                          axisLine={false}
+                          tickLine={false}
+                          dx={10}
                         />
-                        <RechartsTooltip content={<CustomTooltip />} />
-                        <Legend />
+                        <RechartsTooltip
+                          content={<CustomTooltip />}
+                          cursor={{ fill: 'rgba(79, 172, 254, 0.1)', stroke: 'none' }}
+                        />
+                        <Legend
+                          wrapperStyle={{
+                            paddingTop: '20px',
+                            fontSize: '14px',
+                            fontWeight: 500
+                          }}
+                        />
                         <Area
                           yAxisId="left"
                           type="monotone"
                           dataKey="interventions"
-                          fill="url(#interventionsGradient)"
+                          fill="url(#interventionsGradientTrend)"
                           stroke="#667eea"
-                          strokeWidth={2}
+                          strokeWidth={3}
                           name="Interventions"
-                          animationDuration={1500}
+                          animationDuration={2000}
+                          animationBegin={0}
                         />
                         <Area
                           yAxisId="left"
                           type="monotone"
                           dataKey="costSavings"
-                          fill="url(#costSavingsGradient)"
+                          fill="url(#costSavingsGradientTrend)"
                           stroke="#fa709a"
-                          strokeWidth={2}
+                          strokeWidth={3}
                           name="Cost Savings (₦)"
                           animationDuration={2000}
+                          animationBegin={500}
                         />
                         <Line
                           yAxisId="right"
                           type="monotone"
                           dataKey="successRate"
                           stroke="#43e97b"
-                          strokeWidth={3}
-                          dot={{ fill: '#43e97b', strokeWidth: 2, r: 6 }}
-                          activeDot={{ r: 8, stroke: '#43e97b', strokeWidth: 2 }}
+                          strokeWidth={4}
+                          dot={{
+                            fill: '#43e97b',
+                            strokeWidth: 3,
+                            r: 8,
+                            filter: 'url(#glow)'
+                          }}
+                          activeDot={{
+                            r: 12,
+                            stroke: '#43e97b',
+                            strokeWidth: 3,
+                            fill: '#ffffff',
+                            filter: 'url(#glow)'
+                          }}
                           name="Success Rate (%)"
-                          animationDuration={2500}
+                          animationDuration={2000}
+                          animationBegin={1000}
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
