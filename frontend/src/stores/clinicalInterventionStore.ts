@@ -676,7 +676,6 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
             },
 
             fetchDashboardMetrics: async (dateRange) => {
-                console.log('🔍 STORE: fetchDashboardMetrics called with dateRange:', dateRange);
                 const { setLoading, setError } = get();
                 setLoading('fetchDashboardMetrics', true);
                 setError('fetchDashboardMetrics', null);
@@ -684,18 +683,15 @@ export const useClinicalInterventionStore = create<ClinicalInterventionStore>()(
                 try {
                     const { clinicalInterventionService } = await import('../services/clinicalInterventionService');
                     const response = await clinicalInterventionService.getDashboardMetrics(dateRange);
-                    console.log('🔍 STORE: Dashboard response:', response);
 
                     if (response.success && response.data) {
-                        console.log('🔍 STORE: Setting dashboard metrics:', response.data);
                         set({ dashboardMetrics: response.data });
                     } else {
-                        console.log('🔍 STORE: Dashboard fetch failed:', response.message);
                         setError('fetchDashboardMetrics', response.message || 'Failed to fetch dashboard metrics');
                         set({ dashboardMetrics: null });
                     }
                 } catch (error) {
-                    console.error('🔍 STORE: Error fetching dashboard metrics:', error);
+                    console.error('Error fetching dashboard metrics:', error);
                     setError('fetchDashboardMetrics', error instanceof Error ? error.message : 'An unexpected error occurred');
                     set({ dashboardMetrics: null });
                 } finally {

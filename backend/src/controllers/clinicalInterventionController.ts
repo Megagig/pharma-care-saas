@@ -1056,12 +1056,11 @@ export const getOutcomeReports = asyncHandler(
         // Generate outcome report
         const report = await ClinicalInterventionService.generateOutcomeReport(
             context.workplaceIdObj,
-            filters
+            filters,
+            context.isSuperAdmin || req.user?.role === 'super_admin'
         );
 
-        sendSuccess(res, {
-            report
-        }, 'Outcome report generated successfully');
+        sendSuccess(res, report, 'Outcome report generated successfully');
     }
 );
 

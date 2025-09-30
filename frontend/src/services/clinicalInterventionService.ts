@@ -369,7 +369,12 @@ class ClinicalInterventionService {
         });
 
         const url = `/clinical-interventions/reports/outcomes${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-        return this.makeRequest<unknown>(url);
+        console.log('🔍 SERVICE: generateOutcomeReport calling:', `${API_BASE_URL}${url}`);
+
+        const result = await this.makeRequest<unknown>(url);
+        console.log('🔍 SERVICE: generateOutcomeReport result:', result);
+
+        return result;
     }
 
     /**

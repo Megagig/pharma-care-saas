@@ -191,13 +191,17 @@ const ClinicalInterventionReports: React.FC = () => {
           filters.pharmacist !== 'all' ? filters.pharmacist : undefined,
       };
 
+      console.log('🔍 REPORTS: Calling generateOutcomeReport with filters:', apiFilters);
       const response = await clinicalInterventionService.generateOutcomeReport(
         apiFilters
       );
+      console.log('🔍 REPORTS: Received response:', response);
 
       if (response.success && response.data) {
+        console.log('🔍 REPORTS: Setting report data:', response.data);
         setReportData(response.data);
       } else {
+        console.log('🔍 REPORTS: No data received, using mock data');
         // If no data is available, create a mock structure to show the UI
         const mockReportData: OutcomeReport = {
           summary: {

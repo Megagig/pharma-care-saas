@@ -254,7 +254,9 @@ class ClinicalInterventionService {
       category?: string;
       priority?: string;
       outcome?: string;
-    }
+      pharmacist?: string;
+    },
+    isSuperAdmin?: boolean
   ) => Promise<any>;
 
   static calculateCostSavings: (
@@ -4090,7 +4092,8 @@ ClinicalInterventionService.generateOutcomeReport = async (
     priority?: string;
     outcome?: string;
     pharmacist?: string;
-  }
+  },
+  isSuperAdmin: boolean = false
 ): Promise<any> => {
   try {
     const { dateFrom, dateTo, category, priority, outcome, pharmacist } =
@@ -4098,16 +4101,26 @@ ClinicalInterventionService.generateOutcomeReport = async (
 
     // Build base query
     const baseQuery: any = {
-      workplaceId,
       isDeleted: { $ne: true },
-      status: 'completed',
+      // Include all interventions, not just completed ones for better reporting
     };
 
-    // Add date filter
+    // Add workplaceId filter only if not super_admin
+    if (!isSuperAdmin) {
+      baseQuery.workplaceId = workplaceId;
+    }
+
+    // Add date filter - use identifiedDate if completedAt is not available
     if (dateFrom || dateTo) {
-      baseQuery.completedAt = {};
-      if (dateFrom) baseQuery.completedAt.$gte = dateFrom;
-      if (dateTo) baseQuery.completedAt.$lte = dateTo;
+      const dateQuery: any = {};
+      if (dateFrom) dateQuery.$gte = dateFrom;
+      if (dateTo) dateQuery.$lte = dateTo;
+      
+      // Use $or to check both completedAt and identifiedDate
+      baseQuery.$or = [
+        { completedAt: dateQuery },
+        { identifiedDate: dateQuery }
+      ];
     }
 
     // Add category filter
@@ -4135,9 +4148,14 @@ ClinicalInterventionService.generateOutcomeReport = async (
       baseQuery
     );
 
+    // Count successful interventions - include both completed with outcomes and those with positive status
     const successfulInterventions = await ClinicalIntervention.countDocuments({
       ...baseQuery,
-      'outcomes.patientResponse': 'improved',
+      $or: [
+        { 'outcomes.patientResponse': 'improved' },
+        { status: 'completed' },
+        { status: 'resolved' }
+      ]
     });
 
     const successRate =
@@ -4164,14 +4182,28 @@ ClinicalInterventionService.generateOutcomeReport = async (
     const totalCostSavings =
       costSavingsAgg.length > 0 ? costSavingsAgg[0].totalSavings : 0;
 
-    // Calculate average resolution time
+    // Calculate average resolution time - use available date fields
     const resolutionTimeAgg = await ClinicalIntervention.aggregate([
-      { $match: { ...baseQuery, completedAt: { $exists: true } } },
+      { 
+        $match: { 
+          ...baseQuery, 
+          $or: [
+            { completedAt: { $exists: true }, startedAt: { $exists: true } },
+            { completedAt: { $exists: true }, identifiedDate: { $exists: true } },
+            { updatedAt: { $exists: true }, identifiedDate: { $exists: true } }
+          ]
+        } 
+      },
       {
         $project: {
           resolutionTime: {
             $divide: [
-              { $subtract: ['$completedAt', '$startedAt'] },
+              {
+                $subtract: [
+                  { $ifNull: ['$completedAt', '$updatedAt'] },
+                  { $ifNull: ['$startedAt', '$identifiedDate'] }
+                ]
+              },
               1000 * 60 * 60 * 24, // Convert to days
             ],
           },
@@ -4197,16 +4229,42 @@ ClinicalInterventionService.generateOutcomeReport = async (
           total: { $sum: 1 },
           successful: {
             $sum: {
-              $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0],
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ['$outcomes.patientResponse', 'improved'] },
+                    { $eq: ['$status', 'completed'] },
+                    { $eq: ['$status', 'resolved'] }
+                  ]
+                }, 
+                1, 
+                0
+              ],
             },
           },
-          totalCostSavings: { $sum: '$outcomes.successMetrics.costSavings' },
+          totalCostSavings: { $sum: { $ifNull: ['$outcomes.successMetrics.costSavings', 0] } },
           totalResolutionTime: {
             $sum: {
-              $divide: [
-                { $subtract: ['$completedAt', '$startedAt'] },
-                1000 * 60 * 60 * 24,
-              ],
+              $cond: [
+                {
+                  $and: [
+                    { $ifNull: [{ $ifNull: ['$completedAt', '$updatedAt'] }, false] },
+                    { $ifNull: [{ $ifNull: ['$startedAt', '$identifiedDate'] }, false] }
+                  ]
+                },
+                {
+                  $divide: [
+                    {
+                      $subtract: [
+                        { $ifNull: ['$completedAt', '$updatedAt'] },
+                        { $ifNull: ['$startedAt', '$identifiedDate'] }
+                      ]
+                    },
+                    1000 * 60 * 60 * 24,
+                  ]
+                },
+                0
+              ]
             },
           },
         },
@@ -4281,28 +4339,57 @@ ClinicalInterventionService.generateOutcomeReport = async (
       {
         $match: {
           ...baseQuery,
-          completedAt: { $gte: sixMonthsAgo },
+          $or: [
+            { completedAt: { $gte: sixMonthsAgo } },
+            { identifiedDate: { $gte: sixMonthsAgo } }
+          ]
         },
       },
       {
         $group: {
           _id: {
-            year: { $year: '$completedAt' },
-            month: { $month: '$completedAt' },
+            year: { $year: { $ifNull: ['$completedAt', '$identifiedDate'] } },
+            month: { $month: { $ifNull: ['$completedAt', '$identifiedDate'] } },
           },
           interventions: { $sum: 1 },
           successful: {
             $sum: {
-              $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0],
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ['$outcomes.patientResponse', 'improved'] },
+                    { $eq: ['$status', 'completed'] },
+                    { $eq: ['$status', 'resolved'] }
+                  ]
+                }, 
+                1, 
+                0
+              ],
             },
           },
-          costSavings: { $sum: '$outcomes.successMetrics.costSavings' },
+          costSavings: { $sum: { $ifNull: ['$outcomes.successMetrics.costSavings', 0] } },
           totalResolutionTime: {
             $sum: {
-              $divide: [
-                { $subtract: ['$completedAt', '$startedAt'] },
-                1000 * 60 * 60 * 24,
-              ],
+              $cond: [
+                {
+                  $and: [
+                    { $ifNull: [{ $ifNull: ['$completedAt', '$updatedAt'] }, false] },
+                    { $ifNull: [{ $ifNull: ['$startedAt', '$identifiedDate'] }, false] }
+                  ]
+                },
+                {
+                  $divide: [
+                    {
+                      $subtract: [
+                        { $ifNull: ['$completedAt', '$updatedAt'] },
+                        { $ifNull: ['$startedAt', '$identifiedDate'] }
+                      ]
+                    },
+                    1000 * 60 * 60 * 24,
+                  ]
+                },
+                0
+              ]
             },
           },
         },
@@ -4346,11 +4433,11 @@ ClinicalInterventionService.generateOutcomeReport = async (
       { $sort: { '_id.year': 1, '_id.month': 1 } },
     ]);
 
-    // Get detailed outcomes
+    // Get detailed outcomes - sort by available date fields
     const detailedOutcomes = await ClinicalIntervention.find(baseQuery)
       .populate('patientId', 'firstName lastName')
       .populate('identifiedBy', 'firstName lastName')
-      .sort({ completedAt: -1 })
+      .sort({ completedAt: -1, identifiedDate: -1, updatedAt: -1 })
       .limit(100)
       .lean();
 
@@ -4365,16 +4452,15 @@ ClinicalInterventionService.generateOutcomeReport = async (
       priority: intervention.priority,
       outcome: intervention.outcomes?.patientResponse || 'unknown',
       costSavings: intervention.outcomes?.successMetrics?.costSavings || 0,
-      resolutionTime:
-        intervention.completedAt && intervention.startedAt
-          ? Math.ceil(
-            (intervention.completedAt.getTime() -
-              intervention.startedAt.getTime()) /
-            (1000 * 60 * 60 * 24)
-          )
-          : 0,
+      resolutionTime: (() => {
+        const endDate = intervention.completedAt || intervention.updatedAt;
+        const startDate = intervention.startedAt || intervention.identifiedDate;
+        return endDate && startDate
+          ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
+      })(),
       patientResponse: intervention.outcomes?.patientResponse || 'unknown',
-      completedDate: intervention.completedAt?.toISOString() || '',
+      completedDate: (intervention.completedAt || intervention.updatedAt)?.toISOString() || '',
     }));
 
     // Calculate comparative analysis (current vs previous period)
@@ -4390,7 +4476,10 @@ ClinicalInterventionService.generateOutcomeReport = async (
 
     const previousPeriodQuery = {
       ...baseQuery,
-      completedAt: { $gte: previousPeriodStart, $lte: previousPeriodEnd },
+      $or: [
+        { completedAt: { $gte: previousPeriodStart, $lte: previousPeriodEnd } },
+        { identifiedDate: { $gte: previousPeriodStart, $lte: previousPeriodEnd } }
+      ]
     };
 
     const previousPeriodTotal = await ClinicalIntervention.countDocuments(
@@ -4398,7 +4487,11 @@ ClinicalInterventionService.generateOutcomeReport = async (
     );
     const previousPeriodSuccessful = await ClinicalIntervention.countDocuments({
       ...previousPeriodQuery,
-      'outcomes.patientResponse': 'improved',
+      $or: [
+        { 'outcomes.patientResponse': 'improved' },
+        { status: 'completed' },
+        { status: 'resolved' }
+      ]
     });
 
     const previousPeriodSuccessRate =
@@ -4408,15 +4501,12 @@ ClinicalInterventionService.generateOutcomeReport = async (
 
     const previousPeriodCostSavings = await ClinicalIntervention.aggregate([
       {
-        $match: {
-          ...previousPeriodQuery,
-          'outcomes.successMetrics.costSavings': { $exists: true },
-        },
+        $match: previousPeriodQuery,
       },
       {
         $group: {
           _id: null,
-          total: { $sum: '$outcomes.successMetrics.costSavings' },
+          total: { $sum: { $ifNull: ['$outcomes.successMetrics.costSavings', 0] } },
         },
       },
     ]);
