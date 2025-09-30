@@ -287,6 +287,32 @@ const ClinicalInterventionReports: React.FC = () => {
     loadReportData();
   }, [loadReportData]);
 
+  // Memoized safe data for charts
+  const safeReportData = useMemo(() => {
+    if (!reportData) return null;
+
+    return {
+      ...reportData,
+      categoryAnalysis: Array.isArray(reportData.categoryAnalysis) ? reportData.categoryAnalysis : [],
+      trendAnalysis: Array.isArray(reportData.trendAnalysis) ? reportData.trendAnalysis : [],
+      detailedOutcomes: Array.isArray(reportData.detailedOutcomes) ? reportData.detailedOutcomes : [],
+      summary: reportData.summary || {
+        totalInterventions: 0,
+        completedInterventions: 0,
+        successfulInterventions: 0,
+        successRate: 0,
+        totalCostSavings: 0,
+        averageResolutionTime: 0,
+        patientSatisfactionScore: 0,
+      },
+      comparativeAnalysis: reportData.comparativeAnalysis || {
+        currentPeriod: { interventions: 0, successRate: 0, costSavings: 0 },
+        previousPeriod: { interventions: 0, successRate: 0, costSavings: 0 },
+        percentageChange: { interventions: 0, successRate: 0, costSavings: 0 },
+      }
+    };
+  }, [reportData]);
+
   // Handle filter changes
   const handleFilterChange = (field: keyof ReportFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
@@ -361,26 +387,40 @@ const ClinicalInterventionReports: React.FC = () => {
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
             {label}
           </Typography>
-          {payload.map((entry: any, index: number) => (
-            <Typography
-              key={index}
-              variant="body2"
-              sx={{ color: entry.color, display: 'flex', alignItems: 'center', gap: 1 }}
-            >
-              <Box
-                sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  backgroundColor: entry.color,
-                }}
-              />
-              {entry.name}: {entry.value}
-              {entry.name.includes('Rate') && '%'}
-              {entry.name.includes('Savings') && ' ₦'}
-              {entry.name.includes('Time') && ' days'}
-            </Typography>
-          ))}
+          {payload.map((entry: any, index: number) => {
+            const entryName = entry.name || entry.dataKey || 'Value';
+            const entryValue = entry.value || 0;
+
+            // Determine suffix based on entry name or data key
+            let suffix = '';
+            if (typeof entryName === 'string') {
+              if (entryName.toLowerCase().includes('rate')) {
+                suffix = '%';
+              } else if (entryName.toLowerCase().includes('savings') || entryName.toLowerCase().includes('cost')) {
+                suffix = ' ₦';
+              } else if (entryName.toLowerCase().includes('time')) {
+                suffix = ' days';
+              }
+            }
+
+            return (
+              <Typography
+                key={index}
+                variant="body2"
+                sx={{ color: entry.color, display: 'flex', alignItems: 'center', gap: 1 }}
+              >
+                <Box
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    backgroundColor: entry.color,
+                  }}
+                />
+                {entryName}: {entryValue}{suffix}
+              </Typography>
+            );
+          })}
         </Paper>
       );
     }
@@ -402,7 +442,7 @@ const ClinicalInterventionReports: React.FC = () => {
     );
   }
 
-  if (reportError) {
+  if (reportError && !reportData) {
     return (
       <Alert severity="error" sx={{ m: 2 }}>
         Error loading report: {reportError}
@@ -624,7 +664,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       component="div"
                       sx={{ fontWeight: 700, mb: 1 }}
                     >
-                      {reportData?.summary?.totalInterventions || 0}
+                      {safeReportData?.summary?.totalInterventions || 0}
                     </Typography>
                     <Typography variant="body1" sx={{ opacity: 0.9 }}>
                       Total Interventions
@@ -667,7 +707,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       component="div"
                       sx={{ fontWeight: 700, mb: 1 }}
                     >
-                      {(reportData?.summary?.successRate || 0).toFixed(1)}%
+                      {(safeReportData?.summary?.successRate || 0).toFixed(1)}%
                     </Typography>
                     <Typography variant="body1" sx={{ opacity: 0.9 }}>
                       Success Rate
@@ -898,9 +938,13 @@ const ClinicalInterventionReports: React.FC = () => {
                           domain={[0, 100]}
                           tick={{ fontSize: 12, fill: '#64748b' }}
                         />
-                        <RechartsTooltip content={<CustomTooltip />} />
+                        <RechartsTooltip
+                          content={<CustomTooltip />}
+                          formatter={(value: any, name: any) => [`${value}%`, name || 'Success Rate']}
+                        />
                         <Bar
                           dataKey="successRate"
+                          name="Success Rate"
                           fill="url(#successGradient)"
                           radius={[4, 4, 0, 0]}
                           animationDuration={1000}
@@ -960,6 +1004,7 @@ const ClinicalInterventionReports: React.FC = () => {
                           outerRadius={120}
                           paddingAngle={2}
                           dataKey="total"
+                          nameKey="category"
                           animationDuration={1000}
                         >
                           {(reportData?.categoryAnalysis || []).map((entry, index) => (
@@ -969,7 +1014,10 @@ const ClinicalInterventionReports: React.FC = () => {
                             />
                           ))}
                         </Pie>
-                        <RechartsTooltip content={<CustomTooltip />} />
+                        <RechartsTooltip
+                          content={<CustomTooltip />}
+                          formatter={(value: any, name: any) => [value, name || 'Total']}
+                        />
                         <Legend
                           verticalAlign="bottom"
                           height={36}
@@ -1028,6 +1076,7 @@ const ClinicalInterventionReports: React.FC = () => {
                         <Area
                           type="monotone"
                           dataKey="avgCostSavings"
+                          name="Avg Cost Savings"
                           stroke="#fa709a"
                           strokeWidth={3}
                           fill="url(#costGradient)"
@@ -1241,6 +1290,7 @@ const ClinicalInterventionReports: React.FC = () => {
                         <Line
                           type="monotone"
                           dataKey="resolutionTime"
+                          name="Resolution Time"
                           stroke="url(#resolutionGradient)"
                           strokeWidth={4}
                           dot={{ fill: '#f093fb', strokeWidth: 2, r: 6 }}
@@ -1299,7 +1349,10 @@ const ClinicalInterventionReports: React.FC = () => {
                           cornerRadius={10}
                           fill="#43e97b"
                         />
-                        <RechartsTooltip content={<CustomTooltip />} />
+                        <RechartsTooltip
+                          content={<CustomTooltip />}
+                          formatter={(value: any, name: any) => [`${value}%`, name || 'Success Rate']}
+                        />
                       </RadialBarChart>
                     </ResponsiveContainer>
                     <Typography
