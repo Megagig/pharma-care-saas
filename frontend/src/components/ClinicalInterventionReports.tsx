@@ -25,8 +25,7 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  useTheme,
-  alpha,
+
   Dialog,
   DialogTitle,
   DialogContent,
@@ -52,29 +51,22 @@ import {
   AreaChart,
   RadialBarChart,
   RadialBar,
-  Treemap,
-  Funnel,
-  FunnelChart,
 } from 'recharts';
-import {
-  Assessment as AssessmentIcon,
-  TrendingUp as TrendingUpIcon,
-  GetApp as ExportIcon,
-  FilterList as FilterIcon,
-  DateRange as DateRangeIcon,
-  AttachMoney as MoneyIcon,
-  Timeline as TimelineIcon,
-  PieChart as PieChartIcon,
-  BarChart as BarChartIcon,
-  ShowChart as ShowChartIcon,
-  Refresh as RefreshIcon,
-  Print as PrintIcon,
-  Share as ShareIcon,
-} from '@mui/icons-material';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import GetAppIcon from '@mui/icons-material/GetApp';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import PieChartIcon from '@mui/icons-material/PieChart';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import PrintIcon from '@mui/icons-material/Print';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, subDays, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { useClinicalInterventionStore } from '../stores/clinicalInterventionStore';
 
 interface OutcomeReport {
@@ -145,8 +137,7 @@ interface ReportFilters {
 }
 
 const ClinicalInterventionReports: React.FC = () => {
-  const theme = useTheme();
-  const { loading, error } = useClinicalInterventionStore();
+  const { loading } = useClinicalInterventionStore();
 
   // State management
   const [activeTab, setActiveTab] = useState(0);
@@ -187,8 +178,8 @@ const ClinicalInterventionReports: React.FC = () => {
 
       // Convert filters to the format expected by the API
       const apiFilters = {
-        dateFrom: filters.dateFrom,
-        dateTo: filters.dateTo,
+        dateFrom: filters.dateFrom || undefined,
+        dateTo: filters.dateTo || undefined,
         category: filters.category !== 'all' ? filters.category : undefined,
         priority: filters.priority !== 'all' ? filters.priority : undefined,
         outcome: filters.outcome !== 'all' ? filters.outcome : undefined,
@@ -347,17 +338,7 @@ const ClinicalInterventionReports: React.FC = () => {
     }
   };
 
-  // Modern chart colors with gradients
-  const chartColors = [
-    '#667eea', // Modern blue
-    '#764ba2', // Modern purple
-    '#f093fb', // Modern pink
-    '#f5576c', // Modern red
-    '#4facfe', // Modern light blue
-    '#43e97b', // Modern green
-    '#fa709a', // Modern coral
-    '#fee140', // Modern yellow
-  ];
+  // Modern gradient colors
 
   const gradientColors = [
     { start: '#667eea', end: '#764ba2' },
@@ -511,7 +492,7 @@ const ClinicalInterventionReports: React.FC = () => {
             </Tooltip>
             <Button
               variant="outlined"
-              startIcon={<ExportIcon />}
+              startIcon={<GetAppIcon />}
               onClick={() => setExportDialogOpen(true)}
             >
               Export Report
@@ -534,7 +515,7 @@ const ClinicalInterventionReports: React.FC = () => {
               gutterBottom
               sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
             >
-              <FilterIcon />
+              <FilterListIcon />
               Report Filters
             </Typography>
             <Grid container spacing={2}>
@@ -543,9 +524,12 @@ const ClinicalInterventionReports: React.FC = () => {
                   label="From Date"
                   value={filters.dateFrom}
                   onChange={(date) => handleFilterChange('dateFrom', date)}
-                  renderInput={(params) => (
-                    <TextField {...params} fullWidth size="small" />
-                  )}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      size: 'small'
+                    }
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
@@ -553,9 +537,12 @@ const ClinicalInterventionReports: React.FC = () => {
                   label="To Date"
                   value={filters.dateTo}
                   onChange={(date) => handleFilterChange('dateTo', date)}
-                  renderInput={(params) => (
-                    <TextField {...params} fullWidth size="small" />
-                  )}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      size: 'small'
+                    }
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
@@ -743,7 +730,7 @@ const ClinicalInterventionReports: React.FC = () => {
                         mb: 2,
                       }}
                     >
-                      <MoneyIcon sx={{ fontSize: 32 }} />
+                      <AttachMoneyIcon sx={{ fontSize: 32 }} />
                     </Box>
                     <Typography
                       variant="h3"
@@ -1007,7 +994,7 @@ const ClinicalInterventionReports: React.FC = () => {
                           nameKey="category"
                           animationDuration={1000}
                         >
-                          {(reportData?.categoryAnalysis || []).map((entry, index) => (
+                          {(reportData?.categoryAnalysis || []).map((_, index) => (
                             <Cell
                               key={`cell-${index}`}
                               fill={`url(#pieGradient${index % gradientColors.length})`}
@@ -1046,7 +1033,7 @@ const ClinicalInterventionReports: React.FC = () => {
                           mr: 2,
                         }}
                       >
-                        <MoneyIcon sx={{ color: 'white', fontSize: 24 }} />
+                        <AttachMoneyIcon sx={{ color: 'white', fontSize: 24 }} />
                       </Box>
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         Cost Savings by Category
@@ -1341,10 +1328,8 @@ const ClinicalInterventionReports: React.FC = () => {
                         ]}
                       >
                         <RadialBar
-                          minAngle={15}
                           label={{ position: 'insideStart', fill: '#fff' }}
                           background
-                          clockWise
                           dataKey="value"
                           cornerRadius={10}
                           fill="#43e97b"
@@ -1583,7 +1568,7 @@ const ClinicalInterventionReports: React.FC = () => {
                         mb: 2,
                       }}
                     >
-                      <MoneyIcon sx={{ color: 'white', fontSize: 28 }} />
+                      <AttachMoneyIcon sx={{ color: 'white', fontSize: 28 }} />
                     </Box>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                       Cost Savings
@@ -1747,7 +1732,7 @@ const ClinicalInterventionReports: React.FC = () => {
               <Select
                 value={exportFormat}
                 label="Export Format"
-                onChange={(e) => setExportFormat(e.target.value as unknown)}
+                onChange={(e) => setExportFormat(e.target.value as 'pdf' | 'excel' | 'csv')}
               >
                 <MenuItem value="pdf">PDF Report</MenuItem>
                 <MenuItem value="excel">Excel Spreadsheet</MenuItem>
