@@ -316,7 +316,12 @@ class ClinicalInterventionService {
         }
 
         const url = `/clinical-interventions/analytics/summary${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-        return this.makeRequest<DashboardMetrics>(url);
+        console.log('🔍 DASHBOARD: Fetching metrics from:', `${API_BASE_URL}${url}`);
+
+        const result = await this.makeRequest<DashboardMetrics>(url);
+        console.log('🔍 DASHBOARD: Received metrics:', result);
+
+        return result;
     }
 
     /**

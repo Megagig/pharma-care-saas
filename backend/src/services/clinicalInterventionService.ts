@@ -306,7 +306,8 @@ class ClinicalInterventionService {
 
   static getDashboardMetrics: (
     workplaceId: mongoose.Types.ObjectId,
-    dateRange?: any
+    dateRange?: any,
+    isSuperAdmin?: boolean
   ) => Promise<any>;
 
   static getTrendAnalysis: (
@@ -4580,17 +4581,22 @@ ClinicalInterventionService.calculateCostSavings = async (
 // Standalone function to avoid circular reference issues
 async function getDashboardMetrics(
   workplaceId: mongoose.Types.ObjectId,
-  dateRange: { from: Date; to: Date }
+  dateRange: { from: Date; to: Date },
+  isSuperAdmin: boolean = false
 ): Promise<any> {
   try {
     const { from, to } = dateRange;
 
     // Base query for the date range
-    const baseQuery = {
-      workplaceId,
+    const baseQuery: any = {
       isDeleted: { $ne: true },
       identifiedDate: { $gte: from, $lte: to },
     };
+
+    // Add workplaceId filter only if not super_admin
+    if (!isSuperAdmin) {
+      baseQuery.workplaceId = workplaceId;
+    }
 
     // Get basic counts
     const [
@@ -4674,12 +4680,13 @@ async function getDashboardMetrics(
         ? Math.round(averageResolutionResult[0].averageResolutionTime * 10) / 10
         : 0;
 
-    // Get recent interventions - simplified without populate for now
+    // Get recent interventions with patient data
     const recentInterventions = await ClinicalIntervention.find(baseQuery)
       .sort({ identifiedDate: -1 })
       .limit(5)
+      .populate('patientId', 'firstName lastName mrn')
       .select(
-        'interventionNumber category priority status identifiedDate assignments'
+        'interventionNumber category priority status identifiedDate assignments patientId'
       )
       .lean();
 
@@ -4728,7 +4735,9 @@ async function getDashboardMetrics(
         category: formatCategoryName(intervention.category),
         priority: formatPriorityName(intervention.priority),
         status: intervention.status,
-        patientName: 'Patient', // Simplified for now - would need proper population
+        patientName: intervention.patientId 
+          ? `${intervention.patientId.firstName} ${intervention.patientId.lastName}`
+          : 'Unknown Patient',
         identifiedDate: intervention.identifiedDate,
         assignedTo:
           intervention.assignments && intervention.assignments.length > 0

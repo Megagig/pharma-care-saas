@@ -947,17 +947,11 @@ export const getInterventionAnalytics = asyncHandler(
         // Get dashboard metrics
         const metrics = await ClinicalInterventionService.getDashboardMetrics(
             context.workplaceIdObj,
-            { from: fromDate!, to: toDate! }
+            { from: fromDate!, to: toDate! },
+            context.isSuperAdmin || req.user?.role === 'super_admin'
         );
 
-        sendSuccess(res, {
-            metrics,
-            dateRange: {
-                from: fromDate,
-                to: toDate,
-                period
-            }
-        }, 'Analytics retrieved successfully');
+        sendSuccess(res, metrics, 'Analytics retrieved successfully');
     }
 );
 
