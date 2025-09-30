@@ -50,6 +50,11 @@ import {
   ComposedChart,
   Area,
   AreaChart,
+  RadialBarChart,
+  RadialBar,
+  Treemap,
+  Funnel,
+  FunnelChart,
 } from 'recharts';
 import {
   Assessment as AssessmentIcon,
@@ -238,7 +243,7 @@ const ClinicalInterventionReports: React.FC = () => {
         setReportData(mockReportData);
         setReportError(
           response.message ||
-            'No report data available. Create some clinical interventions to see reports.'
+          'No report data available. Create some clinical interventions to see reports.'
         );
       }
     } catch (error) {
@@ -316,15 +321,71 @@ const ClinicalInterventionReports: React.FC = () => {
     }
   };
 
-  // Chart colors
+  // Modern chart colors with gradients
   const chartColors = [
-    theme.palette.primary.main,
-    theme.palette.secondary.main,
-    theme.palette.success.main,
-    theme.palette.warning.main,
-    theme.palette.error.main,
-    theme.palette.info.main,
+    '#667eea', // Modern blue
+    '#764ba2', // Modern purple
+    '#f093fb', // Modern pink
+    '#f5576c', // Modern red
+    '#4facfe', // Modern light blue
+    '#43e97b', // Modern green
+    '#fa709a', // Modern coral
+    '#fee140', // Modern yellow
   ];
+
+  const gradientColors = [
+    { start: '#667eea', end: '#764ba2' },
+    { start: '#f093fb', end: '#f5576c' },
+    { start: '#4facfe', end: '#00f2fe' },
+    { start: '#43e97b', end: '#38f9d7' },
+    { start: '#fa709a', end: '#fee140' },
+    { start: '#a8edea', end: '#fed6e3' },
+    { start: '#ffecd2', end: '#fcb69f' },
+    { start: '#ff9a9e', end: '#fecfef' },
+  ];
+
+  // Custom tooltip component
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <Paper
+          sx={{
+            p: 2,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: 2,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+            {label}
+          </Typography>
+          {payload.map((entry: any, index: number) => (
+            <Typography
+              key={index}
+              variant="body2"
+              sx={{ color: entry.color, display: 'flex', alignItems: 'center', gap: 1 }}
+            >
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  backgroundColor: entry.color,
+                }}
+              />
+              {entry.name}: {entry.value}
+              {entry.name.includes('Rate') && '%'}
+              {entry.name.includes('Savings') && ' ₦'}
+              {entry.name.includes('Time') && ' days'}
+            </Typography>
+          ))}
+        </Paper>
+      );
+    }
+    return null;
+  };
 
   if (loadingReport && !reportData) {
     return (
@@ -526,124 +587,261 @@ const ClinicalInterventionReports: React.FC = () => {
         {/* Tab Content */}
         {activeTab === 0 && (
           <Box>
-            {/* Summary KPIs */}
+            {/* Modern KPI Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid item xs={12} sm={6} md={4}>
-                <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <AssessmentIcon
-                      sx={{ fontSize: 40, color: 'primary.main', mb: 1 }}
-                    />
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 40px rgba(102, 126, 234, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
+                    >
+                      <AssessmentIcon sx={{ fontSize: 32 }} />
+                    </Box>
                     <Typography
-                      variant="h4"
+                      variant="h3"
                       component="div"
-                      sx={{ fontWeight: 'bold' }}
+                      sx={{ fontWeight: 700, mb: 1 }}
                     >
                       {reportData?.summary?.totalInterventions || 0}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body1" sx={{ opacity: 0.9 }}>
                       Total Interventions
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <TrendingUpIcon
-                      sx={{ fontSize: 40, color: 'success.main', mb: 1 }}
-                    />
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(67, 233, 123, 0.3)',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 40px rgba(67, 233, 123, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
+                    >
+                      <TrendingUpIcon sx={{ fontSize: 32 }} />
+                    </Box>
                     <Typography
-                      variant="h4"
+                      variant="h3"
                       component="div"
-                      sx={{ fontWeight: 'bold' }}
+                      sx={{ fontWeight: 700, mb: 1 }}
                     >
                       {(reportData?.summary?.successRate || 0).toFixed(1)}%
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body1" sx={{ opacity: 0.9 }}>
                       Success Rate
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <MoneyIcon
-                      sx={{ fontSize: 40, color: 'warning.main', mb: 1 }}
-                    />
-                    <Typography
-                      variant="h4"
-                      component="div"
-                      sx={{ fontWeight: 'bold' }}
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(250, 112, 154, 0.3)',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 40px rgba(250, 112, 154, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
                     >
-                      ₦
-                      {(
-                        reportData?.summary?.totalCostSavings || 0
-                      ).toLocaleString()}
+                      <MoneyIcon sx={{ fontSize: 32 }} />
+                    </Box>
+                    <Typography
+                      variant="h3"
+                      component="div"
+                      sx={{ fontWeight: 700, mb: 1 }}
+                    >
+                      ₦{(reportData?.summary?.totalCostSavings || 0).toLocaleString()}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body1" sx={{ opacity: 0.9 }}>
                       Total Cost Savings
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <TimelineIcon
-                      sx={{ fontSize: 40, color: 'info.main', mb: 1 }}
-                    />
-                    <Typography
-                      variant="h4"
-                      component="div"
-                      sx={{ fontWeight: 'bold' }}
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(79, 172, 254, 0.3)',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 40px rgba(79, 172, 254, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
                     >
-                      {(
-                        reportData?.summary?.averageResolutionTime || 0
-                      ).toFixed(1)}
+                      <TimelineIcon sx={{ fontSize: 32 }} />
+                    </Box>
+                    <Typography
+                      variant="h3"
+                      component="div"
+                      sx={{ fontWeight: 700, mb: 1 }}
+                    >
+                      {(reportData?.summary?.averageResolutionTime || 0).toFixed(1)}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body1" sx={{ opacity: 0.9 }}>
                       Avg Resolution Time (days)
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <AssessmentIcon
-                      sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }}
-                    />
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(240, 147, 251, 0.3)',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 40px rgba(240, 147, 251, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
+                    >
+                      <AssessmentIcon sx={{ fontSize: 32 }} />
+                    </Box>
                     <Typography
-                      variant="h4"
+                      variant="h3"
                       component="div"
-                      sx={{ fontWeight: 'bold' }}
+                      sx={{ fontWeight: 700, mb: 1 }}
                     >
                       {reportData?.summary?.completedInterventions || 0}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body1" sx={{ opacity: 0.9 }}>
                       Completed Interventions
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <TrendingUpIcon
-                      sx={{ fontSize: 40, color: 'success.main', mb: 1 }}
-                    />
-                    <Typography
-                      variant="h4"
-                      component="div"
-                      sx={{ fontWeight: 'bold' }}
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                    color: '#333',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(168, 237, 234, 0.3)',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 40px rgba(168, 237, 234, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
                     >
-                      {(
-                        reportData?.summary?.patientSatisfactionScore || 0
-                      ).toFixed(1)}
+                      <TrendingUpIcon sx={{ fontSize: 32 }} />
+                    </Box>
+                    <Typography
+                      variant="h3"
+                      component="div"
+                      sx={{ fontWeight: 700, mb: 1 }}
+                    >
+                      {(reportData?.summary?.patientSatisfactionScore || 0).toFixed(1)}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body1" sx={{ opacity: 0.8 }}>
                       Patient Satisfaction (5.0)
                     </Typography>
                   </CardContent>
@@ -651,63 +849,191 @@ const ClinicalInterventionReports: React.FC = () => {
               </Grid>
             </Grid>
 
-            {/* Summary Charts */}
+            {/* Modern Summary Charts */}
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Success Rate by Category
-                    </Typography>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={reportData?.categoryAnalysis || []}>
-                        <CartesianGrid strokeDasharray="3 3" />
+              <Grid item xs={12} lg={8}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <Box
+                        sx={{
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          borderRadius: 2,
+                          p: 1,
+                          mr: 2,
+                        }}
+                      >
+                        <BarChartIcon sx={{ color: 'white', fontSize: 24 }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Success Rate by Category
+                      </Typography>
+                    </Box>
+                    <ResponsiveContainer width="100%" height={350}>
+                      <BarChart
+                        data={reportData?.categoryAnalysis || []}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                      >
+                        <defs>
+                          <linearGradient id="successGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#667eea" stopOpacity={1} />
+                            <stop offset="100%" stopColor="#764ba2" stopOpacity={0.8} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis
                           dataKey="category"
                           angle={-45}
                           textAnchor="end"
                           height={80}
+                          tick={{ fontSize: 12, fill: '#64748b' }}
                         />
-                        <YAxis domain={[0, 100]} />
-                        <RechartsTooltip
-                          formatter={(value) => [`${value}%`, 'Success Rate']}
+                        <YAxis
+                          domain={[0, 100]}
+                          tick={{ fontSize: 12, fill: '#64748b' }}
                         />
+                        <RechartsTooltip content={<CustomTooltip />} />
                         <Bar
                           dataKey="successRate"
-                          fill={theme.palette.primary.main}
+                          fill="url(#successGradient)"
+                          radius={[4, 4, 0, 0]}
+                          animationDuration={1000}
                         />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} md={6}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Cost Savings by Category
-                    </Typography>
+              <Grid item xs={12} lg={4}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                    height: '100%',
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <Box
+                        sx={{
+                          background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                          borderRadius: 2,
+                          p: 1,
+                          mr: 2,
+                        }}
+                      >
+                        <PieChartIcon sx={{ color: 'white', fontSize: 24 }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Category Distribution
+                      </Typography>
+                    </Box>
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={reportData?.categoryAnalysis || []}>
-                        <CartesianGrid strokeDasharray="3 3" />
+                      <PieChart>
+                        <defs>
+                          {gradientColors.map((gradient, index) => (
+                            <linearGradient
+                              key={index}
+                              id={`pieGradient${index}`}
+                              x1="0"
+                              y1="0"
+                              x2="1"
+                              y2="1"
+                            >
+                              <stop offset="0%" stopColor={gradient.start} />
+                              <stop offset="100%" stopColor={gradient.end} />
+                            </linearGradient>
+                          ))}
+                        </defs>
+                        <Pie
+                          data={reportData?.categoryAnalysis || []}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={120}
+                          paddingAngle={2}
+                          dataKey="total"
+                          animationDuration={1000}
+                        >
+                          {(reportData?.categoryAnalysis || []).map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={`url(#pieGradient${index % gradientColors.length})`}
+                            />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip content={<CustomTooltip />} />
+                        <Legend
+                          verticalAlign="bottom"
+                          height={36}
+                          wrapperStyle={{ fontSize: '12px' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <Box
+                        sx={{
+                          background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                          borderRadius: 2,
+                          p: 1,
+                          mr: 2,
+                        }}
+                      >
+                        <MoneyIcon sx={{ color: 'white', fontSize: 24 }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Cost Savings by Category
+                      </Typography>
+                    </Box>
+                    <ResponsiveContainer width="100%" height={350}>
+                      <AreaChart
+                        data={reportData?.categoryAnalysis || []}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                      >
+                        <defs>
+                          <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#fa709a" stopOpacity={0.8} />
+                            <stop offset="100%" stopColor="#fee140" stopOpacity={0.2} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis
                           dataKey="category"
                           angle={-45}
                           textAnchor="end"
                           height={80}
+                          tick={{ fontSize: 12, fill: '#64748b' }}
                         />
-                        <YAxis />
-                        <RechartsTooltip
-                          formatter={(value) => [
-                            `₦${value}`,
-                            'Avg Cost Savings',
-                          ]}
-                        />
-                        <Bar
+                        <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
+                        <RechartsTooltip content={<CustomTooltip />} />
+                        <Area
+                          type="monotone"
                           dataKey="avgCostSavings"
-                          fill={theme.palette.success.main}
+                          stroke="#fa709a"
+                          strokeWidth={3}
+                          fill="url(#costGradient)"
+                          animationDuration={1500}
                         />
-                      </BarChart>
+                      </AreaChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
@@ -753,8 +1079,8 @@ const ClinicalInterventionReports: React.FC = () => {
                                 category.successRate >= 90
                                   ? 'success'
                                   : category.successRate >= 80
-                                  ? 'warning'
-                                  : 'error'
+                                    ? 'warning'
+                                    : 'error'
                               }
                               size="small"
                             />
@@ -777,45 +1103,216 @@ const ClinicalInterventionReports: React.FC = () => {
 
         {activeTab === 2 && (
           <Box>
-            {/* Trend Analysis Charts */}
+            {/* Modern Trend Analysis Charts */}
             <Grid container spacing={3}>
               <Grid item xs={12}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Monthly Trends
-                    </Typography>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <ComposedChart data={reportData?.trendAnalysis || []}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="period" />
-                        <YAxis yAxisId="left" />
-                        <YAxis yAxisId="right" orientation="right" />
-                        <RechartsTooltip />
-                        <Legend />
-                        <Bar
-                          yAxisId="left"
-                          dataKey="interventions"
-                          fill={theme.palette.primary.main}
-                          name="Interventions"
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <Box
+                        sx={{
+                          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                          borderRadius: 2,
+                          p: 1,
+                          mr: 2,
+                        }}
+                      >
+                        <ShowChartIcon sx={{ color: 'white', fontSize: 24 }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Monthly Performance Trends
+                      </Typography>
+                    </Box>
+                    <ResponsiveContainer width="100%" height={450}>
+                      <ComposedChart
+                        data={reportData?.trendAnalysis || []}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <defs>
+                          <linearGradient id="interventionsGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#667eea" stopOpacity={0.8} />
+                            <stop offset="100%" stopColor="#764ba2" stopOpacity={0.3} />
+                          </linearGradient>
+                          <linearGradient id="costSavingsGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#fa709a" stopOpacity={0.6} />
+                            <stop offset="100%" stopColor="#fee140" stopOpacity={0.1} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis
+                          dataKey="period"
+                          tick={{ fontSize: 12, fill: '#64748b' }}
                         />
-                        <Line
+                        <YAxis
+                          yAxisId="left"
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                        />
+                        <YAxis
                           yAxisId="right"
+                          orientation="right"
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                        />
+                        <RechartsTooltip content={<CustomTooltip />} />
+                        <Legend />
+                        <Area
+                          yAxisId="left"
                           type="monotone"
-                          dataKey="successRate"
-                          stroke={theme.palette.success.main}
-                          name="Success Rate %"
+                          dataKey="interventions"
+                          fill="url(#interventionsGradient)"
+                          stroke="#667eea"
+                          strokeWidth={2}
+                          name="Interventions"
+                          animationDuration={1500}
                         />
                         <Area
                           yAxisId="left"
                           type="monotone"
                           dataKey="costSavings"
-                          fill={theme.palette.warning.main}
-                          fillOpacity={0.3}
-                          name="Cost Savings ($)"
+                          fill="url(#costSavingsGradient)"
+                          stroke="#fa709a"
+                          strokeWidth={2}
+                          name="Cost Savings (₦)"
+                          animationDuration={2000}
+                        />
+                        <Line
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="successRate"
+                          stroke="#43e97b"
+                          strokeWidth={3}
+                          dot={{ fill: '#43e97b', strokeWidth: 2, r: 6 }}
+                          activeDot={{ r: 8, stroke: '#43e97b', strokeWidth: 2 }}
+                          name="Success Rate (%)"
+                          animationDuration={2500}
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <Box
+                        sx={{
+                          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                          borderRadius: 2,
+                          p: 1,
+                          mr: 2,
+                        }}
+                      >
+                        <TimelineIcon sx={{ color: 'white', fontSize: 24 }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Resolution Time Trend
+                      </Typography>
+                    </Box>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart
+                        data={reportData?.trendAnalysis || []}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <defs>
+                          <linearGradient id="resolutionGradient" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="#f093fb" />
+                            <stop offset="100%" stopColor="#f5576c" />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis
+                          dataKey="period"
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                        />
+                        <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
+                        <RechartsTooltip content={<CustomTooltip />} />
+                        <Line
+                          type="monotone"
+                          dataKey="resolutionTime"
+                          stroke="url(#resolutionGradient)"
+                          strokeWidth={4}
+                          dot={{ fill: '#f093fb', strokeWidth: 2, r: 6 }}
+                          activeDot={{ r: 8, stroke: '#f093fb', strokeWidth: 2 }}
+                          animationDuration={2000}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <Box
+                        sx={{
+                          background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                          borderRadius: 2,
+                          p: 1,
+                          mr: 2,
+                        }}
+                      >
+                        <TrendingUpIcon sx={{ color: '#333', fontSize: 24 }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Success Rate Progress
+                      </Typography>
+                    </Box>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RadialBarChart
+                        cx="50%"
+                        cy="50%"
+                        innerRadius="20%"
+                        outerRadius="90%"
+                        data={[
+                          {
+                            name: 'Success Rate',
+                            value: reportData?.summary?.successRate || 0,
+                            fill: '#43e97b',
+                          },
+                        ]}
+                      >
+                        <RadialBar
+                          minAngle={15}
+                          label={{ position: 'insideStart', fill: '#fff' }}
+                          background
+                          clockWise
+                          dataKey="value"
+                          cornerRadius={10}
+                          fill="#43e97b"
+                        />
+                        <RechartsTooltip content={<CustomTooltip />} />
+                      </RadialBarChart>
+                    </ResponsiveContainer>
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        textAlign: 'center',
+                        fontWeight: 700,
+                        color: '#43e97b',
+                        mt: -8,
+                      }}
+                    >
+                      {(reportData?.summary?.successRate || 0).toFixed(1)}%
+                    </Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -825,153 +1322,261 @@ const ClinicalInterventionReports: React.FC = () => {
 
         {activeTab === 3 && (
           <Box>
-            {/* Comparative Analysis */}
+            {/* Modern Comparative Analysis */}
             <Grid container spacing={3}>
               <Grid item xs={12} md={4}>
-                <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" gutterBottom>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
+                    }}
+                  />
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
+                    >
+                      <AssessmentIcon sx={{ color: 'white', fontSize: 28 }} />
+                    </Box>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                       Interventions
                     </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {reportData?.comparativeAnalysis?.currentPeriod
-                        ?.interventions || 0}
+                    <Typography
+                      variant="h3"
+                      sx={{ fontWeight: 700, mb: 2, color: '#1e293b' }}
+                    >
+                      {reportData?.comparativeAnalysis?.currentPeriod?.interventions || 0}
                     </Typography>
                     <Box
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        backgroundColor:
+                          (reportData?.comparativeAnalysis?.percentageChange?.interventions || 0) >= 0
+                            ? 'rgba(67, 233, 123, 0.1)'
+                            : 'rgba(245, 87, 108, 0.1)',
+                        borderRadius: 2,
+                        p: 1,
                       }}
                     >
                       <TrendingUpIcon
                         sx={{
                           color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.interventions || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
+                            (reportData?.comparativeAnalysis?.percentageChange?.interventions || 0) >= 0
+                              ? '#43e97b'
+                              : '#f5576c',
                           mr: 0.5,
+                          fontSize: 20,
                         }}
                       />
                       <Typography
                         variant="body2"
                         sx={{
                           color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.interventions || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
-                          fontWeight: 'medium',
+                            (reportData?.comparativeAnalysis?.percentageChange?.interventions || 0) >= 0
+                              ? '#43e97b'
+                              : '#f5576c',
+                          fontWeight: 600,
                         }}
                       >
                         {Math.abs(
-                          reportData?.comparativeAnalysis?.percentageChange
-                            ?.interventions || 0
-                        ).toFixed(1)}
-                        % vs previous period
+                          reportData?.comparativeAnalysis?.percentageChange?.interventions || 0
+                        ).toFixed(1)}% vs previous period
                       </Typography>
                     </Box>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
-                <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" gutterBottom>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #43e97b 0%, #38f9d7 100%)',
+                    }}
+                  />
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
+                    >
+                      <TrendingUpIcon sx={{ color: 'white', fontSize: 28 }} />
+                    </Box>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                       Success Rate
                     </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {(
-                        reportData?.comparativeAnalysis?.currentPeriod
-                          ?.successRate || 0
-                      ).toFixed(1)}
-                      %
+                    <Typography
+                      variant="h3"
+                      sx={{ fontWeight: 700, mb: 2, color: '#1e293b' }}
+                    >
+                      {(reportData?.comparativeAnalysis?.currentPeriod?.successRate || 0).toFixed(1)}%
                     </Typography>
                     <Box
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        backgroundColor:
+                          (reportData?.comparativeAnalysis?.percentageChange?.successRate || 0) >= 0
+                            ? 'rgba(67, 233, 123, 0.1)'
+                            : 'rgba(245, 87, 108, 0.1)',
+                        borderRadius: 2,
+                        p: 1,
                       }}
                     >
                       <TrendingUpIcon
                         sx={{
                           color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.successRate || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
+                            (reportData?.comparativeAnalysis?.percentageChange?.successRate || 0) >= 0
+                              ? '#43e97b'
+                              : '#f5576c',
                           mr: 0.5,
+                          fontSize: 20,
                         }}
                       />
                       <Typography
                         variant="body2"
                         sx={{
                           color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.successRate || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
-                          fontWeight: 'medium',
+                            (reportData?.comparativeAnalysis?.percentageChange?.successRate || 0) >= 0
+                              ? '#43e97b'
+                              : '#f5576c',
+                          fontWeight: 600,
                         }}
                       >
                         {Math.abs(
-                          reportData?.comparativeAnalysis?.percentageChange
-                            ?.successRate || 0
-                        ).toFixed(1)}
-                        % vs previous period
+                          reportData?.comparativeAnalysis?.percentageChange?.successRate || 0
+                        ).toFixed(1)}% vs previous period
                       </Typography>
                     </Box>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
-                <Card>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" gutterBottom>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #fa709a 0%, #fee140 100%)',
+                    }}
+                  />
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
+                    >
+                      <MoneyIcon sx={{ color: 'white', fontSize: 28 }} />
+                    </Box>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                       Cost Savings
                     </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      $
-                      {(
-                        reportData?.comparativeAnalysis?.currentPeriod
-                          ?.costSavings || 0
-                      ).toLocaleString()}
+                    <Typography
+                      variant="h3"
+                      sx={{ fontWeight: 700, mb: 2, color: '#1e293b' }}
+                    >
+                      ₦{(reportData?.comparativeAnalysis?.currentPeriod?.costSavings || 0).toLocaleString()}
                     </Typography>
                     <Box
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        backgroundColor:
+                          (reportData?.comparativeAnalysis?.percentageChange?.costSavings || 0) >= 0
+                            ? 'rgba(67, 233, 123, 0.1)'
+                            : 'rgba(245, 87, 108, 0.1)',
+                        borderRadius: 2,
+                        p: 1,
                       }}
                     >
                       <TrendingUpIcon
                         sx={{
                           color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.costSavings || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
+                            (reportData?.comparativeAnalysis?.percentageChange?.costSavings || 0) >= 0
+                              ? '#43e97b'
+                              : '#f5576c',
                           mr: 0.5,
+                          fontSize: 20,
                         }}
                       />
                       <Typography
                         variant="body2"
                         sx={{
                           color:
-                            (reportData?.comparativeAnalysis?.percentageChange
-                              ?.costSavings || 0) >= 0
-                              ? 'success.main'
-                              : 'error.main',
-                          fontWeight: 'medium',
+                            (reportData?.comparativeAnalysis?.percentageChange?.costSavings || 0) >= 0
+                              ? '#43e97b'
+                              : '#f5576c',
+                          fontWeight: 600,
                         }}
                       >
                         {Math.abs(
-                          reportData?.comparativeAnalysis?.percentageChange
-                            ?.costSavings || 0
-                        ).toFixed(1)}
-                        % vs previous period
+                          reportData?.comparativeAnalysis?.percentageChange?.costSavings || 0
+                        ).toFixed(1)}% vs previous period
                       </Typography>
                     </Box>
                   </CardContent>
@@ -1021,8 +1626,8 @@ const ClinicalInterventionReports: React.FC = () => {
                                   outcome.priority === 'high'
                                     ? 'error'
                                     : outcome.priority === 'medium'
-                                    ? 'warning'
-                                    : 'default'
+                                      ? 'warning'
+                                      : 'default'
                                 }
                                 size="small"
                               />
@@ -1034,8 +1639,8 @@ const ClinicalInterventionReports: React.FC = () => {
                                   outcome.patientResponse === 'improved'
                                     ? 'success'
                                     : outcome.patientResponse === 'no_change'
-                                    ? 'warning'
-                                    : 'error'
+                                      ? 'warning'
+                                      : 'error'
                                 }
                                 size="small"
                               />
