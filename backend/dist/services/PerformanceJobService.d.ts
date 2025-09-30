@@ -50,7 +50,7 @@ export declare class PerformanceJobService {
     static getInstance(): PerformanceJobService;
     private initializeQueues;
     private initializeWorkers;
-    queueAIAnalysis(data: AIAnalysisJobData): Promise<Job<AIAnalysisJobData>>;
+    queueAIAnalysis(data: AIAnalysisJobData): Promise<Job<AIAnalysisJobData> | null>;
     queueDataExport(data: DataExportJobData): Promise<Job<DataExportJobData>>;
     queueCacheWarmup(data: CacheWarmupJobData): Promise<Job<CacheWarmupJobData>>;
     queueDatabaseMaintenance(data: DatabaseMaintenanceJobData): Promise<Job<DatabaseMaintenanceJobData>>;

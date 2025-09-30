@@ -178,6 +178,12 @@ const diagnosticCaseSchema = new mongoose_1.Schema({
             default: false,
         },
         followUpDate: Date,
+        notes: String,
+        reviewedAt: Date,
+        reviewedBy: {
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: 'User',
+        },
     },
     patientConsent: {
         provided: {

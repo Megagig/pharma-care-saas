@@ -65,7 +65,8 @@ class PerformanceCacheService {
             memoryUsage: 0,
             keyCount: 0,
         };
-        this.initializeRedis();
+        this.redis = null;
+        this.isConnected = false;
     }
     static getInstance() {
         if (!PerformanceCacheService.instance) {
@@ -107,8 +108,17 @@ class PerformanceCacheService {
             this.isConnected = false;
         }
     }
+    async ensureConnection() {
+        if (this.isConnected && this.redis) {
+            return true;
+        }
+        if (!this.redis) {
+            await this.initializeRedis();
+        }
+        return this.isConnected;
+    }
     async cacheApiResponse(key, data, options = {}) {
-        if (!this.isConnected || !this.redis) {
+        if (!(await this.ensureConnection())) {
             return false;
         }
         try {
@@ -151,7 +161,7 @@ class PerformanceCacheService {
         }
     }
     async getCachedApiResponse(key) {
-        if (!this.isConnected || !this.redis) {
+        if (!(await this.ensureConnection())) {
             this.stats.misses++;
             return null;
         }
@@ -323,7 +333,7 @@ class PerformanceCacheService {
         ]);
     }
     async getStats() {
-        if (!this.isConnected || !this.redis) {
+        if (!(await this.ensureConnection())) {
             return this.stats;
         }
         try {
@@ -382,6 +392,15 @@ class PerformanceCacheService {
             this.isConnected = false;
             logger_1.default.info('Performance cache service connection closed');
         }
+    }
+    async get(key) {
+        return this.getCachedApiResponse(key);
+    }
+    async set(key, value, ttl) {
+        return this.cacheApiResponse(key, value, { ttl });
+    }
+    async invalidate(pattern) {
+        return this.invalidateByPattern(pattern);
     }
 }
 exports.default = PerformanceCacheService;

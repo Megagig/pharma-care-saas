@@ -97,6 +97,9 @@ export interface IDiagnosticCase extends Document {
     counselingPoints: string[];
     followUpRequired: boolean;
     followUpDate?: Date;
+    notes?: string;
+    reviewedAt?: Date;
+    reviewedBy?: mongoose.Types.ObjectId;
   };
   
   // Patient Consent
@@ -268,6 +271,12 @@ const diagnosticCaseSchema = new Schema(
         default: false,
       },
       followUpDate: Date,
+      notes: String,
+      reviewedAt: Date,
+      reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
     },
     patientConsent: {
       provided: {

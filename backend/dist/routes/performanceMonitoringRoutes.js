@@ -20,7 +20,7 @@ router.use(monitoringRateLimit);
 router.use(auth_1.auth);
 router.get('/overview', async (req, res) => {
     try {
-        const workspaceId = req.user?.workspaceId;
+        const workspaceId = req.user?.workplaceId;
         const overview = await PerformanceMonitoringService_1.performanceMonitoringService.getPerformanceOverview(workspaceId);
         res.json({
             success: true,
@@ -45,7 +45,7 @@ router.get('/trends', [
             return res.status(400).json({ errors: errors.array() });
         }
         const { period = '7d' } = req.query;
-        const workspaceId = req.user?.workspaceId;
+        const workspaceId = req.user?.workplaceId;
         const trends = await PerformanceMonitoringService_1.performanceMonitoringService.getPerformanceTrends(period, workspaceId);
         res.json({
             success: true,
@@ -71,7 +71,7 @@ router.get('/report', [
             return res.status(400).json({ errors: errors.array() });
         }
         const { period = '7d' } = req.query;
-        const workspaceId = req.user?.workspaceId;
+        const workspaceId = req.user?.workplaceId;
         const report = await PerformanceMonitoringService_1.performanceMonitoringService.generatePerformanceReport(period, workspaceId);
         res.json({
             success: true,
@@ -96,7 +96,7 @@ router.get('/alerts', [
             return res.status(400).json({ errors: errors.array() });
         }
         const { limit = 50 } = req.query;
-        const workspaceId = req.user?.workspaceId;
+        const workspaceId = req.user?.workplaceId;
         const alerts = await PerformanceMonitoringService_1.performanceMonitoringService.getPerformanceAlerts(workspaceId, parseInt(limit));
         res.json({
             success: true,
@@ -144,7 +144,7 @@ router.get('/metrics/summary', [
             return res.status(400).json({ errors: errors.array() });
         }
         const { period = '24h' } = req.query;
-        const workspaceId = req.user?.workspaceId;
+        const workspaceId = req.user?.workplaceId;
         const [overview, trends] = await Promise.all([
             PerformanceMonitoringService_1.performanceMonitoringService.getPerformanceOverview(workspaceId),
             PerformanceMonitoringService_1.performanceMonitoringService.getPerformanceTrends(period, workspaceId),
@@ -194,7 +194,7 @@ router.get('/metrics/summary', [
 });
 router.get('/recommendations', async (req, res) => {
     try {
-        const workspaceId = req.user?.workspaceId;
+        const workspaceId = req.user?.workplaceId;
         const overview = await PerformanceMonitoringService_1.performanceMonitoringService.getPerformanceOverview(workspaceId);
         res.json({
             success: true,

@@ -6,6 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mtrErrors_1 = require("../utils/mtrErrors");
 const logger_1 = __importDefault(require("../utils/logger"));
 const errorHandler = (err, req, res, next) => {
+    if (res.headersSent) {
+        console.warn('Error occurred after response was sent:', err.message);
+        return;
+    }
     if ((0, mtrErrors_1.isMTRError)(err)) {
         const severity = (0, mtrErrors_1.getMTRErrorSeverity)(err);
         const recovery = (0, mtrErrors_1.getMTRErrorRecovery)(err);

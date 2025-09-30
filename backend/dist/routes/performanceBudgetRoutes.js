@@ -35,7 +35,7 @@ router.post('/', [
         }
         const budgetData = {
             ...req.body,
-            workspaceId: req.user?.workspaceId,
+            workspaceId: req.user?.workplaceId,
         };
         const budget = await PerformanceBudgetService_1.performanceBudgetService.createBudget(budgetData);
         res.status(201).json({
@@ -54,7 +54,7 @@ router.post('/', [
 });
 router.get('/', async (req, res) => {
     try {
-        const budgets = await PerformanceBudgetService_1.performanceBudgetService.getBudgets(req.user?.workspaceId);
+        const budgets = await PerformanceBudgetService_1.performanceBudgetService.getBudgets(req.user?.workplaceId);
         res.json({
             success: true,
             budgets,
@@ -79,7 +79,7 @@ router.get('/:id', async (req, res) => {
                 message: 'Performance budget not found',
             });
         }
-        if (budget.workspaceId && budget.workspaceId !== req.user?.workspaceId) {
+        if (budget.workspaceId && budget.workspaceId !== req.user?.workplaceId) {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied',
@@ -118,7 +118,7 @@ router.put('/:id', [
                 message: 'Performance budget not found',
             });
         }
-        if (existingBudget.workspaceId && existingBudget.workspaceId !== req.user?.workspaceId) {
+        if (existingBudget.workspaceId && existingBudget.workspaceId !== req.user?.workplaceId) {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied',
@@ -155,7 +155,7 @@ router.delete('/:id', async (req, res) => {
                 message: 'Performance budget not found',
             });
         }
-        if (existingBudget.workspaceId && existingBudget.workspaceId !== req.user?.workspaceId) {
+        if (existingBudget.workspaceId && existingBudget.workspaceId !== req.user?.workplaceId) {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied',
@@ -198,7 +198,7 @@ router.get('/:id/report', [
                 message: 'Performance budget not found',
             });
         }
-        if (existingBudget.workspaceId && existingBudget.workspaceId !== req.user?.workspaceId) {
+        if (existingBudget.workspaceId && existingBudget.workspaceId !== req.user?.workplaceId) {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied',
@@ -236,7 +236,7 @@ router.post('/check/lighthouse', [
             metrics,
             url,
             branch,
-            workspaceId: req.user?.workspaceId,
+            workspaceId: req.user?.workplaceId,
         });
         res.json({
             success: true,
@@ -267,7 +267,7 @@ router.post('/check/web-vitals', [
         const { metrics, url, userAgent, deviceType } = req.body;
         const violations = await PerformanceBudgetService_1.performanceBudgetService.checkWebVitalsBudgets(metrics, {
             url,
-            workspaceId: req.user?.workspaceId,
+            workspaceId: req.user?.workplaceId,
             userAgent,
             deviceType,
         });
@@ -300,7 +300,7 @@ router.post('/check/bundle-size', [
         const violations = await PerformanceBudgetService_1.performanceBudgetService.checkBundleSizeBudgets(bundleData, {
             branch,
             commit,
-            workspaceId: req.user?.workspaceId,
+            workspaceId: req.user?.workplaceId,
         });
         res.json({
             success: true,
@@ -329,7 +329,7 @@ router.post('/check/api-latency', [
         const { latencyData, endpoint } = req.body;
         const violations = await PerformanceBudgetService_1.performanceBudgetService.checkAPILatencyBudgets(latencyData, {
             endpoint,
-            workspaceId: req.user?.workspaceId,
+            workspaceId: req.user?.workplaceId,
         });
         res.json({
             success: true,
@@ -348,7 +348,7 @@ router.post('/check/api-latency', [
 });
 router.post('/default', async (req, res) => {
     try {
-        const workspaceId = req.user?.workspaceId;
+        const workspaceId = req.user?.workplaceId;
         if (!workspaceId) {
             return res.status(400).json({
                 success: false,

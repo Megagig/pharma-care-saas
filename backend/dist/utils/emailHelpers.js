@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sanitizeEmailContent = exports.isValidEmail = exports.sendBulkEmails = exports.sendEmail = void 0;
+exports.sanitizeEmailContent = exports.isValidEmail = exports.sendBulkEmails = exports.sendTemplatedEmail = void 0;
+exports.sendEmail = sendEmail;
 const email_1 = require("./email");
-const sendEmail = async (options) => {
+const sendTemplatedEmail = async (options) => {
     try {
         let htmlContent;
         let textContent;
@@ -31,7 +32,7 @@ const sendEmail = async (options) => {
         throw error;
     }
 };
-exports.sendEmail = sendEmail;
+exports.sendTemplatedEmail = sendTemplatedEmail;
 function generateEmailTemplate(template, data) {
     const templates = {
         'export-ready': `
@@ -87,7 +88,7 @@ const sendBulkEmails = async (recipients, options) => {
     const results = [];
     for (const recipient of recipients) {
         try {
-            const result = await (0, exports.sendEmail)({
+            const result = await (0, exports.sendTemplatedEmail)({
                 ...options,
                 to: recipient
             });
@@ -118,4 +119,11 @@ const sanitizeEmailContent = (content) => {
         .replace(/'/g, '&#39;');
 };
 exports.sanitizeEmailContent = sanitizeEmailContent;
+async function sendEmail(to, subject, body) {
+    await (0, exports.sendTemplatedEmail)({
+        to,
+        subject,
+        text: body,
+    });
+}
 //# sourceMappingURL=emailHelpers.js.map

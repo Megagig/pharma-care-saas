@@ -12,7 +12,7 @@ export interface CacheStats {
     memoryUsage: number;
     keyCount: number;
 }
-declare class PerformanceCacheService {
+export default class PerformanceCacheService {
     private static instance;
     private redis;
     private isConnected;
@@ -23,6 +23,7 @@ declare class PerformanceCacheService {
     private constructor();
     static getInstance(): PerformanceCacheService;
     private initializeRedis;
+    private ensureConnection;
     cacheApiResponse(key: string, data: any, options?: CacheOptions): Promise<boolean>;
     getCachedApiResponse<T = any>(key: string): Promise<T | null>;
     cacheDashboardOverview(userId: string, workspaceId: string, data: any, ttl?: number): Promise<boolean>;
@@ -47,6 +48,8 @@ declare class PerformanceCacheService {
     private hashFilters;
     private hashQuery;
     close(): Promise<void>;
+    get<T = any>(key: string): Promise<T | null>;
+    set<T = any>(key: string, value: T, ttl: number): Promise<boolean>;
+    invalidate(pattern: string): Promise<number>;
 }
-export default PerformanceCacheService;
 //# sourceMappingURL=PerformanceCacheService.d.ts.map

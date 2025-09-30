@@ -80,6 +80,9 @@ export interface IDiagnosticCase extends Document {
         counselingPoints: string[];
         followUpRequired: boolean;
         followUpDate?: Date;
+        notes?: string;
+        reviewedAt?: Date;
+        reviewedBy?: mongoose.Types.ObjectId;
     };
     patientConsent: {
         provided: boolean;

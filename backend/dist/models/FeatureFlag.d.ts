@@ -22,7 +22,9 @@ export interface IFeatureFlag extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-export declare const FeatureFlag: mongoose.Model<IFeatureFlag, {}, {}, {}, mongoose.Document<unknown, {}, IFeatureFlag> & IFeatureFlag & {
+declare const FeatureFlag: mongoose.Model<IFeatureFlag, {}, {}, {}, mongoose.Document<unknown, {}, IFeatureFlag> & IFeatureFlag & {
     _id: mongoose.Types.ObjectId;
 }, any>;
+export default FeatureFlag;
+export { FeatureFlag };
 //# sourceMappingURL=FeatureFlag.d.ts.map

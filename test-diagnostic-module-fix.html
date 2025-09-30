@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnostic Module Fix Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #4CAF50;
+            color: white;
+        }
+        .error-badge {
+            background: #f44336;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+        .highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="highlight">
+        <h1>🔧 Diagnostic Module Fix Applied</h1>
+        <p>Fixed the "Cannot access 'loadDiagnosticHistory' before initialization" error</p>
+        <span class="status-badge">✅ FIXED</span>
+    </div>
+
+    <div class="test-card">
+        <h2>🐛 Problem Identified</h2>
+        <p><strong>Error:</strong> "Cannot access 'loadDiagnosticHistory' before initialization"</p>
+        <p><strong>Root Cause:</strong> The useEffect was calling loadDiagnosticHistory before the function was defined due to JavaScript hoisting issues.</p>
+        
+        <div class="code-block">
+<strong>Before (Problematic):</strong>
+// useEffect calling function before it's defined
+useEffect(() => {
+  if (selectedPatient) {
+    loadDiagnosticHistory(selectedPatient); // ❌ Function not yet defined
+    setHistoryPage(1);
+  }
+}, [selectedPatient, loadDiagnosticHistory, ...]);
+
+// Function defined later in the file
+const loadDiagnosticHistory = useCallback(async (patientId, page) => {
+  // Function implementation
+}, [analysis, saveAnalysisToCache]);
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>✅ Solution Applied</h2>
+        <p>Reorganized the code to ensure proper function definition order:</p>
+        
+        <div class="code-block">
+<strong>After (Fixed):</strong>
+// 1. Function defined first
+const loadDiagnosticHistory = useCallback(async (patientId, page) => {
+  // Function implementation
+}, [analysis, saveAnalysisToCache]);
+
+// 2. Separate useEffect for history loading
+useEffect(() => {
+  if (selectedPatient) {
+    loadDiagnosticHistory(selectedPatient); // ✅ Function is now defined
+  }
+}, [selectedPatient, loadDiagnosticHistory]);
+
+// 3. Other useEffects without circular dependencies
+useEffect(() => {
+  if (selectedPatient) {
+    setHistoryPage(1);
+    // Other logic without loadDiagnosticHistory
+  }
+}, [selectedPatient, loadAnalysisFromCache, loadDraftFromCache, analysis]);
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>🔄 Changes Made</h2>
+        <ol>
+            <li><strong>Removed circular dependency:</strong> Removed loadDiagnosticHistory from the main useEffect dependencies</li>
+            <li><strong>Created separate useEffect:</strong> Added dedicated useEffect for history loading after function definition</li>
+            <li><strong>Maintained functionality:</strong> All features work exactly the same, just with proper initialization order</li>
+        </ol>
+    </div>
+
+    <div class="test-card">
+        <h2>🧪 Testing Instructions</h2>
+        <ol>
+            <li><strong>Navigate to Clinical Decision Support:</strong> Go to /pharmacy/decision-support</li>
+            <li><strong>Check for errors:</strong> The page should load without the initialization error</li>
+            <li><strong>Select a patient:</strong> History should load automatically</li>
+            <li><strong>Verify all features:</strong> All diagnostic history features should work normally</li>
+        </ol>
+    </div>
+
+    <div class="highlight">
+        <h2>🎯 Result</h2>
+        <p>The Clinical Decision Support page should now load successfully without any initialization errors. All diagnostic history functionality remains intact.</p>
+        <span class="status-badge">✅ READY FOR TESTING</span>
+    </div>
+</body>
+</html>

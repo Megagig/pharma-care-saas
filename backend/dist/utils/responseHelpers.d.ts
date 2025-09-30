@@ -17,6 +17,7 @@ export interface ApiResponse<T = any> {
         totalPages?: number;
         hasNext?: boolean;
         hasPrev?: boolean;
+        nextCursor?: string | null;
     };
     timestamp: string;
 }

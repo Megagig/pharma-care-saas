@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testAIConnection = exports.checkDrugInteractions = exports.getDiagnosticCase = exports.getDiagnosticHistory = exports.saveDiagnosticDecision = exports.generateDiagnosticAnalysis = void 0;
+exports.saveDiagnosticNotes = exports.testAIConnection = exports.checkDrugInteractions = exports.getDiagnosticCase = exports.getDiagnosticHistory = exports.saveDiagnosticDecision = exports.generateDiagnosticAnalysis = void 0;
 const express_validator_1 = require("express-validator");
 const DiagnosticCase_1 = __importDefault(require("../models/DiagnosticCase"));
 const Patient_1 = __importDefault(require("../models/Patient"));
@@ -429,6 +429,81 @@ const testAIConnection = async (req, res) => {
     }
 };
 exports.testAIConnection = testAIConnection;
+const saveDiagnosticNotes = async (req, res) => {
+    try {
+        const { caseId } = req.params;
+        const { notes } = req.body;
+        const userId = req.user.id;
+        const workplaceId = req.user.workplaceId;
+        if (!notes || typeof notes !== 'string') {
+            res.status(400).json({
+                success: false,
+                message: 'Notes are required and must be a string',
+            });
+            return;
+        }
+        const diagnosticCase = await DiagnosticCase_1.default.findOne({
+            caseId,
+            workplaceId,
+        });
+        if (!diagnosticCase) {
+            res.status(404).json({
+                success: false,
+                message: 'Diagnostic case not found or access denied',
+            });
+            return;
+        }
+        if (!diagnosticCase.pharmacistDecision) {
+            diagnosticCase.pharmacistDecision = {
+                accepted: false,
+                modifications: '',
+                finalRecommendation: '',
+                counselingPoints: [],
+                followUpRequired: false,
+            };
+        }
+        diagnosticCase.pharmacistDecision.notes = notes;
+        diagnosticCase.pharmacistDecision.reviewedAt = new Date();
+        diagnosticCase.pharmacistDecision.reviewedBy = userId;
+        await diagnosticCase.save();
+        const auditContext = {
+            userId,
+            userRole: req.user.role,
+            workplaceId: workplaceId.toString(),
+            isAdmin: req.isAdmin || false,
+            isSuperAdmin: req.user.role === 'super_admin',
+            canManage: req.canManage || false,
+            timestamp: new Date().toISOString(),
+        };
+        (0, responseHelpers_1.createAuditLog)('DIAGNOSTIC_NOTES_SAVED', 'DiagnosticCase', diagnosticCase._id.toString(), auditContext);
+        res.status(200).json({
+            success: true,
+            message: 'Notes saved successfully',
+            data: {
+                caseId: diagnosticCase.caseId,
+                notes,
+                reviewedAt: diagnosticCase.pharmacistDecision.reviewedAt,
+            },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Failed to save diagnostic notes', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            caseId: req.params.caseId,
+            userId: req.user?.id,
+        });
+        res.status(500).json({
+            success: false,
+            message: 'Failed to save notes',
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
+        });
+    }
+};
+exports.saveDiagnosticNotes = saveDiagnosticNotes;
 exports.default = {
     generateDiagnosticAnalysis: exports.generateDiagnosticAnalysis,
     saveDiagnosticDecision: exports.saveDiagnosticDecision,
@@ -436,5 +511,6 @@ exports.default = {
     getDiagnosticCase: exports.getDiagnosticCase,
     checkDrugInteractions: exports.checkDrugInteractions,
     testAIConnection: exports.testAIConnection,
+    saveDiagnosticNotes: exports.saveDiagnosticNotes,
 };
 //# sourceMappingURL=diagnosticController.js.map

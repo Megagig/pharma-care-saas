@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createMentionNotifications = exports.getMentionedUsers = exports.getMentionStats = exports.searchMessagesByMentions = exports.getUserSuggestions = void 0;
+exports.createMentionNotifications = exports.getMentionedUsers = exports.getMentionStats = exports.searchMessagesByMentionsV2 = exports.searchMessagesByMentions = exports.getUserSuggestions = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const User_1 = __importDefault(require("../models/User"));
 const Conversation_1 = __importDefault(require("../models/Conversation"));
@@ -13,7 +13,67 @@ const getUserSuggestions = async (req, res) => {
         const { conversationId } = req.params;
         const { query, limit = 10 } = req.query;
         const currentUserId = req.user?._id;
-        const workplaceId = req.workplaceId;
+        const workplaceId = req.user?.workplaceId;
+        if (!workplaceId) {
+            res.status(400).json({
+                success: false,
+                message: "Workplace context required",
+            });
+            return;
+        }
+        const conversation = await Conversation_1.default.findOne({
+            _id: conversationId,
+            workplaceId,
+            "participants.userId": currentUserId,
+        });
+        if (!conversation) {
+            res.status(404).json({
+                success: false,
+                message: "Conversation not found or access denied",
+            });
+            return;
+        }
+        let userQuery = {
+            workplaceId,
+            _id: { $ne: currentUserId },
+        };
+        if (query) {
+            userQuery.$or = [
+                { firstName: { $regex: query, $options: 'i' } },
+                { lastName: { $regex: query, $options: 'i' } },
+                { email: { $regex: query, $options: 'i' } },
+            ];
+        }
+        const users = await User_1.default.find(userQuery)
+            .select('firstName lastName email role avatar')
+            .limit(Number(limit))
+            .sort({ firstName: 1, lastName: 1 });
+        res.json({
+            success: true,
+            users: users.map(user => ({
+                id: user._id,
+                name: `${user.firstName} ${user.lastName}`,
+                email: user.email,
+                role: user.role,
+                avatar: user.avatar,
+            })),
+        });
+    }
+    catch (error) {
+        console.error('Error getting user suggestions:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to get user suggestions",
+        });
+    }
+};
+exports.getUserSuggestions = getUserSuggestions;
+const searchMessagesByMentions = async (req, res) => {
+    try {
+        const { conversationId } = req.params;
+        const { userId, limit = 50, page = 1 } = req.query;
+        const currentUserId = req.user?._id;
+        const workplaceId = req.user?.workplaceId;
         if (!workplaceId) {
             res.status(400).json({
                 success: false,
@@ -38,8 +98,9 @@ const getUserSuggestions = async (req, res) => {
             isDeleted: false,
             _id: { $ne: currentUserId },
         };
-        if (query && typeof query === "string") {
-            const searchRegex = new RegExp(query, "i");
+        const searchQueryParam = req.query.query;
+        if (searchQueryParam && typeof searchQueryParam === "string") {
+            const searchRegex = new RegExp(searchQueryParam, "i");
             searchQuery.$or = [
                 { firstName: searchRegex },
                 { lastName: searchRegex },
@@ -84,13 +145,13 @@ const getUserSuggestions = async (req, res) => {
         });
     }
 };
-exports.getUserSuggestions = getUserSuggestions;
-const searchMessagesByMentions = async (req, res) => {
+exports.searchMessagesByMentions = searchMessagesByMentions;
+const searchMessagesByMentionsV2 = async (req, res) => {
     try {
         const { conversationId } = req.params;
         const { userId, limit = 50, page = 1 } = req.query;
         const currentUserId = req.user?._id;
-        const workplaceId = req.workplaceId;
+        const workplaceId = req.user?.workplaceId;
         if (!workplaceId) {
             res.status(400).json({
                 success: false,
@@ -178,12 +239,12 @@ const searchMessagesByMentions = async (req, res) => {
         });
     }
 };
-exports.searchMessagesByMentions = searchMessagesByMentions;
+exports.searchMessagesByMentionsV2 = searchMessagesByMentionsV2;
 const getMentionStats = async (req, res) => {
     try {
         const { conversationId } = req.params;
         const currentUserId = req.user?._id;
-        const workplaceId = req.workplaceId;
+        const workplaceId = req.user?.workplaceId;
         if (!workplaceId) {
             res.status(400).json({
                 success: false,
@@ -291,7 +352,7 @@ const getMentionedUsers = async (req, res) => {
     try {
         const { conversationId } = req.params;
         const currentUserId = req.user?._id;
-        const workplaceId = req.workplaceId;
+        const workplaceId = req.user?.workplaceId;
         if (!workplaceId) {
             res.status(400).json({
                 success: false,

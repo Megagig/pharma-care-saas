@@ -99,7 +99,12 @@ const auditLogSchema = new mongoose_1.Schema({
             'ADMIN_ROLE_ASSIGNMENT',
             'SUPER_ADMIN_ACCESS',
             'RBAC_MIGRATION_EXECUTED',
-            'RBAC_ROLLBACK_EXECUTED'
+            'RBAC_ROLLBACK_EXECUTED',
+            'VIEW_DIAGNOSTIC_HISTORY',
+            'DIAGNOSTIC_ANALYSIS_REQUESTED',
+            'DIAGNOSTIC_CASE_CREATED',
+            'DIAGNOSTIC_CASE_UPDATED',
+            'DIAGNOSTIC_CASE_DELETED'
         ]
     },
     timestamp: {

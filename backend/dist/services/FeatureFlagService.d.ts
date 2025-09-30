@@ -4,6 +4,7 @@ export interface FeatureFlagEvaluation {
     rolloutPercentage: number;
     userPercentile?: number;
     override?: boolean;
+    lastEvaluated: Date;
 }
 export interface FeatureFlagMetrics {
     featureName: string;

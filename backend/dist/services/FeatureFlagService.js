@@ -17,7 +17,7 @@ class FeatureFlagService {
         try {
             const cacheKey = `${featureName}:${userId}:${workspaceId}`;
             const cached = this.cache.get(cacheKey);
-            if (cached && Date.now() - cached.lastEvaluated < this.cacheTimeout) {
+            if (cached && Date.now() - cached.lastEvaluated.getTime() < this.cacheTimeout) {
                 this.updateMetrics(featureName, cached.enabled);
                 return cached;
             }
@@ -162,7 +162,7 @@ class FeatureFlagService {
                     { expiresAt: { $gt: new Date() } }
                 ]
             });
-            return override ? override.enabled : null;
+            return override ? override.isActive : null;
         }
         catch (error) {
             logger_1.default.error('Error getting user feature override:', error);
@@ -179,7 +179,7 @@ class FeatureFlagService {
                     { expiresAt: { $gt: new Date() } }
                 ]
             });
-            return override ? override.enabled : null;
+            return override ? override.isActive : null;
         }
         catch (error) {
             logger_1.default.error('Error getting workspace feature override:', error);

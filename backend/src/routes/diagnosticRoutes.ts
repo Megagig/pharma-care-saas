@@ -1,13 +1,16 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import {
+import diagnosticController from '../controllers/diagnosticController';
+
+const {
   generateDiagnosticAnalysis,
   saveDiagnosticDecision,
   getDiagnosticHistory,
   getDiagnosticCase,
   checkDrugInteractions,
-  testAIConnection
-} from '../controllers/diagnosticController';
+  testAIConnection,
+  saveDiagnosticNotes
+} = diagnosticController;
 import {
   validateDiagnosticAnalysis,
   validateDiagnosticDecision,
@@ -128,6 +131,34 @@ router.post(
   auditLogger('DRUG_INTERACTION_CHECK', 'clinical_documentation'),
   validateDrugInteractions,
   checkDrugInteractions
+);
+
+/**
+ * @route POST /api/diagnostics/cases/:caseId/notes
+ * @desc Save notes for a diagnostic case
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.post(
+  '/cases/:caseId/notes',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('SAVE_DIAGNOSTIC_NOTES', 'clinical_documentation'),
+  saveDiagnosticNotes
+);
+
+/**
+ * @route POST /api/diagnostics/cases/:caseId/notes
+ * @desc Save notes for a diagnostic case
+ * @access Private (requires license)
+ */
+router.post(
+  '/cases/:caseId/notes',
+  diagnosticRateLimit,
+  auth,
+  requireLicense,
+  auditLogger('SAVE_DIAGNOSTIC_NOTES', 'clinical_documentation'),
+  saveDiagnosticNotes
 );
 
 /**

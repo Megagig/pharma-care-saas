@@ -1,4 +1,4 @@
-import mongoose, { Document } from 'mongoose';
+import mongoose, { Document, Model } from 'mongoose';
 export interface IReportAuditLog extends Document {
     _id: string;
     eventType: string;
@@ -67,8 +67,12 @@ export interface IReportAuditLog extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-declare const _default: mongoose.Model<IReportAuditLog, {}, {}, {}, mongoose.Document<unknown, {}, IReportAuditLog> & IReportAuditLog & Required<{
-    _id: string;
-}>, any>;
+export interface IReportAuditLogModel extends Model<IReportAuditLog> {
+    logEvent(eventData: Partial<IReportAuditLog>): Promise<IReportAuditLog>;
+    getSecuritySummary(workplaceId: string, days?: number): Promise<any>;
+    getUserActivity(userId: string, workplaceId: string, days?: number): Promise<IReportAuditLog[]>;
+    getComplianceReport(workplaceId: string, startDate: Date, endDate: Date): Promise<any>;
+}
+declare const _default: IReportAuditLogModel;
 export default _default;
 //# sourceMappingURL=ReportAuditLog.d.ts.map

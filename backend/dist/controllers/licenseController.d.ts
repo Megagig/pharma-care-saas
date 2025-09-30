@@ -1,10 +1,6 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import multer from 'multer';
-import { IUser } from '../models/User';
-interface AuthRequest extends Request {
-    user?: IUser;
-    subscription?: any;
-}
+import { AuthRequest } from '../types/auth';
 export declare const upload: multer.Multer;
 export declare class LicenseController {
     uploadLicense(req: AuthRequest, res: Response): Promise<any>;
@@ -15,5 +11,4 @@ export declare class LicenseController {
     bulkProcessLicenses(req: AuthRequest, res: Response): Promise<any>;
 }
 export declare const licenseController: LicenseController;
-export {};
 //# sourceMappingURL=licenseController.d.ts.map

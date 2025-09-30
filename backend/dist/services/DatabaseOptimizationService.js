@@ -195,12 +195,16 @@ class DatabaseOptimizationService {
     setupQueryProfiling() {
         mongoose_1.default.connection.on('connected', async () => {
             try {
+                if (process.env.MONGODB_URI?.includes('mongodb.net') || process.env.DISABLE_PROFILING === 'true') {
+                    logger_1.default.info('Database profiling skipped (Atlas or disabled)');
+                    return;
+                }
                 const db = mongoose_1.default.connection.db;
                 await db.command({ profile: 2, slowms: this.SLOW_QUERY_THRESHOLD });
                 logger_1.default.info('Database profiling enabled for slow queries');
             }
             catch (error) {
-                logger_1.default.warn('Failed to enable database profiling:', error);
+                logger_1.default.warn('Failed to enable database profiling (likely Atlas):', error);
             }
         });
     }

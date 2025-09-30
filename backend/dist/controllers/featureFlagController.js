@@ -7,11 +7,12 @@ exports.getFeatureFlagsByTier = exports.getFeatureFlagsByCategory = exports.togg
 const FeatureFlag_1 = require("../models/FeatureFlag");
 const express_validator_1 = require("express-validator");
 const mongoose_1 = __importDefault(require("mongoose"));
+const auth_1 = require("../types/auth");
 const getAllFeatureFlags = async (req, res) => {
     try {
         const user = req.user;
         let query = { isActive: true };
-        if (user && user.role === 'super_admin') {
+        if (user && (0, auth_1.isExtendedUser)(user) && user.role === 'super_admin') {
             query = {};
         }
         const featureFlags = await FeatureFlag_1.FeatureFlag.find(query).sort({
@@ -53,7 +54,7 @@ const getFeatureFlagById = async (req, res) => {
         const query = {
             _id: new mongoose_1.default.Types.ObjectId(id),
         };
-        if (!user || user.role !== 'super_admin') {
+        if (!user || !(0, auth_1.isExtendedUser)(user) || user.role !== 'super_admin') {
             query.isActive = true;
         }
         const featureFlag = await FeatureFlag_1.FeatureFlag.findOne(query);

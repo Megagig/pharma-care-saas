@@ -561,6 +561,106 @@ export const testAIConnection = async (
   }
 };
 
+/**
+ * Save notes for a diagnostic case
+ */
+export const saveDiagnosticNotes = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { caseId } = req.params;
+    const { notes } = req.body;
+    const userId = req.user!.id;
+    const workplaceId = req.user!.workplaceId;
+
+    // Validate input
+    if (!notes || typeof notes !== 'string') {
+      res.status(400).json({
+        success: false,
+        message: 'Notes are required and must be a string',
+      });
+      return;
+    }
+
+    // Find and verify ownership of diagnostic case
+    const diagnosticCase = await DiagnosticCase.findOne({
+      caseId,
+      workplaceId,
+    });
+
+    if (!diagnosticCase) {
+      res.status(404).json({
+        success: false,
+        message: 'Diagnostic case not found or access denied',
+      });
+      return;
+    }
+
+    // Update notes in pharmacist decision
+    if (!diagnosticCase.pharmacistDecision) {
+      diagnosticCase.pharmacistDecision = {
+        accepted: false,
+        modifications: '',
+        finalRecommendation: '',
+        counselingPoints: [],
+        followUpRequired: false,
+      };
+    }
+
+    (diagnosticCase.pharmacistDecision as any).notes = notes;
+    (diagnosticCase.pharmacistDecision as any).reviewedAt = new Date();
+    (diagnosticCase.pharmacistDecision as any).reviewedBy = userId;
+
+    await diagnosticCase.save();
+
+    // Create audit log
+    const auditContext = {
+      userId,
+      userRole: req.user!.role,
+      workplaceId: workplaceId.toString(),
+      isAdmin: (req as any).isAdmin || false,
+      isSuperAdmin: req.user!.role === 'super_admin',
+      canManage: (req as any).canManage || false,
+      timestamp: new Date().toISOString(),
+    };
+
+    createAuditLog(
+      'DIAGNOSTIC_NOTES_SAVED',
+      'DiagnosticCase',
+      diagnosticCase._id.toString(),
+      auditContext
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Notes saved successfully',
+      data: {
+        caseId: diagnosticCase.caseId,
+        notes,
+        reviewedAt: (diagnosticCase.pharmacistDecision as any).reviewedAt,
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to save diagnostic notes', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      caseId: req.params.caseId,
+      userId: req.user?.id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save notes',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
 export default {
   generateDiagnosticAnalysis,
   saveDiagnosticDecision,
@@ -568,4 +668,5 @@ export default {
   getDiagnosticCase,
   checkDrugInteractions,
   testAIConnection,
+  saveDiagnosticNotes,
 };

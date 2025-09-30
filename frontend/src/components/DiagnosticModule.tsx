@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -29,6 +29,10 @@ import {
   AccordionDetails,
   FormHelperText,
   LinearProgress,
+  Divider,
+  Tooltip,
+  Badge,
+  Skeleton,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -44,6 +48,14 @@ import {
   Verified as VerifiedIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
+  History as HistoryIcon,
+  Compare as CompareIcon,
+  Edit as EditIcon,
+  Print as PrintIcon,
+  GetApp as ExportIcon,
+  NoteAdd as NoteAddIcon,
+  Visibility as ViewIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useFeatureFlags } from '../context/FeatureFlagContext';
@@ -89,6 +101,49 @@ interface FormValidation {
   errors: ValidationError[];
   completedSections: number;
   totalSections: number;
+}
+
+interface DiagnosticHistoryItem {
+  _id: string;
+  caseId: string;
+  createdAt: string;
+  aiAnalysis: DiagnosticAnalysis['analysis'];
+  symptoms: {
+    subjective: string[];
+    objective: string[];
+    duration: string;
+    severity: 'mild' | 'moderate' | 'severe';
+    onset: 'acute' | 'chronic' | 'subacute';
+  };
+  vitalSigns?: VitalSigns;
+  status: 'draft' | 'completed' | 'referred' | 'cancelled';
+  pharmacistDecision?: {
+    accepted: boolean;
+    modifications: string;
+    finalRecommendation: string;
+    notes?: string;
+    reviewedAt?: string;
+  };
+  processingTime: number;
+}
+
+interface DiagnosticHistoryResponse {
+  success: boolean;
+  data: {
+    cases: DiagnosticHistoryItem[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+}
+
+interface DiagnosticAnalysisResponse {
+  success: boolean;
+  data: DiagnosticAnalysis;
+  message?: string;
 }
 
 interface DiagnosticAnalysis {
@@ -178,9 +233,137 @@ const DiagnosticModule: React.FC = () => {
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
 
+  // History state
+  const [diagnosticHistory, setDiagnosticHistory] = useState<DiagnosticHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [selectedHistoryItems, setSelectedHistoryItems] = useState<Set<string>>(new Set());
+  const [comparisonMode, setComparisonMode] = useState(false);
+
+  // Notes and review state
+  const [notesDialog, setNotesDialog] = useState<{ open: boolean; caseId: string; currentNotes: string }>({
+    open: false,
+    caseId: '',
+    currentNotes: ''
+  });
+
+  // Cache keys
+  const CACHE_KEY_PREFIX = 'diagnostic_analysis_';
+  const DRAFT_CACHE_KEY = 'diagnostic_draft_';
+
   // Check feature access - super_admin bypasses feature flag checks
   const isSuperAdmin = user?.role === 'super_admin';
   const hasAccess = isSuperAdmin || hasFeature('clinical_decision_support');
+
+  // Cache management functions - DEFINED FIRST
+  const saveAnalysisToCache = useCallback((analysis: DiagnosticAnalysis, patientId: string) => {
+    try {
+      const cacheData = {
+        analysis,
+        timestamp: Date.now(),
+        patientId
+      };
+      localStorage.setItem(`${CACHE_KEY_PREFIX}${patientId}`, JSON.stringify(cacheData));
+    } catch (error) {
+      console.warn('Failed to cache analysis:', error);
+    }
+  }, [CACHE_KEY_PREFIX]);
+
+  const loadAnalysisFromCache = useCallback((patientId: string): DiagnosticAnalysis | null => {
+    try {
+      const cached = localStorage.getItem(`${CACHE_KEY_PREFIX}${patientId}`);
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        // Check if cache is less than 24 hours old
+        if (Date.now() - cacheData.timestamp < 24 * 60 * 60 * 1000) {
+          return cacheData.analysis;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load cached analysis:', error);
+    }
+    return null;
+  }, [CACHE_KEY_PREFIX]);
+
+  const saveDraftToCache = useCallback(() => {
+    if (!selectedPatient) return;
+
+    try {
+      const draftData = {
+        selectedPatient,
+        symptoms,
+        vitalSigns,
+        duration,
+        severity,
+        onset,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`${DRAFT_CACHE_KEY}${selectedPatient}`, JSON.stringify(draftData));
+    } catch (error) {
+      console.warn('Failed to cache draft:', error);
+    }
+  }, [selectedPatient, symptoms, vitalSigns, duration, severity, onset, DRAFT_CACHE_KEY]);
+
+  const loadDraftFromCache = useCallback((patientId: string) => {
+    try {
+      const cached = localStorage.getItem(`${DRAFT_CACHE_KEY}${patientId}`);
+      if (cached) {
+        const draftData = JSON.parse(cached);
+        // Check if draft is less than 1 hour old
+        if (Date.now() - draftData.timestamp < 60 * 60 * 1000) {
+          setSymptoms(draftData.symptoms || [{ type: 'subjective', description: '' }]);
+          setVitalSigns(draftData.vitalSigns || {});
+          setDuration(draftData.duration || '');
+          setSeverity(draftData.severity || 'mild');
+          setOnset(draftData.onset || 'acute');
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load cached draft:', error);
+    }
+  }, [DRAFT_CACHE_KEY]);
+
+  // Load diagnostic history for selected patient
+  const loadDiagnosticHistory = useCallback(async (patientId: string, page: number = 1) => {
+    if (!patientId) return;
+
+    setHistoryLoading(true);
+    setHistoryError(null);
+
+    try {
+      const response = await apiHelpers.get(`/diagnostics/patients/${patientId}/history`, {
+        params: { page, limit: 10 }
+      });
+
+      if (response.data.success) {
+        const historyResponse = response.data as DiagnosticHistoryResponse;
+        const newHistory = historyResponse.data.cases || [];
+        setDiagnosticHistory(prev => page === 1 ? newHistory : [...prev, ...newHistory]);
+        setHistoryTotal(historyResponse.data.pagination?.total || 0);
+
+        // Auto-load most recent analysis if no current analysis
+        if (page === 1 && newHistory.length > 0 && !analysis) {
+          const mostRecent = newHistory[0];
+          if (mostRecent.aiAnalysis) {
+            const recentAnalysis: DiagnosticAnalysis = {
+              caseId: mostRecent.caseId,
+              analysis: mostRecent.aiAnalysis,
+              drugInteractions: [],
+              processingTime: mostRecent.processingTime
+            };
+            setAnalysis(recentAnalysis);
+            saveAnalysisToCache(recentAnalysis, patientId);
+          }
+        }
+      }
+    } catch (err) {
+      setHistoryError(err instanceof Error ? err.message : 'Failed to load diagnostic history');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [analysis, saveAnalysisToCache]);
 
   // Validation functions
   const validateBloodPressure = (bp: string): string | null => {
@@ -261,7 +444,7 @@ const DiagnosticModule: React.FC = () => {
     // 2. Symptoms
     const validSubjectiveSymptoms = symptoms
       .filter(s => s.type === 'subjective' && s.description.trim().length >= 3);
-    
+
     if (validSubjectiveSymptoms.length === 0) {
       errors.push({ field: 'symptoms', message: 'At least one subjective symptom (3+ characters) is required' });
     } else {
@@ -291,7 +474,7 @@ const DiagnosticModule: React.FC = () => {
 
     // 4. Vital Signs (optional but if provided, should be valid)
     let vitalSignsValid = true;
-    
+
     if (vitalSigns.bloodPressure && touchedFields.has('bloodPressure')) {
       const bpError = validateBloodPressure(vitalSigns.bloodPressure);
       if (bpError) {
@@ -348,11 +531,6 @@ const DiagnosticModule: React.FC = () => {
     };
   }, [selectedPatient, symptoms, duration, vitalSigns, touchedFields]);
 
-  // Update validation errors when form validation changes
-  useEffect(() => {
-    setValidationErrors(formValidation.errors);
-  }, [formValidation.errors]);
-
   const markFieldAsTouched = (fieldName: string) => {
     setTouchedFields(prev => new Set([...prev, fieldName]));
   };
@@ -365,6 +543,110 @@ const DiagnosticModule: React.FC = () => {
   const hasFieldError = (fieldName: string): boolean => {
     return validationErrors.some(e => e.field === fieldName);
   };
+
+  // Load more history items
+  const loadMoreHistory = useCallback(() => {
+    if (selectedPatient && !historyLoading) {
+      loadDiagnosticHistory(selectedPatient, historyPage + 1);
+      setHistoryPage(prev => prev + 1);
+    }
+  }, [selectedPatient, historyLoading, historyPage, loadDiagnosticHistory]);
+
+  // Save notes for a diagnostic case
+  const saveNotes = useCallback(async (caseId: string, notes: string) => {
+    try {
+      await apiHelpers.post(`/diagnostics/cases/${caseId}/notes`, { notes });
+
+      // Update local history
+      setDiagnosticHistory(prev =>
+        prev.map(item =>
+          item.caseId === caseId
+            ? {
+              ...item,
+              pharmacistDecision: {
+                ...item.pharmacistDecision,
+                notes,
+                reviewedAt: new Date().toISOString()
+              }
+            }
+            : item
+        )
+      );
+
+      setNotesDialog({ open: false, caseId: '', currentNotes: '' });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save notes');
+    }
+  }, []);
+
+  // Export analysis as PDF/JSON
+  const exportAnalysis = useCallback((analysisData: DiagnosticHistoryItem, format: 'pdf' | 'json') => {
+    if (format === 'json') {
+      const dataStr = JSON.stringify(analysisData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `diagnostic-analysis-${analysisData.caseId}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } else {
+      // For PDF, we would typically use a library like jsPDF or send to backend
+      window.print(); // Simple print for now
+    }
+  }, []);
+
+  // ALL USEEFFECTS AFTER FUNCTION DEFINITIONS
+  // Update validation errors when form validation changes
+  useEffect(() => {
+    setValidationErrors(formValidation.errors);
+  }, [formValidation.errors]);
+
+  // Auto-load history and cached data when patient changes
+  useEffect(() => {
+    if (selectedPatient) {
+      setHistoryPage(1);
+
+      // Try to load cached analysis
+      const cachedAnalysis = loadAnalysisFromCache(selectedPatient);
+      if (cachedAnalysis && !analysis) {
+        setAnalysis(cachedAnalysis);
+      }
+
+      // Load draft data
+      loadDraftFromCache(selectedPatient);
+    } else {
+      // Clear history when no patient selected
+      setDiagnosticHistory([]);
+      setHistoryTotal(0);
+      setHistoryPage(1);
+    }
+  }, [selectedPatient, loadAnalysisFromCache, loadDraftFromCache, analysis]);
+
+  // Load diagnostic history when patient changes
+  useEffect(() => {
+    if (selectedPatient) {
+      loadDiagnosticHistory(selectedPatient);
+    }
+  }, [selectedPatient, loadDiagnosticHistory]);
+
+  // Auto-save draft as user types (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (selectedPatient) {
+        saveDraftToCache();
+      }
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedPatient, symptoms, vitalSigns, duration, severity, onset, saveDraftToCache]);
+
+  // Cache analysis when it's generated
+  useEffect(() => {
+    if (analysis && selectedPatient) {
+      saveAnalysisToCache(analysis, selectedPatient);
+    }
+  }, [analysis, selectedPatient, saveAnalysisToCache]);
 
   if (!hasAccess) {
     return (
@@ -379,6 +661,7 @@ const DiagnosticModule: React.FC = () => {
     );
   }
 
+  // Helper functions for form management
   const addSymptom = (type: 'subjective' | 'objective') => {
     setSymptoms([...symptoms, { type, description: '' }]);
   };
@@ -441,13 +724,234 @@ const DiagnosticModule: React.FC = () => {
         },
       });
 
-      setAnalysis(response.data.data);
+      const analysisResponse = response.data.data as DiagnosticAnalysis;
+      setAnalysis(analysisResponse);
       setActiveTab(1); // Switch to results tab
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderAnalysisResults = () => {
+    if (!analysis) {
+      return (
+        <Typography variant="body1" color="text.secondary">
+          No analysis results available.
+        </Typography>
+      );
+    }
+
+    return (
+      <Box sx={{ '& > *': { mb: 3 } }}>
+        {/* Analysis Overview */}
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <VerifiedIcon sx={{ color: 'success.main' }} />
+              <Typography variant="h6" fontWeight={600}>
+                Analysis Overview
+              </Typography>
+              <Chip
+                label={`${analysis.analysis.confidenceScore}% Confidence`}
+                color={analysis.analysis.confidenceScore >= 80 ? 'success' : analysis.analysis.confidenceScore >= 60 ? 'warning' : 'error'}
+                size="small"
+              />
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Case ID: {analysis.caseId} • Processing Time: {analysis.processingTime}ms
+            </Typography>
+          </CardContent>
+        </Card>
+
+        {/* Differential Diagnoses */}
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+          <CardContent>
+            <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <HospitalIcon sx={{ color: 'primary.main' }} />
+              Differential Diagnoses
+            </Typography>
+            {analysis.analysis.differentialDiagnoses.map((diagnosis, index) => (
+              <Accordion key={index} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 1 }}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                    <Typography variant="subtitle1" fontWeight={500}>
+                      {diagnosis.condition}
+                    </Typography>
+                    <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
+                      <Chip
+                        label={`${diagnosis.probability}%`}
+                        size="small"
+                        color={diagnosis.probability >= 70 ? 'success' : diagnosis.probability >= 40 ? 'warning' : 'default'}
+                      />
+                      <Chip
+                        label={diagnosis.severity}
+                        size="small"
+                        color={diagnosis.severity === 'high' ? 'error' : diagnosis.severity === 'medium' ? 'warning' : 'success'}
+                      />
+                    </Box>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography variant="body2" color="text.secondary">
+                    {diagnosis.reasoning}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Recommended Tests */}
+        {analysis.analysis.recommendedTests.length > 0 && (
+          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ScienceIcon sx={{ color: 'info.main' }} />
+                Recommended Tests
+              </Typography>
+              {analysis.analysis.recommendedTests.map((test, index) => (
+                <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                    <Typography variant="subtitle2" fontWeight={500}>
+                      {test.testName}
+                    </Typography>
+                    <Chip
+                      label={test.priority}
+                      size="small"
+                      color={test.priority === 'urgent' ? 'error' : test.priority === 'routine' ? 'warning' : 'default'}
+                    />
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    {test.reasoning}
+                  </Typography>
+                </Box>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Therapeutic Options */}
+        {analysis.analysis.therapeuticOptions.length > 0 && (
+          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <MedicationIcon sx={{ color: 'secondary.main' }} />
+                Therapeutic Options
+              </Typography>
+              {analysis.analysis.therapeuticOptions.map((option, index) => (
+                <Accordion key={index} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', mb: 1 }}>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="subtitle1" fontWeight={500}>
+                      {option.medication} - {option.dosage} {option.frequency}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Box sx={{ '& > *': { mb: 1 } }}>
+                      <Typography variant="body2">
+                        <strong>Duration:</strong> {option.duration}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Reasoning:</strong> {option.reasoning}
+                      </Typography>
+                      {option.safetyNotes.length > 0 && (
+                        <Box>
+                          <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
+                            Safety Notes:
+                          </Typography>
+                          {option.safetyNotes.map((note, noteIndex) => (
+                            <Typography key={noteIndex} variant="body2" color="warning.main" sx={{ ml: 2 }}>
+                              • {note}
+                            </Typography>
+                          ))}
+                        </Box>
+                      )}
+                    </Box>
+                  </AccordionDetails>
+                </Accordion>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Red Flags */}
+        {analysis.analysis.redFlags.length > 0 && (
+          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'error.light', borderRadius: 2, bgcolor: 'error.50' }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}>
+                <WarningIcon />
+                Red Flags
+              </Typography>
+              {analysis.analysis.redFlags.map((flag, index) => (
+                <Alert
+                  key={index}
+                  severity={flag.severity === 'critical' ? 'error' : flag.severity === 'high' ? 'warning' : 'info'}
+                  sx={{ mb: 1 }}
+                >
+                  <Typography variant="subtitle2" fontWeight={500}>
+                    {flag.flag}
+                  </Typography>
+                  <Typography variant="body2">
+                    Action: {flag.action}
+                  </Typography>
+                </Alert>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Referral Recommendation */}
+        {analysis.analysis.referralRecommendation && (
+          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <HealthIcon sx={{ color: 'primary.main' }} />
+                Referral Recommendation
+              </Typography>
+              <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                  <Typography variant="subtitle2" fontWeight={500}>
+                    {analysis.analysis.referralRecommendation.recommended ? 'Referral Recommended' : 'No Referral Needed'}
+                  </Typography>
+                  {analysis.analysis.referralRecommendation.recommended && (
+                    <Chip
+                      label={analysis.analysis.referralRecommendation.urgency}
+                      size="small"
+                      color={analysis.analysis.referralRecommendation.urgency === 'immediate' ? 'error' :
+                        analysis.analysis.referralRecommendation.urgency === 'within_24h' ? 'warning' : 'default'}
+                    />
+                  )}
+                </Box>
+                {analysis.analysis.referralRecommendation.recommended && (
+                  <>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      <strong>Specialty:</strong> {analysis.analysis.referralRecommendation.specialty}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Reason:</strong> {analysis.analysis.referralRecommendation.reason}
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Disclaimer */}
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'warning.light', borderRadius: 2, bgcolor: 'warning.50' }}>
+          <CardContent>
+            <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: 'warning.main' }}>
+              <InfoIcon />
+              Important Disclaimer
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {analysis.analysis.disclaimer}
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
+    );
   };
 
   const renderInputForm = () => (
@@ -599,7 +1103,7 @@ const DiagnosticModule: React.FC = () => {
         sx={{
           p: 3,
           border: '1px solid',
-          borderColor: hasFieldError('symptoms') ? 'error.main' : 
+          borderColor: hasFieldError('symptoms') ? 'error.main' :
             symptoms.filter(s => s.type === 'subjective' && s.description.length >= 3).length > 0 ? 'success.main' : 'divider',
           borderRadius: 2,
         }}
@@ -609,7 +1113,7 @@ const DiagnosticModule: React.FC = () => {
           <Typography variant="h6" fontWeight={600}>
             Symptoms & Clinical Findings
           </Typography>
-          {symptoms.filter(s => s.type === 'subjective' && s.description.length >= 3).length > 0 && 
+          {symptoms.filter(s => s.type === 'subjective' && s.description.length >= 3).length > 0 &&
             <CheckCircleIcon color="success" fontSize="small" />
           }
           <Chip
@@ -635,7 +1139,7 @@ const DiagnosticModule: React.FC = () => {
             {getFieldError('symptoms')}
           </Alert>
         )}
-        
+
         <Box sx={{ mb: 3 }}>
           {symptoms.map((symptom, index) => (
             <Card
@@ -671,7 +1175,7 @@ const DiagnosticModule: React.FC = () => {
                     variant="outlined"
                     size="small"
                     error={hasFieldError(`symptom-${index}`)}
-                    helperText={getFieldError(`symptom-${index}`) || 
+                    helperText={getFieldError(`symptom-${index}`) ||
                       `${symptom.description.length} characters (minimum 3 required)`}
                     sx={{
                       '& .MuiOutlinedInput-root': {
@@ -681,8 +1185,8 @@ const DiagnosticModule: React.FC = () => {
                     }}
                   />
                 </Box>
-                <IconButton 
-                  onClick={() => removeSymptom(index)} 
+                <IconButton
+                  onClick={() => removeSymptom(index)}
                   size="small"
                   sx={{
                     color: 'error.main',
@@ -696,7 +1200,7 @@ const DiagnosticModule: React.FC = () => {
             </Card>
           ))}
         </Box>
-        
+
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <Button
             startIcon={<AddIcon />}
@@ -754,7 +1258,7 @@ const DiagnosticModule: React.FC = () => {
               onBlur={() => markFieldAsTouched('duration')}
               placeholder="e.g., 3 days, 2 weeks, 1 month"
               error={hasFieldError('duration')}
-              helperText={getFieldError('duration') || 
+              helperText={getFieldError('duration') ||
                 'Include number and time unit (1-100 characters)'}
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -836,7 +1340,7 @@ const DiagnosticModule: React.FC = () => {
               onBlur={() => markFieldAsTouched('bloodPressure')}
               placeholder="120/80"
               error={hasFieldError('bloodPressure')}
-              helperText={getFieldError('bloodPressure') || 
+              helperText={getFieldError('bloodPressure') ||
                 'Format: 120/80, 120, or 120/80 mmHg'}
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -861,7 +1365,7 @@ const DiagnosticModule: React.FC = () => {
               onBlur={() => markFieldAsTouched('heartRate')}
               placeholder="BPM"
               error={hasFieldError('heartRate')}
-              helperText={getFieldError('heartRate') || 
+              helperText={getFieldError('heartRate') ||
                 'Range: 30-250 bpm'}
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -886,7 +1390,7 @@ const DiagnosticModule: React.FC = () => {
               onBlur={() => markFieldAsTouched('temperature')}
               placeholder="°C"
               error={hasFieldError('temperature')}
-              helperText={getFieldError('temperature') || 
+              helperText={getFieldError('temperature') ||
                 'Range: 30-45°C'}
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -911,7 +1415,7 @@ const DiagnosticModule: React.FC = () => {
               onBlur={() => markFieldAsTouched('oxygenSaturation')}
               placeholder="%"
               error={hasFieldError('oxygenSaturation')}
-              helperText={getFieldError('oxygenSaturation') || 
+              helperText={getFieldError('oxygenSaturation') ||
                 'Range: 50-100%'}
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -932,7 +1436,7 @@ const DiagnosticModule: React.FC = () => {
             </Typography>
             <Box component="ul" sx={{ m: 0, pl: 2 }}>
               {!selectedPatient && <li>Select a patient</li>}
-              {symptoms.filter(s => s.type === 'subjective' && s.description.length >= 3).length === 0 && 
+              {symptoms.filter(s => s.type === 'subjective' && s.description.length >= 3).length === 0 &&
                 <li>Add at least one subjective symptom (3+ characters)</li>}
               {formValidation.errors.filter(e => !['patient', 'symptoms'].includes(e.field)).map((error, index) => (
                 <li key={index}>{error.message}</li>
@@ -940,7 +1444,7 @@ const DiagnosticModule: React.FC = () => {
             </Box>
           </Alert>
         )}
-        
+
         <Button
           variant="contained"
           size="large"
@@ -956,18 +1460,18 @@ const DiagnosticModule: React.FC = () => {
             fontSize: '1.1rem',
             fontWeight: 600,
             background: loading || !formValidation.isValid
-              ? 'grey.400' 
+              ? 'grey.400'
               : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             boxShadow: loading || !formValidation.isValid
-              ? 'none' 
+              ? 'none'
               : '0 8px 32px rgba(102, 126, 234, 0.3)',
             '&:hover': {
               background: loading || !formValidation.isValid
-                ? 'grey.400' 
+                ? 'grey.400'
                 : 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
               transform: loading || !formValidation.isValid ? 'none' : 'translateY(-2px)',
               boxShadow: loading || !formValidation.isValid
-                ? 'none' 
+                ? 'none'
                 : '0 12px 40px rgba(102, 126, 234, 0.4)',
             },
             transition: 'all 0.3s ease',
@@ -975,7 +1479,7 @@ const DiagnosticModule: React.FC = () => {
         >
           {loading ? 'Generating Analysis...' : 'Generate AI Analysis'}
         </Button>
-        
+
         {formValidation.isValid && (
           <Typography variant="caption" color="success.main" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CheckCircleIcon fontSize="small" />
@@ -986,416 +1490,17 @@ const DiagnosticModule: React.FC = () => {
     </Box>
   );
 
-  const renderAnalysisResults = () => {
-    if (!analysis) return null;
-
-    return (
-      <Box>
-        {/* Analysis Summary Card */}
-        <Card
-          elevation={0}
-          sx={{
-            p: 3,
-            mb: 4,
-            border: '1px solid',
-            borderColor: 'success.light',
-            borderRadius: 2,
-            bgcolor: 'success.50',
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Box
-              sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                bgcolor: 'success.main',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <VerifiedIcon sx={{ color: 'white', fontSize: 24 }} />
-            </Box>
-            <Box>
-              <Typography variant="h6" fontWeight={600} color="success.dark">
-                Analysis Complete
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Processing time: {analysis.processingTime}ms • Confidence: {analysis.analysis.confidenceScore}%
-              </Typography>
-            </Box>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Chip
-              label={`${analysis.analysis.differentialDiagnoses.length} Diagnoses`}
-              color="primary"
-              variant="outlined"
-            />
-            <Chip
-              label={`${analysis.analysis.recommendedTests.length} Tests`}
-              color="secondary"
-              variant="outlined"
-            />
-            <Chip
-              label={`${analysis.analysis.therapeuticOptions.length} Treatments`}
-              color="info"
-              variant="outlined"
-            />
-            {analysis.analysis.redFlags.length > 0 && (
-              <Chip
-                label={`${analysis.analysis.redFlags.length} Red Flags`}
-                color="error"
-                variant="outlined"
-              />
-            )}
-          </Box>
-        </Card>
-
-        {/* Differential Diagnoses */}
-        <Card
-          elevation={0}
-          sx={{
-            mb: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            overflow: 'hidden',
-          }}
-        >
-          <Accordion defaultExpanded elevation={0}>
-            <AccordionSummary 
-              expandIcon={<ExpandMoreIcon />}
-              sx={{
-                bgcolor: 'primary.50',
-                '&:hover': { bgcolor: 'primary.100' },
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <HospitalIcon color="primary" />
-                <Typography variant="h6" fontWeight={600}>
-                  Differential Diagnoses
-                </Typography>
-                <Chip 
-                  label={analysis.analysis.differentialDiagnoses.length} 
-                  size="small" 
-                  color="primary"
-                />
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails sx={{ p: 0 }}>
-              {analysis.analysis.differentialDiagnoses.map((diagnosis, index) => (
-                <Card
-                  key={index}
-                  elevation={0}
-                  sx={{
-                    m: 2,
-                    p: 3,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 2,
-                    '&:hover': {
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                      transform: 'translateY(-1px)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
-                      {diagnosis.condition}
-                    </Typography>
-                    <Chip
-                      label={`${diagnosis.probability}%`}
-                      color={
-                        diagnosis.probability > 70
-                          ? 'error'
-                          : diagnosis.probability > 40
-                            ? 'warning'
-                            : 'success'
-                      }
-                      sx={{ fontWeight: 600 }}
-                    />
-                    <Chip
-                      label={diagnosis.severity}
-                      color={
-                        diagnosis.severity === 'high'
-                          ? 'error'
-                          : diagnosis.severity === 'medium'
-                            ? 'warning'
-                            : 'info'
-                      }
-                      variant="outlined"
-                    />
-                  </Box>
-                  <Typography variant="body1" color="text.secondary">
-                    {diagnosis.reasoning}
-                  </Typography>
-                </Card>
-              ))}
-            </AccordionDetails>
-          </Accordion>
-        </Card>
-
-        {/* Red Flags */}
-        {analysis.analysis.redFlags.length > 0 && (
-          <Card
-            elevation={0}
-            sx={{
-              mb: 3,
-              border: '1px solid',
-              borderColor: 'error.light',
-              borderRadius: 2,
-              overflow: 'hidden',
-            }}
-          >
-            <Accordion elevation={0}>
-              <AccordionSummary 
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  bgcolor: 'error.50',
-                  '&:hover': { bgcolor: 'error.100' },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <WarningIcon color="error" />
-                  <Typography variant="h6" fontWeight={600} color="error.dark">
-                    Red Flags - Immediate Attention Required
-                  </Typography>
-                  <Chip 
-                    label={analysis.analysis.redFlags.length} 
-                    size="small" 
-                    color="error"
-                  />
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 0 }}>
-                {analysis.analysis.redFlags.map((flag, index) => (
-                  <Alert
-                    key={index}
-                    severity={
-                      flag.severity === 'critical' ? 'error' :
-                      flag.severity === 'high' ? 'warning' : 'info'
-                    }
-                    sx={{ 
-                      m: 2, 
-                      borderRadius: 2,
-                      '& .MuiAlert-message': { width: '100%' },
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {flag.flag}
-                      </Typography>
-                      <Chip
-                        label={flag.severity.toUpperCase()}
-                        color={
-                          flag.severity === 'critical'
-                            ? 'error'
-                            : flag.severity === 'high'
-                              ? 'warning'
-                              : 'info'
-                        }
-                        size="small"
-                      />
-                    </Box>
-                    <Typography variant="body2">
-                      <strong>Action Required:</strong> {flag.action}
-                    </Typography>
-                  </Alert>
-                ))}
-              </AccordionDetails>
-            </Accordion>
-          </Card>
-        )}
-
-        {/* Recommended Tests */}
-        <Card
-          elevation={0}
-          sx={{
-            mb: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            overflow: 'hidden',
-          }}
-        >
-          <Accordion elevation={0}>
-            <AccordionSummary 
-              expandIcon={<ExpandMoreIcon />}
-              sx={{
-                bgcolor: 'secondary.50',
-                '&:hover': { bgcolor: 'secondary.100' },
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <ScienceIcon color="secondary" />
-                <Typography variant="h6" fontWeight={600}>
-                  Recommended Tests
-                </Typography>
-                <Chip 
-                  label={analysis.analysis.recommendedTests.length} 
-                  size="small" 
-                  color="secondary"
-                />
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails sx={{ p: 0 }}>
-              {analysis.analysis.recommendedTests.map((test, index) => (
-                <Card
-                  key={index}
-                  elevation={0}
-                  sx={{
-                    m: 2,
-                    p: 3,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 2,
-                    '&:hover': {
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                      transform: 'translateY(-1px)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
-                      {test.testName}
-                    </Typography>
-                    <Chip
-                      label={test.priority.toUpperCase()}
-                      color={
-                        test.priority === 'urgent'
-                          ? 'error'
-                          : test.priority === 'routine'
-                            ? 'warning'
-                            : 'info'
-                      }
-                      sx={{ fontWeight: 600 }}
-                    />
-                  </Box>
-                  <Typography variant="body1" color="text.secondary">
-                    {test.reasoning}
-                  </Typography>
-                </Card>
-              ))}
-            </AccordionDetails>
-          </Accordion>
-        </Card>
-
-        {/* Therapeutic Options */}
-        <Card
-          elevation={0}
-          sx={{
-            mb: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            overflow: 'hidden',
-          }}
-        >
-          <Accordion elevation={0}>
-            <AccordionSummary 
-              expandIcon={<ExpandMoreIcon />}
-              sx={{
-                bgcolor: 'info.50',
-                '&:hover': { bgcolor: 'info.100' },
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <MedicationIcon color="info" />
-                <Typography variant="h6" fontWeight={600}>
-                  Therapeutic Options
-                </Typography>
-                <Chip 
-                  label={analysis.analysis.therapeuticOptions.length} 
-                  size="small" 
-                  color="info"
-                />
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails sx={{ p: 0 }}>
-              {analysis.analysis.therapeuticOptions.map((option, index) => (
-                <Card
-                  key={index}
-                  elevation={0}
-                  sx={{
-                    m: 2,
-                    p: 3,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 2,
-                    '&:hover': {
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                      transform: 'translateY(-1px)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
-                    {option.medication}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                    <Chip label={`Dosage: ${option.dosage}`} size="small" variant="outlined" />
-                    <Chip label={`Frequency: ${option.frequency}`} size="small" variant="outlined" />
-                    <Chip label={`Duration: ${option.duration}`} size="small" variant="outlined" />
-                  </Box>
-                  <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                    {option.reasoning}
-                  </Typography>
-                  {option.safetyNotes.length > 0 && (
-                    <Alert severity="warning" sx={{ borderRadius: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Safety Notes:
-                      </Typography>
-                      <Box component="ul" sx={{ m: 0, pl: 2 }}>
-                        {option.safetyNotes.map((note, i) => (
-                          <li key={i}>
-                            <Typography variant="body2">
-                              {note}
-                            </Typography>
-                          </li>
-                        ))}
-                      </Box>
-                    </Alert>
-                  )}
-                </Card>
-              ))}
-            </AccordionDetails>
-          </Accordion>
-        </Card>
-
-        {/* Disclaimer */}
-        <Alert 
-          severity="warning" 
-          sx={{ 
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'warning.light',
-          }}
-        >
-          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-            Important Disclaimer
-          </Typography>
-          <Typography variant="body2">
-            {analysis.analysis.disclaimer}
-          </Typography>
-        </Alert>
-      </Box>
-    );
-  };
-
   return (
     <Box>
       {error && (
-        <Alert 
-          severity="error" 
-          sx={{ 
+        <Alert
+          severity="error"
+          sx={{
             mb: 3,
             borderRadius: 2,
             border: '1px solid',
             borderColor: 'error.light',
-          }} 
+          }}
           onClose={() => setError(null)}
         >
           {error}
@@ -1437,16 +1542,27 @@ const DiagnosticModule: React.FC = () => {
             },
           }}
         >
-          <Tab 
-            label="Clinical Data Input" 
+          <Tab
+            label="Clinical Data Input"
             icon={<AddIcon />}
             iconPosition="start"
             sx={{ gap: 1.5 }}
           />
-          <Tab 
-            label="AI Analysis Results" 
+          <Tab
+            label="AI Analysis Results"
             disabled={!analysis}
             icon={<PsychologyIcon />}
+            iconPosition="start"
+            sx={{ gap: 1.5 }}
+          />
+          <Tab
+            label={
+              <Badge badgeContent={diagnosticHistory.length} color="primary" max={99}>
+                Patient History
+              </Badge>
+            }
+            disabled={!selectedPatient}
+            icon={<HistoryIcon />}
             iconPosition="start"
             sx={{ gap: 1.5 }}
           />
@@ -1486,7 +1602,7 @@ const DiagnosticModule: React.FC = () => {
         </Card>
       )}
 
-      {activeTab === 1 && (
+      {activeTab === 1 && analysis && (
         <Card
           elevation={0}
           sx={{
@@ -1519,9 +1635,36 @@ const DiagnosticModule: React.FC = () => {
         </Card>
       )}
 
+      {activeTab === 2 && (
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+            <Typography variant="h4" fontWeight={600} gutterBottom>
+              Patient History
+            </Typography>
+            {selectedPatient ? (
+              <Typography variant="body1">
+                History for patient: {selectedPatientObject?.displayName ||
+                  `${selectedPatientObject?.firstName} ${selectedPatientObject?.lastName}`}
+              </Typography>
+            ) : (
+              <Typography variant="body1" color="text.secondary">
+                Select a patient to view diagnostic history.
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Enhanced Patient Consent Dialog */}
-      <Dialog 
-        open={consentDialog} 
+      <Dialog
+        open={consentDialog}
         onClose={() => setConsentDialog(false)}
         maxWidth="sm"
         fullWidth
@@ -1566,7 +1709,7 @@ const DiagnosticModule: React.FC = () => {
           </Alert>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button 
+          <Button
             onClick={() => setConsentDialog(false)}
             variant="outlined"
             sx={{ borderRadius: 2 }}
@@ -1586,6 +1729,76 @@ const DiagnosticModule: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Notes Dialog */}
+      <Dialog
+        open={notesDialog.open}
+        onClose={() => setNotesDialog({ open: false, caseId: '', currentNotes: '' })}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                bgcolor: 'info.50',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <NoteAddIcon sx={{ color: 'info.main', fontSize: 20 }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600}>
+              Add Clinical Notes
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pb: 3 }}>
+          <TextField
+            fullWidth
+            multiline
+            rows={6}
+            label="Clinical Notes"
+            placeholder="Add your clinical observations, decisions, and follow-up plans..."
+            value={notesDialog.currentNotes}
+            onChange={(e) => setNotesDialog(prev => ({ ...prev, currentNotes: e.target.value }))}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+              },
+            }}
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            These notes will be saved to the patient's diagnostic record for future reference.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            onClick={() => setNotesDialog({ open: false, caseId: '', currentNotes: '' })}
+            variant="outlined"
+            sx={{ borderRadius: 2 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => saveNotes(notesDialog.caseId, notesDialog.currentNotes)}
+            variant="contained"
+            sx={{ borderRadius: 2 }}
+          >
+            Save Notes
+          </Button>
+        </DialogActions>
+      </Dialog>r
     </Box>
   );
 };

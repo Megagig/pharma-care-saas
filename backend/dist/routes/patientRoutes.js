@@ -14,7 +14,7 @@ const payloadOptimization_1 = require("../utils/payloadOptimization");
 const router = express_1.default.Router();
 router.use(auth_1.auth);
 router.use(patientRBAC_1.checkPharmacyAccess);
-router.get('/', patientRBAC_1.requirePatientRead, (0, patientValidators_1.validateRequest)(patientValidators_1.searchSchema, 'query'), (0, payloadOptimization_1.responseOptimizationMiddleware)(payloadOptimization_1.OptimizationPresets.list.projection, payloadOptimization_1.OptimizationPresets.list.optimization), cacheMiddleware_1.patientListCacheMiddleware, patientController_1.getPatients);
+router.get('/', patientRBAC_1.requirePatientRead, (0, patientValidators_1.validateRequest)(patientValidators_1.searchSchema, 'query'), patientController_1.getPatients);
 router.get('/search', patientRBAC_1.requirePatientRead, (0, payloadOptimization_1.responseOptimizationMiddleware)(payloadOptimization_1.OptimizationPresets.mobile.projection, payloadOptimization_1.OptimizationPresets.mobile.optimization), cacheMiddleware_1.searchCacheMiddleware, patientController_1.searchPatients);
 router.get('/search-with-interventions', patientRBAC_1.requirePatientRead, patientController_1.searchPatientsWithInterventions);
 router.post('/', patientRBAC_1.requirePatientCreate, patientRBAC_1.checkPatientPlanLimits, (0, patientValidators_1.validateRequest)(patientValidators_1.createPatientSchema, 'body'), patientController_1.createPatient);

@@ -28,13 +28,13 @@ const auth = async (req, res, next) => {
     try {
         if (process.env.NODE_ENV === 'development' && req.header('X-Super-Admin-Test') === 'true') {
             req.user = {
-                _id: new mongoose_1.default.Types.ObjectId(),
+                _id: new mongoose_1.default.Types.ObjectId('68b5cb81f1f0f9758b8afadd'),
                 email: 'super_admin@test.com',
                 role: 'super_admin',
                 firstName: 'Super',
                 lastName: 'Admin',
                 isActive: true,
-                workplaceId: new mongoose_1.default.Types.ObjectId(),
+                workplaceId: new mongoose_1.default.Types.ObjectId('68b5cb82f1f0f9758b8afadf'),
             };
             next();
             return;

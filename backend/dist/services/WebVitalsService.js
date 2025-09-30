@@ -32,10 +32,13 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WebVitalsService = void 0;
+exports.webVitalsService = exports.WebVitalsService = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const PerformanceCacheService_1 = require("./PerformanceCacheService");
+const PerformanceCacheService_1 = __importDefault(require("./PerformanceCacheService"));
 const PerformanceAlertService_1 = require("./PerformanceAlertService");
 const PerformanceBudgetService_1 = require("./PerformanceBudgetService");
 const webVitalsSchema = new mongoose_1.Schema({
@@ -65,7 +68,7 @@ const webVitalsSchema = new mongoose_1.Schema({
 const WebVitalsModel = mongoose_1.default.model('WebVitals', webVitalsSchema);
 class WebVitalsService {
     constructor() {
-        this.cacheService = new PerformanceCacheService_1.PerformanceCacheService();
+        this.cacheService = PerformanceCacheService_1.default.getInstance();
         this.performanceBudgets = {
             FCP: { good: 1800, poor: 3000 },
             LCP: { good: 2500, poor: 4000 },
@@ -385,6 +388,22 @@ class WebVitalsService {
         };
         await PerformanceAlertService_1.performanceAlertService.sendAlert(alert);
     }
+    static async getRecentMetrics(timeRangeMs) {
+        const service = new WebVitalsService();
+        const startTime = new Date(Date.now() - timeRangeMs);
+        const data = await WebVitalsModel.find({
+            timestamp: { $gte: startTime }
+        }).lean();
+        return data;
+    }
+    static async getMetricsInRange(startDate, endDate) {
+        const service = new WebVitalsService();
+        const data = await WebVitalsModel.find({
+            timestamp: { $gte: startDate, $lte: endDate }
+        }).lean();
+        return data;
+    }
 }
 exports.WebVitalsService = WebVitalsService;
+exports.webVitalsService = new WebVitalsService();
 //# sourceMappingURL=WebVitalsService.js.map

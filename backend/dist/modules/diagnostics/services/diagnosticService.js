@@ -17,7 +17,7 @@ const auditService_1 = require("../../../services/auditService");
 class DiagnosticService {
     constructor() {
         this.maxRetries = 3;
-        this.processingTimeout = 180000;
+        this.processingTimeout = 300000;
     }
     async createDiagnosticRequest(data) {
         try {

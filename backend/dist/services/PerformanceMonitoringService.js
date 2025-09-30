@@ -1,16 +1,19 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.performanceMonitoringService = exports.PerformanceMonitoringService = void 0;
 const WebVitalsService_1 = require("./WebVitalsService");
 const LighthouseCIService_1 = require("./LighthouseCIService");
 const PerformanceBudgetService_1 = require("./PerformanceBudgetService");
-const PerformanceCacheService_1 = require("./PerformanceCacheService");
+const PerformanceCacheService_1 = __importDefault(require("./PerformanceCacheService"));
 class PerformanceMonitoringService {
     constructor() {
         this.webVitalsService = new WebVitalsService_1.WebVitalsService();
         this.lighthouseService = new LighthouseCIService_1.LighthouseCIService();
         this.budgetService = new PerformanceBudgetService_1.PerformanceBudgetService();
-        this.cacheService = new PerformanceCacheService_1.PerformanceCacheService();
+        this.cacheService = PerformanceCacheService_1.default.getInstance();
     }
     async getPerformanceOverview(workspaceId) {
         const cacheKey = `performance-overview:${workspaceId || 'global'}`;
@@ -87,10 +90,10 @@ class PerformanceMonitoringService {
                 trends.push({
                     metric,
                     category: 'webVitals',
-                    current: trend.current || 0,
-                    previous: trend.previous || 0,
+                    current: 0,
+                    previous: 0,
                     change: trend.change || 0,
-                    changePercent: ((trend.change || 0) / (trend.previous || 1)) * 100,
+                    changePercent: trend.change || 0,
                     trend: Math.abs(trend.change || 0) < 5 ? 'stable' : (trend.change || 0) > 0 ? 'degrading' : 'improving',
                     timestamp: new Date(),
                 });

@@ -11,7 +11,7 @@ const MTRFollowUp_1 = __importDefault(require("../models/MTRFollowUp"));
 const DrugTherapyProblem_1 = __importDefault(require("../models/DrugTherapyProblem"));
 const Patient_1 = __importDefault(require("../models/Patient"));
 const responseHelpers_1 = require("../utils/responseHelpers");
-const auditService_1 = require("../services/auditService");
+const auditService_1 = __importDefault(require("../services/auditService"));
 exports.getMTRSessions = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { page = 1, limit = 10, status, priority, reviewType, pharmacistId, patientId, sort, } = req.query;
     const context = (0, responseHelpers_1.getRequestContext)(req);
@@ -58,7 +58,7 @@ exports.getMTRSession = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     (0, responseHelpers_1.ensureResourceExists)(session, 'MTR Session', id);
     (0, responseHelpers_1.checkTenantAccess)(session.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const responseData = {
-        review: {
+        session: {
             ...session.toObject(),
             completionPercentage: session.getCompletionPercentage(),
             nextStep: session.getNextStep(),
@@ -115,9 +115,9 @@ exports.createMTRSession = (0, responseHelpers_1.asyncHandler)(async (req, res) 
         selectedAt: new Date(),
     });
     await session.save();
-    await auditService_1.AuditService.logMTRActivity(auditService_1.AuditService.createAuditContext(req), 'CREATE_MTR_SESSION', session);
+    await auditService_1.default.logMTRActivity(auditService_1.default.createAuditContext(req), 'CREATE_MTR_SESSION', session);
     (0, responseHelpers_1.sendSuccess)(res, {
-        review: {
+        session: {
             ...session.toObject(),
             completionPercentage: session.getCompletionPercentage(),
             nextStep: session.getNextStep(),
@@ -131,184 +131,17 @@ exports.updateMTRSession = (0, responseHelpers_1.asyncHandler)(async (req, res) 
     const session = await MedicationTherapyReview_1.default.findById(id);
     (0, responseHelpers_1.ensureResourceExists)(session, 'MTR Session', id);
     (0, responseHelpers_1.checkTenantAccess)(session.workplaceId.toString(), context.workplaceId, context.isAdmin);
-    if (session.status === 'completed' && !context.isAdmin && !context.isSuperAdmin) {
+    if (session.status === 'completed' && !context.isAdmin) {
         return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Cannot update completed MTR session', 403);
-    }
-    if (updates.followUps && Array.isArray(updates.followUps)) {
-        console.log('🔍 Processing follow-ups:', updates.followUps.length);
-        const followUpIds = [];
-        for (const followUpData of updates.followUps) {
-            if (followUpData._id && followUpData._id !== 'temp' && !followUpData._id.toString().startsWith('temp')) {
-                try {
-                    const existingFollowUp = await MTRFollowUp_1.default.findById(followUpData._id);
-                    if (existingFollowUp) {
-                        let assignedToId = existingFollowUp.assignedTo;
-                        if (followUpData.assignedTo) {
-                            if (mongoose_1.default.Types.ObjectId.isValid(followUpData.assignedTo)) {
-                                assignedToId = followUpData.assignedTo;
-                            }
-                            else {
-                                console.log(`⚠️ Invalid assignedTo value "${followUpData.assignedTo}", keeping existing value`);
-                            }
-                        }
-                        Object.assign(existingFollowUp, followUpData, {
-                            assignedTo: assignedToId,
-                            updatedBy: context.userId,
-                        });
-                        await existingFollowUp.save();
-                        followUpIds.push(existingFollowUp._id);
-                        console.log('✅ Updated existing follow-up:', existingFollowUp._id);
-                    }
-                }
-                catch (error) {
-                    console.warn('Failed to update existing follow-up:', error);
-                    let assignedToId = context.userId;
-                    if (followUpData.assignedTo && mongoose_1.default.Types.ObjectId.isValid(followUpData.assignedTo)) {
-                        assignedToId = followUpData.assignedTo;
-                    }
-                    const newFollowUp = new MTRFollowUp_1.default({
-                        ...followUpData,
-                        _id: undefined,
-                        workplaceId: context.workplaceId,
-                        reviewId: id,
-                        patientId: session.patientId,
-                        assignedTo: assignedToId,
-                        createdBy: context.userId,
-                    });
-                    await newFollowUp.save();
-                    followUpIds.push(newFollowUp._id);
-                    console.log('✅ Created new follow-up after update failure:', newFollowUp._id);
-                }
-            }
-            else {
-                let assignedToId = context.userId;
-                if (followUpData.assignedTo) {
-                    if (mongoose_1.default.Types.ObjectId.isValid(followUpData.assignedTo)) {
-                        assignedToId = followUpData.assignedTo;
-                    }
-                    else {
-                        console.log(`⚠️ Invalid assignedTo value "${followUpData.assignedTo}", using current user ID`);
-                        assignedToId = context.userId;
-                    }
-                }
-                const newFollowUp = new MTRFollowUp_1.default({
-                    ...followUpData,
-                    _id: undefined,
-                    workplaceId: context.workplaceId,
-                    reviewId: id,
-                    patientId: session.patientId,
-                    assignedTo: assignedToId,
-                    createdBy: context.userId,
-                });
-                await newFollowUp.save();
-                followUpIds.push(newFollowUp._id);
-                console.log('✅ Created new follow-up:', newFollowUp._id);
-            }
-        }
-        session.followUps = followUpIds;
-        console.log('✅ Updated session with follow-up IDs:', followUpIds);
-        delete updates.followUps;
-    }
-    if (updates.interventions && Array.isArray(updates.interventions)) {
-        const interventionIds = [];
-        for (const interventionData of updates.interventions) {
-            if (interventionData._id && interventionData._id !== 'temp' && !interventionData._id.toString().startsWith('temp')) {
-                try {
-                    const existingIntervention = await MTRIntervention_1.default.findById(interventionData._id);
-                    if (existingIntervention) {
-                        Object.assign(existingIntervention, interventionData, {
-                            updatedBy: context.userId,
-                        });
-                        await existingIntervention.save();
-                        interventionIds.push(existingIntervention._id);
-                    }
-                }
-                catch (error) {
-                    console.warn('Failed to update existing intervention:', error);
-                    const newIntervention = new MTRIntervention_1.default({
-                        ...interventionData,
-                        _id: undefined,
-                        workplaceId: context.workplaceId,
-                        reviewId: id,
-                        patientId: session.patientId,
-                        pharmacistId: context.userId,
-                        createdBy: context.userId,
-                    });
-                    await newIntervention.save();
-                    interventionIds.push(newIntervention._id);
-                }
-            }
-            else {
-                const newIntervention = new MTRIntervention_1.default({
-                    ...interventionData,
-                    _id: undefined,
-                    workplaceId: context.workplaceId,
-                    reviewId: id,
-                    patientId: session.patientId,
-                    pharmacistId: context.userId,
-                    createdBy: context.userId,
-                });
-                await newIntervention.save();
-                interventionIds.push(newIntervention._id);
-            }
-        }
-        session.interventions = interventionIds;
-        delete updates.interventions;
-    }
-    if (updates.problems && Array.isArray(updates.problems)) {
-        const problemIds = [];
-        for (const problemData of updates.problems) {
-            if (problemData._id && problemData._id !== 'temp' && !problemData._id.toString().startsWith('temp')) {
-                try {
-                    const existingProblem = await DrugTherapyProblem_1.default.findById(problemData._id);
-                    if (existingProblem) {
-                        Object.assign(existingProblem, problemData, {
-                            updatedBy: context.userId,
-                        });
-                        await existingProblem.save();
-                        problemIds.push(existingProblem._id);
-                    }
-                }
-                catch (error) {
-                    console.warn('Failed to update existing problem:', error);
-                    const newProblem = new DrugTherapyProblem_1.default({
-                        ...problemData,
-                        _id: undefined,
-                        workplaceId: context.workplaceId,
-                        patientId: session.patientId,
-                        reviewId: id,
-                        identifiedBy: context.userId,
-                        createdBy: context.userId,
-                    });
-                    await newProblem.save();
-                    problemIds.push(newProblem._id);
-                }
-            }
-            else {
-                const newProblem = new DrugTherapyProblem_1.default({
-                    ...problemData,
-                    _id: undefined,
-                    workplaceId: context.workplaceId,
-                    patientId: session.patientId,
-                    reviewId: id,
-                    identifiedBy: context.userId,
-                    createdBy: context.userId,
-                });
-                await newProblem.save();
-                problemIds.push(newProblem._id);
-            }
-        }
-        session.problems = problemIds;
-        delete updates.problems;
     }
     Object.assign(session, updates, {
         updatedBy: context.userId,
         updatedAt: new Date(),
     });
     await session.save();
-    await auditService_1.AuditService.logMTRActivity(auditService_1.AuditService.createAuditContext(req), 'UPDATE_MTR_SESSION', session, session.toObject(), { ...session.toObject(), ...updates });
+    await auditService_1.default.logMTRActivity(auditService_1.default.createAuditContext(req), 'UPDATE_MTR_SESSION', session, session.toObject(), { ...session.toObject(), ...updates });
     (0, responseHelpers_1.sendSuccess)(res, {
-        review: {
+        session: {
             ...session.toObject(),
             completionPercentage: session.getCompletionPercentage(),
             nextStep: session.getNextStep(),
@@ -321,13 +154,13 @@ exports.deleteMTRSession = (0, responseHelpers_1.asyncHandler)(async (req, res) 
     const session = await MedicationTherapyReview_1.default.findById(id);
     (0, responseHelpers_1.ensureResourceExists)(session, 'MTR Session', id);
     (0, responseHelpers_1.checkTenantAccess)(session.workplaceId.toString(), context.workplaceId, context.isAdmin);
-    if (session.status === 'completed' && !context.isAdmin && !context.isSuperAdmin) {
+    if (session.status === 'completed' && !context.isAdmin) {
         return (0, responseHelpers_1.sendError)(res, 'FORBIDDEN', 'Cannot delete completed MTR session', 403);
     }
     session.isDeleted = true;
     session.updatedBy = context.userId;
     await session.save();
-    await auditService_1.AuditService.logMTRActivity(auditService_1.AuditService.createAuditContext(req), 'DELETE_MTR_SESSION', session);
+    await auditService_1.default.logMTRActivity(auditService_1.default.createAuditContext(req), 'DELETE_MTR_SESSION', session);
     (0, responseHelpers_1.sendSuccess)(res, null, 'MTR session deleted successfully');
 });
 exports.updateMTRStep = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -364,7 +197,7 @@ exports.updateMTRStep = (0, responseHelpers_1.asyncHandler)(async (req, res) => 
     session.updatedBy = context.userId;
     await session.save();
     (0, responseHelpers_1.sendSuccess)(res, {
-        review: {
+        session: {
             ...session.toObject(),
             completionPercentage: session.getCompletionPercentage(),
             nextStep: session.getNextStep(),
@@ -453,7 +286,7 @@ exports.createPatientMTRSession = (0, responseHelpers_1.asyncHandler)(async (req
     });
     await session.save();
     (0, responseHelpers_1.sendSuccess)(res, {
-        review: {
+        session: {
             ...session.toObject(),
             completionPercentage: session.getCompletionPercentage(),
             nextStep: session.getNextStep(),

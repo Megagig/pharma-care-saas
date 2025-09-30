@@ -59,6 +59,7 @@ export interface InterventionFilters {
     limit?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
+    isSuperAdmin?: boolean;
 }
 export interface PaginatedResult<T> {
     data: T[];
@@ -164,7 +165,8 @@ declare class ClinicalInterventionService {
         category?: string;
         priority?: string;
         outcome?: string;
-    }) => Promise<any>;
+        pharmacist?: string;
+    }, isSuperAdmin?: boolean) => Promise<any>;
     static calculateCostSavings: (interventions: IClinicalIntervention[], parameters: {
         adverseEventCost?: number;
     }) => Promise<any>;
@@ -174,15 +176,15 @@ declare class ClinicalInterventionService {
     static scheduleFollowUp: (interventionId: string, followUpData: any, userId: mongoose.Types.ObjectId, workplaceId: mongoose.Types.ObjectId) => Promise<IClinicalIntervention>;
     static advancedSearch: (filters: any, options: any) => Promise<any>;
     static getUserAssignmentStats: (userId: mongoose.Types.ObjectId, workplaceId: mongoose.Types.ObjectId, dateRange?: any) => Promise<any>;
-    static getDashboardMetrics: (workplaceId: mongoose.Types.ObjectId, dateRange?: any) => Promise<any>;
+    static getDashboardMetrics: (workplaceId: mongoose.Types.ObjectId, dateRange?: any, isSuperAdmin?: boolean) => Promise<any>;
     static getTrendAnalysis: (workplaceId: mongoose.Types.ObjectId, filters: any) => Promise<any>;
     static exportData: (filters: any, format: string) => Promise<any>;
     static sendNotifications: (interventionId: string, notificationData: any, userId: mongoose.Types.ObjectId, workplaceId: mongoose.Types.ObjectId) => Promise<any>;
     static createIntervention(data: CreateInterventionDTO): Promise<IClinicalIntervention>;
-    static updateIntervention(id: string, updates: UpdateInterventionDTO, userId: mongoose.Types.ObjectId, workplaceId: mongoose.Types.ObjectId): Promise<IClinicalIntervention>;
+    static updateIntervention(id: string, updates: UpdateInterventionDTO, userId: mongoose.Types.ObjectId, workplaceId: mongoose.Types.ObjectId, isSuperAdmin?: boolean): Promise<IClinicalIntervention>;
     static getInterventions(filters: InterventionFilters): Promise<PaginatedResult<IClinicalIntervention>>;
-    static getInterventionById(id: string, workplaceId: mongoose.Types.ObjectId): Promise<IClinicalIntervention>;
-    static deleteIntervention(id: string, userId: mongoose.Types.ObjectId, workplaceId: mongoose.Types.ObjectId): Promise<boolean>;
+    static getInterventionById(id: string, workplaceId: mongoose.Types.ObjectId, isSuperAdmin?: boolean): Promise<IClinicalIntervention>;
+    static deleteIntervention(id: string, userId: mongoose.Types.ObjectId, workplaceId: mongoose.Types.ObjectId, isSuperAdmin?: boolean): Promise<boolean>;
     static generateInterventionNumber(workplaceId: mongoose.Types.ObjectId): Promise<string>;
     static checkDuplicateInterventions(patientId: mongoose.Types.ObjectId, category: string, workplaceId: mongoose.Types.ObjectId, excludeId?: string): Promise<IClinicalIntervention[]>;
     private static isValidStatusTransition;

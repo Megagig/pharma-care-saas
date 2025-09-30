@@ -29,8 +29,8 @@ export declare class BackgroundJobService {
     private cleanupQueue;
     constructor();
     static getInstance(): BackgroundJobService;
-    queueExportJob(data: ExportJobData, options?: JobOptions): Promise<Job<ExportJobData>>;
-    queueScheduledReport(data: ReportGenerationJobData, options?: JobOptions): Promise<Job<ReportGenerationJobData>>;
+    queueExportJob(data: ExportJobData, options?: JobOptions): Promise<Job<ExportJobData> | null>;
+    queueScheduledReport(data: ReportGenerationJobData, options?: JobOptions): Promise<Job<ReportGenerationJobData> | null>;
     getJobStatus(jobId: string, queueType: 'export' | 'report'): Promise<any>;
     cancelJob(jobId: string, queueType: 'export' | 'report'): Promise<boolean>;
     getQueueStats(): Promise<{

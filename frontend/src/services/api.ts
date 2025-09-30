@@ -12,7 +12,7 @@ const getBaseURL = () => {
 
 const api = axios.create({
   baseURL: getBaseURL(),
-  timeout: 60000, // Reduced from 120000 (120s) to 60000 (60s) for better UX
+  timeout: 300000, // 5 minutes for AI analysis operations
   withCredentials: true, // Include httpOnly cookies
   headers: {
     'Content-Type': 'application/json',

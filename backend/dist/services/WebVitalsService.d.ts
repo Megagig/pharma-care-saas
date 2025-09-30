@@ -101,5 +101,8 @@ export declare class WebVitalsService {
     private invalidateRelevantCaches;
     private checkPerformanceBudgets;
     private sendPerformanceAlert;
+    static getRecentMetrics(timeRangeMs: number): Promise<any[]>;
+    static getMetricsInRange(startDate: Date, endDate: Date): Promise<any[]>;
 }
+export declare const webVitalsService: WebVitalsService;
 //# sourceMappingURL=WebVitalsService.d.ts.map

@@ -20,38 +20,39 @@ exports.getPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const parsedLimit = Math.min(50, Math.max(1, parseInt(limit) || 20));
     const filters = {};
+    filters.isDeleted = { $ne: true };
     if (!context.isAdmin) {
         filters.workplaceId = context.workplaceId;
     }
     if (q) {
         const searchRegex = new RegExp(q, 'i');
         filters.$or = [
-            { 'personalInfo.firstName': searchRegex },
-            { 'personalInfo.lastName': searchRegex },
-            { 'personalInfo.otherNames': searchRegex },
-            { 'medicalInfo.medicalRecordNumber': searchRegex },
-            { 'contactInfo.phone': searchRegex },
-            { 'contactInfo.email': searchRegex },
+            { firstName: searchRegex },
+            { lastName: searchRegex },
+            { otherNames: searchRegex },
+            { mrn: searchRegex },
+            { phone: searchRegex },
+            { email: searchRegex },
         ];
     }
     if (name) {
         const nameRegex = new RegExp(name, 'i');
         filters.$or = [
-            { 'personalInfo.firstName': nameRegex },
-            { 'personalInfo.lastName': nameRegex },
-            { 'personalInfo.otherNames': nameRegex },
+            { firstName: nameRegex },
+            { lastName: nameRegex },
+            { otherNames: nameRegex },
         ];
     }
     if (mrn)
-        filters['medicalInfo.medicalRecordNumber'] = new RegExp(mrn, 'i');
+        filters.mrn = new RegExp(mrn, 'i');
     if (phone)
-        filters['contactInfo.phone'] = new RegExp(phone.replace('+', '\\+'), 'i');
+        filters.phone = new RegExp(phone.replace('+', '\\+'), 'i');
     if (state)
-        filters['contactInfo.address.state'] = state;
+        filters.state = state;
     if (bloodGroup)
-        filters['medicalInfo.bloodGroup'] = bloodGroup;
+        filters.bloodGroup = bloodGroup;
     if (genotype)
-        filters['medicalInfo.genotype'] = genotype;
+        filters.genotype = genotype;
     if (useCursor === 'true' && !page) {
         const result = await cursorPagination_1.CursorPagination.paginate(Patient_1.default, {
             limit: parsedLimit,
@@ -61,10 +62,11 @@ exports.getPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
             filters,
         });
         const response = cursorPagination_1.CursorPagination.createPaginatedResponse(result, `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`, { limit: parsedLimit, sortField, sortOrder, ...req.query });
-        res.json({
-            success: true,
-            message: `Found ${result.items.length} patients`,
-            ...response,
+        return (0, responseHelpers_1.sendSuccess)(res, { results: response.data }, `Found ${response.data.length} patients`, 200, {
+            total: response.pagination.totalCount,
+            limit: parsedLimit,
+            hasNext: response.pagination.pageInfo.hasNextPage,
+            nextCursor: response.pagination.cursors.next,
         });
     }
     else {
@@ -260,18 +262,54 @@ exports.searchPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) =>
         query.workplaceId = context.workplaceId;
     }
     const patients = await Patient_1.default.find(query)
-        .select('firstName lastName otherNames mrn phone dob bloodGroup latestVitals')
+        .select('_id firstName lastName otherNames mrn phone dob bloodGroup latestVitals')
         .limit(Math.min(parseInt(limit), 50))
         .sort('lastName firstName')
         .lean();
-    const enrichedPatients = patients.map((patient) => ({
-        ...patient,
-        displayName: `${patient.firstName} ${patient.lastName}`,
-        age: patient.dob
-            ? Math.floor((Date.now() - patient.dob.getTime()) /
-                (1000 * 60 * 60 * 24 * 365.25))
-            : null,
-    }));
+    console.log('🔍 Backend - Raw patients from DB:', patients.map(p => ({
+        _id: p._id,
+        hasId: !!p._id,
+        idType: typeof p._id,
+        firstName: p.firstName,
+        mrn: p.mrn,
+    })));
+    const enrichedPatients = patients.map((patient) => {
+        console.log('🔍 Backend - Raw patient from DB:', {
+            _id: patient._id,
+            id: patient.id,
+            firstName: patient.firstName,
+            lastName: patient.lastName,
+            mrn: patient.mrn,
+            keys: Object.keys(patient),
+        });
+        const enrichedPatient = {
+            _id: patient._id?.toString() || patient._id || patient.id,
+            firstName: patient.firstName,
+            lastName: patient.lastName,
+            otherNames: patient.otherNames,
+            mrn: patient.mrn,
+            phone: patient.phone,
+            dob: patient.dob,
+            bloodGroup: patient.bloodGroup,
+            latestVitals: patient.latestVitals,
+            displayName: `${patient.firstName} ${patient.lastName}`,
+            age: patient.dob
+                ? Math.floor((Date.now() - patient.dob.getTime()) /
+                    (1000 * 60 * 60 * 24 * 365.25))
+                : null,
+        };
+        if (!enrichedPatient._id) {
+            console.error('❌ Backend - Patient missing _id after enrichment:', patient);
+            enrichedPatient._id = patient.mrn;
+        }
+        return enrichedPatient;
+    });
+    console.log('🔍 Backend - Enriched patients being sent:', enrichedPatients.map(p => ({
+        _id: p._id,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        mrn: p.mrn,
+    })));
     (0, responseHelpers_1.sendSuccess)(res, {
         patients: enrichedPatients,
         total: enrichedPatients.length,

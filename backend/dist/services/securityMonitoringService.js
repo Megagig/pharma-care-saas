@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.securityMonitoringService = void 0;
+exports.cleanupSecurityMonitoring = exports.securityMonitoringService = void 0;
 const auditLogging_1 = require("../middlewares/auditLogging");
 const logger_1 = __importDefault(require("../utils/logger"));
 const User_1 = __importDefault(require("../models/User"));
@@ -579,8 +579,18 @@ class SecurityMonitoringService {
     }
 }
 exports.securityMonitoringService = SecurityMonitoringService.getInstance();
-setInterval(() => {
-    exports.securityMonitoringService.cleanup();
-}, 60 * 60 * 1000);
+let securityCleanupInterval = null;
+if (process.env.NODE_ENV === 'production') {
+    securityCleanupInterval = setInterval(() => {
+        exports.securityMonitoringService.cleanup();
+    }, 60 * 60 * 1000);
+}
+const cleanupSecurityMonitoring = () => {
+    if (securityCleanupInterval) {
+        clearInterval(securityCleanupInterval);
+        securityCleanupInterval = null;
+    }
+};
+exports.cleanupSecurityMonitoring = cleanupSecurityMonitoring;
 exports.default = exports.securityMonitoringService;
 //# sourceMappingURL=securityMonitoringService.js.map

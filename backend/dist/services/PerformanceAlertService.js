@@ -337,6 +337,23 @@ class PerformanceAlertService {
     getConfiguration() {
         return { ...this.alertConfig };
     }
+    static async sendAlert(alertData) {
+        const service = new PerformanceAlertService();
+        const alert = {
+            type: alertData.type,
+            severity: alertData.severity,
+            metric: alertData.data?.metric || 'unknown',
+            value: alertData.data?.value || 0,
+            threshold: alertData.data?.threshold,
+            url: alertData.data?.url || 'https://app.pharmacare.com',
+            timestamp: new Date(),
+            userAgent: alertData.data?.userAgent,
+            deviceType: alertData.data?.deviceType,
+            workspaceId: alertData.data?.workspaceId,
+            additionalData: alertData.data,
+        };
+        await service.sendAlert(alert);
+    }
 }
 exports.PerformanceAlertService = PerformanceAlertService;
 exports.performanceAlertService = new PerformanceAlertService();

@@ -1,21 +1,11 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import mongoose from "mongoose";
-interface IUser {
-    _id: mongoose.Types.ObjectId;
-    firstName: string;
-    lastName: string;
-    email: string;
-    role: string;
-    avatar?: string;
-}
-interface AuthenticatedRequest extends Request {
-    user?: IUser;
-    workplaceId?: mongoose.Types.ObjectId;
-}
-export declare const getUserSuggestions: (req: AuthenticatedRequest, res: Response) => Promise<void>;
-export declare const searchMessagesByMentions: (req: AuthenticatedRequest, res: Response) => Promise<void>;
-export declare const getMentionStats: (req: AuthenticatedRequest, res: Response) => Promise<void>;
-export declare const getMentionedUsers: (req: AuthenticatedRequest, res: Response) => Promise<void>;
+import { AuthRequest } from '../types/auth';
+export declare const getUserSuggestions: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const searchMessagesByMentions: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const searchMessagesByMentionsV2: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getMentionStats: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getMentionedUsers: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const createMentionNotifications: (messageId: mongoose.Types.ObjectId, conversationId: mongoose.Types.ObjectId, senderId: mongoose.Types.ObjectId, mentionedUserIds: mongoose.Types.ObjectId[], messageContent: string, priority?: "normal" | "urgent", workplaceId?: mongoose.Types.ObjectId) => Promise<{
     userId: mongoose.Types.ObjectId;
     type: string;
@@ -35,5 +25,4 @@ export declare const createMentionNotifications: (messageId: mongoose.Types.Obje
     };
     workplaceId: mongoose.Types.ObjectId;
 }[]>;
-export {};
 //# sourceMappingURL=mentionController.d.ts.map

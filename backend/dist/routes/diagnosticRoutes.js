@@ -5,7 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
-const diagnosticController_1 = require("../controllers/diagnosticController");
+const diagnosticController_1 = __importDefault(require("../controllers/diagnosticController"));
+const { generateDiagnosticAnalysis, saveDiagnosticDecision, getDiagnosticHistory, getDiagnosticCase, checkDrugInteractions, testAIConnection, saveDiagnosticNotes } = diagnosticController_1.default;
 const diagnosticValidators_1 = require("../validators/diagnosticValidators");
 const auth_1 = require("../middlewares/auth");
 const auditMiddleware_1 = require("../middlewares/auditMiddleware");
@@ -36,11 +37,13 @@ const extendTimeout = (req, res, next) => {
     res.setTimeout(90000);
     next();
 };
-router.post('/ai', extendTimeout, aiRateLimit, auth_1.auth, auth_1.requireLicense, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('AI_DIAGNOSTIC_REQUEST', 'clinical_documentation'), diagnosticValidators_1.validateDiagnosticAnalysis, diagnosticController_1.generateDiagnosticAnalysis);
-router.post('/cases/:caseId/decision', diagnosticRateLimit, auth_1.auth, auth_1.requireLicense, (0, auditMiddleware_1.auditLogger)('DIAGNOSTIC_DECISION', 'clinical_documentation'), diagnosticValidators_1.validateDiagnosticDecision, diagnosticController_1.saveDiagnosticDecision);
-router.get('/patients/:patientId/history', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('VIEW_DIAGNOSTIC_HISTORY', 'data_access'), diagnosticValidators_1.validateDiagnosticHistory, diagnosticController_1.getDiagnosticHistory);
-router.get('/cases/:caseId', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('VIEW_DIAGNOSTIC_CASE', 'data_access'), diagnosticValidators_1.validateGetDiagnosticCase, diagnosticController_1.getDiagnosticCase);
-router.post('/interactions', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)('DRUG_INTERACTION_CHECK', 'clinical_documentation'), diagnosticValidators_1.validateDrugInteractions, diagnosticController_1.checkDrugInteractions);
-router.get('/ai/test', auth_1.auth, (0, auditMiddleware_1.auditLogger)('AI_CONNECTION_TEST', 'system_security'), diagnosticController_1.testAIConnection);
+router.post('/ai', extendTimeout, aiRateLimit, auth_1.auth, auth_1.requireLicense, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('AI_DIAGNOSTIC_REQUEST', 'clinical_documentation'), diagnosticValidators_1.validateDiagnosticAnalysis, generateDiagnosticAnalysis);
+router.post('/cases/:caseId/decision', diagnosticRateLimit, auth_1.auth, auth_1.requireLicense, (0, auditMiddleware_1.auditLogger)('DIAGNOSTIC_DECISION', 'clinical_documentation'), diagnosticValidators_1.validateDiagnosticDecision, saveDiagnosticDecision);
+router.get('/patients/:patientId/history', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('VIEW_DIAGNOSTIC_HISTORY', 'data_access'), diagnosticValidators_1.validateDiagnosticHistory, getDiagnosticHistory);
+router.get('/cases/:caseId', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('VIEW_DIAGNOSTIC_CASE', 'data_access'), diagnosticValidators_1.validateGetDiagnosticCase, getDiagnosticCase);
+router.post('/interactions', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('drug_information'), (0, auditMiddleware_1.auditLogger)('DRUG_INTERACTION_CHECK', 'clinical_documentation'), diagnosticValidators_1.validateDrugInteractions, checkDrugInteractions);
+router.post('/cases/:caseId/notes', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('SAVE_DIAGNOSTIC_NOTES', 'clinical_documentation'), saveDiagnosticNotes);
+router.post('/cases/:caseId/notes', diagnosticRateLimit, auth_1.auth, auth_1.requireLicense, (0, auditMiddleware_1.auditLogger)('SAVE_DIAGNOSTIC_NOTES', 'clinical_documentation'), saveDiagnosticNotes);
+router.get('/ai/test', auth_1.auth, (0, auditMiddleware_1.auditLogger)('AI_CONNECTION_TEST', 'system_security'), testAIConnection);
 exports.default = router;
 //# sourceMappingURL=diagnosticRoutes.js.map
