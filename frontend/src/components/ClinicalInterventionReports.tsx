@@ -63,6 +63,10 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PrintIcon from '@mui/icons-material/Print';
+import HistoryIcon from '@mui/icons-material/History';
+import PersonIcon from '@mui/icons-material/Person';
+import WarningIcon from '@mui/icons-material/Warning';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -123,6 +127,33 @@ interface OutcomeReport {
     patientResponse: string;
     completedDate: string;
   }>;
+  auditTrail?: {
+    summary: {
+      totalActions: number;
+      uniqueUsers: number;
+      riskActivities: number;
+      lastActivity: string | null;
+    };
+    logs: Array<{
+      _id: string;
+      timestamp: string;
+      action: string;
+      userId: {
+        firstName?: string;
+        lastName?: string;
+        email: string;
+      };
+      riskLevel: 'low' | 'medium' | 'high' | 'critical';
+      complianceCategory: string;
+      details: any;
+      interventionId?: {
+        interventionNumber: string;
+      };
+    }>;
+    total: number;
+    page: number;
+    pages: number;
+  };
 }
 
 interface ReportFilters {
@@ -134,6 +165,7 @@ interface ReportFilters {
   pharmacist: string;
   costSavingsMin: number | null;
   costSavingsMax: number | null;
+  riskLevel?: string;
 }
 
 const ClinicalInterventionReports: React.FC = () => {
@@ -608,6 +640,7 @@ const ClinicalInterventionReports: React.FC = () => {
             <Tab label="Trend Analysis" />
             <Tab label="Comparative Analysis" />
             <Tab label="Detailed Outcomes" />
+            <Tab label="Audit Trail" />
           </Tabs>
         </Box>
 
@@ -1463,12 +1496,25 @@ const ClinicalInterventionReports: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
+
+              {/* Enhanced Secondary Charts */}
               <Grid item xs={12} md={6}>
                 <Card
                   sx={{
-                    borderRadius: 3,
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    borderRadius: 4,
+                    boxShadow: '0 16px 48px rgba(0, 0, 0, 0.08)',
                     background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #f093fb 0%, #f5576c 100%)',
+                    },
                   }}
                 >
                   <CardContent sx={{ p: 3 }}>
@@ -1476,112 +1522,245 @@ const ClinicalInterventionReports: React.FC = () => {
                       <Box
                         sx={{
                           background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                          borderRadius: 2,
-                          p: 1,
+                          borderRadius: 3,
+                          p: 1.5,
                           mr: 2,
+                          boxShadow: '0 8px 24px rgba(240, 147, 251, 0.3)',
                         }}
                       >
-                        <TimelineIcon sx={{ color: 'white', fontSize: 24 }} />
+                        <TimelineIcon sx={{ color: 'white', fontSize: 28 }} />
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Resolution Time Trend
-                      </Typography>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>
+                          Resolution Time Analysis
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#64748b' }}>
+                          Average time to resolve interventions
+                        </Typography>
+                      </Box>
                     </Box>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart
-                        data={reportData?.trendAnalysis || []}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    <ResponsiveContainer width="100%" height={350}>
+                      <AreaChart
+                        data={safeReportData?.trendAnalysis || []}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                       >
                         <defs>
-                          <linearGradient id="resolutionGradient" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0%" stopColor="#f093fb" />
-                            <stop offset="100%" stopColor="#f5576c" />
+                          <linearGradient id="resolutionAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#f093fb" stopOpacity={0.8} />
+                            <stop offset="50%" stopColor="#f5576c" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="#f5576c" stopOpacity={0.1} />
                           </linearGradient>
+                          <filter id="dropShadow">
+                            <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#f093fb" floodOpacity="0.3" />
+                          </filter>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <CartesianGrid
+                          strokeDasharray="2 4"
+                          stroke="#e2e8f0"
+                          strokeOpacity={0.6}
+                          horizontal={true}
+                          vertical={false}
+                        />
                         <XAxis
                           dataKey="period"
+                          tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
                           tick={{ fontSize: 12, fill: '#64748b' }}
+                          axisLine={false}
+                          tickLine={false}
                         />
-                        <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
-                        <RechartsTooltip content={<CustomTooltip />} />
-                        <Line
+                        <RechartsTooltip
+                          content={<CustomTooltip />}
+                          cursor={{ fill: 'rgba(240, 147, 251, 0.1)', stroke: 'none' }}
+                        />
+                        <Area
                           type="monotone"
-                          dataKey="resolutionTime"
-                          name="Resolution Time"
-                          stroke="url(#resolutionGradient)"
-                          strokeWidth={4}
-                          dot={{ fill: '#f093fb', strokeWidth: 2, r: 6 }}
-                          activeDot={{ r: 8, stroke: '#f093fb', strokeWidth: 2 }}
-                          animationDuration={2000}
+                          taKey="resolutionTime"
+                          me="Resolution Time (days)"
+                          fill="url(#resolutionAreaGradient)"
+                          stroke="#f093fb"
+                          strokeWidth={3}
+                          dot={{
+                            fill: '#f093fb',
+                            strokeWidth: 2,
+                            r: 6,
+                            filter: 'url(#dropShadow)'
+                          }}
+                          activeDot={{
+                            r: 10,
+                            stroke: '#f093fb',
+                            strokeWidth: 3,
+                            fill: '#ffffff',
+                            filter: 'url(#dropShadow)'
+                          }}
+                          animationDuration={2500}
+                          animationBegin={300}
                         />
-                      </LineChart>
+                      </AreaChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
               </Grid>
+
               <Grid item xs={12} md={6}>
                 <Card
                   sx={{
-                    borderRadius: 3,
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    borderRadius: 4,
+                    boxShadow: '0 16px 48px rgba(0, 0, 0, 0.08)',
                     background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #43e97b 0%, #38f9d7 100%)',
+                    },
                   }}
                 >
                   <CardContent sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                       <Box
                         sx={{
-                          background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                          borderRadius: 2,
-                          p: 1,
+                          background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                          borderRadius: 3,
+                          p: 1.5,
                           mr: 2,
+                          boxShadow: '0 8px 24px rgba(67, 233, 123, 0.3)',
                         }}
                       >
-                        <TrendingUpIcon sx={{ color: '#333', fontSize: 24 }} />
+                        <TrendingUpIcon sx={{ color: 'white', fontSize: 28 }} />
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Success Rate Progress
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>
+                          Success Rate Progress
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#64748b' }}>
+                          Overall intervention success metrics
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ position: 'relative', height: 350, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ResponsiveContainer width="100%" height="80%">
+                        <RadialBarChart
+                          cx="50%"
+                          cy="50%"
+                          innerRadius="30%"
+                          outerRadius="85%"
+                          data={[
+                            {
+                              name: 'Success Rate',
+                              value: safeReportData?.summary?.successRate || 0,
+                              fill: '#43e97b',
+                            },
+                          ]}
+                        >
+                          <defs>
+                            <linearGradient id="successRadialGradient" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor="#43e97b" />
+                              <stop offset="100%" stopColor="#38f9d7" />
+                            </linearGradient>
+                          </defs>
+                          <RadialBar
+                            label={false}
+                            background={{ fill: '#f1f5f9', opacity: 0.3 }}
+                            dataKey="value"
+                            cornerRadius={15}
+                            fill="url(#successRadialGradient)"
+                            animationDuration={2000}
+                          />
+                          <RechartsTooltip
+                            content={<CustomTooltip />}
+                            formatter={(value: any, name: any) => [`${value}%`, name || 'Success Rate']}
+                          />
+                        </RadialBarChart>
+                      </ResponsiveContainer>
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          textAlign: 'center',
+                        }}
+                      >
+                        <Typography
+                          variant="h2"
+                          sx={{
+                            fontWeight: 800,
+                            background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                            backgroundClip: 'text',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            mb: 0.5,
+                          }}
+                        >
+                          {(safeReportData?.summary?.successRate || 0).toFixed(1)}%
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                          Success Rate
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Performance Insights */}
+              <Grid item xs={12}>
+                <Card
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: '0 16px 48px rgba(0, 0, 0, 0.08)',
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ p: 4 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <Box
+                        sx={{
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          borderRadius: 3,
+                          p: 1.5,
+                          mr: 3,
+                          boxShadow: '0 8px 24px rgba(102, 126, 234, 0.3)',
+                        }}
+                      >
+                        <AssessmentIcon sx={{ color: 'white', fontSize: 28 }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>
+                          Performance Insights
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#64748b' }}>
+                          Key performance indicators and trends
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ mt: 3 }}>
+                      <Typography variant="body1" sx={{ color: '#64748b', lineHeight: 1.6 }}>
+                        The trend analysis shows comprehensive performance metrics across all clinical interventions,
+                        providing insights into success rates, cost savings, and resolution times to help optimize
+                        pharmaceutical care delivery.
                       </Typography>
                     </Box>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <RadialBarChart
-                        cx="50%"
-                        cy="50%"
-                        innerRadius="20%"
-                        outerRadius="90%"
-                        data={[
-                          {
-                            name: 'Success Rate',
-                            value: reportData?.summary?.successRate || 0,
-                            fill: '#43e97b',
-                          },
-                        ]}
-                      >
-                        <RadialBar
-                          label={{ position: 'insideStart', fill: '#fff' }}
-                          background
-                          dataKey="value"
-                          cornerRadius={10}
-                          fill="#43e97b"
-                        />
-                        <RechartsTooltip
-                          content={<CustomTooltip />}
-                          formatter={(value: any, name: any) => [`${value}%`, name || 'Success Rate']}
-                        />
-                      </RadialBarChart>
-                    </ResponsiveContainer>
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        textAlign: 'center',
-                        fontWeight: 700,
-                        color: '#43e97b',
-                        mt: -8,
-                      }}
-                    >
-                      {(reportData?.summary?.successRate || 0).toFixed(1)}%
-                    </Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -1851,6 +2030,348 @@ const ClinicalInterventionReports: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
+
+              {/* Modern Charts Section */}
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                {/* Performance Trends Over Time */}
+                <Grid item xs={12} md={8}>
+                  <Card
+                    sx={{
+                      borderRadius: 4,
+                      boxShadow: '0 16px 48px rgba(0, 0, 0, 0.08)',
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 4,
+                        background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <Box
+                          sx={{
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            borderRadius: 3,
+                            p: 1.5,
+                            mr: 3,
+                            boxShadow: '0 8px 24px rgba(102, 126, 234, 0.3)',
+                          }}
+                        >
+                          <TrendingUpIcon sx={{ color: 'white', fontSize: 28 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant="h5" sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>
+                            Performance Trends Over Time
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#64748b' }}>
+                            Comprehensive view of interventions, success rates, and cost savings
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ height: 500, position: 'relative' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ComposedChart
+                            data={safeReportData?.trendAnalysis || []}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                          >
+                            <defs>
+                              <linearGradient id="interventionsGradientComp" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#667eea" stopOpacity={0.9} />
+                                <stop offset="50%" stopColor="#764ba2" stopOpacity={0.6} />
+                                <stop offset="100%" stopColor="#764ba2" stopOpacity={0.2} />
+                              </linearGradient>
+                              <linearGradient id="costSavingsGradientComp" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#fa709a" stopOpacity={0.8} />
+                                <stop offset="50%" stopColor="#fee140" stopOpacity={0.5} />
+                                <stop offset="100%" stopColor="#fee140" stopOpacity={0.1} />
+                              </linearGradient>
+                              <filter id="glowComp">
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                                <feMerge>
+                                  <feMergeNode in="coloredBlur" />
+                                  <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                              </filter>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} horizontal={true} vertical={false} />
+                            <XAxis
+                              dataKey="period"
+                              stroke="#64748b"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <YAxis
+                              yAxisId="left"
+                              stroke="#64748b"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <YAxis
+                              yAxisId="right"
+                              orientation="right"
+                              stroke="#64748b"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <RechartsTooltip
+                              content={<CustomTooltip />}
+                              cursor={{ fill: 'rgba(102, 126, 234, 0.1)' }}
+                            />
+                            <Legend />
+                            <Area
+                              yAxisId="left"
+                              type="monotone"
+                              dataKey="interventions"
+                              stroke="#667eea"
+                              strokeWidth={3}
+                              fill="url(#interventionsGradientComp)"
+                              name="Interventions"
+                              animationDuration={2000}
+                              animationBegin={0}
+                              filter="url(#glowComp)"
+                            />
+                            <Area
+                              yAxisId="left"
+                              type="monotone"
+                              dataKey="costSavings"
+                              stroke="#fa709a"
+                              strokeWidth={3}
+                              fill="url(#costSavingsGradientComp)"
+                              name="Cost Savings (₦)"
+                              animationDuration={2000}
+                              animationBegin={500}
+                            />
+                            <Line
+                              yAxisId="right"
+                              type="monotone"
+                              dataKey="successRate"
+                              stroke="#43e97b"
+                              strokeWidth={4}
+                              dot={{ fill: '#43e97b', strokeWidth: 2, r: 6 }}
+                              activeDot={{ r: 8, stroke: '#43e97b', strokeWidth: 2, fill: '#ffffff' }}
+                              name="Success Rate (%)"
+                              animationDuration={2000}
+                              animationBegin={1000}
+                            />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Resolution Time Trend */}
+                <Grid item xs={12} md={4}>
+                  <Card
+                    sx={{
+                      borderRadius: 4,
+                      boxShadow: '0 16px 48px rgba(0, 0, 0, 0.08)',
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 4,
+                        background: 'linear-gradient(90deg, #f093fb 0%, #f5576c 100%)',
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <Box
+                          sx={{
+                            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                            borderRadius: 3,
+                            p: 1.5,
+                            mr: 2,
+                            boxShadow: '0 8px 24px rgba(240, 147, 251, 0.3)',
+                          }}
+                        >
+                          <AccessTimeIcon sx={{ color: 'white', fontSize: 28 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>
+                            Resolution Time Trend
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#64748b' }}>
+                            Average resolution time analysis
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ height: 350, position: 'relative' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart
+                            data={safeReportData?.trendAnalysis || []}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                          >
+                            <defs>
+                              <linearGradient id="resolutionTimeGradientComp" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#f093fb" stopOpacity={0.8} />
+                                <stop offset="50%" stopColor="#f5576c" stopOpacity={0.5} />
+                                <stop offset="100%" stopColor="#f5576c" stopOpacity={0.1} />
+                              </linearGradient>
+                              <filter id="dropShadowComp">
+                                <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#f093fb" floodOpacity="0.3" />
+                              </filter>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+                            <XAxis
+                              dataKey="period"
+                              stroke="#64748b"
+                              fontSize={11}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <YAxis
+                              stroke="#64748b"
+                              fontSize={11}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <RechartsTooltip
+                              content={<CustomTooltip />}
+                              formatter={(value: any, name: any) => [`${value} days`, name || 'Resolution Time']}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="avgResolutionTime"
+                              stroke="#f093fb"
+                              strokeWidth={3}
+                              fill="url(#resolutionTimeGradientComp)"
+                              dot={{ fill: '#f093fb', strokeWidth: 2, r: 5 }}
+                              activeDot={{ r: 7, stroke: '#f093fb', strokeWidth: 2, fill: '#ffffff' }}
+                              animationDuration={2500}
+                              filter="url(#dropShadowComp)"
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Success Rate Progress */}
+                <Grid item xs={12} md={4}>
+                  <Card
+                    sx={{
+                      borderRadius: 4,
+                      boxShadow: '0 16px 48px rgba(0, 0, 0, 0.08)',
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 4,
+                        background: 'linear-gradient(90deg, #43e97b 0%, #38f9d7 100%)',
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <Box
+                          sx={{
+                            background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                            borderRadius: 3,
+                            p: 1.5,
+                            mr: 2,
+                            boxShadow: '0 8px 24px rgba(67, 233, 123, 0.3)',
+                          }}
+                        >
+                          <TrendingUpIcon sx={{ color: 'white', fontSize: 28 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>
+                            Success Rate Progress
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#64748b' }}>
+                            Overall intervention success metrics
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ position: 'relative', height: 350, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ResponsiveContainer width="100%" height="80%">
+                          <RadialBarChart
+                            cx="50%"
+                            cy="50%"
+                            innerRadius="30%"
+                            outerRadius="85%"
+                            data={[
+                              {
+                                name: 'Success Rate',
+                                value: safeReportData?.comparativeAnalysis?.currentPeriod?.successRate || 0,
+                                fill: '#43e97b',
+                              },
+                            ]}
+                          >
+                            <defs>
+                              <linearGradient id="successRadialGradientComp" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor="#43e97b" />
+                                <stop offset="100%" stopColor="#38f9d7" />
+                              </linearGradient>
+                            </defs>
+                            <RadialBar
+                              label={false}
+                              background={{ fill: '#f1f5f9', opacity: 0.3 }}
+                              dataKey="value"
+                              cornerRadius={15}
+                              fill="url(#successRadialGradientComp)"
+                              animationDuration={2000}
+                            />
+                            <RechartsTooltip
+                              content={<CustomTooltip />}
+                              formatter={(value: any, name: any) => [`${value}%`, name || 'Success Rate']}
+                            />
+                          </RadialBarChart>
+                        </ResponsiveContainer>
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            textAlign: 'center',
+                          }}
+                        >
+                          <Typography
+                            variant="h2"
+                            sx={{
+                              fontWeight: 800,
+                              background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                              backgroundClip: 'text',
+                              WebkitBackgroundClip: 'text',
+                              WebkitTextFillColor: 'transparent',
+                              mb: 0.5,
+                            }}
+                          >
+                            {(safeReportData?.comparativeAnalysis?.currentPeriod?.successRate || 0).toFixed(1)}%
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                            Success Rate
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
             </Grid>
           </Box>
         )}
@@ -1943,6 +2464,509 @@ const ClinicalInterventionReports: React.FC = () => {
                     setPage(0);
                   }}
                 />
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
+        {activeTab === 5 && (
+          <Box>
+            {/* Modern Audit Trail */}
+            <Grid container spacing={3}>
+              {/* Audit Statistics Cards */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-8px) scale(1.02)',
+                      boxShadow: '0 20px 40px rgba(102, 126, 234, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
+                    >
+                      <HistoryIcon sx={{ fontSize: 32 }} />
+                    </Box>
+                    <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                      {reportData?.auditTrail?.summary?.totalActions || 0}
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      Total Actions
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      All recorded activities
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(67, 233, 123, 0.3)',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-8px) scale(1.02)',
+                      boxShadow: '0 20px 40px rgba(67, 233, 123, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
+                    >
+                      <PersonIcon sx={{ fontSize: 32 }} />
+                    </Box>
+                    <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                      {reportData?.auditTrail?.summary?.uniqueUsers || 0}
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      Unique Users
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      Active participants
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(250, 112, 154, 0.3)',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-8px) scale(1.02)',
+                      boxShadow: '0 20px 40px rgba(250, 112, 154, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
+                    >
+                      <WarningIcon sx={{ fontSize: 32 }} />
+                    </Box>
+                    <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                      {reportData?.auditTrail?.summary?.riskActivities || 0}
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      Risk Activities
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      High/Critical risk events
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    color: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 32px rgba(240, 147, 251, 0.3)',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-8px) scale(1.02)',
+                      boxShadow: '0 20px 40px rgba(240, 147, 251, 0.4)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                    <Box
+                      sx={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                        width: 64,
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 2,
+                      }}
+                    >
+                      <AccessTimeIcon sx={{ fontSize: 32 }} />
+                    </Box>
+                    <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                      {reportData?.auditTrail?.summary?.lastActivity ? 'Recent' : 'No'}
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      Last Activity
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      {reportData?.auditTrail?.summary?.lastActivity
+                        ? format(new Date(reportData.auditTrail.summary.lastActivity), 'MMM dd, HH:mm')
+                        : 'No activity'
+                      }
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+
+            {/* Audit Trail Filters */}
+            <Card sx={{ mt: 3, mb: 3 }}>
+              <CardContent>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}
+                >
+                  <FilterListIcon />
+                  Audit Trail Filters
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <DatePicker
+                      label="Start Date"
+                      value={filters.dateFrom}
+                      onChange={(date) => handleFilterChange('dateFrom', date)}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          size: 'small'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <DatePicker
+                      label="End Date"
+                      value={filters.dateTo}
+                      onChange={(date) => handleFilterChange('dateTo', date)}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          size: 'small'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Risk Level</InputLabel>
+                      <Select
+                        value={filters.riskLevel || 'all'}
+                        label="Risk Level"
+                        onChange={(e) => handleFilterChange('riskLevel', e.target.value)}
+                      >
+                        <MenuItem value="all">All Risk Levels</MenuItem>
+                        <MenuItem value="low">Low</MenuItem>
+                        <MenuItem value="medium">Medium</MenuItem>
+                        <MenuItem value="high">High</MenuItem>
+                        <MenuItem value="critical">Critical</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      onClick={() => {
+                        // Clear filters logic would go here
+                        console.log('Clear audit filters');
+                      }}
+                      sx={{ height: '40px' }}
+                    >
+                      Clear Filters
+                    </Button>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            {/* Modern Audit Trail Table */}
+            <Card
+              sx={{
+                borderRadius: 4,
+                boxShadow: '0 16px 48px rgba(0, 0, 0, 0.08)',
+                background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 4,
+                  background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 4 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box
+                      sx={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        borderRadius: 3,
+                        p: 1.5,
+                        mr: 3,
+                        boxShadow: '0 8px 24px rgba(102, 126, 234, 0.3)',
+                      }}
+                    >
+                      <HistoryIcon sx={{ color: 'white', fontSize: 28 }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#1e293b', mb: 0.5 }}>
+                        Clinical Interventions Audit Trail
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#64748b' }}>
+                        Comprehensive audit log of all system activities and changes
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    startIcon={<GetAppIcon />}
+                    onClick={() => {
+                      // Export audit trail logic would go here
+                      console.log('Export audit trail');
+                    }}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Export
+                  </Button>
+                </Box>
+
+                {(reportData?.auditTrail?.logs || []).length > 0 ? (
+                  <>
+                    <TableContainer>
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Timestamp</TableCell>
+                            <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Action</TableCell>
+                            <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>User</TableCell>
+                            <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Risk Level</TableCell>
+                            <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Category</TableCell>
+                            <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>Details</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {(reportData?.auditTrail?.logs || [])
+                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                            .map((log: any, index: number) => (
+                              <TableRow
+                                key={log._id || index}
+                                sx={{
+                                  '&:hover': {
+                                    backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                                  },
+                                }}
+                              >
+                                <TableCell>
+                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                    {format(new Date(log.timestamp), 'MMM dd, yyyy')}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ color: '#64748b' }}>
+                                    {format(new Date(log.timestamp), 'HH:mm:ss')}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={log.action?.replace(/_/g, ' ') || 'Unknown Action'}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                      color: '#667eea',
+                                      fontWeight: 500,
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Box>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                      {log.userId?.firstName && log.userId?.lastName
+                                        ? `${log.userId.firstName} ${log.userId.lastName}`
+                                        : log.userId?.email || 'Unknown User'
+                                      }
+                                    </Typography>
+                                    {log.userId?.email && (
+                                      <Typography variant="caption" sx={{ color: '#64748b' }}>
+                                        {log.userId.email}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={log.riskLevel || 'Low'}
+                                    size="small"
+                                    color={
+                                      log.riskLevel === 'critical' ? 'error' :
+                                        log.riskLevel === 'high' ? 'error' :
+                                          log.riskLevel === 'medium' ? 'warning' : 'success'
+                                    }
+                                    sx={{ fontWeight: 500 }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Typography variant="body2" sx={{
+                                    textTransform: 'capitalize',
+                                    color: '#64748b'
+                                  }}>
+                                    {log.complianceCategory?.replace(/_/g, ' ') || 'General'}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      maxWidth: 200,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      color: '#64748b'
+                                    }}
+                                    title={JSON.stringify(log.details, null, 2)}
+                                  >
+                                    {log.interventionId?.interventionNumber && (
+                                      <strong>#{log.interventionId.interventionNumber}</strong>
+                                    )}
+                                    {log.details && typeof log.details === 'object'
+                                      ? Object.keys(log.details).length > 0
+                                        ? ` - ${Object.keys(log.details).join(', ')}`
+                                        : ' - No details'
+                                      : log.details || 'No details'
+                                    }
+                                  </Typography>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                    <TablePagination
+                      rowsPerPageOptions={[5, 10, 25, 50]}
+                      component="div"
+                      count={reportData?.auditTrail?.total || 0}
+                      rowsPerPage={rowsPerPage}
+                      page={page}
+                      onPageChange={(_, newPage) => setPage(newPage)}
+                      onRowsPerPageChange={(event) => {
+                        setRowsPerPage(parseInt(event.target.value, 10));
+                        setPage(0);
+                      }}
+                    />
+                  </>
+                ) : (
+                  <Box
+                    sx={{
+                      textAlign: 'center',
+                      py: 8,
+                      px: 4,
+                      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                      borderRadius: 3,
+                      border: '2px dashed #cbd5e1',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        borderRadius: '50%',
+                        width: 80,
+                        height: 80,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 3,
+                        opacity: 0.8,
+                      }}
+                    >
+                      <HistoryIcon sx={{ color: 'white', fontSize: 40 }} />
+                    </Box>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 700,
+                        color: '#1e293b',
+                        mb: 2,
+                      }}
+                    >
+                      No Audit Data Available
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: '#64748b',
+                        mb: 3,
+                        maxWidth: 400,
+                        mx: 'auto',
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      No audit logs match the selected criteria. Try adjusting your filters or check back later as audit data is generated through system usage.
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      onClick={() => {
+                        // Clear filters logic would go here
+                        console.log('Clear audit filters');
+                      }}
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        px: 3,
+                      }}
+                    >
+                      Clear Filters
+                    </Button>
+                  </Box>
+                )}
               </CardContent>
             </Card>
           </Box>
