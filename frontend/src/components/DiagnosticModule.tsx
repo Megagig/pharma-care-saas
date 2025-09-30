@@ -37,6 +37,9 @@ import {
   LocalHospital as HospitalIcon,
   Science as ScienceIcon,
   Medication as MedicationIcon,
+  HealthAndSafety as HealthIcon,
+  Info as InfoIcon,
+  Verified as VerifiedIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useFeatureFlags } from '../context/FeatureFlagContext';
@@ -244,9 +247,22 @@ const DiagnosticModule: React.FC = () => {
   };
 
   const renderInputForm = () => (
-    <Grid container spacing={3}>
-      {/* Patient Selection with Search */}
-      <Grid item xs={12}>
+    <Box sx={{ '& > *': { mb: 4 } }}>
+      {/* Patient Selection Section */}
+      <Card
+        elevation={0}
+        sx={{
+          p: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          bgcolor: 'grey.50',
+        }}
+      >
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+          <HospitalIcon color="primary" />
+          Patient Selection
+        </Typography>
         <Autocomplete
           fullWidth
           options={availablePatients}
@@ -263,13 +279,19 @@ const DiagnosticModule: React.FC = () => {
             setPatientSearchQuery(newInputValue);
           }}
           loading={patientsLoading || searchLoading}
-          filterOptions={(x) => x} // Disable client-side filtering since we're using server-side search
+          filterOptions={(x) => x}
           renderInput={(params) => (
             <TextField
               {...params}
               label="Search and Select Patient"
               placeholder="Type patient name, MRN, or phone number..."
               required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  bgcolor: 'background.paper',
+                },
+              }}
               InputProps={{
                 ...params.InputProps,
                 endAdornment: (
@@ -315,95 +337,174 @@ const DiagnosticModule: React.FC = () => {
               No patients found. Please add patients to the system first.
             </Typography>
           )}
-      </Grid>
+      </Card>
 
-      {/* Symptoms */}
-      <Grid item xs={12}>
-        <Typography variant="h6" gutterBottom>
-          Symptoms
+      {/* Symptoms Section */}
+      <Card
+        elevation={0}
+        sx={{
+          p: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+          <ScienceIcon color="primary" />
+          Symptoms & Clinical Findings
         </Typography>
-        {symptoms.map((symptom, index) => (
-          <Box
-            key={index}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
-          >
-            <Chip
-              label={symptom.type === 'subjective' ? 'Subjective' : 'Objective'}
-              color={symptom.type === 'subjective' ? 'primary' : 'secondary'}
-              size="small"
-            />
-            <TextField
-              fullWidth
-              placeholder={`Enter ${symptom.type} symptom`}
-              value={symptom.description}
-              onChange={(e) => updateSymptom(index, e.target.value)}
-            />
-            <IconButton onClick={() => removeSymptom(index)} size="small">
-              <RemoveIcon />
-            </IconButton>
-          </Box>
-        ))}
-        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+        
+        <Box sx={{ mb: 3 }}>
+          {symptoms.map((symptom, index) => (
+            <Card
+              key={index}
+              elevation={0}
+              sx={{
+                p: 2,
+                mb: 2,
+                border: '1px solid',
+                borderColor: symptom.type === 'subjective' ? 'primary.light' : 'secondary.light',
+                borderRadius: 2,
+                bgcolor: symptom.type === 'subjective' ? 'primary.50' : 'secondary.50',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Chip
+                  label={symptom.type === 'subjective' ? 'Subjective' : 'Objective'}
+                  color={symptom.type === 'subjective' ? 'primary' : 'secondary'}
+                  size="small"
+                  sx={{ minWidth: 100 }}
+                />
+                <TextField
+                  fullWidth
+                  placeholder={`Enter ${symptom.type} symptom`}
+                  value={symptom.description}
+                  onChange={(e) => updateSymptom(index, e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: 'background.paper',
+                    },
+                  }}
+                />
+                <IconButton 
+                  onClick={() => removeSymptom(index)} 
+                  size="small"
+                  sx={{
+                    color: 'error.main',
+                    '&:hover': { bgcolor: 'error.50' },
+                  }}
+                >
+                  <RemoveIcon />
+                </IconButton>
+              </Box>
+            </Card>
+          ))}
+        </Box>
+        
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <Button
             startIcon={<AddIcon />}
             onClick={() => addSymptom('subjective')}
-            size="small"
+            variant="outlined"
+            color="primary"
+            sx={{ borderRadius: 2 }}
           >
             Add Subjective
           </Button>
           <Button
             startIcon={<AddIcon />}
             onClick={() => addSymptom('objective')}
-            size="small"
+            variant="outlined"
+            color="secondary"
+            sx={{ borderRadius: 2 }}
           >
             Add Objective
           </Button>
         </Box>
-      </Grid>
+      </Card>
 
-      {/* Clinical Details */}
-      <Grid item xs={12} md={4}>
-        <TextField
-          fullWidth
-          label="Duration"
-          value={duration}
-          onChange={(e) => setDuration(e.target.value)}
-          placeholder="e.g., 3 days, 2 weeks"
-        />
-      </Grid>
-      <Grid item xs={12} md={4}>
-        <FormControl fullWidth>
-          <InputLabel>Severity</InputLabel>
-          <Select
-            value={severity}
-            onChange={(e) => setSeverity(e.target.value as 'mild' | 'moderate' | 'severe')}
-          >
-            <MenuItem value="mild">Mild</MenuItem>
-            <MenuItem value="moderate">Moderate</MenuItem>
-            <MenuItem value="severe">Severe</MenuItem>
-          </Select>
-        </FormControl>
-      </Grid>
-      <Grid item xs={12} md={4}>
-        <FormControl fullWidth>
-          <InputLabel>Onset</InputLabel>
-          <Select
-            value={onset}
-            onChange={(e) => setOnset(e.target.value as 'acute' | 'chronic' | 'subacute')}
-          >
-            <MenuItem value="acute">Acute</MenuItem>
-            <MenuItem value="chronic">Chronic</MenuItem>
-            <MenuItem value="subacute">Subacute</MenuItem>
-          </Select>
-        </FormControl>
-      </Grid>
+      {/* Clinical Details Section */}
+      <Card
+        elevation={0}
+        sx={{
+          p: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+          <InfoIcon color="primary" />
+          Clinical Details
+        </Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label="Duration"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              placeholder="e.g., 3 days, 2 weeks"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth>
+              <InputLabel>Severity</InputLabel>
+              <Select
+                value={severity}
+                onChange={(e) => setSeverity(e.target.value as 'mild' | 'moderate' | 'severe')}
+                sx={{
+                  borderRadius: 2,
+                }}
+              >
+                <MenuItem value="mild">Mild</MenuItem>
+                <MenuItem value="moderate">Moderate</MenuItem>
+                <MenuItem value="severe">Severe</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth>
+              <InputLabel>Onset</InputLabel>
+              <Select
+                value={onset}
+                onChange={(e) => setOnset(e.target.value as 'acute' | 'chronic' | 'subacute')}
+                sx={{
+                  borderRadius: 2,
+                }}
+              >
+                <MenuItem value="acute">Acute</MenuItem>
+                <MenuItem value="chronic">Chronic</MenuItem>
+                <MenuItem value="subacute">Subacute</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Card>
 
-      {/* Vital Signs */}
-      <Grid item xs={12}>
-        <Typography variant="h6" gutterBottom>
+      {/* Vital Signs Section */}
+      <Card
+        elevation={0}
+        sx={{
+          p: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+          <HealthIcon color="primary" />
           Vital Signs
         </Typography>
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           <Grid item xs={6} md={3}>
             <TextField
               fullWidth
@@ -413,6 +514,11 @@ const DiagnosticModule: React.FC = () => {
                 setVitalSigns({ ...vitalSigns, bloodPressure: e.target.value })
               }
               placeholder="120/80"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
             />
           </Grid>
           <Grid item xs={6} md={3}>
@@ -428,6 +534,11 @@ const DiagnosticModule: React.FC = () => {
                 })
               }
               placeholder="BPM"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
             />
           </Grid>
           <Grid item xs={6} md={3}>
@@ -443,6 +554,11 @@ const DiagnosticModule: React.FC = () => {
                 })
               }
               placeholder="°C"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
             />
           </Grid>
           <Grid item xs={6} md={3}>
@@ -458,32 +574,58 @@ const DiagnosticModule: React.FC = () => {
                 })
               }
               placeholder="%"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
             />
           </Grid>
         </Grid>
-      </Grid>
+      </Card>
 
       {/* Generate Analysis Button */}
-      <Grid item xs={12}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={
-              loading ? <CircularProgress size={20} /> : <PsychologyIcon />
-            }
-            onClick={handleAnalysis}
-            disabled={
-              loading ||
-              !selectedPatient ||
-              symptoms.filter((s) => s.description).length === 0
-            }
-          >
-            {loading ? 'Generating Analysis...' : 'Generate AI Analysis'}
-          </Button>
-        </Box>
-      </Grid>
-    </Grid>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <Button
+          variant="contained"
+          size="large"
+          startIcon={
+            loading ? <CircularProgress size={20} color="inherit" /> : <PsychologyIcon />
+          }
+          onClick={handleAnalysis}
+          disabled={
+            loading ||
+            !selectedPatient ||
+            symptoms.filter((s) => s.description).length === 0
+          }
+          sx={{
+            px: 6,
+            py: 2,
+            borderRadius: 3,
+            fontSize: '1.1rem',
+            fontWeight: 600,
+            background: loading 
+              ? 'grey.400' 
+              : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            boxShadow: loading 
+              ? 'none' 
+              : '0 8px 32px rgba(102, 126, 234, 0.3)',
+            '&:hover': {
+              background: loading 
+                ? 'grey.400' 
+                : 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+              transform: loading ? 'none' : 'translateY(-2px)',
+              boxShadow: loading 
+                ? 'none' 
+                : '0 12px 40px rgba(102, 126, 234, 0.4)',
+            },
+            transition: 'all 0.3s ease',
+          }}
+        >
+          {loading ? 'Generating Analysis...' : 'Generate AI Analysis'}
+        </Button>
+      </Box>
+    </Box>
   );
 
   const renderAnalysisResults = () => {
@@ -491,197 +633,395 @@ const DiagnosticModule: React.FC = () => {
 
     return (
       <Box>
-        <Alert severity="info" sx={{ mb: 3 }}>
-          Analysis completed in {analysis.processingTime}ms with confidence
-          score: {analysis.analysis.confidenceScore}%
-        </Alert>
+        {/* Analysis Summary Card */}
+        <Card
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 4,
+            border: '1px solid',
+            borderColor: 'success.light',
+            borderRadius: 2,
+            bgcolor: 'success.50',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: 2,
+                bgcolor: 'success.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <VerifiedIcon sx={{ color: 'white', fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" fontWeight={600} color="success.dark">
+                Analysis Complete
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Processing time: {analysis.processingTime}ms • Confidence: {analysis.analysis.confidenceScore}%
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Chip
+              label={`${analysis.analysis.differentialDiagnoses.length} Diagnoses`}
+              color="primary"
+              variant="outlined"
+            />
+            <Chip
+              label={`${analysis.analysis.recommendedTests.length} Tests`}
+              color="secondary"
+              variant="outlined"
+            />
+            <Chip
+              label={`${analysis.analysis.therapeuticOptions.length} Treatments`}
+              color="info"
+              variant="outlined"
+            />
+            {analysis.analysis.redFlags.length > 0 && (
+              <Chip
+                label={`${analysis.analysis.redFlags.length} Red Flags`}
+                color="error"
+                variant="outlined"
+              />
+            )}
+          </Box>
+        </Card>
 
         {/* Differential Diagnoses */}
-        <Accordion defaultExpanded>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <HospitalIcon />
-              <Typography variant="h6">Differential Diagnoses</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <List>
-              {analysis.analysis.differentialDiagnoses.map(
-                (diagnosis, index) => (
-                  <ListItem key={index}>
-                    <ListItemText
-                      primary={
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <Typography variant="subtitle1">
-                            {diagnosis.condition}
-                          </Typography>
-                          <Chip
-                            label={`${diagnosis.probability}%`}
-                            color={
-                              diagnosis.probability > 70
-                                ? 'error'
-                                : diagnosis.probability > 40
-                                  ? 'warning'
-                                  : 'success'
-                            }
-                            size="small"
-                          />
-                          <Chip
-                            label={diagnosis.severity}
-                            color={
-                              diagnosis.severity === 'high'
-                                ? 'error'
-                                : diagnosis.severity === 'medium'
-                                  ? 'warning'
-                                  : 'info'
-                            }
-                            size="small"
-                          />
-                        </Box>
+        <Card
+          elevation={0}
+          sx={{
+            mb: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            overflow: 'hidden',
+          }}
+        >
+          <Accordion defaultExpanded elevation={0}>
+            <AccordionSummary 
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                bgcolor: 'primary.50',
+                '&:hover': { bgcolor: 'primary.100' },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <HospitalIcon color="primary" />
+                <Typography variant="h6" fontWeight={600}>
+                  Differential Diagnoses
+                </Typography>
+                <Chip 
+                  label={analysis.analysis.differentialDiagnoses.length} 
+                  size="small" 
+                  color="primary"
+                />
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails sx={{ p: 0 }}>
+              {analysis.analysis.differentialDiagnoses.map((diagnosis, index) => (
+                <Card
+                  key={index}
+                  elevation={0}
+                  sx={{
+                    m: 2,
+                    p: 3,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    '&:hover': {
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                      transform: 'translateY(-1px)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
+                      {diagnosis.condition}
+                    </Typography>
+                    <Chip
+                      label={`${diagnosis.probability}%`}
+                      color={
+                        diagnosis.probability > 70
+                          ? 'error'
+                          : diagnosis.probability > 40
+                            ? 'warning'
+                            : 'success'
                       }
-                      secondary={diagnosis.reasoning}
+                      sx={{ fontWeight: 600 }}
                     />
-                  </ListItem>
-                )
-              )}
-            </List>
-          </AccordionDetails>
-        </Accordion>
+                    <Chip
+                      label={diagnosis.severity}
+                      color={
+                        diagnosis.severity === 'high'
+                          ? 'error'
+                          : diagnosis.severity === 'medium'
+                            ? 'warning'
+                            : 'info'
+                      }
+                      variant="outlined"
+                    />
+                  </Box>
+                  <Typography variant="body1" color="text.secondary">
+                    {diagnosis.reasoning}
+                  </Typography>
+                </Card>
+              ))}
+            </AccordionDetails>
+          </Accordion>
+        </Card>
 
         {/* Red Flags */}
         {analysis.analysis.redFlags.length > 0 && (
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <WarningIcon color="error" />
-                <Typography variant="h6">Red Flags</Typography>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <List>
+          <Card
+            elevation={0}
+            sx={{
+              mb: 3,
+              border: '1px solid',
+              borderColor: 'error.light',
+              borderRadius: 2,
+              overflow: 'hidden',
+            }}
+          >
+            <Accordion elevation={0}>
+              <AccordionSummary 
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  bgcolor: 'error.50',
+                  '&:hover': { bgcolor: 'error.100' },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <WarningIcon color="error" />
+                  <Typography variant="h6" fontWeight={600} color="error.dark">
+                    Red Flags - Immediate Attention Required
+                  </Typography>
+                  <Chip 
+                    label={analysis.analysis.redFlags.length} 
+                    size="small" 
+                    color="error"
+                  />
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails sx={{ p: 0 }}>
                 {analysis.analysis.redFlags.map((flag, index) => (
-                  <ListItem key={index}>
-                    <ListItemText
-                      primary={
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                        >
-                          <Typography variant="subtitle1">
-                            {flag.flag}
-                          </Typography>
-                          <Chip
-                            label={flag.severity}
-                            color={
-                              flag.severity === 'critical'
-                                ? 'error'
-                                : flag.severity === 'high'
-                                  ? 'warning'
-                                  : 'info'
-                            }
-                            size="small"
-                          />
-                        </Box>
-                      }
-                      secondary={flag.action}
-                    />
-                  </ListItem>
+                  <Alert
+                    key={index}
+                    severity={
+                      flag.severity === 'critical' ? 'error' :
+                      flag.severity === 'high' ? 'warning' : 'info'
+                    }
+                    sx={{ 
+                      m: 2, 
+                      borderRadius: 2,
+                      '& .MuiAlert-message': { width: '100%' },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        {flag.flag}
+                      </Typography>
+                      <Chip
+                        label={flag.severity.toUpperCase()}
+                        color={
+                          flag.severity === 'critical'
+                            ? 'error'
+                            : flag.severity === 'high'
+                              ? 'warning'
+                              : 'info'
+                        }
+                        size="small"
+                      />
+                    </Box>
+                    <Typography variant="body2">
+                      <strong>Action Required:</strong> {flag.action}
+                    </Typography>
+                  </Alert>
                 ))}
-              </List>
-            </AccordionDetails>
-          </Accordion>
+              </AccordionDetails>
+            </Accordion>
+          </Card>
         )}
 
         {/* Recommended Tests */}
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ScienceIcon />
-              <Typography variant="h6">Recommended Tests</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <List>
+        <Card
+          elevation={0}
+          sx={{
+            mb: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            overflow: 'hidden',
+          }}
+        >
+          <Accordion elevation={0}>
+            <AccordionSummary 
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                bgcolor: 'secondary.50',
+                '&:hover': { bgcolor: 'secondary.100' },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <ScienceIcon color="secondary" />
+                <Typography variant="h6" fontWeight={600}>
+                  Recommended Tests
+                </Typography>
+                <Chip 
+                  label={analysis.analysis.recommendedTests.length} 
+                  size="small" 
+                  color="secondary"
+                />
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails sx={{ p: 0 }}>
               {analysis.analysis.recommendedTests.map((test, index) => (
-                <ListItem key={index}>
-                  <ListItemText
-                    primary={
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <Typography variant="subtitle1">
-                          {test.testName}
-                        </Typography>
-                        <Chip
-                          label={test.priority}
-                          color={
-                            test.priority === 'urgent'
-                              ? 'error'
-                              : test.priority === 'routine'
-                                ? 'warning'
-                                : 'info'
-                          }
-                          size="small"
-                        />
-                      </Box>
-                    }
-                    secondary={test.reasoning}
-                  />
-                </ListItem>
+                <Card
+                  key={index}
+                  elevation={0}
+                  sx={{
+                    m: 2,
+                    p: 3,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    '&:hover': {
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                      transform: 'translateY(-1px)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
+                      {test.testName}
+                    </Typography>
+                    <Chip
+                      label={test.priority.toUpperCase()}
+                      color={
+                        test.priority === 'urgent'
+                          ? 'error'
+                          : test.priority === 'routine'
+                            ? 'warning'
+                            : 'info'
+                      }
+                      sx={{ fontWeight: 600 }}
+                    />
+                  </Box>
+                  <Typography variant="body1" color="text.secondary">
+                    {test.reasoning}
+                  </Typography>
+                </Card>
               ))}
-            </List>
-          </AccordionDetails>
-        </Accordion>
+            </AccordionDetails>
+          </Accordion>
+        </Card>
 
         {/* Therapeutic Options */}
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <MedicationIcon />
-              <Typography variant="h6">Therapeutic Options</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <List>
+        <Card
+          elevation={0}
+          sx={{
+            mb: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            overflow: 'hidden',
+          }}
+        >
+          <Accordion elevation={0}>
+            <AccordionSummary 
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                bgcolor: 'info.50',
+                '&:hover': { bgcolor: 'info.100' },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <MedicationIcon color="info" />
+                <Typography variant="h6" fontWeight={600}>
+                  Therapeutic Options
+                </Typography>
+                <Chip 
+                  label={analysis.analysis.therapeuticOptions.length} 
+                  size="small" 
+                  color="info"
+                />
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails sx={{ p: 0 }}>
               {analysis.analysis.therapeuticOptions.map((option, index) => (
-                <ListItem key={index}>
-                  <ListItemText
-                    primary={`${option.medication} - ${option.dosage}, ${option.frequency}`}
-                    secondary={
-                      <Box>
-                        <Typography variant="body2">
-                          {option.reasoning}
-                        </Typography>
-                        {option.safetyNotes.length > 0 && (
-                          <Box sx={{ mt: 1 }}>
-                            <Typography variant="caption" color="error">
-                              Safety Notes:
+                <Card
+                  key={index}
+                  elevation={0}
+                  sx={{
+                    m: 2,
+                    p: 3,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    '&:hover': {
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                      transform: 'translateY(-1px)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                    {option.medication}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                    <Chip label={`Dosage: ${option.dosage}`} size="small" variant="outlined" />
+                    <Chip label={`Frequency: ${option.frequency}`} size="small" variant="outlined" />
+                    <Chip label={`Duration: ${option.duration}`} size="small" variant="outlined" />
+                  </Box>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                    {option.reasoning}
+                  </Typography>
+                  {option.safetyNotes.length > 0 && (
+                    <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Safety Notes:
+                      </Typography>
+                      <Box component="ul" sx={{ m: 0, pl: 2 }}>
+                        {option.safetyNotes.map((note, i) => (
+                          <li key={i}>
+                            <Typography variant="body2">
+                              {note}
                             </Typography>
-                            {option.safetyNotes.map((note, i) => (
-                              <Typography
-                                key={i}
-                                variant="caption"
-                                display="block"
-                                color="error"
-                              >
-                                • {note}
-                              </Typography>
-                            ))}
-                          </Box>
-                        )}
+                          </li>
+                        ))}
                       </Box>
-                    }
-                  />
-                </ListItem>
+                    </Alert>
+                  )}
+                </Card>
               ))}
-            </List>
-          </AccordionDetails>
-        </Accordion>
+            </AccordionDetails>
+          </Accordion>
+        </Card>
 
         {/* Disclaimer */}
-        <Alert severity="warning" sx={{ mt: 2 }}>
-          {analysis.analysis.disclaimer}
+        <Alert 
+          severity="warning" 
+          sx={{ 
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'warning.light',
+          }}
+        >
+          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            Important Disclaimer
+          </Typography>
+          <Typography variant="body2">
+            {analysis.analysis.disclaimer}
+          </Typography>
         </Alert>
       </Box>
     );
@@ -690,54 +1030,191 @@ const DiagnosticModule: React.FC = () => {
   return (
     <Box>
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mb: 3,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'error.light',
+          }} 
+          onClose={() => setError(null)}
+        >
           {error}
         </Alert>
       )}
 
-      <Tabs
-        value={activeTab}
-        onChange={(_, newValue) => setActiveTab(newValue)}
-        sx={{ mb: 3 }}
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          overflow: 'hidden',
+          mb: 3,
+        }}
       >
-        <Tab label="Input Data" />
-        <Tab label="AI Analysis" disabled={!analysis} />
-      </Tabs>
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              minHeight: 64,
+              textTransform: 'none',
+              fontSize: '1rem',
+              fontWeight: 500,
+              px: 4,
+              py: 2,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                bgcolor: 'action.hover',
+              },
+              '&.Mui-selected': {
+                fontWeight: 600,
+              },
+            },
+            '& .MuiTabs-indicator': {
+              height: 3,
+              borderRadius: '3px 3px 0 0',
+            },
+          }}
+        >
+          <Tab 
+            label="Clinical Data Input" 
+            icon={<AddIcon />}
+            iconPosition="start"
+            sx={{ gap: 1.5 }}
+          />
+          <Tab 
+            label="AI Analysis Results" 
+            disabled={!analysis}
+            icon={<PsychologyIcon />}
+            iconPosition="start"
+            sx={{ gap: 1.5 }}
+          />
+        </Tabs>
+      </Card>
 
       {activeTab === 0 && (
-        <Card>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              Clinical Data Input
-            </Typography>
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 2,
+                  bgcolor: 'primary.50',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <AddIcon sx={{ color: 'primary.main', fontSize: 24 }} />
+              </Box>
+              <Typography variant="h4" fontWeight={600}>
+                Clinical Data Input
+              </Typography>
+            </Box>
             {renderInputForm()}
           </CardContent>
         </Card>
       )}
 
       {activeTab === 1 && (
-        <Card>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              AI Diagnostic Analysis
-            </Typography>
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 2,
+                  bgcolor: 'secondary.50',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <PsychologyIcon sx={{ color: 'secondary.main', fontSize: 24 }} />
+              </Box>
+              <Typography variant="h4" fontWeight={600}>
+                AI Diagnostic Analysis
+              </Typography>
+            </Box>
             {renderAnalysisResults()}
           </CardContent>
         </Card>
       )}
 
-      {/* Patient Consent Dialog */}
-      <Dialog open={consentDialog} onClose={() => setConsentDialog(false)}>
-        <DialogTitle>Patient Consent Required</DialogTitle>
-        <DialogContent>
-          <Typography>
+      {/* Enhanced Patient Consent Dialog */}
+      <Dialog 
+        open={consentDialog} 
+        onClose={() => setConsentDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                bgcolor: 'warning.50',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <WarningIcon sx={{ color: 'warning.main', fontSize: 20 }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600}>
+              Patient Consent Required
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pb: 3 }}>
+          <Typography variant="body1" sx={{ mb: 2 }}>
             AI diagnostic analysis requires patient consent for data processing.
             Please ensure the patient has provided informed consent before
             proceeding.
           </Typography>
+          <Alert severity="info" sx={{ borderRadius: 2 }}>
+            <Typography variant="body2">
+              This analysis will process patient data using AI algorithms to provide diagnostic insights.
+              All data is processed securely and in compliance with HIPAA regulations.
+            </Typography>
+          </Alert>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConsentDialog(false)}>Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button 
+            onClick={() => setConsentDialog(false)}
+            variant="outlined"
+            sx={{ borderRadius: 2 }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={() => {
               setPatientConsent(true);
@@ -745,6 +1222,7 @@ const DiagnosticModule: React.FC = () => {
               handleAnalysis();
             }}
             variant="contained"
+            sx={{ borderRadius: 2 }}
           >
             Patient Consents - Proceed
           </Button>
