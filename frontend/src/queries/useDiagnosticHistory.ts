@@ -60,10 +60,7 @@ export const useAddDiagnosticHistoryNote = () => {
       type?: 'clinical' | 'follow_up' | 'review' | 'general';
     }) => diagnosticHistoryService.addNote(historyId, content, type),
     onSuccess: (data, variables) => {
-      showSuccess({
-        title: 'Note Added',
-        message: 'Diagnostic note has been added successfully.',
-      });
+      showSuccess('Diagnostic note has been added successfully.', 'Note Added');
       
       // Invalidate related queries
       queryClient.invalidateQueries({
@@ -71,10 +68,7 @@ export const useAddDiagnosticHistoryNote = () => {
       });
     },
     onError: (error: any) => {
-      showError({
-        title: 'Failed to Add Note',
-        message: error.response?.data?.message || 'An error occurred while adding the note.',
-      });
+      showError(error.response?.data?.message || 'An error occurred while adding the note.', 'Failed to Add Note');
     },
   });
 };
@@ -172,16 +166,10 @@ export const useExportDiagnosticHistory = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      showSuccess({
-        title: 'Export Successful',
-        message: 'Diagnostic history has been exported successfully.',
-      });
+      showSuccess('Diagnostic history has been exported successfully.', 'Export Successful');
     },
     onError: (error: any) => {
-      showError({
-        title: 'Export Failed',
-        message: error.response?.data?.message || 'An error occurred while exporting the history.',
-      });
+      showError(error.response?.data?.message || 'An error occurred while exporting the history.', 'Export Failed');
     },
   });
 };
@@ -197,10 +185,7 @@ export const useGenerateReferralDocument = () => {
     mutationFn: ({ caseId, data }: { caseId: string; data: any }) => 
       diagnosticHistoryService.generateCaseReferralDocument(caseId, data),
     onSuccess: (data, historyId) => {
-      showSuccess({
-        title: 'Referral Generated',
-        message: 'Referral document has been generated successfully.',
-      });
+      showSuccess('Referral document has been generated successfully.', 'Referral Generated');
       
       // Invalidate related queries
       queryClient.invalidateQueries({
@@ -208,10 +193,7 @@ export const useGenerateReferralDocument = () => {
       });
     },
     onError: (error: any) => {
-      showError({
-        title: 'Referral Generation Failed',
-        message: error.response?.data?.message || 'An error occurred while generating the referral.',
-      });
+      showError(error.response?.data?.message || 'An error occurred while generating the referral.', 'Referral Generation Failed');
     },
   });
 };
@@ -231,10 +213,7 @@ export const useCompareDiagnosticHistories = () => {
       historyId2: string;
     }) => diagnosticHistoryService.compareHistories(historyId1, historyId2),
     onError: (error: any) => {
-      showError({
-        title: 'Comparison Failed',
-        message: error.response?.data?.message || 'An error occurred while comparing histories.',
-      });
+      showError(error.response?.data?.message || 'An error occurred while comparing histories.', 'Comparison Failed');
     },
   });
 };

@@ -37,10 +37,10 @@ export const symptomsSchema = z.object({
         .min(1, 'Duration is required')
         .max(100, 'Duration cannot exceed 100 characters'),
     severity: z.enum(['mild', 'moderate', 'severe'], {
-        errorMap: () => ({ message: 'Severity must be mild, moderate, or severe' }),
+        message: 'Severity must be mild, moderate, or severe',
     }),
     onset: z.enum(['acute', 'chronic', 'subacute'], {
-        errorMap: () => ({ message: 'Onset must be acute, chronic, or subacute' }),
+        message: 'Onset must be acute, chronic, or subacute',
     }),
 });
 
@@ -62,7 +62,7 @@ export const patientConsentSchema = z.object({
         message: 'Patient consent is required for AI diagnostic analysis',
     }),
     method: z.enum(['electronic', 'verbal', 'written'], {
-        errorMap: () => ({ message: 'Consent method must be specified' }),
+        message: 'Consent method must be specified',
     }),
 });
 
@@ -99,7 +99,7 @@ export const validateDiagnosticRequest = (data: any): ValidationResult => {
         };
     } catch (error) {
         if (error instanceof z.ZodError) {
-            const errors: ValidationError[] = error.errors.map((err) => ({
+            const errors: ValidationError[] = error.issues.map((err: z.ZodIssue) => ({
                 field: err.path.join('.'),
                 message: err.message,
                 path: err.path as string[],
@@ -126,7 +126,7 @@ export const validateVitalSigns = (data: any): ValidationResult => {
         };
     } catch (error) {
         if (error instanceof z.ZodError) {
-            const errors: ValidationError[] = error.errors.map((err) => ({
+            const errors: ValidationError[] = error.issues.map((err: z.ZodIssue) => ({
                 field: err.path.join('.'),
                 message: err.message,
                 path: err.path as string[],
@@ -153,7 +153,7 @@ export const validateSymptoms = (data: any): ValidationResult => {
         };
     } catch (error) {
         if (error instanceof z.ZodError) {
-            const errors: ValidationError[] = error.errors.map((err) => ({
+            const errors: ValidationError[] = error.issues.map((err: z.ZodIssue) => ({
                 field: err.path.join('.'),
                 message: err.message,
                 path: err.path as string[],
@@ -220,12 +220,12 @@ export const validateFieldRealTime = (
         return null;
     } catch (error) {
         if (error instanceof z.ZodError) {
-            const fieldError = error.errors.find(err => err.path.includes(fieldName));
-            if (fieldError) {
+            const firstError = error.issues[0];
+            if (firstError) {
                 return {
                     field: fieldName,
-                    message: fieldError.message,
-                    path: fieldError.path as string[],
+                    message: firstError.message,
+                    path: firstError.path as string[],
                 };
             }
         }
