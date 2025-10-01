@@ -561,8 +561,29 @@ class DiagnosticHistoryService {
     institution?: string;
     notes?: string;
   }): Promise<any> {
-    const response = await apiClient.post(`/diagnostics/cases/${caseId}/referral/send`, data);
-    return response.data;
+    console.log('diagnosticHistoryService.sendReferralElectronically: Making API call', {
+      caseId,
+      data,
+      url: `/diagnostics/cases/${caseId}/referral/send`
+    });
+    
+    try {
+      const response = await apiClient.post(`/diagnostics/cases/${caseId}/referral/send`, data);
+      console.log('diagnosticHistoryService.sendReferralElectronically: API call successful', {
+        caseId,
+        status: response.status,
+        data: response.data
+      });
+      return response.data;
+    } catch (error) {
+      console.error('diagnosticHistoryService.sendReferralElectronically: API call failed', {
+        caseId,
+        error,
+        status: error?.response?.status,
+        data: error?.response?.data
+      });
+      throw error;
+    }
   }
 
   /**

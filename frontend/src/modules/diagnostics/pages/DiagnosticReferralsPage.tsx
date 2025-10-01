@@ -81,6 +81,7 @@ const DiagnosticReferralsPage: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editContent, setEditContent] = useState('');
   const [editingReferral, setEditingReferral] = useState<DiagnosticReferral | null>(null);
+  const [sendingReferral, setSendingReferral] = useState<DiagnosticReferral | null>(null);
 
   const {
     data: referralsData,
@@ -209,14 +210,44 @@ const DiagnosticReferralsPage: React.FC = () => {
   };
 
   const handleSendReferral = async (data: any) => {
-    if (!selectedReferral) return;
+    if (!sendingReferral) {
+      console.error('No referral selected for sending');
+      alert('Error: No referral selected. Please try again.');
+      return;
+    }
     
-    await sendMutation.mutateAsync({
-      caseId: selectedReferral.caseId,
-      data,
-    });
-    
-    refetch();
+    try {
+      console.log('Sending referral electronically:', {
+        caseId: sendingReferral.caseId,
+        data
+      });
+      
+      await sendMutation.mutateAsync({
+        caseId: sendingReferral.caseId,
+        data,
+      });
+      
+      console.log('Referral sent successfully');
+      
+      // Clear the sending referral state
+      setSendingReferral(null);
+      
+      // Refetch data to update status
+      await refetch();
+      
+    } catch (error) {
+      console.error('Failed to send referral:', error);
+      
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'An unexpected error occurred while sending the referral.';
+      
+      alert(`Failed to send referral: ${errorMessage}\n\nPlease try again or contact support if the problem persists.`);
+      
+      // Don't close the dialog on error so user can retry
+      throw error;
+    }
   };
 
   const handleEditReferral = () => {
@@ -721,6 +752,8 @@ const DiagnosticReferralsPage: React.FC = () => {
           </MenuItemComponent>
           <MenuItemComponent
             onClick={() => {
+              // Store the referral being sent separately so it persists after menu closes
+              setSendingReferral(selectedReferral);
               setSendDialogOpen(true);
               handleMenuClose();
             }}
@@ -754,10 +787,13 @@ const DiagnosticReferralsPage: React.FC = () => {
       {/* Send Referral Dialog */}
       <SendReferralDialog
         open={sendDialogOpen}
-        onClose={() => setSendDialogOpen(false)}
+        onClose={() => {
+          setSendDialogOpen(false);
+          setSendingReferral(null); // Clear sending referral when dialog closes
+        }}
         onSend={handleSendReferral}
         loading={sendMutation.isPending}
-        caseId={selectedReferral?.caseId}
+        caseId={sendingReferral?.caseId}
       />
 
       {/* Edit Referral Dialog */}
