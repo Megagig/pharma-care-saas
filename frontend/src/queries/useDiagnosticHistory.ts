@@ -307,3 +307,58 @@ export const useFollowUpCases = (
     enabled: queryOptions.enabled !== false,
   });
 };
+
+/**
+ * Hook to download referral document
+ */
+export const useDownloadReferralDocument = () => {
+  return useMutation({
+    mutationFn: ({ caseId, format }: { caseId: string; format?: 'pdf' | 'docx' | 'text' }) =>
+      diagnosticHistoryService.downloadReferralDocument(caseId, format),
+  });
+};
+
+/**
+ * Hook to send referral electronically
+ */
+export const useSendReferralElectronically = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ caseId, data }: { caseId: string; data: any }) =>
+      diagnosticHistoryService.sendReferralElectronically(caseId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: diagnosticHistoryKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to delete referral
+ */
+export const useDeleteReferral = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (caseId: string) =>
+      diagnosticHistoryService.deleteReferral(caseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: diagnosticHistoryKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to update referral document
+ */
+export const useUpdateReferralDocument = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ caseId, content }: { caseId: string; content: string }) =>
+      diagnosticHistoryService.updateReferralDocument(caseId, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: diagnosticHistoryKeys.all });
+    },
+  });
+};

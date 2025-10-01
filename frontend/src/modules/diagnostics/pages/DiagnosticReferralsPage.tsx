@@ -45,11 +45,29 @@ import {
   MoreVert as MoreVertIcon,
   Warning as WarningIcon,
   Assignment as AssignmentIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { useDiagnosticReferrals } from '../../../queries/useDiagnosticHistory';
+import { 
+  useDiagnosticReferrals,
+  useDownloadReferralDocument,
+  useSendReferralElectronically,
+  useDeleteReferral,
+  useUpdateReferralDocument,
+} from '../../../queries/useDiagnosticHistory';
 import { DiagnosticReferral } from '../../../services/diagnosticHistoryService';
+import SendReferralDialog from '../../../components/diagnostics/SendReferralDialog';
+import EditReferralDialog from '../../../components/diagnostics/EditReferralDialog';
+import { 
+  generateTextDocument, 
+  generateRTFDocument, 
+  generateHTMLDocument,
+  generatePDFDocument,
+  downloadDocument,
+  ReferralDocumentData 
+} from '../../../utils/documentGenerator';
 
 const DiagnosticReferralsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -59,6 +77,9 @@ const DiagnosticReferralsPage: React.FC = () => {
   const [specialtyFilter, setSpecialtyFilter] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedReferral, setSelectedReferral] = useState<DiagnosticReferral | null>(null);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editContent, setEditContent] = useState('');
 
   const {
     data: referralsData,
@@ -115,8 +136,119 @@ const DiagnosticReferralsPage: React.FC = () => {
     setSelectedReferral(null);
   };
 
+  // Mutations
+  const downloadMutation = useDownloadReferralDocument();
+  const sendMutation = useSendReferralElectronically();
+  const deleteMutation = useDeleteReferral();
+  const updateMutation = useUpdateReferralDocument();
+
   const handleRefresh = () => {
     refetch();
+  };
+
+  const handleDownload = async (caseId: string, format: 'pdf' | 'docx' | 'text' = 'pdf') => {
+    try {
+      const result = await downloadMutation.mutateAsync({ caseId, format });
+      
+      // Get patient and pharmacist names from the selected referral
+      const patientName = selectedReferral?.patientId ? 
+        `${selectedReferral.patientId.firstName} ${selectedReferral.patientId.lastName}` : 
+        undefined;
+      const pharmacistName = selectedReferral?.pharmacistId ? 
+        `${selectedReferral.pharmacistId.firstName} ${selectedReferral.pharmacistId.lastName}` : 
+        undefined;
+
+      const documentData: ReferralDocumentData = {
+        content: result.content,
+        caseId,
+        patientName,
+        pharmacistName,
+        generatedAt: new Date(),
+      };
+      
+      let blob: Blob;
+      let filename: string;
+      
+      switch (format) {
+        case 'text':
+          blob = generateTextDocument(documentData);
+          filename = `referral-${caseId}.txt`;
+          break;
+        case 'docx':
+          blob = generateRTFDocument(documentData);
+          filename = `referral-${caseId}.rtf`;
+          break;
+        case 'pdf':
+          blob = generatePDFDocument(documentData);
+          filename = `referral-${caseId}.pdf`;
+          break;
+        default:
+          blob = generatePDFDocument(documentData);
+          filename = `referral-${caseId}.pdf`;
+      }
+      
+      downloadDocument(
+        blob,
+        filename,
+        () => {
+          handleMenuClose();
+          // Show success notification instead of alert
+          console.log(`Referral document downloaded as ${filename}`);
+        },
+        (error) => {
+          console.error('Download failed:', error);
+          alert('Download failed. Please try again.');
+        }
+      );
+      
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Download failed. Please try again.');
+    }
+  };
+
+  const handleSendReferral = async (data: any) => {
+    if (!selectedReferral) return;
+    
+    await sendMutation.mutateAsync({
+      caseId: selectedReferral.caseId,
+      data,
+    });
+    
+    refetch();
+  };
+
+  const handleEditReferral = () => {
+    if (!selectedReferral?.referral?.document?.content) return;
+    
+    setEditContent(selectedReferral.referral.document.content);
+    setEditDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleSaveEdit = async (content: string) => {
+    if (!selectedReferral) return;
+    
+    await updateMutation.mutateAsync({
+      caseId: selectedReferral.caseId,
+      content,
+    });
+    
+    refetch();
+  };
+
+  const handleDeleteReferral = async () => {
+    if (!selectedReferral) return;
+    
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this referral? This action cannot be undone.'
+    );
+    
+    if (confirmed) {
+      await deleteMutation.mutateAsync(selectedReferral.caseId);
+      refetch();
+      handleMenuClose();
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -470,19 +602,92 @@ const DiagnosticReferralsPage: React.FC = () => {
             <ListItemText>View Case Details</ListItemText>
           </MenuItemComponent>
           <MenuItemComponent
-            onClick={() => {
-              // TODO: Implement download referral document
-              handleMenuClose();
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownload(selectedReferral?.caseId || '', 'pdf');
             }}
+            disabled={downloadMutation.isPending}
           >
             <ListItemIcon>
               <DownloadIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Download Referral</ListItemText>
+            <ListItemText>Download PDF</ListItemText>
+          </MenuItemComponent>
+          <MenuItemComponent
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownload(selectedReferral?.caseId || '', 'docx');
+            }}
+            disabled={downloadMutation.isPending}
+          >
+            <ListItemIcon>
+              <DownloadIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Download RTF (Word Compatible)</ListItemText>
+          </MenuItemComponent>
+          <MenuItemComponent
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownload(selectedReferral?.caseId || '', 'text');
+            }}
+            disabled={downloadMutation.isPending}
+          >
+            <ListItemIcon>
+              <DownloadIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Download Text File</ListItemText>
+          </MenuItemComponent>
+          <MenuItemComponent
+            onClick={(e) => {
+              e.stopPropagation();
+              // Add HTML format to the handleDownload function
+              const result = downloadMutation.mutateAsync({ caseId: selectedReferral?.caseId || '', format: 'html' });
+              result.then((res) => {
+                const patientName = selectedReferral?.patientId ? 
+                  `${selectedReferral.patientId.firstName} ${selectedReferral.patientId.lastName}` : 
+                  undefined;
+                const pharmacistName = selectedReferral?.pharmacistId ? 
+                  `${selectedReferral.pharmacistId.firstName} ${selectedReferral.pharmacistId.lastName}` : 
+                  undefined;
+
+                const documentData: ReferralDocumentData = {
+                  content: res.content,
+                  caseId: selectedReferral?.caseId || '',
+                  patientName,
+                  pharmacistName,
+                  generatedAt: new Date(),
+                };
+                
+                const blob = generateHTMLDocument(documentData);
+                const filename = `referral-${selectedReferral?.caseId}.html`;
+                
+                downloadDocument(
+                  blob,
+                  filename,
+                  () => {
+                    handleMenuClose();
+                    console.log(`Referral document downloaded as ${filename}`);
+                  },
+                  (error) => {
+                    console.error('Download failed:', error);
+                    alert('Download failed. Please try again.');
+                  }
+                );
+              }).catch((error) => {
+                console.error('Download failed:', error);
+                alert('Download failed. Please try again.');
+              });
+            }}
+            disabled={downloadMutation.isPending}
+          >
+            <ListItemIcon>
+              <DownloadIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Download HTML (Print to PDF)</ListItemText>
           </MenuItemComponent>
           <MenuItemComponent
             onClick={() => {
-              // TODO: Implement send referral
+              setSendDialogOpen(true);
               handleMenuClose();
             }}
           >
@@ -491,8 +696,45 @@ const DiagnosticReferralsPage: React.FC = () => {
             </ListItemIcon>
             <ListItemText>Send Referral</ListItemText>
           </MenuItemComponent>
+          <MenuItemComponent
+            onClick={handleEditReferral}
+          >
+            <ListItemIcon>
+              <EditIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Edit Referral</ListItemText>
+          </MenuItemComponent>
+          <MenuItemComponent
+            onClick={handleDeleteReferral}
+            disabled={deleteMutation.isPending}
+            sx={{ color: 'error.main' }}
+          >
+            <ListItemIcon>
+              <DeleteIcon fontSize="small" color="error" />
+            </ListItemIcon>
+            <ListItemText>Delete Referral</ListItemText>
+          </MenuItemComponent>
         </MenuList>
       </Menu>
+
+      {/* Send Referral Dialog */}
+      <SendReferralDialog
+        open={sendDialogOpen}
+        onClose={() => setSendDialogOpen(false)}
+        onSend={handleSendReferral}
+        loading={sendMutation.isPending}
+        caseId={selectedReferral?.caseId}
+      />
+
+      {/* Edit Referral Dialog */}
+      <EditReferralDialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        onSave={handleSaveEdit}
+        loading={updateMutation.isPending}
+        initialContent={editContent}
+        caseId={selectedReferral?.caseId}
+      />
     </Container>
   );
 };

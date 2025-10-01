@@ -509,6 +509,42 @@ class DiagnosticHistoryService {
     });
     return response.data.data;
   }
+
+  /**
+   * Download referral document
+   */
+  async downloadReferralDocument(caseId: string, format: 'pdf' | 'docx' | 'text' = 'pdf'): Promise<{
+    content: string;
+    format: string;
+    filename: string;
+  }> {
+    const response = await apiClient.get(`/diagnostics/cases/${caseId}/referral/download`, {
+      params: { format },
+    });
+    return response.data.data;
+  }
+
+  /**
+   * Send referral electronically
+   */
+  async sendReferralElectronically(caseId: string, data: {
+    physicianName: string;
+    physicianEmail: string;
+    specialty?: string;
+    institution?: string;
+    notes?: string;
+  }): Promise<any> {
+    const response = await apiClient.post(`/diagnostics/cases/${caseId}/referral/send`, data);
+    return response.data;
+  }
+
+  /**
+   * Delete referral
+   */
+  async deleteReferral(caseId: string): Promise<any> {
+    const response = await apiClient.delete(`/diagnostics/cases/${caseId}/referral`);
+    return response.data;
+  }
 }
 
 export const diagnosticHistoryService = new DiagnosticHistoryService();

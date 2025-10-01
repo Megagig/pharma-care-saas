@@ -22,6 +22,9 @@ import {
   generateCaseReferralDocument,
   updateReferralDocument,
   getFollowUpCases,
+  downloadReferralDocument,
+  sendReferralElectronically,
+  deleteReferral,
 } from '../controllers/diagnosticController';
 import {
   validateDiagnosticAnalysis,
@@ -356,6 +359,48 @@ router.get(
   requireFeature('clinical_decision_support'),
   auditLogger('VIEW_FOLLOW_UP_CASES', 'data_access'),
   getFollowUpCases
+);
+
+/**
+ * @route GET /api/diagnostics/cases/:caseId/referral/download
+ * @desc Download referral document
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.get(
+  '/cases/:caseId/referral/download',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('DOWNLOAD_REFERRAL_DOCUMENT', 'data_export'),
+  downloadReferralDocument
+);
+
+/**
+ * @route POST /api/diagnostics/cases/:caseId/referral/send
+ * @desc Send referral electronically
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.post(
+  '/cases/:caseId/referral/send',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('SEND_REFERRAL_ELECTRONICALLY', 'clinical_communication'),
+  sendReferralElectronically
+);
+
+/**
+ * @route DELETE /api/diagnostics/cases/:caseId/referral
+ * @desc Delete referral
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.delete(
+  '/cases/:caseId/referral',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('DELETE_REFERRAL', 'clinical_documentation'),
+  deleteReferral
 );
 
 export default router;

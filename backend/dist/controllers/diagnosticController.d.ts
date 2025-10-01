@@ -21,4 +21,7 @@ export declare const markCaseAsCompleted: (req: AuthRequest, res: Response) => P
 export declare const generateCaseReferralDocument: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const updateReferralDocument: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const getFollowUpCases: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const downloadReferralDocument: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const sendReferralElectronically: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const deleteReferral: (req: AuthRequest, res: Response) => Promise<void>;
 //# sourceMappingURL=diagnosticController.d.ts.map

@@ -1357,11 +1357,11 @@ export const getDiagnosticReferrals = async (
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    // Build filter
+    // Build filter for DiagnosticCase with referrals
     const filter: any = {
       workplaceId,
+      status: 'referred',
       'referral.generated': true,
-      status: 'active',
     };
 
     if (status) {
@@ -1369,22 +1369,22 @@ export const getDiagnosticReferrals = async (
     }
 
     if (specialty) {
-      filter['referral.specialty'] = { $regex: specialty, $options: 'i' };
+      filter['referral.sentTo.specialty'] = { $regex: specialty, $options: 'i' };
     }
 
-    const referrals = await DiagnosticHistory.find(filter)
+    const referrals = await DiagnosticCase.find(filter)
       .populate('patientId', 'firstName lastName age gender')
       .populate('pharmacistId', 'firstName lastName')
       .sort({ 'referral.generatedAt': -1 })
       .skip(skip)
       .limit(Number(limit))
-      .select('patientId pharmacistId caseId referral analysisSnapshot.referralRecommendation createdAt');
+      .select('patientId pharmacistId caseId referral aiAnalysis.referralRecommendation createdAt');
 
-    const total = await DiagnosticHistory.countDocuments(filter);
+    const total = await DiagnosticCase.countDocuments(filter);
 
     // Get referral statistics
-    const stats = await DiagnosticHistory.aggregate([
-      { $match: { workplaceId, 'referral.generated': true, status: 'active' } },
+    const stats = await DiagnosticCase.aggregate([
+      { $match: { workplaceId, status: 'referred', 'referral.generated': true } },
       {
         $group: {
           _id: '$referral.status',
@@ -2193,6 +2193,242 @@ export const getFollowUpCases = async (
     res.status(500).json({
       success: false,
       message: 'Failed to get follow-up cases',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Download referral document
+ */
+export const downloadReferralDocument = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { caseId } = req.params;
+    const { format = 'pdf' } = req.query;
+    const userId = req.user!._id;
+    const workplaceId = req.user!.workplaceId;
+
+    const diagnosticCase = await DiagnosticCase.findOne({
+      caseId,
+      workplaceId,
+      status: 'referred',
+      'referral.generated': true,
+    })
+      .populate('patientId', 'firstName lastName age gender dateOfBirth')
+      .populate('pharmacistId', 'firstName lastName credentials');
+
+    if (!diagnosticCase || !diagnosticCase.referral?.document) {
+      res.status(404).json({
+        success: false,
+        message: 'Referral document not found',
+      });
+      return;
+    }
+
+    const patient = diagnosticCase.patientId as any;
+    const pharmacist = diagnosticCase.pharmacistId as any;
+    const referralContent = diagnosticCase.referral.document.content;
+
+    // For now, we'll return the content as JSON for the frontend to handle
+    // In production, you would generate actual PDF/Word files here
+    const filename = format === 'pdf' ? `referral-${caseId}.pdf` :
+                     format === 'docx' ? `referral-${caseId}.docx` :
+                     `referral-${caseId}.txt`;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        content: referralContent,
+        format: format,
+        filename: filename,
+      },
+    });
+
+    logger.info('Referral document downloaded', {
+      caseId,
+      format,
+      userId,
+    });
+  } catch (error) {
+    logger.error('Failed to download referral document', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      caseId: req.params.caseId,
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to download referral document',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Send referral electronically
+ */
+export const sendReferralElectronically = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { caseId } = req.params;
+    const { physicianName, physicianEmail, specialty, institution, notes } = req.body;
+    const userId = req.user!._id;
+    const workplaceId = req.user!.workplaceId;
+
+    if (!physicianName || !physicianEmail) {
+      res.status(400).json({
+        success: false,
+        message: 'Physician name and email are required',
+      });
+      return;
+    }
+
+    const diagnosticCase = await DiagnosticCase.findOne({
+      caseId,
+      workplaceId,
+      status: 'referred',
+      'referral.generated': true,
+    });
+
+    if (!diagnosticCase || !diagnosticCase.referral) {
+      res.status(404).json({
+        success: false,
+        message: 'Referral not found',
+      });
+      return;
+    }
+
+    // Generate tracking ID
+    const trackingId = `REF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+    // Update referral with physician info and mark as sent
+    diagnosticCase.referral.status = 'sent';
+    diagnosticCase.referral.sentAt = new Date();
+    diagnosticCase.referral.sentTo = {
+      physicianName,
+      physicianEmail,
+      specialty: specialty || 'General Medicine',
+      institution: institution || '',
+    };
+    diagnosticCase.referral.trackingId = trackingId;
+
+    await diagnosticCase.save();
+
+    // In a real implementation, you would send the email here
+    // await emailService.sendReferral({
+    //   to: physicianEmail,
+    //   subject: `Medical Referral - ${patient.firstName} ${patient.lastName}`,
+    //   content: diagnosticCase.referral.document.content,
+    //   trackingId
+    // });
+
+    logger.info('Referral sent electronically', {
+      caseId,
+      physicianEmail,
+      trackingId,
+      userId,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Referral sent successfully',
+      data: {
+        caseId,
+        trackingId,
+        sentTo: diagnosticCase.referral.sentTo,
+        sentAt: diagnosticCase.referral.sentAt,
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to send referral', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      caseId: req.params.caseId,
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send referral',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Delete referral
+ */
+export const deleteReferral = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { caseId } = req.params;
+    const userId = req.user!._id;
+    const workplaceId = req.user!.workplaceId;
+
+    const diagnosticCase = await DiagnosticCase.findOne({
+      caseId,
+      workplaceId,
+      status: 'referred',
+    });
+
+    if (!diagnosticCase) {
+      res.status(404).json({
+        success: false,
+        message: 'Referral not found',
+      });
+      return;
+    }
+
+    // Reset case status back to pending_review and remove referral
+    diagnosticCase.status = 'pending_review';
+    diagnosticCase.referral = undefined;
+
+    await diagnosticCase.save();
+
+    logger.info('Referral deleted', {
+      caseId,
+      userId,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Referral deleted successfully',
+      data: {
+        caseId,
+        newStatus: diagnosticCase.status,
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to delete referral', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      caseId: req.params.caseId,
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete referral',
       error:
         process.env.NODE_ENV === 'development'
           ? error instanceof Error

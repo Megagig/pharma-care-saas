@@ -56,5 +56,8 @@ router.post('/cases/:caseId/complete', diagnosticRateLimit, auth_1.auth, (0, aut
 router.post('/cases/:caseId/referral/generate', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('GENERATE_CASE_REFERRAL', 'clinical_documentation'), diagnosticController_1.generateCaseReferralDocument);
 router.put('/cases/:caseId/referral/update', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('UPDATE_REFERRAL_DOCUMENT', 'clinical_documentation'), diagnosticController_1.updateReferralDocument);
 router.get('/follow-up', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('VIEW_FOLLOW_UP_CASES', 'data_access'), diagnosticController_1.getFollowUpCases);
+router.get('/cases/:caseId/referral/download', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('DOWNLOAD_REFERRAL_DOCUMENT', 'data_export'), diagnosticController_1.downloadReferralDocument);
+router.post('/cases/:caseId/referral/send', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('SEND_REFERRAL_ELECTRONICALLY', 'clinical_communication'), diagnosticController_1.sendReferralElectronically);
+router.delete('/cases/:caseId/referral', diagnosticRateLimit, auth_1.auth, (0, auth_1.requireFeature)('clinical_decision_support'), (0, auditMiddleware_1.auditLogger)('DELETE_REFERRAL', 'clinical_documentation'), diagnosticController_1.deleteReferral);
 exports.default = router;
 //# sourceMappingURL=diagnosticRoutes.js.map
