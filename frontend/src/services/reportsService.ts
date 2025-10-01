@@ -123,37 +123,63 @@ class ReportsService {
       const url = `/reports/${reportType}${queryString ? `?${queryString}` : ''}`;
       
       console.log(`📡 Making API call to: ${url}`);
+      console.log(`🔗 Full URL: http://localhost:5000/api${url}`);
       
-      const response = await apiHelpers.get(url);
+      // Add timeout and better error handling
+      console.log('🔐 Making authenticated API request...');
+      const response = await Promise.race([
+        apiHelpers.get(url),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout after 2 minutes')), 120000)
+        )
+      ]) as any;
       
-      console.log('📊 API Response:', response.data);
+      console.log('📊 API Response status:', response.status);
+      console.log('📊 API Response data:', response.data);
+      
+      if (!response.data) {
+        throw new Error('No data received from API');
+      }
       
       // Transform backend response to match frontend ReportData interface
-      const transformedData = this.transformBackendResponse(response.data.data || {}, reportType, filters);
+      const transformedData = this.transformBackendResponse(response.data.data || response.data, reportType, filters);
       
       console.log('✅ Transformed data:', transformedData);
       
       return transformedData;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Error generating ${reportType} report:`, error);
       
-      // If it's a network error, provide more details
+      // Provide detailed error information
       if (error.response) {
         console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
         console.error('Response data:', error.response.data);
+        
+        // Create a more specific error message
+        const statusCode = error.response.status;
+        const errorData = error.response.data;
+        
+        if (statusCode === 401) {
+          throw new Error('Authentication required. Please log in again.');
+        } else if (statusCode === 403) {
+          throw new Error('Access denied. You do not have permission to view this report.');
+        } else if (statusCode === 404) {
+          throw new Error(`Report type "${reportType}" not found or not implemented.`);
+        } else if (statusCode === 500) {
+          throw new Error(`Server error: ${errorData?.message || 'Internal server error'}`);
+        } else {
+          throw new Error(`API Error ${statusCode}: ${errorData?.message || error.response.statusText}`);
+        }
       } else if (error.request) {
         console.error('No response received:', error.request);
+        throw new Error('Network error: Unable to connect to the server. Please check if the backend is running on http://localhost:5000');
+      } else if (error.message === 'Request timeout after 2 minutes') {
+        throw new Error('Request timeout: The server is taking too long to respond. Please try again.');
       } else {
         console.error('Error setting up request:', error.message);
+        throw new Error(`Request error: ${error.message}`);
       }
-      
-      // For development/testing, provide fallback data so we can see the UI working
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 Providing fallback data for development');
-        return this.createFallbackData(reportType, filters);
-      }
-      
-      throw error;
     }
   }
 
@@ -322,14 +348,7 @@ class ReportsService {
     return 0;
   }
 
-  private formatDateRange(dateRange?: { startDate: Date; endDate: Date }): string {
-    if (!dateRange) return '30 days';
-    
-    const diffTime = Math.abs(dateRange.endDate.getTime() - dateRange.startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return `${diffDays} days`;
-  }
+
 
   private transformChartsData(backendData: any, reportType: string): Array<any> {
     const charts = [];
@@ -477,87 +496,7 @@ class ReportsService {
     return tables;
   }
 
-  /**
-   * Create fallback data for development/testing when API is not available
-   */
-  private createFallbackData(reportType: string, filters: ReportFilters): ReportData {
-    console.log('🔧 Creating fallback data for:', reportType);
-    
-    return {
-      summary: {
-        totalRecords: 25,
-        primaryMetric: {
-          label: 'Total Records',
-          value: 25,
-          unit: 'records',
-          trend: 'stable'
-        },
-        secondaryMetrics: [
-          {
-            label: 'Success Rate',
-            value: '85%',
-            icon: 'CheckCircle',
-            color: 'success'
-          },
-          {
-            label: 'Status',
-            value: 'Demo Mode',
-            icon: 'Info',
-            color: 'info'
-          }
-        ]
-      },
-      charts: [
-        {
-          id: 'demo-chart-1',
-          type: 'bar',
-          title: 'Sample Data Overview',
-          data: [
-            { category: 'Category A', value: 15 },
-            { category: 'Category B', value: 8 },
-            { category: 'Category C', value: 2 }
-          ]
-        },
-        {
-          id: 'demo-chart-2',
-          type: 'line',
-          title: 'Trend Analysis',
-          data: [
-            { category: 'Week 1', value: 10 },
-            { category: 'Week 2', value: 15 },
-            { category: 'Week 3', value: 12 },
-            { category: 'Week 4', value: 18 }
-          ]
-        }
-      ],
-      tables: [
-        {
-          id: 'demo-table',
-          title: 'Sample Report Data',
-          headers: ['Item', 'Value', 'Status', 'Date'],
-          rows: [
-            ['Demo Item 1', '85%', 'Active', '2024-10-01'],
-            ['Demo Item 2', '92%', 'Active', '2024-10-01'],
-            ['Demo Item 3', '78%', 'Pending', '2024-10-01'],
-            ['Demo Item 4', '95%', 'Complete', '2024-10-01'],
-            ['Demo Item 5', '88%', 'Active', '2024-10-01']
-          ]
-        }
-      ],
-      metadata: {
-        id: `demo-report-${reportType}-${Date.now()}`,
-        title: `${this.getReportTitle(reportType)} (Demo)`,
-        description: 'This is demo data shown when the API is not available',
-        category: this.getReportCategory(reportType),
-        generatedAt: new Date(),
-        generatedBy: 'Demo System',
-        workspaceId: 'demo-workspace',
-        filters: filters || {},
-        dataPoints: 25,
-        version: '1.0-demo'
-      }
-    };
-  }
+
 }
 
 export const reportsService = new ReportsService();

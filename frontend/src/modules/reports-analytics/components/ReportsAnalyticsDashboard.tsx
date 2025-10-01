@@ -1,5 +1,6 @@
 // Modern Reports Analytics Dashboard - Redesigned UI
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import ReportDisplay from './ReportDisplay';
 import {
   Box,
   Container,
@@ -37,6 +38,7 @@ import { useDashboardStore } from '../stores/dashboardStore';
 import { ReportType } from '../types/reports';
 import type { ReportFilters } from '../types/filters';
 import FixedGrid from '../../../components/common/FixedGrid';
+import { reportsService } from '../../../services/reportsService';
 
 // Modern Icons
 import SearchIcon from '@mui/icons-material/Search';
@@ -200,6 +202,7 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
   // Local state for UI
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
+  const [showReportDisplay, setShowReportDisplay] = useState(false);
 
   // Get store state directly for reactive updates
   const activeReport = useReportsStore((state) => state.activeReport);
@@ -228,13 +231,26 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
   const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Clear any loading states when component mounts
+  // Clear any loading states when component mounts (only run once)
   useEffect(() => {
     console.log('🧹 Clearing any persisted loading states on dashboard mount');
     console.log('Current loading states:', loading);
     console.log('Current active report:', activeReport);
     reportsStore.clearAllLoadingStates();
-  }, [reportsStore, loading, activeReport]);
+    
+    // Test basic reports endpoint connectivity
+    const testReportsEndpoint = async () => {
+      try {
+        console.log('🔍 Testing reports endpoint connectivity...');
+        const availableReports = await reportsService.getAvailableReports();
+        console.log('✅ Reports endpoint accessible:', availableReports);
+      } catch (error) {
+        console.error('❌ Reports endpoint test failed:', error);
+      }
+    };
+    
+    testReportsEndpoint();
+  }, []); // Empty dependency array - only run once on mount
 
   // Create modern icon elements with enhanced styling
   const icons = useMemo(
@@ -391,6 +407,13 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
         setActiveReportStore(reportTypeEnum);
         console.log('✅ Active report set to:', reportTypeEnum);
 
+        // Check if we already have data for this report
+        const existingData = reportData[reportTypeEnum];
+        if (existingData) {
+          // Show existing report
+          setShowReportDisplay(true);
+        }
+
         // Add to recent reports
         const filters = {
           dateRange: {
@@ -411,7 +434,7 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
         console.error('❌ Error handling report click:', error);
       }
     },
-    [setActiveReportStore, addToHistory, addToRecentlyViewed]
+    [setActiveReportStore, addToHistory, addToRecentlyViewed, reportData]
   );
 
   const handleFavoriteToggle = useCallback(
@@ -441,25 +464,39 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
     async (reportType: ReportType) => {
       console.log('🚀 Generate report clicked for:', reportType);
 
+      // Prevent multiple rapid clicks
+      if (loading[reportType]) {
+        console.log('⏳ Report already generating, ignoring click');
+        return;
+      }
+
       try {
-        // Generate default filters for the report
+        // Set the active report first
+        setActiveReportStore(reportType);
+        
+        // Generate default filters for the report with a shorter date range for faster processing
         const filters = {
           dateRange: {
-            startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+            startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago (shorter range)
             endDate: new Date(),
-            preset: '30d' as const,
+            preset: '7d' as const,
           },
         };
 
+        console.log('📊 Generating report with 7-day range for faster processing...');
+
         // Use the store's generateReport method which calls the real API
         await reportsStore.generateReport(reportType, filters);
+        
+        // Show the report display after successful generation
+        setShowReportDisplay(true);
         
         console.log('✅ Report generated successfully from API');
       } catch (error) {
         console.error('❌ Error generating report:', error);
       }
     },
-    [reportsStore]
+    [reportsStore, setActiveReportStore, loading]
   );
 
   // Filter reports based on search and category
@@ -509,6 +546,21 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
     },
     [setSelectedCategoryStore]
   );
+
+  // Handle back from report display
+  const handleBackFromReport = useCallback(() => {
+    setShowReportDisplay(false);
+  }, []);
+
+  // Show report display if we have an active report and should show it
+  if (showReportDisplay && activeReport) {
+    return (
+      <ReportDisplay
+        reportType={activeReport}
+        onBack={handleBackFromReport}
+      />
+    );
+  }
 
   // Render modern dashboard
   return (
@@ -590,6 +642,30 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
               >
                 View Trends
               </ActionButton>
+              {process.env.NODE_ENV === 'development' && (
+                <ActionButton
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    console.log('🔧 Debug: Resetting store and clearing localStorage');
+                    reportsStore.resetStore();
+                    localStorage.removeItem('reports-store');
+                    localStorage.removeItem('dashboard-store');
+                    window.location.reload();
+                  }}
+                  sx={{ 
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'white',
+                    fontSize: '0.75rem',
+                    '&:hover': {
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      bgcolor: 'rgba(255,255,255,0.1)',
+                    }
+                  }}
+                >
+                  Reset & Reload
+                </ActionButton>
+              )}
             </Stack>
           </Box>
           <Box sx={{ display: { xs: 'none', md: 'block' } }}>

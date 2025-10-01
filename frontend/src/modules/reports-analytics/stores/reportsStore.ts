@@ -217,34 +217,32 @@ export const useReportsStore = create<ReportsState>()(
             } : undefined;
 
             // Generate report using real API
+            console.log('📡 Calling reportsService.generateReport...');
             const reportData = await reportsService.generateReport(reportType, serviceFilters);
+            console.log('📊 Raw report data received:', reportData);
             
-            // Transform the service response to match store interface
-            const transformedData = {
-              ...reportData,
-              tables: reportData.tables.map(table => ({
-                ...table,
-                columns: table.headers.map((header, index) => ({
-                  id: `col-${index}`,
-                  label: header,
-                  field: `field-${index}`,
-                })),
-                rows: table.rows.map(row => 
-                  row.reduce((obj, cell, index) => ({
-                    ...obj,
-                    [`field-${index}`]: cell
-                  }), {})
-                )
-              }))
-            };
+            // Store the report data as-is since ReportDisplay expects the original format
+            const transformedData = reportData;
+            console.log('🔄 Transformed data:', transformedData);
             
             // Store the generated report data
             state.setReportData(reportType, transformedData);
+            console.log('💾 Data stored in state');
             
             console.log('✅ Report generated successfully from API:', transformedData);
-          } catch (error) {
+          } catch (error: any) {
             console.error('❌ Error generating report from API:', error);
-            state.setError(reportType, error instanceof Error ? error.message : 'Failed to generate report');
+            
+            let errorMessage = 'Failed to generate report';
+            if (error.response) {
+              errorMessage = `API Error ${error.response.status}: ${error.response.data?.message || error.response.statusText}`;
+            } else if (error.request) {
+              errorMessage = 'Network error: Unable to reach the server. Please check if the backend is running.';
+            } else {
+              errorMessage = error.message || 'Unknown error occurred';
+            }
+            
+            state.setError(reportType, errorMessage);
           } finally {
             state.setLoading(reportType, false);
           }
@@ -252,6 +250,17 @@ export const useReportsStore = create<ReportsState>()(
 
         clearAllLoadingStates: () => {
           set({ loading: {}, errors: {} }, false, 'clearAllLoadingStates');
+        },
+
+        resetStore: () => {
+          set({
+            activeReport: null,
+            reportData: {},
+            loading: {},
+            errors: {},
+            sidebarCollapsed: false,
+            fullscreenChart: null,
+          }, false, 'resetStore');
         },
 
         // Computed getters
