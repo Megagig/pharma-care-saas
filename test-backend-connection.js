@@ -1,57 +1,40 @@
-#!/usr/bin/env node
-
-/**
- * Simple test to check if the backend is accessible
- */
-
-const API_BASE_URL = 'http://localhost:5000';
+// Simple test to check backend connectivity
+const axios = require('axios');
 
 async function testBackendConnection() {
-  console.log('🔍 Testing backend connection...\n');
-
+  console.log('🔍 Testing backend connection...');
+  
+  const baseURL = 'http://localhost:5000/api';
+  
   try {
-    // Test 1: Basic health check
-    console.log('1. Testing basic connectivity...');
-    const healthResponse = await fetch(`${API_BASE_URL}/api/health/feature-flags`);
+    // Test basic connectivity
+    console.log('📡 Testing basic connectivity to:', baseURL);
+    const response = await axios.get(`${baseURL}/health`, {
+      timeout: 5000,
+      withCredentials: true
+    });
+    console.log('✅ Backend is accessible:', response.status, response.statusText);
     
-    if (healthResponse.ok) {
-      console.log('✅ Backend is accessible');
-    } else {
-      console.log('❌ Backend health check failed:', healthResponse.status);
-    }
-
-    // Test 2: Check if reports routes are mounted
-    console.log('\n2. Testing reports routes...');
-    const reportsResponse = await fetch(`${API_BASE_URL}/api/reports/types`);
+    // Test reports endpoint
+    console.log('📊 Testing reports endpoint...');
+    const reportsResponse = await axios.get(`${baseURL}/reports/types`, {
+      timeout: 5000,
+      withCredentials: true
+    });
+    console.log('✅ Reports endpoint accessible:', reportsResponse.status);
     
-    console.log('Reports endpoint status:', reportsResponse.status);
-    
-    if (reportsResponse.status === 401) {
-      console.log('⚠️ Authentication required - this is expected');
-      console.log('   The reports endpoint exists but requires authentication');
-    } else if (reportsResponse.ok) {
-      console.log('✅ Reports endpoint is accessible');
-      const data = await reportsResponse.json();
-      console.log('   Response:', data);
-    } else {
-      console.log('❌ Reports endpoint failed:', reportsResponse.status);
-      const errorText = await reportsResponse.text();
-      console.log('   Error:', errorText);
-    }
-
-    // Test 3: Check CORS
-    console.log('\n3. Testing CORS headers...');
-    console.log('   Access-Control-Allow-Origin:', reportsResponse.headers.get('Access-Control-Allow-Origin'));
-    console.log('   Access-Control-Allow-Credentials:', reportsResponse.headers.get('Access-Control-Allow-Credentials'));
-
   } catch (error) {
-    console.error('❌ Connection error:', error.message);
-    console.log('\nTroubleshooting:');
-    console.log('1. Make sure your backend server is running: npm run dev (in backend directory)');
-    console.log('2. Check that the server is listening on port 5000');
-    console.log('3. Verify MongoDB is connected');
+    console.error('❌ Backend connection failed:');
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    } else if (error.request) {
+      console.error('No response received - backend may not be running');
+      console.error('Request details:', error.request.path);
+    } else {
+      console.error('Error:', error.message);
+    }
   }
 }
 
-// Run the test
 testBackendConnection();

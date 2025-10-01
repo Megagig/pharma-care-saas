@@ -12,7 +12,8 @@ export const LazyCommunicationHub = lazy(() => import('../pages/CommunicationHub
 export const LazyDrugInformationCenter = lazy(() => import('../pages/DrugInformationCenter'));
 export const LazyClinicalDecisionSupport = lazy(() => import('../pages/ClinicalDecisionSupport'));
 export const LazyPharmacyReports = lazy(() => import('../pages/PharmacyReports'));
-export const LazyPharmacyUserManagement = lazy(() => import('../pages/PharmacyUserManagement'));
+export const LazyPharmacyUserManagement = lazy(() => import('../pages/EnhancedUserManagement'));
+export const LazyPharmacyUserManagementOld = lazy(() => import('../pages/PharmacyUserManagement'));
 
 // Module components
 export const LazyDiagnosticDashboard = lazy(() => import('../modules/diagnostics/pages/DiagnosticDashboard'));
@@ -28,7 +29,7 @@ export const LazyDiagnosticReferralsPage = lazy(() => import('../modules/diagnos
 export const LazyFollowUpCasesPage = lazy(() => import('../modules/diagnostics/pages/FollowUpCasesPage'));
 
 // Reports & Analytics
-export const LazyReportsAnalyticsDashboard = lazy(() => 
+export const LazyReportsAnalyticsDashboard = lazy(() =>
   import('../modules/reports-analytics/components/ReportsAnalyticsDashboard')
 );
 
@@ -39,13 +40,13 @@ export const LazyFeatureFlagsPage = lazy(() => import('../pages/FeatureFlags'));
 // Heavy form components
 export const LazyPatientForm = lazy(() => import('../components/PatientForm'));
 export const LazyPatientManagement = lazy(() => import('../components/PatientManagement'));
-export const LazyMedicationsManagementDashboard = lazy(() => 
+export const LazyMedicationsManagementDashboard = lazy(() =>
   import('../components/medications/MedicationsManagementDashboard')
 );
-export const LazyPatientMedicationsPage = lazy(() => 
+export const LazyPatientMedicationsPage = lazy(() =>
   import('../components/medications/PatientMedicationsPage')
 );
-export const LazyClinicalInterventionsLayout = lazy(() => 
+export const LazyClinicalInterventionsLayout = lazy(() =>
   import('../components/ClinicalInterventionsLayout')
 );
 

@@ -859,3 +859,482 @@ export const getSystemAnalytics = async (
     throw error;
   }
 };
+
+// Role Hierarchy Management
+export const getRoleHierarchyTree = async (): Promise<{
+  success: boolean;
+  data: any;
+}> => {
+  try {
+    const response = await apiClient.get(`/role-hierarchy/hierarchy-tree`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching role hierarchy tree:', error);
+    throw error;
+  }
+};
+
+export const getRoleHierarchy = async (
+  roleId: string
+): Promise<{ success: boolean; data: any }> => {
+  try {
+    const response = await apiClient.get(`/role-hierarchy/${roleId}/hierarchy`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching role hierarchy:', error);
+    throw error;
+  }
+};
+
+export const addChildRoles = async (
+  roleId: string,
+  childRoleIds: string[]
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.post(
+      `/role-hierarchy/${roleId}/children`,
+      { childRoleIds }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error adding child roles:', error);
+    throw error;
+  }
+};
+
+export const removeChildRole = async (
+  roleId: string,
+  childId: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.delete(
+      `/role-hierarchy/${roleId}/children/${childId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error removing child role:', error);
+    throw error;
+  }
+};
+
+export const changeParentRole = async (
+  roleId: string,
+  newParentId: string | null
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.put(`/role-hierarchy/${roleId}/parent`, {
+      newParentId,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error changing parent role:', error);
+    throw error;
+  }
+};
+
+export const validateRoleHierarchy = async (data: {
+  roleId: string;
+  newParentId?: string;
+  childRoleIds?: string[];
+}): Promise<{ success: boolean; data: any }> => {
+  try {
+    const response = await apiClient.post(
+      `/role-hierarchy/hierarchy/validate`,
+      data
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error validating role hierarchy:', error);
+    throw error;
+  }
+};
+
+// Permission Management
+export const getPermissionMatrix = async (params?: {
+  category?: string;
+  includeInactive?: boolean;
+}): Promise<{ success: boolean; data: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const response = await apiClient.get(`/permissions/matrix?${queryParams}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching permission matrix:', error);
+    throw error;
+  }
+};
+
+export const getPermissionCategories = async (): Promise<{
+  success: boolean;
+  data: any;
+}> => {
+  try {
+    const response = await apiClient.get(`/permissions/categories`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching permission categories:', error);
+    throw error;
+  }
+};
+
+export const getPermissionDependencies = async (params?: {
+  action?: string;
+  includeReverse?: boolean;
+}): Promise<{ success: boolean; data: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const response = await apiClient.get(
+      `/permissions/dependencies?${queryParams}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching permission dependencies:', error);
+    throw error;
+  }
+};
+
+export const getPermissionUsage = async (
+  action: string
+): Promise<{ success: boolean; data: any }> => {
+  try {
+    const response = await apiClient.get(`/permissions/${action}/usage`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching permission usage:', error);
+    throw error;
+  }
+};
+
+export const validatePermissions = async (data: {
+  permissions: string[];
+  context?: Record<string, any>;
+}): Promise<{ success: boolean; data: any }> => {
+  try {
+    const response = await apiClient.post(`/permissions/validate`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error validating permissions:', error);
+    throw error;
+  }
+};
+
+export const createPermission = async (data: {
+  action: string;
+  displayName: string;
+  description?: string;
+  category?: string;
+  dependencies?: string[];
+}): Promise<{ success: boolean; message: string; data?: any }> => {
+  try {
+    const response = await apiClient.post(`/permissions`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating permission:', error);
+    throw error;
+  }
+};
+
+export const updatePermission = async (
+  action: string,
+  data: {
+    displayName?: string;
+    description?: string;
+    category?: string;
+    dependencies?: string[];
+    isActive?: boolean;
+  }
+): Promise<{ success: boolean; message: string; data?: any }> => {
+  try {
+    const response = await apiClient.put(`/permissions/${action}`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating permission:', error);
+    throw error;
+  }
+};
+
+// Role Management
+export const createRole = async (data: {
+  name: string;
+  displayName: string;
+  description?: string;
+  category?: string;
+  permissions?: string[];
+  parentRole?: string;
+}): Promise<{ success: boolean; message: string; data?: any }> => {
+  try {
+    const response = await apiClient.post(`/roles`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating role:', error);
+    throw error;
+  }
+};
+
+export const getRoleById = async (
+  roleId: string
+): Promise<{ success: boolean; data: any }> => {
+  try {
+    const response = await apiClient.get(`/roles/${roleId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching role:', error);
+    throw error;
+  }
+};
+
+export const updateRole = async (
+  roleId: string,
+  data: {
+    displayName?: string;
+    description?: string;
+    permissions?: string[];
+    isActive?: boolean;
+  }
+): Promise<{ success: boolean; message: string; data?: any }> => {
+  try {
+    const response = await apiClient.put(`/roles/${roleId}`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating role:', error);
+    throw error;
+  }
+};
+
+export const deleteRole = async (
+  roleId: string,
+  options?: { force?: boolean; reassignRoleId?: string }
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.delete(`/roles/${roleId}`, {
+      data: options,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting role:', error);
+    throw error;
+  }
+};
+
+export const getRolePermissions = async (
+  roleId: string
+): Promise<{ success: boolean; data: any }> => {
+  try {
+    const response = await apiClient.get(`/roles/${roleId}/permissions`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching role permissions:', error);
+    throw error;
+  }
+};
+
+// RBAC Audit Functions
+export const getAuditDashboard = async (params?: {
+  timeRange?: string;
+}): Promise<{ success: boolean; data: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const response = await apiClient.get(`/rbac-audit/dashboard?${queryParams}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching audit dashboard:', error);
+    throw error;
+  }
+};
+
+export const getRBACDetailedAuditLogs = async (params?: {
+  page?: number;
+  limit?: number;
+  userId?: string;
+  action?: string;
+  resourceType?: string;
+  startDate?: string;
+  endDate?: string;
+}): Promise<{ success: boolean; data: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const response = await apiClient.get(`/rbac-audit/logs?${queryParams}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching RBAC audit logs:', error);
+    throw error;
+  }
+};
+
+export const getUserAuditTrail = async (
+  userId: string,
+  params?: {
+    page?: number;
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<{ success: boolean; data: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const response = await apiClient.get(
+      `/rbac-audit/users/${userId}/trail?${queryParams}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user audit trail:', error);
+    throw error;
+  }
+};
+
+export const getRoleAuditTrail = async (
+  roleId: string,
+  params?: {
+    page?: number;
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<{ success: boolean; data: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const response = await apiClient.get(
+      `/rbac-audit/roles/${roleId}/trail?${queryParams}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching role audit trail:', error);
+    throw error;
+  }
+};
+
+export const exportAuditLogs = async (params?: {
+  format?: string;
+  startDate?: string;
+  endDate?: string;
+  userId?: string;
+  action?: string;
+}): Promise<{ success: boolean; data: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const response = await apiClient.get(`/rbac-audit/export?${queryParams}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error exporting audit logs:', error);
+    throw error;
+  }
+};
+
+export const getComplianceReport = async (params?: {
+  reportType?: string;
+  startDate?: string;
+  endDate?: string;
+}): Promise<{ success: boolean; data: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const response = await apiClient.get(
+      `/rbac-audit/compliance?${queryParams}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching compliance report:', error);
+    throw error;
+  }
+};
+
+export const getSecurityAlerts = async (params?: {
+  page?: number;
+  limit?: number;
+  severity?: string;
+  status?: string;
+}): Promise<{ success: boolean; data: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const response = await apiClient.get(
+      `/rbac-audit/security-alerts?${queryParams}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching security alerts:', error);
+    throw error;
+  }
+};
+
+export const resolveSecurityAlert = async (
+  alertId: string,
+  resolution: {
+    action: string;
+    notes?: string;
+  }
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.post(
+      `/rbac-audit/security-alerts/${alertId}/resolve`,
+      resolution
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error resolving security alert:', error);
+    throw error;
+  }
+};
+
+export const getAuditStatistics = async (params?: {
+  timeRange?: string;
+}): Promise<{ success: boolean; data: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+    const response = await apiClient.get(
+      `/rbac-audit/statistics?${queryParams}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching audit statistics:', error);
+    throw error;
+  }
+};
