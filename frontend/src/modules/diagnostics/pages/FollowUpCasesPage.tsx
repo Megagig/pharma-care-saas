@@ -5,7 +5,6 @@ import {
   Typography,
   Card,
   CardContent,
-  Grid,
   IconButton,
   Button,
   Chip,
@@ -20,13 +19,11 @@ import {
   FormControlLabel,
   Pagination,
 } from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  Person as PersonIcon,
-  Schedule as ScheduleIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-} from '@mui/icons-material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PersonIcon from '@mui/icons-material/Person';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import WarningIcon from '@mui/icons-material/Warning';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useNavigate } from 'react-router-dom';
 import { format, isPast } from 'date-fns';
 import { useFollowUpCases, useMarkCaseAsCompleted } from '../../../queries/useDiagnosticHistory';
@@ -68,15 +65,15 @@ const FollowUpCasesPage: React.FC = () => {
     const date = new Date(scheduledDate);
     const isOverdue = isPast(date);
     const daysUntil = Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-    
+
     return {
       isOverdue,
       daysUntil,
-      label: isOverdue 
+      label: isOverdue
         ? `Overdue by ${Math.abs(daysUntil)} day${Math.abs(daysUntil) !== 1 ? 's' : ''}`
         : daysUntil === 0
-        ? 'Due today'
-        : `Due in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`,
+          ? 'Due today'
+          : `Due in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`,
       color: isOverdue ? 'error' : daysUntil <= 1 ? 'warning' : 'info'
     };
   };
@@ -134,135 +131,133 @@ const FollowUpCasesPage: React.FC = () => {
       </Box>
 
       {/* Follow-up Cases List */}
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-                {showOverdueOnly ? 'Overdue Follow-ups' : 'All Follow-up Cases'}
-                {pagination && (
-                  <Chip
-                    label={`${pagination.totalCases} total`}
-                    size="small"
-                    sx={{ ml: 2 }}
-                  />
-                )}
-              </Typography>
+      <Box>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+              {showOverdueOnly ? 'Overdue Follow-ups' : 'All Follow-up Cases'}
+              {pagination && (
+                <Chip
+                  label={`${pagination.totalCases} total`}
+                  size="small"
+                  sx={{ ml: 2 }}
+                />
+              )}
+            </Typography>
 
-              {isLoading ? (
-                <Box>
-                  {[...Array(5)].map((_, index) => (
-                    <Box key={index} sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
-                        <Box sx={{ flex: 1 }}>
-                          <Skeleton variant="text" width="60%" />
-                          <Skeleton variant="text" width="40%" />
-                        </Box>
-                        <Skeleton variant="rectangular" width={100} height={24} sx={{ borderRadius: 1 }} />
+            {isLoading ? (
+              <Box>
+                {[...Array(5)].map((_, index) => (
+                  <Box key={index} sx={{ mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
+                      <Box sx={{ flex: 1 }}>
+                        <Skeleton variant="text" width="60%" />
+                        <Skeleton variant="text" width="40%" />
                       </Box>
+                      <Skeleton variant="rectangular" width={100} height={24} sx={{ borderRadius: 1 }} />
                     </Box>
-                  ))}
-                </Box>
-              ) : followUpCases.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <ScheduleIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                  <Typography variant="body1" color="text.secondary">
-                    {showOverdueOnly ? 'No overdue follow-ups' : 'No follow-up cases found'}
-                  </Typography>
-                </Box>
-              ) : (
-                <List>
-                  {followUpCases.map((case_, index) => {
-                    const followUpStatus = getFollowUpStatus(case_.followUp.scheduledDate);
-                    
-                    return (
-                      <ListItem
-                        key={case_._id}
-                        sx={{
-                          cursor: 'pointer',
-                          borderRadius: 1,
-                          mb: 1,
-                          border: '1px solid',
-                          borderColor: 'divider',
-                          '&:hover': {
-                            bgcolor: 'action.hover',
-                          },
-                        }}
-                        onClick={() => handleViewCase(case_)}
-                      >
-                        <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: followUpStatus.isOverdue ? 'error.main' : 'warning.main' }}>
-                            {followUpStatus.isOverdue ? <WarningIcon /> : <PersonIcon />}
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                                {case_.patientId?.firstName} {case_.patientId?.lastName}
-                              </Typography>
-                              <Chip
-                                label={followUpStatus.label}
-                                color={followUpStatus.color as any}
-                                size="small"
-                              />
-                            </Box>
-                          }
-                          secondary={
-                            <Box>
-                              <Typography variant="body2" component="span">
-                                Case ID: {case_.caseId}
-                              </Typography>
-                              <br />
-                              <Typography variant="body2" component="span">
-                                Reason: {case_.followUp.reason}
-                              </Typography>
-                              <br />
-                              <Typography variant="caption" color="text.secondary">
-                                Scheduled: {format(new Date(case_.followUp.scheduledDate), 'MMM dd, yyyy')}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                        <Box sx={{ textAlign: 'right' }}>
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            {case_.patientId?.age}y, {case_.patientId?.gender}
-                          </Typography>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<CheckCircleIcon />}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewCase(case_);
-                            }}
-                            sx={{ mt: 1 }}
-                          >
-                            Review
-                          </Button>
-                        </Box>
-                      </ListItem>
-                    );
-                  })}
-                </List>
-              )}
+                  </Box>
+                ))}
+              </Box>
+            ) : followUpCases.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <ScheduleIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="body1" color="text.secondary">
+                  {showOverdueOnly ? 'No overdue follow-ups' : 'No follow-up cases found'}
+                </Typography>
+              </Box>
+            ) : (
+              <List>
+                {followUpCases.map((case_) => {
+                  const followUpStatus = getFollowUpStatus(case_.followUp.scheduledDate);
 
-              {/* Pagination */}
-              {pagination && pagination.total > 1 && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                  <Pagination
-                    count={pagination.total}
-                    page={pagination.current}
-                    onChange={(_, newPage) => setPage(newPage)}
-                    color="primary"
-                  />
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+                  return (
+                    <ListItem
+                      key={case_._id}
+                      sx={{
+                        cursor: 'pointer',
+                        borderRadius: 1,
+                        mb: 1,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        '&:hover': {
+                          bgcolor: 'action.hover',
+                        },
+                      }}
+                      onClick={() => handleViewCase(case_)}
+                    >
+                      <ListItemAvatar>
+                        <Avatar sx={{ bgcolor: followUpStatus.isOverdue ? 'error.main' : 'warning.main' }}>
+                          {followUpStatus.isOverdue ? <WarningIcon /> : <PersonIcon />}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                              {case_.patientId?.firstName} {case_.patientId?.lastName}
+                            </Typography>
+                            <Chip
+                              label={followUpStatus.label}
+                              color={followUpStatus.color as any}
+                              size="small"
+                            />
+                          </Box>
+                        }
+                        secondary={
+                          <Box>
+                            <Typography variant="body2" component="span">
+                              Case ID: {case_.caseId}
+                            </Typography>
+                            <br />
+                            <Typography variant="body2" component="span">
+                              Reason: {case_.followUp.reason}
+                            </Typography>
+                            <br />
+                            <Typography variant="caption" color="text.secondary">
+                              Scheduled: {format(new Date(case_.followUp.scheduledDate), 'MMM dd, yyyy')}
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="caption" display="block" color="text.secondary">
+                          {case_.patientId?.age}y, {case_.patientId?.gender}
+                        </Typography>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<CheckCircleIcon />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewCase(case_);
+                          }}
+                          sx={{ mt: 1 }}
+                        >
+                          Review
+                        </Button>
+                      </Box>
+                    </ListItem>
+                  );
+                })}
+              </List>
+            )}
+
+            {/* Pagination */}
+            {pagination && pagination.total > 1 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <Pagination
+                  count={pagination.total}
+                  page={pagination.current}
+                  onChange={(_, newPage) => setPage(newPage)}
+                  color="primary"
+                />
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      </Box>
 
       {/* Case Review Dialog */}
       <CaseReviewDialog
@@ -272,9 +267,9 @@ const FollowUpCasesPage: React.FC = () => {
           setSelectedCase(null);
         }}
         case={selectedCase}
-        onMarkFollowUp={async () => {}} // Not applicable for follow-up cases
+        onMarkFollowUp={async () => { }} // Not applicable for follow-up cases
         onMarkCompleted={handleMarkCompleted}
-        onGenerateReferral={async () => {}} // Not applicable for follow-up cases
+        onGenerateReferral={async () => { }} // Not applicable for follow-up cases
         loading={markCompletedMutation.isPending}
       />
     </Container>

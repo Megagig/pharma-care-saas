@@ -5,7 +5,7 @@ import {
   Typography,
   Card,
   CardContent,
-  Grid,
+  Stack,
   IconButton,
   Button,
   FormControl,
@@ -19,7 +19,6 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Paper,
   Skeleton,
   Alert,
   Avatar,
@@ -32,25 +31,23 @@ import {
   ListItemText,
   Badge,
 } from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  Refresh as RefreshIcon,
-  LocalHospital as LocalHospitalIcon,
-  Person as PersonIcon,
-  Schedule as ScheduleIcon,
-  CheckCircle as CheckCircleIcon,
-  Send as SendIcon,
-  Visibility as VisibilityIcon,
-  Download as DownloadIcon,
-  MoreVert as MoreVertIcon,
-  Warning as WarningIcon,
-  Assignment as AssignmentIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-} from '@mui/icons-material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import PersonIcon from '@mui/icons-material/Person';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import SendIcon from '@mui/icons-material/Send';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import DownloadIcon from '@mui/icons-material/Download';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import WarningIcon from '@mui/icons-material/Warning';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { 
+import {
   useDiagnosticReferrals,
   useDownloadReferralDocument,
   useSendReferralElectronically,
@@ -60,13 +57,12 @@ import {
 import { DiagnosticReferral } from '../../../services/diagnosticHistoryService';
 import SendReferralDialog from '../../../components/diagnostics/SendReferralDialog';
 import EditReferralDialog from '../../../components/diagnostics/EditReferralDialog';
-import { 
-  generateTextDocument, 
-  generateRTFDocument, 
-  generateHTMLDocument,
+import {
+  generateTextDocument,
+  generateRTFDocument,
   generatePDFDocument,
   downloadDocument,
-  ReferralDocumentData 
+  ReferralDocumentData
 } from '../../../utils/documentGenerator';
 
 const DiagnosticReferralsPage: React.FC = () => {
@@ -109,7 +105,7 @@ const DiagnosticReferralsPage: React.FC = () => {
     completed: 0,
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -151,13 +147,13 @@ const DiagnosticReferralsPage: React.FC = () => {
   const handleDownload = async (caseId: string, format: 'pdf' | 'docx' | 'text' = 'pdf') => {
     try {
       const result = await downloadMutation.mutateAsync({ caseId, format });
-      
+
       // Get patient and pharmacist names from the selected referral
-      const patientName = selectedReferral?.patientId ? 
-        `${selectedReferral.patientId.firstName} ${selectedReferral.patientId.lastName}` : 
+      const patientName = selectedReferral?.patientId ?
+        `${selectedReferral.patientId.firstName} ${selectedReferral.patientId.lastName}` :
         undefined;
-      const pharmacistName = selectedReferral?.pharmacistId ? 
-        `${selectedReferral.pharmacistId.firstName} ${selectedReferral.pharmacistId.lastName}` : 
+      const pharmacistName = selectedReferral?.pharmacistId ?
+        `${selectedReferral.pharmacistId.firstName} ${selectedReferral.pharmacistId.lastName}` :
         undefined;
 
       const documentData: ReferralDocumentData = {
@@ -167,10 +163,10 @@ const DiagnosticReferralsPage: React.FC = () => {
         pharmacistName,
         generatedAt: new Date(),
       };
-      
+
       let blob: Blob;
       let filename: string;
-      
+
       switch (format) {
         case 'text':
           blob = generateTextDocument(documentData);
@@ -188,7 +184,7 @@ const DiagnosticReferralsPage: React.FC = () => {
           blob = generatePDFDocument(documentData);
           filename = `referral-${caseId}.pdf`;
       }
-      
+
       downloadDocument(
         blob,
         filename,
@@ -202,7 +198,7 @@ const DiagnosticReferralsPage: React.FC = () => {
           alert('Download failed. Please try again.');
         }
       );
-      
+
     } catch (error) {
       console.error('Download failed:', error);
       alert('Download failed. Please try again.');
@@ -215,36 +211,36 @@ const DiagnosticReferralsPage: React.FC = () => {
       alert('Error: No referral selected. Please try again.');
       return;
     }
-    
+
     try {
       console.log('Sending referral electronically:', {
         caseId: sendingReferral.caseId,
         data
       });
-      
+
       await sendMutation.mutateAsync({
         caseId: sendingReferral.caseId,
         data,
       });
-      
+
       console.log('Referral sent successfully');
-      
+
       // Clear the sending referral state
       setSendingReferral(null);
-      
+
       // Refetch data to update status
       await refetch();
-      
+
     } catch (error) {
       console.error('Failed to send referral:', error);
-      
+
       // Show user-friendly error message
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : 'An unexpected error occurred while sending the referral.';
-      
+
       alert(`Failed to send referral: ${errorMessage}\n\nPlease try again or contact support if the problem persists.`);
-      
+
       // Don't close the dialog on error so user can retry
       throw error;
     }
@@ -252,7 +248,7 @@ const DiagnosticReferralsPage: React.FC = () => {
 
   const handleEditReferral = () => {
     if (!selectedReferral?.referral?.document?.content) return;
-    
+
     // Store the referral being edited separately so it persists after menu closes
     setEditingReferral(selectedReferral);
     setEditContent(selectedReferral.referral.document.content);
@@ -266,37 +262,37 @@ const DiagnosticReferralsPage: React.FC = () => {
       alert('Error: No referral selected. Please try again.');
       return;
     }
-    
+
     try {
       console.log('Saving referral edit:', {
         caseId: editingReferral.caseId,
         contentLength: content.length,
         content: content.substring(0, 100) + '...' // Log first 100 chars for debugging
       });
-      
+
       const result = await updateMutation.mutateAsync({
         caseId: editingReferral.caseId,
         content,
       });
-      
+
       console.log('Save successful:', result);
-      
+
       // Refetch the data to get updated content
       await refetch();
-      
+
       // Clear the editing referral state
       setEditingReferral(null);
-      
+
     } catch (error) {
       console.error('Failed to save referral edit:', error);
-      
+
       // Show user-friendly error message
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : 'An unexpected error occurred while saving the referral document.';
-      
+
       alert(`Failed to save changes: ${errorMessage}\n\nPlease try again or contact support if the problem persists.`);
-      
+
       // Don't close the dialog on error so user can retry
       throw error;
     }
@@ -304,11 +300,11 @@ const DiagnosticReferralsPage: React.FC = () => {
 
   const handleDeleteReferral = async () => {
     if (!selectedReferral) return;
-    
+
     const confirmed = window.confirm(
       'Are you sure you want to delete this referral? This action cannot be undone.'
     );
-    
+
     if (confirmed) {
       await deleteMutation.mutateAsync(selectedReferral.caseId);
       refetch();
@@ -376,8 +372,12 @@ const DiagnosticReferralsPage: React.FC = () => {
         </Box>
 
         {/* Statistics Cards */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          sx={{ mb: 3 }}
+        >
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 50%', md: '1 1 25%' } }}>
             <Card>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Badge badgeContent={statistics.pending} color="warning">
@@ -393,8 +393,8 @@ const DiagnosticReferralsPage: React.FC = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 50%', md: '1 1 25%' } }}>
             <Card>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Badge badgeContent={statistics.sent} color="primary">
@@ -410,8 +410,8 @@ const DiagnosticReferralsPage: React.FC = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 50%', md: '1 1 25%' } }}>
             <Card>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Badge badgeContent={statistics.acknowledged} color="info">
@@ -427,8 +427,8 @@ const DiagnosticReferralsPage: React.FC = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 50%', md: '1 1 25%' } }}>
             <Card>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Badge badgeContent={statistics.completed} color="success">
@@ -444,8 +444,8 @@ const DiagnosticReferralsPage: React.FC = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Stack>
 
         {/* Filters */}
         <Card sx={{ mb: 3 }}>
@@ -701,54 +701,6 @@ const DiagnosticReferralsPage: React.FC = () => {
               <DownloadIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText>Download Text File</ListItemText>
-          </MenuItemComponent>
-          <MenuItemComponent
-            onClick={(e) => {
-              e.stopPropagation();
-              // Add HTML format to the handleDownload function
-              const result = downloadMutation.mutateAsync({ caseId: selectedReferral?.caseId || '', format: 'html' });
-              result.then((res) => {
-                const patientName = selectedReferral?.patientId ? 
-                  `${selectedReferral.patientId.firstName} ${selectedReferral.patientId.lastName}` : 
-                  undefined;
-                const pharmacistName = selectedReferral?.pharmacistId ? 
-                  `${selectedReferral.pharmacistId.firstName} ${selectedReferral.pharmacistId.lastName}` : 
-                  undefined;
-
-                const documentData: ReferralDocumentData = {
-                  content: res.content,
-                  caseId: selectedReferral?.caseId || '',
-                  patientName,
-                  pharmacistName,
-                  generatedAt: new Date(),
-                };
-                
-                const blob = generateHTMLDocument(documentData);
-                const filename = `referral-${selectedReferral?.caseId}.html`;
-                
-                downloadDocument(
-                  blob,
-                  filename,
-                  () => {
-                    handleMenuClose();
-                    console.log(`Referral document downloaded as ${filename}`);
-                  },
-                  (error) => {
-                    console.error('Download failed:', error);
-                    alert('Download failed. Please try again.');
-                  }
-                );
-              }).catch((error) => {
-                console.error('Download failed:', error);
-                alert('Download failed. Please try again.');
-              });
-            }}
-            disabled={downloadMutation.isPending}
-          >
-            <ListItemIcon>
-              <DownloadIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Download HTML (Print to PDF)</ListItemText>
           </MenuItemComponent>
           <MenuItemComponent
             onClick={() => {

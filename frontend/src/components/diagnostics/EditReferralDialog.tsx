@@ -11,10 +11,8 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import {
-  Save as SaveIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
+import SaveIcon from '@mui/icons-material/Save';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface EditReferralDialogProps {
   open: boolean;

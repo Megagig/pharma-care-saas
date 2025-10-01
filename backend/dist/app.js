@@ -96,6 +96,7 @@ const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"))
 const communicationRoutes_1 = __importDefault(require("./routes/communicationRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 const analyticsRoutes_1 = __importDefault(require("./routes/analyticsRoutes"));
+const reportsRoutes_1 = __importDefault(require("./routes/reportsRoutes"));
 const lighthouseRoutes_1 = __importDefault(require("./routes/lighthouseRoutes"));
 const performanceBudgetRoutes_1 = __importDefault(require("./routes/performanceBudgetRoutes"));
 const performanceMonitoringRoutes_1 = __importDefault(require("./routes/performanceMonitoringRoutes"));
@@ -225,6 +226,7 @@ app.get('/api/health/cache', async (req, res) => {
 app.use('/api/public', publicApiRoutes_1.default);
 app.use('/api/public/drugs', publicDrugDetailsRoutes_1.default);
 app.use('/api/analytics', analyticsRoutes_1.default);
+app.use('/api/reports', reportsRoutes_1.default);
 app.use('/api/lighthouse', lighthouseRoutes_1.default);
 app.use('/api/performance-budgets', performanceBudgetRoutes_1.default);
 app.use('/api/performance-monitoring', performanceMonitoringRoutes_1.default);

@@ -5,7 +5,6 @@ import {
   Typography,
   Card,
   CardContent,
-  Grid,
   IconButton,
   Button,
   TextField,
@@ -21,18 +20,17 @@ import {
   Avatar,
   LinearProgress,
   Chip,
+  Stack,
 } from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  Refresh as RefreshIcon,
-  TrendingUp as TrendingUpIcon,
-  Assessment as AssessmentIcon,
-  Schedule as ScheduleIcon,
-  LocalHospital as LocalHospitalIcon,
-  CheckCircle as CheckCircleIcon,
-  Timer as TimerIcon,
-  DateRange as DateRangeIcon,
-} from '@mui/icons-material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import TimerIcon from '@mui/icons-material/Timer';
+import DateRangeIcon from '@mui/icons-material/DateRange';
 import { useNavigate } from 'react-router-dom';
 import { format, subDays } from 'date-fns';
 import {
@@ -43,11 +41,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
 } from 'recharts';
 import { useDiagnosticAnalytics } from '../../../queries/useDiagnosticHistory';
 
@@ -135,14 +128,14 @@ const DiagnosticAnalyticsPage: React.FC = () => {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
               <TextField
                 label="To Date"
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
               <Button
                 variant="contained"
@@ -156,10 +149,10 @@ const DiagnosticAnalyticsPage: React.FC = () => {
         </Card>
       </Box>
 
-      <Grid container spacing={3}>
+      <Stack spacing={3}>
         {/* Summary Stats */}
-        <Grid item xs={12} sm={6} md={2}>
-          <Card>
+        <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', '& > *': { minWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(16.666% - 8px)' } } }}>
+          <Card sx={{ flex: '1 1 auto' }}>
             <CardContent>
               {isLoading ? (
                 <Box>
@@ -184,10 +177,8 @@ const DiagnosticAnalyticsPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={2}>
-          <Card>
+          <Card sx={{ flex: '1 1 auto' }}>
             <CardContent>
               {isLoading ? (
                 <Box>
@@ -212,10 +203,8 @@ const DiagnosticAnalyticsPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={2}>
-          <Card>
+          <Card sx={{ flex: '1 1 auto' }}>
             <CardContent>
               {isLoading ? (
                 <Box>
@@ -240,10 +229,8 @@ const DiagnosticAnalyticsPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={2}>
-          <Card>
+          <Card sx={{ flex: '1 1 auto' }}>
             <CardContent>
               {isLoading ? (
                 <Box>
@@ -268,10 +255,8 @@ const DiagnosticAnalyticsPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={2}>
-          <Card>
+          <Card sx={{ flex: '1 1 auto' }}>
             <CardContent>
               {isLoading ? (
                 <Box>
@@ -296,10 +281,8 @@ const DiagnosticAnalyticsPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={2}>
-          <Card>
+          <Card sx={{ flex: '1 1 auto' }}>
             <CardContent>
               {isLoading ? (
                 <Box>
@@ -324,11 +307,11 @@ const DiagnosticAnalyticsPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </Stack>
 
         {/* Case Completion Trends */}
-        <Grid item xs={12} md={8}>
-          <Card>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+          <Card sx={{ flex: { xs: '1', md: '2' } }}>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
                 Case Completion Trends (Last 30 Days)
@@ -367,11 +350,9 @@ const DiagnosticAnalyticsPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
 
-        {/* Top Diagnoses */}
-        <Grid item xs={12} md={4}>
-          <Card>
+          {/* Top Diagnoses */}
+          <Card sx={{ flex: { xs: '1', md: '1' } }}>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
                 Top Diagnoses
@@ -387,7 +368,7 @@ const DiagnosticAnalyticsPage: React.FC = () => {
                 </Box>
               ) : topDiagnosesData.length > 0 ? (
                 <Box>
-                  {topDiagnosesData.map((diagnosis, index) => (
+                  {topDiagnosesData.map((diagnosis) => (
                     <Box key={diagnosis.condition} sx={{ mb: 2 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -427,78 +408,76 @@ const DiagnosticAnalyticsPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </Stack>
 
         {/* Detailed Statistics Table */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-                Detailed Statistics
-              </Typography>
-              {isLoading ? (
-                <Skeleton variant="rectangular" height={200} />
-              ) : (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Metric</TableCell>
-                        <TableCell align="right">Value</TableCell>
-                        <TableCell>Description</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>Total Cases</TableCell>
-                        <TableCell align="right">{analytics?.summary?.totalCases || 0}</TableCell>
-                        <TableCell>Total diagnostic cases in selected period</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Completion Rate</TableCell>
-                        <TableCell align="right">
-                          {analytics?.summary?.totalCases
-                            ? Math.round(
-                                ((analytics.summary.completedCases || 0) /
-                                  analytics.summary.totalCases) *
-                                  100
-                              )
-                            : 0}%
-                        </TableCell>
-                        <TableCell>Percentage of cases completed</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Average Confidence</TableCell>
-                        <TableCell align="right">
-                          {Math.round(analytics?.summary?.averageConfidence || 0)}%
-                        </TableCell>
-                        <TableCell>Average AI confidence score</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Average Processing Time</TableCell>
-                        <TableCell align="right">
-                          {Math.round(analytics?.summary?.averageProcessingTime || 0)}s
-                        </TableCell>
-                        <TableCell>Average time for AI analysis</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Referrals Generated</TableCell>
-                        <TableCell align="right">{analytics?.summary?.referralsGenerated || 0}</TableCell>
-                        <TableCell>Number of referrals recommended by AI</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Pending Follow-ups</TableCell>
-                        <TableCell align="right">{analytics?.summary?.pendingFollowUps || 0}</TableCell>
-                        <TableCell>Cases requiring follow-up attention</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+              Detailed Statistics
+            </Typography>
+            {isLoading ? (
+              <Skeleton variant="rectangular" height={200} />
+            ) : (
+              <TableContainer component={Paper} variant="outlined">
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Metric</TableCell>
+                      <TableCell align="right">Value</TableCell>
+                      <TableCell>Description</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell>Total Cases</TableCell>
+                      <TableCell align="right">{analytics?.summary?.totalCases || 0}</TableCell>
+                      <TableCell>Total diagnostic cases in selected period</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Completion Rate</TableCell>
+                      <TableCell align="right">
+                        {analytics?.summary?.totalCases
+                          ? Math.round(
+                            ((analytics.summary.completedCases || 0) /
+                              analytics.summary.totalCases) *
+                            100
+                          )
+                          : 0}%
+                      </TableCell>
+                      <TableCell>Percentage of cases completed</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Average Confidence</TableCell>
+                      <TableCell align="right">
+                        {Math.round(analytics?.summary?.averageConfidence || 0)}%
+                      </TableCell>
+                      <TableCell>Average AI confidence score</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Average Processing Time</TableCell>
+                      <TableCell align="right">
+                        {Math.round(analytics?.summary?.averageProcessingTime || 0)}s
+                      </TableCell>
+                      <TableCell>Average time for AI analysis</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Referrals Generated</TableCell>
+                      <TableCell align="right">{analytics?.summary?.referralsGenerated || 0}</TableCell>
+                      <TableCell>Number of referrals recommended by AI</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Pending Follow-ups</TableCell>
+                      <TableCell align="right">{analytics?.summary?.pendingFollowUps || 0}</TableCell>
+                      <TableCell>Cases requiring follow-up attention</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </CardContent>
+        </Card>
+      </Stack>
     </Container>
   );
 };

@@ -521,6 +521,40 @@ const validateDataAccess = async (req, res, next) => {
 };
 exports.validateDataAccess = validateDataAccess;
 const enforceWorkspaceIsolation = (req, res, next) => {
+    const userRole = (0, auth_1.isExtendedUser)(req.user) ? req.user.role : undefined;
+    if (userRole === 'super_admin') {
+        console.log(`🔓 Super admin ${req.user.email} accessing reports across all workplaces`);
+        ReportAuditLog_1.default.logEvent({
+            eventType: 'DATA_ACCESS',
+            userId: new mongoose_1.default.Types.ObjectId(req.user._id),
+            workplaceId: req.user.workplaceId ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId) : undefined,
+            sessionId: req.sessionId,
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+            eventDetails: {
+                action: 'ACCESS',
+                resource: 'DATA',
+                resourceId: 'ALL_WORKSPACES',
+                success: true,
+                metadata: {
+                    message: 'Super admin accessing cross-workspace data',
+                    accessType: 'cross-workspace',
+                    userRole: 'super_admin'
+                }
+            },
+            compliance: {
+                dataAccessed: ['PATIENT_DATA', 'CLINICAL_DATA', 'FINANCIAL_DATA', 'SYSTEM_DATA'],
+                sensitiveData: true,
+                anonymized: false,
+                encryptionUsed: true,
+                accessJustification: 'Super admin role allows cross-workspace access'
+            },
+            riskScore: 5
+        }).catch(error => {
+            logger_1.default.error('Failed to log super admin access:', error);
+        });
+        return next();
+    }
     const originalQuery = req.query;
     req.query = {
         ...originalQuery,

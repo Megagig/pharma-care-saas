@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Reports API with Authentication</title>
+</head>
+<body>
+    <h1>Reports API Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testReportsAPI() {
+            const results = document.getElementById('results');
+            
+            try {
+                // Test with credentials (cookies)
+                const response = await fetch('http://localhost:5000/api/reports/types', {
+                    method: 'GET',
+                    credentials: 'include', // Include cookies
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                results.innerHTML += `<p>Status: ${response.status}</p>`;
+                
+                if (response.status === 401) {
+                    results.innerHTML += `<p style="color: orange;">Authentication required - you need to log in first</p>`;
+                    results.innerHTML += `<p>Go to <a href="http://localhost:5173/login" target="_blank">http://localhost:5173/login</a> to log in, then come back and refresh this page</p>`;
+                } else if (response.ok) {
+                    const data = await response.json();
+                    results.innerHTML += `<p style="color: green;">Success! Data received:</p>`;
+                    results.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    const errorText = await response.text();
+                    results.innerHTML += `<p style="color: red;">Error: ${errorText}</p>`;
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<p style="color: red;">Network Error: ${error.message}</p>`;
+                results.innerHTML += `<p>Make sure your backend server is running on port 5000</p>`;
+            }
+        }
+        
+        // Run test when page loads
+        testReportsAPI();
+    </script>
+</body>
+</html>

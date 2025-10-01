@@ -229,7 +229,7 @@ class DiagnosticHistoryService {
     };
   }> {
     const { page = 1, limit = 10, includeArchived = false } = options;
-    
+
     const response = await apiClient.get(
       `/diagnostics/patients/${patientId}/history`,
       {
@@ -241,7 +241,7 @@ class DiagnosticHistoryService {
         timeout: 30000,
       }
     );
-    
+
     return response.data.data;
   }
 
@@ -266,7 +266,7 @@ class DiagnosticHistoryService {
         timeout: 15000,
       }
     );
-    
+
     return response.data.data;
   }
 
@@ -282,7 +282,7 @@ class DiagnosticHistoryService {
       params: options,
       timeout: 30000,
     });
-    
+
     return response.data.data;
   }
 
@@ -322,7 +322,7 @@ class DiagnosticHistoryService {
       sortBy = 'createdAt',
       sortOrder = 'desc',
     } = options;
-    
+
     const response = await apiClient.get('/diagnostics/cases/all', {
       params: {
         page,
@@ -335,7 +335,7 @@ class DiagnosticHistoryService {
       },
       timeout: 30000,
     });
-    
+
     return response.data.data;
   }
 
@@ -367,7 +367,7 @@ class DiagnosticHistoryService {
     };
   }> {
     const { page = 1, limit = 20, status, specialty } = options;
-    
+
     const response = await apiClient.get('/diagnostics/referrals', {
       params: {
         page,
@@ -377,7 +377,7 @@ class DiagnosticHistoryService {
       },
       timeout: 30000,
     });
-    
+
     return response.data.data;
   }
 
@@ -396,7 +396,7 @@ class DiagnosticHistoryService {
         timeout: 60000,
       }
     );
-    
+
     return response.data;
   }
 
@@ -416,7 +416,7 @@ class DiagnosticHistoryService {
         timeout: 30000,
       }
     );
-    
+
     return response.data.data;
   }
 
@@ -447,7 +447,7 @@ class DiagnosticHistoryService {
         timeout: 30000,
       }
     );
-    
+
     return response.data.data;
   }
 
@@ -495,7 +495,7 @@ class DiagnosticHistoryService {
       contentLength: content.length,
       url: `/diagnostics/cases/${caseId}/referral/update`
     });
-    
+
     try {
       const response = await apiClient.put(`/diagnostics/cases/${caseId}/referral/update`, { content });
       console.log('diagnosticHistoryService.updateReferralDocument: API call successful', {
@@ -504,7 +504,7 @@ class DiagnosticHistoryService {
         data: response.data
       });
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('diagnosticHistoryService.updateReferralDocument: API call failed', {
         caseId,
         error,
@@ -566,7 +566,7 @@ class DiagnosticHistoryService {
       data,
       url: `/diagnostics/cases/${caseId}/referral/send`
     });
-    
+
     try {
       const response = await apiClient.post(`/diagnostics/cases/${caseId}/referral/send`, data);
       console.log('diagnosticHistoryService.sendReferralElectronically: API call successful', {
@@ -575,7 +575,7 @@ class DiagnosticHistoryService {
         data: response.data
       });
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('diagnosticHistoryService.sendReferralElectronically: API call failed', {
         caseId,
         error,

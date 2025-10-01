@@ -6,7 +6,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  Grid,
   Typography,
   Box,
   FormControl,
@@ -15,11 +14,10 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
+  Stack,
 } from '@mui/material';
-import {
-  Send as SendIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
+import SendIcon from '@mui/icons-material/Send';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface SendReferralDialogProps {
   open: boolean;
@@ -54,7 +52,7 @@ const SendReferralDialog: React.FC<SendReferralDialogProps> = ({
   const handleChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any) => {
     const value = event.target.value;
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -136,8 +134,8 @@ const SendReferralDialog: React.FC<SendReferralDialogProps> = ({
           </Alert>
         )}
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+        <Stack spacing={3}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
             <TextField
               fullWidth
               label="Physician Name"
@@ -148,9 +146,7 @@ const SendReferralDialog: React.FC<SendReferralDialogProps> = ({
               disabled={loading}
               required
             />
-          </Grid>
 
-          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Physician Email"
@@ -162,9 +158,9 @@ const SendReferralDialog: React.FC<SendReferralDialogProps> = ({
               disabled={loading}
               required
             />
-          </Grid>
+          </Stack>
 
-          <Grid item xs={12} md={6}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
             <FormControl fullWidth error={!!errors.specialty} disabled={loading}>
               <InputLabel>Specialty *</InputLabel>
               <Select
@@ -190,9 +186,7 @@ const SendReferralDialog: React.FC<SendReferralDialogProps> = ({
                 </Typography>
               )}
             </FormControl>
-          </Grid>
 
-          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Institution/Clinic"
@@ -201,21 +195,19 @@ const SendReferralDialog: React.FC<SendReferralDialogProps> = ({
               disabled={loading}
               placeholder="e.g., City General Hospital"
             />
-          </Grid>
+          </Stack>
 
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              label="Additional Notes"
-              value={formData.notes}
-              onChange={handleChange('notes')}
-              disabled={loading}
-              placeholder="Any additional information for the receiving physician..."
-            />
-          </Grid>
-        </Grid>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Additional Notes"
+            value={formData.notes}
+            onChange={handleChange('notes')}
+            disabled={loading}
+            placeholder="Any additional information for the receiving physician..."
+          />
+        </Stack>
 
         <Box sx={{ mt: 3 }}>
           <Typography variant="body2" color="text.secondary">
