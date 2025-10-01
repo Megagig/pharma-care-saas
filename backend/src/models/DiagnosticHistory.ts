@@ -235,9 +235,22 @@ const diagnosticHistorySchema = new Schema(
                 urgency: {
                     type: String,
                     enum: ['immediate', 'within_24h', 'routine'],
+                    required: function(this: any) {
+                        return this.recommended === true;
+                    },
                 },
-                specialty: String,
-                reason: String,
+                specialty: {
+                    type: String,
+                    required: function(this: any) {
+                        return this.recommended === true;
+                    },
+                },
+                reason: {
+                    type: String,
+                    required: function(this: any) {
+                        return this.recommended === true;
+                    },
+                },
             },
             disclaimer: String,
             confidenceScore: Number,

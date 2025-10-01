@@ -10,6 +10,7 @@ import openRouterService, {
 import { AuthRequest } from '../middlewares/auth';
 import logger from '../utils/logger';
 import { createAuditLog } from '../utils/responseHelpers';
+import { cleanAIAnalysis, validateAIAnalysis, generateAnalysisSummary } from '../utils/aiAnalysisHelpers';
 // Note: Drug interaction service integration will be added later
 
 /**
@@ -114,6 +115,23 @@ export const generateDiagnosticAnalysis = async (
     const aiResult =
       await openRouterService.generateDiagnosticAnalysis(diagnosticInput);
 
+    // Clean AI analysis data to handle null/undefined values
+    const cleanedAnalysis = cleanAIAnalysis({
+      ...aiResult.analysis,
+      processingTime: aiResult.processingTime,
+    });
+
+    // Validate the cleaned analysis
+    const validation = validateAIAnalysis(cleanedAnalysis);
+    if (!validation.isValid) {
+      logger.warn('AI analysis validation failed', {
+        errors: validation.errors,
+        patientId,
+        pharmacistId: userId,
+      });
+      // Continue with cleaned data but log the issues
+    }
+
     // Check for drug interactions if medications are provided
     const drugInteractions: any[] = [];
     if (currentMedications && currentMedications.length > 1) {
@@ -141,10 +159,7 @@ export const generateDiagnosticAnalysis = async (
       labResults,
       currentMedications,
       vitalSigns,
-      aiAnalysis: {
-        ...aiResult.analysis,
-        processingTime: aiResult.processingTime,
-      },
+      aiAnalysis: cleanedAnalysis,
       drugInteractions,
       patientConsent: {
         provided: patientConsent.provided,
@@ -177,10 +192,7 @@ export const generateDiagnosticAnalysis = async (
       diagnosticCaseId: diagnosticCase._id,
       pharmacistId: userId,
       workplaceId,
-      analysisSnapshot: {
-        ...aiResult.analysis,
-        processingTime: aiResult.processingTime,
-      },
+      analysisSnapshot: cleanedAnalysis,
       clinicalContext: {
         symptoms,
         vitalSigns,
@@ -211,12 +223,12 @@ export const generateDiagnosticAnalysis = async (
     });
 
     // Generate referral document if recommended
-    if (aiResult.analysis.referralRecommendation?.recommended) {
+    if (cleanedAnalysis.referralRecommendation?.recommended) {
       diagnosticHistory.referral = {
         generated: true,
         generatedAt: new Date(),
-        specialty: aiResult.analysis.referralRecommendation.specialty,
-        urgency: aiResult.analysis.referralRecommendation.urgency,
+        specialty: cleanedAnalysis.referralRecommendation.specialty || 'general_medicine',
+        urgency: cleanedAnalysis.referralRecommendation.urgency || 'routine',
         status: 'pending',
       };
     }
@@ -244,14 +256,15 @@ export const generateDiagnosticAnalysis = async (
     logger.info('AI diagnostic analysis completed', {
       caseId: diagnosticCase.caseId,
       processingTime: aiResult.processingTime,
-      confidenceScore: aiResult.analysis.confidenceScore,
+      confidenceScore: cleanedAnalysis.confidenceScore,
+      summary: generateAnalysisSummary(cleanedAnalysis),
     });
 
     res.status(200).json({
       success: true,
       data: {
         caseId: diagnosticCase.caseId,
-        analysis: aiResult.analysis,
+        analysis: cleanedAnalysis,
         drugInteractions,
         processingTime: aiResult.processingTime,
         tokensUsed: aiResult.usage.total_tokens,

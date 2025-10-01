@@ -12,6 +12,7 @@ const Patient_1 = __importDefault(require("../models/Patient"));
 const openRouterService_1 = __importDefault(require("../services/openRouterService"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const responseHelpers_1 = require("../utils/responseHelpers");
+const aiAnalysisHelpers_1 = require("../utils/aiAnalysisHelpers");
 const generateDiagnosticAnalysis = async (req, res) => {
     try {
         logger_1.default.info('Diagnostic analysis request received:', {
@@ -80,6 +81,18 @@ const generateDiagnosticAnalysis = async (req, res) => {
             symptomsCount: symptoms.subjective.length + symptoms.objective.length,
         });
         const aiResult = await openRouterService_1.default.generateDiagnosticAnalysis(diagnosticInput);
+        const cleanedAnalysis = (0, aiAnalysisHelpers_1.cleanAIAnalysis)({
+            ...aiResult.analysis,
+            processingTime: aiResult.processingTime,
+        });
+        const validation = (0, aiAnalysisHelpers_1.validateAIAnalysis)(cleanedAnalysis);
+        if (!validation.isValid) {
+            logger_1.default.warn('AI analysis validation failed', {
+                errors: validation.errors,
+                patientId,
+                pharmacistId: userId,
+            });
+        }
         const drugInteractions = [];
         if (currentMedications && currentMedications.length > 1) {
             try {
@@ -102,10 +115,7 @@ const generateDiagnosticAnalysis = async (req, res) => {
             labResults,
             currentMedications,
             vitalSigns,
-            aiAnalysis: {
-                ...aiResult.analysis,
-                processingTime: aiResult.processingTime,
-            },
+            aiAnalysis: cleanedAnalysis,
             drugInteractions,
             patientConsent: {
                 provided: patientConsent.provided,
@@ -135,10 +145,7 @@ const generateDiagnosticAnalysis = async (req, res) => {
             diagnosticCaseId: diagnosticCase._id,
             pharmacistId: userId,
             workplaceId,
-            analysisSnapshot: {
-                ...aiResult.analysis,
-                processingTime: aiResult.processingTime,
-            },
+            analysisSnapshot: cleanedAnalysis,
             clinicalContext: {
                 symptoms,
                 vitalSigns,
@@ -167,12 +174,12 @@ const generateDiagnosticAnalysis = async (req, res) => {
             },
             status: 'active',
         });
-        if (aiResult.analysis.referralRecommendation?.recommended) {
+        if (cleanedAnalysis.referralRecommendation?.recommended) {
             diagnosticHistory.referral = {
                 generated: true,
                 generatedAt: new Date(),
-                specialty: aiResult.analysis.referralRecommendation.specialty,
-                urgency: aiResult.analysis.referralRecommendation.urgency,
+                specialty: cleanedAnalysis.referralRecommendation.specialty || 'general_medicine',
+                urgency: cleanedAnalysis.referralRecommendation.urgency || 'routine',
                 status: 'pending',
             };
         }
@@ -190,13 +197,14 @@ const generateDiagnosticAnalysis = async (req, res) => {
         logger_1.default.info('AI diagnostic analysis completed', {
             caseId: diagnosticCase.caseId,
             processingTime: aiResult.processingTime,
-            confidenceScore: aiResult.analysis.confidenceScore,
+            confidenceScore: cleanedAnalysis.confidenceScore,
+            summary: (0, aiAnalysisHelpers_1.generateAnalysisSummary)(cleanedAnalysis),
         });
         res.status(200).json({
             success: true,
             data: {
                 caseId: diagnosticCase.caseId,
-                analysis: aiResult.analysis,
+                analysis: cleanedAnalysis,
                 drugInteractions,
                 processingTime: aiResult.processingTime,
                 tokensUsed: aiResult.usage.total_tokens,

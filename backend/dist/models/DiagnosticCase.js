@@ -144,9 +144,22 @@ const diagnosticCaseSchema = new mongoose_1.Schema({
             urgency: {
                 type: String,
                 enum: ['immediate', 'within_24h', 'routine'],
+                required: function () {
+                    return this.recommended === true;
+                },
             },
-            specialty: String,
-            reason: String,
+            specialty: {
+                type: String,
+                required: function () {
+                    return this.recommended === true;
+                },
+            },
+            reason: {
+                type: String,
+                required: function () {
+                    return this.recommended === true;
+                },
+            },
         },
         disclaimer: String,
         confidenceScore: Number,
