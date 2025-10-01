@@ -194,8 +194,8 @@ export const useGenerateReferralDocument = () => {
   const { showSuccess, showError } = useNotifications();
 
   return useMutation({
-    mutationFn: (historyId: string) => 
-      diagnosticHistoryService.generateReferralDocument(historyId),
+    mutationFn: ({ caseId, data }: { caseId: string; data: any }) => 
+      diagnosticHistoryService.generateCaseReferralDocument(caseId, data),
     onSuccess: (data, historyId) => {
       showSuccess({
         title: 'Referral Generated',
@@ -274,4 +274,57 @@ export const useDiagnosticDashboardStats = () => {
       enabled: true,
     }
   );
+};
+
+/**
+ * Hook to mark case for follow-up
+ */
+export const useMarkCaseForFollowUp = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ caseId, data }: { caseId: string; data: any }) =>
+      diagnosticHistoryService.markCaseForFollowUp(caseId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: diagnosticHistoryKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to mark case as completed
+ */
+export const useMarkCaseAsCompleted = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ caseId, data }: { caseId: string; data: any }) =>
+      diagnosticHistoryService.markCaseAsCompleted(caseId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: diagnosticHistoryKeys.all });
+    },
+  });
+};
+
+
+
+/**
+ * Hook to get follow-up cases
+ */
+export const useFollowUpCases = (
+  options: {
+    page?: number;
+    limit?: number;
+    overdue?: boolean;
+  } = {},
+  queryOptions: {
+    enabled?: boolean;
+  } = {}
+) => {
+  return useQuery({
+    queryKey: ['diagnostics', 'follow-up', options],
+    queryFn: () => diagnosticHistoryService.getFollowUpCases(options),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: queryOptions.enabled !== false,
+  });
 };

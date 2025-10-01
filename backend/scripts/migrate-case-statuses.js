@@ -36,6 +36,17 @@ async function migrateCaseStatuses() {
       console.log(`Updated ${result.modifiedCount} cases from "draft" to "pending_review"`);
     }
 
+    // Also check for any cases that might need the new follow_up status structure
+    const followUpCases = await DiagnosticCase.find({
+      status: 'follow_up',
+      followUp: { $exists: false }
+    }).toArray();
+
+    if (followUpCases.length > 0) {
+      console.log(`Found ${followUpCases.length} follow_up cases without followUp structure`);
+      // These would need manual review as we don't have the original follow-up data
+    }
+
     // Show summary of current statuses
     const statusCounts = await DiagnosticCase.aggregate([
       {

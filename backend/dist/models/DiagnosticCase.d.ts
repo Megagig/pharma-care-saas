@@ -84,6 +84,36 @@ export interface IDiagnosticCase extends Document {
         reviewedAt?: Date;
         reviewedBy?: mongoose.Types.ObjectId;
     };
+    followUp?: {
+        scheduledDate: Date;
+        reason: string;
+        completed: boolean;
+        completedDate?: Date;
+        outcome?: string;
+        nextSteps?: string;
+    };
+    referral?: {
+        generated: boolean;
+        generatedAt?: Date;
+        document?: {
+            content: string;
+            template: string;
+            lastModified: Date;
+            modifiedBy: mongoose.Types.ObjectId;
+        };
+        status: 'pending' | 'sent' | 'acknowledged' | 'completed';
+        sentAt?: Date;
+        sentTo?: {
+            physicianName: string;
+            physicianEmail?: string;
+            specialty: string;
+            institution?: string;
+        };
+        acknowledgedAt?: Date;
+        completedAt?: Date;
+        feedback?: string;
+        trackingId?: string;
+    };
     patientConsent: {
         provided: boolean;
         consentDate: Date;
@@ -97,7 +127,7 @@ export interface IDiagnosticCase extends Document {
         requestId: string;
         processingTime: number;
     };
-    status: 'draft' | 'pending_review' | 'completed' | 'referred' | 'cancelled';
+    status: 'draft' | 'pending_review' | 'follow_up' | 'completed' | 'referred' | 'cancelled';
     completedAt?: Date;
     createdAt: Date;
     updatedAt: Date;

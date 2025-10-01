@@ -51,6 +51,7 @@ import {
   LazyAllDiagnosticCasesPage,
   LazyDiagnosticAnalyticsPage,
   LazyDiagnosticReferralsPage,
+  LazyFollowUpCasesPage,
   LazyReportsAnalyticsDashboard,
   LazyAdminDashboard,
   LazyFeatureFlagsPage,
@@ -610,6 +611,18 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyDiagnosticReferralsPage />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/follow-up"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyFollowUpCasesPage />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>

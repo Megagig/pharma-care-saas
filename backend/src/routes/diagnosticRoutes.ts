@@ -17,6 +17,11 @@ import {
   generateReferralDocument,
   compareDiagnosticHistories,
   debugDatabaseCounts,
+  markCaseForFollowUp,
+  markCaseAsCompleted,
+  generateCaseReferralDocument,
+  updateReferralDocument,
+  getFollowUpCases,
 } from '../controllers/diagnosticController';
 import {
   validateDiagnosticAnalysis,
@@ -281,6 +286,76 @@ router.post(
   requireFeature('clinical_decision_support'),
   auditLogger('COMPARE_DIAGNOSTIC_HISTORIES', 'data_analysis'),
   compareDiagnosticHistories
+);
+
+/**
+ * @route POST /api/diagnostics/cases/:caseId/follow-up
+ * @desc Mark case for follow-up
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.post(
+  '/cases/:caseId/follow-up',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('MARK_CASE_FOLLOW_UP', 'clinical_documentation'),
+  markCaseForFollowUp
+);
+
+/**
+ * @route POST /api/diagnostics/cases/:caseId/complete
+ * @desc Mark case as completed
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.post(
+  '/cases/:caseId/complete',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('MARK_CASE_COMPLETED', 'clinical_documentation'),
+  markCaseAsCompleted
+);
+
+/**
+ * @route POST /api/diagnostics/cases/:caseId/referral/generate
+ * @desc Generate referral document for case
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.post(
+  '/cases/:caseId/referral/generate',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('GENERATE_CASE_REFERRAL', 'clinical_documentation'),
+  generateCaseReferralDocument
+);
+
+/**
+ * @route PUT /api/diagnostics/cases/:caseId/referral/update
+ * @desc Update referral document
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.put(
+  '/cases/:caseId/referral/update',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('UPDATE_REFERRAL_DOCUMENT', 'clinical_documentation'),
+  updateReferralDocument
+);
+
+/**
+ * @route GET /api/diagnostics/follow-up
+ * @desc Get follow-up cases
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.get(
+  '/follow-up',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('VIEW_FOLLOW_UP_CASES', 'data_access'),
+  getFollowUpCases
 );
 
 export default router;

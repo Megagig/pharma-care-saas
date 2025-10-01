@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.compareDiagnosticHistories = exports.generateReferralDocument = exports.exportDiagnosticHistoryPDF = exports.getDiagnosticReferrals = exports.getAllDiagnosticCases = exports.getDiagnosticAnalytics = exports.addDiagnosticHistoryNote = exports.getPatientDiagnosticHistory = exports.saveDiagnosticNotes = exports.debugDatabaseCounts = exports.testAIConnection = exports.checkDrugInteractions = exports.getDiagnosticCase = exports.getDiagnosticHistory = exports.saveDiagnosticDecision = exports.generateDiagnosticAnalysis = void 0;
+exports.getFollowUpCases = exports.updateReferralDocument = exports.generateCaseReferralDocument = exports.markCaseAsCompleted = exports.markCaseForFollowUp = exports.compareDiagnosticHistories = exports.generateReferralDocument = exports.exportDiagnosticHistoryPDF = exports.getDiagnosticReferrals = exports.getAllDiagnosticCases = exports.getDiagnosticAnalytics = exports.addDiagnosticHistoryNote = exports.getPatientDiagnosticHistory = exports.saveDiagnosticNotes = exports.debugDatabaseCounts = exports.testAIConnection = exports.checkDrugInteractions = exports.getDiagnosticCase = exports.getDiagnosticHistory = exports.saveDiagnosticDecision = exports.generateDiagnosticAnalysis = void 0;
 const express_validator_1 = require("express-validator");
 const mongoose_1 = __importDefault(require("mongoose"));
 const DiagnosticCase_1 = __importDefault(require("../models/DiagnosticCase"));
@@ -1385,4 +1385,376 @@ const compareDiagnosticHistories = async (req, res) => {
     }
 };
 exports.compareDiagnosticHistories = compareDiagnosticHistories;
+const markCaseForFollowUp = async (req, res) => {
+    try {
+        const { caseId } = req.params;
+        const { followUpDate, reason, notes } = req.body;
+        const userId = req.user._id;
+        const workplaceId = req.user.workplaceId;
+        if (!followUpDate || !reason) {
+            res.status(400).json({
+                success: false,
+                message: 'Follow-up date and reason are required',
+            });
+            return;
+        }
+        const diagnosticCase = await DiagnosticCase_1.default.findOne({
+            caseId,
+            workplaceId,
+            status: 'pending_review',
+        });
+        if (!diagnosticCase) {
+            res.status(404).json({
+                success: false,
+                message: 'Case not found or not available for review',
+            });
+            return;
+        }
+        diagnosticCase.status = 'follow_up';
+        diagnosticCase.followUp = {
+            scheduledDate: new Date(followUpDate),
+            reason,
+            completed: false,
+        };
+        diagnosticCase.pharmacistDecision.notes = notes || '';
+        diagnosticCase.pharmacistDecision.reviewedAt = new Date();
+        diagnosticCase.pharmacistDecision.reviewedBy = userId;
+        await diagnosticCase.save();
+        logger_1.default.info('Case marked for follow-up', {
+            caseId,
+            followUpDate,
+            reason,
+            userId,
+        });
+        res.status(200).json({
+            success: true,
+            message: 'Case marked for follow-up successfully',
+            data: {
+                caseId: diagnosticCase.caseId,
+                status: diagnosticCase.status,
+                followUpDate: diagnosticCase.followUp?.scheduledDate,
+            },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Failed to mark case for follow-up', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            caseId: req.params.caseId,
+            userId: req.user?._id,
+        });
+        res.status(500).json({
+            success: false,
+            message: 'Failed to mark case for follow-up',
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
+        });
+    }
+};
+exports.markCaseForFollowUp = markCaseForFollowUp;
+const markCaseAsCompleted = async (req, res) => {
+    try {
+        const { caseId } = req.params;
+        const { notes, finalRecommendation, counselingPoints } = req.body;
+        const userId = req.user._id;
+        const workplaceId = req.user.workplaceId;
+        const diagnosticCase = await DiagnosticCase_1.default.findOne({
+            caseId,
+            workplaceId,
+            status: { $in: ['pending_review', 'follow_up', 'referred'] },
+        });
+        if (!diagnosticCase) {
+            res.status(404).json({
+                success: false,
+                message: 'Case not found or not available for completion',
+            });
+            return;
+        }
+        diagnosticCase.status = 'completed';
+        diagnosticCase.completedAt = new Date();
+        diagnosticCase.pharmacistDecision.accepted = true;
+        diagnosticCase.pharmacistDecision.notes = notes || '';
+        diagnosticCase.pharmacistDecision.finalRecommendation = finalRecommendation || '';
+        diagnosticCase.pharmacistDecision.counselingPoints = counselingPoints || [];
+        diagnosticCase.pharmacistDecision.reviewedAt = new Date();
+        diagnosticCase.pharmacistDecision.reviewedBy = userId;
+        if (diagnosticCase.followUp) {
+            diagnosticCase.followUp.completed = true;
+            diagnosticCase.followUp.completedDate = new Date();
+        }
+        await diagnosticCase.save();
+        logger_1.default.info('Case marked as completed', {
+            caseId,
+            userId,
+            previousStatus: diagnosticCase.status,
+        });
+        res.status(200).json({
+            success: true,
+            message: 'Case marked as completed successfully',
+            data: {
+                caseId: diagnosticCase.caseId,
+                status: diagnosticCase.status,
+                completedAt: diagnosticCase.completedAt,
+            },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Failed to mark case as completed', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            caseId: req.params.caseId,
+            userId: req.user?._id,
+        });
+        res.status(500).json({
+            success: false,
+            message: 'Failed to mark case as completed',
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
+        });
+    }
+};
+exports.markCaseAsCompleted = markCaseAsCompleted;
+const generateCaseReferralDocument = async (req, res) => {
+    try {
+        const { caseId } = req.params;
+        const { notes, physicianInfo } = req.body;
+        const userId = req.user._id;
+        const workplaceId = req.user.workplaceId;
+        const diagnosticCase = await DiagnosticCase_1.default.findOne({
+            caseId,
+            workplaceId,
+            status: 'pending_review',
+        })
+            .populate('patientId', 'firstName lastName age gender dateOfBirth')
+            .populate('pharmacistId', 'firstName lastName credentials');
+        if (!diagnosticCase) {
+            res.status(404).json({
+                success: false,
+                message: 'Case not found or not available for referral',
+            });
+            return;
+        }
+        const patient = diagnosticCase.patientId;
+        const pharmacist = diagnosticCase.pharmacistId;
+        const referralContent = `
+MEDICAL REFERRAL DOCUMENT
+
+Patient Information:
+- Name: ${patient.firstName} ${patient.lastName}
+- Age: ${patient.age}
+- Gender: ${patient.gender}
+- Date of Birth: ${patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}
+
+Referring Pharmacist:
+- Name: ${pharmacist.firstName} ${pharmacist.lastName}
+- Credentials: ${pharmacist.credentials || 'PharmD'}
+
+Clinical Presentation:
+Subjective Symptoms: ${diagnosticCase.symptoms.subjective.join(', ')}
+Objective Findings: ${diagnosticCase.symptoms.objective.join(', ')}
+Duration: ${diagnosticCase.symptoms.duration}
+Severity: ${diagnosticCase.symptoms.severity}
+Onset: ${diagnosticCase.symptoms.onset}
+
+AI Analysis Summary:
+Primary Differential Diagnoses:
+${diagnosticCase.aiAnalysis.differentialDiagnoses.slice(0, 3).map((dx, index) => `${index + 1}. ${dx.condition} (${Math.round(dx.probability)}% probability)
+     Reasoning: ${dx.reasoning}`).join('\n')}
+
+Recommended Tests:
+${diagnosticCase.aiAnalysis.recommendedTests.map((test, index) => `${index + 1}. ${test.testName} (${test.priority})
+     Reasoning: ${test.reasoning}`).join('\n')}
+
+Red Flags Identified:
+${diagnosticCase.aiAnalysis.redFlags.length > 0
+            ? diagnosticCase.aiAnalysis.redFlags.map((flag, index) => `${index + 1}. ${flag.flag} (${flag.severity})
+         Action: ${flag.action}`).join('\n')
+            : 'None identified'}
+
+Pharmacist Notes:
+${notes || 'No additional notes provided'}
+
+Referral Specialty: ${physicianInfo?.specialty || 'General Medicine'}
+Urgency: ${diagnosticCase.aiAnalysis.referralRecommendation?.urgency || 'Routine'}
+
+AI Confidence Score: ${Math.round(diagnosticCase.aiAnalysis.confidenceScore)}%
+
+Date: ${new Date().toLocaleDateString()}
+Time: ${new Date().toLocaleTimeString()}
+
+This referral was generated with AI assistance and reviewed by a licensed pharmacist.
+    `.trim();
+        diagnosticCase.status = 'referred';
+        diagnosticCase.referral = {
+            generated: true,
+            generatedAt: new Date(),
+            document: {
+                content: referralContent,
+                template: 'standard_referral',
+                lastModified: new Date(),
+                modifiedBy: userId,
+            },
+            status: 'pending',
+            sentTo: physicianInfo,
+        };
+        diagnosticCase.pharmacistDecision.notes = notes || '';
+        diagnosticCase.pharmacistDecision.reviewedAt = new Date();
+        diagnosticCase.pharmacistDecision.reviewedBy = userId;
+        await diagnosticCase.save();
+        logger_1.default.info('Referral document generated', {
+            caseId,
+            userId,
+            documentLength: referralContent.length,
+        });
+        res.status(200).json({
+            success: true,
+            message: 'Referral document generated successfully',
+            data: {
+                caseId: diagnosticCase.caseId,
+                status: diagnosticCase.status,
+                referralDocument: {
+                    content: referralContent,
+                    template: 'standard_referral',
+                    generatedAt: diagnosticCase.referral?.generatedAt,
+                },
+            },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Failed to generate referral document', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            caseId: req.params.caseId,
+            userId: req.user?._id,
+        });
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate referral document',
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
+        });
+    }
+};
+exports.generateCaseReferralDocument = generateCaseReferralDocument;
+const updateReferralDocument = async (req, res) => {
+    try {
+        const { caseId } = req.params;
+        const { content } = req.body;
+        const userId = req.user._id;
+        const workplaceId = req.user.workplaceId;
+        if (!content) {
+            res.status(400).json({
+                success: false,
+                message: 'Referral document content is required',
+            });
+            return;
+        }
+        const diagnosticCase = await DiagnosticCase_1.default.findOne({
+            caseId,
+            workplaceId,
+            status: 'referred',
+            'referral.generated': true,
+        });
+        if (!diagnosticCase || !diagnosticCase.referral) {
+            res.status(404).json({
+                success: false,
+                message: 'Referral document not found or case not in referred status',
+            });
+            return;
+        }
+        diagnosticCase.referral.document = {
+            ...diagnosticCase.referral.document,
+            content,
+            lastModified: new Date(),
+            modifiedBy: userId,
+        };
+        await diagnosticCase.save();
+        logger_1.default.info('Referral document updated', {
+            caseId,
+            userId,
+            contentLength: content.length,
+        });
+        res.status(200).json({
+            success: true,
+            message: 'Referral document updated successfully',
+            data: {
+                caseId: diagnosticCase.caseId,
+                lastModified: diagnosticCase.referral.document?.lastModified,
+            },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Failed to update referral document', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            caseId: req.params.caseId,
+            userId: req.user?._id,
+        });
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update referral document',
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
+        });
+    }
+};
+exports.updateReferralDocument = updateReferralDocument;
+const getFollowUpCases = async (req, res) => {
+    try {
+        const { page = 1, limit = 10, overdue = false } = req.query;
+        const workplaceId = req.user.workplaceId;
+        const skip = (Number(page) - 1) * Number(limit);
+        let matchFilter = {
+            workplaceId,
+            status: 'follow_up',
+            'followUp.completed': false,
+        };
+        if (overdue === 'true') {
+            matchFilter['followUp.scheduledDate'] = { $lt: new Date() };
+        }
+        const followUpCases = await DiagnosticCase_1.default.find(matchFilter)
+            .populate('patientId', 'firstName lastName age gender')
+            .populate('pharmacistId', 'firstName lastName')
+            .sort({ 'followUp.scheduledDate': 1 })
+            .skip(skip)
+            .limit(Number(limit));
+        const total = await DiagnosticCase_1.default.countDocuments(matchFilter);
+        res.status(200).json({
+            success: true,
+            data: {
+                cases: followUpCases,
+                pagination: {
+                    current: Number(page),
+                    total: Math.ceil(total / Number(limit)),
+                    count: followUpCases.length,
+                    totalCases: total,
+                },
+            },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Failed to get follow-up cases', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            userId: req.user?._id,
+        });
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get follow-up cases',
+            error: process.env.NODE_ENV === 'development'
+                ? error instanceof Error
+                    ? error.message
+                    : 'Unknown error'
+                : 'Internal server error',
+        });
+    }
+};
+exports.getFollowUpCases = getFollowUpCases;
 //# sourceMappingURL=diagnosticController.js.map

@@ -444,6 +444,71 @@ class DiagnosticHistoryService {
     
     return response.data.data;
   }
+
+  /**
+   * Mark case for follow-up
+   */
+  async markCaseForFollowUp(caseId: string, data: {
+    followUpDate: Date;
+    reason: string;
+    notes: string;
+  }): Promise<any> {
+    const response = await apiClient.post(`/diagnostics/cases/${caseId}/follow-up`, data);
+    return response.data;
+  }
+
+  /**
+   * Mark case as completed
+   */
+  async markCaseAsCompleted(caseId: string, data: {
+    notes: string;
+    finalRecommendation: string;
+    counselingPoints: string[];
+  }): Promise<any> {
+    const response = await apiClient.post(`/diagnostics/cases/${caseId}/complete`, data);
+    return response.data;
+  }
+
+  /**
+   * Generate case referral document
+   */
+  async generateCaseReferralDocument(caseId: string, data: {
+    notes: string;
+    physicianInfo: any;
+  }): Promise<any> {
+    const response = await apiClient.post(`/diagnostics/cases/${caseId}/referral/generate`, data);
+    return response.data;
+  }
+
+  /**
+   * Update referral document
+   */
+  async updateReferralDocument(caseId: string, content: string): Promise<any> {
+    const response = await apiClient.put(`/diagnostics/cases/${caseId}/referral/update`, { content });
+    return response.data;
+  }
+
+  /**
+   * Get follow-up cases
+   */
+  async getFollowUpCases(options: {
+    page?: number;
+    limit?: number;
+    overdue?: boolean;
+  } = {}): Promise<{
+    cases: any[];
+    pagination: {
+      current: number;
+      total: number;
+      count: number;
+      totalCases: number;
+    };
+  }> {
+    const response = await apiClient.get('/diagnostics/follow-up', {
+      params: options,
+    });
+    return response.data.data;
+  }
 }
 
 export const diagnosticHistoryService = new DiagnosticHistoryService();

@@ -43,11 +43,17 @@ import {
   useDiagnosticDashboardStats,
   useRecentDiagnosticActivity,
   useDiagnosticReferrals,
+  useMarkCaseForFollowUp,
+  useMarkCaseAsCompleted,
+  useGenerateReferralDocument,
 } from '../../../queries/useDiagnosticHistory';
+import CaseReviewDialog from '../../../components/diagnostics/CaseReviewDialog';
 
 const DiagnosticDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [refreshing, setRefreshing] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<any>(null);
 
   // Use new hooks for real data
   const {
@@ -91,6 +97,11 @@ const DiagnosticDashboard: React.FC = () => {
   const recentCases = recentActivity?.cases || [];
   const pendingReferrals = referralsData?.referrals || [];
 
+  // Mutations for case actions
+  const markFollowUpMutation = useMarkCaseForFollowUp();
+  const markCompletedMutation = useMarkCaseAsCompleted();
+  const generateReferralMutation = useGenerateReferralDocument();
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -123,8 +134,25 @@ const DiagnosticDashboard: React.FC = () => {
     navigate('/pharmacy/diagnostics/case/new');
   };
 
-  const handleViewCase = (caseId: string) => {
-    navigate(`/pharmacy/diagnostics/case/${caseId}/results`);
+  const handleViewCase = (case_: any) => {
+    if (case_.status === 'pending_review') {
+      setSelectedCase(case_);
+      setReviewDialogOpen(true);
+    } else {
+      navigate(`/pharmacy/diagnostics/case/${case_.caseId}/results`);
+    }
+  };
+
+  const handleMarkFollowUp = async (caseId: string, data: any) => {
+    await markFollowUpMutation.mutateAsync({ caseId, data });
+  };
+
+  const handleMarkCompleted = async (caseId: string, data: any) => {
+    await markCompletedMutation.mutateAsync({ caseId, data });
+  };
+
+  const handleGenerateReferral = async (caseId: string, data: any) => {
+    await generateReferralMutation.mutateAsync({ caseId, data });
   };
 
   return (
@@ -405,7 +433,7 @@ const DiagnosticDashboard: React.FC = () => {
                               bgcolor: 'action.hover',
                             },
                           }}
-                          onClick={() => handleViewCase(case_.caseId)}
+                          onClick={() => handleViewCase(case_)}
                         >
                           <ListItemAvatar>
                             <Avatar sx={{ bgcolor: 'primary.main' }}>
@@ -439,6 +467,8 @@ const DiagnosticDashboard: React.FC = () => {
                                   ? 'Completed'
                                   : case_.status === 'referred'
                                   ? 'Referred'
+                                  : case_.status === 'follow_up'
+                                  ? 'Follow-up'
                                   : case_.status === 'cancelled'
                                   ? 'Cancelled'
                                   : case_.status === 'draft'
@@ -452,9 +482,11 @@ const DiagnosticDashboard: React.FC = () => {
                                   ? 'info'
                                   : case_.status === 'referred'
                                   ? 'secondary'
+                                  : case_.status === 'follow_up'
+                                  ? 'warning'
                                   : case_.status === 'cancelled'
                                   ? 'error'
-                                  : 'warning'
+                                  : 'default'
                               }
                               size="small"
                               sx={{ mb: 1 }}
@@ -597,7 +629,85 @@ const DiagnosticDashboard: React.FC = () => {
             </Fade>
           </Box>
         </Grid>
+
+        {/* Follow-up Required Section */}
+        <Grid item xs={12} md={4}>
+          <Fade in timeout={1600}>
+            <Card>
+              <CardContent>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                    Follow-up Required
+                  </Typography>
+                  <Chip
+                    label={stats.pendingFollowUps}
+                    color="warning"
+                    size="small"
+                  />
+                </Box>
+                
+                {statsLoading ? (
+                  <Box>
+                    {[...Array(2)].map((_, index) => (
+                      <Box key={index} sx={{ mb: 2 }}>
+                        <Skeleton variant="text" width="80%" />
+                        <Skeleton variant="text" width="60%" />
+                      </Box>
+                    ))}
+                  </Box>
+                ) : stats.pendingFollowUps === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 2 }}>
+                    <ScheduleIcon sx={{ fontSize: 32, color: 'text.secondary', mb: 1 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      No follow-ups required
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 2 }}>
+                    <ScheduleIcon sx={{ fontSize: 32, color: 'warning.main', mb: 1 }} />
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {stats.pendingFollowUps} cases need follow-up
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => navigate('/pharmacy/diagnostics/follow-up')}
+                      sx={{ mt: 1, textTransform: 'none' }}
+                    >
+                      View Follow-ups
+                    </Button>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Fade>
+        </Grid>
       </Grid>
+
+      {/* Case Review Dialog */}
+      <CaseReviewDialog
+        open={reviewDialogOpen}
+        onClose={() => {
+          setReviewDialogOpen(false);
+          setSelectedCase(null);
+        }}
+        case={selectedCase}
+        onMarkFollowUp={handleMarkFollowUp}
+        onMarkCompleted={handleMarkCompleted}
+        onGenerateReferral={handleGenerateReferral}
+        loading={
+          markFollowUpMutation.isPending ||
+          markCompletedMutation.isPending ||
+          generateReferralMutation.isPending
+        }
+      />
     </Container>
   );
 };

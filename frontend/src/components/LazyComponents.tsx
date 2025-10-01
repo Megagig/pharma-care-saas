@@ -25,6 +25,7 @@ export const LazyComponentDemo = lazy(() => import('../modules/diagnostics/pages
 export const LazyAllDiagnosticCasesPage = lazy(() => import('../modules/diagnostics/pages/AllDiagnosticCasesPage'));
 export const LazyDiagnosticAnalyticsPage = lazy(() => import('../modules/diagnostics/pages/DiagnosticAnalyticsPage'));
 export const LazyDiagnosticReferralsPage = lazy(() => import('../modules/diagnostics/pages/DiagnosticReferralsPage'));
+export const LazyFollowUpCasesPage = lazy(() => import('../modules/diagnostics/pages/FollowUpCasesPage'));
 
 // Reports & Analytics
 export const LazyReportsAnalyticsDashboard = lazy(() => 
