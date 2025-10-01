@@ -630,6 +630,64 @@ export const testAIConnection = async (
 };
 
 /**
+ * Debug endpoint to check database counts (development only)
+ */
+export const debugDatabaseCounts = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (process.env.NODE_ENV !== 'development') {
+      res.status(404).json({
+        success: false,
+        message: 'Endpoint not available in production',
+      });
+      return;
+    }
+
+    const workplaceId = req.user!.workplaceId;
+
+    const diagnosticCasesCount = await DiagnosticCase.countDocuments({ workplaceId });
+    const diagnosticHistoryCount = await DiagnosticHistory.countDocuments({ workplaceId });
+    const activeHistoryCount = await DiagnosticHistory.countDocuments({ 
+      workplaceId, 
+      status: 'active' 
+    });
+
+    // Get sample records
+    const sampleCase = await DiagnosticCase.findOne({ workplaceId }).select('caseId status createdAt');
+    const sampleHistory = await DiagnosticHistory.findOne({ workplaceId }).select('caseId status createdAt');
+
+    res.status(200).json({
+      success: true,
+      data: {
+        counts: {
+          diagnosticCases: diagnosticCasesCount,
+          diagnosticHistory: diagnosticHistoryCount,
+          activeHistory: activeHistoryCount,
+        },
+        samples: {
+          case: sampleCase,
+          history: sampleHistory,
+        },
+        workplaceId: workplaceId.toString(),
+      },
+    });
+  } catch (error) {
+    logger.error('Debug database counts failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Debug failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+/**
  * Save notes for a diagnostic case
  */
 export const saveDiagnosticNotes = async (
@@ -940,7 +998,6 @@ export const getDiagnosticAnalytics = async (
 
     const matchFilter: any = {
       workplaceId,
-      status: 'active',
     };
 
     if (Object.keys(dateFilter).length > 0) {
@@ -951,94 +1008,195 @@ export const getDiagnosticAnalytics = async (
       matchFilter.patientId = new mongoose.Types.ObjectId(patientId as string);
     }
 
-    // Aggregate analytics data
-    const analytics = await DiagnosticHistory.aggregate([
-      { $match: matchFilter },
-      {
-        $group: {
-          _id: null,
-          totalCases: { $sum: 1 },
-          averageConfidence: { $avg: '$analysisSnapshot.confidenceScore' },
-          averageProcessingTime: { $avg: '$analysisSnapshot.processingTime' },
-          completedCases: {
-            $sum: {
-              $cond: [{ $eq: ['$followUp.completed', true] }, 1, 0],
-            },
-          },
-          pendingFollowUps: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ['$followUp.required', true] },
-                    { $eq: ['$followUp.completed', false] },
-                  ],
-                },
-                1,
-                0,
-              ],
-            },
-          },
-          referralsGenerated: {
-            $sum: {
-              $cond: [{ $eq: ['$referral.generated', true] }, 1, 0],
-            },
-          },
-        },
-      },
-    ]);
+    // First try DiagnosticHistory, then fallback to DiagnosticCase
+    let analytics: any[] = [];
+    let topDiagnoses: any[] = [];
+    let completionTrends: any[] = [];
 
-    // Get top diagnoses
-    const topDiagnoses = await DiagnosticHistory.aggregate([
-      { $match: matchFilter },
-      { $unwind: '$analysisSnapshot.differentialDiagnoses' },
-      {
-        $group: {
-          _id: '$analysisSnapshot.differentialDiagnoses.condition',
-          count: { $sum: 1 },
-          averageConfidence: {
-            $avg: '$analysisSnapshot.differentialDiagnoses.probability',
-          },
-        },
-      },
-      { $sort: { count: -1 } },
-      { $limit: 10 },
-      {
-        $project: {
-          condition: '$_id',
-          count: 1,
-          averageConfidence: { $round: ['$averageConfidence', 2] },
-          _id: 0,
-        },
-      },
-    ]);
+    // Check DiagnosticHistory first
+    const historyCount = await DiagnosticHistory.countDocuments({
+      ...matchFilter,
+      status: 'active',
+    });
 
-    // Get case completion trends (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const completionTrends = await DiagnosticHistory.aggregate([
-      {
-        $match: {
-          ...matchFilter,
-          createdAt: { $gte: thirtyDaysAgo },
-        },
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
-          },
-          casesCreated: { $sum: 1 },
-          casesCompleted: {
-            $sum: {
-              $cond: [{ $eq: ['$followUp.completed', true] }, 1, 0],
+    if (historyCount > 0) {
+      // Use DiagnosticHistory data
+      const historyMatchFilter = { ...matchFilter, status: 'active' };
+      
+      analytics = await DiagnosticHistory.aggregate([
+        { $match: historyMatchFilter },
+        {
+          $group: {
+            _id: null,
+            totalCases: { $sum: 1 },
+            averageConfidence: { $avg: '$analysisSnapshot.confidenceScore' },
+            averageProcessingTime: { $avg: '$analysisSnapshot.processingTime' },
+            completedCases: {
+              $sum: {
+                $cond: [{ $eq: ['$followUp.completed', true] }, 1, 0],
+              },
+            },
+            pendingFollowUps: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ['$followUp.required', true] },
+                      { $eq: ['$followUp.completed', false] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+            referralsGenerated: {
+              $sum: {
+                $cond: [{ $eq: ['$referral.generated', true] }, 1, 0],
+              },
             },
           },
         },
-      },
-      { $sort: { _id: 1 } },
-    ]);
+      ]);
+
+      topDiagnoses = await DiagnosticHistory.aggregate([
+        { $match: historyMatchFilter },
+        { $unwind: '$analysisSnapshot.differentialDiagnoses' },
+        {
+          $group: {
+            _id: '$analysisSnapshot.differentialDiagnoses.condition',
+            count: { $sum: 1 },
+            averageConfidence: {
+              $avg: '$analysisSnapshot.differentialDiagnoses.probability',
+            },
+          },
+        },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+        {
+          $project: {
+            condition: '$_id',
+            count: 1,
+            averageConfidence: { $round: ['$averageConfidence', 2] },
+            _id: 0,
+          },
+        },
+      ]);
+
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      completionTrends = await DiagnosticHistory.aggregate([
+        {
+          $match: {
+            ...historyMatchFilter,
+            createdAt: { $gte: thirtyDaysAgo },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+            },
+            casesCreated: { $sum: 1 },
+            casesCompleted: {
+              $sum: {
+                $cond: [{ $eq: ['$followUp.completed', true] }, 1, 0],
+              },
+            },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+    } else {
+      // Fallback to DiagnosticCase data
+      logger.info('No DiagnosticHistory records found, using DiagnosticCase data for analytics');
+      
+      analytics = await DiagnosticCase.aggregate([
+        { $match: matchFilter },
+        {
+          $group: {
+            _id: null,
+            totalCases: { $sum: 1 },
+            averageConfidence: { $avg: '$aiAnalysis.confidenceScore' },
+            averageProcessingTime: { $avg: '$aiRequestData.processingTime' },
+            completedCases: {
+              $sum: {
+                $cond: [{ $eq: ['$status', 'completed'] }, 1, 0],
+              },
+            },
+            pendingFollowUps: {
+              $sum: {
+                $cond: [
+                  { $eq: ['$pharmacistDecision.followUpRequired', true] },
+                  1,
+                  0,
+                ],
+              },
+            },
+            referralsGenerated: {
+              $sum: {
+                $cond: [
+                  { $eq: ['$aiAnalysis.referralRecommendation.recommended', true] },
+                  1,
+                  0,
+                ],
+              },
+            },
+          },
+        },
+      ]);
+
+      topDiagnoses = await DiagnosticCase.aggregate([
+        { $match: matchFilter },
+        { $unwind: '$aiAnalysis.differentialDiagnoses' },
+        {
+          $group: {
+            _id: '$aiAnalysis.differentialDiagnoses.condition',
+            count: { $sum: 1 },
+            averageConfidence: {
+              $avg: '$aiAnalysis.differentialDiagnoses.probability',
+            },
+          },
+        },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+        {
+          $project: {
+            condition: '$_id',
+            count: 1,
+            averageConfidence: { $round: ['$averageConfidence', 2] },
+            _id: 0,
+          },
+        },
+      ]);
+
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      completionTrends = await DiagnosticCase.aggregate([
+        {
+          $match: {
+            ...matchFilter,
+            createdAt: { $gte: thirtyDaysAgo },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+            },
+            casesCreated: { $sum: 1 },
+            casesCompleted: {
+              $sum: {
+                $cond: [{ $eq: ['$status', 'completed'] }, 1, 0],
+              },
+            },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+    }
 
     const result = {
       summary: analytics[0] || {
@@ -1049,13 +1207,20 @@ export const getDiagnosticAnalytics = async (
         pendingFollowUps: 0,
         referralsGenerated: 0,
       },
-      topDiagnoses,
-      completionTrends,
+      topDiagnoses: topDiagnoses || [],
+      completionTrends: completionTrends || [],
       dateRange: {
         from: dateFrom || null,
         to: dateTo || null,
       },
     };
+
+    logger.info('Diagnostic analytics generated', {
+      historyRecords: historyCount,
+      totalCases: result.summary.totalCases,
+      topDiagnosesCount: result.topDiagnoses.length,
+      trendsCount: result.completionTrends.length,
+    });
 
     res.status(200).json({
       success: true,

@@ -16,6 +16,7 @@ import {
   exportDiagnosticHistoryPDF,
   generateReferralDocument,
   compareDiagnosticHistories,
+  debugDatabaseCounts,
 } from '../controllers/diagnosticController';
 import {
   validateDiagnosticAnalysis,
@@ -179,6 +180,17 @@ router.get(
   auth,
   auditLogger('AI_CONNECTION_TEST', 'system_security'),
   testAIConnection
+);
+
+/**
+ * @route GET /api/diagnostics/debug/counts
+ * @desc Debug endpoint to check database counts (Development only)
+ * @access Private
+ */
+router.get(
+  '/debug/counts',
+  auth,
+  debugDatabaseCounts
 );
 
 // New enhanced endpoints for diagnostic history management

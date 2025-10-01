@@ -6,6 +6,7 @@ export declare const getDiagnosticHistory: (req: AuthRequest, res: Response) => 
 export declare const getDiagnosticCase: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const checkDrugInteractions: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const testAIConnection: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const debugDatabaseCounts: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const saveDiagnosticNotes: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const getPatientDiagnosticHistory: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const addDiagnosticHistoryNote: (req: AuthRequest, res: Response) => Promise<void>;
