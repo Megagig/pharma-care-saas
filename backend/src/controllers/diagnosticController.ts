@@ -1377,8 +1377,7 @@ export const getDiagnosticReferrals = async (
       .populate('pharmacistId', 'firstName lastName')
       .sort({ 'referral.generatedAt': -1 })
       .skip(skip)
-      .limit(Number(limit))
-      .select('patientId pharmacistId caseId referral aiAnalysis.referralRecommendation createdAt');
+      .limit(Number(limit));
 
     const total = await DiagnosticCase.countDocuments(filter);
 

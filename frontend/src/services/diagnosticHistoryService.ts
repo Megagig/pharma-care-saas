@@ -177,6 +177,12 @@ export interface DiagnosticReferral {
   referral: {
     generated: boolean;
     generatedAt?: string;
+    document?: {
+      content: string;
+      template: string;
+      lastModified: string;
+      modifiedBy: string;
+    };
     specialty: string;
     urgency: 'immediate' | 'within_24h' | 'routine';
     status: 'pending' | 'sent' | 'acknowledged' | 'completed';

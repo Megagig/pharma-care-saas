@@ -1094,8 +1094,7 @@ const getDiagnosticReferrals = async (req, res) => {
             .populate('pharmacistId', 'firstName lastName')
             .sort({ 'referral.generatedAt': -1 })
             .skip(skip)
-            .limit(Number(limit))
-            .select('patientId pharmacistId caseId referral aiAnalysis.referralRecommendation createdAt');
+            .limit(Number(limit));
         const total = await DiagnosticCase_1.default.countDocuments(filter);
         const stats = await DiagnosticCase_1.default.aggregate([
             { $match: { workplaceId, status: 'referred', 'referral.generated': true } },
@@ -1781,40 +1780,17 @@ const downloadReferralDocument = async (req, res) => {
         const patient = diagnosticCase.patientId;
         const pharmacist = diagnosticCase.pharmacistId;
         const referralContent = diagnosticCase.referral.document.content;
-        if (format === 'pdf') {
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="referral-${caseId}.pdf"`);
-            res.status(200).json({
-                success: true,
-                data: {
-                    content: referralContent,
-                    format: 'pdf',
-                    filename: `referral-${caseId}.pdf`,
-                },
-            });
-        }
-        else if (format === 'docx') {
-            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-            res.setHeader('Content-Disposition', `attachment; filename="referral-${caseId}.docx"`);
-            res.status(200).json({
-                success: true,
-                data: {
-                    content: referralContent,
-                    format: 'docx',
-                    filename: `referral-${caseId}.docx`,
-                },
-            });
-        }
-        else {
-            res.status(200).json({
-                success: true,
-                data: {
-                    content: referralContent,
-                    format: 'text',
-                    filename: `referral-${caseId}.txt`,
-                },
-            });
-        }
+        const filename = format === 'pdf' ? `referral-${caseId}.pdf` :
+            format === 'docx' ? `referral-${caseId}.docx` :
+                `referral-${caseId}.txt`;
+        res.status(200).json({
+            success: true,
+            data: {
+                content: referralContent,
+                format: format,
+                filename: filename,
+            },
+        });
         logger_1.default.info('Referral document downloaded', {
             caseId,
             format,
