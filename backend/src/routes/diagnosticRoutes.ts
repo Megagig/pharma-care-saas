@@ -110,6 +110,20 @@ router.get(
 );
 
 /**
+ * @route GET /api/diagnostics/cases/all
+ * @desc Get all diagnostic cases (for "View All" functionality)
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.get(
+  '/cases/all',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('VIEW_ALL_DIAGNOSTIC_CASES', 'data_access'),
+  getAllDiagnosticCases
+);
+
+/**
  * @route GET /api/diagnostics/cases/:caseId
  * @desc Get a specific diagnostic case
  * @access Private (requires clinical_decision_support feature)
@@ -153,19 +167,7 @@ router.post(
   saveDiagnosticNotes
 );
 
-/**
- * @route POST /api/diagnostics/cases/:caseId/notes
- * @desc Save notes for a diagnostic case
- * @access Private (requires license)
- */
-router.post(
-  '/cases/:caseId/notes',
-  diagnosticRateLimit,
-  auth,
-  requireLicense,
-  auditLogger('SAVE_DIAGNOSTIC_NOTES', 'clinical_documentation'),
-  saveDiagnosticNotes
-);
+
 
 /**
  * @route GET /api/diagnostics/ai/test
@@ -181,19 +183,7 @@ router.get(
 
 // New enhanced endpoints for diagnostic history management
 
-/**
- * @route GET /api/diagnostics/patients/:patientId/history
- * @desc Get comprehensive diagnostic history for a patient
- * @access Private (requires clinical_decision_support feature)
- */
-router.get(
-  '/patients/:patientId/history',
-  diagnosticRateLimit,
-  auth,
-  requireFeature('clinical_decision_support'),
-  auditLogger('VIEW_PATIENT_DIAGNOSTIC_HISTORY', 'data_access'),
-  getPatientDiagnosticHistory
-);
+
 
 /**
  * @route POST /api/diagnostics/history/:historyId/notes
@@ -223,19 +213,7 @@ router.get(
   getDiagnosticAnalytics
 );
 
-/**
- * @route GET /api/diagnostics/cases/all
- * @desc Get all diagnostic cases (for "View All" functionality)
- * @access Private (requires clinical_decision_support feature)
- */
-router.get(
-  '/cases/all',
-  diagnosticRateLimit,
-  auth,
-  requireFeature('clinical_decision_support'),
-  auditLogger('VIEW_ALL_DIAGNOSTIC_CASES', 'data_access'),
-  getAllDiagnosticCases
-);
+
 
 /**
  * @route GET /api/diagnostics/referrals
