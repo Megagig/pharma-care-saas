@@ -137,6 +137,7 @@ const generateDiagnosticAnalysis = async (req, res) => {
                 counselingPoints: [],
                 followUpRequired: false,
             },
+            status: 'pending_review',
         });
         await diagnosticCase.save();
         const diagnosticHistory = new DiagnosticHistory_1.default({

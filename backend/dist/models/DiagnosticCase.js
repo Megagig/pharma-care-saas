@@ -223,7 +223,7 @@ const diagnosticCaseSchema = new mongoose_1.Schema({
     },
     status: {
         type: String,
-        enum: ['draft', 'completed', 'referred', 'cancelled'],
+        enum: ['draft', 'pending_review', 'completed', 'referred', 'cancelled'],
         default: 'draft',
         index: true,
     },

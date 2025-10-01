@@ -97,7 +97,7 @@ export interface IDiagnosticCase extends Document {
         requestId: string;
         processingTime: number;
     };
-    status: 'draft' | 'completed' | 'referred' | 'cancelled';
+    status: 'draft' | 'pending_review' | 'completed' | 'referred' | 'cancelled';
     completedAt?: Date;
     createdAt: Date;
     updatedAt: Date;

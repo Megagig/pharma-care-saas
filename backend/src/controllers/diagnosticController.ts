@@ -181,6 +181,7 @@ export const generateDiagnosticAnalysis = async (
         counselingPoints: [],
         followUpRequired: false,
       },
+      status: 'pending_review', // AI analysis done, awaiting pharmacist review
     });
 
     await diagnosticCase.save();

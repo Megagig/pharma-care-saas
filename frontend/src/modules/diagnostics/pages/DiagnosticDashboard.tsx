@@ -432,13 +432,27 @@ const DiagnosticDashboard: React.FC = () => {
                           />
                           <Box sx={{ textAlign: 'right' }}>
                             <Chip
-                              label={case_.status}
+                              label={
+                                case_.status === 'pending_review' 
+                                  ? 'Pending Review'
+                                  : case_.status === 'completed'
+                                  ? 'Completed'
+                                  : case_.status === 'referred'
+                                  ? 'Referred'
+                                  : case_.status === 'cancelled'
+                                  ? 'Cancelled'
+                                  : case_.status === 'draft'
+                                  ? 'Draft'
+                                  : case_.status
+                              }
                               color={
                                 case_.status === 'completed' 
                                   ? 'success' 
-                                  : case_.status === 'processing'
+                                  : case_.status === 'pending_review'
                                   ? 'info'
-                                  : case_.status === 'failed'
+                                  : case_.status === 'referred'
+                                  ? 'secondary'
+                                  : case_.status === 'cancelled'
                                   ? 'error'
                                   : 'warning'
                               }

@@ -119,7 +119,7 @@ export interface IDiagnosticCase extends Document {
     processingTime: number;
   };
   
-  status: 'draft' | 'completed' | 'referred' | 'cancelled';
+  status: 'draft' | 'pending_review' | 'completed' | 'referred' | 'cancelled';
   completedAt?: Date;
   
   createdAt: Date;
@@ -316,7 +316,7 @@ const diagnosticCaseSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ['draft', 'completed', 'referred', 'cancelled'],
+      enum: ['draft', 'pending_review', 'completed', 'referred', 'cancelled'],
       default: 'draft',
       index: true,
     },
