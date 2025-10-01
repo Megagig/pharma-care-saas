@@ -101,6 +101,8 @@ export interface IPatient extends Document {
   getInterventionCount(): Promise<number>;
   getActiveInterventionCount(): Promise<number>;
   updateInterventionFlags(): Promise<void>;
+  getDiagnosticHistoryCount(): Promise<number>;
+  getLatestDiagnosticHistory(): Promise<any>;
 }
 
 const patientSchema = new Schema(
@@ -441,6 +443,28 @@ patientSchema.methods.updateInterventionFlags = async function (
   const activeCount = await this.getActiveInterventionCount();
   this.hasActiveInterventions = activeCount > 0;
   await this.save();
+};
+
+patientSchema.methods.getDiagnosticHistoryCount = async function (
+  this: IPatient
+): Promise<number> {
+  const DiagnosticHistory = mongoose.model('DiagnosticHistory');
+  return await DiagnosticHistory.countDocuments({
+    patientId: this._id,
+    status: 'active',
+  });
+};
+
+patientSchema.methods.getLatestDiagnosticHistory = async function (
+  this: IPatient
+): Promise<any> {
+  const DiagnosticHistory = mongoose.model('DiagnosticHistory');
+  return await DiagnosticHistory.findOne({
+    patientId: this._id,
+    status: 'active',
+  })
+    .populate('pharmacistId', 'firstName lastName')
+    .sort({ createdAt: -1 });
 };
 
 // Pre-save middleware to validate and set computed fields

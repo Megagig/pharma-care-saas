@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 import DiagnosticCase, { IDiagnosticCase } from '../models/DiagnosticCase';
+import DiagnosticHistory, { IDiagnosticHistory } from '../models/DiagnosticHistory';
 import Patient from '../models/Patient';
 import openRouterService, {
   DiagnosticInput,
@@ -167,6 +169,59 @@ export const generateDiagnosticAnalysis = async (
     });
 
     await diagnosticCase.save();
+
+    // Create diagnostic history entry for persistent storage
+    const diagnosticHistory = new DiagnosticHistory({
+      patientId,
+      caseId: diagnosticCase.caseId,
+      diagnosticCaseId: diagnosticCase._id,
+      pharmacistId: userId,
+      workplaceId,
+      analysisSnapshot: {
+        ...aiResult.analysis,
+        processingTime: aiResult.processingTime,
+      },
+      clinicalContext: {
+        symptoms,
+        vitalSigns,
+        currentMedications,
+        labResults,
+      },
+      notes: [],
+      followUp: {
+        required: false,
+        completed: false,
+      },
+      exports: [],
+      auditTrail: {
+        viewedBy: [userId],
+        lastViewed: new Date(),
+        modifiedBy: [userId],
+        lastModified: new Date(),
+        accessLog: [
+          {
+            userId,
+            action: 'view',
+            timestamp: new Date(),
+            ipAddress: req.ip,
+          },
+        ],
+      },
+      status: 'active',
+    });
+
+    // Generate referral document if recommended
+    if (aiResult.analysis.referralRecommendation?.recommended) {
+      diagnosticHistory.referral = {
+        generated: true,
+        generatedAt: new Date(),
+        specialty: aiResult.analysis.referralRecommendation.specialty,
+        urgency: aiResult.analysis.referralRecommendation.urgency,
+        status: 'pending',
+      };
+    }
+
+    await diagnosticHistory.save();
 
     // Create audit log
     const auditContext = {
@@ -661,12 +716,849 @@ export const saveDiagnosticNotes = async (
   }
 };
 
-export default {
-  generateDiagnosticAnalysis,
-  saveDiagnosticDecision,
-  getDiagnosticHistory,
-  getDiagnosticCase,
-  checkDrugInteractions,
-  testAIConnection,
-  saveDiagnosticNotes,
+/**
+ * Get comprehensive diagnostic history for a patient
+ */
+export const getPatientDiagnosticHistory = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { patientId } = req.params;
+    const { page = 1, limit = 10, includeArchived = false } = req.query;
+    const workplaceId = req.user!.workplaceId;
+    const userId = req.user!._id;
+
+    // Verify patient access
+    const patient = await Patient.findOne({
+      _id: patientId,
+      workplaceId: workplaceId,
+    });
+
+    if (!patient) {
+      res.status(404).json({
+        success: false,
+        message: 'Patient not found or access denied',
+      });
+      return;
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const statusFilter = includeArchived === 'true' 
+      ? { status: { $in: ['active', 'archived'] } }
+      : { status: 'active' };
+
+    const history = await DiagnosticHistory.find({
+      patientId,
+      workplaceId,
+      ...statusFilter,
+    })
+      .populate('pharmacistId', 'firstName lastName')
+      .populate('notes.addedBy', 'firstName lastName')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const total = await DiagnosticHistory.countDocuments({
+      patientId,
+      workplaceId,
+      ...statusFilter,
+    });
+
+    // Update audit trail for viewing
+    await DiagnosticHistory.updateMany(
+      { patientId, workplaceId, ...statusFilter },
+      {
+        $addToSet: { 'auditTrail.viewedBy': userId },
+        $set: { 'auditTrail.lastViewed': new Date() },
+        $push: {
+          'auditTrail.accessLog': {
+            userId,
+            action: 'view',
+            timestamp: new Date(),
+            ipAddress: req.ip,
+          },
+        },
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        history,
+        pagination: {
+          current: Number(page),
+          total: Math.ceil(total / Number(limit)),
+          count: history.length,
+          totalRecords: total,
+        },
+        patient: {
+          id: patient._id,
+          name: `${patient.firstName} ${patient.lastName}`,
+          age: patient.age,
+          gender: patient.gender,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to get patient diagnostic history', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      patientId: req.params.patientId,
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get diagnostic history',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Add notes to diagnostic history
+ */
+export const addDiagnosticHistoryNote = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { historyId } = req.params;
+    const { content, type = 'general' } = req.body;
+    const userId = req.user!._id;
+    const workplaceId = req.user!.workplaceId;
+
+    if (!content || typeof content !== 'string') {
+      res.status(400).json({
+        success: false,
+        message: 'Note content is required',
+      });
+      return;
+    }
+
+    const history = await DiagnosticHistory.findOne({
+      _id: historyId,
+      workplaceId,
+      status: 'active',
+    });
+
+    if (!history) {
+      res.status(404).json({
+        success: false,
+        message: 'Diagnostic history not found or access denied',
+      });
+      return;
+    }
+
+    // Add note
+    history.notes.push({
+      content,
+      addedBy: userId,
+      addedAt: new Date(),
+      type,
+    } as any);
+
+    // Update audit trail
+    history.auditTrail.modifiedBy.push(userId);
+    history.auditTrail.lastModified = new Date();
+    history.auditTrail.accessLog.push({
+      userId,
+      action: 'edit',
+      timestamp: new Date(),
+      ipAddress: req.ip,
+    } as any);
+
+    await history.save();
+
+    const lastNote = history.notes[history.notes.length - 1] as any;
+    
+    res.status(200).json({
+      success: true,
+      message: 'Note added successfully',
+      data: {
+        noteId: lastNote._id?.toString() || 'generated',
+        addedAt: lastNote.addedAt,
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to add diagnostic history note', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      historyId: req.params.historyId,
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add note',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Get diagnostic analytics
+ */
+export const getDiagnosticAnalytics = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { dateFrom, dateTo, patientId } = req.query;
+    const workplaceId = req.user!.workplaceId;
+
+    // Build date filter
+    const dateFilter: any = {};
+    if (dateFrom) {
+      dateFilter.$gte = new Date(dateFrom as string);
+    }
+    if (dateTo) {
+      dateFilter.$lte = new Date(dateTo as string);
+    }
+
+    const matchFilter: any = {
+      workplaceId,
+      status: 'active',
+    };
+
+    if (Object.keys(dateFilter).length > 0) {
+      matchFilter.createdAt = dateFilter;
+    }
+
+    if (patientId) {
+      matchFilter.patientId = new mongoose.Types.ObjectId(patientId as string);
+    }
+
+    // Aggregate analytics data
+    const analytics = await DiagnosticHistory.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: null,
+          totalCases: { $sum: 1 },
+          averageConfidence: { $avg: '$analysisSnapshot.confidenceScore' },
+          averageProcessingTime: { $avg: '$analysisSnapshot.processingTime' },
+          completedCases: {
+            $sum: {
+              $cond: [{ $eq: ['$followUp.completed', true] }, 1, 0],
+            },
+          },
+          pendingFollowUps: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$followUp.required', true] },
+                    { $eq: ['$followUp.completed', false] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          referralsGenerated: {
+            $sum: {
+              $cond: [{ $eq: ['$referral.generated', true] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]);
+
+    // Get top diagnoses
+    const topDiagnoses = await DiagnosticHistory.aggregate([
+      { $match: matchFilter },
+      { $unwind: '$analysisSnapshot.differentialDiagnoses' },
+      {
+        $group: {
+          _id: '$analysisSnapshot.differentialDiagnoses.condition',
+          count: { $sum: 1 },
+          averageConfidence: {
+            $avg: '$analysisSnapshot.differentialDiagnoses.probability',
+          },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+      {
+        $project: {
+          condition: '$_id',
+          count: 1,
+          averageConfidence: { $round: ['$averageConfidence', 2] },
+          _id: 0,
+        },
+      },
+    ]);
+
+    // Get case completion trends (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const completionTrends = await DiagnosticHistory.aggregate([
+      {
+        $match: {
+          ...matchFilter,
+          createdAt: { $gte: thirtyDaysAgo },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+          },
+          casesCreated: { $sum: 1 },
+          casesCompleted: {
+            $sum: {
+              $cond: [{ $eq: ['$followUp.completed', true] }, 1, 0],
+            },
+          },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const result = {
+      summary: analytics[0] || {
+        totalCases: 0,
+        averageConfidence: 0,
+        averageProcessingTime: 0,
+        completedCases: 0,
+        pendingFollowUps: 0,
+        referralsGenerated: 0,
+      },
+      topDiagnoses,
+      completionTrends,
+      dateRange: {
+        from: dateFrom || null,
+        to: dateTo || null,
+      },
+    };
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    logger.error('Failed to get diagnostic analytics', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get analytics',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Get all diagnostic cases (for "View All" functionality)
+ */
+export const getAllDiagnosticCases = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      patientId,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = req.query;
+    const workplaceId = req.user!.workplaceId;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    // Build filter
+    const filter: any = { workplaceId };
+
+    if (status) {
+      filter.status = status;
+    }
+
+    if (patientId) {
+      filter.patientId = patientId;
+    }
+
+    // Build search filter
+    let searchFilter = {};
+    if (search) {
+      searchFilter = {
+        $or: [
+          { caseId: { $regex: search, $options: 'i' } },
+          { 'symptoms.subjective': { $regex: search, $options: 'i' } },
+          { 'symptoms.objective': { $regex: search, $options: 'i' } },
+        ],
+      };
+    }
+
+    const finalFilter = { ...filter, ...searchFilter };
+
+    // Build sort
+    const sort: any = {};
+    sort[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
+
+    const cases = await DiagnosticCase.find(finalFilter)
+      .populate('patientId', 'firstName lastName age gender')
+      .populate('pharmacistId', 'firstName lastName')
+      .sort(sort)
+      .skip(skip)
+      .limit(Number(limit))
+      .select('-aiRequestData'); // Exclude sensitive data
+
+    const total = await DiagnosticCase.countDocuments(finalFilter);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        cases,
+        pagination: {
+          current: Number(page),
+          total: Math.ceil(total / Number(limit)),
+          count: cases.length,
+          totalCases: total,
+        },
+        filters: {
+          status,
+          patientId,
+          search,
+          sortBy,
+          sortOrder,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to get all diagnostic cases', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get diagnostic cases',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Get referrals data
+ */
+export const getDiagnosticReferrals = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { page = 1, limit = 20, status, specialty } = req.query;
+    const workplaceId = req.user!.workplaceId;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    // Build filter
+    const filter: any = {
+      workplaceId,
+      'referral.generated': true,
+      status: 'active',
+    };
+
+    if (status) {
+      filter['referral.status'] = status;
+    }
+
+    if (specialty) {
+      filter['referral.specialty'] = { $regex: specialty, $options: 'i' };
+    }
+
+    const referrals = await DiagnosticHistory.find(filter)
+      .populate('patientId', 'firstName lastName age gender')
+      .populate('pharmacistId', 'firstName lastName')
+      .sort({ 'referral.generatedAt': -1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .select('patientId pharmacistId caseId referral analysisSnapshot.referralRecommendation createdAt');
+
+    const total = await DiagnosticHistory.countDocuments(filter);
+
+    // Get referral statistics
+    const stats = await DiagnosticHistory.aggregate([
+      { $match: { workplaceId, 'referral.generated': true, status: 'active' } },
+      {
+        $group: {
+          _id: '$referral.status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const referralStats = {
+      pending: 0,
+      sent: 0,
+      acknowledged: 0,
+      completed: 0,
+    };
+
+    stats.forEach((stat) => {
+      if (stat._id in referralStats) {
+        referralStats[stat._id as keyof typeof referralStats] = stat.count;
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        referrals,
+        pagination: {
+          current: Number(page),
+          total: Math.ceil(total / Number(limit)),
+          count: referrals.length,
+          totalReferrals: total,
+        },
+        statistics: referralStats,
+        filters: {
+          status,
+          specialty,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to get diagnostic referrals', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get referrals',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
+
+
+/**
+ * Export diagnostic history as PDF
+ */
+export const exportDiagnosticHistoryPDF = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { historyId } = req.params;
+    const { purpose = 'patient_record' } = req.query;
+    const workplaceId = req.user!.workplaceId;
+    const userId = req.user!._id;
+
+    const history = await DiagnosticHistory.findOne({
+      _id: historyId,
+      workplaceId,
+      status: 'active',
+    })
+      .populate('patientId', 'firstName lastName age gender dateOfBirth')
+      .populate('pharmacistId', 'firstName lastName');
+
+    if (!history) {
+      res.status(404).json({
+        success: false,
+        message: 'Diagnostic history not found or access denied',
+      });
+      return;
+    }
+
+    // Update audit trail for export
+    history.auditTrail.accessLog.push({
+      userId,
+      action: 'export',
+      timestamp: new Date(),
+      ipAddress: req.ip,
+    } as any);
+
+    history.exports.push({
+      exportedBy: userId,
+      exportedAt: new Date(),
+      format: 'pdf',
+      purpose: purpose as string,
+    } as any);
+
+    await history.save();
+
+    // For now, return a placeholder response
+    // In a real implementation, you would generate a PDF using a library like puppeteer or pdfkit
+    res.status(200).json({
+      success: true,
+      message: 'PDF export functionality will be implemented with a PDF generation library',
+      data: {
+        historyId,
+        purpose,
+        exportedAt: new Date(),
+        // In real implementation: downloadUrl: 'generated-pdf-url'
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to export diagnostic history as PDF', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      historyId: req.params.historyId,
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export PDF',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Generate referral document
+ */
+export const generateReferralDocument = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { historyId } = req.params;
+    const workplaceId = req.user!.workplaceId;
+    const userId = req.user!._id;
+
+    const history = await DiagnosticHistory.findOne({
+      _id: historyId,
+      workplaceId,
+      status: 'active',
+    })
+      .populate('patientId', 'firstName lastName age gender dateOfBirth')
+      .populate('pharmacistId', 'firstName lastName');
+
+    if (!history) {
+      res.status(404).json({
+        success: false,
+        message: 'Diagnostic history not found or access denied',
+      });
+      return;
+    }
+
+    if (!history.analysisSnapshot.referralRecommendation?.recommended) {
+      res.status(400).json({
+        success: false,
+        message: 'No referral recommendation found for this case',
+      });
+      return;
+    }
+
+    // Update referral status
+    if (!history.referral) {
+      history.referral = {
+        generated: true,
+        generatedAt: new Date(),
+        specialty: history.analysisSnapshot.referralRecommendation.specialty,
+        urgency: history.analysisSnapshot.referralRecommendation.urgency,
+        status: 'pending',
+      } as any;
+    }
+
+    // Generate referral ID
+    const referralId = `REF-${Date.now().toString(36).toUpperCase()}`;
+
+    // Update audit trail
+    history.auditTrail.accessLog.push({
+      userId,
+      action: 'referral_generated',
+      timestamp: new Date(),
+      ipAddress: req.ip,
+    } as any);
+
+    await history.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Referral document generated successfully',
+      data: {
+        referralId,
+        documentUrl: `/api/diagnostics/referrals/${referralId}/document`, // Placeholder URL
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to generate referral document', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      historyId: req.params.historyId,
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate referral document',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Compare diagnostic histories
+ */
+export const compareDiagnosticHistories = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { historyId1, historyId2 } = req.body;
+    const workplaceId = req.user!.workplaceId;
+
+    if (!historyId1 || !historyId2) {
+      res.status(400).json({
+        success: false,
+        message: 'Two history IDs are required for comparison',
+      });
+      return;
+    }
+
+    const [history1, history2] = await Promise.all([
+      DiagnosticHistory.findOne({
+        _id: historyId1,
+        workplaceId,
+        status: 'active',
+      }),
+      DiagnosticHistory.findOne({
+        _id: historyId2,
+        workplaceId,
+        status: 'active',
+      }),
+    ]);
+
+    if (!history1 || !history2) {
+      res.status(404).json({
+        success: false,
+        message: 'One or both diagnostic histories not found',
+      });
+      return;
+    }
+
+    // Ensure both histories belong to the same patient
+    if (history1.patientId.toString() !== history2.patientId.toString()) {
+      res.status(400).json({
+        success: false,
+        message: 'Cannot compare histories from different patients',
+      });
+      return;
+    }
+
+    // Perform comparison
+    const comparison = {
+      diagnosisChanges: [] as string[],
+      confidenceChange: history2.analysisSnapshot.confidenceScore - history1.analysisSnapshot.confidenceScore,
+      newSymptoms: [] as string[],
+      resolvedSymptoms: [] as string[],
+      medicationChanges: [] as string[],
+      improvementScore: 0,
+    };
+
+    // Compare diagnoses
+    const oldDiagnoses = history1.analysisSnapshot.differentialDiagnoses.map(d => d.condition);
+    const newDiagnoses = history2.analysisSnapshot.differentialDiagnoses.map(d => d.condition);
+    
+    comparison.diagnosisChanges = [
+      ...newDiagnoses.filter(d => !oldDiagnoses.includes(d)).map(d => `Added: ${d}`),
+      ...oldDiagnoses.filter(d => !newDiagnoses.includes(d)).map(d => `Removed: ${d}`),
+    ];
+
+    // Compare symptoms
+    const oldSymptoms = [...history1.clinicalContext.symptoms.subjective, ...history1.clinicalContext.symptoms.objective];
+    const newSymptoms = [...history2.clinicalContext.symptoms.subjective, ...history2.clinicalContext.symptoms.objective];
+    
+    comparison.newSymptoms = newSymptoms.filter(s => !oldSymptoms.includes(s));
+    comparison.resolvedSymptoms = oldSymptoms.filter(s => !newSymptoms.includes(s));
+
+    // Compare medications
+    const oldMeds = history1.clinicalContext.currentMedications?.map(m => m.name) || [];
+    const newMeds = history2.clinicalContext.currentMedications?.map(m => m.name) || [];
+    
+    comparison.medicationChanges = [
+      ...newMeds.filter(m => !oldMeds.includes(m)).map(m => `Added: ${m}`),
+      ...oldMeds.filter(m => !newMeds.includes(m)).map(m => `Discontinued: ${m}`),
+    ];
+
+    // Calculate improvement score (simplified)
+    comparison.improvementScore = Math.round(
+      (comparison.confidenceChange * 0.4) +
+      (comparison.resolvedSymptoms.length * 10) -
+      (comparison.newSymptoms.length * 5)
+    );
+
+    // Generate recommendations
+    const recommendations = [];
+    if (comparison.confidenceChange > 10) {
+      recommendations.push('Diagnostic confidence has improved significantly');
+    }
+    if (comparison.resolvedSymptoms.length > 0) {
+      recommendations.push('Patient shows symptom improvement');
+    }
+    if (comparison.newSymptoms.length > 0) {
+      recommendations.push('Monitor new symptoms closely');
+    }
+    if (comparison.medicationChanges.length > 0) {
+      recommendations.push('Review medication changes and their effects');
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        comparison,
+        recommendations,
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to compare diagnostic histories', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to compare histories',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
 };

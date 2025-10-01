@@ -718,3 +718,138 @@ export const searchPatientsWithInterventions = asyncHandler(
     );
   }
 );
+
+/**
+ * GET /api/patients/:id/diagnostic-history
+ * Get patient diagnostic history
+ */
+export const getPatientDiagnosticHistory = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { page = 1, limit = 10, includeArchived = false } = req.query;
+    const context = getRequestContext(req);
+
+    // Find patient
+    const patient = await Patient.findById(id);
+    ensureResourceExists(patient, 'Patient', id);
+    checkTenantAccess(
+      patient!.workplaceId.toString(),
+      context.workplaceId,
+      context.isAdmin
+    );
+
+    // Import DiagnosticHistory model
+    const DiagnosticHistory = mongoose.model('DiagnosticHistory');
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const statusFilter = includeArchived === 'true' 
+      ? { status: { $in: ['active', 'archived'] } }
+      : { status: 'active' };
+
+    const history = await DiagnosticHistory.find({
+      patientId: patient._id,
+      workplaceId: context.workplaceId,
+      ...statusFilter,
+    })
+      .populate('pharmacistId', 'firstName lastName')
+      .populate('notes.addedBy', 'firstName lastName')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const total = await DiagnosticHistory.countDocuments({
+      patientId: patient._id,
+      workplaceId: context.workplaceId,
+      ...statusFilter,
+    });
+
+    // Create audit log
+    createAuditLog(
+      'VIEW_PATIENT_DIAGNOSTIC_HISTORY',
+      'Patient',
+      patient._id.toString(),
+      context
+    );
+
+    sendSuccess(res, {
+      history,
+      pagination: {
+        current: Number(page),
+        total: Math.ceil(total / Number(limit)),
+        count: history.length,
+        totalRecords: total,
+      },
+      patient: {
+        id: patient._id,
+        name: patient.getDisplayName(),
+        age: patient.getAge(),
+        gender: patient.gender,
+      },
+    });
+  }
+);
+
+/**
+ * GET /api/patients/:id/diagnostic-summary
+ * Get patient diagnostic summary for dashboard
+ */
+export const getPatientDiagnosticSummary = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const context = getRequestContext(req);
+
+    // Find patient
+    const patient = await Patient.findById(id);
+    ensureResourceExists(patient, 'Patient', id);
+    checkTenantAccess(
+      patient!.workplaceId.toString(),
+      context.workplaceId,
+      context.isAdmin
+    );
+
+    // Get diagnostic history count and latest entry
+    const diagnosticHistoryCount = await patient.getDiagnosticHistoryCount();
+    const latestDiagnosticHistory = await patient.getLatestDiagnosticHistory();
+
+    // Import DiagnosticHistory model for additional queries
+    const DiagnosticHistory = mongoose.model('DiagnosticHistory');
+
+    // Get pending follow-ups
+    const pendingFollowUps = await DiagnosticHistory.countDocuments({
+      patientId: patient._id,
+      workplaceId: context.workplaceId,
+      status: 'active',
+      'followUp.required': true,
+      'followUp.completed': false,
+    });
+
+    // Get referrals count
+    const referralsCount = await DiagnosticHistory.countDocuments({
+      patientId: patient._id,
+      workplaceId: context.workplaceId,
+      status: 'active',
+      'referral.generated': true,
+    });
+
+    sendSuccess(res, {
+      patient: {
+        id: patient._id,
+        name: patient.getDisplayName(),
+        age: patient.getAge(),
+        gender: patient.gender,
+      },
+      diagnosticSummary: {
+        totalCases: diagnosticHistoryCount,
+        pendingFollowUps,
+        referralsGenerated: referralsCount,
+        latestCase: latestDiagnosticHistory ? {
+          id: latestDiagnosticHistory._id,
+          caseId: latestDiagnosticHistory.caseId,
+          createdAt: latestDiagnosticHistory.createdAt,
+          pharmacist: latestDiagnosticHistory.pharmacistId,
+          confidenceScore: latestDiagnosticHistory.analysisSnapshot?.confidenceScore,
+        } : null,
+      },
+    });
+  }
+);

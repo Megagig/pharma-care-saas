@@ -23,6 +23,8 @@ router.get('/:id/summary', patientRBAC_1.requirePatientRead, (0, patientValidato
 router.get('/:id/interventions', patientRBAC_1.requirePatientRead, (0, patientValidators_1.validateRequest)(patientValidators_1.patientParamsSchema, 'params'), patientController_1.getPatientInterventions);
 router.patch('/:id', patientRBAC_1.requirePatientUpdate, (0, patientValidators_1.validateRequest)(patientValidators_1.patientParamsSchema, 'params'), (0, patientValidators_1.validateRequest)(patientValidators_1.updatePatientSchema, 'body'), patientController_1.updatePatient);
 router.delete('/:id', patientRBAC_1.requirePatientDelete, (0, patientValidators_1.validateRequest)(patientValidators_1.patientParamsSchema, 'params'), patientController_1.deletePatient);
+router.get('/:id/diagnostic-history', patientRBAC_1.requirePatientRead, (0, patientValidators_1.validateRequest)(patientValidators_1.patientParamsSchema, 'params'), patientController_1.getPatientDiagnosticHistory);
+router.get('/:id/diagnostic-summary', patientRBAC_1.requirePatientRead, (0, patientValidators_1.validateRequest)(patientValidators_1.patientParamsSchema, 'params'), patientController_1.getPatientDiagnosticSummary);
 router.use(responseHelpers_1.patientManagementErrorHandler);
 exports.default = router;
 //# sourceMappingURL=patientRoutes.js.map

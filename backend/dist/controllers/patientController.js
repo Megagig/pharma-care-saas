@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchPatientsWithInterventions = exports.getPatientInterventions = exports.getPatientSummary = exports.searchPatients = exports.deletePatient = exports.updatePatient = exports.createPatient = exports.getPatient = exports.getPatients = void 0;
+exports.getPatientDiagnosticSummary = exports.getPatientDiagnosticHistory = exports.searchPatientsWithInterventions = exports.getPatientInterventions = exports.getPatientSummary = exports.searchPatients = exports.deletePatient = exports.updatePatient = exports.createPatient = exports.getPatient = exports.getPatients = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const Patient_1 = __importDefault(require("../models/Patient"));
 const Allergy_1 = __importDefault(require("../models/Allergy"));
@@ -403,5 +403,92 @@ exports.searchPatientsWithInterventions = (0, responseHelpers_1.asyncHandler)(as
         total: patients.length,
         query: q,
     }, `Found ${patients.length} patients with intervention context`);
+});
+exports.getPatientDiagnosticHistory = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    const { page = 1, limit = 10, includeArchived = false } = req.query;
+    const context = (0, responseHelpers_1.getRequestContext)(req);
+    const patient = await Patient_1.default.findById(id);
+    (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', id);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
+    const DiagnosticHistory = mongoose_1.default.model('DiagnosticHistory');
+    const skip = (Number(page) - 1) * Number(limit);
+    const statusFilter = includeArchived === 'true'
+        ? { status: { $in: ['active', 'archived'] } }
+        : { status: 'active' };
+    const history = await DiagnosticHistory.find({
+        patientId: patient._id,
+        workplaceId: context.workplaceId,
+        ...statusFilter,
+    })
+        .populate('pharmacistId', 'firstName lastName')
+        .populate('notes.addedBy', 'firstName lastName')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit));
+    const total = await DiagnosticHistory.countDocuments({
+        patientId: patient._id,
+        workplaceId: context.workplaceId,
+        ...statusFilter,
+    });
+    (0, responseHelpers_1.createAuditLog)('VIEW_PATIENT_DIAGNOSTIC_HISTORY', 'Patient', patient._id.toString(), context);
+    (0, responseHelpers_1.sendSuccess)(res, {
+        history,
+        pagination: {
+            current: Number(page),
+            total: Math.ceil(total / Number(limit)),
+            count: history.length,
+            totalRecords: total,
+        },
+        patient: {
+            id: patient._id,
+            name: patient.getDisplayName(),
+            age: patient.getAge(),
+            gender: patient.gender,
+        },
+    });
+});
+exports.getPatientDiagnosticSummary = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    const context = (0, responseHelpers_1.getRequestContext)(req);
+    const patient = await Patient_1.default.findById(id);
+    (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', id);
+    (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
+    const diagnosticHistoryCount = await patient.getDiagnosticHistoryCount();
+    const latestDiagnosticHistory = await patient.getLatestDiagnosticHistory();
+    const DiagnosticHistory = mongoose_1.default.model('DiagnosticHistory');
+    const pendingFollowUps = await DiagnosticHistory.countDocuments({
+        patientId: patient._id,
+        workplaceId: context.workplaceId,
+        status: 'active',
+        'followUp.required': true,
+        'followUp.completed': false,
+    });
+    const referralsCount = await DiagnosticHistory.countDocuments({
+        patientId: patient._id,
+        workplaceId: context.workplaceId,
+        status: 'active',
+        'referral.generated': true,
+    });
+    (0, responseHelpers_1.sendSuccess)(res, {
+        patient: {
+            id: patient._id,
+            name: patient.getDisplayName(),
+            age: patient.getAge(),
+            gender: patient.gender,
+        },
+        diagnosticSummary: {
+            totalCases: diagnosticHistoryCount,
+            pendingFollowUps,
+            referralsGenerated: referralsCount,
+            latestCase: latestDiagnosticHistory ? {
+                id: latestDiagnosticHistory._id,
+                caseId: latestDiagnosticHistory.caseId,
+                createdAt: latestDiagnosticHistory.createdAt,
+                pharmacist: latestDiagnosticHistory.pharmacistId,
+                confidenceScore: latestDiagnosticHistory.analysisSnapshot?.confidenceScore,
+            } : null,
+        },
+    });
 });
 //# sourceMappingURL=patientController.js.map

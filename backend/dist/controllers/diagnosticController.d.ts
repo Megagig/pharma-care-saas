@@ -7,14 +7,12 @@ export declare const getDiagnosticCase: (req: AuthRequest, res: Response) => Pro
 export declare const checkDrugInteractions: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const testAIConnection: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const saveDiagnosticNotes: (req: AuthRequest, res: Response) => Promise<void>;
-declare const _default: {
-    generateDiagnosticAnalysis: (req: AuthRequest, res: Response) => Promise<void>;
-    saveDiagnosticDecision: (req: AuthRequest, res: Response) => Promise<void>;
-    getDiagnosticHistory: (req: AuthRequest, res: Response) => Promise<void>;
-    getDiagnosticCase: (req: AuthRequest, res: Response) => Promise<void>;
-    checkDrugInteractions: (req: AuthRequest, res: Response) => Promise<void>;
-    testAIConnection: (req: AuthRequest, res: Response) => Promise<void>;
-    saveDiagnosticNotes: (req: AuthRequest, res: Response) => Promise<void>;
-};
-export default _default;
+export declare const getPatientDiagnosticHistory: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const addDiagnosticHistoryNote: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getDiagnosticAnalytics: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getAllDiagnosticCases: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getDiagnosticReferrals: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const exportDiagnosticHistoryPDF: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const generateReferralDocument: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const compareDiagnosticHistories: (req: AuthRequest, res: Response) => Promise<void>;
 //# sourceMappingURL=diagnosticController.d.ts.map

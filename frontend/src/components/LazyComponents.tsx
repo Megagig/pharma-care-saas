@@ -21,6 +21,11 @@ export const LazyCaseResultsPage = lazy(() => import('../modules/diagnostics/pag
 export const LazyResultsReviewPage = lazy(() => import('../modules/diagnostics/pages/ResultsReviewPage'));
 export const LazyComponentDemo = lazy(() => import('../modules/diagnostics/pages/ComponentDemo'));
 
+// New diagnostic pages
+export const LazyAllDiagnosticCasesPage = lazy(() => import('../modules/diagnostics/pages/AllDiagnosticCasesPage'));
+export const LazyDiagnosticAnalyticsPage = lazy(() => import('../modules/diagnostics/pages/DiagnosticAnalyticsPage'));
+export const LazyDiagnosticReferralsPage = lazy(() => import('../modules/diagnostics/pages/DiagnosticReferralsPage'));
+
 // Reports & Analytics
 export const LazyReportsAnalyticsDashboard = lazy(() => 
   import('../modules/reports-analytics/components/ReportsAnalyticsDashboard')

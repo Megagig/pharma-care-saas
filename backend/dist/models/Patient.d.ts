@@ -77,6 +77,8 @@ export interface IPatient extends Document {
     getInterventionCount(): Promise<number>;
     getActiveInterventionCount(): Promise<number>;
     updateInterventionFlags(): Promise<void>;
+    getDiagnosticHistoryCount(): Promise<number>;
+    getLatestDiagnosticHistory(): Promise<any>;
 }
 declare const _default: mongoose.Model<IPatient, {}, {}, {}, mongoose.Document<unknown, {}, IPatient> & IPatient & Required<{
     _id: mongoose.Types.ObjectId;

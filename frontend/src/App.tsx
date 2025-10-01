@@ -48,6 +48,9 @@ import {
   LazyCaseResultsPage,
   LazyResultsReviewPage,
   LazyComponentDemo,
+  LazyAllDiagnosticCasesPage,
+  LazyDiagnosticAnalyticsPage,
+  LazyDiagnosticReferralsPage,
   LazyReportsAnalyticsDashboard,
   LazyAdminDashboard,
   LazyFeatureFlagsPage,
@@ -571,6 +574,42 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyComponentDemo />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/cases/all"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyAllDiagnosticCasesPage />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/analytics"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyDiagnosticAnalyticsPage />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/referrals"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyDiagnosticReferralsPage />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>

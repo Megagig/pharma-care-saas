@@ -1,0 +1,277 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import diagnosticHistoryService, {
+  DiagnosticHistoryItem,
+  DiagnosticCase,
+  DiagnosticAnalytics,
+  DiagnosticReferral,
+} from '../services/diagnosticHistoryService';
+import { useNotifications } from '../components/common/NotificationSystem';
+
+// Query Keys
+export const diagnosticHistoryKeys = {
+  all: ['diagnosticHistory'] as const,
+  patient: (patientId: string) => [...diagnosticHistoryKeys.all, 'patient', patientId] as const,
+  patientHistory: (patientId: string, options?: any) => 
+    [...diagnosticHistoryKeys.patient(patientId), 'history', options] as const,
+  analytics: (options?: any) => [...diagnosticHistoryKeys.all, 'analytics', options] as const,
+  cases: (options?: any) => [...diagnosticHistoryKeys.all, 'cases', options] as const,
+  referrals: (options?: any) => [...diagnosticHistoryKeys.all, 'referrals', options] as const,
+};
+
+/**
+ * Hook to get patient diagnostic history
+ */
+export const usePatientDiagnosticHistory = (
+  patientId: string,
+  options: {
+    page?: number;
+    limit?: number;
+    includeArchived?: boolean;
+  } = {},
+  queryOptions: {
+    enabled?: boolean;
+    refetchOnWindowFocus?: boolean;
+  } = {}
+) => {
+  return useQuery({
+    queryKey: diagnosticHistoryKeys.patientHistory(patientId, options),
+    queryFn: () => diagnosticHistoryService.getPatientHistory(patientId, options),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: queryOptions.enabled !== false && !!patientId,
+    refetchOnWindowFocus: queryOptions.refetchOnWindowFocus ?? false,
+  });
+};
+
+/**
+ * Hook to add note to diagnostic history
+ */
+export const useAddDiagnosticHistoryNote = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useNotifications();
+
+  return useMutation({
+    mutationFn: ({
+      historyId,
+      content,
+      type = 'general',
+    }: {
+      historyId: string;
+      content: string;
+      type?: 'clinical' | 'follow_up' | 'review' | 'general';
+    }) => diagnosticHistoryService.addNote(historyId, content, type),
+    onSuccess: (data, variables) => {
+      showSuccess({
+        title: 'Note Added',
+        message: 'Diagnostic note has been added successfully.',
+      });
+      
+      // Invalidate related queries
+      queryClient.invalidateQueries({
+        queryKey: diagnosticHistoryKeys.all,
+      });
+    },
+    onError: (error: any) => {
+      showError({
+        title: 'Failed to Add Note',
+        message: error.response?.data?.message || 'An error occurred while adding the note.',
+      });
+    },
+  });
+};
+
+/**
+ * Hook to get diagnostic analytics
+ */
+export const useDiagnosticAnalytics = (
+  options: {
+    dateFrom?: string;
+    dateTo?: string;
+    patientId?: string;
+  } = {},
+  queryOptions: {
+    enabled?: boolean;
+  } = {}
+) => {
+  return useQuery({
+    queryKey: diagnosticHistoryKeys.analytics(options),
+    queryFn: () => diagnosticHistoryService.getAnalytics(options),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    enabled: queryOptions.enabled !== false,
+  });
+};
+
+/**
+ * Hook to get all diagnostic cases
+ */
+export const useAllDiagnosticCases = (
+  options: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    patientId?: string;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  } = {},
+  queryOptions: {
+    enabled?: boolean;
+  } = {}
+) => {
+  return useQuery({
+    queryKey: diagnosticHistoryKeys.cases(options),
+    queryFn: () => diagnosticHistoryService.getAllCases(options),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: queryOptions.enabled !== false,
+  });
+};
+
+/**
+ * Hook to get diagnostic referrals
+ */
+export const useDiagnosticReferrals = (
+  options: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    specialty?: string;
+  } = {},
+  queryOptions: {
+    enabled?: boolean;
+  } = {}
+) => {
+  return useQuery({
+    queryKey: diagnosticHistoryKeys.referrals(options),
+    queryFn: () => diagnosticHistoryService.getReferrals(options),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: queryOptions.enabled !== false,
+  });
+};
+
+/**
+ * Hook to export diagnostic history as PDF
+ */
+export const useExportDiagnosticHistory = () => {
+  const { showSuccess, showError } = useNotifications();
+
+  return useMutation({
+    mutationFn: ({
+      historyId,
+      purpose = 'patient_record',
+    }: {
+      historyId: string;
+      purpose?: 'referral' | 'patient_record' | 'consultation' | 'audit';
+    }) => diagnosticHistoryService.exportHistoryAsPDF(historyId, purpose),
+    onSuccess: (blob, variables) => {
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `diagnostic-history-${variables.historyId}-${variables.purpose}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      showSuccess({
+        title: 'Export Successful',
+        message: 'Diagnostic history has been exported successfully.',
+      });
+    },
+    onError: (error: any) => {
+      showError({
+        title: 'Export Failed',
+        message: error.response?.data?.message || 'An error occurred while exporting the history.',
+      });
+    },
+  });
+};
+
+/**
+ * Hook to generate referral document
+ */
+export const useGenerateReferralDocument = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useNotifications();
+
+  return useMutation({
+    mutationFn: (historyId: string) => 
+      diagnosticHistoryService.generateReferralDocument(historyId),
+    onSuccess: (data, historyId) => {
+      showSuccess({
+        title: 'Referral Generated',
+        message: 'Referral document has been generated successfully.',
+      });
+      
+      // Invalidate related queries
+      queryClient.invalidateQueries({
+        queryKey: diagnosticHistoryKeys.all,
+      });
+    },
+    onError: (error: any) => {
+      showError({
+        title: 'Referral Generation Failed',
+        message: error.response?.data?.message || 'An error occurred while generating the referral.',
+      });
+    },
+  });
+};
+
+/**
+ * Hook to compare diagnostic histories
+ */
+export const useCompareDiagnosticHistories = () => {
+  const { showError } = useNotifications();
+
+  return useMutation({
+    mutationFn: ({
+      historyId1,
+      historyId2,
+    }: {
+      historyId1: string;
+      historyId2: string;
+    }) => diagnosticHistoryService.compareHistories(historyId1, historyId2),
+    onError: (error: any) => {
+      showError({
+        title: 'Comparison Failed',
+        message: error.response?.data?.message || 'An error occurred while comparing histories.',
+      });
+    },
+  });
+};
+
+/**
+ * Hook to get recent diagnostic activity for dashboard
+ */
+export const useRecentDiagnosticActivity = (
+  limit: number = 5
+) => {
+  return useAllDiagnosticCases(
+    {
+      page: 1,
+      limit,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    },
+    {
+      enabled: true,
+    }
+  );
+};
+
+/**
+ * Hook to get diagnostic dashboard stats
+ */
+export const useDiagnosticDashboardStats = () => {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  return useDiagnosticAnalytics(
+    {
+      dateFrom: thirtyDaysAgo.toISOString().split('T')[0],
+      dateTo: new Date().toISOString().split('T')[0],
+    },
+    {
+      enabled: true,
+    }
+  );
+};

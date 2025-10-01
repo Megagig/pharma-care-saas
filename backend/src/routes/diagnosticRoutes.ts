@@ -1,16 +1,22 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import diagnosticController from '../controllers/diagnosticController';
-
-const {
+import {
   generateDiagnosticAnalysis,
   saveDiagnosticDecision,
   getDiagnosticHistory,
   getDiagnosticCase,
   checkDrugInteractions,
   testAIConnection,
-  saveDiagnosticNotes
-} = diagnosticController;
+  saveDiagnosticNotes,
+  getPatientDiagnosticHistory,
+  addDiagnosticHistoryNote,
+  getDiagnosticAnalytics,
+  getAllDiagnosticCases,
+  getDiagnosticReferrals,
+  exportDiagnosticHistoryPDF,
+  generateReferralDocument,
+  compareDiagnosticHistories,
+} from '../controllers/diagnosticController';
 import {
   validateDiagnosticAnalysis,
   validateDiagnosticDecision,
@@ -171,6 +177,120 @@ router.get(
   auth,
   auditLogger('AI_CONNECTION_TEST', 'system_security'),
   testAIConnection
+);
+
+// New enhanced endpoints for diagnostic history management
+
+/**
+ * @route GET /api/diagnostics/patients/:patientId/history
+ * @desc Get comprehensive diagnostic history for a patient
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.get(
+  '/patients/:patientId/history',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('VIEW_PATIENT_DIAGNOSTIC_HISTORY', 'data_access'),
+  getPatientDiagnosticHistory
+);
+
+/**
+ * @route POST /api/diagnostics/history/:historyId/notes
+ * @desc Add notes to diagnostic history
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.post(
+  '/history/:historyId/notes',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('ADD_DIAGNOSTIC_HISTORY_NOTE', 'clinical_documentation'),
+  addDiagnosticHistoryNote
+);
+
+/**
+ * @route GET /api/diagnostics/analytics
+ * @desc Get diagnostic analytics
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.get(
+  '/analytics',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('VIEW_DIAGNOSTIC_ANALYTICS', 'data_access'),
+  getDiagnosticAnalytics
+);
+
+/**
+ * @route GET /api/diagnostics/cases/all
+ * @desc Get all diagnostic cases (for "View All" functionality)
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.get(
+  '/cases/all',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('VIEW_ALL_DIAGNOSTIC_CASES', 'data_access'),
+  getAllDiagnosticCases
+);
+
+/**
+ * @route GET /api/diagnostics/referrals
+ * @desc Get diagnostic referrals
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.get(
+  '/referrals',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('VIEW_DIAGNOSTIC_REFERRALS', 'data_access'),
+  getDiagnosticReferrals
+);
+
+/**
+ * @route GET /api/diagnostics/history/:historyId/export/pdf
+ * @desc Export diagnostic history as PDF
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.get(
+  '/history/:historyId/export/pdf',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('EXPORT_DIAGNOSTIC_HISTORY_PDF', 'data_export'),
+  exportDiagnosticHistoryPDF
+);
+
+/**
+ * @route POST /api/diagnostics/history/:historyId/referral/generate
+ * @desc Generate referral document
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.post(
+  '/history/:historyId/referral/generate',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('GENERATE_REFERRAL_DOCUMENT', 'clinical_documentation'),
+  generateReferralDocument
+);
+
+/**
+ * @route POST /api/diagnostics/history/compare
+ * @desc Compare diagnostic histories
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.post(
+  '/history/compare',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('COMPARE_DIAGNOSTIC_HISTORIES', 'data_analysis'),
+  compareDiagnosticHistories
 );
 
 export default router;
