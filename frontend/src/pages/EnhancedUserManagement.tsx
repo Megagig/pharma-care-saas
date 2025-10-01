@@ -187,6 +187,7 @@ const EnhancedUserManagement: React.FC = () => {
 
     // Selection states
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+    const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
     const [selectedRolesForAssignment, setSelectedRolesForAssignment] = useState<string[]>([]);
     const [directPermissions, setDirectPermissions] = useState<string[]>([]);
     const [deniedPermissions, setDeniedPermissions] = useState<string[]>([]);
@@ -194,7 +195,8 @@ const EnhancedUserManagement: React.FC = () => {
     // Preview and conflict states
     const [permissionPreview, setPermissionPreview] = useState<any>(null);
     const [detectedConflicts, setDetectedConflicts] = useState<any>(null);
-    const [effectivePermissions, setEffectivePermissions] = useState<any>(null);
+    const [effectivePermissions, setEffectivePermissions] = useState<any>([]);
+    const [auditTrail, setAuditTrail] = useState<any[]>([]);
 
     // Notification state
     const [snackbar, setSnackbar] = useState<{
@@ -438,7 +440,7 @@ const EnhancedUserManagement: React.FC = () => {
         try {
             const response = await rbacService.getUserAuditTrail(user._id);
             if (response.success) {
-                setAuditLogs(response.data || []);
+                setAuditTrail(response.data || []);
                 setAuditTrailOpen(true);
             }
         } catch (error) {
@@ -689,6 +691,126 @@ const EnhancedUserManagement: React.FC = () => {
 
             {/* Dialogs will be added here */}
 
+            {/* User Details Dialog */}
+            <Dialog open={userDetailsOpen} onClose={() => setUserDetailsOpen(false)} maxWidth="md" fullWidth>
+                <DialogTitle>User Details - {selectedUser?.firstName} {selectedUser?.lastName}</DialogTitle>
+                <DialogContent>
+                    {selectedUser && (
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                <strong>Email:</strong> {selectedUser.email}
+                            </Typography>
+                            <Typography variant="subtitle2" gutterBottom>
+                                <strong>Status:</strong> {selectedUser.status}
+                            </Typography>
+                            <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                                <strong>Assigned Roles:</strong>
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+                                {(selectedUser as any).roles?.map((role: any) => (
+                                    <Chip key={role._id} label={role.displayName || role.name} size="small" color="primary" />
+                                ))}
+                            </Box>
+                            <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+                                <strong>Effective Permissions:</strong>
+                            </Typography>
+                            <Box sx={{ maxHeight: 300, overflow: 'auto', mt: 1 }}>
+                                {effectivePermissions.map((perm: string, index: number) => (
+                                    <Chip key={index} label={perm} size="small" sx={{ m: 0.5 }} />
+                                ))}
+                            </Box>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setUserDetailsOpen(false)}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Audit Trail Dialog */}
+            <Dialog open={auditTrailOpen} onClose={() => setAuditTrailOpen(false)} maxWidth="lg" fullWidth>
+                <DialogTitle>Audit Trail - {selectedUser?.firstName} {selectedUser?.lastName}</DialogTitle>
+                <DialogContent>
+                    {auditTrail.length > 0 ? (
+                        <TableContainer>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Timestamp</TableCell>
+                                        <TableCell>Action</TableCell>
+                                        <TableCell>Details</TableCell>
+                                        <TableCell>Performed By</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {auditTrail.map((entry: any, index: number) => (
+                                        <TableRow key={index}>
+                                            <TableCell>
+                                                {new Date(entry.timestamp || entry.createdAt).toLocaleString()}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip label={entry.action || entry.type} size="small" />
+                                            </TableCell>
+                                            <TableCell>{entry.details || entry.description || 'N/A'}</TableCell>
+                                            <TableCell>{entry.performedBy || entry.userId || 'System'}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                            No audit trail available
+                        </Typography>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setAuditTrailOpen(false)}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Role Assignment Dialog */}
+            <Dialog open={roleAssignmentOpen} onClose={() => setRoleAssignmentOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Assign Roles to Users</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mt: 2 }}>
+                        <Typography variant="body2" gutterBottom>
+                            Selected Users: {selectedUserIds.length}
+                        </Typography>
+                        <FormControl fullWidth sx={{ mt: 2 }}>
+                            <InputLabel>Select Roles</InputLabel>
+                            <Select
+                                multiple
+                                value={selectedRoleIds}
+                                onChange={(e) => setSelectedRoleIds(typeof e.target.value === 'string' ? [] : e.target.value)}
+                                input={<OutlinedInput label="Select Roles" />}
+                                renderValue={(selected) => (
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                        {selected.map((value) => {
+                                            const role = roles.find((r) => r._id === value);
+                                            return <Chip key={value} label={role?.displayName || value} size="small" />;
+                                        })}
+                                    </Box>
+                                )}
+                            >
+                                {roles.map((role) => (
+                                    <MenuItem key={role._id} value={role._id}>
+                                        <Checkbox checked={selectedRoleIds.indexOf(role._id) > -1} />
+                                        <ListItemText primary={role.displayName} secondary={role.description} />
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setRoleAssignmentOpen(false)}>Cancel</Button>
+                    <Button onClick={handleAssignRoles} variant="contained" disabled={selectedRoleIds.length === 0}>
+                        Assign Roles
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             {/* Snackbar */}
             <Snackbar
                 open={snackbar.open}
@@ -909,19 +1031,35 @@ function UsersOverviewTab({
                                             </TableCell>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                                    {user.assignedRoles?.slice(0, 2).map((roleId: string) => {
+                                                    {/* Use roles array from backend (populated from UserRole table) */}
+                                                    {(user as any).roles?.slice(0, 2).map((role: any) => (
+                                                        <Chip
+                                                            key={role._id || role}
+                                                            label={role.displayName || role.name || 'Unknown'}
+                                                            size="small"
+                                                            color="primary"
+                                                            variant="outlined"
+                                                        />
+                                                    ))}
+                                                    {/* Fallback to assignedRoles if roles not available */}
+                                                    {!(user as any).roles && user.assignedRoles?.slice(0, 2).map((roleId: string) => {
                                                         const role = roles.find((r) => r._id === roleId);
                                                         return (
                                                             <Chip
                                                                 key={roleId}
                                                                 label={role?.displayName || 'Unknown'}
                                                                 size="small"
+                                                                color="primary"
                                                                 variant="outlined"
                                                             />
                                                         );
                                                     })}
-                                                    {user.assignedRoles?.length > 2 && (
-                                                        <Chip label={`+${user.assignedRoles.length - 2}`} size="small" />
+                                                    {((user as any).roles || user.assignedRoles || []).length > 2 && (
+                                                        <Chip
+                                                            label={`+${((user as any).roles || user.assignedRoles).length - 2}`}
+                                                            size="small"
+                                                            color="default"
+                                                        />
                                                     )}
                                                 </Box>
                                             </TableCell>
@@ -934,8 +1072,8 @@ function UsersOverviewTab({
                                             </TableCell>
                                             <TableCell>
                                                 <Typography variant="caption">
-                                                    {user.lastActive
-                                                        ? new Date(user.lastActive).toLocaleDateString()
+                                                    {(user as any).lastLoginAt || user.lastActive
+                                                        ? new Date((user as any).lastLoginAt || user.lastActive).toLocaleDateString()
                                                         : 'Never'}
                                                 </Typography>
                                             </TableCell>

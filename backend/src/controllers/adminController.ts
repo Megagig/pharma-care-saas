@@ -80,7 +80,7 @@ export class AdminController {
       const userRoles = await UserRole.find({
         userId: { $in: userIds },
         isActive: true,
-      }).populate('roleId', 'name displayName category');
+      }).populate('roleId', 'name displayName category description');
 
       // Create a map of user roles
       const userRolesMap = new Map<string, any[]>();
@@ -92,12 +92,17 @@ export class AdminController {
         userRolesMap.get(userId)!.push(ur.roleId);
       });
 
-      // Format response
+      // Format response with all RBAC fields
       const formattedUsers = users.map((user) => {
+        const userObj = user.toObject();
         const roles = userRolesMap.get(user._id.toString()) || [];
         return {
-          ...user.toObject(),
-          roles,
+          ...userObj,
+          roles, // Populated roles from UserRole table
+          // Ensure RBAC fields are present
+          assignedRoles: userObj.assignedRoles || [],
+          directPermissions: userObj.directPermissions || [],
+          deniedPermissions: userObj.deniedPermissions || [],
         };
       });
 
