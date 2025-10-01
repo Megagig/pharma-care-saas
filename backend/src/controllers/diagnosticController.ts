@@ -2072,7 +2072,16 @@ export const updateReferralDocument = async (
     const userId = req.user!._id;
     const workplaceId = req.user!.workplaceId;
 
+    logger.info('Update referral document request', {
+      caseId,
+      userId,
+      workplaceId,
+      contentLength: content?.length || 0,
+      hasContent: !!content,
+    });
+
     if (!content) {
+      logger.warn('Update referral document failed: no content provided', { caseId, userId });
       res.status(400).json({
         success: false,
         message: 'Referral document content is required',
@@ -2087,7 +2096,22 @@ export const updateReferralDocument = async (
       'referral.generated': true,
     });
 
+    logger.info('Diagnostic case lookup result', {
+      caseId,
+      found: !!diagnosticCase,
+      hasReferral: !!diagnosticCase?.referral,
+      referralStatus: diagnosticCase?.referral?.status,
+      referralGenerated: diagnosticCase?.referral?.generated,
+      hasDocument: !!diagnosticCase?.referral?.document,
+    });
+
     if (!diagnosticCase || !diagnosticCase.referral) {
+      logger.warn('Update referral document failed: case not found or no referral', {
+        caseId,
+        userId,
+        found: !!diagnosticCase,
+        hasReferral: !!diagnosticCase?.referral,
+      });
       res.status(404).json({
         success: false,
         message: 'Referral document not found or case not in referred status',
@@ -2095,13 +2119,22 @@ export const updateReferralDocument = async (
       return;
     }
 
-    // Update referral document
-    diagnosticCase.referral.document = {
-      ...diagnosticCase.referral.document!,
-      content,
-      lastModified: new Date(),
-      modifiedBy: userId,
-    };
+    // Update referral document - handle case where document doesn't exist yet
+    if (!diagnosticCase.referral.document) {
+      diagnosticCase.referral.document = {
+        content,
+        template: 'default',
+        lastModified: new Date(),
+        modifiedBy: userId,
+      };
+    } else {
+      diagnosticCase.referral.document = {
+        ...diagnosticCase.referral.document,
+        content,
+        lastModified: new Date(),
+        modifiedBy: userId,
+      };
+    }
 
     await diagnosticCase.save();
 

@@ -353,12 +353,28 @@ export const useDeleteReferral = () => {
  */
 export const useUpdateReferralDocument = () => {
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useNotifications();
   
   return useMutation({
-    mutationFn: ({ caseId, content }: { caseId: string; content: string }) =>
-      diagnosticHistoryService.updateReferralDocument(caseId, content),
-    onSuccess: () => {
+    mutationFn: ({ caseId, content }: { caseId: string; content: string }) => {
+      console.log('useUpdateReferralDocument: Starting mutation', { caseId, contentLength: content.length });
+      return diagnosticHistoryService.updateReferralDocument(caseId, content);
+    },
+    onSuccess: (data, variables) => {
+      console.log('useUpdateReferralDocument: Mutation successful', { data, caseId: variables.caseId });
       queryClient.invalidateQueries({ queryKey: diagnosticHistoryKeys.all });
+      showSuccess('Referral document updated successfully.', 'Document Updated');
+    },
+    onError: (error: any, variables) => {
+      console.error('useUpdateReferralDocument: Mutation failed', { 
+        error, 
+        caseId: variables.caseId,
+        errorMessage: error?.response?.data?.message || error?.message 
+      });
+      showError(
+        error?.response?.data?.message || error?.message || 'Failed to update referral document. Please try again.',
+        'Update Failed'
+      );
     },
   });
 };

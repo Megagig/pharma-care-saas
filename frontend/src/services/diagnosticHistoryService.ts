@@ -490,8 +490,29 @@ class DiagnosticHistoryService {
    * Update referral document
    */
   async updateReferralDocument(caseId: string, content: string): Promise<any> {
-    const response = await apiClient.put(`/diagnostics/cases/${caseId}/referral/update`, { content });
-    return response.data;
+    console.log('diagnosticHistoryService.updateReferralDocument: Making API call', {
+      caseId,
+      contentLength: content.length,
+      url: `/diagnostics/cases/${caseId}/referral/update`
+    });
+    
+    try {
+      const response = await apiClient.put(`/diagnostics/cases/${caseId}/referral/update`, { content });
+      console.log('diagnosticHistoryService.updateReferralDocument: API call successful', {
+        caseId,
+        status: response.status,
+        data: response.data
+      });
+      return response.data;
+    } catch (error) {
+      console.error('diagnosticHistoryService.updateReferralDocument: API call failed', {
+        caseId,
+        error,
+        status: error?.response?.status,
+        data: error?.response?.data
+      });
+      throw error;
+    }
   }
 
   /**

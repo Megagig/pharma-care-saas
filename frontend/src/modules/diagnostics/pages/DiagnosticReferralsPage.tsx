@@ -80,6 +80,7 @@ const DiagnosticReferralsPage: React.FC = () => {
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editContent, setEditContent] = useState('');
+  const [editingReferral, setEditingReferral] = useState<DiagnosticReferral | null>(null);
 
   const {
     data: referralsData,
@@ -221,20 +222,53 @@ const DiagnosticReferralsPage: React.FC = () => {
   const handleEditReferral = () => {
     if (!selectedReferral?.referral?.document?.content) return;
     
+    // Store the referral being edited separately so it persists after menu closes
+    setEditingReferral(selectedReferral);
     setEditContent(selectedReferral.referral.document.content);
     setEditDialogOpen(true);
     handleMenuClose();
   };
 
   const handleSaveEdit = async (content: string) => {
-    if (!selectedReferral) return;
+    if (!editingReferral) {
+      console.error('No referral selected for editing');
+      alert('Error: No referral selected. Please try again.');
+      return;
+    }
     
-    await updateMutation.mutateAsync({
-      caseId: selectedReferral.caseId,
-      content,
-    });
-    
-    refetch();
+    try {
+      console.log('Saving referral edit:', {
+        caseId: editingReferral.caseId,
+        contentLength: content.length,
+        content: content.substring(0, 100) + '...' // Log first 100 chars for debugging
+      });
+      
+      const result = await updateMutation.mutateAsync({
+        caseId: editingReferral.caseId,
+        content,
+      });
+      
+      console.log('Save successful:', result);
+      
+      // Refetch the data to get updated content
+      await refetch();
+      
+      // Clear the editing referral state
+      setEditingReferral(null);
+      
+    } catch (error) {
+      console.error('Failed to save referral edit:', error);
+      
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'An unexpected error occurred while saving the referral document.';
+      
+      alert(`Failed to save changes: ${errorMessage}\n\nPlease try again or contact support if the problem persists.`);
+      
+      // Don't close the dialog on error so user can retry
+      throw error;
+    }
   };
 
   const handleDeleteReferral = async () => {
@@ -729,11 +763,14 @@ const DiagnosticReferralsPage: React.FC = () => {
       {/* Edit Referral Dialog */}
       <EditReferralDialog
         open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setEditingReferral(null); // Clear editing referral when dialog closes
+        }}
         onSave={handleSaveEdit}
         loading={updateMutation.isPending}
         initialContent={editContent}
-        caseId={selectedReferral?.caseId}
+        caseId={editingReferral?.caseId}
       />
     </Container>
   );

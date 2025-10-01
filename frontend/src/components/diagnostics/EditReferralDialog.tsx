@@ -35,6 +35,7 @@ const EditReferralDialog: React.FC<EditReferralDialogProps> = ({
 }) => {
   const [content, setContent] = useState(initialContent);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setContent(initialContent);
@@ -48,17 +49,30 @@ const EditReferralDialog: React.FC<EditReferralDialogProps> = ({
   };
 
   const handleSave = async () => {
+    console.log('EditReferralDialog: handleSave called', {
+      hasChanges,
+      contentLength: content.length,
+      initialContentLength: initialContent.length,
+    });
+
     if (!hasChanges) {
+      console.log('EditReferralDialog: No changes detected, closing dialog');
       onClose();
       return;
     }
 
     try {
+      setIsSaving(true);
+      console.log('EditReferralDialog: Calling onSave with content');
       await onSave(content);
+      console.log('EditReferralDialog: onSave completed successfully');
       setHasChanges(false);
       onClose();
     } catch (error) {
-      console.error('Failed to save referral:', error);
+      console.error('EditReferralDialog: Failed to save referral:', error);
+      // Don't close the dialog on error so user can see the error and retry
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -140,10 +154,10 @@ const EditReferralDialog: React.FC<EditReferralDialogProps> = ({
         <Button
           onClick={handleSave}
           variant="contained"
-          startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
-          disabled={loading || !hasChanges}
+          startIcon={(loading || isSaving) ? <CircularProgress size={20} /> : <SaveIcon />}
+          disabled={loading || isSaving || !hasChanges}
         >
-          {loading ? 'Saving...' : hasChanges ? 'Save Changes' : 'No Changes'}
+          {(loading || isSaving) ? 'Saving...' : hasChanges ? 'Save Changes' : 'No Changes'}
         </Button>
       </DialogActions>
     </Dialog>

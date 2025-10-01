@@ -1647,7 +1647,15 @@ const updateReferralDocument = async (req, res) => {
         const { content } = req.body;
         const userId = req.user._id;
         const workplaceId = req.user.workplaceId;
+        logger_1.default.info('Update referral document request', {
+            caseId,
+            userId,
+            workplaceId,
+            contentLength: content?.length || 0,
+            hasContent: !!content,
+        });
         if (!content) {
+            logger_1.default.warn('Update referral document failed: no content provided', { caseId, userId });
             res.status(400).json({
                 success: false,
                 message: 'Referral document content is required',
@@ -1660,19 +1668,43 @@ const updateReferralDocument = async (req, res) => {
             status: 'referred',
             'referral.generated': true,
         });
+        logger_1.default.info('Diagnostic case lookup result', {
+            caseId,
+            found: !!diagnosticCase,
+            hasReferral: !!diagnosticCase?.referral,
+            referralStatus: diagnosticCase?.referral?.status,
+            referralGenerated: diagnosticCase?.referral?.generated,
+            hasDocument: !!diagnosticCase?.referral?.document,
+        });
         if (!diagnosticCase || !diagnosticCase.referral) {
+            logger_1.default.warn('Update referral document failed: case not found or no referral', {
+                caseId,
+                userId,
+                found: !!diagnosticCase,
+                hasReferral: !!diagnosticCase?.referral,
+            });
             res.status(404).json({
                 success: false,
                 message: 'Referral document not found or case not in referred status',
             });
             return;
         }
-        diagnosticCase.referral.document = {
-            ...diagnosticCase.referral.document,
-            content,
-            lastModified: new Date(),
-            modifiedBy: userId,
-        };
+        if (!diagnosticCase.referral.document) {
+            diagnosticCase.referral.document = {
+                content,
+                template: 'default',
+                lastModified: new Date(),
+                modifiedBy: userId,
+            };
+        }
+        else {
+            diagnosticCase.referral.document = {
+                ...diagnosticCase.referral.document,
+                content,
+                lastModified: new Date(),
+                modifiedBy: userId,
+            };
+        }
         await diagnosticCase.save();
         logger_1.default.info('Referral document updated', {
             caseId,
