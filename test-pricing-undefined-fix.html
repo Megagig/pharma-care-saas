@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing Page Undefined Properties Fix</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-header {
+            color: #1976d2;
+            border-bottom: 2px solid #e3f2fd;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            margin: 8px 0;
+        }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        .warning { background: #fff3e0; color: #f57c00; }
+        .error { background: #ffebee; color: #d32f2f; }
+        .info { background: #e3f2fd; color: #1976d2; }
+        .code-block {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .feature-list li:before {
+            content: "✅ ";
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .test-steps {
+            background: #f8f9fa;
+            border-left: 4px solid #1976d2;
+            padding: 16px;
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-header">🔧 Pricing Page Undefined Properties Fix</h1>
+        
+        <div class="status success">
+            ✅ Fix Applied Successfully
+        </div>
+        
+        <h2>Problem Identified</h2>
+        <p>The Pricing page was throwing <code>TypeError: Cannot read properties of undefined (reading 'map')</code> because plan properties like <code>displayedFeatures</code> were undefined when the API returned incomplete data.</p>
+        
+        <h2>Root Cause</h2>
+        <p>The subscription service was returning plan objects with missing or undefined properties, causing the component to crash when trying to access:</p>
+        <ul>
+            <li><code>plan.displayedFeatures.map()</code></li>
+            <li><code>plan.priceNGN.toLocaleString()</code></li>
+            <li>Other plan properties without safe checks</li>
+        </ul>
+        
+        <h2>Solution Implemented</h2>
+        <ul class="feature-list">
+            <li>Added safe array access: <code>(plan.displayedFeatures || []).map()</code></li>
+            <li>Added safe number access: <code>(plan.priceNGN || 0).toLocaleString()</code></li>
+            <li>Added safe string access: <code>plan.name || 'Plan'</code></li>
+            <li>Added safe ID access: <code>plan._id || ''</code></li>
+            <li>Added conditional rendering for pricing cards section</li>
+            <li>Improved query error handling without mock data</li>
+        </ul>
+        
+        <h2>Code Changes Made</h2>
+        <div class="code-block">
+// Before (causing errors):
+{plan.displayedFeatures.map(...)}
+₦{plan.priceNGN.toLocaleString()}
+{plan.name}
+onClick={() => handleSubscribe(plan._id)}
+
+// After (safe access):
+{(plan.displayedFeatures || []).map(...)}
+₦{(plan.priceNGN || 0).toLocaleString()}
+{plan.name || 'Plan'}
+onClick={() => handleSubscribe(plan._id || '')}
+
+// Query improvements:
+export const useAvailablePlansQuery = (billingInterval) => {
+  return useQuery({
+    queryKey: [...subscriptionKeys.plans(), billingInterval],
+    queryFn: async () => {
+      try {
+        const plans = await subscriptionService.fetchPlans();
+        if (Array.isArray(plans)) {
+          return plans.filter(plan => plan.billingInterval === billingInterval);
+        }
+        return [];
+      } catch (error) {
+        console.error('Failed to fetch plans:', error);
+        throw error; // Let React Query handle the error state
+      }
+    },
+    staleTime: 10 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+  });
+};
+        </div>
+        
+        <h2>Properties Protected</h2>
+        <div class="test-steps">
+            <ul>
+                <li><code>plan.displayedFeatures</code> - Array of features to display</li>
+                <li><code>plan.priceNGN</code> - Price in Nigerian Naira</li>
+                <li><code>plan.name</code> - Plan name</li>
+                <li><code>plan._id</code> - Plan identifier</li>
+                <li><code>plan.whatsappNumber</code> - Contact WhatsApp number</li>
+                <li><code>plan.metadata?.mostPopular</code> - Already safely accessed</li>
+                <li><code>plan.isContactSales</code> - Contact sales flag</li>
+            </ul>
+        </div>
+        
+        <h2>Testing Instructions</h2>
+        <div class="test-steps">
+            <ol>
+                <li>Navigate to <code>http://localhost:5173/pricing</code></li>
+                <li>Verify the page loads without console errors</li>
+                <li>Check that loading state shows properly</li>
+                <li>Verify error state displays when API fails</li>
+                <li>Test billing interval toggle (Monthly/Yearly)</li>
+                <li>Ensure pricing cards render even with incomplete data</li>
+                <li>Test "Get Started" and "Contact Sales" buttons</li>
+            </ol>
+        </div>
+        
+        <h2>Error Handling Improvements</h2>
+        <div class="test-steps">
+            <h3>Query Level:</h3>
+            <p>✅ Proper error throwing to let React Query handle error states</p>
+            <p>✅ No mock data fallbacks as requested</p>
+            <p>✅ Retry logic with exponential backoff</p>
+            
+            <h3>Component Level:</h3>
+            <p>✅ Safe property access with fallback values</p>
+            <p>✅ Conditional rendering based on loading/error states</p>
+            <p>✅ Graceful handling of incomplete API responses</p>
+        </div>
+        
+        <div class="status info">
+            💡 The pricing page should now handle incomplete API responses gracefully without crashing, while still showing proper error states when the API is completely unavailable.
+        </div>
+        
+        <h2>Expected Behavior</h2>
+        <ul>
+            <li>Page loads without JavaScript errors</li>
+            <li>Loading spinner shows while fetching data</li>
+            <li>Error message displays if API fails completely</li>
+            <li>Pricing cards render safely even with missing properties</li>
+            <li>All interactive elements work properly</li>
+            <li>No mock data is used (as requested)</li>
+        </ul>
+    </div>
+    
+    <script>
+        console.log('🔧 Pricing Page Undefined Properties Fix Applied');
+        console.log('✅ Safe property access implemented');
+        console.log('🛡️ Error handling improved');
+        console.log('🎯 Ready for testing!');
+    </script>
+</body>
+</html>

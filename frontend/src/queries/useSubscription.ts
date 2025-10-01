@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   subscriptionService,
-  type SubscriptionPlan,
 } from '../services/subscriptionService';
+// import type { SubscriptionPlan } from '../services/subscriptionService';
 import { paymentService } from '../services/paymentService';
 import { useNotifications } from '../context/NotificationContext';
 
@@ -23,8 +23,8 @@ export const useCurrentSubscriptionQuery = () => {
   return useQuery({
     queryKey: subscriptionKeys.current(),
     queryFn: async () => {
-      const response = await subscriptionService.getCurrentSubscription();
-      return response.data?.subscription || null;
+      const response = await subscriptionService.fetchCurrentSubscription();
+      return response?.data?.subscription || null;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
@@ -38,10 +38,21 @@ export const useAvailablePlansQuery = (
   return useQuery({
     queryKey: [...subscriptionKeys.plans(), billingInterval],
     queryFn: async () => {
-      const response = await subscriptionService.getPlans(billingInterval);
-      return response.data as SubscriptionPlan[];
+      try {
+        const plans = await subscriptionService.fetchPlans();
+        // Filter plans by billing interval if needed, ensure we always return an array
+        if (Array.isArray(plans)) {
+          return plans.filter(plan => plan.billingInterval === billingInterval);
+        }
+        return [];
+      } catch (error) {
+        console.error('Failed to fetch plans:', error);
+        throw error; // Let React Query handle the error state
+      }
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 };
 
@@ -49,7 +60,10 @@ export const useAvailablePlansQuery = (
 export const usePaymentMethodsQuery = () => {
   return useQuery({
     queryKey: subscriptionKeys.paymentMethods(),
-    queryFn: () => paymentService.getPaymentMethods(),
+    queryFn: async () => {
+      const methods = await paymentService.getPaymentMethods();
+      return methods;
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
@@ -62,14 +76,16 @@ export const usePaymentHistoryQuery = (
 ) => {
   return useQuery({
     queryKey: subscriptionKeys.paymentHistory({ page, limit, ...filters }),
-    queryFn: () =>
-      paymentService.getPayments(
+    queryFn: async () => {
+      const result = await paymentService.getPayments(
         page,
         limit,
         filters.status,
         filters.dateFrom,
         filters.dateTo
-      ),
+      );
+      return result;
+    },
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };
@@ -79,8 +95,8 @@ export const useUsageMetricsQuery = () => {
   return useQuery({
     queryKey: subscriptionKeys.usageMetrics(),
     queryFn: async () => {
-      const response = await subscriptionService.getUsageMetrics();
-      return response.data;
+      const response = await subscriptionService.getUsageStatistics();
+      return response?.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -92,15 +108,33 @@ export const useBillingHistoryQuery = () => {
     queryKey: subscriptionKeys.billingHistory(),
     queryFn: async () => {
       const response = await subscriptionService.getBillingHistory();
-      return response.data || [];
+      return response || [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
+// Safe notifications hook that doesn't throw if provider is missing
+const useSafeNotifications = () => {
+  try {
+    return useNotifications();
+  } catch (error) {
+    // Return a fallback object when NotificationProvider is not available
+    return {
+      addNotification: (notification: any) => {
+        console.warn('NotificationProvider not available, using fallback:', notification);
+        // Fallback to browser alert for critical errors
+        if (notification.type === 'error') {
+          alert(`${notification.title}: ${notification.message}`);
+        }
+      }
+    };
+  }
+};
+
 // Checkout Session Mutation
 export const useCreateCheckoutSessionMutation = () => {
-  const { addNotification } = useNotifications();
+  const { addNotification } = useSafeNotifications();
 
   return useMutation({
     mutationFn: async ({
@@ -110,11 +144,13 @@ export const useCreateCheckoutSessionMutation = () => {
       planId: string;
       billingInterval: 'monthly' | 'yearly';
     }) => {
-      const response = await subscriptionService.createCheckoutSession(
+      const response = await subscriptionService.createCheckoutSession({
         planId,
-        billingInterval
-      );
-      return response.data.sessionUrl;
+        interval: billingInterval,
+        successUrl: `${window.location.origin}/subscription/success`,
+        cancelUrl: `${window.location.origin}/pricing`,
+      });
+      return response.sessionUrl;
     },
     onSuccess: (sessionUrl) => {
       // Redirect to Stripe checkout
@@ -135,11 +171,11 @@ export const useCreateCheckoutSessionMutation = () => {
 // Cancel Subscription Mutation
 export const useCancelSubscriptionMutation = () => {
   const queryClient = useQueryClient();
-  const { addNotification } = useNotifications();
+  const { addNotification } = useSafeNotifications();
 
   return useMutation({
-    mutationFn: (reason?: string) =>
-      subscriptionService.cancelSubscription(reason),
+    mutationFn: (subscriptionId: string) =>
+      subscriptionService.cancelSubscription(subscriptionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.current() });
       addNotification({
@@ -164,7 +200,7 @@ export const useCancelSubscriptionMutation = () => {
 // Reactivate Subscription Mutation
 export const useReactivateSubscriptionMutation = () => {
   const queryClient = useQueryClient();
-  const { addNotification } = useNotifications();
+  const { addNotification } = useSafeNotifications();
 
   return useMutation({
     mutationFn: () => subscriptionService.reactivateSubscription(),
@@ -192,7 +228,7 @@ export const useReactivateSubscriptionMutation = () => {
 // Update Subscription Mutation
 export const useUpdateSubscriptionMutation = () => {
   const queryClient = useQueryClient();
-  const { addNotification } = useNotifications();
+  const { addNotification } = useSafeNotifications();
 
   return useMutation({
     mutationFn: ({
@@ -226,7 +262,7 @@ export const useUpdateSubscriptionMutation = () => {
 // Add Payment Method Mutation
 export const useAddPaymentMethodMutation = () => {
   const queryClient = useQueryClient();
-  const { addNotification } = useNotifications();
+  const { addNotification } = useSafeNotifications();
 
   return useMutation({
     mutationFn: ({
@@ -262,7 +298,7 @@ export const useAddPaymentMethodMutation = () => {
 // Remove Payment Method Mutation
 export const useRemovePaymentMethodMutation = () => {
   const queryClient = useQueryClient();
-  const { addNotification } = useNotifications();
+  const { addNotification } = useSafeNotifications();
 
   return useMutation({
     mutationFn: (paymentMethodId: string) =>
@@ -293,7 +329,7 @@ export const useRemovePaymentMethodMutation = () => {
 // Set Default Payment Method Mutation
 export const useSetDefaultPaymentMethodMutation = () => {
   const queryClient = useQueryClient();
-  const { addNotification } = useNotifications();
+  const { addNotification } = useSafeNotifications();
 
   return useMutation({
     mutationFn: (paymentMethodId: string) =>
@@ -323,7 +359,7 @@ export const useSetDefaultPaymentMethodMutation = () => {
 
 // Download Invoice Mutation
 export const useDownloadInvoiceMutation = () => {
-  const { addNotification } = useNotifications();
+  const { addNotification } = useSafeNotifications();
 
   return useMutation({
     mutationFn: (paymentId: string) =>

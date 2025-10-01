@@ -16,6 +16,14 @@ export interface DiagnosticCaseData {
         bloodGlucose?: number;
         respiratoryRate?: number;
     };
+    // Alias for backward compatibility
+    vitalSigns?: {
+        bloodPressure?: string;
+        heartRate?: number;
+        temperature?: number;
+        bloodGlucose?: number;
+        respiratoryRate?: number;
+    };
     currentMedications?: Array<{
         name: string;
         dosage: string;
@@ -24,6 +32,10 @@ export interface DiagnosticCaseData {
     allergies?: string[];
     medicalHistory?: string[];
     labResults?: string[];
+    patientConsent?: {
+        provided: boolean;
+        method: string;
+    };
 }
 
 export interface AIAnalysisResult {
@@ -79,6 +91,16 @@ export interface DiagnosticCase {
 }
 
 class AIdiagnosticService {
+    /**
+     * Safely get confidence score from analysis object
+     */
+    private getConfidenceScore(analysis: unknown): number {
+        if (analysis && typeof analysis === 'object' && 'confidenceScore' in analysis) {
+            return (analysis as any).confidenceScore || 0;
+        }
+        return 0;
+    }
+
     /**
      * Transform backend analysis structure to frontend format
      */
@@ -170,7 +192,7 @@ class AIdiagnosticService {
                 symptoms: caseData.symptoms,
                 labResults: caseData.labResults || [],
                 currentMedications: caseData.currentMedications || [],
-                vitalSigns: caseData.vitalSigns || {},
+                vitalSigns: caseData.vitalSigns || caseData.vitals || {},
                 patientConsent: caseData.patientConsent || {
                     provided: true,
                     method: 'electronic'
@@ -178,7 +200,7 @@ class AIdiagnosticService {
             };
 
             // Use extended timeout for AI analysis (3 minutes)
-            const response = await apiClient.post('/api/diagnostics/ai', apiPayload, {
+            const response = await apiClient.post('/diagnostics/ai', apiPayload, {
                 timeout: 180000 // 3 minutes timeout for AI processing
             });
 
@@ -259,7 +281,7 @@ class AIdiagnosticService {
      */
     async getCase(caseId: string): Promise<DiagnosticCase> {
         try {
-            const response = await apiClient.get(`/api/diagnostics/cases/${caseId}`, {
+            const response = await apiClient.get(`/diagnostics/cases/${caseId}`, {
                 timeout: 30000 // 30 seconds timeout for getting case data
             });
             const diagnosticCase = response.data.data;
@@ -285,7 +307,7 @@ class AIdiagnosticService {
                     id: diagnosticCase._id,
                     caseId: diagnosticCase.caseId,
                     analysis: this.transformAnalysisStructure(diagnosticCase.aiAnalysis),
-                    confidence: diagnosticCase.aiAnalysis.confidenceScore || 0,
+                    confidence: this.getConfidenceScore(diagnosticCase.aiAnalysis),
                     processingTime: diagnosticCase.aiRequestData?.processingTime || 0,
                     createdAt: diagnosticCase.createdAt,
                     status: 'completed' as const
@@ -337,7 +359,7 @@ class AIdiagnosticService {
      */
     async getPatientCases(patientId: string): Promise<DiagnosticCase[]> {
         try {
-            const response = await apiClient.get(`/api/diagnostics/patients/${patientId}/history`);
+            const response = await apiClient.get(`/diagnostics/patients/${patientId}/history`);
             const diagnosticCases = response.data.data.cases;
 
             // Transform backend cases to frontend format
@@ -374,7 +396,7 @@ class AIdiagnosticService {
                     id: diagnosticCase._id,
                     caseId: diagnosticCase.caseId,
                     analysis: this.transformAnalysisStructure(diagnosticCase.aiAnalysis),
-                    confidence: diagnosticCase.aiAnalysis.confidenceScore || 0,
+                    confidence: this.getConfidenceScore(diagnosticCase.aiAnalysis),
                     processingTime: diagnosticCase.aiRequestData?.processingTime || 0,
                     createdAt: diagnosticCase.createdAt,
                     status: 'completed' as const
