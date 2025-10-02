@@ -70,6 +70,7 @@ import roleHierarchyRoutes from './routes/roleHierarchyRoutes';
 import permissionRoutes from './routes/permissionRoutes';
 import rbacAuditRoutes from './routes/rbacAudit';
 import roleRoutes from './routes/roleRoutes';
+import pricingManagementRoutes from './routes/pricingManagementRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -260,6 +261,7 @@ app.use('/api/continuous-monitoring', continuousMonitoringRoutes);
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/pricing', pricingManagementRoutes);
 
 // Patient Management routes
 app.use('/api/patients', patientRoutes);

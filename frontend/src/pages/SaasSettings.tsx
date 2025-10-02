@@ -39,9 +39,11 @@ import {
   Shield as ShieldIcon,
   Tune as TuneIcon,
   Timeline as MonitoringIcon,
+  AttachMoney as PricingIcon,
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useRBAC } from '../hooks/useRBAC';
+import PricingManagement from '../components/admin/PricingManagement';
 
 const SaasSettings: React.FC = () => {
   const theme = useTheme();
@@ -80,6 +82,12 @@ const SaasSettings: React.FC = () => {
       label: 'System Overview',
       icon: <DashboardIcon />,
       description: 'System metrics and health status',
+    },
+    {
+      id: 'pricing',
+      label: 'Pricing Management',
+      icon: <PricingIcon />,
+      description: 'Manage pricing plans and features',
     },
     {
       id: 'users',
@@ -459,11 +467,12 @@ const SaasSettings: React.FC = () => {
       {/* Tab Content */}
       <Box sx={{ mt: 3 }}>
         {activeTab === 0 && renderOverviewTab()}
-        {activeTab === 1 && renderPlaceholderTab('User Management')}
-        {activeTab === 2 && renderPlaceholderTab('Feature Flags')}
-        {activeTab === 3 && renderPlaceholderTab('Security Settings')}
-        {activeTab === 4 && renderPlaceholderTab('Analytics & Reports')}
-        {activeTab === 5 && renderPlaceholderTab('Notifications')}
+        {activeTab === 1 && <PricingManagement />}
+        {activeTab === 2 && renderPlaceholderTab('User Management')}
+        {activeTab === 3 && renderPlaceholderTab('Feature Flags')}
+        {activeTab === 4 && renderPlaceholderTab('Security Settings')}
+        {activeTab === 5 && renderPlaceholderTab('Analytics & Reports')}
+        {activeTab === 6 && renderPlaceholderTab('Notifications')}
       </Box>
     </Container>
   );

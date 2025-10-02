@@ -326,7 +326,7 @@ const EnhancedUserManagement: React.FC = () => {
             // Fetch effective permissions
             const response = await rbacService.getUserEffectivePermissions(user._id);
             if (response.success) {
-                setEffectivePermissions(response.data);
+                setEffectivePermissions(response.data.permissions || []);
             }
         } catch (error) {
             console.error('Error fetching user details:', error);

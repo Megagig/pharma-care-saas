@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -176,6 +176,10 @@ type WorkplaceFlow = 'create' | 'join' | 'skip';
 const steps = ['Personal Info', 'Workplace Setup', 'Confirmation'];
 
 const MultiStepRegister = () => {
+  const [searchParams] = useSearchParams();
+  const selectedPlan = searchParams.get('plan') || 'free-trial';
+  const selectedPlanName = searchParams.get('planName') || 'Free Trial';
+
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -1044,13 +1048,31 @@ const MultiStepRegister = () => {
               <Typography
                 variant="h3"
                 component="h1"
-                sx={{ fontWeight: 'bold', mb: 1 }}
+                gutterBottom
+                sx={{ fontWeight: 700 }}
               >
-                Join PharmaCareSaaS
+                Create Account
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Create your account and set up your workplace
+                Join PharmaCare and transform your pharmacy practice
               </Typography>
+
+              {/* Selected Plan Display */}
+              {selectedPlanName && (
+                <Box sx={{ mt: 2 }}>
+                  <Chip
+                    label={`Selected Plan: ${selectedPlanName}`}
+                    color="primary"
+                    sx={{
+                      fontWeight: 600,
+                      px: 2,
+                      py: 2.5,
+                      height: 'auto',
+                      fontSize: '0.875rem',
+                    }}
+                  />
+                </Box>
+              )}
             </Box>
 
             {/* Stepper */}

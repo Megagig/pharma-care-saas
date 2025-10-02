@@ -89,7 +89,7 @@ import {
 import Landing from './pages/Landing';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import Pricing from './pages/Pricing';
+import NewPricing from './pages/NewPricing';
 import Login from './pages/Login';
 import MultiStepRegister from './pages/MultiStepRegister';
 import VerifyEmail from './pages/VerifyEmail';
@@ -108,7 +108,7 @@ function AppHooks() {
   useRoutePrefetching();
   useBackgroundSync();
   useCacheWarming();
-  
+
   return null; // This component doesn't render anything
 }
 
@@ -116,14 +116,14 @@ function App(): JSX.Element {
   // Initialize Zustand stores on app startup
   useEffect(() => {
     initializeStores();
-    
+
     // Initialize query devtools in development
     initializeQueryDevtools(queryClient);
-    
+
     // Initialize module preloader and compression utils
     modulePreloader.initialize();
     compressionUtils.preloadCriticalAssets().catch(console.error);
-    
+
     // Register service worker for caching
     registerSW({
       onSuccess: () => console.log('Service worker registered successfully'),
@@ -131,7 +131,7 @@ function App(): JSX.Element {
       onOfflineReady: () => console.log('App ready to work offline'),
       onNeedRefresh: () => console.log('App needs refresh for updates'),
     });
-    
+
     // Prefetch likely routes on app load
     queryPrefetcher.prefetchLikelyRoutes().catch(console.error);
   }, []);
@@ -194,16 +194,16 @@ function App(): JSX.Element {
                             position="bottom-right"
                           />
                         )}
-                        
+
                         {/* Service Worker Update Notifications */}
                         <ServiceWorkerUpdateNotification />
-                        
+
                         <Routes>
                           {/* Public Routes */}
                           <Route path="/" element={<Landing />} />
                           <Route path="/about" element={<About />} />
                           <Route path="/contact" element={<Contact />} />
-                          <Route path="/pricing" element={<Pricing />} />
+                          <Route path="/pricing" element={<NewPricing />} />
                           <Route path="/login" element={<Login />} />
                           <Route
                             path="/register"
