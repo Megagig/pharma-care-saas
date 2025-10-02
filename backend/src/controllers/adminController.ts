@@ -82,6 +82,12 @@ export class AdminController {
         isActive: true,
       }).populate('roleId', 'name displayName category description');
 
+      // Debug logging
+      logger.info(`Found ${userRoles.length} UserRole records for ${userIds.length} users`);
+      if (userRoles.length > 0) {
+        logger.info('Sample UserRole:', JSON.stringify(userRoles[0]));
+      }
+
       // Create a map of user roles
       const userRolesMap = new Map<string, any[]>();
       userRoles.forEach((ur) => {
@@ -105,6 +111,16 @@ export class AdminController {
           deniedPermissions: userObj.deniedPermissions || [],
         };
       });
+
+      // Debug: Log first user's role data
+      if (formattedUsers.length > 0) {
+        logger.info('Sample formatted user:', {
+          email: formattedUsers[0].email,
+          roles: formattedUsers[0].roles,
+          assignedRoles: formattedUsers[0].assignedRoles,
+          systemRole: (formattedUsers[0] as any).systemRole,
+        });
+      }
 
       res.json({
         success: true,

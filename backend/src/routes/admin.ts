@@ -19,34 +19,34 @@ router.post('/users/bulk-assign-roles', adminController.bulkAssignRoles);
 router.post('/users/bulk-revoke-roles', adminController.bulkRevokeRoles);
 
 // User role management routes
-router.get('/users/:id/roles', userRoleController.getUserRoles);
-router.post('/users/assign-roles', userRoleController.assignUserRoles);
-router.delete('/users/:id/roles/:roleId', userRoleController.revokeUserRole);
-router.put('/users/:id/permissions', userRoleController.updateUserPermissions);
+router.get('/users/:id/roles', userRoleController.getUserRoles.bind(userRoleController));
+router.post('/users/assign-roles', userRoleController.assignUserRoles.bind(userRoleController));
+router.delete('/users/:id/roles/:roleId', userRoleController.revokeUserRole.bind(userRoleController));
+router.put('/users/:id/permissions', userRoleController.updateUserPermissions.bind(userRoleController));
 router.get(
   '/users/:id/effective-permissions',
-  userRoleController.getUserEffectivePermissions
+  userRoleController.getUserEffectivePermissions.bind(userRoleController)
 );
-router.post('/users/bulk-update', userRoleController.bulkUpdateUsers);
+router.post('/users/bulk-update', userRoleController.bulkUpdateUsers.bind(userRoleController));
 router.post(
   '/users/:id/check-permission',
-  userRoleController.checkUserPermission
+  userRoleController.checkUserPermission.bind(userRoleController)
 );
 router.post(
   '/users/:id/preview-permissions',
-  userRoleController.previewPermissionChanges
+  userRoleController.previewPermissionChanges.bind(userRoleController)
 );
 router.post(
   '/users/:id/detect-conflicts',
-  userRoleController.detectRoleConflicts
+  userRoleController.detectRoleConflicts.bind(userRoleController)
 );
 router.post(
   '/users/:id/resolve-conflicts',
-  userRoleController.resolveRoleConflicts
+  userRoleController.resolveRoleConflicts.bind(userRoleController)
 );
 router.post(
   '/users/:id/refresh-cache',
-  userRoleController.refreshUserPermissionCache
+  userRoleController.refreshUserPermissionCache.bind(userRoleController)
 );
 
 // Role management routes

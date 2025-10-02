@@ -222,6 +222,13 @@ const EnhancedUserManagement: React.FC = () => {
             if (usersRes.success) setUsers(usersRes.data?.users || []);
             if (rolesRes.success) setRoles(rolesRes.data?.roles || []);
             if (permsRes.success) setPermissions(permsRes.data?.permissions || []);
+
+            // Debug logging
+            if (usersRes.success && usersRes.data?.users?.length > 0) {
+                console.log('Sample user data:', usersRes.data.users[0]);
+                console.log('User roles field:', usersRes.data.users[0].roles);
+                console.log('User assignedRoles field:', usersRes.data.users[0].assignedRoles);
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
             showSnackbar('Failed to load data', 'error');
@@ -332,7 +339,7 @@ const EnhancedUserManagement: React.FC = () => {
 
     // Assign roles
     const handleAssignRoles = async () => {
-        if (selectedUserIds.length === 0 || selectedRolesForAssignment.length === 0) {
+        if (selectedUserIds.length === 0 || selectedRoleIds.length === 0) {
             showSnackbar('Please select users and roles', 'warning');
             return;
         }
@@ -341,15 +348,16 @@ const EnhancedUserManagement: React.FC = () => {
         try {
             const response = await rbacService.assignUserRoles({
                 userIds: selectedUserIds,
-                roleIds: selectedRolesForAssignment,
-                workspaceId: 'default',
+                roleIds: selectedRoleIds,
+                // Don't send workspaceId if not needed (avoids ObjectId cast error)
                 isTemporary: false,
             });
 
             if (response.success) {
                 showSnackbar('Roles assigned successfully', 'success');
                 setRoleAssignmentOpen(false);
-                setSelectedRolesForAssignment([]);
+                setSelectedRoleIds([]);
+                setSelectedUserIds([]);
                 fetchData();
             } else {
                 showSnackbar(response.message || 'Failed to assign roles', 'error');
@@ -1032,34 +1040,51 @@ function UsersOverviewTab({
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                                                     {/* Use roles array from backend (populated from UserRole table) */}
-                                                    {(user as any).roles?.slice(0, 2).map((role: any) => (
-                                                        <Chip
-                                                            key={role._id || role}
-                                                            label={role.displayName || role.name || 'Unknown'}
-                                                            size="small"
-                                                            color="primary"
-                                                            variant="outlined"
-                                                        />
-                                                    ))}
-                                                    {/* Fallback to assignedRoles if roles not available */}
-                                                    {!(user as any).roles && user.assignedRoles?.slice(0, 2).map((roleId: string) => {
-                                                        const role = roles.find((r) => r._id === roleId);
-                                                        return (
-                                                            <Chip
-                                                                key={roleId}
-                                                                label={role?.displayName || 'Unknown'}
-                                                                size="small"
-                                                                color="primary"
-                                                                variant="outlined"
-                                                            />
-                                                        );
-                                                    })}
-                                                    {((user as any).roles || user.assignedRoles || []).length > 2 && (
-                                                        <Chip
-                                                            label={`+${((user as any).roles || user.assignedRoles).length - 2}`}
-                                                            size="small"
-                                                            color="default"
-                                                        />
+                                                    {(user as any).roles && Array.isArray((user as any).roles) && (user as any).roles.length > 0 ? (
+                                                        <>
+                                                            {(user as any).roles.slice(0, 2).map((role: any) => (
+                                                                <Chip
+                                                                    key={role._id || role}
+                                                                    label={role.displayName || role.name || role}
+                                                                    size="small"
+                                                                    color="primary"
+                                                                    variant="outlined"
+                                                                />
+                                                            ))}
+                                                            {(user as any).roles.length > 2 && (
+                                                                <Chip
+                                                                    label={`+${(user as any).roles.length - 2}`}
+                                                                    size="small"
+                                                                    color="default"
+                                                                />
+                                                            )}
+                                                        </>
+                                                    ) : user.assignedRoles && Array.isArray(user.assignedRoles) && user.assignedRoles.length > 0 ? (
+                                                        <>
+                                                            {user.assignedRoles.slice(0, 2).map((roleId: string) => {
+                                                                const role = roles.find((r) => r._id === roleId);
+                                                                return (
+                                                                    <Chip
+                                                                        key={roleId}
+                                                                        label={role?.displayName || role?.name || 'Unknown'}
+                                                                        size="small"
+                                                                        color="primary"
+                                                                        variant="outlined"
+                                                                    />
+                                                                );
+                                                            })}
+                                                            {user.assignedRoles.length > 2 && (
+                                                                <Chip
+                                                                    label={`+${user.assignedRoles.length - 2}`}
+                                                                    size="small"
+                                                                    color="default"
+                                                                />
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            No roles assigned
+                                                        </Typography>
                                                     )}
                                                 </Box>
                                             </TableCell>
