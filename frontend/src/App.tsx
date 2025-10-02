@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, Suspense } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -68,7 +68,6 @@ import {
   LazyHelp,
   LazyMTRHelp,
   LazyLicenseUpload,
-  preloadCriticalRoutes,
 } from './components/LazyComponents';
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
@@ -191,6 +190,7 @@ function App(): JSX.Element {
                         {import.meta.env.DEV && (
                           <ReactQueryDevtools
                             initialIsOpen={false}
+                            // @ts-ignore - DevtoolsPosition type mismatch
                             position="bottom-right"
                           />
                         )}

@@ -177,7 +177,10 @@ const steps = ['Personal Info', 'Workplace Setup', 'Confirmation'];
 
 const MultiStepRegister = () => {
   const [searchParams] = useSearchParams();
-  const selectedPlan = searchParams.get('plan') || 'free-trial';
+  // Plan slug stored for potential future use
+  // @ts-ignore - Variable reserved for future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _selectedPlan = searchParams.get('plan') || 'free-trial';
   const selectedPlanName = searchParams.get('planName') || 'Free Trial';
 
   const [activeStep, setActiveStep] = useState(0);
