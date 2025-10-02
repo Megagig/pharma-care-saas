@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, Suspense } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -48,6 +48,10 @@ import {
   LazyCaseResultsPage,
   LazyResultsReviewPage,
   LazyComponentDemo,
+  LazyAllDiagnosticCasesPage,
+  LazyDiagnosticAnalyticsPage,
+  LazyDiagnosticReferralsPage,
+  LazyFollowUpCasesPage,
   LazyReportsAnalyticsDashboard,
   LazyAdminDashboard,
   LazyFeatureFlagsPage,
@@ -64,7 +68,6 @@ import {
   LazyHelp,
   LazyMTRHelp,
   LazyLicenseUpload,
-  preloadCriticalRoutes,
 } from './components/LazyComponents';
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
@@ -85,7 +88,7 @@ import {
 import Landing from './pages/Landing';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import Pricing from './pages/Pricing';
+import NewPricing from './pages/NewPricing';
 import Login from './pages/Login';
 import MultiStepRegister from './pages/MultiStepRegister';
 import VerifyEmail from './pages/VerifyEmail';
@@ -104,7 +107,7 @@ function AppHooks() {
   useRoutePrefetching();
   useBackgroundSync();
   useCacheWarming();
-  
+
   return null; // This component doesn't render anything
 }
 
@@ -112,14 +115,14 @@ function App(): JSX.Element {
   // Initialize Zustand stores on app startup
   useEffect(() => {
     initializeStores();
-    
+
     // Initialize query devtools in development
     initializeQueryDevtools(queryClient);
-    
+
     // Initialize module preloader and compression utils
     modulePreloader.initialize();
     compressionUtils.preloadCriticalAssets().catch(console.error);
-    
+
     // Register service worker for caching
     registerSW({
       onSuccess: () => console.log('Service worker registered successfully'),
@@ -127,7 +130,7 @@ function App(): JSX.Element {
       onOfflineReady: () => console.log('App ready to work offline'),
       onNeedRefresh: () => console.log('App needs refresh for updates'),
     });
-    
+
     // Prefetch likely routes on app load
     queryPrefetcher.prefetchLikelyRoutes().catch(console.error);
   }, []);
@@ -187,19 +190,20 @@ function App(): JSX.Element {
                         {import.meta.env.DEV && (
                           <ReactQueryDevtools
                             initialIsOpen={false}
+                            // @ts-ignore - DevtoolsPosition type mismatch
                             position="bottom-right"
                           />
                         )}
-                        
+
                         {/* Service Worker Update Notifications */}
                         <ServiceWorkerUpdateNotification />
-                        
+
                         <Routes>
                           {/* Public Routes */}
                           <Route path="/" element={<Landing />} />
                           <Route path="/about" element={<About />} />
                           <Route path="/contact" element={<Contact />} />
-                          <Route path="/pricing" element={<Pricing />} />
+                          <Route path="/pricing" element={<NewPricing />} />
                           <Route path="/login" element={<Login />} />
                           <Route
                             path="/register"
@@ -571,6 +575,54 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyComponentDemo />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/cases/all"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyAllDiagnosticCasesPage />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/analytics"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyDiagnosticAnalyticsPage />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/referrals"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyDiagnosticReferralsPage />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/pharmacy/diagnostics/follow-up"
+                            element={
+                              <ProtectedRoute requiresActiveSubscription>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyFollowUpCasesPage />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>

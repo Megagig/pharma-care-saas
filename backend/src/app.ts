@@ -62,9 +62,15 @@ import diagnosticRoutes from './routes/diagnosticRoutes';
 import communicationRoutes from './routes/communicationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import reportsRoutes from './routes/reportsRoutes';
 import lighthouseRoutes from './routes/lighthouseRoutes';
 import performanceBudgetRoutes from './routes/performanceBudgetRoutes';
 import performanceMonitoringRoutes from './routes/performanceMonitoringRoutes';
+import roleHierarchyRoutes from './routes/roleHierarchyRoutes';
+import permissionRoutes from './routes/permissionRoutes';
+import rbacAuditRoutes from './routes/rbacAudit';
+import roleRoutes from './routes/roleRoutes';
+import pricingManagementRoutes from './routes/pricingManagementRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -238,6 +244,7 @@ app.use('/api/public/drugs', publicDrugDetailsRoutes);
 
 // Analytics routes (no authentication required for Web Vitals collection)
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/reports', reportsRoutes);
 app.use('/api/lighthouse', lighthouseRoutes);
 app.use('/api/performance-budgets', performanceBudgetRoutes);
 app.use('/api/performance-monitoring', performanceMonitoringRoutes);
@@ -254,6 +261,7 @@ app.use('/api/continuous-monitoring', continuousMonitoringRoutes);
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/pricing', pricingManagementRoutes);
 
 // Patient Management routes
 app.use('/api/patients', patientRoutes);
@@ -360,6 +368,10 @@ app.use('/api/email', emailWebhookRoutes);
 // RBAC and enhanced features
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/role-hierarchy', roleHierarchyRoutes);
+app.use('/api/permissions', permissionRoutes);
+app.use('/api/rbac-audit', rbacAuditRoutes);
 app.use('/api/license', licenseRoutes);
 app.use('/api/subscription-management', subAnalyticsRoutes); // Using correct subscription Management routes
 app.use('/api/subscription', subscriptionManagementRoutes); // Old routes at /api/subscription

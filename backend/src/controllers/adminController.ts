@@ -80,7 +80,13 @@ export class AdminController {
       const userRoles = await UserRole.find({
         userId: { $in: userIds },
         isActive: true,
-      }).populate('roleId', 'name displayName category');
+      }).populate('roleId', 'name displayName category description');
+
+      // Debug logging
+      logger.info(`Found ${userRoles.length} UserRole records for ${userIds.length} users`);
+      if (userRoles.length > 0) {
+        logger.info('Sample UserRole:', JSON.stringify(userRoles[0]));
+      }
 
       // Create a map of user roles
       const userRolesMap = new Map<string, any[]>();
@@ -92,14 +98,29 @@ export class AdminController {
         userRolesMap.get(userId)!.push(ur.roleId);
       });
 
-      // Format response
+      // Format response with all RBAC fields
       const formattedUsers = users.map((user) => {
+        const userObj = user.toObject();
         const roles = userRolesMap.get(user._id.toString()) || [];
         return {
-          ...user.toObject(),
-          roles,
+          ...userObj,
+          roles, // Populated roles from UserRole table
+          // Ensure RBAC fields are present
+          assignedRoles: userObj.assignedRoles || [],
+          directPermissions: userObj.directPermissions || [],
+          deniedPermissions: userObj.deniedPermissions || [],
         };
       });
+
+      // Debug: Log first user's role data
+      if (formattedUsers.length > 0) {
+        logger.info('Sample formatted user:', {
+          email: formattedUsers[0].email,
+          roles: formattedUsers[0].roles,
+          assignedRoles: formattedUsers[0].assignedRoles,
+          systemRole: (formattedUsers[0] as any).systemRole,
+        });
+      }
 
       res.json({
         success: true,

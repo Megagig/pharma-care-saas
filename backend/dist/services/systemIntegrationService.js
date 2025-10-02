@@ -1,12 +1,15 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SystemIntegrationService = void 0;
-const featureFlags_1 = require("../config/featureFlags");
+const FeatureFlagService_1 = __importDefault(require("../services/FeatureFlagService"));
 const auditService_1 = require("./auditService");
 class SystemIntegrationService {
     constructor() {
         this.healthChecks = new Map();
-        this.featureFlagService = featureFlags_1.FeatureFlagService.getInstance();
+        this.featureFlagService = FeatureFlagService_1.default;
         this.initializeHealthChecks();
     }
     static getInstance() {
@@ -99,16 +102,10 @@ class SystemIntegrationService {
         };
     }
     gradualRolloutMiddleware() {
-        return (req, res, next) => {
+        return async (req, res, next) => {
             const userId = req.user?._id?.toString();
             const workplaceId = req.user?.workplaceId?.toString();
-            const context = {
-                userId,
-                workplaceId,
-                environment: process.env.NODE_ENV,
-                userAgent: req.get('User-Agent')
-            };
-            const isEnabled = this.featureFlagService.isEnabled('manual_lab_orders', context);
+            const isEnabled = await this.featureFlagService.isFeatureEnabled('manual_lab_orders', userId || '', workplaceId || '');
             if (!isEnabled && req.path.startsWith('/api/manual-lab')) {
                 res.status(404).json({
                     success: false,
@@ -134,11 +131,13 @@ class SystemIntegrationService {
         else {
             overall = 'unhealthy';
         }
-        const manualLabEnabled = this.featureFlagService.isEnabled('manual_lab_orders');
-        const criticalFeaturesEnabled = [
+        const manualLabResult = await this.featureFlagService.isFeatureEnabled('manual_lab_orders', 'system', 'system');
+        const manualLabEnabled = manualLabResult.enabled;
+        const criticalFeatureChecks = await Promise.all([
             'manual_lab_pdf_generation',
             'manual_lab_qr_scanning'
-        ].every(flag => this.featureFlagService.isEnabled(flag));
+        ].map(flag => this.featureFlagService.isFeatureEnabled(flag, 'system', 'system')));
+        const criticalFeaturesEnabled = criticalFeatureChecks.every(check => check.enabled);
         let manualLabStatus;
         if (!manualLabEnabled) {
             manualLabStatus = 'disabled';
@@ -168,7 +167,7 @@ class SystemIntegrationService {
             ];
             for (const flag of manualLabFlags) {
                 try {
-                    this.featureFlagService.updateFlag(flag, { enabled: false });
+                    await this.featureFlagService.setUserFeatureOverride(flag, 'system', false);
                     rollbackActions.push(`Disabled feature flag: ${flag}`);
                 }
                 catch (error) {

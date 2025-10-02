@@ -4,6 +4,7 @@ export interface LighthouseResult {
     runId: string;
     branch: string;
     commit: string;
+    workspaceId: string;
     scores: {
         performance: number;
         accessibility: number;
@@ -86,6 +87,12 @@ export declare class LighthouseCIService {
     private calculateAverages;
     private generateRecommendations;
     private invalidateRelevantCaches;
+    static runLighthouseTest(url: string): Promise<{
+        performance: number;
+        accessibility: number;
+        bestPractices: number;
+        seo: number;
+    }>;
 }
 export declare const lighthouseCIService: LighthouseCIService;
 //# sourceMappingURL=LighthouseCIService.d.ts.map

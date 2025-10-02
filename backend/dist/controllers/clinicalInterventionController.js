@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendNotifications = exports.getPriorityDistribution = exports.getCategoryCounts = exports.checkDuplicates = exports.exportAuditData = exports.getComplianceReport = exports.getInterventionAuditTrail = exports.syncWithMTR = exports.getInterventionsForMTR = exports.getMTRReference = exports.createInterventionsFromMTR = exports.handleClinicalInterventionError = exports.sendInterventionNotifications = exports.linkToMTR = exports.getStrategyRecommendations = exports.exportInterventionData = exports.exportInterventionsReport = exports.getCostSavingsReport = exports.getOutcomeReports = exports.getInterventionTrends = exports.getInterventionAnalytics = exports.getAssignedInterventions = exports.getPatientInterventions = exports.searchClinicalInterventions = exports.scheduleFollowUp = exports.recordOutcome = exports.updateAssignment = exports.assignTeamMember = exports.updateInterventionStrategy = exports.addInterventionStrategy = exports.deleteClinicalIntervention = exports.updateClinicalIntervention = exports.getClinicalIntervention = exports.createClinicalIntervention = exports.getClinicalInterventions = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const clinicalInterventionService_1 = __importDefault(require("../services/clinicalInterventionService"));
+const ClinicalIntervention_1 = __importDefault(require("../models/ClinicalIntervention"));
 const responseHelpers_1 = require("../utils/responseHelpers");
 const logger_1 = __importDefault(require("../utils/logger"));
 const validateObjectId = (id, fieldName) => {
@@ -55,7 +56,8 @@ const getValidatedContext = (req) => {
     return {
         ...context,
         userIdObj: new mongoose_1.default.Types.ObjectId(context.userId),
-        workplaceIdObj: new mongoose_1.default.Types.ObjectId(context.workplaceId)
+        workplaceIdObj: new mongoose_1.default.Types.ObjectId(context.workplaceId),
+        isSuperAdmin: context.isSuperAdmin || req.user?.role === 'super_admin'
     };
 };
 exports.getClinicalInterventions = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -66,7 +68,8 @@ exports.getClinicalInterventions = (0, responseHelpers_1.asyncHandler)(async (re
         page: Math.max(1, parseInt(page) || 1),
         limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
         sortBy,
-        sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
+        sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+        isSuperAdmin: context.isSuperAdmin || req.user?.role === 'super_admin'
     };
     if (patientId) {
         if (!mongoose_1.default.Types.ObjectId.isValid(patientId)) {
@@ -110,7 +113,7 @@ exports.getClinicalInterventions = (0, responseHelpers_1.asyncHandler)(async (re
     }
     const result = await clinicalInterventionService_1.default.getInterventions(filters);
     (0, responseHelpers_1.sendSuccess)(res, {
-        interventions: result.data,
+        data: result.data,
         pagination: result.pagination
     }, 'Interventions retrieved successfully');
 });
@@ -146,25 +149,21 @@ exports.createClinicalIntervention = (0, responseHelpers_1.asyncHandler)(async (
         relatedDTPIds: relatedDTPIds ? relatedDTPIds.map((id) => new mongoose_1.default.Types.ObjectId(id)) : []
     };
     const intervention = await clinicalInterventionService_1.default.createIntervention(interventionData);
-    await clinicalInterventionService_1.default.logInterventionAccess(intervention._id.toString(), context.userIdObj, context.workplaceIdObj, 'create', req, { category: interventionData.category, priority: interventionData.priority });
-    (0, responseHelpers_1.sendSuccess)(res, {
-        intervention
-    }, 'Clinical intervention created successfully', 201);
+    await clinicalInterventionService_1.default.logActivity('CREATE_INTERVENTION', intervention._id.toString(), context.userIdObj, context.workplaceIdObj, { category: interventionData.category, priority: interventionData.priority }, req);
+    (0, responseHelpers_1.sendSuccess)(res, intervention, 'Clinical intervention created successfully', 201);
 });
 exports.getClinicalIntervention = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const { id } = req.params;
     const interventionId = validateObjectId(id, 'intervention ID');
     const workplaceId = validateObjectId(context.workplaceId, 'workplace ID');
-    const intervention = await clinicalInterventionService_1.default.getInterventionById(interventionId.toString(), workplaceId);
+    const intervention = await clinicalInterventionService_1.default.getInterventionById(interventionId.toString(), workplaceId, req.user?.role === 'super_admin');
     await clinicalInterventionService_1.default.logActivity('VIEW_INTERVENTION', id || '', new mongoose_1.default.Types.ObjectId(context.userId), new mongoose_1.default.Types.ObjectId(context.workplaceId), {
         interventionNumber: intervention.interventionNumber,
         status: intervention.status,
         category: intervention.category
     }, req);
-    (0, responseHelpers_1.sendSuccess)(res, {
-        intervention
-    }, 'Intervention retrieved successfully');
+    (0, responseHelpers_1.sendSuccess)(res, intervention, 'Intervention retrieved successfully');
 });
 exports.updateClinicalIntervention = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = getValidatedContext(req);
@@ -193,14 +192,12 @@ exports.updateClinicalIntervention = (0, responseHelpers_1.asyncHandler)(async (
     if (Object.keys(updates).length === 0) {
         throw (0, responseHelpers_1.createValidationError)('No valid fields provided for update');
     }
-    const intervention = await clinicalInterventionService_1.default.updateIntervention(id, updates, context.userIdObj, context.workplaceIdObj);
+    const intervention = await clinicalInterventionService_1.default.updateIntervention(id, updates, context.userIdObj, context.workplaceIdObj, context.isSuperAdmin || req.user?.role === 'super_admin');
     await clinicalInterventionService_1.default.logActivity('UPDATE_INTERVENTION', id, context.userIdObj, context.workplaceIdObj, {
         updatedFields: Object.keys(updates),
         statusChange: updates.status ? { to: updates.status } : undefined
     });
-    (0, responseHelpers_1.sendSuccess)(res, {
-        intervention
-    }, 'Intervention updated successfully');
+    (0, responseHelpers_1.sendSuccess)(res, intervention, 'Intervention updated successfully');
 });
 exports.deleteClinicalIntervention = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = getValidatedContext(req);
@@ -208,7 +205,7 @@ exports.deleteClinicalIntervention = (0, responseHelpers_1.asyncHandler)(async (
     if (!id || !mongoose_1.default.Types.ObjectId.isValid(id)) {
         throw (0, responseHelpers_1.createValidationError)('Invalid intervention ID format');
     }
-    const success = await clinicalInterventionService_1.default.deleteIntervention(id, context.userIdObj, context.workplaceIdObj);
+    const success = await clinicalInterventionService_1.default.deleteIntervention(id, context.userIdObj, context.workplaceIdObj, context.isSuperAdmin || req.user?.role === 'super_admin');
     if (!success) {
         throw (0, responseHelpers_1.createNotFoundError)('Intervention not found or could not be deleted');
     }
@@ -376,7 +373,8 @@ exports.searchClinicalInterventions = (0, responseHelpers_1.asyncHandler)(async 
         page: Math.max(1, parseInt(page) || 1),
         limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
         sortBy,
-        sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
+        sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+        isSuperAdmin: context.isSuperAdmin || req.user?.role === 'super_admin'
     };
     if (q) {
         filters.search = q;
@@ -442,7 +440,8 @@ exports.getPatientInterventions = (0, responseHelpers_1.asyncHandler)(async (req
         page: Math.max(1, parseInt(page) || 1),
         limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
         sortBy,
-        sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
+        sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+        isSuperAdmin: context.isSuperAdmin || req.user?.role === 'super_admin'
     };
     if (status)
         filters.status = status;
@@ -465,7 +464,8 @@ exports.getAssignedInterventions = (0, responseHelpers_1.asyncHandler)(async (re
         page: Math.max(1, parseInt(page) || 1),
         limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
         sortBy,
-        sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
+        sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+        isSuperAdmin: context.isSuperAdmin || req.user?.role === 'super_admin'
     };
     if (status)
         filters.status = status;
@@ -500,15 +500,8 @@ exports.getInterventionAnalytics = (0, responseHelpers_1.asyncHandler)(async (re
         fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
         toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     }
-    const metrics = await clinicalInterventionService_1.default.getDashboardMetrics(context.workplaceIdObj, { from: fromDate, to: toDate });
-    (0, responseHelpers_1.sendSuccess)(res, {
-        metrics,
-        dateRange: {
-            from: fromDate,
-            to: toDate,
-            period
-        }
-    }, 'Analytics retrieved successfully');
+    const metrics = await clinicalInterventionService_1.default.getDashboardMetrics(context.workplaceIdObj, { from: fromDate, to: toDate }, context.isSuperAdmin || req.user?.role === 'super_admin');
+    (0, responseHelpers_1.sendSuccess)(res, metrics, 'Analytics retrieved successfully');
 });
 exports.getInterventionTrends = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = getValidatedContext(req);
@@ -562,10 +555,8 @@ exports.getOutcomeReports = (0, responseHelpers_1.asyncHandler)(async (req, res)
         outcome,
         pharmacist
     };
-    const report = await clinicalInterventionService_1.default.generateOutcomeReport(context.workplaceIdObj, filters);
-    (0, responseHelpers_1.sendSuccess)(res, {
-        report
-    }, 'Outcome report generated successfully');
+    const report = await clinicalInterventionService_1.default.generateOutcomeReport(context.workplaceIdObj, filters, context.isSuperAdmin || req.user?.role === 'super_admin');
+    (0, responseHelpers_1.sendSuccess)(res, report, 'Outcome report generated successfully');
 });
 exports.getCostSavingsReport = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = getValidatedContext(req);
@@ -1004,7 +995,7 @@ exports.checkDuplicates = (0, responseHelpers_1.asyncHandler)(async (req, res) =
         throw (0, responseHelpers_1.createValidationError)('Invalid patient ID format');
     }
     try {
-        const duplicates = [];
+        const duplicates = await clinicalInterventionService_1.default.checkDuplicateInterventions(new mongoose_1.default.Types.ObjectId(patientId), category, context.workplaceIdObj);
         (0, responseHelpers_1.sendSuccess)(res, {
             duplicates,
             count: duplicates.length
@@ -1017,10 +1008,31 @@ exports.checkDuplicates = (0, responseHelpers_1.asyncHandler)(async (req, res) =
 exports.getCategoryCounts = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = getValidatedContext(req);
     try {
+        const matchStage = {
+            isDeleted: { $ne: true }
+        };
+        if (!context.isSuperAdmin && req.user?.role !== 'super_admin') {
+            matchStage.workplaceId = context.workplaceIdObj;
+        }
+        const categoryStats = await ClinicalIntervention_1.default.aggregate([
+            {
+                $match: matchStage
+            },
+            {
+                $group: {
+                    _id: '$category',
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { count: -1 }
+            }
+        ]);
         const categoryCounts = {};
-        (0, responseHelpers_1.sendSuccess)(res, {
-            categories: categoryCounts
-        }, 'Category counts retrieved successfully');
+        categoryStats.forEach((stat) => {
+            categoryCounts[stat._id] = stat.count;
+        });
+        (0, responseHelpers_1.sendSuccess)(res, categoryCounts, 'Category counts retrieved successfully');
     }
     catch (error) {
         throw (0, responseHelpers_1.createBusinessRuleError)('Failed to get category counts');
@@ -1029,10 +1041,31 @@ exports.getCategoryCounts = (0, responseHelpers_1.asyncHandler)(async (req, res)
 exports.getPriorityDistribution = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = getValidatedContext(req);
     try {
+        const matchStage = {
+            isDeleted: { $ne: true }
+        };
+        if (!context.isSuperAdmin && req.user?.role !== 'super_admin') {
+            matchStage.workplaceId = context.workplaceIdObj;
+        }
+        const priorityStats = await ClinicalIntervention_1.default.aggregate([
+            {
+                $match: matchStage
+            },
+            {
+                $group: {
+                    _id: '$priority',
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { count: -1 }
+            }
+        ]);
         const priorityDistribution = {};
-        (0, responseHelpers_1.sendSuccess)(res, {
-            priorities: priorityDistribution
-        }, 'Priority distribution retrieved successfully');
+        priorityStats.forEach((stat) => {
+            priorityDistribution[stat._id] = stat.count;
+        });
+        (0, responseHelpers_1.sendSuccess)(res, priorityDistribution, 'Priority distribution retrieved successfully');
     }
     catch (error) {
         throw (0, responseHelpers_1.createBusinessRuleError)('Failed to get priority distribution');

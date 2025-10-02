@@ -48,6 +48,12 @@ export declare class PerformanceAlertService {
     }>;
     updateConfiguration(config: Partial<AlertConfiguration>): void;
     getConfiguration(): AlertConfiguration;
+    static sendAlert(alertData: {
+        type: string;
+        severity: string;
+        message: string;
+        data?: any;
+    }): Promise<void>;
 }
 export declare const performanceAlertService: PerformanceAlertService;
 //# sourceMappingURL=PerformanceAlertService.d.ts.map

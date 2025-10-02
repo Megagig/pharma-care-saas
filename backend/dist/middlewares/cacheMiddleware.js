@@ -88,8 +88,8 @@ function generateDefaultCacheKey(req, varyBy) {
     if (req.user?.id) {
         parts.push(`user:${req.user.id}`);
     }
-    if (req.user?.workspaceId) {
-        parts.push(`workspace:${req.user.workspaceId}`);
+    if (req.user?.workplaceId) {
+        parts.push(`workspace:${req.user.workplaceId}`);
     }
     return parts.join('|');
 }
@@ -107,7 +107,7 @@ exports.patientListCacheMiddleware = (0, exports.cacheMiddleware)({
     varyBy: ['workspace'],
     keyGenerator: (req) => {
         const { page, limit, search, filters } = req.query;
-        const workspaceId = req.user?.workspaceId || 'unknown';
+        const workspaceId = req.user?.workplaceId || 'unknown';
         const keyParts = [
             'patient-list',
             workspaceId,
@@ -134,7 +134,7 @@ exports.userProfileCacheMiddleware = (0, exports.cacheMiddleware)({
         return `user-profile:${userId}`;
     },
     condition: (req) => {
-        return !!req.user && (req.user.id === req.params.userId || req.user.role === 'admin');
+        return !!req.user && (req.user.id === req.params.userId || req.user.role === 'super_admin' || req.user.role === 'owner');
     },
 });
 exports.clinicalNotesCacheMiddleware = (0, exports.cacheMiddleware)({
@@ -167,7 +167,7 @@ exports.searchCacheMiddleware = (0, exports.cacheMiddleware)({
     tags: (req) => ['search', req.params.type || 'general'],
     keyGenerator: (req) => {
         const { q, type, filters } = req.query;
-        const workspaceId = req.user?.workspaceId || 'unknown';
+        const workspaceId = req.user?.workplaceId || 'unknown';
         const keyParts = [
             'search',
             workspaceId,
@@ -185,7 +185,7 @@ exports.reportsCacheMiddleware = (0, exports.cacheMiddleware)({
     tags: ['reports', 'analytics'],
     keyGenerator: (req) => {
         const { reportType, dateRange, filters } = req.query;
-        const workspaceId = req.user?.workspaceId || 'unknown';
+        const workspaceId = req.user?.workplaceId || 'unknown';
         const keyParts = [
             'reports',
             workspaceId,

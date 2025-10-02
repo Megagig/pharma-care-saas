@@ -345,55 +345,51 @@ exports.createNote = createNote;
 const updateNote = async (req, res) => {
     try {
         console.log(`UPDATE Note controller running for ID: ${req.params.id}`);
-        const existingNote = req.clinicalNote;
-        if (!existingNote) {
-            console.log(`Note not found in request, trying direct lookup with multiple strategies`);
-            const noteId = req.params.id;
-            const query = { deletedAt: { $exists: false } };
-            if (req.user?.role !== 'super_admin') {
-                query.workplaceId =
-                    req.user?.workplaceId || req.workspaceContext?.workspace?._id;
-            }
-            if (noteId && mongoose_1.default.Types.ObjectId.isValid(noteId)) {
-                const note = await ClinicalNote_1.default.findById(noteId);
-                if (note) {
-                    console.log(`Found note by direct ID: ${note._id}`);
-                    req.clinicalNote = note;
-                }
-            }
-            if (!req.clinicalNote) {
-                query.$or = [
-                    { _id: noteId },
-                    { customId: noteId },
-                    { legacyId: noteId },
-                ];
-                const note = await ClinicalNote_1.default.findOne(query);
-                if (note) {
-                    console.log(`Found note using OR query: ${note._id}`);
-                    req.clinicalNote = note;
-                }
-            }
+        console.log(`User: ${req.user?.id}, Role: ${req.user?.role}`);
+        console.log(`Workspace: ${req.user?.workplaceId || req.workspaceContext?.workspace?._id}`);
+        const noteId = req.params.id;
+        if (!noteId || !mongoose_1.default.Types.ObjectId.isValid(noteId)) {
+            console.log(`Invalid note ID: ${noteId}`);
+            res.status(400).json({ message: 'Invalid note ID' });
+            return;
         }
-        if (!req.clinicalNote) {
-            console.log(`Note still not found for update, ID: ${req.params.id}`);
+        let note = await ClinicalNote_1.default.findById(noteId)
+            .populate('patient', 'firstName lastName mrn')
+            .populate('pharmacist', 'firstName lastName role')
+            .populate('medications', 'name dosage');
+        if (!note) {
+            console.log(`Note not found with ID: ${noteId}`);
             res.status(404).json({ message: 'Clinical note not found' });
             return;
         }
-        const noteToUpdate = req.clinicalNote;
-        const oldValues = noteToUpdate.toObject();
+        console.log(`Found note: ${note._id}, workplace: ${note.workplaceId}`);
+        if (req.user?.role !== 'super_admin') {
+            const userWorkplaceId = req.user?.workplaceId || req.workspaceContext?.workspace?._id;
+            if (note.workplaceId?.toString() !== userWorkplaceId?.toString()) {
+                console.log(`Workspace mismatch. Note: ${note.workplaceId}, User: ${userWorkplaceId}`);
+                res.status(403).json({ message: 'Access denied to this note' });
+                return;
+            }
+        }
+        const canModify = req.user?.role === 'super_admin' ||
+            req.user?.workplaceRole === 'Owner' ||
+            (req.user?.workplaceRole === 'Pharmacist' && note.pharmacist.toString() === req.user._id.toString());
+        if (!canModify) {
+            console.log(`User cannot modify note. User role: ${req.user?.workplaceRole}, Note creator: ${note.pharmacist}`);
+            res.status(403).json({ message: 'Insufficient permissions to modify this note' });
+            return;
+        }
+        const oldValues = note.toObject();
         const updateData = {
             ...req.body,
             lastModifiedBy: req.user?.id,
             updatedAt: new Date(),
         };
-        const note = await ClinicalNote_1.default.findOneAndUpdate({
-            _id: req.params.id,
-            workplaceId: req.user?.workplaceId || req.workspace?._id,
-        }, updateData, { new: true, runValidators: true })
+        const updatedNote = await ClinicalNote_1.default.findByIdAndUpdate(noteId, updateData, { new: true, runValidators: true })
             .populate('patient', 'firstName lastName mrn')
             .populate('pharmacist', 'firstName lastName role')
             .populate('medications', 'name dosage');
-        if (!note) {
+        if (!updatedNote) {
             res
                 .status(404)
                 .json({ message: 'Clinical note not found or access denied' });
@@ -403,22 +399,22 @@ const updateNote = async (req, res) => {
             action: 'UPDATE_CLINICAL_NOTE',
             userId: req.user?.id || 'unknown',
             resourceType: 'ClinicalNote',
-            resourceId: note._id,
+            resourceId: updatedNote._id,
             details: {
-                noteId: note._id,
-                patientId: note.patient._id,
-                noteType: note.type,
-                title: note.title,
-                priority: note.priority,
-                isConfidential: note.isConfidential,
+                noteId: updatedNote._id,
+                patientId: updatedNote.patient._id,
+                noteType: updatedNote.type,
+                title: updatedNote.title,
+                priority: updatedNote.priority,
+                isConfidential: updatedNote.isConfidential,
             },
             oldValues,
-            newValues: note.toObject(),
+            newValues: updatedNote.toObject(),
             changedFields: Object.keys(req.body),
             complianceCategory: 'clinical_documentation',
-            riskLevel: note.isConfidential ? 'high' : 'medium',
+            riskLevel: updatedNote.isConfidential ? 'high' : 'medium',
         });
-        res.json({ note });
+        res.json({ note: updatedNote });
     }
     catch (error) {
         res.status(400).json({ message: error.message });
@@ -724,30 +720,6 @@ const getNotesWithFilters = async (req, res) => {
             .populate('medications', 'name dosage')
             .sort(sortObj);
         const total = await ClinicalNote_1.default.countDocuments(query);
-        const auditContext = auditService_1.AuditService.createAuditContext(req);
-        await auditService_1.AuditService.logActivity(auditContext, {
-            action: 'FILTER_CLINICAL_NOTES',
-            resourceType: 'ClinicalNote',
-            resourceId: new mongoose_1.default.Types.ObjectId(),
-            details: {
-                filters: {
-                    type,
-                    priority,
-                    patientId,
-                    clinicianId,
-                    dateFrom,
-                    dateTo,
-                    isConfidential,
-                    followUpRequired,
-                    tags,
-                },
-                resultCount: notes.length,
-                sortBy,
-                sortOrder,
-            },
-            complianceCategory: 'data_access',
-            riskLevel: 'low',
-        });
         res.json({
             notes,
             totalPages: Math.ceil(total / Number(limit)),
@@ -1005,25 +977,6 @@ const uploadAttachment = async (req, res) => {
         }, { new: true, runValidators: true })
             .populate('patient', 'firstName lastName mrn')
             .populate('pharmacist', 'firstName lastName role');
-        const auditContext = auditService_1.AuditService.createAuditContext(req);
-        await auditService_1.AuditService.logActivity(auditContext, {
-            action: 'UPLOAD_NOTE_ATTACHMENT',
-            resourceType: 'ClinicalNote',
-            resourceId: note._id,
-            patientId: note.patient,
-            details: {
-                noteTitle: note.title,
-                attachmentCount: attachmentData.length,
-                attachments: attachmentData.map((att) => ({
-                    fileName: att.fileName,
-                    originalName: att.originalName,
-                    size: att.size,
-                    mimeType: att.mimeType,
-                })),
-            },
-            complianceCategory: 'clinical_documentation',
-            riskLevel: 'medium',
-        });
         res.status(201).json({
             message: 'Files uploaded successfully',
             attachments: attachmentData,
@@ -1070,23 +1023,6 @@ const deleteAttachment = async (req, res) => {
         }, { new: true })
             .populate('patient', 'firstName lastName mrn')
             .populate('pharmacist', 'firstName lastName role');
-        const auditContext = auditService_1.AuditService.createAuditContext(req);
-        await auditService_1.AuditService.logActivity(auditContext, {
-            action: 'DELETE_NOTE_ATTACHMENT',
-            resourceType: 'ClinicalNote',
-            resourceId: note._id,
-            patientId: note.patient,
-            details: {
-                noteTitle: note.title,
-                deletedAttachment: {
-                    fileName: attachment.fileName,
-                    originalName: attachment.originalName,
-                    size: attachment.size,
-                },
-            },
-            complianceCategory: 'clinical_documentation',
-            riskLevel: 'medium',
-        });
         res.json({
             message: 'Attachment deleted successfully',
             note: updatedNote,

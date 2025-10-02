@@ -37,6 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.gracefulPermissionHandling = exports.notifyPermissionChanges = exports.validateSessionPermissions = exports.requireSubscriptionOrTrial = exports.requireActiveSubscription = exports.requireAnyPermission = exports.requireAllPermissions = exports.requireSuperAdmin = exports.requireWorkspaceOwner = exports.requirePlanTier = exports.requireFeature = exports.requireWorkplaceRole = exports.requireRole = exports.requirePermission = exports.requireDynamicPermission = void 0;
+const auth_1 = require("../types/auth");
 const PermissionService_1 = __importDefault(require("../services/PermissionService"));
 const DynamicPermissionService_1 = __importDefault(require("../services/DynamicPermissionService"));
 const auditLogging_1 = require("./auditLogging");
@@ -117,9 +118,9 @@ const requireDynamicPermission = (action, options = {}) => {
                 }
                 errorResponse.userContext = {
                     userId: req.user._id,
-                    systemRole: req.user.role,
-                    workplaceRole: req.user.workplaceRole,
-                    status: req.user.status
+                    systemRole: (0, auth_1.getUserRole)(req.user),
+                    workplaceRole: (0, auth_1.getUserWorkplaceRole)(req.user),
+                    status: (0, auth_1.getUserStatus)(req.user)
                 };
                 res.status(statusCode).json(errorResponse);
                 return;
@@ -198,7 +199,8 @@ const requirePermission = (action, options = {}) => {
                 });
                 return;
             }
-            if (req.user.role === 'super_admin') {
+            const userRole = (0, auth_1.getUserRole)(req.user);
+            if (userRole === 'super_admin') {
                 req.permissionContext = {
                     action,
                     source: 'super_admin'
@@ -259,8 +261,8 @@ const requirePermission = (action, options = {}) => {
                     requiredRoles: result.requiredRoles,
                     requiredFeatures: result.requiredFeatures,
                     upgradeRequired: result.upgradeRequired || false,
-                    userRole: req.user.role,
-                    workplaceRole: req.user.workplaceRole,
+                    userRole: (0, auth_1.getUserRole)(req.user),
+                    workplaceRole: (0, auth_1.getUserWorkplaceRole)(req.user),
                     source: permissionSource
                 };
                 if (useDynamicRBAC && result.suggestions) {
@@ -297,7 +299,8 @@ const requireRole = (...roles) => {
                 });
                 return;
             }
-            if (req.user.role === 'super_admin') {
+            const userRole = (0, auth_1.getUserRole)(req.user);
+            if (userRole === 'super_admin') {
                 req.permissionContext = {
                     action: `role:${roles.join('|')}`,
                     source: 'super_admin'
@@ -307,12 +310,13 @@ const requireRole = (...roles) => {
             let hasRole = false;
             let matchedRole;
             let roleSource = 'static';
-            if (req.user.role && roles.includes(req.user.role)) {
+            if (userRole && roles.includes(userRole)) {
                 hasRole = true;
-                matchedRole = req.user.role;
+                matchedRole = userRole;
                 roleSource = 'static';
             }
-            if (!hasRole && req.user.assignedRoles && req.user.assignedRoles.length > 0) {
+            const userAssignedRoles = (0, auth_1.getUserAssignedRoles)(req.user);
+            if (!hasRole && userAssignedRoles && userAssignedRoles.length > 0) {
                 try {
                     const dynamicPermissionService = DynamicPermissionService_1.default.getInstance();
                     const userPermissions = await dynamicPermissionService.resolveUserPermissions(req.user, req.workspaceContext || {});
@@ -336,8 +340,8 @@ const requireRole = (...roles) => {
                     success: false,
                     message: 'Insufficient role permissions',
                     requiredRoles: roles,
-                    userRole: req.user.role,
-                    userAssignedRoles: req.user.assignedRoles || [],
+                    userRole: (0, auth_1.getUserRole)(req.user),
+                    userAssignedRoles: (0, auth_1.getUserAssignedRoles)(req.user) || [],
                     source: roleSource
                 });
                 return;
@@ -368,7 +372,8 @@ const requireWorkplaceRole = (...roles) => {
                 });
                 return;
             }
-            if (req.user.role === 'super_admin') {
+            const userRole = (0, auth_1.getUserRole)(req.user);
+            if (userRole === 'super_admin') {
                 req.permissionContext = {
                     action: `workplace_role:${roles.join('|')}`,
                     source: 'super_admin'
@@ -378,9 +383,10 @@ const requireWorkplaceRole = (...roles) => {
             let hasWorkplaceRole = false;
             let matchedRole;
             let roleSource = 'static';
-            if (req.user.workplaceRole && roles.includes(req.user.workplaceRole)) {
+            const userWorkplaceRole = (0, auth_1.getUserWorkplaceRole)(req.user);
+            if (userWorkplaceRole && roles.includes(userWorkplaceRole)) {
                 hasWorkplaceRole = true;
-                matchedRole = req.user.workplaceRole;
+                matchedRole = userWorkplaceRole;
                 roleSource = 'static';
             }
             if (!hasWorkplaceRole && req.workspaceContext?.workspace) {
@@ -428,7 +434,7 @@ const requireWorkplaceRole = (...roles) => {
                     success: false,
                     message: 'Insufficient workplace role permissions',
                     requiredWorkplaceRoles: roles,
-                    userWorkplaceRole: req.user.workplaceRole,
+                    userWorkplaceRole: (0, auth_1.getUserWorkplaceRole)(req.user),
                     workspaceId: req.workspaceContext?.workspace?._id,
                     source: roleSource
                 });
@@ -466,7 +472,8 @@ const requireFeature = (...features) => {
             });
             return;
         }
-        if (req.user.role === 'super_admin') {
+        const userRole = (0, auth_1.getUserRole)(req.user);
+        if (userRole === 'super_admin') {
             return next();
         }
         const userFeatures = req.workspaceContext.permissions || [];
@@ -501,7 +508,8 @@ const requirePlanTier = (...tiers) => {
             });
             return;
         }
-        if (req.user.role === 'super_admin') {
+        const userRole = (0, auth_1.getUserRole)(req.user);
+        if (userRole === 'super_admin') {
             return next();
         }
         const currentTier = req.workspaceContext.plan?.tier;
@@ -534,7 +542,8 @@ const requireWorkspaceOwner = (req, res, next) => {
         });
         return;
     }
-    if (req.user.role === 'super_admin') {
+    const userRole = (0, auth_1.getUserRole)(req.user);
+    if (userRole === 'super_admin') {
         return next();
     }
     const isOwner = req.workspaceContext.workspace.ownerId.toString() === req.user._id.toString();
@@ -556,11 +565,12 @@ const requireSuperAdmin = (req, res, next) => {
         });
         return;
     }
-    if (req.user.role !== 'super_admin') {
+    const userRole = (0, auth_1.getUserRole)(req.user);
+    if (userRole !== 'super_admin') {
         res.status(403).json({
             success: false,
             message: 'Super administrator access required',
-            userRole: req.user.role,
+            userRole: userRole,
         });
         return;
     }
@@ -584,7 +594,8 @@ const requireAllPermissions = (...actions) => {
                 });
                 return;
             }
-            if (req.user.role === 'super_admin') {
+            const userRole = (0, auth_1.getUserRole)(req.user);
+            if (userRole === 'super_admin') {
                 req.permissionContext = {
                     action: `all:${actions.join('|')}`,
                     source: 'super_admin'
@@ -674,7 +685,8 @@ const requireAnyPermission = (...actions) => {
                 });
                 return;
             }
-            if (req.user.role === 'super_admin') {
+            const userRole = (0, auth_1.getUserRole)(req.user);
+            if (userRole === 'super_admin') {
                 req.permissionContext = {
                     action: `any:${actions.join('|')}`,
                     source: 'super_admin'
@@ -761,7 +773,8 @@ const requireActiveSubscription = (req, res, next) => {
         });
         return;
     }
-    if (req.user.role === 'super_admin') {
+    const userRole = (0, auth_1.getUserRole)(req.user);
+    if (userRole === 'super_admin') {
         return next();
     }
     if (!req.workspaceContext.isSubscriptionActive) {
@@ -791,7 +804,8 @@ const requireSubscriptionOrTrial = (req, res, next) => {
         });
         return;
     }
-    if (req.user.role === 'super_admin') {
+    const userRole = (0, auth_1.getUserRole)(req.user);
+    if (userRole === 'super_admin') {
         return next();
     }
     const isTrialActive = req.workspaceContext.workspace?.subscriptionStatus === 'trial' &&
@@ -821,7 +835,8 @@ const validateSessionPermissions = (options = {}) => {
                 });
                 return;
             }
-            if (req.user.role === 'super_admin') {
+            const userRole = (0, auth_1.getUserRole)(req.user);
+            if (userRole === 'super_admin') {
                 return next();
             }
             const currentTime = new Date();

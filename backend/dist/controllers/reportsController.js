@@ -18,33 +18,36 @@ const ConnectionPoolService_1 = __importDefault(require("../services/ConnectionP
 const getUnifiedReportData = async (req, res) => {
     try {
         const { reportType } = req.params;
-        const workplaceId = req.user?.workplaceId;
+        const userWorkplaceId = req.user?.workplaceId;
+        const userRole = req.user?.role;
         const filters = parseReportFilters(req.query);
+        const workplaceId = userRole === 'super_admin' ? null : userWorkplaceId?.toString() || '';
+        console.log(`🔍 Report request - User: ${req.user?.email}, Role: ${userRole}, WorkplaceId: ${workplaceId || 'ALL'}`);
         const cachedReportService = new RedisCacheService_1.CachedReportService();
-        const reportData = await cachedReportService.getCachedReportData(reportType || '', workplaceId?.toString() || '', filters, async () => {
+        const reportData = await cachedReportService.getCachedReportData(reportType || '', workplaceId || 'all-workplaces', filters, async () => {
             switch (reportType) {
                 case 'patient-outcomes':
-                    return await getPatientOutcomesDataOptimized(workplaceId?.toString() || '', filters);
+                    return await getPatientOutcomesDataOptimized(workplaceId, filters);
                 case 'pharmacist-interventions':
-                    return await getPharmacistInterventionsDataOptimized(workplaceId?.toString() || '', filters);
+                    return await getPharmacistInterventionsDataOptimized(workplaceId, filters);
                 case 'therapy-effectiveness':
-                    return await getTherapyEffectivenessDataOptimized(workplaceId?.toString() || '', filters);
+                    return await getTherapyEffectivenessDataOptimized(workplaceId, filters);
                 case 'quality-improvement':
-                    return await getQualityImprovementDataOptimized(workplaceId?.toString() || '', filters);
+                    return await getQualityImprovementDataOptimized(workplaceId, filters);
                 case 'regulatory-compliance':
-                    return await getRegulatoryComplianceDataOptimized(workplaceId?.toString() || '', filters);
+                    return await getRegulatoryComplianceDataOptimized(workplaceId, filters);
                 case 'cost-effectiveness':
-                    return await getCostEffectivenessDataOptimized(workplaceId?.toString() || '', filters);
+                    return await getCostEffectivenessDataOptimized(workplaceId, filters);
                 case 'trend-forecasting':
-                    return await getTrendForecastingDataOptimized(workplaceId?.toString() || '', filters);
+                    return await getTrendForecastingDataOptimized(workplaceId, filters);
                 case 'operational-efficiency':
-                    return await getOperationalEfficiencyDataOptimized(workplaceId?.toString() || '', filters);
+                    return await getOperationalEfficiencyDataOptimized(workplaceId, filters);
                 case 'medication-inventory':
-                    return await getMedicationInventoryDataOptimized(workplaceId?.toString() || '', filters);
+                    return await getMedicationInventoryDataOptimized(workplaceId, filters);
                 case 'patient-demographics':
-                    return await getPatientDemographicsDataOptimized(workplaceId?.toString() || '', filters);
+                    return await getPatientDemographicsDataOptimized(workplaceId, filters);
                 case 'adverse-events':
-                    return await getAdverseEventsDataOptimized(workplaceId?.toString() || '', filters);
+                    return await getAdverseEventsDataOptimized(workplaceId, filters);
                 default:
                     throw new Error('Invalid report type specified');
             }
@@ -166,16 +169,20 @@ const getAvailableReports = async (req, res) => {
 exports.getAvailableReports = getAvailableReports;
 const getReportSummary = async (req, res) => {
     try {
-        const workplaceId = req.user?.workplaceId;
+        const userWorkplaceId = req.user?.workplaceId;
+        const userRole = req.user?.role;
         const { period = '30d' } = req.query;
         const startDate = (0, moment_1.default)()
             .subtract(parseInt(period.toString(), 10) || 30, 'days')
             .toDate();
         const matchStage = {
-            workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
             isDeleted: false,
             createdAt: { $gte: startDate },
         };
+        if (userRole !== 'super_admin' && userWorkplaceId) {
+            matchStage.workplaceId = new mongoose_1.default.Types.ObjectId(userWorkplaceId);
+        }
+        console.log(`🔍 Summary request - User: ${req.user?.email}, Role: ${userRole}, Match stage:`, matchStage);
         const [mtrStats, interventionStats, problemStats] = await Promise.all([
             MedicationTherapyReview_1.default.aggregate([
                 { $match: matchStage },
@@ -689,9 +696,11 @@ function parseReportFilters(query) {
 }
 function buildMatchStage(workplaceId, filters) {
     const matchStage = {
-        workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
         isDeleted: false,
     };
+    if (workplaceId) {
+        matchStage.workplaceId = new mongoose_1.default.Types.ObjectId(workplaceId);
+    }
     if (filters.dateRange) {
         matchStage.createdAt = {
             $gte: filters.dateRange.startDate,

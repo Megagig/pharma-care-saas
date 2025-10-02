@@ -144,9 +144,22 @@ const diagnosticCaseSchema = new mongoose_1.Schema({
             urgency: {
                 type: String,
                 enum: ['immediate', 'within_24h', 'routine'],
+                required: function () {
+                    return this.recommended === true;
+                },
             },
-            specialty: String,
-            reason: String,
+            specialty: {
+                type: String,
+                required: function () {
+                    return this.recommended === true;
+                },
+            },
+            reason: {
+                type: String,
+                required: function () {
+                    return this.recommended === true;
+                },
+            },
         },
         disclaimer: String,
         confidenceScore: Number,
@@ -178,6 +191,12 @@ const diagnosticCaseSchema = new mongoose_1.Schema({
             default: false,
         },
         followUpDate: Date,
+        notes: String,
+        reviewedAt: Date,
+        reviewedBy: {
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: 'User',
+        },
     },
     patientConsent: {
         provided: {
@@ -204,11 +223,64 @@ const diagnosticCaseSchema = new mongoose_1.Schema({
     },
     status: {
         type: String,
-        enum: ['draft', 'completed', 'referred', 'cancelled'],
+        enum: ['draft', 'pending_review', 'follow_up', 'completed', 'referred', 'cancelled'],
         default: 'draft',
         index: true,
     },
     completedAt: Date,
+    followUp: {
+        scheduledDate: {
+            type: Date,
+            required: function () {
+                return this.parent().status === 'follow_up';
+            },
+        },
+        reason: {
+            type: String,
+            required: function () {
+                return this.parent().status === 'follow_up';
+            },
+        },
+        completed: {
+            type: Boolean,
+            default: false,
+        },
+        completedDate: Date,
+        outcome: String,
+        nextSteps: String,
+    },
+    referral: {
+        generated: {
+            type: Boolean,
+            default: false,
+        },
+        generatedAt: Date,
+        document: {
+            content: String,
+            template: String,
+            lastModified: Date,
+            modifiedBy: {
+                type: mongoose_1.default.Schema.Types.ObjectId,
+                ref: 'User',
+            },
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'sent', 'acknowledged', 'completed'],
+            default: 'pending',
+        },
+        sentAt: Date,
+        sentTo: {
+            physicianName: String,
+            physicianEmail: String,
+            specialty: String,
+            institution: String,
+        },
+        acknowledgedAt: Date,
+        completedAt: Date,
+        feedback: String,
+        trackingId: String,
+    },
 }, {
     timestamps: true,
     collection: 'diagnostic_cases'

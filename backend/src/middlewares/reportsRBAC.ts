@@ -640,7 +640,48 @@ export const validateDataAccess = async (req: AuthRequest, res: Response, next: 
  * Workspace-based data filtering to ensure data isolation
  */
 export const enforceWorkspaceIsolation = (req: AuthRequest, res: Response, next: NextFunction): void => {
-    // Add workspace filter to all database queries
+    const userRole = isExtendedUser(req.user!) ? req.user!.role : undefined;
+    
+    // Super admin users can access data from all workplaces
+    if (userRole === 'super_admin') {
+        console.log(`🔓 Super admin ${req.user!.email} accessing reports across all workplaces`);
+        
+        // Log super admin access for audit purposes
+        ReportAuditLog.logEvent({
+            eventType: 'DATA_ACCESS',
+            userId: new mongoose.Types.ObjectId(req.user!._id),
+            workplaceId: req.user!.workplaceId ? new mongoose.Types.ObjectId(req.user!.workplaceId) : undefined,
+            sessionId: req.sessionId,
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+            eventDetails: {
+                action: 'ACCESS',
+                resource: 'DATA',
+                resourceId: 'ALL_WORKSPACES',
+                success: true,
+                metadata: {
+                    message: 'Super admin accessing cross-workspace data',
+                    accessType: 'cross-workspace',
+                    userRole: 'super_admin'
+                }
+            },
+            compliance: {
+                dataAccessed: ['PATIENT_DATA', 'CLINICAL_DATA', 'FINANCIAL_DATA', 'SYSTEM_DATA'],
+                sensitiveData: true,
+                anonymized: false,
+                encryptionUsed: true,
+                accessJustification: 'Super admin role allows cross-workspace access'
+            },
+            riskScore: 5 // Low risk for authorized super admin access
+        }).catch(error => {
+            logger.error('Failed to log super admin access:', error);
+        });
+        
+        // Don't add workspace filter for super admin
+        return next();
+    }
+
+    // Add workspace filter to all database queries for non-super admin users
     const originalQuery = req.query;
 
     // Ensure workspace isolation by adding workplaceId to filters

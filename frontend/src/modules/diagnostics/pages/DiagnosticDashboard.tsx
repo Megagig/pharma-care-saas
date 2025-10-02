@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -7,806 +7,709 @@ import {
   CardContent,
   Typography,
   Button,
-  Chip,
   IconButton,
-  Menu,
-  MenuItem,
-  TextField,
-  InputAdornment,
+  Avatar,
+  Chip,
+  LinearProgress,
   Alert,
   Skeleton,
-  Fab,
-  Badge,
-  Tooltip,
-  useTheme,
-  useMediaQuery,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Paper,
+  Fade,
+  Zoom,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import ScienceIcon from '@mui/icons-material/Science';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import PersonIcon from '@mui/icons-material/Person';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { format, formatDistanceToNow } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
-
-// Import hooks and components
 import {
-  useDiagnosticHistory,
-  useDiagnosticAnalytics,
-} from '../hooks/useDiagnostics';
-import { useDiagnosticStore } from '../store/diagnosticStore';
-import { usePatients } from '../../../stores';
-import { ErrorBoundary } from '../../../components/common/ErrorBoundary';
-
-// Import types
-import type {
-  DiagnosticRequest,
-  DiagnosticResult,
-  DiagnosticAnalytics,
-} from '../types';
-
-interface QuickStatsCardProps {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  color: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
-}
-
-const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
-  title,
-  value,
-  icon,
-  color,
-  trend,
-}) => {
-  return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Box
-            sx={{
-              p: 1,
-              borderRadius: 2,
-              backgroundColor: `${color}.light`,
-              color: `${color}.contrastText`,
-              mr: 2,
-            }}
-          >
-            {icon}
-          </Box>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h4" sx={{ fontWeight: 600, mb: 0.5 }}>
-              {value}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {title}
-            </Typography>
-          </Box>
-        </Box>
-        {trend && (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <TrendingUpIcon
-              sx={{
-                fontSize: 16,
-                color: trend.isPositive ? 'success.main' : 'error.main',
-                transform: trend.isPositive ? 'none' : 'rotate(180deg)',
-                mr: 0.5,
-              }}
-            />
-            <Typography
-              variant="caption"
-              sx={{
-                color: trend.isPositive ? 'success.main' : 'error.main',
-                fontWeight: 500,
-              }}
-            >
-              {Math.abs(trend.value)}% from last week
-            </Typography>
-          </Box>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-
-interface RecentCaseCardProps {
-  request: DiagnosticRequest;
-  result?: DiagnosticResult;
-  onViewDetails: (request: DiagnosticRequest) => void;
-  onQuickAction: (request: DiagnosticRequest, action: string) => void;
-}
-
-const RecentCaseCard: React.FC<RecentCaseCardProps> = ({
-  request,
-  result,
-  onViewDetails,
-  onQuickAction,
-}) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  // TEMPORARILY DISABLED TO TEST INFINITE LOOP
-  const patients: unknown[] = [];
-
-  const patient = patients.find((p) => p._id === request.patientId);
-  const statusColor = {
-    pending: 'warning',
-    processing: 'info',
-    completed: 'success',
-    failed: 'error',
-    cancelled: 'default',
-  }[request.status] as 'warning' | 'info' | 'success' | 'error' | 'default';
-
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleQuickAction = (action: string) => {
-    onQuickAction(request, action);
-    handleMenuClose();
-  };
-
-  return (
-    <Card sx={{ mb: 2, '&:hover': { boxShadow: 4 } }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-          <Box sx={{ flexGrow: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <PersonIcon
-                sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }}
-              />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                {patient
-                  ? `${patient.firstName} ${patient.lastName}`
-                  : 'Unknown Patient'}
-              </Typography>
-              <Chip
-                label={request.status}
-                color={statusColor}
-                size="small"
-                sx={{ ml: 1, textTransform: 'capitalize' }}
-              />
-            </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {request.inputSnapshot.symptoms.subjective.slice(0, 2).join(', ')}
-              {request.inputSnapshot.symptoms.subjective.length > 2 && '...'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {formatDistanceToNow(new Date(request.createdAt), {
-                addSuffix: true,
-              })}
-            </Typography>
-          </Box>
-          <IconButton size="small" onClick={handleMenuClick}>
-            <MoreVertIcon />
-          </IconButton>
-        </Box>
-
-        {result && (
-          <Box sx={{ mb: 2 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mb: 1, display: 'block' }}
-            >
-              Top Diagnosis:
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {result.diagnoses[0]?.condition || 'No diagnosis available'}
-            </Typography>
-            {result.diagnoses[0] && (
-              <Typography variant="caption" color="text.secondary">
-                Confidence: {Math.round(result.diagnoses[0].probability * 100)}%
-              </Typography>
-            )}
-          </Box>
-        )}
-
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => onViewDetails(request)}
-          >
-            View Details
-          </Button>
-          {request.status === 'completed' &&
-            result?.pharmacistReview?.status === undefined && (
-              <Button
-                size="small"
-                variant="contained"
-                color="primary"
-                onClick={() => handleQuickAction('review')}
-              >
-                Review
-              </Button>
-            )}
-        </Box>
-
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-        >
-          <MenuItem onClick={() => handleQuickAction('view')}>
-            View Full Details
-          </MenuItem>
-          {request.status === 'pending' && (
-            <MenuItem onClick={() => handleQuickAction('cancel')}>
-              Cancel Request
-            </MenuItem>
-          )}
-          {request.status === 'completed' && (
-            <MenuItem onClick={() => handleQuickAction('export')}>
-              Export Report
-            </MenuItem>
-          )}
-        </Menu>
-      </CardContent>
-    </Card>
-  );
-};
+  Add as AddIcon,
+  TrendingUp as TrendingUpIcon,
+  Assessment as AssessmentIcon,
+  Person as PersonIcon,
+  Schedule as ScheduleIcon,
+  CheckCircle as CheckCircleIcon,
+  Warning as WarningIcon,
+  Refresh as RefreshIcon,
+  MoreVert as MoreVertIcon,
+  Analytics as AnalyticsIcon,
+  Assignment as AssignmentIcon,
+  LocalHospital as LocalHospitalIcon,
+  Visibility as VisibilityIcon,
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import {
+  useDiagnosticDashboardStats,
+  useRecentDiagnosticActivity,
+  useDiagnosticReferrals,
+  useMarkCaseForFollowUp,
+  useMarkCaseAsCompleted,
+  useGenerateReferralDocument,
+} from '../../../queries/useDiagnosticHistory';
+import CaseReviewDialog from '../../../components/diagnostics/CaseReviewDialog';
 
 const DiagnosticDashboard: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
-
-  // Local state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(
-    null
-  );
   const [refreshing, setRefreshing] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<any>(null);
 
-  // Store state
-  const { filters, setFilters, clearFilters, selectRequest } =
-    useDiagnosticStore();
-
-  // TEMPORARILY DISABLED TO TEST INFINITE LOOP
-  const patients: unknown[] = [];
-
-  // Memoize the history query parameters to prevent infinite loops
-  const historyParams = useMemo(
-    () => ({
-      ...filters,
-      limit: 10, // Show recent cases
-    }),
-    [filters]
-  );
-
-  // API queries - TEMPORARILY DISABLED TO FIX INFINITE LOOP
-  const historyData = { data: { results: [] } };
-  const historyLoading = false;
-  const historyError = null;
-  const refetchHistoryOriginal = () => Promise.resolve();
-
-  const analyticsData = { data: {} };
-  const analyticsLoading = false;
-  const analyticsError = null;
-  const refetchAnalytics = () => Promise.resolve();
-
-  // ORIGINAL CODE (commented out):
-  /*
+  // Use new hooks for real data
   const {
-    data: historyData,
-    isLoading: historyLoading,
-    error: historyError,
-    refetch: refetchHistoryOriginal,
-  } = useDiagnosticHistory(historyParams);
-
-  // Memoize analytics parameters to prevent unnecessary re-renders
-  const analyticsParams = useMemo(
-    () => ({
-      dateFrom: format(
-        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        'yyyy-MM-dd'
-      ),
-      dateTo: format(new Date(), 'yyyy-MM-dd'),
-    }),
-    []
-  );
+    data: dashboardStats,
+    isLoading: statsLoading,
+    error: statsError,
+    refetch: refetchStats,
+  } = useDiagnosticDashboardStats();
 
   const {
-    data: analyticsData,
-    isLoading: analyticsLoading,
-    error: analyticsError,
-    refetch: refetchAnalytics,
-  } = useDiagnosticAnalytics(analyticsParams);
-  */
+    data: recentActivity,
+    isLoading: activityLoading,
+    error: activityError,
+    refetch: refetchActivity,
+  } = useRecentDiagnosticActivity(5);
 
-  // Memoize refetch functions to prevent infinite loops
-  const refetchHistory = useCallback(() => {
-    refetchHistoryOriginal();
-  }, []);
-
-  // Real-time updates for pending requests
-  const pendingRequests =
-    historyData?.data?.results?.filter(
-      (req: DiagnosticRequest) =>
-        req.status === 'pending' || req.status === 'processing'
-    ) || [];
-
-  // Removed unused polling variables since polling is disabled
-
-  // Poll for status updates on pending requests - DISABLED TO FIX INFINITE LOOP
-  // TODO: Re-enable polling after fixing the infinite loop issue
-  /*
-  useEffect(() => {
-    // Clear existing interval
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    // Set up new interval only if there are pending requests
-    if (hasPendingRequests) {
-      intervalRef.current = setInterval(() => {
-        refetchHistory();
-      }, 10000); // Poll every 10 seconds
-    }
-
-    // Cleanup function
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [hasPendingRequests, refetchHistory]);
-  */
-
-  // Handlers - SIMPLIFIED TO FIX INFINITE LOOP
-  const handleSearch = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      setSearchTerm(value);
-
-      // Simple direct update without debouncing for now
-      if (value !== filters.search) {
-        setFilters({ search: value, page: 1 });
-      }
+  const {
+    data: referralsData,
+    isLoading: referralsLoading,
+    refetch: refetchReferrals,
+  } = useDiagnosticReferrals(
+    {
+      page: 1,
+      limit: 5,
+      status: 'pending',
     },
-    [setFilters, filters.search]
+    {
+      enabled: true,
+    }
   );
 
-  const handleRefresh = useCallback(async () => {
+  // Extract stats with fallbacks
+  const stats = dashboardStats?.summary || {
+    totalCases: 0,
+    completedCases: 0,
+    pendingFollowUps: 0,
+    averageConfidence: 0,
+    referralsGenerated: 0,
+  };
+
+  const recentCases = recentActivity?.cases || [];
+  const pendingReferrals = referralsData?.referrals || [];
+
+  // Mutations for case actions
+  const markFollowUpMutation = useMarkCaseForFollowUp();
+  const markCompletedMutation = useMarkCaseAsCompleted();
+  const generateReferralMutation = useGenerateReferralDocument();
+
+  const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refetchHistory(), refetchAnalytics()]);
+      await Promise.all([
+        refetchStats(),
+        refetchActivity(),
+        refetchReferrals(),
+      ]);
+    } catch (error) {
+      console.error('Failed to refresh dashboard:', error);
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  };
 
-  const handleNewCase = useCallback(() => {
+  // Navigation handlers for dashboard buttons
+  const handleViewAllCases = () => {
+    navigate('/pharmacy/diagnostics/cases/all');
+  };
+
+  const handleViewAnalytics = () => {
+    navigate('/pharmacy/diagnostics/analytics');
+  };
+
+  const handleViewReferrals = () => {
+    navigate('/pharmacy/diagnostics/referrals');
+  };
+
+  const handleNewCase = () => {
     navigate('/pharmacy/diagnostics/case/new');
-  }, [navigate]);
+  };
 
-  const handleViewDetails = useCallback(
-    (request: DiagnosticRequest) => {
-      selectRequest(request);
-      navigate(`/pharmacy/diagnostics/case/${request._id}`);
-    },
-    [selectRequest, navigate]
-  );
+  const handleViewCase = (case_: any) => {
+    if (case_.status === 'pending_review') {
+      setSelectedCase(case_);
+      setReviewDialogOpen(true);
+    } else {
+      navigate(`/pharmacy/diagnostics/case/${case_.caseId}/results`);
+    }
+  };
 
-  const handleQuickAction = useCallback(
-    (request: DiagnosticRequest, action: string) => {
-      switch (action) {
-        case 'view':
-          handleViewDetails(request);
-          break;
-        case 'review':
-          navigate(`/pharmacy/diagnostics/case/${request._id}`);
-          break;
-        case 'cancel':
-          // Handle cancel logic
-          break;
-        case 'export':
-          // Handle export logic
-          break;
-      }
-    },
-    [handleViewDetails, navigate]
-  );
+  const handleMarkFollowUp = async (caseId: string, data: any) => {
+    await markFollowUpMutation.mutateAsync({ caseId, data });
+  };
 
-  const handleFilterClick = useCallback(
-    (event: React.MouseEvent<HTMLElement>) => {
-      setFilterAnchorEl(event.currentTarget);
-    },
-    []
-  );
+  const handleMarkCompleted = async (caseId: string, data: any) => {
+    await markCompletedMutation.mutateAsync({ caseId, data });
+  };
 
-  const handleFilterClose = useCallback(() => {
-    setFilterAnchorEl(null);
-  }, []);
-
-  const handleFilterPending = useCallback(() => {
-    setFilters({ status: 'pending' });
-    handleFilterClose();
-  }, [setFilters, handleFilterClose]);
-
-  const handleFilterCompleted = useCallback(() => {
-    setFilters({ status: 'completed' });
-    handleFilterClose();
-  }, [setFilters, handleFilterClose]);
-
-  const handleClearFilters = useCallback(() => {
-    clearFilters();
-    handleFilterClose();
-  }, [clearFilters, handleFilterClose]);
-
-  // Computed values
-  const recentCases = historyData?.data?.results || [];
-  const analytics = analyticsData?.data as DiagnosticAnalytics | undefined;
-
-  const quickStats = useMemo(
-    () => [
-      {
-        title: 'Total Cases',
-        value: analytics?.totalRequests || 0,
-        icon: <AssessmentIcon />,
-        color: 'primary' as const,
-        trend: { value: 12, isPositive: true },
-      },
-      {
-        title: 'Completed Today',
-        value: analytics?.completedRequests || 0,
-        icon: <CheckCircleIcon />,
-        color: 'success' as const,
-        trend: { value: 8, isPositive: true },
-      },
-      {
-        title: 'Pending Review',
-        value: pendingRequests.length,
-        icon: <ScheduleIcon />,
-        color: 'warning' as const,
-      },
-      {
-        title: 'Avg Confidence',
-        value: analytics?.averageConfidenceScore
-          ? `${Math.round(analytics.averageConfidenceScore * 100)}%`
-          : '0%',
-        icon: <TrendingUpIcon />,
-        color: 'secondary' as const,
-        trend: { value: 5, isPositive: true },
-      },
-    ],
-    [analytics, pendingRequests.length]
-  );
-
-  if (historyError || analyticsError) {
-    return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to load dashboard data. Please try refreshing the page.
-        </Alert>
-        <Button
-          variant="contained"
-          onClick={handleRefresh}
-          startIcon={<RefreshIcon />}
-        >
-          Retry
-        </Button>
-      </Container>
-    );
-  }
+  const handleGenerateReferral = async (caseId: string, data: any) => {
+    await generateReferralMutation.mutateAsync({ caseId, data });
+  };
 
   return (
-    <ErrorBoundary>
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 2,
-            }}
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+            Diagnostic Dashboard
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={handleRefresh}
+            disabled={refreshing}
           >
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-                Diagnostic Dashboard
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                AI-powered diagnostic analysis and case management
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Tooltip title="Refresh Data">
-                <IconButton onClick={handleRefresh} disabled={refreshing}>
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleNewCase}
-                sx={{ display: { xs: 'none', sm: 'flex' } }}
-              >
-                New Case
-              </Button>
-            </Box>
-          </Box>
-
-          {/* Search and Filters */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-            <TextField
-              placeholder="Search cases..."
-              value={searchTerm}
-              onChange={handleSearch}
-              size="small"
-              sx={{ minWidth: 300, flexGrow: 1 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Button
-              variant="outlined"
-              startIcon={<FilterListIcon />}
-              onClick={handleFilterClick}
-            >
-              Filters
-            </Button>
-          </Box>
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
         </Box>
+        <Typography variant="body1" color="text.secondary">
+          AI-powered diagnostic analysis and case management
+        </Typography>
+      </Box>
 
-        {/* Quick Stats */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          {quickStats.map((stat, index) => (
-            <Grid xs={12} sm={6} md={3} key={index}>
-              {analyticsLoading ? (
-                <Skeleton variant="rectangular" height={120} />
-              ) : (
-                <QuickStatsCard {...stat} />
-              )}
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* Main Content */}
-        <Grid container spacing={3}>
-          {/* Recent Cases */}
-          <Grid xs={12} md={8}>
-            <Card>
+      <Grid container spacing={3}>
+        {/* Stats Cards */}
+        <Grid item xs={12} sm={6} md={2}>
+          <Zoom in timeout={600}>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    mb: 3,
-                  }}
-                >
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Recent Cases
-                  </Typography>
-                  <Button
-                    size="small"
-                    onClick={() => navigate('/pharmacy/diagnostics')}
-                  >
-                    View All
-                  </Button>
-                </Box>
-
-                {historyLoading ? (
+                {statsLoading ? (
                   <Box>
-                    {[...Array(5)].map((_, index) => (
-                      <Skeleton
-                        key={index}
-                        variant="rectangular"
-                        height={100}
-                        sx={{ mb: 2 }}
-                      />
-                    ))}
-                  </Box>
-                ) : recentCases.length > 0 ? (
-                  <Box>
-                    {recentCases.map((request: DiagnosticRequest) => (
-                      <RecentCaseCard
-                        key={request._id}
-                        request={request}
-                        onViewDetails={handleViewDetails}
-                        onQuickAction={handleQuickAction}
-                      />
-                    ))}
+                    <Skeleton variant="circular" width={40} height={40} sx={{ mb: 1 }} />
+                    <Skeleton variant="text" width="60%" height={32} />
+                    <Skeleton variant="text" width="80%" />
                   </Box>
                 ) : (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <ScienceIcon
-                      sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }}
-                    />
-                    <Typography
-                      variant="h6"
-                      color="text.secondary"
-                      sx={{ mb: 1 }}
-                    >
-                      No cases yet
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
-                      Start your first diagnostic case to see it here
-                    </Typography>
-                    <Button variant="contained" onClick={handleNewCase}>
-                      Create First Case
-                    </Button>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                      <AssessmentIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                        {stats.totalCases}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Cases
+                      </Typography>
+                    </Box>
                   </Box>
                 )}
               </CardContent>
             </Card>
-          </Grid>
+          </Zoom>
+        </Grid>
 
-          {/* Quick Actions & Notifications */}
-          <Grid xs={12} md={4}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Quick Actions */}
+        <Grid item xs={12} sm={6} md={2}>
+          <Zoom in timeout={700}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                {statsLoading ? (
+                  <Box>
+                    <Skeleton variant="circular" width={40} height={40} sx={{ mb: 1 }} />
+                    <Skeleton variant="text" width="60%" height={32} />
+                    <Skeleton variant="text" width="80%" />
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+                      <CheckCircleIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                        {stats.completedCases}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Completed
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Zoom>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={2}>
+          <Zoom in timeout={800}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                {statsLoading ? (
+                  <Box>
+                    <Skeleton variant="circular" width={40} height={40} sx={{ mb: 1 }} />
+                    <Skeleton variant="text" width="60%" height={32} />
+                    <Skeleton variant="text" width="80%" />
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
+                      <ScheduleIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                        {stats.pendingFollowUps}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Pending Follow-ups
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Zoom>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={2}>
+          <Zoom in timeout={900}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                {statsLoading ? (
+                  <Box>
+                    <Skeleton variant="circular" width={40} height={40} sx={{ mb: 1 }} />
+                    <Skeleton variant="text" width="60%" height={32} />
+                    <Skeleton variant="text" width="80%" />
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
+                      <TrendingUpIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                        {Math.round(stats.averageConfidence)}%
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Avg Confidence
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Zoom>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={2}>
+          <Zoom in timeout={1000}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                {statsLoading ? (
+                  <Box>
+                    <Skeleton variant="circular" width={40} height={40} sx={{ mb: 1 }} />
+                    <Skeleton variant="text" width="60%" height={32} />
+                    <Skeleton variant="text" width="80%" />
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
+                      <LocalHospitalIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                        {stats.referralsGenerated}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Referrals
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Zoom>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={2}>
+          <Zoom in timeout={1100}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                {statsLoading ? (
+                  <Box>
+                    <Skeleton variant="circular" width={40} height={40} sx={{ mb: 1 }} />
+                    <Skeleton variant="text" width="60%" height={32} />
+                    <Skeleton variant="text" width="80%" />
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Avatar sx={{ bgcolor: 'grey.600', mr: 2 }}>
+                      <ScheduleIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                        {Math.round((stats.averageProcessingTime || 0) / 1000)}s
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Avg Processing
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Zoom>
+        </Grid>
+
+        {/* Recent Cases */}
+        <Grid item xs={12} md={8}>
+          <Fade in timeout={1000}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                    Recent Cases
+                  </Typography>
+                  <Button 
+                    size="small" 
+                    color="primary"
+                    onClick={handleViewAllCases}
+                    startIcon={<VisibilityIcon />}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    View All
+                  </Button>
+                </Box>
+                
+                {activityLoading ? (
+                  <Box>
+                    {[...Array(3)].map((_, index) => (
+                      <Box key={index} sx={{ mb: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
+                          <Box sx={{ flex: 1 }}>
+                            <Skeleton variant="text" width="60%" />
+                            <Skeleton variant="text" width="40%" />
+                          </Box>
+                          <Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: 1 }} />
+                        </Box>
+                        {index < 2 && <Divider sx={{ mt: 2 }} />}
+                      </Box>
+                    ))}
+                  </Box>
+                ) : activityError ? (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    Failed to load recent cases. Please try refreshing.
+                  </Alert>
+                ) : recentCases.length === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <AssignmentIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="body1" color="text.secondary">
+                      No recent cases found
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      onClick={handleNewCase}
+                      sx={{ mt: 2, textTransform: 'none' }}
+                      startIcon={<AddIcon />}
+                    >
+                      Create New Case
+                    </Button>
+                  </Box>
+                ) : (
+                  <List>
+                    {recentCases.map((case_, index) => (
+                      <React.Fragment key={case_._id}>
+                        <ListItem
+                          sx={{
+                            cursor: 'pointer',
+                            borderRadius: 1,
+                            '&:hover': {
+                              bgcolor: 'action.hover',
+                            },
+                          }}
+                          onClick={() => handleViewCase(case_)}
+                        >
+                          <ListItemAvatar>
+                            <Avatar sx={{ bgcolor: 'primary.main' }}>
+                              <PersonIcon />
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                                {case_.patientId?.firstName} {case_.patientId?.lastName}
+                              </Typography>
+                            }
+                            secondary={
+                              <Box>
+                                <Typography variant="body2" component="span">
+                                  Case ID: {case_.caseId}
+                                </Typography>
+                                <br />
+                                <Typography variant="caption" color="text.secondary">
+                                  {format(new Date(case_.createdAt), 'MMM dd, yyyy HH:mm')}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                          <Box sx={{ textAlign: 'right' }}>
+                            <Chip
+                              label={
+                                case_.status === 'pending_review' 
+                                  ? 'Pending Review'
+                                  : case_.status === 'completed'
+                                  ? 'Completed'
+                                  : case_.status === 'referred'
+                                  ? 'Referred'
+                                  : case_.status === 'follow_up'
+                                  ? 'Follow-up'
+                                  : case_.status === 'cancelled'
+                                  ? 'Cancelled'
+                                  : case_.status === 'draft'
+                                  ? 'Draft'
+                                  : case_.status
+                              }
+                              color={
+                                case_.status === 'completed' 
+                                  ? 'success' 
+                                  : case_.status === 'pending_review'
+                                  ? 'info'
+                                  : case_.status === 'referred'
+                                  ? 'secondary'
+                                  : case_.status === 'follow_up'
+                                  ? 'warning'
+                                  : case_.status === 'cancelled'
+                                  ? 'error'
+                                  : 'default'
+                              }
+                              size="small"
+                              sx={{ mb: 1 }}
+                            />
+                            <Typography variant="caption" display="block" color="text.secondary">
+                              {case_.patientId?.age}y, {case_.patientId?.gender}
+                            </Typography>
+                          </Box>
+                        </ListItem>
+                        {index < recentCases.length - 1 && <Divider />}
+                      </React.Fragment>
+                    ))}
+                  </List>
+                )}
+              </CardContent>
+            </Card>
+          </Fade>
+        </Grid>
+
+        {/* Quick Actions & Referrals */}
+        <Grid item xs={12} md={4}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, height: '100%' }}>
+            {/* Quick Actions */}
+            <Fade in timeout={1200}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
                     Quick Actions
                   </Typography>
-                  <Box
-                    sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
-                  >
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Button
-                      variant="outlined"
+                      variant="contained"
                       startIcon={<AddIcon />}
-                      onClick={handleNewCase}
                       fullWidth
+                      onClick={handleNewCase}
+                      sx={{
+                        textTransform: 'none',
+                        py: 1.5,
+                        background: 'linear-gradient(45deg, #1976d2, #1565c0)',
+                      }}
                     >
                       New Diagnostic Case
                     </Button>
                     <Button
                       variant="outlined"
-                      startIcon={<ScienceIcon />}
-                      onClick={() => navigate('/pharmacy/diagnostics/case/new')}
+                      startIcon={<AnalyticsIcon />}
                       fullWidth
-                    >
-                      Lab Orders
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<TimelineIcon />}
-                      onClick={() => navigate('/pharmacy/diagnostics')}
-                      fullWidth
+                      onClick={handleViewAnalytics}
+                      sx={{ textTransform: 'none', py: 1.5 }}
                     >
                       View Analytics
                     </Button>
                     <Button
                       variant="outlined"
                       startIcon={<LocalHospitalIcon />}
-                      onClick={() => navigate('/pharmacy/diagnostics')}
                       fullWidth
+                      onClick={handleViewReferrals}
+                      sx={{ textTransform: 'none', py: 1.5 }}
                     >
                       Referrals
                     </Button>
                   </Box>
                 </CardContent>
               </Card>
+            </Fade>
 
-              {/* Notifications */}
-              <Card>
+            {/* Pending Referrals */}
+            <Fade in timeout={1400}>
+              <Card sx={{ flex: 1 }}>
                 <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <NotificationsIcon sx={{ mr: 1 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Notifications
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mb: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      Pending Referrals
                     </Typography>
-                    <Badge
-                      badgeContent={pendingRequests.length}
-                      color="error"
-                      sx={{ ml: 1 }}
+                    <Chip
+                      label={pendingReferrals.length}
+                      color="warning"
+                      size="small"
                     />
                   </Box>
-
-                  {pendingRequests.length > 0 ? (
+                  
+                  {referralsLoading ? (
                     <Box>
-                      {pendingRequests
-                        .slice(0, 3)
-                        .map((request: DiagnosticRequest) => {
-                          const patient = patients.find(
-                            (p) => p._id === request.patientId
-                          );
-                          return (
-                            <Alert
-                              key={request._id}
-                              severity="info"
-                              sx={{ mb: 1 }}
-                              action={
-                                <Button
-                                  size="small"
-                                  onClick={() => handleViewDetails(request)}
-                                >
-                                  View
-                                </Button>
-                              }
-                            >
-                              <Typography variant="body2">
-                                {patient
-                                  ? `${patient.firstName} ${patient.lastName}`
-                                  : 'Patient'}{' '}
-                                - Case {request.status}
-                              </Typography>
-                            </Alert>
-                          );
-                        })}
-                      {pendingRequests.length > 3 && (
-                        <Typography variant="caption" color="text.secondary">
-                          +{pendingRequests.length - 3} more pending cases
-                        </Typography>
-                      )}
+                      {[...Array(2)].map((_, index) => (
+                        <Box key={index} sx={{ mb: 2 }}>
+                          <Skeleton variant="text" width="80%" />
+                          <Skeleton variant="text" width="60%" />
+                        </Box>
+                      ))}
+                    </Box>
+                  ) : pendingReferrals.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 2 }}>
+                      <LocalHospitalIcon sx={{ fontSize: 32, color: 'text.secondary', mb: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        No pending referrals
+                      </Typography>
                     </Box>
                   ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No pending notifications
-                    </Typography>
+                    <List dense>
+                      {pendingReferrals.slice(0, 3).map((referral, index) => (
+                        <ListItem key={referral._id} sx={{ px: 0 }}>
+                          <ListItemText
+                            primary={
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                {referral.patientId?.firstName} {referral.patientId?.lastName}
+                              </Typography>
+                            }
+                            secondary={
+                              <Box>
+                                <Typography variant="caption" color="text.secondary">
+                                  {referral.referral?.specialty} • {referral.referral?.urgency}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                      ))}
+                      {pendingReferrals.length > 3 && (
+                        <ListItem sx={{ px: 0, justifyContent: 'center' }}>
+                          <Button
+                            size="small"
+                            onClick={handleViewReferrals}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            View All ({pendingReferrals.length})
+                          </Button>
+                        </ListItem>
+                      )}
+                    </List>
                   )}
                 </CardContent>
               </Card>
-            </Box>
-          </Grid>
+            </Fade>
+          </Box>
         </Grid>
 
-        {/* Floating Action Button for Mobile */}
-        {isMobile && (
-          <Fab
-            color="primary"
-            aria-label="new case"
-            onClick={handleNewCase}
-            sx={{
-              position: 'fixed',
-              bottom: 16,
-              right: 16,
-            }}
-          >
-            <AddIcon />
-          </Fab>
-        )}
+        {/* Follow-up Required Section */}
+        <Grid item xs={12} md={4}>
+          <Fade in timeout={1600}>
+            <Card>
+              <CardContent>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                    Follow-up Required
+                  </Typography>
+                  <Chip
+                    label={stats.pendingFollowUps}
+                    color="warning"
+                    size="small"
+                  />
+                </Box>
+                
+                {statsLoading ? (
+                  <Box>
+                    {[...Array(2)].map((_, index) => (
+                      <Box key={index} sx={{ mb: 2 }}>
+                        <Skeleton variant="text" width="80%" />
+                        <Skeleton variant="text" width="60%" />
+                      </Box>
+                    ))}
+                  </Box>
+                ) : stats.pendingFollowUps === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 2 }}>
+                    <ScheduleIcon sx={{ fontSize: 32, color: 'text.secondary', mb: 1 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      No follow-ups required
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 2 }}>
+                    <ScheduleIcon sx={{ fontSize: 32, color: 'warning.main', mb: 1 }} />
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {stats.pendingFollowUps} cases need follow-up
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => navigate('/pharmacy/diagnostics/follow-up')}
+                      sx={{ mt: 1, textTransform: 'none' }}
+                    >
+                      View Follow-ups
+                    </Button>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Fade>
+        </Grid>
+      </Grid>
 
-        {/* Filter Menu */}
-        <Menu
-          anchorEl={filterAnchorEl}
-          open={Boolean(filterAnchorEl)}
-          onClose={handleFilterClose}
-        >
-          <MenuItem onClick={handleFilterPending}>Pending Cases</MenuItem>
-          <MenuItem onClick={handleFilterCompleted}>Completed Cases</MenuItem>
-          <MenuItem onClick={handleClearFilters}>Clear Filters</MenuItem>
-        </Menu>
-      </Container>
-    </ErrorBoundary>
+      {/* Case Review Dialog */}
+      <CaseReviewDialog
+        open={reviewDialogOpen}
+        onClose={() => {
+          setReviewDialogOpen(false);
+          setSelectedCase(null);
+        }}
+        case={selectedCase}
+        onMarkFollowUp={handleMarkFollowUp}
+        onMarkCompleted={handleMarkCompleted}
+        onGenerateReferral={handleGenerateReferral}
+        loading={
+          markFollowUpMutation.isPending ||
+          markCompletedMutation.isPending ||
+          generateReferralMutation.isPending
+        }
+      />
+    </Container>
   );
 };
-
-// TEMPORARILY REMOVED FEATURE GUARD TO TEST INFINITE LOOP
-// const DiagnosticDashboardWithGuard: React.FC = () => (
-//   <DiagnosticFeatureGuard>
-//     <DiagnosticDashboard />
-//   </DiagnosticFeatureGuard>
-// );
 
 export default DiagnosticDashboard;

@@ -41,74 +41,81 @@ interface ReportFilters {
 export const getUnifiedReportData = async (req: AuthRequest, res: Response) => {
   try {
     const { reportType } = req.params;
-    const workplaceId = req.user?.workplaceId;
+    const userWorkplaceId = req.user?.workplaceId;
+    const userRole = req.user?.role;
 
     // Parse filters from query parameters
     const filters = parseReportFilters(req.query);
+
+    // For super_admin users, show data from all workplaces (null workplaceId)
+    // For other users, filter by their workplaceId
+    const workplaceId = userRole === 'super_admin' ? null : userWorkplaceId?.toString() || '';
+
+    console.log(`🔍 Report request - User: ${req.user?.email}, Role: ${userRole}, WorkplaceId: ${workplaceId || 'ALL'}`);
 
     // Use cached report service for performance
     const cachedReportService = new CachedReportService();
 
     const reportData = await cachedReportService.getCachedReportData(
       reportType || '',
-      workplaceId?.toString() || '',
+      workplaceId || 'all-workplaces',
       filters,
       async () => {
         // Generate report data using optimized aggregation
         switch (reportType) {
           case 'patient-outcomes':
             return await getPatientOutcomesDataOptimized(
-              workplaceId?.toString() || '',
+              workplaceId,
               filters
             );
           case 'pharmacist-interventions':
             return await getPharmacistInterventionsDataOptimized(
-              workplaceId?.toString() || '',
+              workplaceId,
               filters
             );
           case 'therapy-effectiveness':
             return await getTherapyEffectivenessDataOptimized(
-              workplaceId?.toString() || '',
+              workplaceId,
               filters
             );
           case 'quality-improvement':
             return await getQualityImprovementDataOptimized(
-              workplaceId?.toString() || '',
+              workplaceId,
               filters
             );
           case 'regulatory-compliance':
             return await getRegulatoryComplianceDataOptimized(
-              workplaceId?.toString() || '',
+              workplaceId,
               filters
             );
           case 'cost-effectiveness':
             return await getCostEffectivenessDataOptimized(
-              workplaceId?.toString() || '',
+              workplaceId,
               filters
             );
           case 'trend-forecasting':
             return await getTrendForecastingDataOptimized(
-              workplaceId?.toString() || '',
+              workplaceId,
               filters
             );
           case 'operational-efficiency':
             return await getOperationalEfficiencyDataOptimized(
-              workplaceId?.toString() || '',
+              workplaceId,
               filters
             );
           case 'medication-inventory':
             return await getMedicationInventoryDataOptimized(
-              workplaceId?.toString() || '',
+              workplaceId,
               filters
             );
           case 'patient-demographics':
             return await getPatientDemographicsDataOptimized(
-              workplaceId?.toString() || '',
+              workplaceId,
               filters
             );
           case 'adverse-events':
             return await getAdverseEventsDataOptimized(
-              workplaceId?.toString() || '',
+              workplaceId,
               filters
             );
           default:
@@ -250,18 +257,26 @@ export const getAvailableReports = async (req: AuthRequest, res: Response) => {
  */
 export const getReportSummary = async (req: AuthRequest, res: Response) => {
   try {
-    const workplaceId = req.user?.workplaceId;
+    const userWorkplaceId = req.user?.workplaceId;
+    const userRole = req.user?.role;
     const { period = '30d' } = req.query;
 
     const startDate = moment()
       .subtract(parseInt(period.toString(), 10) || 30, 'days')
       .toDate();
 
-    const matchStage = {
-      workplaceId: new mongoose.Types.ObjectId(workplaceId),
+    // For super_admin users, don't filter by workplaceId (show all workplaces)
+    // For other users, filter by their workplaceId
+    const matchStage: any = {
       isDeleted: false,
       createdAt: { $gte: startDate },
     };
+
+    if (userRole !== 'super_admin' && userWorkplaceId) {
+      matchStage.workplaceId = new mongoose.Types.ObjectId(userWorkplaceId);
+    }
+
+    console.log(`🔍 Summary request - User: ${req.user?.email}, Role: ${userRole}, Match stage:`, matchStage);
 
     // Get summary statistics
     const [mtrStats, interventionStats, problemStats] = await Promise.all([
@@ -516,7 +531,7 @@ async function getPatientOutcomesDataOptimized(
 }
 
 async function getPatientOutcomesData(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   const matchStage = buildMatchStage(workplaceId, filters);
@@ -598,7 +613,7 @@ async function getPatientOutcomesData(
 }
 
 async function getPharmacistInterventionsDataOptimized(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   const aggregationService = ReportAggregationService.getInstance();
@@ -647,7 +662,7 @@ async function getPharmacistInterventionsDataOptimized(
 }
 
 async function getPharmacistInterventionsData(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   const matchStage = buildMatchStage(workplaceId, filters);
@@ -694,7 +709,7 @@ async function getPharmacistInterventionsData(
 }
 
 async function getTherapyEffectivenessData(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   const matchStage = buildMatchStage(workplaceId, filters);
@@ -717,7 +732,7 @@ async function getTherapyEffectivenessData(
 }
 
 async function getQualityImprovementData(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   const matchStage = buildMatchStage(workplaceId, filters);
@@ -744,7 +759,7 @@ async function getQualityImprovementData(
 }
 
 async function getRegulatoryComplianceData(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   const matchStage = buildMatchStage(workplaceId, filters);
@@ -765,7 +780,7 @@ async function getRegulatoryComplianceData(
 }
 
 async function getCostEffectivenessData(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   const matchStage = buildMatchStage(workplaceId, filters);
@@ -786,7 +801,7 @@ async function getCostEffectivenessData(
 }
 
 async function getTrendForecastingData(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   const matchStage = buildMatchStage(workplaceId, filters);
@@ -812,7 +827,7 @@ async function getTrendForecastingData(
 }
 
 async function getOperationalEfficiencyData(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   const matchStage = buildMatchStage(workplaceId, filters);
@@ -845,7 +860,7 @@ async function getOperationalEfficiencyData(
 }
 
 async function getMedicationInventoryData(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   // This would typically query inventory-specific models
@@ -858,7 +873,7 @@ async function getMedicationInventoryData(
 }
 
 async function getPatientDemographicsData(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   // This would typically query patient demographic data
@@ -871,7 +886,7 @@ async function getPatientDemographicsData(
 }
 
 async function getAdverseEventsData(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   const matchStage = buildMatchStage(workplaceId, filters);
@@ -916,11 +931,15 @@ function parseReportFilters(query: any): ReportFilters {
   return filters;
 }
 
-function buildMatchStage(workplaceId: string, filters: ReportFilters) {
+function buildMatchStage(workplaceId: string | null, filters: ReportFilters) {
   const matchStage: any = {
-    workplaceId: new mongoose.Types.ObjectId(workplaceId),
     isDeleted: false,
   };
+
+  // Only add workplaceId filter if it's provided (not null for super_admin)
+  if (workplaceId) {
+    matchStage.workplaceId = new mongoose.Types.ObjectId(workplaceId);
+  }
 
   if (filters.dateRange) {
     matchStage.createdAt = {
@@ -954,7 +973,7 @@ function buildMatchStage(workplaceId: string, filters: ReportFilters) {
 
 // Missing optimized functions
 async function getTherapyEffectivenessDataOptimized(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   // Placeholder implementation
@@ -962,7 +981,7 @@ async function getTherapyEffectivenessDataOptimized(
 }
 
 async function getQualityImprovementDataOptimized(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   // Placeholder implementation
@@ -970,7 +989,7 @@ async function getQualityImprovementDataOptimized(
 }
 
 async function getRegulatoryComplianceDataOptimized(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   // Placeholder implementation
@@ -978,7 +997,7 @@ async function getRegulatoryComplianceDataOptimized(
 }
 
 async function getCostEffectivenessDataOptimized(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   // Placeholder implementation
@@ -986,7 +1005,7 @@ async function getCostEffectivenessDataOptimized(
 }
 
 async function getTrendForecastingDataOptimized(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   // Placeholder implementation
@@ -994,7 +1013,7 @@ async function getTrendForecastingDataOptimized(
 }
 
 async function getOperationalEfficiencyDataOptimized(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   // Placeholder implementation
@@ -1002,7 +1021,7 @@ async function getOperationalEfficiencyDataOptimized(
 }
 
 async function getMedicationInventoryDataOptimized(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   // Placeholder implementation
@@ -1010,7 +1029,7 @@ async function getMedicationInventoryDataOptimized(
 }
 
 async function getPatientDemographicsDataOptimized(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   // Placeholder implementation
@@ -1018,7 +1037,7 @@ async function getPatientDemographicsDataOptimized(
 }
 
 async function getAdverseEventsDataOptimized(
-  workplaceId: string,
+  workplaceId: string | null,
   filters: ReportFilters
 ) {
   // Placeholder implementation

@@ -204,8 +204,10 @@ router.post('/webhook', [
             runId,
             branch,
             commit,
+            workspaceId: req.body.workspaceId || 'default',
             scores,
             metrics,
+            budgetStatus: {},
             reportUrl: req.body.reportUrl,
             rawResult: lhr,
         });

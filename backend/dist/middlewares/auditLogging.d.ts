@@ -32,6 +32,7 @@ interface SystemAuditLog {
     complianceRelevant: boolean;
     retentionPeriod?: number;
 }
+export declare const cleanupAuditLogging: () => void;
 export declare const createAuditLog: (logData: Partial<SystemAuditLog>) => Promise<void>;
 export declare const auditMiddleware: (options: {
     action: string;

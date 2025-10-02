@@ -53,7 +53,7 @@ export interface PatientDataAggregation {
 
 export class DiagnosticService {
     private readonly maxRetries = 3;
-    private readonly processingTimeout = 180000; // 3 minutes
+    private readonly processingTimeout = 300000; // 5 minutes
 
     /**
      * Create a new diagnostic request

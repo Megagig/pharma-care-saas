@@ -27,7 +27,8 @@ class RoleController {
                     message: 'Name, display name, and description are required',
                 });
             }
-            const existingRole = await Role_1.default.findOne({ name: name.toLowerCase() });
+            const sanitizedName = name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '');
+            const existingRole = await Role_1.default.findOne({ name: sanitizedName });
             if (existingRole) {
                 return res.status(409).json({
                     success: false,
@@ -74,7 +75,7 @@ class RoleController {
             }
             const hierarchyLevel = parentRole ? parentRole.hierarchyLevel + 1 : 0;
             const role = new Role_1.default({
-                name: name.toLowerCase(),
+                name: sanitizedName,
                 displayName,
                 description,
                 category,

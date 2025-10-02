@@ -135,8 +135,15 @@ const login = async (req, res) => {
             .select('+passwordHash')
             .populate('currentPlanId');
         if (!user || !(await user.comparePassword(password))) {
-            await auditLogging_1.auditOperations.login(req, user || { email }, false);
             res.status(401).json({ message: 'Invalid credentials' });
+            setImmediate(async () => {
+                try {
+                    await auditLogging_1.auditOperations.login(req, user || { email }, false);
+                }
+                catch (auditError) {
+                    console.error('Audit logging error:', auditError);
+                }
+            });
             return;
         }
         if (user.status === 'suspended') {
@@ -182,7 +189,6 @@ const login = async (req, res) => {
             maxAge: 30 * 24 * 60 * 60 * 1000,
             path: '/',
         });
-        await auditLogging_1.auditOperations.login(req, user, true);
         res.json({
             success: true,
             user: {
@@ -197,9 +203,19 @@ const login = async (req, res) => {
                 workplaceId: user.workplaceId,
             },
         });
+        setImmediate(async () => {
+            try {
+                await auditLogging_1.auditOperations.login(req, user, true);
+            }
+            catch (auditError) {
+                console.error('Audit logging error:', auditError);
+            }
+        });
     }
     catch (error) {
-        res.status(400).json({ message: error.message });
+        if (!res.headersSent) {
+            res.status(400).json({ message: error.message });
+        }
     }
 };
 exports.login = login;

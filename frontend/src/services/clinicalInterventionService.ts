@@ -1,4 +1,3 @@
-import axios from 'axios';
 import type {
     ClinicalIntervention,
     CreateInterventionData,
@@ -47,6 +46,13 @@ class ClinicalInterventionService {
         url: string,
         options: RequestOptions = {}
     ): Promise<ApiResponse<T>> {
+        console.log('🔍 Making request:', {
+            url: `${API_BASE_URL}${url}`,
+            method: options.method || 'GET',
+            body: options.body,
+            headers: options.headers
+        });
+
         try {
             // Add super_admin test header for development testing
             const headers: Record<string, string> = {
@@ -57,6 +63,7 @@ class ClinicalInterventionService {
             // Check if we're in super_admin test mode (development only)
             if (import.meta.env.DEV) {
                 headers['X-Super-Admin-Test'] = 'true';
+                console.log('🔍 Added super_admin test header for development');
             }
 
             const config = {
@@ -65,7 +72,13 @@ class ClinicalInterventionService {
                 headers,
             };
 
+            console.log('🔍 Final request config:', config);
             const response = await fetch(`${API_BASE_URL}${url}`, config);
+            console.log('🔍 Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers.entries())
+            });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -83,6 +96,7 @@ class ClinicalInterventionService {
             }
 
             const data = await response.json();
+            console.log('🔍 Response data:', data);
             return data;
         } catch (error) {
             console.error(`API request failed for ${url}:`, error);
@@ -125,7 +139,40 @@ class ClinicalInterventionService {
         });
 
         const url = `/clinical-interventions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-        return this.makeRequest<PaginatedResponse<ClinicalIntervention>['data']>(url);
+        const response = await this.makeRequest<any>(url);
+
+        // Handle different response structures from backend
+        if (response.success && response.data) {
+            // If backend returns nested data structure
+            if (response.data.data && response.data.pagination) {
+                return {
+                    success: true,
+                    data: {
+                        data: response.data.data,
+                        pagination: response.data.pagination
+                    }
+                };
+            }
+            // If backend returns direct array (fallback)
+            else if (Array.isArray(response.data)) {
+                return {
+                    success: true,
+                    data: {
+                        data: response.data,
+                        pagination: {
+                            page: filters.page || 1,
+                            limit: filters.limit || 20,
+                            total: response.data.length,
+                            pages: Math.ceil(response.data.length / (filters.limit || 20)),
+                            hasNext: false,
+                            hasPrev: false
+                        }
+                    }
+                };
+            }
+        }
+
+        return response as PaginatedResponse<ClinicalIntervention>;
     }
 
     /**
@@ -139,10 +186,15 @@ class ClinicalInterventionService {
      * Create a new intervention
      */
     async createIntervention(data: CreateInterventionData): Promise<ApiResponse<ClinicalIntervention>> {
-        return this.makeRequest<ClinicalIntervention>('/clinical-interventions', {
+        console.log('🔍 SERVICE: createIntervention called with:', data);
+
+        const result = await this.makeRequest<ClinicalIntervention>('/clinical-interventions', {
             method: 'POST',
             body: JSON.stringify(data),
         });
+
+        console.log('🔍 SERVICE: createIntervention result:', result);
+        return result;
     }
 
     /**
@@ -264,7 +316,12 @@ class ClinicalInterventionService {
         }
 
         const url = `/clinical-interventions/analytics/summary${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-        return this.makeRequest<DashboardMetrics>(url);
+        console.log('🔍 DASHBOARD: Fetching metrics from:', `${API_BASE_URL}${url}`);
+
+        const result = await this.makeRequest<DashboardMetrics>(url);
+        console.log('🔍 DASHBOARD: Received metrics:', result);
+
+        return result;
     }
 
     /**
@@ -302,7 +359,7 @@ class ClinicalInterventionService {
         const queryParams = new URLSearchParams();
 
         Object.entries(filters).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== '') {
+            if (value !== undefined && value !== null && String(value) !== '') {
                 if (value instanceof Date) {
                     queryParams.append(key, value.toISOString());
                 } else {
@@ -312,7 +369,12 @@ class ClinicalInterventionService {
         });
 
         const url = `/clinical-interventions/reports/outcomes${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-        return this.makeRequest<unknown>(url);
+        console.log('🔍 SERVICE: generateOutcomeReport calling:', `${API_BASE_URL}${url}`);
+
+        const result = await this.makeRequest<unknown>(url);
+        console.log('🔍 SERVICE: generateOutcomeReport result:', result);
+
+        return result;
     }
 
     /**
@@ -418,8 +480,8 @@ class ClinicalInterventionService {
     /**
      * Check for duplicate interventions
      */
-    async checkDuplicates(patientId: string, category: string): Promise<ApiResponse<ClinicalIntervention[]>> {
-        return this.makeRequest<ClinicalIntervention[]>(`/clinical-interventions/check-duplicates?patientId=${patientId}&category=${category}`);
+    async checkDuplicates(patientId: string, category: string): Promise<ApiResponse<{ duplicates: ClinicalIntervention[]; count: number }>> {
+        return this.makeRequest<{ duplicates: ClinicalIntervention[]; count: number }>(`/clinical-interventions/check-duplicates?patientId=${patientId}&category=${category}`);
     }
 
     /**

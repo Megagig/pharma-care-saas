@@ -10,9 +10,10 @@ interface SendEmailOptions {
         path: string;
     }>;
 }
-export declare const sendEmail: (options: SendEmailOptions) => Promise<any>;
+export declare const sendTemplatedEmail: (options: SendEmailOptions) => Promise<any>;
 export declare const sendBulkEmails: (recipients: string[], options: Omit<SendEmailOptions, "to">) => Promise<any[]>;
 export declare const isValidEmail: (email: string) => boolean;
 export declare const sanitizeEmailContent: (content: string) => string;
+export declare function sendEmail(to: string, subject: string, body: string): Promise<void>;
 export {};
 //# sourceMappingURL=emailHelpers.d.ts.map

@@ -108,5 +108,7 @@ FeatureFlagSchema.pre('save', function (next) {
     this.updatedAt = new Date();
     next();
 });
-exports.FeatureFlag = mongoose_1.default.model('FeatureFlag', FeatureFlagSchema);
+const FeatureFlag = mongoose_1.default.model('FeatureFlag', FeatureFlagSchema);
+exports.FeatureFlag = FeatureFlag;
+exports.default = FeatureFlag;
 //# sourceMappingURL=FeatureFlag.js.map

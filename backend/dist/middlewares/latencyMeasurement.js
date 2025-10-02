@@ -100,8 +100,16 @@ const latencyMeasurementMiddleware = (req, res, next) => {
             userAgent: req.get('User-Agent'),
             ip: req.ip,
         };
-        latencyTracker.addMetric(metric);
-        res.set('X-Response-Time', `${duration.toFixed(2)}ms`);
+        setImmediate(() => {
+            latencyTracker.addMetric(metric);
+        });
+        try {
+            if (!res.headersSent) {
+                res.set('X-Response-Time', `${duration.toFixed(2)}ms`);
+            }
+        }
+        catch (error) {
+        }
         return originalEnd.call(this, chunk, encoding);
     };
     next();

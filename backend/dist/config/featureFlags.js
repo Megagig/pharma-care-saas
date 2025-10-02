@@ -1,6 +1,9 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.FEATURE_FLAG_CATEGORIES = exports.FEATURE_FLAG_DESCRIPTIONS = exports.getDefaultFeatureFlags = exports.getFeatureFlagStatus = exports.validateFeatureFlags = exports.getPerformanceFeatureFlags = void 0;
+exports.requireFeatureFlag = exports.injectFeatureFlags = exports.FeatureFlagService = exports.FEATURE_FLAG_CATEGORIES = exports.FEATURE_FLAG_DESCRIPTIONS = exports.getDefaultFeatureFlags = exports.getFeatureFlagStatus = exports.validateFeatureFlags = exports.getPerformanceFeatureFlags = void 0;
 const getPerformanceFeatureFlags = () => {
     return {
         themeOptimization: process.env.FEATURE_THEME_OPTIMIZATION === 'true',
@@ -122,4 +125,38 @@ exports.FEATURE_FLAG_CATEGORIES = {
     backend: ['apiCaching', 'databaseOptimization', 'cursorPagination', 'backgroundJobs'],
     frontend: ['virtualization', 'reactQueryOptimization', 'serviceWorker'],
 };
+const FeatureFlagService_1 = __importDefault(require("../services/FeatureFlagService"));
+exports.FeatureFlagService = FeatureFlagService_1.default;
+const injectFeatureFlags = (req, res, next) => {
+    try {
+        const flags = (0, exports.getPerformanceFeatureFlags)();
+        req.featureFlags = flags;
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.injectFeatureFlags = injectFeatureFlags;
+const requireFeatureFlag = (featureName) => {
+    return (req, res, next) => {
+        try {
+            const flags = req.featureFlags || (0, exports.getPerformanceFeatureFlags)();
+            if (flags[featureName]) {
+                next();
+            }
+            else {
+                res.status(403).json({
+                    success: false,
+                    message: `Feature '${featureName}' is not enabled`,
+                    code: 'FEATURE_NOT_ENABLED'
+                });
+            }
+        }
+        catch (error) {
+            next(error);
+        }
+    };
+};
+exports.requireFeatureFlag = requireFeatureFlag;
 //# sourceMappingURL=featureFlags.js.map

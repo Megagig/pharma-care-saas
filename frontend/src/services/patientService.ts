@@ -230,10 +230,27 @@ class PatientService {
       // Return the data portion directly for the search hook to process
       const searchData = result.data || { patients: [], total: 0, query: query };
       
-      console.log('Search data being returned:', {
+      // Fix missing _id fields by using mrn as fallback
+      if (searchData.patients && Array.isArray(searchData.patients)) {
+        searchData.patients = searchData.patients.map((patient: any) => {
+          // If _id is missing but mrn exists, use mrn as _id
+          if (!patient._id && patient.mrn) {
+            console.log('🔧 Frontend Service - Fixing missing _id, using mrn:', patient.mrn);
+            patient._id = patient.mrn;
+          }
+          return patient;
+        });
+      }
+      
+      // Debug the actual patient data being returned
+      console.log('🔍 Frontend Service - Search data being returned:', {
         patientsCount: searchData.patients ? searchData.patients.length : 0,
         total: searchData.total,
-        query: searchData.query
+        query: searchData.query,
+        firstPatient: searchData.patients?.[0],
+        firstPatientKeys: searchData.patients?.[0] ? Object.keys(searchData.patients[0]) : [],
+        firstPatientId: searchData.patients?.[0]?._id,
+        firstPatientMrn: searchData.patients?.[0]?.mrn,
       });
 
       return searchData;

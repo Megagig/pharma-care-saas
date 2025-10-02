@@ -18,10 +18,11 @@ const storage = multer_1.default.diskStorage({
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-        if (!req.user) {
+        const authReq = req;
+        if (!authReq.user) {
             return cb(new Error('User not authenticated'), '');
         }
-        const userId = req.user._id;
+        const userId = authReq.user._id;
         const uniqueSuffix = Date.now();
         const extension = path_1.default.extname(file.originalname);
         cb(null, `license-${userId}-${uniqueSuffix}${extension}`);

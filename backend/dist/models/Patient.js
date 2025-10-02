@@ -328,6 +328,22 @@ patientSchema.methods.updateInterventionFlags = async function () {
     this.hasActiveInterventions = activeCount > 0;
     await this.save();
 };
+patientSchema.methods.getDiagnosticHistoryCount = async function () {
+    const DiagnosticHistory = mongoose_1.default.model('DiagnosticHistory');
+    return await DiagnosticHistory.countDocuments({
+        patientId: this._id,
+        status: 'active',
+    });
+};
+patientSchema.methods.getLatestDiagnosticHistory = async function () {
+    const DiagnosticHistory = mongoose_1.default.model('DiagnosticHistory');
+    return await DiagnosticHistory.findOne({
+        patientId: this._id,
+        status: 'active',
+    })
+        .populate('pharmacistId', 'firstName lastName')
+        .sort({ createdAt: -1 });
+};
 patientSchema.pre('save', function () {
     if (!this.dob && !this.age) {
         throw new Error('Either date of birth or age must be provided');

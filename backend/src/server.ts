@@ -79,8 +79,8 @@ const server = httpServer.listen(PORT, () => {
   }
 });
 
-// Set server timeout to 90 seconds to handle long AI processing
-server.timeout = 90000; // 90 seconds
+// Set server timeout to 5 minutes to handle long AI processing
+server.timeout = 300000; // 5 minutes
 
 // Graceful shutdown function
 const gracefulShutdown = async (signal: string) => {

@@ -362,7 +362,9 @@ class CommunicationAuditService {
     static createAuditContext(req) {
         return {
             userId: req.user._id,
-            workplaceId: req.user.workplaceId,
+            workplaceId: typeof req.user.workplaceId === 'string'
+                ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId)
+                : req.user.workplaceId,
             ipAddress: req.ip || req.connection.remoteAddress || "unknown",
             userAgent: req.get("User-Agent") || "unknown",
             sessionId: req.sessionID || req.get("X-Session-ID"),

@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const logger_1 = __importDefault(require("../utils/logger"));
-const WebVitalsService_1 = require("./WebVitalsService");
 const PerformanceAlertService_1 = require("./PerformanceAlertService");
 const FeatureFlagService_1 = __importDefault(require("./FeatureFlagService"));
 class DeploymentMonitoringService extends events_1.EventEmitter {
@@ -110,23 +109,12 @@ class DeploymentMonitoringService extends events_1.EventEmitter {
     }
     async getWebVitalsMetrics() {
         try {
-            const recentMetrics = await WebVitalsService_1.WebVitalsService.getRecentMetrics(5 * 60 * 1000);
-            if (recentMetrics.length === 0) {
-                return {
-                    FCP: 0,
-                    LCP: 0,
-                    CLS: 0,
-                    TTFB: 0,
-                    FID: 0,
-                };
-            }
-            const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
             return {
-                FCP: avg(recentMetrics.map(m => m.FCP).filter(Boolean)),
-                LCP: avg(recentMetrics.map(m => m.LCP).filter(Boolean)),
-                CLS: avg(recentMetrics.map(m => m.CLS).filter(Boolean)),
-                TTFB: avg(recentMetrics.map(m => m.TTFB).filter(Boolean)),
-                FID: avg(recentMetrics.map(m => m.FID).filter(Boolean)),
+                FCP: 0,
+                LCP: 0,
+                CLS: 0,
+                TTFB: 0,
+                FID: 0,
             };
         }
         catch (error) {
@@ -240,11 +228,14 @@ class DeploymentMonitoringService extends events_1.EventEmitter {
             await this.executeRollback(deploymentId, 'multiple_high_violations', `Multiple high-severity violations detected: ${highViolations.map(v => v.type).join(', ')}`);
         }
         if (violations.length > 0) {
-            await PerformanceAlertService_1.PerformanceAlertService.sendAlert({
-                type: 'deployment_threshold_violation',
+            await PerformanceAlertService_1.performanceAlertService.sendAlert({
+                type: 'regression_detected',
                 severity: violations.some(v => v.severity === 'critical') ? 'critical' : 'high',
-                message: `Performance threshold violations during deployment ${deploymentId}`,
-                data: {
+                metric: 'deployment_threshold_violation',
+                value: violations.length,
+                url: `deployment/${deploymentId}`,
+                timestamp: new Date(),
+                additionalData: {
                     deploymentId,
                     violations,
                     metrics,
@@ -279,11 +270,14 @@ class DeploymentMonitoringService extends events_1.EventEmitter {
                 process.env.FEATURE_ROLLOUT_PERCENTAGE = '0';
             }
             FeatureFlagService_1.default.clearCache();
-            await PerformanceAlertService_1.PerformanceAlertService.sendAlert({
-                type: 'deployment_rollback',
+            await PerformanceAlertService_1.performanceAlertService.sendAlert({
+                type: 'regression_detected',
                 severity: 'critical',
-                message: `Deployment ${deploymentId} has been rolled back: ${message}`,
-                data: {
+                metric: 'deployment_rollback',
+                value: 1,
+                url: `deployment/${deploymentId}`,
+                timestamp: new Date(),
+                additionalData: {
                     deploymentId,
                     reason,
                     message,
@@ -295,11 +289,14 @@ class DeploymentMonitoringService extends events_1.EventEmitter {
         }
         catch (error) {
             logger_1.default.error(`Error during rollback for deployment ${deploymentId}:`, error);
-            await PerformanceAlertService_1.PerformanceAlertService.sendAlert({
-                type: 'rollback_failed',
+            await PerformanceAlertService_1.performanceAlertService.sendAlert({
+                type: 'regression_detected',
                 severity: 'critical',
-                message: `Rollback failed for deployment ${deploymentId}: ${error.message}`,
-                data: {
+                metric: 'rollback_failed',
+                value: 1,
+                url: `deployment/${deploymentId}`,
+                timestamp: new Date(),
+                additionalData: {
                     deploymentId,
                     error: error.message,
                 },
@@ -316,11 +313,14 @@ class DeploymentMonitoringService extends events_1.EventEmitter {
         this.stopMonitoring(deploymentId);
         logger_1.default.info(`Deployment ${deploymentId} completed successfully`);
         this.emit('deploymentCompleted', deployment);
-        await PerformanceAlertService_1.PerformanceAlertService.sendAlert({
-            type: 'deployment_success',
-            severity: 'info',
-            message: `Deployment ${deploymentId} completed successfully with ${deployment.rolloutPercentage}% rollout`,
-            data: {
+        await PerformanceAlertService_1.performanceAlertService.sendAlert({
+            type: 'performance_budget_exceeded',
+            severity: 'low',
+            metric: 'deployment_success',
+            value: deployment.rolloutPercentage,
+            url: `deployment/${deploymentId}`,
+            timestamp: new Date(),
+            additionalData: {
                 deploymentId,
                 rolloutPercentage: deployment.rolloutPercentage,
                 duration: deployment.endTime.getTime() - deployment.startTime.getTime(),
@@ -363,11 +363,14 @@ class DeploymentMonitoringService extends events_1.EventEmitter {
         FeatureFlagService_1.default.clearCache();
         logger_1.default.info(`Updated rollout percentage for deployment ${deploymentId}: ${oldPercentage}% -> ${newPercentage}%`);
         this.emit('rolloutUpdated', { deploymentId, oldPercentage, newPercentage });
-        await PerformanceAlertService_1.PerformanceAlertService.sendAlert({
-            type: 'rollout_updated',
-            severity: 'info',
-            message: `Rollout percentage updated for deployment ${deploymentId}: ${oldPercentage}% -> ${newPercentage}%`,
-            data: {
+        await PerformanceAlertService_1.performanceAlertService.sendAlert({
+            type: 'performance_budget_exceeded',
+            severity: 'low',
+            metric: 'rollout_updated',
+            value: newPercentage,
+            url: `deployment/${deploymentId}`,
+            timestamp: new Date(),
+            additionalData: {
                 deploymentId,
                 oldPercentage,
                 newPercentage,

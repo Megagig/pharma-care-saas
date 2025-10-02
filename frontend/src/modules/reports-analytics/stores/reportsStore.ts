@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { ReportType, ReportData } from '../types/reports';
 import { ReportFilters } from '../types/filters';
+import { reportsService } from '../../../services/reportsService';
 
 interface ReportsState {
   // Current report state
@@ -34,6 +35,9 @@ interface ReportsState {
   clearHistory: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setFullscreenChart: (chartId: string | null) => void;
+  generateReport: (reportType: ReportType, filters?: ReportFilters) => Promise<void>;
+  clearAllLoadingStates: () => void;
+  resetStore: () => void;
 
   // Computed getters
   getCurrentReportData: () => ReportData | null;
@@ -189,6 +193,76 @@ export const useReportsStore = create<ReportsState>()(
           set({ fullscreenChart: chartId }, false, 'setFullscreenChart');
         },
 
+        generateReport: async (reportType: ReportType, filters?: ReportFilters) => {
+          const state = get();
+          
+          try {
+            // Set loading state
+            state.setLoading(reportType, true);
+            state.setError(reportType, null);
+
+            // Create compatible filters for the service
+            const serviceFilters = filters ? {
+              dateRange: filters.dateRange ? {
+                startDate: filters.dateRange.startDate,
+                endDate: filters.dateRange.endDate,
+                preset: filters.dateRange.preset === 'custom' ? undefined : filters.dateRange.preset as '7d' | '30d' | '90d' | '1y' | undefined
+              } : undefined,
+              patientId: filters.patientId,
+              pharmacistId: filters.pharmacistId,
+              therapyType: filters.therapyType,
+              priority: filters.priority,
+              location: filters.location,
+              status: filters.status,
+            } : undefined;
+
+            // Generate report using real API
+            console.log('📡 Calling reportsService.generateReport...');
+            const reportData = await reportsService.generateReport(reportType, serviceFilters);
+            console.log('📊 Raw report data received:', reportData);
+            
+            // Store the report data as-is since ReportDisplay expects the original format
+            const transformedData = reportData;
+            console.log('🔄 Transformed data:', transformedData);
+            
+            // Store the generated report data
+            state.setReportData(reportType, transformedData);
+            console.log('💾 Data stored in state');
+            
+            console.log('✅ Report generated successfully from API:', transformedData);
+          } catch (error: any) {
+            console.error('❌ Error generating report from API:', error);
+            
+            let errorMessage = 'Failed to generate report';
+            if (error.response) {
+              errorMessage = `API Error ${error.response.status}: ${error.response.data?.message || error.response.statusText}`;
+            } else if (error.request) {
+              errorMessage = 'Network error: Unable to reach the server. Please check if the backend is running.';
+            } else {
+              errorMessage = error.message || 'Unknown error occurred';
+            }
+            
+            state.setError(reportType, errorMessage);
+          } finally {
+            state.setLoading(reportType, false);
+          }
+        },
+
+        clearAllLoadingStates: () => {
+          set({ loading: {}, errors: {} }, false, 'clearAllLoadingStates');
+        },
+
+        resetStore: () => {
+          set({
+            activeReport: null,
+            reportData: {},
+            loading: {},
+            errors: {},
+            sidebarCollapsed: false,
+            fullscreenChart: null,
+          }, false, 'resetStore');
+        },
+
         // Computed getters
         getCurrentReportData: () => {
           const state = get();
@@ -219,10 +293,10 @@ export const useReportsStore = create<ReportsState>()(
       {
         name: 'reports-store',
         partialize: (state) => ({
-          // Only persist certain parts of the state
+          // Only persist certain parts of the state - NOT loading states
           reportHistory: state.reportHistory,
           sidebarCollapsed: state.sidebarCollapsed,
-          activeReport: state.activeReport,
+          // Don't persist activeReport to avoid auto-loading on page refresh
         }),
       }
     ),

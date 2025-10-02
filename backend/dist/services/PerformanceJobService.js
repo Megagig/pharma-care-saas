@@ -12,6 +12,10 @@ const PerformanceDatabaseOptimizer_1 = __importDefault(require("./PerformanceDat
 class PerformanceJobService {
     constructor() {
         this.queueEvents = new Map();
+        if (process.env.DISABLE_PERFORMANCE_JOBS === 'true') {
+            logger_1.default.info('Performance job service is disabled via environment variable');
+            return;
+        }
         this.initializeQueues();
         this.initializeWorkers();
         this.setupEventHandlers();
@@ -24,95 +28,119 @@ class PerformanceJobService {
         return PerformanceJobService.instance;
     }
     initializeQueues() {
-        const connection = {
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379'),
-            password: process.env.REDIS_PASSWORD,
-            db: parseInt(process.env.REDIS_JOB_DB || '2'),
-        };
-        this.aiAnalysisQueue = new bullmq_1.Queue('ai-analysis', {
-            connection,
-            defaultJobOptions: {
-                removeOnComplete: 50,
-                removeOnFail: 20,
-                attempts: 3,
-                backoff: {
-                    type: 'exponential',
-                    delay: 2000,
+        try {
+            const connection = {
+                host: process.env.REDIS_HOST || 'localhost',
+                port: parseInt(process.env.REDIS_PORT || '6379'),
+                password: process.env.REDIS_PASSWORD,
+                db: parseInt(process.env.REDIS_JOB_DB || '2'),
+            };
+            this.aiAnalysisQueue = new bullmq_1.Queue('ai-analysis', {
+                connection,
+                defaultJobOptions: {
+                    removeOnComplete: 50,
+                    removeOnFail: 20,
+                    attempts: 3,
+                    backoff: {
+                        type: 'exponential',
+                        delay: 2000,
+                    },
                 },
-            },
-        });
-        this.dataExportQueue = new bullmq_1.Queue('data-export', {
-            connection,
-            defaultJobOptions: {
-                removeOnComplete: 20,
-                removeOnFail: 10,
-                attempts: 2,
-                backoff: {
-                    type: 'fixed',
-                    delay: 5000,
+            });
+            this.dataExportQueue = new bullmq_1.Queue('data-export', {
+                connection,
+                defaultJobOptions: {
+                    removeOnComplete: 20,
+                    removeOnFail: 10,
+                    attempts: 2,
+                    backoff: {
+                        type: 'fixed',
+                        delay: 5000,
+                    },
                 },
-            },
-        });
-        this.cacheWarmupQueue = new bullmq_1.Queue('cache-warmup', {
-            connection,
-            defaultJobOptions: {
-                removeOnComplete: 10,
-                removeOnFail: 5,
-                attempts: 2,
-                backoff: {
-                    type: 'fixed',
-                    delay: 3000,
+            });
+            this.cacheWarmupQueue = new bullmq_1.Queue('cache-warmup', {
+                connection,
+                defaultJobOptions: {
+                    removeOnComplete: 10,
+                    removeOnFail: 5,
+                    attempts: 2,
+                    backoff: {
+                        type: 'fixed',
+                        delay: 3000,
+                    },
                 },
-            },
-        });
-        this.databaseMaintenanceQueue = new bullmq_1.Queue('database-maintenance', {
-            connection,
-            defaultJobOptions: {
-                removeOnComplete: 30,
-                removeOnFail: 10,
-                attempts: 1,
-            },
-        });
-        ['ai-analysis', 'data-export', 'cache-warmup', 'database-maintenance'].forEach(queueName => {
-            this.queueEvents.set(queueName, new bullmq_1.QueueEvents(queueName, { connection }));
-        });
+            });
+            this.databaseMaintenanceQueue = new bullmq_1.Queue('database-maintenance', {
+                connection,
+                defaultJobOptions: {
+                    removeOnComplete: 30,
+                    removeOnFail: 10,
+                    attempts: 1,
+                },
+            });
+            ['ai-analysis', 'data-export', 'cache-warmup', 'database-maintenance'].forEach(queueName => {
+                this.queueEvents.set(queueName, new bullmq_1.QueueEvents(queueName, { connection }));
+            });
+            logger_1.default.info('Performance job queues initialized successfully');
+        }
+        catch (error) {
+            logger_1.default.error('Failed to initialize performance job queues:', error);
+            logger_1.default.warn('Performance job service will be disabled. Install and start Redis to enable job processing.');
+        }
     }
     initializeWorkers() {
-        const connection = {
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379'),
-            password: process.env.REDIS_PASSWORD,
-            db: parseInt(process.env.REDIS_JOB_DB || '2'),
-        };
-        this.aiAnalysisWorker = new bullmq_1.Worker('ai-analysis', async (job) => this.processAIAnalysisJob(job), {
-            connection,
-            concurrency: 2,
-        });
-        this.dataExportWorker = new bullmq_1.Worker('data-export', async (job) => this.processDataExportJob(job), {
-            connection,
-            concurrency: 3,
-        });
-        this.cacheWarmupWorker = new bullmq_1.Worker('cache-warmup', async (job) => this.processCacheWarmupJob(job), {
-            connection,
-            concurrency: 5,
-        });
-        this.databaseMaintenanceWorker = new bullmq_1.Worker('database-maintenance', async (job) => this.processDatabaseMaintenanceJob(job), {
-            connection,
-            concurrency: 1,
-        });
+        try {
+            const connection = {
+                host: process.env.REDIS_HOST || 'localhost',
+                port: parseInt(process.env.REDIS_PORT || '6379'),
+                password: process.env.REDIS_PASSWORD,
+                db: parseInt(process.env.REDIS_JOB_DB || '2'),
+            };
+            this.aiAnalysisWorker = new bullmq_1.Worker('ai-analysis', async (job) => this.processAIAnalysisJob(job), {
+                connection,
+                concurrency: 2,
+            });
+            this.dataExportWorker = new bullmq_1.Worker('data-export', async (job) => this.processDataExportJob(job), {
+                connection,
+                concurrency: 3,
+            });
+            this.cacheWarmupWorker = new bullmq_1.Worker('cache-warmup', async (job) => this.processCacheWarmupJob(job), {
+                connection,
+                concurrency: 5,
+            });
+            this.databaseMaintenanceWorker = new bullmq_1.Worker('database-maintenance', async (job) => this.processDatabaseMaintenanceJob(job), {
+                connection,
+                concurrency: 1,
+            });
+            logger_1.default.info('Performance job workers initialized successfully');
+        }
+        catch (error) {
+            logger_1.default.error('Failed to initialize performance job workers:', error);
+            logger_1.default.warn('Performance job workers will be disabled. Install and start Redis to enable job processing.');
+        }
     }
     async queueAIAnalysis(data) {
-        const priority = this.getPriority(data.priority);
-        logger_1.default.info(`Queuing AI analysis job: ${data.type}`, {
-            patientId: data.patientId,
-            workspaceId: data.workspaceId,
-            priority: data.priority,
-        });
-        return this.aiAnalysisQueue.add('ai-analysis', data, {
-            priority,
-            delay: data.priority === 'urgent' ? 0 : 1000,
-        });
+        try {
+            if (!this.aiAnalysisQueue) {
+                logger_1.default.warn('AI analysis queue not available - Redis connection failed');
+                return null;
+            }
+            const priority = this.getPriority(data.priority);
+            logger_1.default.info(`Queuing AI analysis job: ${data.type}`, {
+                patientId: data.patientId,
+                workspaceId: data.workspaceId,
+                priority: data.priority,
+            });
+            return this.aiAnalysisQueue.add('ai-analysis', data, {
+                priority,
+                delay: data.priority === 'urgent' ? 0 : 1000,
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Failed to queue AI analysis job:', error);
+            return null;
+        }
     }
     async queueDataExport(data) {
         logger_1.default.info(`Queuing data export job: ${data.type}`, {

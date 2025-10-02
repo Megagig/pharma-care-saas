@@ -8,4 +8,6 @@ export declare const searchPatients: (req: import("express").Request, res: Respo
 export declare const getPatientSummary: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getPatientInterventions: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const searchPatientsWithInterventions: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getPatientDiagnosticHistory: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getPatientDiagnosticSummary: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 //# sourceMappingURL=patientController.d.ts.map

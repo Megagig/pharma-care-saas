@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.enforceConcurrentSessionLimit = exports.sessionManagementEndpoints = exports.getUserActiveSessions = exports.terminateAllUserSessions = exports.terminateSession = exports.validateSession = exports.validateUserSession = exports.createUserSession = void 0;
+exports.enforceConcurrentSessionLimit = exports.sessionManagementEndpoints = exports.getUserActiveSessions = exports.terminateAllUserSessions = exports.terminateSession = exports.validateSession = exports.validateUserSession = exports.createUserSession = exports.cleanupSessionManagement = void 0;
 const crypto_1 = __importDefault(require("crypto"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const activeSessionsStore = new Map();
@@ -16,41 +16,51 @@ const SESSION_CONFIG = {
     lockoutDuration: 15 * 60 * 1000,
     deviceFingerprintRequired: true,
 };
-setInterval(() => {
-    const now = Date.now();
-    for (const [userId, sessions] of activeSessionsStore.entries()) {
-        const activeSessions = {};
-        let hasActiveSessions = false;
-        for (const [sessionId, session] of Object.entries(sessions)) {
-            const isExpired = now - session.lastActivity > SESSION_CONFIG.sessionTimeout;
-            const isInactive = now - session.lastActivity > SESSION_CONFIG.inactivityTimeout;
-            if (!isExpired && !isInactive && session.isActive) {
-                activeSessions[sessionId] = session;
-                hasActiveSessions = true;
+let sessionCleanupInterval = null;
+if (process.env.NODE_ENV === 'production') {
+    sessionCleanupInterval = setInterval(() => {
+        const now = Date.now();
+        for (const [userId, sessions] of activeSessionsStore.entries()) {
+            const activeSessions = {};
+            let hasActiveSessions = false;
+            for (const [sessionId, session] of Object.entries(sessions)) {
+                const isExpired = now - session.lastActivity > SESSION_CONFIG.sessionTimeout;
+                const isInactive = now - session.lastActivity > SESSION_CONFIG.inactivityTimeout;
+                if (!isExpired && !isInactive && session.isActive) {
+                    activeSessions[sessionId] = session;
+                    hasActiveSessions = true;
+                }
+                else {
+                    logger_1.default.info('Session expired/inactive', {
+                        userId,
+                        sessionId,
+                        reason: isExpired ? 'expired' : 'inactive',
+                        lastActivity: new Date(session.lastActivity).toISOString(),
+                        service: 'communication-session',
+                    });
+                }
+            }
+            if (hasActiveSessions) {
+                activeSessionsStore.set(userId, activeSessions);
             }
             else {
-                logger_1.default.info('Session expired/inactive', {
-                    userId,
-                    sessionId,
-                    reason: isExpired ? 'expired' : 'inactive',
-                    lastActivity: new Date(session.lastActivity).toISOString(),
-                    service: 'communication-session',
-                });
+                activeSessionsStore.delete(userId);
             }
         }
-        if (hasActiveSessions) {
-            activeSessionsStore.set(userId, activeSessions);
+        for (const [userId, security] of sessionSecurityStore.entries()) {
+            if (security.lockExpires && now > security.lockExpires) {
+                sessionSecurityStore.delete(userId);
+            }
         }
-        else {
-            activeSessionsStore.delete(userId);
-        }
+    }, 10 * 60 * 1000);
+}
+const cleanupSessionManagement = () => {
+    if (sessionCleanupInterval) {
+        clearInterval(sessionCleanupInterval);
+        sessionCleanupInterval = null;
     }
-    for (const [userId, security] of sessionSecurityStore.entries()) {
-        if (security.lockExpires && now > security.lockExpires) {
-            sessionSecurityStore.delete(userId);
-        }
-    }
-}, 10 * 60 * 1000);
+};
+exports.cleanupSessionManagement = cleanupSessionManagement;
 const generateDeviceFingerprint = (req) => {
     const components = [
         req.get('User-Agent') || '',

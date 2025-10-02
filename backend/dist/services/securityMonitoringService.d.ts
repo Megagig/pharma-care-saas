@@ -44,5 +44,6 @@ declare class SecurityMonitoringService {
     cleanup(): void;
 }
 export declare const securityMonitoringService: SecurityMonitoringService;
+export declare const cleanupSecurityMonitoring: () => void;
 export default securityMonitoringService;
 //# sourceMappingURL=securityMonitoringService.d.ts.map

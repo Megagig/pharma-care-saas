@@ -115,7 +115,7 @@ class DeploymentConfigManager {
                 model: process.env.AI_MODEL || 'deepseek/deepseek-chat-v3.1',
                 maxTokens: parseInt(process.env.AI_MAX_TOKENS || '4000'),
                 temperature: parseFloat(process.env.AI_TEMPERATURE || '0.1'),
-                timeout: parseInt(process.env.AI_TIMEOUT || '60000'),
+                timeout: parseInt(process.env.AI_TIMEOUT || '300000'), // 5 minutes
                 retryAttempts: parseInt(process.env.AI_RETRY_ATTEMPTS || '3'),
                 rateLimits: {
                     requestsPerMinute: parseInt(process.env.AI_REQUESTS_PER_MINUTE || '60'),
@@ -237,7 +237,7 @@ class DeploymentConfigManager {
                         model: 'deepseek/deepseek-chat-v3.1',
                         maxTokens: 4000,
                         temperature: 0.1,
-                        timeout: 60000,
+                        timeout: 300000, // 5 minutes
                         retryAttempts: 3,
                         rateLimits: {
                             requestsPerMinute: 60,

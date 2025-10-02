@@ -49,7 +49,11 @@ class AdminController {
             const userRoles = await UserRole_1.default.find({
                 userId: { $in: userIds },
                 isActive: true,
-            }).populate('roleId', 'name displayName category');
+            }).populate('roleId', 'name displayName category description');
+            logger_1.default.info(`Found ${userRoles.length} UserRole records for ${userIds.length} users`);
+            if (userRoles.length > 0) {
+                logger_1.default.info('Sample UserRole:', JSON.stringify(userRoles[0]));
+            }
             const userRolesMap = new Map();
             userRoles.forEach((ur) => {
                 const userId = ur.userId.toString();
@@ -59,12 +63,24 @@ class AdminController {
                 userRolesMap.get(userId).push(ur.roleId);
             });
             const formattedUsers = users.map((user) => {
+                const userObj = user.toObject();
                 const roles = userRolesMap.get(user._id.toString()) || [];
                 return {
-                    ...user.toObject(),
+                    ...userObj,
                     roles,
+                    assignedRoles: userObj.assignedRoles || [],
+                    directPermissions: userObj.directPermissions || [],
+                    deniedPermissions: userObj.deniedPermissions || [],
                 };
             });
+            if (formattedUsers.length > 0) {
+                logger_1.default.info('Sample formatted user:', {
+                    email: formattedUsers[0].email,
+                    roles: formattedUsers[0].roles,
+                    assignedRoles: formattedUsers[0].assignedRoles,
+                    systemRole: formattedUsers[0].systemRole,
+                });
+            }
             res.json({
                 success: true,
                 data: {

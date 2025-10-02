@@ -380,10 +380,12 @@ class DatabaseIndexingService {
     }
     async getSlowQueries() {
         try {
-            await mongoose_1.default.connection.db.admin().command({
-                profile: 2,
-                slowms: 100,
-            });
+            if (!process.env.MONGODB_URI?.includes('mongodb.net') && process.env.DISABLE_PROFILING !== 'true') {
+                await mongoose_1.default.connection.db.admin().command({
+                    profile: 2,
+                    slowms: 100,
+                });
+            }
             const profilerData = await mongoose_1.default.connection.db
                 .collection('system.profile')
                 .find({

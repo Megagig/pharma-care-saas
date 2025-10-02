@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.enforceWorkspaceIsolation = exports.validateDataAccess = exports.requireExportPermission = exports.requireScheduleAccess = exports.requireTemplateAccess = exports.requireReportAccess = void 0;
+const auth_1 = require("../types/auth");
 const rbac_1 = require("./rbac");
 const ReportTemplate_1 = __importDefault(require("../models/ReportTemplate"));
 const ReportSchedule_1 = __importDefault(require("../models/ReportSchedule"));
@@ -63,8 +64,8 @@ const requireReportAccess = (reportType) => {
                 await ReportAuditLog_1.default.logEvent({
                     eventType: 'UNAUTHORIZED_ACCESS',
                     reportType: targetReportType,
-                    userId: req.user._id,
-                    workplaceId: req.user.workplaceId,
+                    userId: new mongoose_1.default.Types.ObjectId(req.user._id),
+                    workplaceId: req.user.workplaceId ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId) : undefined,
                     sessionId: req.sessionId,
                     ipAddress: req.ip,
                     userAgent: req.get('User-Agent'),
@@ -91,15 +92,15 @@ const requireReportAccess = (reportType) => {
                     code: 'REPORT_ACCESS_DENIED',
                     reportType: targetReportType,
                     requiredPermissions,
-                    userPermissions: req.user?.permissions || []
+                    userPermissions: (0, auth_1.isExtendedUser)(req.user) ? req.user.permissions || [] : []
                 });
                 return;
             }
             await ReportAuditLog_1.default.logEvent({
                 eventType: 'REPORT_VIEWED',
                 reportType: targetReportType,
-                userId: req.user._id,
-                workplaceId: req.user.workplaceId,
+                userId: new mongoose_1.default.Types.ObjectId(req.user._id),
+                workplaceId: req.user.workplaceId ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId) : undefined,
                 sessionId: req.sessionId,
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
@@ -155,7 +156,7 @@ const requireTemplateAccess = (action = 'view') => {
                 });
                 return;
             }
-            if (template.workplaceId.toString() !== req.user.workplaceId.toString() && !template.isPublic) {
+            if (template.workplaceId.toString() !== (req.user.workplaceId?.toString() || '') && !template.isPublic) {
                 res.status(403).json({
                     success: false,
                     message: 'Access denied: Template belongs to different workspace',
@@ -164,8 +165,8 @@ const requireTemplateAccess = (action = 'view') => {
                 return;
             }
             const userPermissions = template.permissions[action] || [];
-            const userRole = req.user.role;
-            const userWorkplaceRole = req.user.workplaceRole;
+            const userRole = (0, auth_1.isExtendedUser)(req.user) ? req.user.role : undefined;
+            const userWorkplaceRole = (0, auth_1.isExtendedUser)(req.user) ? req.user.workplaceRole : undefined;
             let hasAccess = false;
             if (userRole === 'super_admin') {
                 hasAccess = true;
@@ -186,9 +187,9 @@ const requireTemplateAccess = (action = 'view') => {
                 await ReportAuditLog_1.default.logEvent({
                     eventType: 'UNAUTHORIZED_ACCESS',
                     reportType: template.reportType,
-                    templateId: template._id,
-                    userId: req.user._id,
-                    workplaceId: req.user.workplaceId,
+                    templateId: new mongoose_1.default.Types.ObjectId(template._id),
+                    userId: new mongoose_1.default.Types.ObjectId(req.user._id),
+                    workplaceId: req.user.workplaceId ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId) : undefined,
                     sessionId: req.sessionId,
                     ipAddress: req.ip,
                     userAgent: req.get('User-Agent'),
@@ -222,9 +223,9 @@ const requireTemplateAccess = (action = 'view') => {
             await ReportAuditLog_1.default.logEvent({
                 eventType: action === 'view' ? 'TEMPLATE_VIEWED' : 'TEMPLATE_MODIFIED',
                 reportType: template.reportType,
-                templateId: template._id,
-                userId: req.user._id,
-                workplaceId: req.user.workplaceId,
+                templateId: new mongoose_1.default.Types.ObjectId(template._id),
+                userId: new mongoose_1.default.Types.ObjectId(req.user._id),
+                workplaceId: req.user.workplaceId ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId) : undefined,
                 sessionId: req.sessionId,
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
@@ -284,7 +285,7 @@ const requireScheduleAccess = (action = 'view') => {
                 });
                 return;
             }
-            if (schedule.workplaceId.toString() !== req.user.workplaceId.toString()) {
+            if (schedule.workplaceId.toString() !== (req.user.workplaceId?.toString() || '')) {
                 res.status(403).json({
                     success: false,
                     message: 'Access denied: Schedule belongs to different workspace',
@@ -293,8 +294,8 @@ const requireScheduleAccess = (action = 'view') => {
                 return;
             }
             const userPermissions = schedule.permissions[action] || [];
-            const userRole = req.user.role;
-            const userWorkplaceRole = req.user.workplaceRole;
+            const userRole = (0, auth_1.isExtendedUser)(req.user) ? req.user.role : undefined;
+            const userWorkplaceRole = (0, auth_1.isExtendedUser)(req.user) ? req.user.workplaceRole : undefined;
             let hasAccess = false;
             if (userRole === 'super_admin') {
                 hasAccess = true;
@@ -312,9 +313,9 @@ const requireScheduleAccess = (action = 'view') => {
                 await ReportAuditLog_1.default.logEvent({
                     eventType: 'UNAUTHORIZED_ACCESS',
                     reportType: schedule.reportType,
-                    scheduleId: schedule._id,
-                    userId: req.user._id,
-                    workplaceId: req.user.workplaceId,
+                    scheduleId: new mongoose_1.default.Types.ObjectId(schedule._id),
+                    userId: new mongoose_1.default.Types.ObjectId(req.user._id),
+                    workplaceId: req.user.workplaceId ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId) : undefined,
                     sessionId: req.sessionId,
                     ipAddress: req.ip,
                     userAgent: req.get('User-Agent'),
@@ -348,9 +349,9 @@ const requireScheduleAccess = (action = 'view') => {
             await ReportAuditLog_1.default.logEvent({
                 eventType: action === 'view' ? 'SCHEDULE_VIEWED' : 'SCHEDULE_MODIFIED',
                 reportType: schedule.reportType,
-                scheduleId: schedule._id,
-                userId: req.user._id,
-                workplaceId: req.user.workplaceId,
+                scheduleId: new mongoose_1.default.Types.ObjectId(schedule._id),
+                userId: new mongoose_1.default.Types.ObjectId(req.user._id),
+                workplaceId: req.user.workplaceId ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId) : undefined,
                 sessionId: req.sessionId,
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent'),
@@ -404,8 +405,8 @@ const requireExportPermission = (req, res, next) => {
         ReportAuditLog_1.default.logEvent({
             eventType: 'REPORT_EXPORTED',
             reportType,
-            userId: req.user._id,
-            workplaceId: req.user.workplaceId,
+            userId: new mongoose_1.default.Types.ObjectId(req.user._id),
+            workplaceId: req.user.workplaceId ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId) : undefined,
             sessionId: req.sessionId,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -482,8 +483,8 @@ const validateDataAccess = async (req, res, next) => {
         await ReportAuditLog_1.default.logEvent({
             eventType: 'DATA_ACCESS',
             reportType,
-            userId: req.user._id,
-            workplaceId: req.user.workplaceId,
+            userId: new mongoose_1.default.Types.ObjectId(req.user._id),
+            workplaceId: req.user.workplaceId ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId) : undefined,
             sessionId: req.sessionId,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
@@ -520,12 +521,46 @@ const validateDataAccess = async (req, res, next) => {
 };
 exports.validateDataAccess = validateDataAccess;
 const enforceWorkspaceIsolation = (req, res, next) => {
+    const userRole = (0, auth_1.isExtendedUser)(req.user) ? req.user.role : undefined;
+    if (userRole === 'super_admin') {
+        console.log(`🔓 Super admin ${req.user.email} accessing reports across all workplaces`);
+        ReportAuditLog_1.default.logEvent({
+            eventType: 'DATA_ACCESS',
+            userId: new mongoose_1.default.Types.ObjectId(req.user._id),
+            workplaceId: req.user.workplaceId ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId) : undefined,
+            sessionId: req.sessionId,
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+            eventDetails: {
+                action: 'ACCESS',
+                resource: 'DATA',
+                resourceId: 'ALL_WORKSPACES',
+                success: true,
+                metadata: {
+                    message: 'Super admin accessing cross-workspace data',
+                    accessType: 'cross-workspace',
+                    userRole: 'super_admin'
+                }
+            },
+            compliance: {
+                dataAccessed: ['PATIENT_DATA', 'CLINICAL_DATA', 'FINANCIAL_DATA', 'SYSTEM_DATA'],
+                sensitiveData: true,
+                anonymized: false,
+                encryptionUsed: true,
+                accessJustification: 'Super admin role allows cross-workspace access'
+            },
+            riskScore: 5
+        }).catch(error => {
+            logger_1.default.error('Failed to log super admin access:', error);
+        });
+        return next();
+    }
     const originalQuery = req.query;
     req.query = {
         ...originalQuery,
-        workplaceId: req.user.workplaceId.toString()
+        workplaceId: req.user.workplaceId?.toString() || ''
     };
-    if (originalQuery.workplaceId && originalQuery.workplaceId.toString() !== req.user.workplaceId.toString()) {
+    if (originalQuery.workplaceId && originalQuery.workplaceId.toString() !== (req.user.workplaceId?.toString() || '')) {
         logger_1.default.warn('Attempted cross-workspace data access', {
             userId: req.user._id,
             userWorkspace: req.user.workplaceId,
@@ -534,8 +569,8 @@ const enforceWorkspaceIsolation = (req, res, next) => {
         });
         ReportAuditLog_1.default.logEvent({
             eventType: 'UNAUTHORIZED_ACCESS',
-            userId: req.user._id,
-            workplaceId: req.user.workplaceId,
+            userId: new mongoose_1.default.Types.ObjectId(req.user._id),
+            workplaceId: req.user.workplaceId ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId) : undefined,
             sessionId: req.sessionId,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),

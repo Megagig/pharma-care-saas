@@ -47,4 +47,16 @@ export declare const FEATURE_FLAG_CATEGORIES: {
     readonly backend: readonly ["apiCaching", "databaseOptimization", "cursorPagination", "backgroundJobs"];
     readonly frontend: readonly ["virtualization", "reactQueryOptimization", "serviceWorker"];
 };
+import FeatureFlagService from '../services/FeatureFlagService';
+export { FeatureFlagService };
+import { Request, Response, NextFunction } from 'express';
+export declare const injectFeatureFlags: (req: Request, res: Response, next: NextFunction) => void;
+export declare const requireFeatureFlag: (featureName: string) => (req: Request, res: Response, next: NextFunction) => void;
+declare global {
+    namespace Express {
+        interface Request {
+            featureFlags?: PerformanceFeatureFlags;
+        }
+    }
+}
 //# sourceMappingURL=featureFlags.d.ts.map

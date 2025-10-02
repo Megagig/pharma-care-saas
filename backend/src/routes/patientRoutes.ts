@@ -9,6 +9,8 @@ import {
   getPatientSummary,
   getPatientInterventions,
   searchPatientsWithInterventions,
+  getPatientDiagnosticHistory,
+  getPatientDiagnosticSummary,
 } from '../controllers/patientController';
 import { auth } from '../middlewares/auth';
 import {
@@ -52,13 +54,13 @@ router.get(
 );
 
 // GET /api/patients/search - Search patients
-router.get('/search', 
-  requirePatientRead, 
+router.get('/search',
+  requirePatientRead,
   responseOptimizationMiddleware(
     OptimizationPresets.mobile.projection,
     OptimizationPresets.mobile.optimization
   ),
-  searchCacheMiddleware, 
+  searchCacheMiddleware,
   searchPatients
 );
 
@@ -113,6 +115,22 @@ router.delete(
   requirePatientDelete,
   validateRequest(patientParamsSchema, 'params'),
   deletePatient
+);
+
+// GET /api/patients/:id/diagnostic-history - Get patient diagnostic history
+router.get(
+  '/:id/diagnostic-history',
+  requirePatientRead,
+  validateRequest(patientParamsSchema, 'params'),
+  getPatientDiagnosticHistory
+);
+
+// GET /api/patients/:id/diagnostic-summary - Get patient diagnostic summary
+router.get(
+  '/:id/diagnostic-summary',
+  requirePatientRead,
+  validateRequest(patientParamsSchema, 'params'),
+  getPatientDiagnosticSummary
 );
 
 // Error handling middleware
