@@ -172,3 +172,66 @@ export const useTerminateSession = () => {
     },
   });
 };
+
+// Main hook that provides all SaaS settings functionality
+export const useSaasSettings = () => {
+  return {
+    // System Overview
+    getSystemMetrics: saasService.getSystemMetrics.bind(saasService),
+    getSystemHealth: saasService.getSystemHealth.bind(saasService),
+    getRecentActivities: saasService.getRecentActivities.bind(saasService),
+
+    // User Management
+    getUsers: saasService.getUsers.bind(saasService),
+    updateUserRole: saasService.updateUserRole.bind(saasService),
+    suspendUser: saasService.suspendUser.bind(saasService),
+    reactivateUser: saasService.reactivateUser.bind(saasService),
+    bulkAssignRoles: saasService.bulkAssignRoles.bind(saasService),
+    impersonateUser: saasService.impersonateUser.bind(saasService),
+
+    // Feature Flags
+    getFeatureFlags: saasService.getFeatureFlags.bind(saasService),
+    updateFeatureFlagTargeting: saasService.updateFeatureFlagTargeting.bind(saasService),
+    getFeatureFlagUsageMetrics: saasService.getFeatureFlagUsageMetrics.bind(saasService),
+
+    // Security
+    getSecuritySettings: saasService.getSecuritySettings.bind(saasService),
+    updatePasswordPolicy: saasService.updatePasswordPolicy.bind(saasService),
+    getActiveSessions: saasService.getActiveSessions.bind(saasService),
+    terminateSession: saasService.terminateSession.bind(saasService),
+    getSecurityAuditLogs: saasService.getSecurityAuditLogs.bind(saasService),
+    lockUserAccount: saasService.lockUserAccount.bind(saasService),
+    unlockUserAccount: saasService.unlockUserAccount.bind(saasService),
+    getSecurityDashboard: saasService.getSecurityDashboard.bind(saasService),
+
+    // Analytics
+    getSubscriptionAnalytics: saasService.getSubscriptionAnalytics.bind(saasService),
+    getPharmacyUsageReports: saasService.getPharmacyUsageReports.bind(saasService),
+    getClinicalOutcomesReport: saasService.getClinicalOutcomesReport.bind(saasService),
+    exportReport: saasService.exportReport.bind(saasService),
+    scheduleReport: saasService.scheduleReport.bind(saasService),
+
+    // Notifications
+    getNotificationChannels: saasService.getNotificationChannels.bind(saasService),
+    updateNotificationChannel: saasService.updateNotificationChannel.bind(saasService),
+    getNotificationRules: saasService.getNotificationRules.bind(saasService),
+    createNotificationRule: saasService.createNotificationRule.bind(saasService),
+    updateNotificationRule: saasService.updateNotificationRule.bind(saasService),
+    deleteNotificationRule: saasService.deleteNotificationRule.bind(saasService),
+    toggleNotificationRule: saasService.toggleNotificationRule.bind(saasService),
+    getNotificationTemplates: saasService.getNotificationTemplates.bind(saasService),
+    createNotificationTemplate: saasService.createNotificationTemplate.bind(saasService),
+    updateNotificationTemplate: saasService.updateNotificationTemplate.bind(saasService),
+    deleteNotificationTemplate: saasService.deleteNotificationTemplate.bind(saasService),
+    getNotificationHistory: saasService.getNotificationHistory.bind(saasService),
+    sendTestNotification: saasService.sendTestNotification.bind(saasService),
+
+    // Audit
+    getAuditLogs: saasService.getAuditLogs.bind(saasService),
+    getAuditSummary: saasService.getAuditSummary.bind(saasService),
+    generateComplianceReport: saasService.generateComplianceReport.bind(saasService),
+    reviewAuditLog: saasService.reviewAuditLog.bind(saasService),
+    getFlaggedAuditLogs: saasService.getFlaggedAuditLogs.bind(saasService),
+    exportAuditLogs: saasService.exportAuditLogs.bind(saasService),
+  };
+};

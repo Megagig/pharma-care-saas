@@ -204,22 +204,175 @@ class SaaSService {
   }
 
   // Security APIs
-  async getSecuritySettings(): Promise<SecuritySettings> {
+  async getSecuritySettings(): Promise<{ success: boolean; data: { settings: SecuritySettings } }> {
     const response = await apiClient.get(`${this.baseUrl}/security/settings`);
-    return response.data.data;
+    return response.data;
   }
 
-  async updatePasswordPolicy(policy: SecuritySettings['passwordPolicy']): Promise<void> {
-    await apiClient.put(`${this.baseUrl}/security/password-policy`, policy);
+  async updatePasswordPolicy(policy: SecuritySettings['passwordPolicy']): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`${this.baseUrl}/security/password-policy`, policy);
+    return response.data;
   }
 
-  async getActiveSessions(): Promise<UserSession[]> {
-    const response = await apiClient.get(`${this.baseUrl}/security/sessions`);
-    return response.data.data;
+  async getActiveSessions(filters: any = {}): Promise<{ success: boolean; data: { sessions: UserSession[] } }> {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`${this.baseUrl}/security/sessions?${params}`);
+    return response.data;
   }
 
-  async terminateSession(sessionId: string): Promise<void> {
-    await apiClient.delete(`${this.baseUrl}/security/sessions/${sessionId}`);
+  async terminateSession(sessionId: string, data: { reason?: string } = {}): Promise<{ success: boolean }> {
+    const response = await apiClient.delete(`${this.baseUrl}/security/sessions/${sessionId}`, { data });
+    return response.data;
+  }
+
+  async getSecurityAuditLogs(filters: any = {}): Promise<{ success: boolean; data: { auditLogs: any[] } }> {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`${this.baseUrl}/security/audit-logs?${params}`);
+    return response.data;
+  }
+
+  async lockUserAccount(userId: string, data: { reason: string }): Promise<{ success: boolean }> {
+    const response = await apiClient.post(`${this.baseUrl}/security/users/${userId}/lock`, data);
+    return response.data;
+  }
+
+  async unlockUserAccount(userId: string): Promise<{ success: boolean }> {
+    const response = await apiClient.post(`${this.baseUrl}/security/users/${userId}/unlock`);
+    return response.data;
+  }
+
+  async getSecurityDashboard(timeRange: string = '24h'): Promise<{ success: boolean; data: any }> {
+    const response = await apiClient.get(`${this.baseUrl}/security/dashboard?timeRange=${timeRange}`);
+    return response.data;
+  }
+
+  // Analytics APIs
+  async getSubscriptionAnalytics(params: { timeRange: string }): Promise<{ success: boolean; data: any }> {
+    const response = await apiClient.get(`${this.baseUrl}/analytics/subscriptions?timeRange=${params.timeRange}`);
+    return response.data;
+  }
+
+  async getPharmacyUsageReports(params: { timeRange: string }): Promise<{ success: boolean; data: { reports: any[] } }> {
+    const response = await apiClient.get(`${this.baseUrl}/analytics/pharmacy-usage?timeRange=${params.timeRange}`);
+    return response.data;
+  }
+
+  async getClinicalOutcomesReport(params: { timeRange: string }): Promise<{ success: boolean; data: any }> {
+    const response = await apiClient.get(`${this.baseUrl}/analytics/clinical-outcomes?timeRange=${params.timeRange}`);
+    return response.data;
+  }
+
+  async exportReport(options: any): Promise<{ success: boolean; data: any }> {
+    const response = await apiClient.post(`${this.baseUrl}/analytics/export`, options, {
+      responseType: 'blob',
+    });
+    return { success: true, data: response.data };
+  }
+
+  async scheduleReport(options: any): Promise<{ success: boolean }> {
+    const response = await apiClient.post(`${this.baseUrl}/analytics/schedule`, options);
+    return response.data;
+  }
+
+  // Notifications APIs
+  async getNotificationChannels(): Promise<{ success: boolean; data: { channels: any[] } }> {
+    const response = await apiClient.get(`${this.baseUrl}/notifications/channels`);
+    return response.data;
+  }
+
+  async updateNotificationChannel(channelId: string, data: any): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`${this.baseUrl}/notifications/channels/${channelId}`, data);
+    return response.data;
+  }
+
+  async getNotificationRules(): Promise<{ success: boolean; data: { rules: any[] } }> {
+    const response = await apiClient.get(`${this.baseUrl}/notifications/rules`);
+    return response.data;
+  }
+
+  async createNotificationRule(data: any): Promise<{ success: boolean }> {
+    const response = await apiClient.post(`${this.baseUrl}/notifications/rules`, data);
+    return response.data;
+  }
+
+  async updateNotificationRule(ruleId: string, data: any): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`${this.baseUrl}/notifications/rules/${ruleId}`, data);
+    return response.data;
+  }
+
+  async deleteNotificationRule(ruleId: string): Promise<{ success: boolean }> {
+    const response = await apiClient.delete(`${this.baseUrl}/notifications/rules/${ruleId}`);
+    return response.data;
+  }
+
+  async toggleNotificationRule(ruleId: string, data: { isActive: boolean }): Promise<{ success: boolean }> {
+    const response = await apiClient.patch(`${this.baseUrl}/notifications/rules/${ruleId}/toggle`, data);
+    return response.data;
+  }
+
+  async getNotificationTemplates(): Promise<{ success: boolean; data: { templates: any[] } }> {
+    const response = await apiClient.get(`${this.baseUrl}/notifications/templates`);
+    return response.data;
+  }
+
+  async createNotificationTemplate(data: any): Promise<{ success: boolean }> {
+    const response = await apiClient.post(`${this.baseUrl}/notifications/templates`, data);
+    return response.data;
+  }
+
+  async updateNotificationTemplate(templateId: string, data: any): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`${this.baseUrl}/notifications/templates/${templateId}`, data);
+    return response.data;
+  }
+
+  async deleteNotificationTemplate(templateId: string): Promise<{ success: boolean }> {
+    const response = await apiClient.delete(`${this.baseUrl}/notifications/templates/${templateId}`);
+    return response.data;
+  }
+
+  async getNotificationHistory(filters: any = {}): Promise<{ success: boolean; data: { history: any[] } }> {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`${this.baseUrl}/notifications/history?${params}`);
+    return response.data;
+  }
+
+  async sendTestNotification(data: any): Promise<{ success: boolean }> {
+    const response = await apiClient.post(`${this.baseUrl}/notifications/test`, data);
+    return response.data;
+  }
+
+  // Audit APIs
+  async getAuditLogs(filters: any = {}): Promise<{ success: boolean; data: any }> {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`${this.baseUrl}/audit/logs?${params}`);
+    return response.data;
+  }
+
+  async getAuditSummary(timeRange: string = '30d'): Promise<{ success: boolean; data: any }> {
+    const response = await apiClient.get(`${this.baseUrl}/audit/summary?timeRange=${timeRange}`);
+    return response.data;
+  }
+
+  async generateComplianceReport(options: any): Promise<{ success: boolean; data: any }> {
+    const response = await apiClient.post(`${this.baseUrl}/audit/compliance-report`, options);
+    return response.data;
+  }
+
+  async reviewAuditLog(logId: string, data: { resolution: string; notes?: string }): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`${this.baseUrl}/audit/logs/${logId}/review`, data);
+    return response.data;
+  }
+
+  async getFlaggedAuditLogs(limit: number = 50): Promise<{ success: boolean; data: any }> {
+    const response = await apiClient.get(`${this.baseUrl}/audit/flagged?limit=${limit}`);
+    return response.data;
+  }
+
+  async exportAuditLogs(options: any): Promise<{ success: boolean; data: any }> {
+    const response = await apiClient.post(`${this.baseUrl}/audit/export`, options, {
+      responseType: 'blob',
+    });
+    return { success: true, data: response.data };
   }
 }
 
