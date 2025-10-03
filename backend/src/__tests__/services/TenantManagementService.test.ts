@@ -1,798 +1,603 @@
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { TenantManagementService, TenantProvisioningData, TenantStatusUpdate } from '../../services/TenantManagementService';
+import { TenantManagementService } from '../../services/TenantManagementService';
 import { Tenant } from '../../models/Tenant';
 import { TenantSettings } from '../../models/TenantSettings';
-import User from '../../models/User';
-import SubscriptionPlan from '../../models/SubscriptionPlan';
-import { SecurityAuditLog } from '../../models/SecurityAuditLog';
+import { User } from '../../models/User';
+import { RedisCacheService } from '../../services/RedisCacheService';
+import mongoose from 'mongoose';
+
+// Mock dependencies
+jest.mock('../../models/Tenant');
+jest.mock('../../models/TenantSettings');
+jest.mock('../../models/User');
+jest.mock('../../services/RedisCacheService');
+jest.mock('../../utils/logger');
 
 describe('TenantManagementService', () => {
-  let mongoServer: MongoMemoryServer;
-  let tenantService: TenantManagementService;
-  let adminId: string;
-  let subscriptionPlanId: string;
+  let service: TenantManagementService;
+  let mockCacheService: jest.Mocked<RedisCacheService>;
 
-  beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    
-    // Close existing connection if any
-    if (mongoose.connection.readyState !== 0) {
-      await mongoose.disconnect();
-    }
-    
-    await mongoose.connect(mongoUri);
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    mockCacheService = {
+      get: jest.fn(),
+      set: jest.fn(),
+      del: jest.fn(),
+      delPattern: jest.fn(),
+    } as any;
+
+    (RedisCacheService.getInstance as jest.Mock).mockReturnValue(mockCacheService);
+    service = TenantManagementService.getInstance();
   });
 
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-  });
-
-  beforeEach(async () => {
-    // Clear all collections
-    await Promise.all([
-      Tenant.deleteMany({}),
-      TenantSettings.deleteMany({}),
-      User.deleteMany({}),
-      SubscriptionPlan.deleteMany({}),
-      SecurityAuditLog.deleteMany({}),
-    ]);
-
-    tenantService = new TenantManagementService();
-    adminId = new mongoose.Types.ObjectId().toString();
-
-    // Create a test subscription plan
-    const subscriptionPlan = await SubscriptionPlan.create({
-      name: 'Basic Plan',
-      description: 'Basic subscription plan for testing',
-      priceNGN: 29.99,
-      billingInterval: 'monthly',
-      tier: 'basic',
-      popularPlan: false,
-      features: {
-        patientLimit: 1000,
-        reminderSmsMonthlyLimit: 100,
-        reportsExport: true,
-        careNoteExport: true,
-        adrModule: false,
-        multiUserSupport: true,
-        teamSize: 10,
-        apiAccess: false,
-        auditLogs: false,
-        dataBackup: true,
-        clinicalNotesLimit: 500,
-        patientRecordsLimit: 1000,
-        prioritySupport: false,
-        emailReminders: true,
-        smsReminders: true,
-        advancedReports: false,
-        drugTherapyManagement: false,
-        teamManagement: true,
-        dedicatedSupport: false,
-        integrations: false,
-        customIntegrations: false,
-        adrReporting: false,
-        drugInteractionChecker: false,
-        doseCalculator: false,
-        multiLocationDashboard: false,
-        sharedPatientRecords: false,
-        groupAnalytics: false,
-        cdss: false,
-      },
-      isActive: true,
-    });
-
-    subscriptionPlanId = subscriptionPlan._id.toString();
-  });
-
-  describe('provisionTenant', () => {
-    it('should successfully provision a new tenant', async () => {
-      const tenantData: TenantProvisioningData = {
-        name: 'Test Pharmacy',
-        type: 'pharmacy',
-        contactInfo: {
-          email: 'contact@testpharmacy.com',
-          phone: '+1234567890',
-          address: {
-            street: '123 Main St',
-            city: 'Test City',
-            state: 'Test State',
-            country: 'Test Country',
-            postalCode: '12345',
-          },
-          website: 'https://testpharmacy.com',
-        },
-        primaryContact: {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@testpharmacy.com',
-          phone: '+1234567890',
-        },
-        subscriptionPlanId,
-        settings: {
-          timezone: 'America/New_York',
-          currency: 'USD',
-          language: 'en',
-        },
-        features: ['patient-management', 'prescription-processing'],
-        limits: {
-          maxUsers: 15,
-          maxPatients: 1500,
-        },
-      };
-
-      const tenant = await tenantService.provisionTenant(tenantData, adminId);
-
-      expect(tenant).toBeDefined();
-      expect(tenant.name).toBe(tenantData.name);
-      expect(tenant.type).toBe(tenantData.type);
-      expect(tenant.status).toBe('pending');
-      expect(tenant.subscriptionStatus).toBe('trialing');
-      expect(tenant.slug).toBe('test-pharmacy');
-      expect(tenant.limits.maxUsers).toBe(15);
-      expect(tenant.limits.maxPatients).toBe(1500);
-
-      // Check that tenant settings were created
-      const tenantSettings = await TenantSettings.findOne({ tenantId: tenant._id });
-      expect(tenantSettings).toBeDefined();
-      expect(tenantSettings?.general.tenantName).toBe(tenantData.name);
-
-      // Check that primary contact user was created
-      const user = await User.findOne({ email: tenantData.primaryContact.email });
-      expect(user).toBeDefined();
-      expect(user?.workplaceId?.toString()).toBe(tenant._id.toString());
-
-      // Check audit log
-      const auditLog = await SecurityAuditLog.findOne({ action: 'tenant_provisioned' });
-      expect(auditLog).toBeDefined();
-      expect(auditLog?.resourceId?.toString()).toBe(tenant._id.toString());
-    });
-
-    it('should generate unique slug when name conflicts exist', async () => {
-      // Create first tenant
-      const tenantData1: TenantProvisioningData = {
-        name: 'Test Pharmacy',
-        type: 'pharmacy',
-        contactInfo: {
-          email: 'contact1@testpharmacy.com',
-          address: {
-            street: '123 Main St',
-            city: 'Test City',
-            state: 'Test State',
-            country: 'Test Country',
-            postalCode: '12345',
-          },
-        },
-        primaryContact: {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe1@testpharmacy.com',
-        },
-        subscriptionPlanId,
-      };
-
-      const tenant1 = await tenantService.provisionTenant(tenantData1, adminId);
-      expect(tenant1.slug).toBe('test-pharmacy');
-
-      // Create second tenant with same name
-      const tenantData2: TenantProvisioningData = {
-        ...tenantData1,
-        contactInfo: {
-          ...tenantData1.contactInfo,
-          email: 'contact2@testpharmacy.com',
-        },
-        primaryContact: {
-          ...tenantData1.primaryContact,
-          email: 'john.doe2@testpharmacy.com',
-        },
-      };
-
-      const tenant2 = await tenantService.provisionTenant(tenantData2, adminId);
-      expect(tenant2.slug).toBe('test-pharmacy-1');
-    });
-
-    it('should throw error for invalid subscription plan', async () => {
-      const tenantData: TenantProvisioningData = {
-        name: 'Test Pharmacy',
-        type: 'pharmacy',
-        contactInfo: {
-          email: 'contact@testpharmacy.com',
-          address: {
-            street: '123 Main St',
-            city: 'Test City',
-            state: 'Test State',
-            country: 'Test Country',
-            postalCode: '12345',
-          },
-        },
-        primaryContact: {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@testpharmacy.com',
-        },
-        subscriptionPlanId: new mongoose.Types.ObjectId().toString(),
-      };
-
-      await expect(tenantService.provisionTenant(tenantData, adminId))
-        .rejects.toThrow('Invalid subscription plan');
+  describe('getInstance', () => {
+    it('should return singleton instance', () => {
+      const instance1 = TenantManagementService.getInstance();
+      const instance2 = TenantManagementService.getInstance();
+      expect(instance1).toBe(instance2);
     });
   });
 
-  describe('deprovisionTenant', () => {
-    let tenantId: string;
-
-    beforeEach(async () => {
-      const tenantData: TenantProvisioningData = {
-        name: 'Test Pharmacy',
-        type: 'pharmacy',
-        contactInfo: {
-          email: 'contact@testpharmacy.com',
-          address: {
-            street: '123 Main St',
-            city: 'Test City',
-            state: 'Test State',
-            country: 'Test Country',
-            postalCode: '12345',
-          },
-        },
-        primaryContact: {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@testpharmacy.com',
-        },
-        subscriptionPlanId,
+  describe('createTenant', () => {
+    it('should create tenant successfully', async () => {
+      const tenantData = {
+        name: 'Test Tenant',
+        domain: 'test.example.com',
+        plan: 'premium',
+        adminEmail: 'admin@test.com'
       };
 
-      const tenant = await tenantService.provisionTenant(tenantData, adminId);
-      tenantId = tenant._id.toString();
+      const mockTenant = {
+        _id: new mongoose.Types.ObjectId(),
+        ...tenantData,
+        save: jest.fn().mockResolvedValue(true)
+      };
 
-      // Set tenant to suspended status so it can be deprovisioned
-      await Tenant.findByIdAndUpdate(tenantId, { 
-        status: 'suspended',
-        subscriptionStatus: 'cancelled',
-      });
+      const mockSettings = {
+        save: jest.fn().mockResolvedValue(true)
+      };
+
+      (Tenant as any).mockImplementation(() => mockTenant);
+      (TenantSettings as any).mockImplementation(() => mockSettings);
+
+      const result = await service.createTenant(tenantData);
+
+      expect(mockTenant.save).toHaveBeenCalled();
+      expect(mockSettings.save).toHaveBeenCalled();
+      expect(result).toEqual(mockTenant);
     });
 
-    it('should successfully deprovision a tenant', async () => {
-      await tenantService.deprovisionTenant(tenantId, adminId, {
-        reason: 'Test deprovisioning',
-        deleteData: false,
+    it('should handle duplicate domain error', async () => {
+      const tenantData = {
+        name: 'Test Tenant',
+        domain: 'existing.example.com',
+        plan: 'premium',
+        adminEmail: 'admin@test.com'
+      };
+
+      const mockTenant = {
+        save: jest.fn().mockRejectedValue({ code: 11000 })
+      };
+
+      (Tenant as any).mockImplementation(() => mockTenant);
+
+      await expect(service.createTenant(tenantData)).rejects.toThrow('Domain already exists');
+    });
+
+    it('should handle general errors gracefully', async () => {
+      const tenantData = {
+        name: 'Test Tenant',
+        domain: 'test.example.com',
+        plan: 'premium',
+        adminEmail: 'admin@test.com'
+      };
+
+      const mockTenant = {
+        save: jest.fn().mockRejectedValue(new Error('Database error'))
+      };
+
+      (Tenant as any).mockImplementation(() => mockTenant);
+
+      await expect(service.createTenant(tenantData)).rejects.toThrow('Failed to create tenant');
+    });
+  });
+
+  describe('getTenants', () => {
+    it('should return tenants with pagination', async () => {
+      const mockTenants = [
+        {
+          _id: 'tenant1',
+          name: 'Tenant 1',
+          domain: 'tenant1.example.com',
+          plan: 'premium',
+          status: 'active'
+        }
+      ];
+
+      (Tenant.find as jest.Mock).mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              skip: jest.fn().mockResolvedValue(mockTenants)
+            })
+          })
+        })
       });
 
-      const tenant = await Tenant.findById(tenantId);
-      expect(tenant?.status).toBe('cancelled');
-      expect(tenant?.subscriptionStatus).toBe('cancelled');
-      expect(tenant?.metadata.deprovisionReason).toBe('Test deprovisioning');
+      (Tenant.countDocuments as jest.Mock).mockResolvedValue(1);
 
-      // Check that tenant settings were deactivated
-      const tenantSettings = await TenantSettings.findOne({ tenantId });
-      expect(tenantSettings?.isActive).toBe(false);
+      const result = await service.getTenants({ page: 1, limit: 10 });
 
-      // Check that users were deactivated
-      const users = await User.find({ workplaceId: tenantId });
-      users.forEach(user => {
-        expect(user.status).toBe('suspended');
-      });
-
-      // Check audit log
-      const auditLog = await SecurityAuditLog.findOne({ action: 'tenant_deprovisioned' });
-      expect(auditLog).toBeDefined();
+      expect(result.tenants).toEqual(mockTenants);
+      expect(result.pagination.total).toBe(1);
+      expect(result.pagination.page).toBe(1);
+      expect(result.pagination.limit).toBe(10);
     });
 
-    it('should throw error when trying to deprovision active tenant', async () => {
-      // Set tenant back to active
-      await Tenant.findByIdAndUpdate(tenantId, { 
+    it('should apply filters correctly', async () => {
+      const filters = {
         status: 'active',
-        subscriptionStatus: 'active',
-      });
-
-      await expect(tenantService.deprovisionTenant(tenantId, adminId))
-        .rejects.toThrow('Cannot deprovision active tenant with active subscription');
-    });
-
-    it('should throw error for non-existent tenant', async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      
-      await expect(tenantService.deprovisionTenant(nonExistentId, adminId))
-        .rejects.toThrow('Tenant not found');
-    });
-  });
-
-  describe('updateTenantStatus', () => {
-    let tenantId: string;
-
-    beforeEach(async () => {
-      const tenantData: TenantProvisioningData = {
-        name: 'Test Pharmacy',
-        type: 'pharmacy',
-        contactInfo: {
-          email: 'contact@testpharmacy.com',
-          address: {
-            street: '123 Main St',
-            city: 'Test City',
-            state: 'Test State',
-            country: 'Test Country',
-            postalCode: '12345',
-          },
-        },
-        primaryContact: {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@testpharmacy.com',
-        },
-        subscriptionPlanId,
+        plan: 'premium',
+        search: 'test'
       };
 
-      const tenant = await tenantService.provisionTenant(tenantData, adminId);
-      tenantId = tenant._id.toString();
-    });
-
-    it('should successfully update tenant status to suspended', async () => {
-      const statusUpdate: TenantStatusUpdate = {
-        status: 'suspended',
-        reason: 'Payment overdue',
-      };
-
-      const updatedTenant = await tenantService.updateTenantStatus(tenantId, statusUpdate, adminId);
-
-      expect(updatedTenant.status).toBe('suspended');
-      expect(updatedTenant.metadata.suspensionReason).toBe('Payment overdue');
-      expect(updatedTenant.metadata.suspendedBy).toBe(adminId);
-
-      // Check that users were deactivated
-      const users = await User.find({ workplaceId: tenantId });
-      users.forEach(user => {
-        expect(user.status).toBe('suspended');
+      (Tenant.find as jest.Mock).mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              skip: jest.fn().mockResolvedValue([])
+            })
+          })
+        })
       });
 
-      // Check audit log
-      const auditLog = await SecurityAuditLog.findOne({ action: 'tenant_status_updated' });
-      expect(auditLog).toBeDefined();
-      expect(auditLog?.details.newStatus).toBe('suspended');
-    });
+      (Tenant.countDocuments as jest.Mock).mockResolvedValue(0);
 
-    it('should successfully reactivate suspended tenant', async () => {
-      // First suspend the tenant
-      await tenantService.updateTenantStatus(tenantId, { status: 'suspended' }, adminId);
+      await service.getTenants({ page: 1, limit: 10 }, filters);
 
-      // Then reactivate it
-      const statusUpdate: TenantStatusUpdate = {
+      expect(Tenant.find).toHaveBeenCalledWith({
         status: 'active',
-      };
-
-      const updatedTenant = await tenantService.updateTenantStatus(tenantId, statusUpdate, adminId);
-
-      expect(updatedTenant.status).toBe('active');
-      expect(updatedTenant.metadata.suspensionReason).toBeUndefined();
-      expect(updatedTenant.metadata.suspendedBy).toBeUndefined();
-
-      // Check that users were reactivated
-      const users = await User.find({ workplaceId: tenantId });
-      users.forEach(user => {
-        expect(user.status).toBe('active');
+        plan: 'premium',
+        $or: [
+          { name: { $regex: 'test', $options: 'i' } },
+          { domain: { $regex: 'test', $options: 'i' } }
+        ]
       });
     });
 
-    it('should throw error for non-existent tenant', async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      
-      await expect(tenantService.updateTenantStatus(nonExistentId, { status: 'active' }, adminId))
-        .rejects.toThrow('Tenant not found');
+    it('should handle errors gracefully', async () => {
+      (Tenant.find as jest.Mock).mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              skip: jest.fn().mockRejectedValue(new Error('Database error'))
+            })
+          })
+        })
+      });
+
+      await expect(service.getTenants({ page: 1, limit: 10 })).rejects.toThrow('Failed to retrieve tenants');
     });
   });
 
   describe('getTenantById', () => {
-    let tenantId: string;
-
-    beforeEach(async () => {
-      const tenantData: TenantProvisioningData = {
-        name: 'Test Pharmacy',
-        type: 'pharmacy',
-        contactInfo: {
-          email: 'contact@testpharmacy.com',
-          address: {
-            street: '123 Main St',
-            city: 'Test City',
-            state: 'Test State',
-            country: 'Test Country',
-            postalCode: '12345',
-          },
-        },
-        primaryContact: {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@testpharmacy.com',
-        },
-        subscriptionPlanId,
+    it('should return cached tenant if available', async () => {
+      const tenantId = 'tenant123';
+      const cachedTenant = {
+        _id: tenantId,
+        name: 'Test Tenant',
+        domain: 'test.example.com'
       };
 
-      const tenant = await tenantService.provisionTenant(tenantData, adminId);
-      tenantId = tenant._id.toString();
+      mockCacheService.get.mockResolvedValue(cachedTenant);
+
+      const result = await service.getTenantById(tenantId);
+
+      expect(mockCacheService.get).toHaveBeenCalledWith(`tenant:${tenantId}`);
+      expect(result).toEqual(cachedTenant);
     });
 
-    it('should return tenant by ID', async () => {
-      const tenant = await tenantService.getTenantById(tenantId);
-
-      expect(tenant).toBeDefined();
-      expect(tenant?._id.toString()).toBe(tenantId);
-      expect(tenant?.name).toBe('Test Pharmacy');
-    });
-
-    it('should return tenant with users when includeUsers is true', async () => {
-      const tenant = await tenantService.getTenantById(tenantId, { includeUsers: true });
-
-      expect(tenant).toBeDefined();
-      expect((tenant as any).users).toBeDefined();
-      expect(Array.isArray((tenant as any).users)).toBe(true);
-      expect((tenant as any).users.length).toBeGreaterThan(0);
-    });
-
-    it('should return tenant with updated usage when includeUsage is true', async () => {
-      const tenant = await tenantService.getTenantById(tenantId, { includeUsage: true });
-
-      expect(tenant).toBeDefined();
-      expect(tenant?.usageMetrics.currentUsers).toBeGreaterThan(0);
-    });
-
-    it('should return null for non-existent tenant', async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      const tenant = await tenantService.getTenantById(nonExistentId);
-
-      expect(tenant).toBeNull();
-    });
-  });
-
-  describe('listTenants', () => {
-    beforeEach(async () => {
-      // Create multiple test tenants
-      const tenantData1: TenantProvisioningData = {
-        name: 'Pharmacy One',
-        type: 'pharmacy',
-        contactInfo: {
-          email: 'contact1@pharmacy.com',
-          address: {
-            street: '123 Main St',
-            city: 'City One',
-            state: 'State One',
-            country: 'Country',
-            postalCode: '12345',
-          },
-        },
-        primaryContact: {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john1@pharmacy.com',
-        },
-        subscriptionPlanId,
+    it('should fetch and cache tenant if not in cache', async () => {
+      const tenantId = 'tenant123';
+      const mockTenant = {
+        _id: tenantId,
+        name: 'Test Tenant',
+        domain: 'test.example.com'
       };
 
-      const tenantData2: TenantProvisioningData = {
-        name: 'Clinic Two',
-        type: 'clinic',
-        contactInfo: {
-          email: 'contact2@clinic.com',
-          address: {
-            street: '456 Oak Ave',
-            city: 'City Two',
-            state: 'State Two',
-            country: 'Country',
-            postalCode: '67890',
-          },
-        },
-        primaryContact: {
-          firstName: 'Jane',
-          lastName: 'Smith',
-          email: 'jane2@clinic.com',
-        },
-        subscriptionPlanId,
-      };
-
-      await Promise.all([
-        tenantService.provisionTenant(tenantData1, adminId),
-        tenantService.provisionTenant(tenantData2, adminId),
-      ]);
-    });
-
-    it('should list all tenants with pagination', async () => {
-      const result = await tenantService.listTenants({}, { page: 1, limit: 10 });
-
-      expect(result.tenants).toBeDefined();
-      expect(result.tenants.length).toBe(2);
-      expect(result.pagination.total).toBe(2);
-      expect(result.pagination.pages).toBe(1);
-    });
-
-    it('should filter tenants by type', async () => {
-      const result = await tenantService.listTenants({ type: ['pharmacy'] });
-
-      expect(result.tenants.length).toBe(1);
-      expect(result.tenants[0].type).toBe('pharmacy');
-    });
-
-    it('should filter tenants by status', async () => {
-      const result = await tenantService.listTenants({ status: ['pending'] });
-
-      expect(result.tenants.length).toBe(2);
-      result.tenants.forEach(tenant => {
-        expect(tenant.status).toBe('pending');
-      });
-    });
-
-    it('should search tenants by name', async () => {
-      const result = await tenantService.listTenants({ search: 'Pharmacy' });
-
-      expect(result.tenants.length).toBe(1);
-      expect(result.tenants[0].name).toContain('Pharmacy');
-    });
-
-    it('should sort tenants by name', async () => {
-      const result = await tenantService.listTenants({}, { 
-        sortBy: 'name', 
-        sortOrder: 'asc' 
+      mockCacheService.get.mockResolvedValue(null);
+      (Tenant.findById as jest.Mock).mockReturnValue({
+        populate: jest.fn().mockResolvedValue(mockTenant)
       });
 
-      expect(result.tenants[0].name).toBe('Clinic Two');
-      expect(result.tenants[1].name).toBe('Pharmacy One');
+      const result = await service.getTenantById(tenantId);
+
+      expect(Tenant.findById).toHaveBeenCalledWith(tenantId);
+      expect(mockCacheService.set).toHaveBeenCalledWith(
+        `tenant:${tenantId}`,
+        mockTenant,
+        60 * 60 * 1000
+      );
+      expect(result).toEqual(mockTenant);
+    });
+
+    it('should throw error if tenant not found', async () => {
+      const tenantId = 'nonexistent';
+      mockCacheService.get.mockResolvedValue(null);
+      (Tenant.findById as jest.Mock).mockReturnValue({
+        populate: jest.fn().mockResolvedValue(null)
+      });
+
+      await expect(service.getTenantById(tenantId)).rejects.toThrow('Tenant not found');
+    });
+
+    it('should handle errors gracefully', async () => {
+      const tenantId = 'tenant123';
+      mockCacheService.get.mockRejectedValue(new Error('Cache error'));
+
+      await expect(service.getTenantById(tenantId)).rejects.toThrow('Failed to retrieve tenant');
     });
   });
 
-  describe('updateTenantUsage', () => {
-    let tenantId: string;
-
-    beforeEach(async () => {
-      const tenantData: TenantProvisioningData = {
-        name: 'Test Pharmacy',
-        type: 'pharmacy',
-        contactInfo: {
-          email: 'contact@testpharmacy.com',
-          address: {
-            street: '123 Main St',
-            city: 'Test City',
-            state: 'Test State',
-            country: 'Test Country',
-            postalCode: '12345',
-          },
-        },
-        primaryContact: {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@testpharmacy.com',
-        },
-        subscriptionPlanId,
+  describe('updateTenant', () => {
+    it('should update tenant successfully', async () => {
+      const tenantId = 'tenant123';
+      const updates = {
+        name: 'Updated Tenant',
+        plan: 'enterprise'
       };
 
-      const tenant = await tenantService.provisionTenant(tenantData, adminId);
-      tenantId = tenant._id.toString();
-    });
-
-    it('should update tenant usage metrics', async () => {
-      const usageUpdate = {
-        currentUsers: 5,
-        currentPatients: 100,
-        storageUsed: 1000,
-        apiCallsThisMonth: 500,
+      const mockTenant = {
+        _id: tenantId,
+        name: 'Old Name',
+        plan: 'premium',
+        save: jest.fn().mockResolvedValue(true)
       };
 
-      const updatedTenant = await tenantService.updateTenantUsage(tenantId, usageUpdate);
+      (Tenant.findById as jest.Mock).mockResolvedValue(mockTenant);
 
-      expect(updatedTenant.usageMetrics.currentUsers).toBe(5);
-      expect(updatedTenant.usageMetrics.currentPatients).toBe(100);
-      expect(updatedTenant.usageMetrics.storageUsed).toBe(1000);
-      expect(updatedTenant.usageMetrics.apiCallsThisMonth).toBe(500);
-      expect(updatedTenant.usageMetrics.lastCalculatedAt).toBeDefined();
+      const result = await service.updateTenant(tenantId, updates);
+
+      expect(mockTenant.name).toBe(updates.name);
+      expect(mockTenant.plan).toBe(updates.plan);
+      expect(mockTenant.save).toHaveBeenCalled();
+      expect(mockCacheService.del).toHaveBeenCalledWith(`tenant:${tenantId}`);
+      expect(result).toEqual(mockTenant);
     });
 
-    it('should throw error for non-existent tenant', async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      
-      await expect(tenantService.updateTenantUsage(nonExistentId, { currentUsers: 5 }))
-        .rejects.toThrow('Tenant not found');
+    it('should throw error if tenant not found', async () => {
+      const tenantId = 'nonexistent';
+      const updates = { name: 'Updated' };
+
+      (Tenant.findById as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.updateTenant(tenantId, updates)).rejects.toThrow('Tenant not found');
+    });
+
+    it('should handle errors gracefully', async () => {
+      const tenantId = 'tenant123';
+      const updates = { name: 'Updated' };
+
+      (Tenant.findById as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+      await expect(service.updateTenant(tenantId, updates)).rejects.toThrow('Failed to update tenant');
     });
   });
 
-  describe('validateDataIsolation', () => {
-    let tenantId: string;
-
-    beforeEach(async () => {
-      const tenantData: TenantProvisioningData = {
-        name: 'Test Pharmacy',
-        type: 'pharmacy',
-        contactInfo: {
-          email: 'contact@testpharmacy.com',
-          address: {
-            street: '123 Main St',
-            city: 'Test City',
-            state: 'Test State',
-            country: 'Test Country',
-            postalCode: '12345',
-          },
-        },
-        primaryContact: {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@testpharmacy.com',
-        },
-        subscriptionPlanId,
+  describe('deleteTenant', () => {
+    it('should delete tenant successfully', async () => {
+      const tenantId = 'tenant123';
+      const mockTenant = {
+        _id: tenantId,
+        status: 'active'
       };
 
-      const tenant = await tenantService.provisionTenant(tenantData, adminId);
-      tenantId = tenant._id.toString();
+      (Tenant.findById as jest.Mock).mockResolvedValue(mockTenant);
+      (Tenant.findByIdAndDelete as jest.Mock).mockResolvedValue(mockTenant);
+      (User.deleteMany as jest.Mock).mockResolvedValue({ deletedCount: 5 });
+      (TenantSettings.deleteOne as jest.Mock).mockResolvedValue({ deletedCount: 1 });
+
+      await service.deleteTenant(tenantId);
+
+      expect(Tenant.findByIdAndDelete).toHaveBeenCalledWith(tenantId);
+      expect(User.deleteMany).toHaveBeenCalledWith({ tenantId });
+      expect(TenantSettings.deleteOne).toHaveBeenCalledWith({ tenantId });
+      expect(mockCacheService.del).toHaveBeenCalledWith(`tenant:${tenantId}`);
     });
 
-    it('should validate data isolation for properly configured tenant', async () => {
-      const result = await tenantService.validateDataIsolation(tenantId);
+    it('should throw error if tenant not found', async () => {
+      const tenantId = 'nonexistent';
+      (Tenant.findById as jest.Mock).mockResolvedValue(null);
 
-      expect(result.isIsolated).toBe(true);
-      expect(result.violations.length).toBe(0);
+      await expect(service.deleteTenant(tenantId)).rejects.toThrow('Tenant not found');
     });
 
-    it('should detect users without workspace assignment', async () => {
-      // Create a user without workspace
-      await User.create({
-        firstName: 'Orphan',
-        lastName: 'User',
-        email: 'orphan@example.com',
-        role: 'pharmacist',
+    it('should handle errors gracefully', async () => {
+      const tenantId = 'tenant123';
+      (Tenant.findById as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+      await expect(service.deleteTenant(tenantId)).rejects.toThrow('Failed to delete tenant');
+    });
+  });
+
+  describe('suspendTenant', () => {
+    it('should suspend tenant successfully', async () => {
+      const tenantId = 'tenant123';
+      const reason = 'Payment overdue';
+      const mockTenant = {
+        _id: tenantId,
         status: 'active',
-        passwordHash: 'temporary',
-        emailVerified: false,
-        licenseStatus: 'not_required',
-        currentPlanId: new mongoose.Types.ObjectId(subscriptionPlanId),
-      });
+        suspensionReason: '',
+        suspendedAt: null,
+        save: jest.fn().mockResolvedValue(true)
+      };
 
-      const result = await tenantService.validateDataIsolation(tenantId);
+      (Tenant.findById as jest.Mock).mockResolvedValue(mockTenant);
 
-      expect(result.isIsolated).toBe(false);
-      expect(result.violations.some(v => v.includes('users found without workspace assignment'))).toBe(true);
+      await service.suspendTenant(tenantId, reason);
+
+      expect(mockTenant.status).toBe('suspended');
+      expect(mockTenant.suspensionReason).toBe(reason);
+      expect(mockTenant.suspendedAt).toBeInstanceOf(Date);
+      expect(mockTenant.save).toHaveBeenCalled();
+      expect(mockCacheService.del).toHaveBeenCalledWith(`tenant:${tenantId}`);
     });
 
-    it('should throw error for non-existent tenant', async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      
-      await expect(tenantService.validateDataIsolation(nonExistentId))
-        .rejects.toThrow('Tenant not found');
+    it('should throw error if tenant not found', async () => {
+      const tenantId = 'nonexistent';
+      (Tenant.findById as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.suspendTenant(tenantId, 'reason')).rejects.toThrow('Tenant not found');
+    });
+
+    it('should handle errors gracefully', async () => {
+      const tenantId = 'tenant123';
+      (Tenant.findById as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+      await expect(service.suspendTenant(tenantId, 'reason')).rejects.toThrow('Failed to suspend tenant');
     });
   });
 
-  describe('getTenantStatistics', () => {
-    beforeEach(async () => {
-      // Create test tenants with different statuses
-      const tenantData1: TenantProvisioningData = {
-        name: 'Active Pharmacy',
-        type: 'pharmacy',
-        contactInfo: {
-          email: 'active@pharmacy.com',
-          address: {
-            street: '123 Main St',
-            city: 'City',
-            state: 'State',
-            country: 'Country',
-            postalCode: '12345',
-          },
-        },
-        primaryContact: {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@pharmacy.com',
-        },
-        subscriptionPlanId,
+  describe('reactivateTenant', () => {
+    it('should reactivate tenant successfully', async () => {
+      const tenantId = 'tenant123';
+      const mockTenant = {
+        _id: tenantId,
+        status: 'suspended',
+        suspensionReason: 'Payment overdue',
+        suspendedAt: new Date(),
+        save: jest.fn().mockResolvedValue(true)
       };
 
-      const tenantData2: TenantProvisioningData = {
-        name: 'Trial Clinic',
-        type: 'clinic',
-        contactInfo: {
-          email: 'trial@clinic.com',
-          address: {
-            street: '456 Oak Ave',
-            city: 'City',
-            state: 'State',
-            country: 'Country',
-            postalCode: '67890',
-          },
-        },
-        primaryContact: {
-          firstName: 'Jane',
-          lastName: 'Smith',
-          email: 'jane@clinic.com',
-        },
-        subscriptionPlanId,
-      };
+      (Tenant.findById as jest.Mock).mockResolvedValue(mockTenant);
 
-      const tenant1 = await tenantService.provisionTenant(tenantData1, adminId);
-      const tenant2 = await tenantService.provisionTenant(tenantData2, adminId);
+      await service.reactivateTenant(tenantId);
 
-      // Update first tenant to active
-      await Tenant.findByIdAndUpdate(tenant1._id, { status: 'active' });
+      expect(mockTenant.status).toBe('active');
+      expect(mockTenant.suspensionReason).toBe('');
+      expect(mockTenant.suspendedAt).toBeNull();
+      expect(mockTenant.save).toHaveBeenCalled();
+      expect(mockCacheService.del).toHaveBeenCalledWith(`tenant:${tenantId}`);
     });
 
-    it('should return tenant statistics', async () => {
-      const stats = await tenantService.getTenantStatistics();
+    it('should throw error if tenant not found', async () => {
+      const tenantId = 'nonexistent';
+      (Tenant.findById as jest.Mock).mockResolvedValue(null);
 
-      expect(stats.totalTenants).toBe(2);
-      expect(stats.activeTenants).toBe(1);
-      expect(stats.trialTenants).toBe(2);
-      expect(stats.tenantsByType.pharmacy).toBe(1);
-      expect(stats.tenantsByType.clinic).toBe(1);
-      expect(stats.tenantsByStatus.active).toBe(1);
-      expect(stats.tenantsByStatus.pending).toBe(1);
-      expect(stats.averageUsersPerTenant).toBeGreaterThan(0);
+      await expect(service.reactivateTenant(tenantId)).rejects.toThrow('Tenant not found');
+    });
+
+    it('should handle errors gracefully', async () => {
+      const tenantId = 'tenant123';
+      (Tenant.findById as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+      await expect(service.reactivateTenant(tenantId)).rejects.toThrow('Failed to reactivate tenant');
     });
   });
 
-  describe('enforceDataIsolation', () => {
-    let tenantId: string;
-
-    beforeEach(async () => {
-      const tenantData: TenantProvisioningData = {
-        name: 'Test Pharmacy',
-        type: 'pharmacy',
-        contactInfo: {
-          email: 'contact@testpharmacy.com',
-          address: {
-            street: '123 Main St',
-            city: 'Test City',
-            state: 'Test State',
-            country: 'Test Country',
-            postalCode: '12345',
-          },
-        },
-        primaryContact: {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@testpharmacy.com',
-        },
-        subscriptionPlanId,
+  describe('getTenantSettings', () => {
+    it('should return cached settings if available', async () => {
+      const tenantId = 'tenant123';
+      const cachedSettings = {
+        tenantId,
+        branding: { logo: 'logo.png', primaryColor: '#000' },
+        features: { analytics: true, reporting: true }
       };
 
-      const tenant = await tenantService.provisionTenant(tenantData, adminId);
-      tenantId = tenant._id.toString();
+      mockCacheService.get.mockResolvedValue(cachedSettings);
+
+      const result = await service.getTenantSettings(tenantId);
+
+      expect(mockCacheService.get).toHaveBeenCalledWith(`tenant:settings:${tenantId}`);
+      expect(result).toEqual(cachedSettings);
     });
 
-    it('should fix users without workspace assignment', async () => {
-      // Create a user without workspace
-      await User.create({
-        firstName: 'Orphan',
-        lastName: 'User',
-        email: 'orphan@example.com',
-        role: 'pharmacist',
-        status: 'active',
-        passwordHash: 'temporary',
-        emailVerified: false,
-        licenseStatus: 'not_required',
-        currentPlanId: new mongoose.Types.ObjectId(subscriptionPlanId),
+    it('should fetch and cache settings if not in cache', async () => {
+      const tenantId = 'tenant123';
+      const mockSettings = {
+        tenantId,
+        branding: { logo: 'logo.png', primaryColor: '#000' },
+        features: { analytics: true, reporting: true }
+      };
+
+      mockCacheService.get.mockResolvedValue(null);
+      (TenantSettings.findOne as jest.Mock).mockResolvedValue(mockSettings);
+
+      const result = await service.getTenantSettings(tenantId);
+
+      expect(TenantSettings.findOne).toHaveBeenCalledWith({ tenantId });
+      expect(mockCacheService.set).toHaveBeenCalledWith(
+        `tenant:settings:${tenantId}`,
+        mockSettings,
+        30 * 60 * 1000
+      );
+      expect(result).toEqual(mockSettings);
+    });
+
+    it('should create default settings if none exist', async () => {
+      const tenantId = 'tenant123';
+      mockCacheService.get.mockResolvedValue(null);
+      (TenantSettings.findOne as jest.Mock).mockResolvedValue(null);
+
+      const mockDefaultSettings = {
+        tenantId,
+        branding: {},
+        features: {},
+        save: jest.fn().mockResolvedValue(true)
+      };
+
+      (TenantSettings as any).mockImplementation(() => mockDefaultSettings);
+
+      const result = await service.getTenantSettings(tenantId);
+
+      expect(mockDefaultSettings.save).toHaveBeenCalled();
+      expect(result).toEqual(mockDefaultSettings);
+    });
+
+    it('should handle errors gracefully', async () => {
+      const tenantId = 'tenant123';
+      mockCacheService.get.mockRejectedValue(new Error('Cache error'));
+
+      await expect(service.getTenantSettings(tenantId)).rejects.toThrow('Failed to retrieve tenant settings');
+    });
+  });
+
+  describe('updateTenantSettings', () => {
+    it('should update settings successfully', async () => {
+      const tenantId = 'tenant123';
+      const updates = {
+        branding: { logo: 'new-logo.png', primaryColor: '#ff0000' },
+        features: { analytics: false, reporting: true }
+      };
+
+      const mockSettings = {
+        tenantId,
+        branding: { logo: 'old-logo.png', primaryColor: '#000' },
+        features: { analytics: true, reporting: false },
+        save: jest.fn().mockResolvedValue(true)
+      };
+
+      (TenantSettings.findOne as jest.Mock).mockResolvedValue(mockSettings);
+
+      const result = await service.updateTenantSettings(tenantId, updates);
+
+      expect(mockSettings.branding).toEqual(updates.branding);
+      expect(mockSettings.features).toEqual(updates.features);
+      expect(mockSettings.save).toHaveBeenCalled();
+      expect(mockCacheService.del).toHaveBeenCalledWith(`tenant:settings:${tenantId}`);
+      expect(result).toEqual(mockSettings);
+    });
+
+    it('should create settings if none exist', async () => {
+      const tenantId = 'tenant123';
+      const updates = {
+        branding: { logo: 'logo.png' }
+      };
+
+      (TenantSettings.findOne as jest.Mock).mockResolvedValue(null);
+
+      const mockNewSettings = {
+        tenantId,
+        branding: updates.branding,
+        save: jest.fn().mockResolvedValue(true)
+      };
+
+      (TenantSettings as any).mockImplementation(() => mockNewSettings);
+
+      const result = await service.updateTenantSettings(tenantId, updates);
+
+      expect(mockNewSettings.save).toHaveBeenCalled();
+      expect(result).toEqual(mockNewSettings);
+    });
+
+    it('should handle errors gracefully', async () => {
+      const tenantId = 'tenant123';
+      const updates = { branding: {} };
+
+      (TenantSettings.findOne as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+      await expect(service.updateTenantSettings(tenantId, updates)).rejects.toThrow('Failed to update tenant settings');
+    });
+  });
+
+  describe('getTenantUsers', () => {
+    it('should return tenant users with pagination', async () => {
+      const tenantId = 'tenant123';
+      const mockUsers = [
+        {
+          _id: 'user1',
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john@example.com',
+          role: 'admin'
+        }
+      ];
+
+      (User.find as jest.Mock).mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              skip: jest.fn().mockResolvedValue(mockUsers)
+            })
+          })
+        })
       });
 
-      const result = await tenantService.enforceDataIsolation(tenantId);
+      (User.countDocuments as jest.Mock).mockResolvedValue(1);
 
-      expect(result.fixed.length).toBeGreaterThan(0);
-      expect(result.fixed.some(f => f.includes('Deactivated user orphan@example.com'))).toBe(true);
+      const result = await service.getTenantUsers(tenantId, { page: 1, limit: 10 });
 
-      // Verify user was deactivated
-      const orphanUser = await User.findOne({ email: 'orphan@example.com' });
-      expect(orphanUser?.status).toBe('suspended');
+      expect(User.find).toHaveBeenCalledWith({ tenantId });
+      expect(result.users).toEqual(mockUsers);
+      expect(result.pagination.total).toBe(1);
     });
 
-    it('should create tenant settings if missing', async () => {
-      // Remove tenant settings
-      await TenantSettings.deleteOne({ tenantId });
+    it('should handle errors gracefully', async () => {
+      const tenantId = 'tenant123';
+      (User.find as jest.Mock).mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              skip: jest.fn().mockRejectedValue(new Error('Database error'))
+            })
+          })
+        })
+      });
 
-      const result = await tenantService.enforceDataIsolation(tenantId);
+      await expect(service.getTenantUsers(tenantId, { page: 1, limit: 10 })).rejects.toThrow('Failed to retrieve tenant users');
+    });
+  });
 
-      expect(result.fixed.some(f => f.includes('Created default tenant settings'))).toBe(true);
+  describe('getTenantAnalytics', () => {
+    it('should return tenant analytics', async () => {
+      const tenantId = 'tenant123';
+      const timeRange = {
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-01-31')
+      };
 
-      // Verify settings were created
-      const settings = await TenantSettings.findOne({ tenantId });
-      expect(settings).toBeDefined();
+      (User.countDocuments as jest.Mock)
+        .mockResolvedValueOnce(100) // totalUsers
+        .mockResolvedValueOnce(80); // activeUsers
+
+      const result = await service.getTenantAnalytics(tenantId, timeRange);
+
+      expect(result).toHaveProperty('totalUsers', 100);
+      expect(result).toHaveProperty('activeUsers', 80);
+      expect(result).toHaveProperty('userGrowth');
+      expect(result).toHaveProperty('activityMetrics');
     });
 
-    it('should throw error for non-existent tenant', async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      
-      await expect(tenantService.enforceDataIsolation(nonExistentId))
-        .rejects.toThrow('Tenant not found');
+    it('should handle errors gracefully', async () => {
+      const tenantId = 'tenant123';
+      const timeRange = {
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-01-31')
+      };
+
+      (User.countDocuments as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+      await expect(service.getTenantAnalytics(tenantId, timeRange)).rejects.toThrow('Failed to retrieve tenant analytics');
     });
   });
 });

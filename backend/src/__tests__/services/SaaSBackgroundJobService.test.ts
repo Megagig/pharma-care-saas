@@ -1,261 +1,476 @@
-// Unit tests for SaaSBackgroundJobService
+import { SaaSBackgroundJobService } from '../../services/SaaSBackgroundJobService';
+import { BackgroundJobService } from '../../services/BackgroundJobService';
+import { RedisCacheService } from '../../services/RedisCacheService';
+
+// Mock dependencies
+jest.mock('../../services/BackgroundJobService');
+jest.mock('../../services/RedisCacheService');
+jest.mock('../../utils/logger');
+
 describe('SaaSBackgroundJobService', () => {
-  // Mock all the dependencies to avoid compilation issues
-  const mockSaaSBackgroundJobService = {
-    queueMetricsCalculation: jest.fn(),
-    queueNotification: jest.fn(),
-    queueDataExport: jest.fn(),
-    queueDataImport: jest.fn(),
-    queueMaintenanceTask: jest.fn(),
-    getAllQueueStats: jest.fn(),
-    shutdown: jest.fn(),
-  };
+  let service: SaaSBackgroundJobService;
+  let mockBaseJobService: jest.Mocked<BackgroundJobService>;
+  let mockCacheService: jest.Mocked<RedisCacheService>;
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockBaseJobService = {
+      addJob: jest.fn(),
+      getJobStatus: jest.fn(),
+      cancelJob: jest.fn(),
+      getQueueStats: jest.fn(),
+      processJob: jest.fn(),
+    } as any;
+
+    mockCacheService = {
+      get: jest.fn(),
+      set: jest.fn(),
+      del: jest.fn(),
+      delPattern: jest.fn(),
+    } as any;
+
+    (BackgroundJobService.getInstance as jest.Mock).mockReturnValue(mockBaseJobService);
+    (RedisCacheService.getInstance as jest.Mock).mockReturnValue(mockCacheService);
+
+    service = SaaSBackgroundJobService.getInstance();
   });
 
   describe('getInstance', () => {
-    it('should return a service instance', () => {
-      expect(mockSaaSBackgroundJobService).toBeDefined();
+    it('should return singleton instance', () => {
+      const instance1 = SaaSBackgroundJobService.getInstance();
+      const instance2 = SaaSBackgroundJobService.getInstance();
+      expect(instance1).toBe(instance2);
     });
   });
 
-  describe('queueMetricsCalculation', () => {
-    it('should queue metrics calculation job successfully', async () => {
-      const jobData = {
-        type: 'system' as const,
-        timeRange: {
-          start: new Date('2023-01-01'),
-          end: new Date('2023-01-02'),
-        },
-      };
+  describe('scheduleTenantAnalyticsJob', () => {
+    it('should schedule tenant analytics job successfully', async () => {
+      const tenantId = 'tenant123';
+      const jobId = 'job123';
 
-      mockSaaSBackgroundJobService.queueMetricsCalculation.mockResolvedValue({ id: 'job123' });
+      mockBaseJobService.addJob.mockResolvedValue(jobId);
 
-      const result = await mockSaaSBackgroundJobService.queueMetricsCalculation(jobData);
+      const result = await service.scheduleTenantAnalyticsJob(tenantId);
 
-      expect(result).toBeTruthy();
-      expect(result.id).toBe('job123');
-      expect(mockSaaSBackgroundJobService.queueMetricsCalculation).toHaveBeenCalledWith(jobData);
+      expect(mockBaseJobService.addJob).toHaveBeenCalledWith(
+        'tenant-analytics',
+        { tenantId, type: 'analytics-generation' },
+        {
+          priority: 5,
+          delay: 0,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 2000 }
+        }
+      );
+      expect(result).toBe(jobId);
     });
 
-    it('should handle queue errors gracefully', async () => {
-      const jobData = {
-        type: 'user' as const,
-        timeRange: {
-          start: new Date('2023-01-01'),
-          end: new Date('2023-01-02'),
-        },
-      };
+    it('should handle job scheduling errors', async () => {
+      const tenantId = 'tenant123';
+      mockBaseJobService.addJob.mockRejectedValue(new Error('Queue error'));
 
-      mockSaaSBackgroundJobService.queueMetricsCalculation.mockResolvedValue(null);
-
-      const result = await mockSaaSBackgroundJobService.queueMetricsCalculation(jobData);
-
-      expect(result).toBeNull();
+      await expect(service.scheduleTenantAnalyticsJob(tenantId)).rejects.toThrow('Failed to schedule tenant analytics job');
     });
   });
 
-  describe('queueNotification', () => {
-    it('should queue high priority notification with correct options', async () => {
-      const jobData = {
-        type: 'email' as const,
-        recipients: ['user@example.com'],
+  describe('scheduleSystemMetricsJob', () => {
+    it('should schedule system metrics job successfully', async () => {
+      const jobId = 'job123';
+      mockBaseJobService.addJob.mockResolvedValue(jobId);
+
+      const result = await service.scheduleSystemMetricsJob();
+
+      expect(mockBaseJobService.addJob).toHaveBeenCalledWith(
+        'system-metrics',
+        { type: 'system-metrics-collection' },
+        {
+          priority: 3,
+          repeat: { cron: '*/5 * * * *' },
+          attempts: 5,
+          backoff: { type: 'exponential', delay: 1000 }
+        }
+      );
+      expect(result).toBe(jobId);
+    });
+
+    it('should handle job scheduling errors', async () => {
+      mockBaseJobService.addJob.mockRejectedValue(new Error('Queue error'));
+
+      await expect(service.scheduleSystemMetricsJob()).rejects.toThrow('Failed to schedule system metrics job');
+    });
+  });
+
+  describe('scheduleNotificationJob', () => {
+    it('should schedule notification job successfully', async () => {
+      const notificationData = {
+        userId: 'user123',
+        tenantId: 'tenant123',
+        type: 'email',
         template: 'welcome',
-        data: { name: 'John' },
-        priority: 'high' as const,
+        data: { name: 'John Doe' }
       };
+      const jobId = 'job123';
 
-      mockSaaSBackgroundJobService.queueNotification.mockResolvedValue({ id: 'job123' });
+      mockBaseJobService.addJob.mockResolvedValue(jobId);
 
-      const result = await mockSaaSBackgroundJobService.queueNotification(jobData);
+      const result = await service.scheduleNotificationJob(notificationData);
 
-      expect(result).toBeTruthy();
-      expect(result.id).toBe('job123');
-      expect(mockSaaSBackgroundJobService.queueNotification).toHaveBeenCalledWith(jobData);
+      expect(mockBaseJobService.addJob).toHaveBeenCalledWith(
+        'notification',
+        notificationData,
+        {
+          priority: 7,
+          delay: 0,
+          attempts: 3,
+          backoff: { type: 'fixed', delay: 5000 }
+        }
+      );
+      expect(result).toBe(jobId);
     });
 
-    it('should schedule notification for future delivery', async () => {
-      const scheduledFor = new Date(Date.now() + 60000); // 1 minute from now
-      const jobData = {
-        type: 'email' as const,
-        recipients: ['user@example.com'],
+    it('should schedule delayed notification', async () => {
+      const notificationData = {
+        userId: 'user123',
+        tenantId: 'tenant123',
+        type: 'email',
         template: 'reminder',
-        data: { message: 'Test' },
-        priority: 'medium' as const,
-        scheduledFor,
+        data: {}
+      };
+      const delay = 60000; // 1 minute
+      const jobId = 'job123';
+
+      mockBaseJobService.addJob.mockResolvedValue(jobId);
+
+      const result = await service.scheduleNotificationJob(notificationData, delay);
+
+      expect(mockBaseJobService.addJob).toHaveBeenCalledWith(
+        'notification',
+        notificationData,
+        {
+          priority: 7,
+          delay: 60000,
+          attempts: 3,
+          backoff: { type: 'fixed', delay: 5000 }
+        }
+      );
+      expect(result).toBe(jobId);
+    });
+
+    it('should handle notification job scheduling errors', async () => {
+      const notificationData = {
+        userId: 'user123',
+        tenantId: 'tenant123',
+        type: 'email',
+        template: 'test',
+        data: {}
       };
 
-      mockSaaSBackgroundJobService.queueNotification.mockResolvedValue({ id: 'job456' });
+      mockBaseJobService.addJob.mockRejectedValue(new Error('Queue error'));
 
-      const result = await mockSaaSBackgroundJobService.queueNotification(jobData);
-
-      expect(result).toBeTruthy();
-      expect(result.id).toBe('job456');
+      await expect(service.scheduleNotificationJob(notificationData)).rejects.toThrow('Failed to schedule notification job');
     });
   });
 
-  describe('queueDataExport', () => {
-    it('should queue data export job successfully', async () => {
-      const jobData = {
-        exportType: 'users' as const,
-        format: 'csv' as const,
-        filters: { isActive: true },
-        requestedBy: 'admin123',
-        email: 'admin@example.com',
-        workspaceId: 'workspace123',
+  describe('scheduleBillingJob', () => {
+    it('should schedule billing job successfully', async () => {
+      const billingData = {
+        tenantId: 'tenant123',
+        subscriptionId: 'sub123',
+        action: 'invoice_generation',
+        amount: 99.99
       };
+      const jobId = 'job123';
 
-      mockSaaSBackgroundJobService.queueDataExport.mockResolvedValue({ id: 'export123' });
+      mockBaseJobService.addJob.mockResolvedValue(jobId);
 
-      const result = await mockSaaSBackgroundJobService.queueDataExport(jobData);
+      const result = await service.scheduleBillingJob(billingData);
 
-      expect(result).toBeTruthy();
-      expect(result.id).toBe('export123');
-      expect(mockSaaSBackgroundJobService.queueDataExport).toHaveBeenCalledWith(jobData);
+      expect(mockBaseJobService.addJob).toHaveBeenCalledWith(
+        'billing',
+        billingData,
+        {
+          priority: 8,
+          delay: 0,
+          attempts: 5,
+          backoff: { type: 'exponential', delay: 3000 }
+        }
+      );
+      expect(result).toBe(jobId);
     });
 
-    it('should handle different export types', async () => {
-      const exportTypes = ['users', 'analytics', 'audit_logs', 'system_metrics'] as const;
+    it('should handle billing job scheduling errors', async () => {
+      const billingData = {
+        tenantId: 'tenant123',
+        subscriptionId: 'sub123',
+        action: 'payment_processing',
+        amount: 99.99
+      };
 
-      for (const exportType of exportTypes) {
-        const jobData = {
-          exportType,
-          format: 'excel' as const,
-          filters: {},
-          requestedBy: 'admin123',
-          email: 'admin@example.com',
-        };
+      mockBaseJobService.addJob.mockRejectedValue(new Error('Queue error'));
 
-        mockSaaSBackgroundJobService.queueDataExport.mockResolvedValue({ id: `export_${exportType}` });
-
-        const result = await mockSaaSBackgroundJobService.queueDataExport(jobData);
-        expect(result).toBeTruthy();
-        expect(result.id).toBe(`export_${exportType}`);
-      }
+      await expect(service.scheduleBillingJob(billingData)).rejects.toThrow('Failed to schedule billing job');
     });
   });
 
-  describe('queueDataImport', () => {
-    it('should queue data import job successfully', async () => {
-      const jobData = {
-        importType: 'users' as const,
-        filePath: '/tmp/users.csv',
-        format: 'csv' as const,
-        requestedBy: 'admin123',
-        workspaceId: 'workspace123',
-        options: {
-          validateOnly: false,
-          skipDuplicates: true,
-        },
+  describe('scheduleDataExportJob', () => {
+    it('should schedule data export job successfully', async () => {
+      const exportData = {
+        tenantId: 'tenant123',
+        userId: 'user123',
+        exportType: 'user_data',
+        format: 'json',
+        filters: {}
       };
+      const jobId = 'job123';
 
-      mockSaaSBackgroundJobService.queueDataImport.mockResolvedValue({ id: 'import123' });
+      mockBaseJobService.addJob.mockResolvedValue(jobId);
 
-      const result = await mockSaaSBackgroundJobService.queueDataImport(jobData);
+      const result = await service.scheduleDataExportJob(exportData);
 
-      expect(result).toBeTruthy();
-      expect(result.id).toBe('import123');
+      expect(mockBaseJobService.addJob).toHaveBeenCalledWith(
+        'data-export',
+        exportData,
+        {
+          priority: 4,
+          delay: 0,
+          attempts: 3,
+          backoff: { type: 'fixed', delay: 10000 },
+          timeout: 30 * 60 * 1000 // 30 minutes
+        }
+      );
+      expect(result).toBe(jobId);
     });
 
-    it('should handle validation-only imports', async () => {
-      const jobData = {
-        importType: 'tenants' as const,
-        filePath: '/tmp/tenants.json',
-        format: 'json' as const,
-        requestedBy: 'admin123',
-        options: {
-          validateOnly: true,
-        },
+    it('should handle data export job scheduling errors', async () => {
+      const exportData = {
+        tenantId: 'tenant123',
+        userId: 'user123',
+        exportType: 'analytics',
+        format: 'csv',
+        filters: {}
       };
 
-      mockSaaSBackgroundJobService.queueDataImport.mockResolvedValue({ id: 'validate123' });
+      mockBaseJobService.addJob.mockRejectedValue(new Error('Queue error'));
 
-      const result = await mockSaaSBackgroundJobService.queueDataImport(jobData);
-
-      expect(result).toBeTruthy();
-      expect(result.id).toBe('validate123');
+      await expect(service.scheduleDataExportJob(exportData)).rejects.toThrow('Failed to schedule data export job');
     });
   });
 
-  describe('queueMaintenanceTask', () => {
-    it('should queue maintenance tasks successfully', async () => {
-      const maintenanceTasks = [
-        'cleanup_sessions',
-        'archive_logs',
-        'optimize_indexes',
-        'cache_warming',
-        'health_check',
-      ] as const;
+  describe('scheduleMaintenanceJob', () => {
+    it('should schedule maintenance job successfully', async () => {
+      const maintenanceData = {
+        type: 'database_cleanup',
+        targetDate: new Date('2024-12-31'),
+        parameters: { retentionDays: 90 }
+      };
+      const jobId = 'job123';
 
-      for (const task of maintenanceTasks) {
-        const jobData = { task };
-        
-        mockSaaSBackgroundJobService.queueMaintenanceTask.mockResolvedValue({ id: `maintenance_${task}` });
-        
-        const result = await mockSaaSBackgroundJobService.queueMaintenanceTask(jobData);
-        expect(result).toBeTruthy();
-        expect(result.id).toBe(`maintenance_${task}`);
-      }
+      mockBaseJobService.addJob.mockResolvedValue(jobId);
+
+      const result = await service.scheduleMaintenanceJob(maintenanceData);
+
+      expect(mockBaseJobService.addJob).toHaveBeenCalledWith(
+        'maintenance',
+        maintenanceData,
+        {
+          priority: 2,
+          delay: expect.any(Number),
+          attempts: 2,
+          backoff: { type: 'fixed', delay: 60000 }
+        }
+      );
+      expect(result).toBe(jobId);
     });
 
-    it('should queue maintenance task with options', async () => {
-      const jobData = {
-        task: 'archive_logs' as const,
-        options: {
-          retentionDays: 90,
-        },
+    it('should handle maintenance job scheduling errors', async () => {
+      const maintenanceData = {
+        type: 'cache_cleanup',
+        targetDate: new Date(),
+        parameters: {}
       };
 
-      mockSaaSBackgroundJobService.queueMaintenanceTask.mockResolvedValue({ id: 'archive_with_options' });
+      mockBaseJobService.addJob.mockRejectedValue(new Error('Queue error'));
 
-      const result = await mockSaaSBackgroundJobService.queueMaintenanceTask(jobData);
-
-      expect(result).toBeTruthy();
-      expect(result.id).toBe('archive_with_options');
+      await expect(service.scheduleMaintenanceJob(maintenanceData)).rejects.toThrow('Failed to schedule maintenance job');
     });
   });
 
-  describe('getAllQueueStats', () => {
-    it('should return comprehensive queue statistics', async () => {
-      const mockStats = {
-        base: { export: {}, report: {} },
-        metrics: { waiting: 0, active: 1, completed: 5 },
-        notifications: { waiting: 2, active: 0, completed: 10 },
-        dataExport: { waiting: 1, active: 0, completed: 3 },
-        dataImport: { waiting: 0, active: 0, completed: 1 },
-        maintenance: { waiting: 0, active: 0, completed: 2 },
+  describe('getJobStatus', () => {
+    it('should return job status successfully', async () => {
+      const jobId = 'job123';
+      const jobStatus = {
+        id: jobId,
+        status: 'completed',
+        progress: 100,
+        result: { success: true }
       };
 
-      mockSaaSBackgroundJobService.getAllQueueStats.mockResolvedValue(mockStats);
+      mockBaseJobService.getJobStatus.mockResolvedValue(jobStatus);
 
-      const stats = await mockSaaSBackgroundJobService.getAllQueueStats();
+      const result = await service.getJobStatus(jobId);
 
-      expect(stats).toHaveProperty('base');
-      expect(stats).toHaveProperty('metrics');
-      expect(stats).toHaveProperty('notifications');
-      expect(stats).toHaveProperty('dataExport');
-      expect(stats).toHaveProperty('dataImport');
-      expect(stats).toHaveProperty('maintenance');
+      expect(mockBaseJobService.getJobStatus).toHaveBeenCalledWith(jobId);
+      expect(result).toEqual(jobStatus);
     });
 
-    it('should handle stats retrieval errors gracefully', async () => {
-      mockSaaSBackgroundJobService.getAllQueueStats.mockResolvedValue({});
+    it('should handle job status retrieval errors', async () => {
+      const jobId = 'job123';
+      mockBaseJobService.getJobStatus.mockRejectedValue(new Error('Job not found'));
 
-      const stats = await mockSaaSBackgroundJobService.getAllQueueStats();
-
-      expect(stats).toEqual({});
+      await expect(service.getJobStatus(jobId)).rejects.toThrow('Failed to get job status');
     });
   });
 
-  describe('shutdown', () => {
-    it('should shutdown all queues gracefully', async () => {
-      mockSaaSBackgroundJobService.shutdown.mockResolvedValue(undefined);
+  describe('cancelJob', () => {
+    it('should cancel job successfully', async () => {
+      const jobId = 'job123';
+      mockBaseJobService.cancelJob.mockResolvedValue(true);
 
-      await mockSaaSBackgroundJobService.shutdown();
+      const result = await service.cancelJob(jobId);
 
-      expect(mockSaaSBackgroundJobService.shutdown).toHaveBeenCalled();
+      expect(mockBaseJobService.cancelJob).toHaveBeenCalledWith(jobId);
+      expect(result).toBe(true);
+    });
+
+    it('should handle job cancellation errors', async () => {
+      const jobId = 'job123';
+      mockBaseJobService.cancelJob.mockRejectedValue(new Error('Job not found'));
+
+      await expect(service.cancelJob(jobId)).rejects.toThrow('Failed to cancel job');
+    });
+  });
+
+  describe('getQueueStats', () => {
+    it('should return queue statistics successfully', async () => {
+      const queueStats = {
+        waiting: 5,
+        active: 2,
+        completed: 100,
+        failed: 3,
+        delayed: 1
+      };
+
+      mockBaseJobService.getQueueStats.mockResolvedValue(queueStats);
+
+      const result = await service.getQueueStats();
+
+      expect(mockBaseJobService.getQueueStats).toHaveBeenCalled();
+      expect(result).toEqual(queueStats);
+    });
+
+    it('should handle queue stats retrieval errors', async () => {
+      mockBaseJobService.getQueueStats.mockRejectedValue(new Error('Queue error'));
+
+      await expect(service.getQueueStats()).rejects.toThrow('Failed to get queue statistics');
+    });
+  });
+
+  describe('getTenantJobHistory', () => {
+    it('should return cached job history if available', async () => {
+      const tenantId = 'tenant123';
+      const cachedHistory = [
+        {
+          id: 'job1',
+          type: 'analytics',
+          status: 'completed',
+          createdAt: new Date()
+        }
+      ];
+
+      mockCacheService.get.mockResolvedValue(cachedHistory);
+
+      const result = await service.getTenantJobHistory(tenantId);
+
+      expect(mockCacheService.get).toHaveBeenCalledWith(`tenant:jobs:${tenantId}`);
+      expect(result).toEqual(cachedHistory);
+    });
+
+    it('should return empty array if no cached history', async () => {
+      const tenantId = 'tenant123';
+      mockCacheService.get.mockResolvedValue(null);
+
+      const result = await service.getTenantJobHistory(tenantId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should handle job history retrieval errors', async () => {
+      const tenantId = 'tenant123';
+      mockCacheService.get.mockRejectedValue(new Error('Cache error'));
+
+      await expect(service.getTenantJobHistory(tenantId)).rejects.toThrow('Failed to get tenant job history');
+    });
+  });
+
+  describe('scheduleRecurringJobs', () => {
+    it('should schedule all recurring jobs successfully', async () => {
+      mockBaseJobService.addJob.mockResolvedValue('job123');
+
+      await service.scheduleRecurringJobs();
+
+      expect(mockBaseJobService.addJob).toHaveBeenCalledTimes(3);
+      
+      // Check system metrics job
+      expect(mockBaseJobService.addJob).toHaveBeenCalledWith(
+        'system-metrics',
+        { type: 'system-metrics-collection' },
+        expect.objectContaining({
+          repeat: { cron: '*/5 * * * *' }
+        })
+      );
+
+      // Check cleanup job
+      expect(mockBaseJobService.addJob).toHaveBeenCalledWith(
+        'cleanup',
+        { type: 'data-cleanup' },
+        expect.objectContaining({
+          repeat: { cron: '0 2 * * *' }
+        })
+      );
+
+      // Check analytics job
+      expect(mockBaseJobService.addJob).toHaveBeenCalledWith(
+        'analytics-aggregation',
+        { type: 'daily-analytics' },
+        expect.objectContaining({
+          repeat: { cron: '0 1 * * *' }
+        })
+      );
+    });
+
+    it('should handle recurring job scheduling errors', async () => {
+      mockBaseJobService.addJob.mockRejectedValue(new Error('Queue error'));
+
+      await expect(service.scheduleRecurringJobs()).rejects.toThrow('Failed to schedule recurring jobs');
+    });
+  });
+
+  describe('processJobResult', () => {
+    it('should process job result and update cache', async () => {
+      const jobId = 'job123';
+      const result = {
+        success: true,
+        data: { processed: 100 },
+        tenantId: 'tenant123'
+      };
+
+      await service.processJobResult(jobId, result);
+
+      expect(mockCacheService.set).toHaveBeenCalledWith(
+        `job:result:${jobId}`,
+        result,
+        24 * 60 * 60 * 1000 // 24 hours
+      );
+    });
+
+    it('should handle job result processing errors', async () => {
+      const jobId = 'job123';
+      const result = { success: false, error: 'Processing failed' };
+
+      mockCacheService.set.mockRejectedValue(new Error('Cache error'));
+
+      await expect(service.processJobResult(jobId, result)).rejects.toThrow('Failed to process job result');
     });
   });
 });
