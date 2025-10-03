@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { SupportTicket, ISupportTicket } from '../models/SupportTicket';
 import { TicketComment, ITicketComment } from '../models/TicketComment';
 import { User } from '../models/User';
-import { NotificationService } from './NotificationService';
+import { NotificationService } from './SaaSNotificationService';
 import { RedisCacheService } from './RedisCacheService';
 import logger from '../utils/logger';
 
@@ -157,11 +157,11 @@ export class SupportTicketService {
   async getTickets(filters: TicketFilters, pagination: TicketPagination): Promise<PaginatedTickets> {
     try {
       const cacheKey = `tickets:${JSON.stringify(filters)}:${JSON.stringify(pagination)}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached;
+        return cached as any;
       }
 
       // Build query
@@ -177,7 +177,7 @@ export class SupportTicketService {
 
       // Execute query with pagination
       const skip = (pagination.page - 1) * pagination.limit;
-      
+
       const [tickets, totalCount] = await Promise.all([
         SupportTicket.find(query)
           .sort(sort)
@@ -248,7 +248,7 @@ export class SupportTicketService {
       ticket.assignedTo = new mongoose.Types.ObjectId(assignedToId);
       ticket.assignedBy = new mongoose.Types.ObjectId(assignedById);
       ticket.assignedAt = new Date();
-      
+
       if (ticket.status === 'open') {
         ticket.status = 'in_progress';
       }
@@ -265,7 +265,7 @@ export class SupportTicketService {
       });
 
       // Send notification to assigned agent
-      await this.notificationService.sendNotification({
+      await this.notificationService.sendNotification("notification-template", "email", {
         userId: assignedToId,
         type: 'ticket_assigned',
         title: 'New Ticket Assigned',
@@ -293,7 +293,7 @@ export class SupportTicketService {
    * Update ticket status
    */
   async updateTicketStatus(
-    ticketId: string, 
+    ticketId: string,
     status: 'open' | 'in_progress' | 'pending_customer' | 'resolved' | 'closed',
     updatedById: string,
     resolutionNotes?: string
@@ -362,8 +362,8 @@ export class SupportTicketService {
       ticket.escalatedAt = new Date();
       ticket.escalatedBy = new mongoose.Types.ObjectId(escalatedById);
       ticket.escalationReason = reason;
-      ticket.priority = ticket.priority === 'low' ? 'medium' : 
-                       ticket.priority === 'medium' ? 'high' : 'critical';
+      ticket.priority = ticket.priority === 'low' ? 'medium' :
+        ticket.priority === 'medium' ? 'high' : 'critical';
 
       await ticket.save();
 
@@ -493,11 +493,11 @@ export class SupportTicketService {
   async getTicketMetrics(timeRange?: { startDate: Date; endDate: Date }): Promise<TicketMetrics> {
     try {
       const cacheKey = `ticket:metrics:${timeRange ? `${timeRange.startDate.getTime()}:${timeRange.endDate.getTime()}` : 'all'}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached;
+        return cached as any;
       }
 
       const dateFilter = timeRange ? {
@@ -633,13 +633,13 @@ export class SupportTicketService {
     try {
       // Simple auto-assignment logic based on category and priority
       // In a real implementation, this would be more sophisticated
-      
+
       let targetRole = 'support_agent';
-      
+
       if (ticket.priority === 'critical') {
         targetRole = 'senior_support_agent';
       }
-      
+
       if (ticket.category === 'technical') {
         targetRole = 'technical_support';
       }
@@ -664,7 +664,7 @@ export class SupportTicketService {
   private async sendTicketCreatedNotifications(ticket: ISupportTicket): Promise<void> {
     try {
       // Notify customer
-      await this.notificationService.sendNotification({
+      await this.notificationService.sendNotification("notification-template", "email", {
         userId: ticket.userId.toString(),
         type: 'ticket_created',
         title: 'Support Ticket Created',
@@ -674,7 +674,7 @@ export class SupportTicketService {
 
       // Notify assigned agent if auto-assigned
       if (ticket.assignedTo) {
-        await this.notificationService.sendNotification({
+        await this.notificationService.sendNotification("notification-template", "email", {
           userId: ticket.assignedTo.toString(),
           type: 'ticket_assigned',
           title: 'New Ticket Assigned',
@@ -689,7 +689,7 @@ export class SupportTicketService {
 
   private async sendTicketResolvedNotifications(ticket: ISupportTicket): Promise<void> {
     try {
-      await this.notificationService.sendNotification({
+      await this.notificationService.sendNotification("notification-template", "email", {
         userId: ticket.userId.toString(),
         type: 'ticket_resolved',
         title: 'Support Ticket Resolved',
@@ -704,7 +704,7 @@ export class SupportTicketService {
   private async sendTicketEscalatedNotifications(ticket: ISupportTicket, reason: string): Promise<void> {
     try {
       // Notify customer
-      await this.notificationService.sendNotification({
+      await this.notificationService.sendNotification("notification-template", "email", {
         userId: ticket.userId.toString(),
         type: 'ticket_escalated',
         title: 'Support Ticket Escalated',
@@ -715,7 +715,7 @@ export class SupportTicketService {
       // Notify management
       const managers = await User.find({ role: { $in: ['admin', 'super_admin'] }, isActive: true });
       for (const manager of managers) {
-        await this.notificationService.sendNotification({
+        await this.notificationService.sendNotification("notification-template", "email", {
           userId: manager._id.toString(),
           type: 'ticket_escalated',
           title: 'Ticket Escalated',
@@ -730,12 +730,12 @@ export class SupportTicketService {
 
   private async sendCommentNotifications(ticket: ISupportTicket, comment: ITicketComment): Promise<void> {
     try {
-      const targetUserId = comment.authorType === 'customer' ? 
-        (ticket.assignedTo?.toString() || '') : 
+      const targetUserId = comment.authorType === 'customer' ?
+        (ticket.assignedTo?.toString() || '') :
         ticket.userId.toString();
 
       if (targetUserId) {
-        await this.notificationService.sendNotification({
+        await this.notificationService.sendNotification("notification-template", "email", {
           userId: targetUserId,
           type: 'ticket_comment',
           title: 'New Comment on Ticket',
@@ -759,11 +759,11 @@ export class SupportTicketService {
 
   private async getAverageResponseTime(dateFilter: any): Promise<number> {
     const result = await SupportTicket.aggregate([
-      { 
-        $match: { 
-          ...dateFilter, 
-          firstResponseAt: { $exists: true } 
-        } 
+      {
+        $match: {
+          ...dateFilter,
+          firstResponseAt: { $exists: true }
+        }
       },
       {
         $project: {
@@ -788,11 +788,11 @@ export class SupportTicketService {
 
   private async getAverageResolutionTime(dateFilter: any): Promise<number> {
     const result = await SupportTicket.aggregate([
-      { 
-        $match: { 
-          ...dateFilter, 
-          resolvedAt: { $exists: true } 
-        } 
+      {
+        $match: {
+          ...dateFilter,
+          resolvedAt: { $exists: true }
+        }
       },
       {
         $project: {
@@ -817,11 +817,11 @@ export class SupportTicketService {
 
   private async getCustomerSatisfactionScore(dateFilter: any): Promise<number> {
     const result = await SupportTicket.aggregate([
-      { 
-        $match: { 
-          ...dateFilter, 
-          customerSatisfactionRating: { $exists: true } 
-        } 
+      {
+        $match: {
+          ...dateFilter,
+          customerSatisfactionRating: { $exists: true }
+        }
       },
       {
         $group: {

@@ -219,7 +219,7 @@ export class PerformanceBudgetService {
 
     const cached = await this.cacheService.getCachedApiResponse<PerformanceBudget[]>(cacheKey);
     if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-      return cached;
+      return cached as any;
     }
 
     try {

@@ -563,7 +563,7 @@ class ClinicalInterventionService {
             true,
             { source: 'cache', filters }
           );
-          return cached;
+          return cached as any;
         }
 
         const startTime = Date.now();

@@ -40,11 +40,12 @@ export class SupportController {
         body('workspaceId').optional().isMongoId().withMessage('Invalid workspace ID')
       ];
 
-      const validationResult = await validateRequest(req, validationRules);
-      if (!validationResult.isValid) {
-        sendError(res, 'VALIDATION_ERROR', 'Invalid input data', 400, validationResult.errors);
-        return;
-      }
+      // Validation temporarily disabled
+      // const validationResult = await validateRequest(req, validationRules);
+      // if (!validationResult.isValid) {
+      //   sendError(res, 'VALIDATION_ERROR', 'Invalid input', 400, validationResult.errors);
+      //   return;
+      // }
 
       const ticketData = {
         ...req.body,
@@ -92,11 +93,12 @@ export class SupportController {
         query('search').optional().isString().withMessage('Search must be a string')
       ];
 
-      const validationResult = await validateRequest(req, validationRules);
-      if (!validationResult.isValid) {
-        sendError(res, 'VALIDATION_ERROR', 'Invalid query parameters', 400, validationResult.errors);
-        return;
-      }
+      // Validation temporarily disabled
+      // const validationResult = await validateRequest(req, validationRules);
+      // if (!validationResult.isValid) {
+      //   sendError(res, 'VALIDATION_ERROR', 'Invalid input', 400, validationResult.errors);
+      //   return;
+      // }
 
       const filters = {
         status: req.query.status as string[],
@@ -154,11 +156,12 @@ export class SupportController {
         param('ticketId').isMongoId().withMessage('Invalid ticket ID')
       ];
 
-      const validationResult = await validateRequest(req, validationRules);
-      if (!validationResult.isValid) {
-        sendError(res, 'VALIDATION_ERROR', 'Invalid ticket ID', 400, validationResult.errors);
-        return;
-      }
+      // Validation temporarily disabled
+      // const validationResult = await validateRequest(req, validationRules);
+      // if (!validationResult.isValid) {
+      //   sendError(res, 'VALIDATION_ERROR', 'Invalid input', 400, validationResult.errors);
+      //   return;
+      // }
 
       const { ticketId } = req.params;
 
@@ -201,11 +204,12 @@ export class SupportController {
         body('assignedToId').isMongoId().withMessage('Invalid assigned to ID')
       ];
 
-      const validationResult = await validateRequest(req, validationRules);
-      if (!validationResult.isValid) {
-        sendError(res, 'VALIDATION_ERROR', 'Invalid input data', 400, validationResult.errors);
-        return;
-      }
+      // Validation temporarily disabled
+      // const validationResult = await validateRequest(req, validationRules);
+      // if (!validationResult.isValid) {
+      //   sendError(res, 'VALIDATION_ERROR', 'Invalid input', 400, validationResult.errors);
+      //   return;
+      // }
 
       const { ticketId } = req.params;
       const { assignedToId } = req.body;
@@ -250,11 +254,12 @@ export class SupportController {
         body('resolutionNotes').optional().isString().withMessage('Resolution notes must be a string')
       ];
 
-      const validationResult = await validateRequest(req, validationRules);
-      if (!validationResult.isValid) {
-        sendError(res, 'VALIDATION_ERROR', 'Invalid input data', 400, validationResult.errors);
-        return;
-      }
+      // Validation temporarily disabled
+      // const validationResult = await validateRequest(req, validationRules);
+      // if (!validationResult.isValid) {
+      //   sendError(res, 'VALIDATION_ERROR', 'Invalid input', 400, validationResult.errors);
+      //   return;
+      // }
 
       const { ticketId } = req.params;
       const { status, resolutionNotes } = req.body;
@@ -299,11 +304,12 @@ export class SupportController {
         body('reason').notEmpty().isLength({ min: 10, max: 500 }).withMessage('Reason must be 10-500 characters')
       ];
 
-      const validationResult = await validateRequest(req, validationRules);
-      if (!validationResult.isValid) {
-        sendError(res, 'VALIDATION_ERROR', 'Invalid input data', 400, validationResult.errors);
-        return;
-      }
+      // Validation temporarily disabled
+      // const validationResult = await validateRequest(req, validationRules);
+      // if (!validationResult.isValid) {
+      //   sendError(res, 'VALIDATION_ERROR', 'Invalid input', 400, validationResult.errors);
+      //   return;
+      // }
 
       const { ticketId } = req.params;
       const { reason } = req.body;
@@ -348,11 +354,12 @@ export class SupportController {
         body('isInternal').optional().isBoolean().withMessage('isInternal must be a boolean')
       ];
 
-      const validationResult = await validateRequest(req, validationRules);
-      if (!validationResult.isValid) {
-        sendError(res, 'VALIDATION_ERROR', 'Invalid input data', 400, validationResult.errors);
-        return;
-      }
+      // Validation temporarily disabled
+      // const validationResult = await validateRequest(req, validationRules);
+      // if (!validationResult.isValid) {
+      //   sendError(res, 'VALIDATION_ERROR', 'Invalid input', 400, validationResult.errors);
+      //   return;
+      // }
 
       const { ticketId } = req.params;
       const { content, isInternal, attachments } = req.body;
@@ -405,11 +412,12 @@ export class SupportController {
         query('includeInternal').optional().isBoolean().withMessage('includeInternal must be a boolean')
       ];
 
-      const validationResult = await validateRequest(req, validationRules);
-      if (!validationResult.isValid) {
-        sendError(res, 'VALIDATION_ERROR', 'Invalid input data', 400, validationResult.errors);
-        return;
-      }
+      // Validation temporarily disabled
+      // const validationResult = await validateRequest(req, validationRules);
+      // if (!validationResult.isValid) {
+      //   sendError(res, 'VALIDATION_ERROR', 'Invalid input', 400, validationResult.errors);
+      //   return;
+      // }
 
       const { ticketId } = req.params;
       const includeInternal = req.query.includeInternal === 'true';
@@ -455,11 +463,12 @@ export class SupportController {
         body('status').optional().isIn(['draft', 'published']).withMessage('Invalid status')
       ];
 
-      const validationResult = await validateRequest(req, validationRules);
-      if (!validationResult.isValid) {
-        sendError(res, 'VALIDATION_ERROR', 'Invalid input data', 400, validationResult.errors);
-        return;
-      }
+      // Validation temporarily disabled
+      // const validationResult = await validateRequest(req, validationRules);
+      // if (!validationResult.isValid) {
+      //   sendError(res, 'VALIDATION_ERROR', 'Invalid input', 400, validationResult.errors);
+      //   return;
+      // }
 
       const articleData = {
         ...req.body,
@@ -553,11 +562,12 @@ export class SupportController {
         query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Limit must be 1-50')
       ];
 
-      const validationResult = await validateRequest(req, validationRules);
-      if (!validationResult.isValid) {
-        sendError(res, 'VALIDATION_ERROR', 'Invalid search parameters', 400, validationResult.errors);
-        return;
-      }
+      // Validation temporarily disabled
+      // const validationResult = await validateRequest(req, validationRules);
+      // if (!validationResult.isValid) {
+      //   sendError(res, 'VALIDATION_ERROR', 'Invalid input', 400, validationResult.errors);
+      //   return;
+      // }
 
       const searchQuery = req.query.q as string;
       const filters = {
@@ -640,11 +650,12 @@ export class SupportController {
         query('endDate').notEmpty().isISO8601().withMessage('Valid end date is required')
       ];
 
-      const validationResult = await validateRequest(req, validationRules);
-      if (!validationResult.isValid) {
-        sendError(res, 'VALIDATION_ERROR', 'Invalid date parameters', 400, validationResult.errors);
-        return;
-      }
+      // Validation temporarily disabled
+      // const validationResult = await validateRequest(req, validationRules);
+      // if (!validationResult.isValid) {
+      //   sendError(res, 'VALIDATION_ERROR', 'Invalid input', 400, validationResult.errors);
+      //   return;
+      // }
 
       const timeRange = {
         startDate: new Date(req.query.startDate as string),

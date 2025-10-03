@@ -7,6 +7,7 @@ export interface IUser extends Document {
     lastName: string;
     role: 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin' | 'owner';
     status: 'pending' | 'active' | 'suspended' | 'license_pending' | 'license_rejected';
+    isActive: boolean;
     emailVerified: boolean;
     verificationToken?: string;
     verificationCode?: string;

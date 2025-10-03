@@ -7,6 +7,10 @@ import saasAnalyticsRoutes from './saasAnalyticsRoutes';
 import saasNotificationsRoutes from './saasNotificationsRoutes';
 import saasAuditRoutes from './saasAuditRoutes';
 import supportRoutes from './supportRoutes';
+import apiManagementRoutes from './apiManagementRoutes';
+import developerPortalRoutes from './developerPortalRoutes';
+import webhookRoutes from './webhookRoutes';
+import integrationRoutes from './integrationRoutes';
 
 const router = Router();
 
@@ -25,6 +29,10 @@ const router = Router();
  * - /api/admin/saas/notifications/* - Notification management with multi-channel support
  * - /api/admin/saas/audit/* - Comprehensive audit trail and compliance reporting
  * - /api/admin/saas/support/* - Support ticket management and knowledge base
+ * - /api/admin/saas/api-management/* - API endpoint management and documentation
+ * - /api/admin/saas/developer-portal/* - Developer portal and sandbox environment
+ * - /api/admin/saas/webhooks/* - Webhook configuration and delivery management
+ * - /api/admin/saas/integrations/* - External system integrations and data sync
  */
 
 // System Overview Routes
@@ -50,5 +58,17 @@ router.use('/audit', saasAuditRoutes);
 
 // Support and Helpdesk Routes
 router.use('/support', supportRoutes);
+
+// API Management Routes
+router.use('/api-management', apiManagementRoutes);
+
+// Developer Portal Routes
+router.use('/developer-portal', developerPortalRoutes);
+
+// Webhook Management Routes
+router.use('/webhooks', webhookRoutes);
+
+// Integration Management Routes
+router.use('/integrations', integrationRoutes);
 
 export default router;

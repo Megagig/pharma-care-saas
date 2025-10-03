@@ -585,7 +585,7 @@ export class CachedReportService {
         // Try to get from cache first
         const cached = await this.cache.get<T>(cacheKey);
         if (cached !== null) {
-            return cached;
+            return cached as any;
         }
 
         // Fetch fresh data

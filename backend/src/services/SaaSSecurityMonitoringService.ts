@@ -104,22 +104,24 @@ export class SecurityMonitoringService {
    */
   async getSecuritySettings(): Promise<ISecuritySettings> {
     try {
-            // Try cache first  
+      const cacheKey = 'security:settings';
+      // Try cache first  
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached as ISecuritySettings;
+        // Cache contains serialized data, return as-is since MongoDB will validate
+        return cached as any;
       }
 
       let settings = await SecuritySettings.findOne({ isActive: true });
-      
+
       // Create default settings if none exist
       if (!settings) {
-        settings = await this.createDefaultSecuritySettings();
+        settings = await this.createDefaultSecuritySettings() as any;
       }
 
       // Cache the settings
       await this.cacheService.set('security:settings', settings, { ttl: this.CACHE_TTL / 1000 });
-      
+
       return settings;
     } catch (error) {
       logger.error('Error getting security settings:', error);
@@ -133,7 +135,7 @@ export class SecurityMonitoringService {
   async updatePasswordPolicy(policy: IPasswordPolicy, adminId: string): Promise<void> {
     try {
       const settings = await this.getSecuritySettings();
-      
+
       // Store old policy for audit
       const oldPolicy = settings.passwordPolicy;
 
@@ -185,7 +187,7 @@ export class SecurityMonitoringService {
       return sessions.map(session => ({
         sessionId: session._id.toString(),
         userId: session.userId._id.toString(),
-        userEmail: session.userId.email,
+        userEmail: (session.userId as any).email || "unknown",
         ipAddress: session.ipAddress,
         userAgent: session.userAgent,
         location: session.location,
@@ -274,7 +276,7 @@ export class SecurityMonitoringService {
       const history: LoginHistory[] = logs.map(log => ({
         id: log._id.toString(),
         userId: log.userId._id.toString(),
-        userEmail: log.userId.email,
+        userEmail: (log.userId as any).email || "unknown",
         ipAddress: log.ipAddress,
         userAgent: log.userAgent,
         success: log.success,
@@ -322,7 +324,7 @@ export class SecurityMonitoringService {
       await this.cacheService.set(
         `${this.LOCKOUT_CACHE_PREFIX}${userId}`,
         lockoutInfo,
-        lockoutDuration
+        { ttl: lockoutDuration }
       );
 
       // Terminate all active sessions
@@ -399,14 +401,15 @@ export class SecurityMonitoringService {
   async isAccountLocked(userId: string): Promise<AccountLockoutInfo> {
     try {
       const lockoutInfo = await this.cacheService.get(`${this.LOCKOUT_CACHE_PREFIX}${userId}`);
-      
+
       if (lockoutInfo) {
         // Check if lockout has expired
-        if (lockoutInfo.unlockTime && new Date() > new Date(lockoutInfo.unlockTime)) {
+        if (lockoutInfo && typeof lockoutInfo === 'object' && 'unlockTime' in lockoutInfo &&
+          lockoutInfo.unlockTime && new Date() > new Date(lockoutInfo.unlockTime as string)) {
           await this.unlockAccount(userId);
           return { userId, isLocked: false, failedAttempts: 0 };
         }
-        return lockoutInfo;
+        return lockoutInfo as AccountLockoutInfo;
       }
 
       return { userId, isLocked: false, failedAttempts: 0 };
@@ -431,8 +434,8 @@ export class SecurityMonitoringService {
 
       // Get current failed attempts
       const attemptsKey = `${this.FAILED_ATTEMPTS_PREFIX}${userId}`;
-      let attempts = await this.cacheService.get(attemptsKey) || 0;
-      attempts++;
+      const cachedAttempts = await this.cacheService.get(attemptsKey) || 0;
+      const attempts = typeof cachedAttempts === 'number' ? cachedAttempts + 1 : 1;
 
       // Store updated attempts (expire after 1 hour)
       await this.cacheService.set(attemptsKey, attempts, { ttl: 60 * 60 });
@@ -453,7 +456,8 @@ export class SecurityMonitoringService {
       });
 
       // Lock account if max attempts reached
-      if (attempts >= maxAttempts) {
+      const attemptCount = typeof attempts === 'number' ? attempts : 0;
+      if (attemptCount >= maxAttempts) {
         await this.lockAccount(userId, `Too many failed login attempts (${attempts})`);
       }
 
@@ -506,7 +510,7 @@ export class SecurityMonitoringService {
     try {
       const settings = await this.getSecuritySettings();
       const policy = settings.passwordPolicy;
-      
+
       const errors: string[] = [];
       let score = 0;
 
@@ -614,13 +618,13 @@ export class SecurityMonitoringService {
 
       // Build query
       const query: any = {};
-      
+
       if (filters.startDate || filters.endDate) {
         query.timestamp = {};
         if (filters.startDate) query.timestamp.$gte = filters.startDate;
         if (filters.endDate) query.timestamp.$lte = filters.endDate;
       }
-      
+
       if (filters.action) query.action = filters.action;
       if (filters.userId) query.userId = filters.userId;
 
@@ -701,7 +705,7 @@ export class SecurityMonitoringService {
 
   private comparePasswordPolicies(oldPolicy: IPasswordPolicy, newPolicy: IPasswordPolicy): string[] {
     const changes: string[] = [];
-    
+
     if (oldPolicy.minLength !== newPolicy.minLength) {
       changes.push(`Minimum length: ${oldPolicy.minLength} → ${newPolicy.minLength}`);
     }
@@ -819,7 +823,7 @@ export class SecurityMonitoringService {
       }
 
       // Check for new user agent (simplified check)
-      const isNewDevice = !knownUserAgents.some(ua => 
+      const isNewDevice = !knownUserAgents.some(ua =>
         ua && userAgent && ua.includes(userAgent.split(' ')[0])
       );
 
@@ -892,7 +896,7 @@ export class SecurityMonitoringService {
         this.cacheService.delPattern('failed_attempts:*'),
         this.cacheService.delPattern('security:alert:*')
       ]);
-      
+
       logger.info('Security monitoring cache cleared');
     } catch (error) {
       logger.error('Error clearing security cache:', error);

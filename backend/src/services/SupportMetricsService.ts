@@ -13,29 +13,29 @@ export interface SupportKPIs {
   resolvedTickets: number;
   closedTickets: number;
   criticalTickets: number;
-  
+
   // Performance metrics
   averageResponseTime: number; // in hours
   averageResolutionTime: number; // in hours
   firstResponseSLA: number; // percentage meeting SLA
   resolutionSLA: number; // percentage meeting SLA
-  
+
   // Quality metrics
   customerSatisfactionScore: number; // 1-100 scale
   escalationRate: number; // percentage of tickets escalated
   reopenRate: number; // percentage of resolved tickets reopened
-  
+
   // Agent metrics
   totalAgents: number;
   activeAgents: number;
   averageTicketsPerAgent: number;
   topPerformingAgents: AgentPerformance[];
-  
+
   // Knowledge base metrics
   totalArticles: number;
   articleViews: number;
   articleHelpfulnessScore: number;
-  
+
   // Trend data
   ticketTrends: TrendData[];
   resolutionTrends: TrendData[];
@@ -131,11 +131,11 @@ export class SupportMetricsService {
   async getSupportAnalytics(timeRange: { startDate: Date; endDate: Date }): Promise<SupportAnalytics> {
     try {
       const cacheKey = `support:analytics:${timeRange.startDate.getTime()}:${timeRange.endDate.getTime()}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached;
+        return cached as any;
       }
 
       // Calculate all analytics in parallel
@@ -177,14 +177,14 @@ export class SupportMetricsService {
    */
   async getSupportKPIs(timeRange?: { startDate: Date; endDate: Date }): Promise<SupportKPIs> {
     try {
-      const cacheKey = timeRange ? 
+      const cacheKey = timeRange ?
         `support:kpis:${timeRange.startDate.getTime()}:${timeRange.endDate.getTime()}` :
         'support:kpis:current';
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached;
+        return cached as any;
       }
 
       const kpis = await this.calculateKPIs(timeRange);
@@ -203,16 +203,16 @@ export class SupportMetricsService {
    * Get agent performance metrics
    */
   async getAgentPerformance(
-    agentId?: string, 
+    agentId?: string,
     timeRange?: { startDate: Date; endDate: Date }
   ): Promise<AgentPerformance[]> {
     try {
       const cacheKey = `support:agent:performance:${agentId || 'all'}:${timeRange ? `${timeRange.startDate.getTime()}:${timeRange.endDate.getTime()}` : 'all'}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached;
+        return cached as any;
       }
 
       const performance = await this.calculateAgentPerformance(agentId, timeRange);
@@ -237,11 +237,11 @@ export class SupportMetricsService {
   ): Promise<TrendData[]> {
     try {
       const cacheKey = `support:trends:${metric}:${granularity}:${timeRange.startDate.getTime()}:${timeRange.endDate.getTime()}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached;
+        return cached as any;
       }
 
       const trends = await this.calculateTrends(metric, timeRange, granularity);
@@ -274,10 +274,10 @@ export class SupportMetricsService {
 
       // Calculate response time SLA compliance
       const responseTimeSLA = await this.calculateResponseTimeSLA(dateFilter);
-      
+
       // Calculate resolution time SLA compliance
       const resolutionTimeSLA = await this.calculateResolutionTimeSLA(dateFilter);
-      
+
       // Calculate SLA by priority
       const slaByPriority = await this.calculateSLAByPriority(dateFilter);
 
@@ -324,6 +324,23 @@ export class SupportMetricsService {
     ]);
 
     return {
+      totalTickets: 0,
+      openTickets: 0,
+      resolvedTickets: 0,
+      closedTickets: 0,
+      criticalTickets: 0,
+      averageResponseTime: 0,
+      averageResolutionTime: 0,
+      firstResponseSLA: 0,
+      resolutionSLA: 0,
+      customerSatisfactionScore: 0,
+      totalEscalations: 0,
+      activeAgents: 0,
+      topPerformingAgents: [],
+      kbArticleViews: 0,
+      responseTrends: [],
+      resolutionTrends: [],
+      satisfactionTrends: [],
       ...ticketCounts,
       ...responseTimeStats,
       ...resolutionTimeStats,
@@ -332,7 +349,7 @@ export class SupportMetricsService {
       ...agentStats,
       ...kbStats,
       ...trends
-    };
+    } as SupportKPIs;
   }
 
   private async getTicketCounts(dateFilter: any): Promise<Partial<SupportKPIs>> {
@@ -366,11 +383,11 @@ export class SupportMetricsService {
 
   private async getResponseTimeStats(dateFilter: any): Promise<Partial<SupportKPIs>> {
     const result = await SupportTicket.aggregate([
-      { 
-        $match: { 
-          ...dateFilter, 
-          firstResponseAt: { $exists: true } 
-        } 
+      {
+        $match: {
+          ...dateFilter,
+          firstResponseAt: { $exists: true }
+        }
       },
       {
         $project: {
@@ -397,7 +414,7 @@ export class SupportMetricsService {
     }
 
     const avgResponseTime = Math.round(result[0].avgResponseTime);
-    
+
     // Calculate SLA compliance
     const tickets = result[0].tickets;
     const slaCompliant = tickets.filter((ticket: any) => {
@@ -415,11 +432,11 @@ export class SupportMetricsService {
 
   private async getResolutionTimeStats(dateFilter: any): Promise<Partial<SupportKPIs>> {
     const result = await SupportTicket.aggregate([
-      { 
-        $match: { 
-          ...dateFilter, 
-          resolvedAt: { $exists: true } 
-        } 
+      {
+        $match: {
+          ...dateFilter,
+          resolvedAt: { $exists: true }
+        }
       },
       {
         $project: {
@@ -446,7 +463,7 @@ export class SupportMetricsService {
     }
 
     const avgResolutionTime = Math.round(result[0].avgResolutionTime);
-    
+
     // Calculate SLA compliance
     const tickets = result[0].tickets;
     const slaCompliant = tickets.filter((ticket: any) => {
@@ -464,11 +481,11 @@ export class SupportMetricsService {
 
   private async getSatisfactionStats(dateFilter: any): Promise<Partial<SupportKPIs>> {
     const result = await SupportTicket.aggregate([
-      { 
-        $match: { 
-          ...dateFilter, 
-          customerSatisfactionRating: { $exists: true } 
-        } 
+      {
+        $match: {
+          ...dateFilter,
+          customerSatisfactionRating: { $exists: true }
+        }
       },
       {
         $group: {
@@ -478,7 +495,7 @@ export class SupportMetricsService {
       }
     ]);
 
-    const customerSatisfactionScore = result.length > 0 ? 
+    const customerSatisfactionScore = result.length > 0 ?
       Math.round(result[0].avgSatisfaction * 20) : 0; // Convert 1-5 scale to percentage
 
     return { customerSatisfactionScore };
@@ -495,8 +512,8 @@ export class SupportMetricsService {
     // Calculate reopen rate
     const [resolved, reopened] = await Promise.all([
       SupportTicket.countDocuments({ ...dateFilter, status: 'resolved' }),
-      SupportTicket.countDocuments({ 
-        ...dateFilter, 
+      SupportTicket.countDocuments({
+        ...dateFilter,
         status: 'open',
         resolvedAt: { $exists: true }
       })
@@ -510,7 +527,7 @@ export class SupportMetricsService {
   private async getAgentStats(dateFilter: any): Promise<Partial<SupportKPIs>> {
     const [totalAgents, activeAgents, ticketsAssigned] = await Promise.all([
       User.countDocuments({ role: { $in: ['support_agent', 'senior_support_agent', 'technical_support'] } }),
-      User.countDocuments({ 
+      User.countDocuments({
         role: { $in: ['support_agent', 'senior_support_agent', 'technical_support'] },
         lastLoginAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Active in last 7 days
       }),
@@ -693,7 +710,7 @@ export class SupportMetricsService {
       ])
     ]);
 
-    const addPercentages = (data: any[]) => 
+    const addPercentages = (data: any[]) =>
       data.map(item => ({
         ...item,
         status: item._id,
@@ -739,7 +756,7 @@ export class SupportMetricsService {
   }
 
   private async calculateAgentPerformance(
-    agentId?: string, 
+    agentId?: string,
     timeRange?: { startDate: Date; endDate: Date }
   ): Promise<AgentPerformance[]> {
     // Implementation for agent performance calculation

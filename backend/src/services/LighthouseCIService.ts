@@ -160,7 +160,7 @@ export class LighthouseCIService {
 
     const cached = await this.cacheService.get<LighthouseResult[]>(cacheKey);
     if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-      return cached;
+      return cached as any;
     }
 
     try {
@@ -256,7 +256,7 @@ export class LighthouseCIService {
 
     const cached = await this.cacheService.get<any[]>(cacheKey);
     if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-      return cached;
+      return cached as any;
     }
 
     try {

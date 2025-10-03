@@ -148,7 +148,7 @@ export class WebVitalsService {
     // Try to get from cache first
     const cached = await this.cacheService.get<WebVitalsSummary>(cacheKey);
     if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-      return cached;
+      return cached as any;
     }
 
     try {
@@ -208,7 +208,7 @@ export class WebVitalsService {
 
     const cached = await this.cacheService.get<Array<{ timestamp: Date; value: number; count: number }>>(cacheKey);
     if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-      return cached;
+      return cached as any;
     }
 
     try {

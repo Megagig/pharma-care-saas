@@ -94,6 +94,11 @@ const userSchema = new mongoose_1.Schema({
         default: 'pending',
         index: true,
     },
+    isActive: {
+        type: Boolean,
+        default: true,
+        index: true,
+    },
     emailVerified: {
         type: Boolean,
         default: false,

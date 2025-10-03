@@ -152,7 +152,7 @@ export class UserManagementService {
       const cacheKey = `user:${userId}`;
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached;
+        return cached as any;
       }
 
       const user = await User.findById(userId)
@@ -196,10 +196,14 @@ export class UserManagementService {
 
       // Check if admin has permission to assign this role
       if (adminId) {
-        const canAssignRole = await this.permissionService.hasPermission(
-          adminId,
+        const admin = await User.findById(adminId);
+        if (!admin) {
+          throw new Error('Admin user not found');
+        }
+        const canAssignRole = await this.permissionService.checkPermission(
+          admin,
           'ASSIGN_ROLES',
-          workspaceId
+          { workspace: null }
         );
         if (!canAssignRole) {
           throw new Error('Insufficient permissions to assign role');
@@ -207,7 +211,7 @@ export class UserManagementService {
       }
 
       // Store old values for audit
-      const oldRoles = user.roles;
+      const oldRoles = [user.role];
 
       // Update user role
       await User.findByIdAndUpdate(userId, {
@@ -265,10 +269,14 @@ export class UserManagementService {
 
       // Check if admin has permission to revoke this role
       if (adminId) {
-        const canRevokeRole = await this.permissionService.hasPermission(
-          adminId,
+        const admin = await User.findById(adminId);
+        if (!admin) {
+          throw new Error('Admin user not found');
+        }
+        const canRevokeRole = await this.permissionService.checkPermission(
+          admin,
           'REVOKE_ROLES',
-          workspaceId
+          { workspace: null }
         );
         if (!canRevokeRole) {
           throw new Error('Insufficient permissions to revoke role');
@@ -276,7 +284,7 @@ export class UserManagementService {
       }
 
       // Store old values for audit
-      const oldRoles = user.roles;
+      const oldRoles = [user.role];
 
       // Remove role from user
       await User.findByIdAndUpdate(userId, {
@@ -561,9 +569,14 @@ export class UserManagementService {
   async impersonateUser(adminId: string, targetUserId: string): Promise<ImpersonationSession> {
     try {
       // Validate admin has impersonation permission
-      const canImpersonate = await this.permissionService.hasPermission(
-        adminId,
-        'IMPERSONATE_USERS'
+      const admin = await User.findById(adminId);
+      if (!admin) {
+        throw new Error('Admin user not found');
+      }
+      const canImpersonate = await this.permissionService.checkPermission(
+        admin,
+        'IMPERSONATE_USERS',
+        { workspace: null }
       );
       if (!canImpersonate) {
         throw new Error('Insufficient permissions to impersonate users');
@@ -647,11 +660,11 @@ export class UserManagementService {
         // Create audit log
         await this.auditService.createAuditLog({
           action: 'USER_IMPERSONATION_ENDED',
-          userId: session.adminId,
+          userId: (session as any).adminId,
           resourceType: 'User',
-          resourceId: session.targetUserId,
+          resourceId: (session as any).targetUserId,
           details: {
-            targetUserId: session.targetUserId,
+            targetUserId: (session as any).targetUserId,
             sessionToken: sessionToken.substring(0, 10) + '...',
             endedAt: new Date()
           },
@@ -659,7 +672,7 @@ export class UserManagementService {
           riskLevel: 'medium'
         });
 
-        logger.info(`Impersonation session ended for admin ${session.adminId}`);
+        logger.info(`Impersonation session ended for admin ${(session as any).adminId}`);
       }
     } catch (error) {
       logger.error('Error ending impersonation session:', error);

@@ -5,41 +5,41 @@ export interface IKnowledgeBaseArticle extends Document {
   slug: string;
   content: string;
   excerpt: string;
-  
+
   // Organization
   category: string;
   subcategory?: string;
   tags: string[];
-  
+
   // Status and visibility
   status: 'draft' | 'published' | 'archived';
   isPublic: boolean; // Public articles visible to all users
-  
+
   // Author information
   authorId: mongoose.Types.ObjectId;
   authorName: string;
-  
+
   // Content management
   version: number;
   lastEditedBy?: mongoose.Types.ObjectId;
   lastEditedAt?: Date;
-  
+
   // Analytics
   viewCount: number;
   helpfulVotes: number;
   notHelpfulVotes: number;
-  
+
   // SEO and search
   metaDescription?: string;
   searchKeywords: string[];
-  
+
   // Related content
   relatedArticles: mongoose.Types.ObjectId[];
-  
+
   // Publishing
   publishedAt?: Date;
   scheduledPublishAt?: Date;
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -182,7 +182,7 @@ knowledgeBaseArticleSchema.index({
 });
 
 // Pre-save middleware to generate slug and handle publishing
-knowledgeBaseArticleSchema.pre('save', function(next) {
+knowledgeBaseArticleSchema.pre('save', function (next) {
   // Generate slug from title if not provided
   if (this.isNew && !this.slug) {
     this.slug = this.title
@@ -192,18 +192,18 @@ knowledgeBaseArticleSchema.pre('save', function(next) {
       .replace(/-+/g, '-')
       .trim();
   }
-  
+
   // Set published date when status changes to published
   if (this.isModified('status') && this.status === 'published' && !this.publishedAt) {
     this.publishedAt = new Date();
   }
-  
+
   // Update version number on content changes
   if (this.isModified('content') && !this.isNew) {
     this.version += 1;
     this.lastEditedAt = new Date();
   }
-  
+
   next();
 });
 
@@ -223,8 +223,8 @@ knowledgeBaseArticleSchema.methods.getHelpfulnessScore = function (): number {
 
 // Check if article is published and visible
 knowledgeBaseArticleSchema.methods.isVisible = function (): boolean {
-  return this.status === 'published' && 
-         (!this.scheduledPublishAt || this.scheduledPublishAt <= new Date());
+  return this.status === 'published' &&
+    (!this.scheduledPublishAt || this.scheduledPublishAt <= new Date());
 };
 
 // Increment view count
@@ -233,6 +233,13 @@ knowledgeBaseArticleSchema.methods.incrementViewCount = async function (): Promi
     { _id: this._id },
     { $inc: { viewCount: 1 } }
   );
+};
+
+// Add incrementViewCount method
+knowledgeBaseArticleSchema.methods.incrementViewCount = function (): Promise<IKnowledgeBaseArticle> {
+  this.viewCount = (this.viewCount || 0) + 1;
+  this.lastModified = new Date();
+  return this.save();
 };
 
 export const KnowledgeBaseArticle = mongoose.model<IKnowledgeBaseArticle>('KnowledgeBaseArticle', knowledgeBaseArticleSchema);

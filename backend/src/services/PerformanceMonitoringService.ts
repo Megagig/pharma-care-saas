@@ -106,7 +106,7 @@ export class PerformanceMonitoringService {
 
     const cached = await this.cacheService.get<PerformanceOverview>(cacheKey);
     if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-      return cached;
+      return cached as any;
     }
 
     try {

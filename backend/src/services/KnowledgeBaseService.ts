@@ -93,7 +93,7 @@ export class KnowledgeBaseService {
     try {
       // Generate slug from title
       const slug = this.generateSlug(articleData.title);
-      
+
       // Check if slug already exists
       const existingArticle = await KnowledgeBaseArticle.findOne({ slug });
       if (existingArticle) {
@@ -149,11 +149,11 @@ export class KnowledgeBaseService {
   async getArticles(filters: ArticleFilters, pagination: ArticlePagination): Promise<PaginatedArticles> {
     try {
       const cacheKey = `kb:articles:${JSON.stringify(filters)}:${JSON.stringify(pagination)}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached;
+        return cached as any;
       }
 
       // Build query
@@ -170,7 +170,7 @@ export class KnowledgeBaseService {
 
       // Execute query with pagination
       const skip = (pagination.page - 1) * pagination.limit;
-      
+
       const [articles, totalCount] = await Promise.all([
         KnowledgeBaseArticle.find(query)
           .sort(sort)
@@ -210,12 +210,12 @@ export class KnowledgeBaseService {
   async getArticle(identifier: string, incrementView: boolean = false): Promise<IKnowledgeBaseArticle | null> {
     try {
       const cacheKey = `kb:article:${identifier}`;
-      
+
       // Try cache first (only if not incrementing view)
       if (!incrementView) {
         const cached = await this.cacheService.get(cacheKey);
         if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-          return cached;
+          return cached as any;
         }
       }
 
@@ -229,7 +229,7 @@ export class KnowledgeBaseService {
 
       if (article && incrementView) {
         // Increment view count
-        await article.incrementViewCount();
+        await (article as any).incrementViewCount();
         // Clear cache after view increment
         await this.cacheService.del(cacheKey);
       } else if (article) {
@@ -248,7 +248,7 @@ export class KnowledgeBaseService {
    * Update article
    */
   async updateArticle(
-    articleId: string, 
+    articleId: string,
     updates: Partial<IKnowledgeBaseArticle>,
     updatedById: string
   ): Promise<IKnowledgeBaseArticle> {
@@ -260,16 +260,16 @@ export class KnowledgeBaseService {
 
       // Update fields
       Object.assign(article, updates);
-      
+
       // Set edit tracking
       article.lastEditedBy = new mongoose.Types.ObjectId(updatedById);
       article.lastEditedAt = new Date();
 
       // If slug is being updated, check for conflicts
       if (updates.slug && updates.slug !== article.slug) {
-        const existingArticle = await KnowledgeBaseArticle.findOne({ 
-          slug: updates.slug, 
-          _id: { $ne: articleId } 
+        const existingArticle = await KnowledgeBaseArticle.findOne({
+          slug: updates.slug,
+          _id: { $ne: articleId }
         });
         if (existingArticle) {
           throw new Error('An article with this slug already exists');
@@ -336,7 +336,7 @@ export class KnowledgeBaseService {
   ): Promise<SearchResult> {
     try {
       const startTime = Date.now();
-      
+
       // Build search query
       const query: any = {
         $text: { $search: searchQuery },
@@ -393,11 +393,11 @@ export class KnowledgeBaseService {
   async getCategories(): Promise<{ category: string; subcategories: string[]; count: number }[]> {
     try {
       const cacheKey = 'kb:categories';
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached;
+        return cached as any;
       }
 
       const result = await KnowledgeBaseArticle.aggregate([
@@ -414,7 +414,7 @@ export class KnowledgeBaseService {
         {
           $group: {
             _id: '$_id.category',
-            subcategories: { 
+            subcategories: {
               $push: {
                 $cond: [
                   { $ne: ['$_id.subcategory', null] },
@@ -453,11 +453,11 @@ export class KnowledgeBaseService {
   async getPopularTags(limit: number = 20): Promise<{ tag: string; count: number }[]> {
     try {
       const cacheKey = `kb:tags:${limit}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached;
+        return cached as any;
       }
 
       const result = await KnowledgeBaseArticle.aggregate([
@@ -485,11 +485,11 @@ export class KnowledgeBaseService {
   async getKnowledgeBaseMetrics(): Promise<KnowledgeBaseMetrics> {
     try {
       const cacheKey = 'kb:metrics';
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
-        return cached;
+        return cached as any;
       }
 
       // Parallel execution of metric calculations
@@ -590,9 +590,9 @@ export class KnowledgeBaseService {
           { searchKeywords: { $in: article.searchKeywords } }
         ]
       })
-      .sort({ viewCount: -1, publishedAt: -1 })
-      .limit(limit)
-      .select('title slug excerpt category viewCount publishedAt');
+        .sort({ viewCount: -1, publishedAt: -1 })
+        .limit(limit)
+        .select('title slug excerpt category viewCount publishedAt');
 
       return relatedArticles;
     } catch (error) {
@@ -710,9 +710,9 @@ export class KnowledgeBaseService {
       { status: 'published', isPublic: true },
       { title: 1, viewCount: 1, slug: 1 }
     )
-    .sort({ viewCount: -1 })
-    .limit(limit)
-    .lean();
+      .sort({ viewCount: -1 })
+      .limit(limit)
+      .lean();
   }
 
   private async getRecentlyUpdatedArticles(limit: number): Promise<{ title: string; updatedAt: Date; slug: string }[]> {
@@ -720,9 +720,9 @@ export class KnowledgeBaseService {
       { status: 'published', isPublic: true },
       { title: 1, updatedAt: 1, slug: 1 }
     )
-    .sort({ updatedAt: -1 })
-    .limit(limit)
-    .lean();
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .lean();
   }
 
   private async generateSearchSuggestions(query: string): Promise<string[]> {
@@ -733,19 +733,19 @@ export class KnowledgeBaseService {
     ]);
 
     const suggestions: string[] = [];
-    
+
     // Add similar tags
     tags.forEach(tag => {
-      if (tag.tag.toLowerCase().includes(query.toLowerCase()) || 
-          query.toLowerCase().includes(tag.tag.toLowerCase())) {
+      if (tag.tag.toLowerCase().includes(query.toLowerCase()) ||
+        query.toLowerCase().includes(tag.tag.toLowerCase())) {
         suggestions.push(tag.tag);
       }
     });
 
     // Add similar categories
     categories.forEach(cat => {
-      if (cat.category.toLowerCase().includes(query.toLowerCase()) || 
-          query.toLowerCase().includes(cat.category.toLowerCase())) {
+      if (cat.category.toLowerCase().includes(query.toLowerCase()) ||
+        query.toLowerCase().includes(cat.category.toLowerCase())) {
         suggestions.push(cat.category);
       }
     });
