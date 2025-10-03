@@ -6,7 +6,7 @@ import { User } from '../models/User';
 import { Workplace } from '../models/Workplace';
 import { Subscription } from '../models/Subscription';
 import { FeatureFlag } from '../models/FeatureFlag';
-import { License } from '../models/License';
+// import { License } from '../models/License'; // TODO: Implement License model
 import { RedisCacheService } from './RedisCacheService';
 import { BackgroundJobService } from './BackgroundJobService';
 import logger from '../utils/logger';
@@ -100,10 +100,10 @@ export class SystemAnalyticsService {
 
       // Calculate metrics
       const metrics = await this.calculateSystemMetrics();
-      
+
       // Cache the result
-      await this.cacheService.set(this.METRICS_CACHE_KEY, metrics, this.CACHE_TTL);
-      
+      await this.cacheService.set(this.METRICS_CACHE_KEY, metrics, { ttl: this.CACHE_TTL / 1000 });
+
       return metrics;
     } catch (error) {
       logger.error('Error getting system metrics:', error);
@@ -179,7 +179,7 @@ export class SystemAnalyticsService {
   async getUserAnalytics(timeRange: TimeRange): Promise<IUserAnalytics> {
     try {
       const cacheKey = `user:analytics:${timeRange.startDate.getTime()}:${timeRange.endDate.getTime()}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached) {
@@ -187,10 +187,10 @@ export class SystemAnalyticsService {
       }
 
       const analytics = await this.calculateUserAnalytics(timeRange);
-      
+
       // Cache for 1 hour
-      await this.cacheService.set(cacheKey, analytics, 60 * 60 * 1000);
-      
+      await this.cacheService.set(cacheKey, analytics, { ttl: 60 * 60 });
+
       return analytics;
     } catch (error) {
       logger.error('Error getting user analytics:', error);
@@ -204,7 +204,7 @@ export class SystemAnalyticsService {
   async getSubscriptionAnalytics(timeRange: TimeRange): Promise<ISubscriptionAnalytics> {
     try {
       const cacheKey = `subscription:analytics:${timeRange.startDate.getTime()}:${timeRange.endDate.getTime()}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached) {
@@ -212,10 +212,10 @@ export class SystemAnalyticsService {
       }
 
       const analytics = await this.calculateSubscriptionAnalytics(timeRange);
-      
+
       // Cache for 1 hour
-      await this.cacheService.set(cacheKey, analytics, 60 * 60 * 1000);
-      
+      await this.cacheService.set(cacheKey, analytics, { ttl: 60 * 60 });
+
       return analytics;
     } catch (error) {
       logger.error('Error getting subscription analytics:', error);
@@ -229,7 +229,7 @@ export class SystemAnalyticsService {
   async getRevenueMetrics(timeRange: TimeRange): Promise<RevenueMetrics> {
     try {
       const subscriptionAnalytics = await this.getSubscriptionAnalytics(timeRange);
-      
+
       return {
         mrr: subscriptionAnalytics.mrr,
         arr: subscriptionAnalytics.arr,
@@ -255,10 +255,10 @@ export class SystemAnalyticsService {
       }
 
       const health = await this.calculateSystemHealth();
-      
+
       // Cache for 1 minute (health checks should be frequent)
-      await this.cacheService.set(this.HEALTH_CACHE_KEY, health, 60 * 1000);
-      
+      await this.cacheService.set(this.HEALTH_CACHE_KEY, health, { ttl: 60 });
+
       return health;
     } catch (error) {
       logger.error('Error getting system health:', error);
@@ -272,7 +272,7 @@ export class SystemAnalyticsService {
   async getChurnAnalytics(timeRange: TimeRange): Promise<ChurnAnalytics> {
     try {
       const subscriptionAnalytics = await this.getSubscriptionAnalytics(timeRange);
-      
+
       return {
         churnRate: subscriptionAnalytics.churnRate,
         churnedUsers: subscriptionAnalytics.churnedSubscriptions,
@@ -291,7 +291,7 @@ export class SystemAnalyticsService {
   async getRecentActivities(limit: number = 10): Promise<Activity[]> {
     try {
       const cacheKey = `system:activities:${limit}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached) {
@@ -299,10 +299,10 @@ export class SystemAnalyticsService {
       }
 
       const activities = await this.fetchRecentActivities(limit);
-      
+
       // Cache for 2 minutes
-      await this.cacheService.set(cacheKey, activities, 2 * 60 * 1000);
-      
+      await this.cacheService.set(cacheKey, activities, { ttl: 120 });
+
       return activities;
     } catch (error) {
       logger.error('Error getting recent activities:', error);
@@ -340,7 +340,7 @@ export class SystemAnalyticsService {
   private async getActiveUsers(): Promise<number> {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     return await User.countDocuments({
       isActive: true,
       lastLoginAt: { $gte: thirtyDaysAgo }
@@ -387,7 +387,7 @@ export class SystemAnalyticsService {
     const days = Math.floor(uptime / 86400);
     const hours = Math.floor((uptime % 86400) / 3600);
     const minutes = Math.floor((uptime % 3600) / 60);
-    
+
     return `${days}d ${hours}h ${minutes}m`;
   }
 
@@ -396,7 +396,9 @@ export class SystemAnalyticsService {
   }
 
   private async getPendingLicenses(): Promise<number> {
-    return await License.countDocuments({ status: 'pending' });
+    // TODO: Implement License model and query
+    // return await License.countDocuments({ status: 'pending' });
+    return 0;
   }
 
   private async getSupportTicketsMetrics(): Promise<{ open: number; resolved: number; critical: number }> {
@@ -411,16 +413,16 @@ export class SystemAnalyticsService {
 
   private async calculateSystemHealth(): Promise<SystemHealth> {
     const startTime = Date.now();
-    
+
     // Database health check
     const dbHealth = await this.checkDatabaseHealth();
-    
+
     // API health check
     const apiHealth = await this.checkApiHealth(startTime);
-    
+
     // Memory health check
     const memoryHealth = await this.checkMemoryHealth();
-    
+
     // Cache health check
     const cacheHealth = await this.checkCacheHealth();
 
@@ -437,13 +439,13 @@ export class SystemAnalyticsService {
       const startTime = Date.now();
       await mongoose.connection.db.admin().ping();
       const responseTime = Date.now() - startTime;
-      
+
       const connections = mongoose.connection.readyState === 1 ? 1 : 0;
-      
+
       let status: 'healthy' | 'warning' | 'critical' = 'healthy';
       if (responseTime > 1000) status = 'critical';
       else if (responseTime > 500) status = 'warning';
-      
+
       return {
         status,
         responseTime,
@@ -460,14 +462,14 @@ export class SystemAnalyticsService {
 
   private async checkApiHealth(startTime: number) {
     const responseTime = Date.now() - startTime;
-    
+
     // Mock requests per minute calculation
     const requestsPerMinute = 100; // This would come from actual metrics
-    
+
     let status: 'healthy' | 'warning' | 'critical' = 'healthy';
     if (responseTime > 2000) status = 'critical';
     else if (responseTime > 1000) status = 'warning';
-    
+
     return {
       status,
       responseTime,
@@ -480,13 +482,13 @@ export class SystemAnalyticsService {
     const totalMemory = memoryUsage.heapTotal;
     const usedMemory = memoryUsage.heapUsed;
     const availableMemory = totalMemory - usedMemory;
-    
+
     const usagePercentage = (usedMemory / totalMemory) * 100;
-    
+
     let status: 'healthy' | 'warning' | 'critical' = 'healthy';
     if (usagePercentage > 90) status = 'critical';
     else if (usagePercentage > 75) status = 'warning';
-    
+
     return {
       status,
       usage: usedMemory,
@@ -499,15 +501,15 @@ export class SystemAnalyticsService {
       const startTime = Date.now();
       await this.cacheService.ping();
       const responseTime = Date.now() - startTime;
-      
+
       // Mock cache hit rate - this would come from actual Redis stats
       const hitRate = 85;
       const connections = 1;
-      
+
       let status: 'healthy' | 'warning' | 'critical' = 'healthy';
       if (hitRate < 50) status = 'critical';
       else if (hitRate < 70) status = 'warning';
-      
+
       return {
         status,
         hitRate,
@@ -526,7 +528,7 @@ export class SystemAnalyticsService {
     // This is a complex calculation that would involve multiple aggregations
     // For now, returning a basic structure
     const date = new Date();
-    
+
     const analytics = new UserAnalytics({
       date,
       registrationTrend: [],
@@ -553,7 +555,7 @@ export class SystemAnalyticsService {
     // This is a complex calculation that would involve multiple aggregations
     // For now, returning a basic structure
     const date = new Date();
-    
+
     const analytics = new SubscriptionAnalytics({
       date,
       mrr: await this.getMonthlyRevenue(new Date(date.getFullYear(), date.getMonth(), 1)),
@@ -595,7 +597,7 @@ export class SystemAnalyticsService {
         this.cacheService.delPattern('subscription:analytics:*'),
         this.cacheService.delPattern('system:activities:*')
       ]);
-      
+
       logger.info('System analytics cache cleared');
     } catch (error) {
       logger.error('Error clearing analytics cache:', error);

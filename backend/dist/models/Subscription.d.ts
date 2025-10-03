@@ -55,8 +55,9 @@ export interface ISubscription extends Document {
     isExpired(): boolean;
     canRenew(): boolean;
 }
-declare const _default: mongoose.Model<ISubscription, {}, {}, {}, mongoose.Document<unknown, {}, ISubscription> & ISubscription & {
+declare const Subscription: mongoose.Model<ISubscription, {}, {}, {}, mongoose.Document<unknown, {}, ISubscription> & ISubscription & {
     _id: mongoose.Types.ObjectId;
 }, any>;
-export default _default;
+export { Subscription };
+export default Subscription;
 //# sourceMappingURL=Subscription.d.ts.map

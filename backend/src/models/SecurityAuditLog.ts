@@ -17,7 +17,7 @@ export interface ISecurityAuditLog extends Document {
   success: boolean;
   errorMessage?: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  category: 'authentication' | 'authorization' | 'data_access' | 'configuration' | 'user_management' | 'system';
+  category: 'authentication' | 'authorization' | 'data_access' | 'configuration' | 'user_management' | 'system' | 'tenant_management';
   details: Record<string, any>;
   riskScore: number;
   flagged: boolean;
@@ -97,7 +97,7 @@ const securityAuditLogSchema = new Schema<ISecurityAuditLog>(
     },
     category: {
       type: String,
-      enum: ['authentication', 'authorization', 'data_access', 'configuration', 'user_management', 'system'],
+      enum: ['authentication', 'authorization', 'data_access', 'configuration', 'user_management', 'system', 'tenant_management'],
       required: true,
       index: true,
     },
@@ -235,8 +235,8 @@ securityAuditLogSchema.methods.markReviewed = function (reviewerId: mongoose.Typ
 // Static methods
 securityAuditLogSchema.statics.createLog = function (logData: Partial<ISecurityAuditLog>) {
   const log = new this(logData);
-  log.riskScore = log.calculateRiskScore();
-  log.flagged = log.shouldFlag();
+  (log as any).riskScore = (log as any).calculateRiskScore();
+  (log as any).flagged = (log as any).shouldFlag();
   return log.save();
 };
 
@@ -292,8 +292,8 @@ securityAuditLogSchema.statics.getFailedLogins = function (timeRange: { start: D
 // Pre-save middleware to auto-calculate risk score and flagging
 securityAuditLogSchema.pre('save', function(next) {
   if (this.isNew) {
-    this.riskScore = this.calculateRiskScore();
-    this.flagged = this.shouldFlag();
+    (this as any).riskScore = (this as any).calculateRiskScore();
+    (this as any).flagged = (this as any).shouldFlag();
   }
   next();
 });

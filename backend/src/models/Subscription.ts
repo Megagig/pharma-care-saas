@@ -318,7 +318,10 @@ subscriptionSchema.virtual('isTrial').get(function () {
 subscriptionSchema.set('toJSON', { virtuals: true });
 subscriptionSchema.set('toObject', { virtuals: true });
 
-export default mongoose.model<ISubscription>(
+const Subscription = mongoose.model<ISubscription>(
   'Subscription',
   subscriptionSchema
 );
+
+export { Subscription };
+export default Subscription;

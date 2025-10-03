@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Workplace = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const nigerianStates = [
     'Abia',
@@ -312,5 +313,7 @@ workplaceSchema.virtual('subscriptionId').set(function (value) {
 });
 workplaceSchema.set('toJSON', { virtuals: true });
 workplaceSchema.set('toObject', { virtuals: true });
-exports.default = mongoose_1.default.model('Workplace', workplaceSchema);
+const Workplace = mongoose_1.default.model('Workplace', workplaceSchema);
+exports.Workplace = Workplace;
+exports.default = Workplace;
 //# sourceMappingURL=Workplace.js.map

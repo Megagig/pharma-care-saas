@@ -623,7 +623,7 @@ clinicalInterventionSchema.statics.generateNextInterventionNumber = async functi
 
     // Use a more robust approach with atomic operations to prevent duplicates
     const prefix = `CI-${year}${month}`;
-    
+
     // Try to find the highest sequence number for this month across all workplaces
     // This ensures global uniqueness for super_admin users
     const lastIntervention = await this.findOne(
@@ -644,19 +644,19 @@ clinicalInterventionSchema.statics.generateNextInterventionNumber = async functi
 
     // Generate the intervention number
     const interventionNumber = `${prefix}-${sequence.toString().padStart(4, '0')}`;
-    
+
     // Double-check for uniqueness to prevent race conditions
     const existing = await this.findOne(
         { interventionNumber },
         {},
         { bypassTenancyGuard: true }
     );
-    
+
     if (existing) {
         // If somehow a duplicate exists, try the next number
         return `${prefix}-${(sequence + 1).toString().padStart(4, '0')}`;
     }
-    
+
     return interventionNumber;
 };
 
@@ -723,4 +723,7 @@ clinicalInterventionSchema.statics.findAssignedToUser = function (
     return baseQuery.sort({ priority: 1, identifiedDate: 1 });
 };
 
-export default mongoose.model<IClinicalIntervention, IClinicalInterventionModel>('ClinicalIntervention', clinicalInterventionSchema);
+const ClinicalIntervention = mongoose.model<IClinicalIntervention, IClinicalInterventionModel>('ClinicalIntervention', clinicalInterventionSchema);
+
+export { ClinicalIntervention };
+export default ClinicalIntervention;

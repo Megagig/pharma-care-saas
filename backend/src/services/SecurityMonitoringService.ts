@@ -118,7 +118,7 @@ export class SecurityMonitoringService {
       }
 
       // Cache the settings
-      await this.cacheService.set('security:settings', settings, this.CACHE_TTL);
+      await this.cacheService.set('security:settings', settings, { ttl: this.CACHE_TTL / 1000 });
       
       return settings;
     } catch (error) {
@@ -435,7 +435,7 @@ export class SecurityMonitoringService {
       attempts++;
 
       // Store updated attempts (expire after 1 hour)
-      await this.cacheService.set(attemptsKey, attempts, 60 * 60 * 1000);
+      await this.cacheService.set(attemptsKey, attempts, { ttl: 60 * 60 });
 
       // Create security audit log
       await this.createSecurityAuditLog({
@@ -858,7 +858,7 @@ export class SecurityMonitoringService {
         resolved: false
       };
 
-      await this.cacheService.set(`security:alert:${alertId}`, securityAlert, 24 * 60 * 60 * 1000);
+      await this.cacheService.set(`security:alert:${alertId}`, securityAlert, { ttl: 24 * 3600 });
 
       // Also create audit log
       await this.createSecurityAuditLog({

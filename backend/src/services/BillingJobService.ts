@@ -3,7 +3,7 @@ import { subscriptionLifecycleService } from './SubscriptionLifecycleService';
 import { billingService } from './BillingService';
 
 export class BillingJobService {
-  private jobs: Map<string, cron.ScheduledTask> = new Map();
+  private jobs: Map<string, ReturnType<typeof cron.schedule>> = new Map();
 
   /**
    * Start all billing-related cron jobs
@@ -14,7 +14,7 @@ export class BillingJobService {
     this.startDunningJob();
     this.startTrialExpirationJob();
     this.startPendingPlanChangeJob();
-    
+
     console.log('All billing jobs started successfully');
   }
 
@@ -38,7 +38,7 @@ export class BillingJobService {
       try {
         const result = await subscriptionLifecycleService.processBillingCycles();
         console.log(`Billing cycle completed: ${result.processed} processed, ${result.failed} failed`);
-        
+
         if (result.errors.length > 0) {
           console.error('Billing cycle errors:', result.errors);
           // Here you could send alerts to administrators
@@ -47,12 +47,10 @@ export class BillingJobService {
         console.error('Billing cycle job failed:', error);
       }
     }, {
-      scheduled: false,
       timezone: 'UTC'
     });
 
     this.jobs.set('billingCycle', job);
-    job.start();
     console.log('Billing cycle job scheduled (daily at 2 AM UTC)');
   }
 
@@ -69,12 +67,10 @@ export class BillingJobService {
         console.error('Subscription status update job failed:', error);
       }
     }, {
-      scheduled: false,
       timezone: 'UTC'
     });
 
     this.jobs.set('statusUpdate', job);
-    job.start();
     console.log('Subscription status update job scheduled (hourly)');
   }
 
@@ -91,12 +87,10 @@ export class BillingJobService {
         console.error('Dunning management job failed:', error);
       }
     }, {
-      scheduled: false,
       timezone: 'UTC'
     });
 
     this.jobs.set('dunning', job);
-    job.start();
     console.log('Dunning management job scheduled (daily at 10 AM UTC)');
   }
 
@@ -113,12 +107,10 @@ export class BillingJobService {
         console.error('Trial expiration job failed:', error);
       }
     }, {
-      scheduled: false,
       timezone: 'UTC'
     });
 
     this.jobs.set('trialExpiration', job);
-    job.start();
     console.log('Trial expiration job scheduled (every 6 hours)');
   }
 
@@ -135,12 +127,10 @@ export class BillingJobService {
         console.error('Pending plan change job failed:', error);
       }
     }, {
-      scheduled: false,
       timezone: 'UTC'
     });
 
     this.jobs.set('pendingPlanChanges', job);
-    job.start();
     console.log('Pending plan change job scheduled (daily at 1 AM UTC)');
   }
 
@@ -149,23 +139,23 @@ export class BillingJobService {
    */
   async runJobManually(jobName: string): Promise<void> {
     console.log(`Manually running job: ${jobName}`);
-    
+
     switch (jobName) {
       case 'billingCycle':
         const result = await subscriptionLifecycleService.processBillingCycles();
         console.log(`Manual billing cycle result:`, result);
         break;
-        
+
       case 'statusUpdate':
         await subscriptionLifecycleService.updateSubscriptionStatuses();
         console.log('Manual subscription status update completed');
         break;
-        
+
       case 'dunning':
         await billingService.processDunning();
         console.log('Manual dunning processing completed');
         break;
-        
+
       default:
         throw new Error(`Unknown job name: ${jobName}`);
     }
@@ -174,17 +164,17 @@ export class BillingJobService {
   /**
    * Get status of all jobs
    */
-  getJobStatuses(): Record<string, { running: boolean; nextRun?: Date }> {
-    const statuses: Record<string, { running: boolean; nextRun?: Date }> = {};
-    
+  getJobStatuses(): Record<string, { scheduled: boolean }> {
+    const statuses: Record<string, { scheduled: boolean }> = {};
+
     this.jobs.forEach((job, name) => {
       statuses[name] = {
-        running: job.running,
+        scheduled: true, // Job is scheduled if it exists in the map
         // Note: node-cron doesn't provide next run time directly
         // You might need to calculate this based on the cron expression
       };
     });
-    
+
     return statuses;
   }
 

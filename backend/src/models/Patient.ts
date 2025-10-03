@@ -502,4 +502,7 @@ patientSchema.statics.generateNextMRN = async function (
   return generateMRN(workplaceCode, sequence);
 };
 
-export default mongoose.model<IPatient>('Patient', patientSchema);
+const Patient = mongoose.model<IPatient>('Patient', patientSchema);
+
+export { Patient };
+export default Patient;

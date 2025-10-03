@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { body, query } from 'express-validator';
 import { auth, requireSuperAdmin } from '../middlewares/auth';
 import { saasAnalyticsController } from '../controllers/saasAnalyticsController';
-import { validateRequest } from '../middlewares/validateRequest';
+import { validateRequest } from '../middlewares/validation';
 
 const router = Router();
 

@@ -385,4 +385,7 @@ workplaceSchema.virtual('subscriptionId').set(function (value) {
 workplaceSchema.set('toJSON', { virtuals: true });
 workplaceSchema.set('toObject', { virtuals: true });
 
-export default mongoose.model<IWorkplace>('Workplace', workplaceSchema);
+const Workplace = mongoose.model<IWorkplace>('Workplace', workplaceSchema);
+
+export { Workplace };
+export default Workplace;

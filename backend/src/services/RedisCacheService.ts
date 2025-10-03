@@ -256,6 +256,52 @@ export class RedisCacheService {
     }
 
     /**
+     * Delete all keys matching a pattern
+     */
+    async delPattern(pattern: string): Promise<number> {
+        if (!this.redis) {
+            return 0;
+        }
+
+        try {
+            const keys = await this.redis.keys(pattern);
+            if (keys.length === 0) {
+                return 0;
+            }
+
+            const pipeline = this.redis.pipeline();
+            keys.forEach(key => {
+                pipeline.del(key);
+                pipeline.del(`compressed:${key}`);
+                pipeline.del(`meta:${key}`);
+            });
+
+            const results = await pipeline.exec();
+            return results?.filter(([err, result]) => !err && result).length || 0;
+        } catch (error) {
+            logger.error('Redis delPattern error:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Ping Redis server
+     */
+    async ping(): Promise<boolean> {
+        if (!this.redis) {
+            return false;
+        }
+
+        try {
+            const result = await this.redis.ping();
+            return result === 'PONG';
+        } catch (error) {
+            logger.error('Redis ping error:', error);
+            return false;
+        }
+    }
+
+    /**
      * Check if key exists
      */
     async exists(key: string): Promise<boolean> {

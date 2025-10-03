@@ -247,7 +247,7 @@ describe('BillingSubscriptions', () => {
 
   it('should handle refresh data', async () => {
     const mockRefreshData = jest.fn();
-    
+
     mockUseBillingData.mockReturnValue({
       analytics: mockAnalytics,
       invoices: mockInvoices,
@@ -298,7 +298,7 @@ describe('BillingSubscriptions', () => {
 
   it('should process refund', async () => {
     const mockProcessRefund = jest.fn().mockResolvedValue(undefined);
-    
+
     mockUseBillingData.mockReturnValue({
       analytics: mockAnalytics,
       invoices: mockInvoices,
@@ -323,7 +323,7 @@ describe('BillingSubscriptions', () => {
     // Fill in refund details
     const amountInput = screen.getByLabelText('Refund Amount (optional)');
     const reasonInput = screen.getByLabelText('Reason');
-    
+
     fireEvent.change(amountInput, { target: { value: '5000' } });
     fireEvent.change(reasonInput, { target: { value: 'Customer request' } });
 
@@ -351,12 +351,12 @@ describe('BillingSubscriptions', () => {
 
     // Should be on Revenue Overview tab by default
     expect(screen.getByText('Revenue by Plan')).toBeInTheDocument();
-    
+
     // Check plan data
     expect(screen.getByText('Basic')).toBeInTheDocument();
     expect(screen.getByText('Pro')).toBeInTheDocument();
     expect(screen.getByText('Enterprise')).toBeInTheDocument();
-    
+
     // Check subscriber counts
     expect(screen.getByText('12 subscribers')).toBeInTheDocument();
     expect(screen.getByText('9 subscribers')).toBeInTheDocument();
@@ -378,7 +378,7 @@ describe('BillingSubscriptions', () => {
 
     // Should be on Revenue Overview tab by default
     expect(screen.getByText('Subscription Status Distribution')).toBeInTheDocument();
-    
+
     // Check status counts
     expect(screen.getByText('18 subscriptions')).toBeInTheDocument(); // active
     expect(screen.getByText('5 subscriptions')).toBeInTheDocument(); // trialing

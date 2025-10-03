@@ -104,6 +104,7 @@ const roleHierarchyRoutes_1 = __importDefault(require("./routes/roleHierarchyRou
 const permissionRoutes_1 = __importDefault(require("./routes/permissionRoutes"));
 const rbacAudit_1 = __importDefault(require("./routes/rbacAudit"));
 const roleRoutes_1 = __importDefault(require("./routes/roleRoutes"));
+const pricingManagementRoutes_1 = __importDefault(require("./routes/pricingManagementRoutes"));
 const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
 const systemIntegration = systemIntegrationService_1.default.getInstance();
@@ -239,6 +240,7 @@ app.use('/api/production-validation', productionValidationRoutes_1.default);
 app.use('/api/continuous-monitoring', continuousMonitoringRoutes_1.default);
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api/subscriptions', subscriptionRoutes_1.default);
+app.use('/api/pricing', pricingManagementRoutes_1.default);
 app.use('/api/patients', patientRoutes_1.default);
 app.use('/api/patients', allergyRoutes_1.default);
 app.use('/api/patients', conditionRoutes_1.default);

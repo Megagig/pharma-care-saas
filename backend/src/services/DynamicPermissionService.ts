@@ -1195,3 +1195,4 @@ class DynamicPermissionService {
 }
 
 export default DynamicPermissionService;
+export { DynamicPermissionService };

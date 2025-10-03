@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ClinicalIntervention = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const tenancyGuard_1 = require("../utils/tenancyGuard");
 const clinicalInterventionSchema = new mongoose_1.Schema({
@@ -481,5 +482,7 @@ clinicalInterventionSchema.statics.findAssignedToUser = function (userId, workpl
         : this.find(query);
     return baseQuery.sort({ priority: 1, identifiedDate: 1 });
 };
-exports.default = mongoose_1.default.model('ClinicalIntervention', clinicalInterventionSchema);
+const ClinicalIntervention = mongoose_1.default.model('ClinicalIntervention', clinicalInterventionSchema);
+exports.ClinicalIntervention = ClinicalIntervention;
+exports.default = ClinicalIntervention;
 //# sourceMappingURL=ClinicalIntervention.js.map

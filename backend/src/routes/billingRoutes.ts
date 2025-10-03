@@ -1,7 +1,8 @@
 import express from 'express';
 import { body, query } from 'express-validator';
-import { auth, requireRole } from '../middlewares/auth';
-import { validateRequest } from '../middlewares/validateRequest';
+import { auth } from '../middlewares/auth';
+import { requireRole } from '../middlewares/rbac';
+import { validateRequest } from '../middlewares/validation';
 import { billingController } from '../controllers/billingController';
 
 const router = express.Router();
@@ -154,7 +155,7 @@ router.post(
 router.post(
   '/refunds',
   auth,
-  requireRole(['super_admin', 'admin']),
+  requireRole('super_admin', 'admin'),
   [
     body('paymentReference')
       .notEmpty()
@@ -180,7 +181,7 @@ router.post(
 router.get(
   '/analytics',
   auth,
-  requireRole(['super_admin']),
+  requireRole('super_admin'),
   [
     query('startDate')
       .optional()

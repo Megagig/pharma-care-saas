@@ -8,7 +8,7 @@ import logger from '../utils/logger';
 export interface UserFilters {
   search?: string;
   role?: string;
-  status?: string;
+  status?: 'active' | 'inactive' | 'suspended';
   workspaceId?: string;
   subscriptionPlan?: string;
   lastLoginAfter?: Date;
@@ -71,7 +71,9 @@ export class SaaSUserManagementController {
       const filters: UserFilters = {};
       if (search) filters.search = search as string;
       if (role) filters.role = role as string;
-      if (status) filters.status = status as string;
+      if (status && ['active', 'inactive', 'suspended'].includes(status as string)) {
+        filters.status = status as 'active' | 'inactive' | 'suspended';
+      }
       if (workspaceId) filters.workspaceId = workspaceId as string;
       if (subscriptionPlan) filters.subscriptionPlan = subscriptionPlan as string;
       if (lastLoginAfter) filters.lastLoginAfter = new Date(lastLoginAfter as string);
@@ -224,7 +226,7 @@ export class SaaSUserManagementController {
       );
     } catch (error) {
       logger.error('Error updating user role:', error);
-      
+
       if (error instanceof Error) {
         if (error.message.includes('User not found')) {
           sendError(res, 'USER_NOT_FOUND', 'User not found', 404);
@@ -281,7 +283,7 @@ export class SaaSUserManagementController {
       );
     } catch (error) {
       logger.error('Error suspending user:', error);
-      
+
       if (error instanceof Error && error.message.includes('User not found')) {
         sendError(res, 'USER_NOT_FOUND', 'User not found', 404);
       } else if (error instanceof Error && error.message.includes('already suspended')) {
@@ -324,7 +326,7 @@ export class SaaSUserManagementController {
       );
     } catch (error) {
       logger.error('Error reactivating user:', error);
-      
+
       if (error instanceof Error && error.message.includes('User not found')) {
         sendError(res, 'USER_NOT_FOUND', 'User not found', 404);
       } else if (error instanceof Error && error.message.includes('not suspended')) {
@@ -377,12 +379,11 @@ export class SaaSUserManagementController {
         res,
         {
           totalUsers: userIds.length,
-          successfulAssignments: result.successful,
+          successfulAssignments: result.success,
           failedAssignments: result.failed,
-          skippedAssignments: result.skipped,
           assignedBy: req.user?._id,
           assignedAt: new Date(),
-          details: result.details
+          errors: result.errors
         },
         'Bulk role assignment completed'
       );
@@ -448,7 +449,7 @@ export class SaaSUserManagementController {
       );
     } catch (error) {
       logger.error('Error creating impersonation session:', error);
-      
+
       if (error instanceof Error && error.message.includes('User not found')) {
         sendError(res, 'USER_NOT_FOUND', 'Target user not found', 404);
       } else if (error instanceof Error && error.message.includes('cannot impersonate')) {
@@ -472,7 +473,7 @@ export class SaaSUserManagementController {
         timeRange
       });
 
-      const statistics = await this.userManagementService.getUserStatistics(timeRange as string);
+      const statistics = await this.userManagementService.getUserStatistics();
 
       sendSuccess(
         res,
@@ -514,11 +515,22 @@ export class SaaSUserManagementController {
         includeInactive
       });
 
-      const result = await this.userManagementService.searchUsers(
-        query,
-        filters,
-        pagination,
-        includeInactive
+      // Build search filters
+      const searchFilters: UserFilters = {
+        ...filters,
+        search: query
+      };
+
+      const searchPagination: Pagination = {
+        page: pagination.page || 1,
+        limit: pagination.limit || 20,
+        sortBy: pagination.sortBy || 'createdAt',
+        sortOrder: pagination.sortOrder || 'desc'
+      };
+
+      const result = await this.userManagementService.getAllUsers(
+        searchFilters,
+        searchPagination
       );
 
       sendSuccess(
@@ -527,8 +539,8 @@ export class SaaSUserManagementController {
           users: result.users,
           total: result.total,
           pagination: {
-            ...pagination,
-            pages: Math.ceil(result.total / pagination.limit)
+            ...searchPagination,
+            pages: Math.ceil(result.total / searchPagination.limit)
           },
           searchQuery: query,
           appliedFilters: filters

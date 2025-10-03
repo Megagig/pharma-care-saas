@@ -374,6 +374,89 @@ class SaaSService {
     });
     return { success: true, data: response.data };
   }
+
+  // Tenant Management APIs
+  async getTenants(filters: any = {}): Promise<{ success: boolean; tenants: any[]; pagination: any }> {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`${this.baseUrl}/tenant-management/tenants?${params}`);
+    return response.data.data;
+  }
+
+  async getTenantById(tenantId: string, options: any = {}): Promise<{ success: boolean; data: { tenant: any } }> {
+    const params = new URLSearchParams(options);
+    const response = await apiClient.get(`${this.baseUrl}/tenant-management/tenants/${tenantId}?${params}`);
+    return response.data;
+  }
+
+  async getTenantCustomization(tenantId: string): Promise<{ success: boolean; customization: any }> {
+    const response = await apiClient.get(`${this.baseUrl}/tenant-management/tenants/${tenantId}/customization`);
+    return response.data.data;
+  }
+
+  async updateTenantBranding(tenantId: string, branding: any): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`${this.baseUrl}/tenant-management/tenants/${tenantId}/branding`, branding);
+    return response.data;
+  }
+
+  async updateTenantLimits(tenantId: string, limits: any): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`${this.baseUrl}/tenant-management/tenants/${tenantId}/limits`, limits);
+    return response.data;
+  }
+
+  async updateTenantFeatures(tenantId: string, features: string[]): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`${this.baseUrl}/tenant-management/tenants/${tenantId}/features`, { features });
+    return response.data;
+  }
+
+  async updateTenantCustomization(tenantId: string, customization: any): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`${this.baseUrl}/tenant-management/tenants/${tenantId}/customization`, customization);
+    return response.data;
+  }
+
+  async provisionTenant(tenantData: any): Promise<{ success: boolean; data: { tenant: any } }> {
+    const response = await apiClient.post(`${this.baseUrl}/tenant-management/tenants`, tenantData);
+    return response.data;
+  }
+
+  async deprovisionTenant(tenantId: string, options: any = {}): Promise<{ success: boolean }> {
+    const response = await apiClient.delete(`${this.baseUrl}/tenant-management/tenants/${tenantId}`, { data: options });
+    return response.data;
+  }
+
+  async updateTenantStatus(tenantId: string, statusUpdate: any): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`${this.baseUrl}/tenant-management/tenants/${tenantId}/status`, statusUpdate);
+    return response.data;
+  }
+
+  async getTenantStatistics(): Promise<{ success: boolean; data: { statistics: any } }> {
+    const response = await apiClient.get(`${this.baseUrl}/tenant-management/statistics`);
+    return response.data;
+  }
+
+  async validateTenantDataIsolation(tenantId: string): Promise<{ success: boolean; data: any }> {
+    const response = await apiClient.get(`${this.baseUrl}/tenant-management/tenants/${tenantId}/data-isolation/validate`);
+    return response.data;
+  }
+
+  async enforceTenantDataIsolation(tenantId: string): Promise<{ success: boolean; data: any }> {
+    const response = await apiClient.post(`${this.baseUrl}/tenant-management/tenants/${tenantId}/data-isolation/enforce`);
+    return response.data;
+  }
+
+  async getTenantAnalytics(tenantId: string, timeRange: string = '30d'): Promise<{ success: boolean; data: { analytics: any } }> {
+    const response = await apiClient.get(`${this.baseUrl}/tenant-management/tenants/${tenantId}/analytics?timeRange=${timeRange}`);
+    return response.data;
+  }
+
+  async getTenantPerformanceMetrics(tenantId: string): Promise<{ success: boolean; data: { metrics: any } }> {
+    const response = await apiClient.get(`${this.baseUrl}/tenant-management/tenants/${tenantId}/performance`);
+    return response.data;
+  }
+
+  async getTenantBillingAnalytics(tenantId: string, timeRange: string = '30d'): Promise<{ success: boolean; data: { billingAnalytics: any } }> {
+    const response = await apiClient.get(`${this.baseUrl}/tenant-management/tenants/${tenantId}/billing-analytics?timeRange=${timeRange}`);
+    return response.data;
+  }
 }
 
 export const saasService = new SaaSService();

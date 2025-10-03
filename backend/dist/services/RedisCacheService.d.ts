@@ -22,6 +22,8 @@ export declare class RedisCacheService {
     get<T>(key: string): Promise<T | null>;
     mget<T>(keys: string[]): Promise<(T | null)[]>;
     del(key: string): Promise<boolean>;
+    delPattern(pattern: string): Promise<number>;
+    ping(): Promise<boolean>;
     exists(key: string): Promise<boolean>;
     expire(key: string, ttl: number): Promise<boolean>;
     ttl(key: string): Promise<number>;

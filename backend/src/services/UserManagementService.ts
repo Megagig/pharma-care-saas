@@ -105,10 +105,10 @@ export class UserManagementService {
   async getAllUsers(filters: UserFilters = {}, pagination: Pagination): Promise<PaginatedUsers> {
     try {
       const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = pagination;
-      
+
       // Build query
       const query = this.buildUserQuery(filters);
-      
+
       // Calculate pagination
       const skip = (page - 1) * limit;
       const sortOptions: Record<string, 1 | -1> = {};
@@ -162,7 +162,7 @@ export class UserManagementService {
 
       if (user) {
         // Cache the result
-        await this.cacheService.set(cacheKey, user, this.CACHE_TTL);
+        await this.cacheService.set(cacheKey, user, { ttl: this.CACHE_TTL / 1000 });
       }
 
       return user as IUser;
@@ -176,9 +176,9 @@ export class UserManagementService {
    * Update user role with RBAC validation
    */
   async updateUserRole(
-    userId: string, 
-    roleId: string, 
-    workspaceId?: string, 
+    userId: string,
+    roleId: string,
+    workspaceId?: string,
     adminId?: string
   ): Promise<void> {
     try {
@@ -251,9 +251,9 @@ export class UserManagementService {
    * Revoke user role
    */
   async revokeUserRole(
-    userId: string, 
-    roleId: string, 
-    workspaceId?: string, 
+    userId: string,
+    roleId: string,
+    workspaceId?: string,
     adminId?: string
   ): Promise<void> {
     try {
@@ -381,9 +381,9 @@ export class UserManagementService {
       // Update user status
       await User.findByIdAndUpdate(userId, {
         isActive: true,
-        $unset: { 
-          suspendedAt: 1, 
-          suspensionReason: 1 
+        $unset: {
+          suspendedAt: 1,
+          suspensionReason: 1
         },
         updatedAt: new Date()
       });
@@ -600,7 +600,7 @@ export class UserManagementService {
         targetUserId,
         createdAt: new Date(),
         expiresAt
-      }, this.IMPERSONATION_TTL);
+      }, { ttl: this.IMPERSONATION_TTL / 1000 });
 
       // Create audit log
       await this.auditService.createAuditLog({
@@ -639,7 +639,7 @@ export class UserManagementService {
     try {
       const sessionKey = `impersonation:${sessionToken}`;
       const session = await this.cacheService.get(sessionKey);
-      
+
       if (session) {
         // Remove session from cache
         await this.cacheService.del(sessionKey);
@@ -686,7 +686,7 @@ export class UserManagementService {
         { ...updateData, updatedAt: new Date() },
         { new: true }
       ).populate('roles', 'name displayName permissions')
-       .populate('workplaceId', 'name type');
+        .populate('workplaceId', 'name type');
 
       if (!updatedUser) {
         throw new Error('Failed to update user');
@@ -787,8 +787,8 @@ export class UserManagementService {
       // Update all active sessions for the user
       await UserSession.updateMany(
         { userId, isActive: true },
-        { 
-          isActive: false, 
+        {
+          isActive: false,
           terminatedAt: new Date(),
           terminationReason: 'User suspended'
         }

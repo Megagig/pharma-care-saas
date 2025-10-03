@@ -87,6 +87,7 @@ export interface IClinicalInterventionModel extends mongoose.Model<IClinicalInte
     findByPatient(patientId: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId): mongoose.Query<IClinicalIntervention[], IClinicalIntervention>;
     findAssignedToUser(userId: mongoose.Types.ObjectId, workplaceId?: mongoose.Types.ObjectId): mongoose.Query<IClinicalIntervention[], IClinicalIntervention>;
 }
-declare const _default: IClinicalInterventionModel;
-export default _default;
+declare const ClinicalIntervention: IClinicalInterventionModel;
+export { ClinicalIntervention };
+export default ClinicalIntervention;
 //# sourceMappingURL=ClinicalIntervention.d.ts.map

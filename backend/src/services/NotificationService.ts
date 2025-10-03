@@ -128,7 +128,7 @@ export class NotificationService {
   async getNotificationSettings(workspaceId?: string): Promise<INotificationSettings> {
     try {
       const cacheKey = `notification:settings:${workspaceId || 'global'}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached) {
@@ -146,8 +146,8 @@ export class NotificationService {
       }
 
       // Cache the settings
-      await this.cacheService.set(cacheKey, settings, this.CACHE_TTL);
-      
+      await this.cacheService.set(cacheKey, settings, { ttl: this.CACHE_TTL / 1000 });
+
       return settings;
     } catch (error) {
       logger.error('Error getting notification settings:', error);
@@ -159,8 +159,8 @@ export class NotificationService {
    * Update notification rules
    */
   async updateNotificationRules(
-    rules: INotificationRule[], 
-    workspaceId?: string, 
+    rules: INotificationRule[],
+    workspaceId?: string,
     adminId?: string
   ): Promise<void> {
     try {
@@ -222,7 +222,7 @@ export class NotificationService {
   async sendBulkNotification(notification: BulkNotification, adminId?: string): Promise<NotificationResult> {
     try {
       const notificationId = new mongoose.Types.ObjectId().toString();
-      
+
       // Validate template exists
       const template = await NotificationTemplate.findById(notification.templateId);
       if (!template) {
@@ -275,7 +275,7 @@ export class NotificationService {
           this.NOTIFICATION_QUEUE,
           job,
           {
-            delay: notification.scheduledFor ? 
+            delay: notification.scheduledFor ?
               notification.scheduledFor.getTime() - Date.now() : 0,
             priority: this.getPriorityValue(notification.priority),
             removeOnComplete: 100,
@@ -285,7 +285,7 @@ export class NotificationService {
       }
 
       // Store result in cache for tracking
-      await this.cacheService.set(`notification:result:${notificationId}`, result, 24 * 60 * 60 * 1000);
+      await this.cacheService.set(`notification:result:${notificationId}`, result, { ttl: 24 * 3600 });
 
       // Create audit log
       if (adminId) {
@@ -351,7 +351,7 @@ export class NotificationService {
   async getNotificationTemplates(workspaceId?: string): Promise<INotificationTemplate[]> {
     try {
       const cacheKey = `notification:templates:${workspaceId || 'global'}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached) {
@@ -364,8 +364,8 @@ export class NotificationService {
       }).sort({ name: 1 });
 
       // Cache the templates
-      await this.cacheService.set(cacheKey, templates, this.CACHE_TTL);
-      
+      await this.cacheService.set(cacheKey, templates, { ttl: this.CACHE_TTL / 1000 });
+
       return templates;
     } catch (error) {
       logger.error('Error getting notification templates:', error);
@@ -377,8 +377,8 @@ export class NotificationService {
    * Create notification template
    */
   async createNotificationTemplate(
-    template: Partial<INotificationTemplate>, 
-    workspaceId?: string, 
+    template: Partial<INotificationTemplate>,
+    workspaceId?: string,
     adminId?: string
   ): Promise<INotificationTemplate> {
     try {
@@ -426,7 +426,7 @@ export class NotificationService {
   async getDeliveryStatus(notificationId: string): Promise<DeliveryStatus> {
     try {
       const cacheKey = `notification:status:${notificationId}`;
-      
+
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
       if (cached) {
@@ -444,8 +444,8 @@ export class NotificationService {
       };
 
       // Cache for 5 minutes
-      await this.cacheService.set(cacheKey, status, 5 * 60 * 1000);
-      
+      await this.cacheService.set(cacheKey, status, { ttl: 5 * 60 });
+
       return status;
     } catch (error) {
       logger.error('Error getting delivery status:', error);
@@ -515,7 +515,7 @@ export class NotificationService {
     try {
       // Initialize email transporter
       if (process.env.SMTP_HOST) {
-        this.emailTransporter = nodemailer.createTransporter({
+        this.emailTransporter = nodemailer.createTransport({
           host: process.env.SMTP_HOST,
           port: parseInt(process.env.SMTP_PORT || '587'),
           secure: process.env.SMTP_SECURE === 'true',
@@ -598,7 +598,7 @@ export class NotificationService {
     try {
       const settings = await this.getNotificationSettings();
       const channelConfig = settings.channels[channel as keyof typeof settings.channels];
-      
+
       if (!channelConfig) {
         throw new Error(`Channel ${channel} not configured`);
       }
@@ -634,8 +634,8 @@ export class NotificationService {
       // Update counters
       await Promise.all([
         this.cacheService.set(minuteKey, minuteCount + count, 60 * 1000),
-        this.cacheService.set(hourKey, hourCount + count, 60 * 60 * 1000),
-        this.cacheService.set(dayKey, dayCount + count, 24 * 60 * 60 * 1000)
+        this.cacheService.set(hourKey, hourCount + count, { ttl: 60 * 60 }),
+        this.cacheService.set(dayKey, dayCount + count, { ttl: 24 * 3600 })
       ]);
     } catch (error) {
       logger.error('Error checking rate limits:', error);
@@ -644,7 +644,7 @@ export class NotificationService {
   }
 
   private processTemplate(
-    template: INotificationTemplate, 
+    template: INotificationTemplate,
     variables: Record<string, any>
   ): { subject?: string; body: string } {
     let subject = template.subject || '';
@@ -688,8 +688,8 @@ export class NotificationService {
   }
 
   private async sendEmail(
-    user: IUser, 
-    content: { subject?: string; body: string }, 
+    user: IUser,
+    content: { subject?: string; body: string },
     notificationId: string
   ): Promise<void> {
     if (!this.emailTransporter) {
@@ -712,8 +712,8 @@ export class NotificationService {
   }
 
   private async sendSMS(
-    user: IUser, 
-    content: { subject?: string; body: string }, 
+    user: IUser,
+    content: { subject?: string; body: string },
     notificationId: string
   ): Promise<void> {
     // SMS implementation would go here
@@ -721,8 +721,8 @@ export class NotificationService {
   }
 
   private async sendPush(
-    user: IUser, 
-    content: { subject?: string; body: string }, 
+    user: IUser,
+    content: { subject?: string; body: string },
     notificationId: string
   ): Promise<void> {
     // Push notification implementation would go here
@@ -730,8 +730,8 @@ export class NotificationService {
   }
 
   private async sendWhatsApp(
-    user: IUser, 
-    content: { subject?: string; body: string }, 
+    user: IUser,
+    content: { subject?: string; body: string },
     notificationId: string
   ): Promise<void> {
     // WhatsApp implementation would go here
@@ -739,8 +739,8 @@ export class NotificationService {
   }
 
   private async sendInApp(
-    user: IUser, 
-    content: { subject?: string; body: string }, 
+    user: IUser,
+    content: { subject?: string; body: string },
     notificationId: string
   ): Promise<void> {
     // In-app notification implementation would go here
@@ -778,7 +778,7 @@ export class NotificationService {
           this.cacheService.delPattern('rate_limit:*')
         ]);
       }
-      
+
       logger.info(`Notification cache cleared for workspace ${workspaceId || 'all'}`);
     } catch (error) {
       logger.error('Error clearing notification cache:', error);
