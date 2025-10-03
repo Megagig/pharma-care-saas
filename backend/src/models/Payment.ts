@@ -7,12 +7,12 @@ export interface IPayment extends Document {
   amount: number;
   currency: string;
   paymentMethod:
-    | 'credit_card'
-    | 'debit_card'
-    | 'paypal'
-    | 'bank_transfer'
-    | 'nomba'
-    | 'paystack';
+  | 'credit_card'
+  | 'debit_card'
+  | 'paypal'
+  | 'bank_transfer'
+  | 'nomba'
+  | 'paystack';
   status: 'pending' | 'completed' | 'failed' | 'refunded';
   paymentReference?: string; // Added for Nomba payment reference
   stripePaymentIntentId?: string;
@@ -42,6 +42,9 @@ export interface IPayment extends Document {
     refundAmount?: number;
     reason?: string;
   };
+  refundedAt?: Date;
+  refundAmount?: number;
+  refundReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }

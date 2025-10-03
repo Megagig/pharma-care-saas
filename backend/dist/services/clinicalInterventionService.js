@@ -126,7 +126,7 @@ class ClinicalInterventionService {
             const { workplaceId, page = 1, limit = 20, sortBy = 'identifiedDate', sortOrder = 'desc', } = filters;
             const cacheKey = performanceOptimization_1.CacheManager.generateKey('interventions_list', JSON.stringify(filters), workplaceId.toString());
             const cached = await performanceOptimization_1.CacheManager.get(cacheKey);
-            if (cached) {
+            if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
                 performanceMonitoring_1.default.recordInterventionMetrics('getInterventions', filters.workplaceId.toString(), 0, true, { source: 'cache', filters });
                 return cached;
             }

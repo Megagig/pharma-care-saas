@@ -14,11 +14,11 @@ export interface IInvoiceLineItem {
 export interface IBillingInvoice extends Document {
   workspaceId: mongoose.Types.ObjectId;
   subscriptionId: mongoose.Types.ObjectId;
-  
+
   // Invoice details
   invoiceNumber: string;
   status: 'draft' | 'open' | 'paid' | 'void' | 'uncollectible';
-  
+
   // Amounts
   subtotal: number;
   tax: number;
@@ -26,25 +26,25 @@ export interface IBillingInvoice extends Document {
   amountPaid: number;
   amountDue: number;
   currency: string;
-  
+
   // Line items
   lineItems: IInvoiceLineItem[];
-  
+
   // Dates
   createdAt: Date;
   dueDate: Date;
   paidAt?: Date;
   voidedAt?: Date;
-  
+
   // Payment
   paymentAttempts: number;
   lastPaymentAttempt?: Date;
   nextPaymentAttempt?: Date;
-  
+
   // Nomba integration
   nombaInvoiceId?: string;
   nombaPaymentIntentId?: string;
-  
+
   // Customer details
   customerEmail: string;
   customerName: string;
@@ -56,10 +56,10 @@ export interface IBillingInvoice extends Document {
     country: string;
     postalCode: string;
   };
-  
+
   // Metadata
   metadata: Record<string, any>;
-  
+
   // Methods
   isPaid(): boolean;
   isOverdue(): boolean;
@@ -110,7 +110,7 @@ const billingInvoiceSchema = new Schema(
       required: true,
       index: true,
     },
-    
+
     // Invoice details
     invoiceNumber: {
       type: String,
@@ -124,7 +124,7 @@ const billingInvoiceSchema = new Schema(
       default: 'draft',
       index: true,
     },
-    
+
     // Amounts
     subtotal: {
       type: Number,
@@ -154,10 +154,10 @@ const billingInvoiceSchema = new Schema(
       default: 'NGN',
       uppercase: true,
     },
-    
+
     // Line items
     lineItems: [invoiceLineItemSchema],
-    
+
     // Dates
     dueDate: {
       type: Date,
@@ -166,7 +166,7 @@ const billingInvoiceSchema = new Schema(
     },
     paidAt: Date,
     voidedAt: Date,
-    
+
     // Payment
     paymentAttempts: {
       type: Number,
@@ -174,7 +174,7 @@ const billingInvoiceSchema = new Schema(
     },
     lastPaymentAttempt: Date,
     nextPaymentAttempt: Date,
-    
+
     // Nomba integration
     nombaInvoiceId: {
       type: String,
@@ -186,7 +186,7 @@ const billingInvoiceSchema = new Schema(
       sparse: true,
       index: true,
     },
-    
+
     // Customer details
     customerEmail: {
       type: String,
@@ -204,14 +204,14 @@ const billingInvoiceSchema = new Schema(
       country: String,
       postalCode: String,
     },
-    
+
     // Metadata
     metadata: {
       type: Schema.Types.Mixed,
       default: {},
     },
   },
-  { 
+  {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
@@ -219,32 +219,32 @@ const billingInvoiceSchema = new Schema(
 );
 
 // Instance methods
-billingInvoiceSchema.methods.isPaid = function(): boolean {
+billingInvoiceSchema.methods.isPaid = function (): boolean {
   return this.status === 'paid';
 };
 
-billingInvoiceSchema.methods.isOverdue = function(): boolean {
+billingInvoiceSchema.methods.isOverdue = function (): boolean {
   return this.status === 'open' && new Date() > this.dueDate;
 };
 
-billingInvoiceSchema.methods.canVoid = function(): boolean {
+billingInvoiceSchema.methods.canVoid = function (): boolean {
   return ['draft', 'open'].includes(this.status);
 };
 
-billingInvoiceSchema.methods.calculateTotals = function(): void {
+billingInvoiceSchema.methods.calculateTotals = function (): void {
   this.subtotal = this.lineItems.reduce((sum, item) => sum + item.amount, 0);
   this.total = this.subtotal + this.tax;
   this.amountDue = this.total - this.amountPaid;
 };
 
 // Pre-save middleware to calculate totals
-billingInvoiceSchema.pre('save', function(next) {
-  this.calculateTotals();
+billingInvoiceSchema.pre('save', function (next) {
+  (this as any).calculateTotals(); // Type assertion for method call
   next();
 });
 
 // Generate invoice number
-billingInvoiceSchema.pre('save', function(next) {
+billingInvoiceSchema.pre('save', function (next) {
   if (this.isNew && !this.invoiceNumber) {
     const year = new Date().getFullYear();
     const month = String(new Date().getMonth() + 1).padStart(2, '0');

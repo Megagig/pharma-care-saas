@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
-import { NotificationService } from '../services/NotificationService';
+import { NotificationService } from '../services/SaaSNotificationService';
 import { sendSuccess, sendError } from '../utils/responseHelpers';
 import logger from '../utils/logger';
 import { NotificationSettings } from '../models/NotificationSettings';
@@ -65,7 +65,7 @@ export class SaaSNotificationsController {
 
       // Get notification settings which contain channel configurations
       const settings = await this.notificationService.getNotificationSettings();
-      
+
       // Mock channel data with usage statistics
       const channels: NotificationChannel[] = [
         {
@@ -166,7 +166,7 @@ export class SaaSNotificationsController {
 
       // In a real implementation, this would update the channel configuration
       // For now, we'll just log the update
-      
+
       sendSuccess(
         res,
         {
@@ -686,7 +686,7 @@ export class SaaSNotificationsController {
 
       // In a real implementation, this would send the actual notification
       // For now, we'll simulate the process
-      
+
       const testResult = {
         id: `test_${Date.now()}`,
         channelId,

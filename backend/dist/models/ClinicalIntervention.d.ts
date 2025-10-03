@@ -26,8 +26,10 @@ export interface ISuccessMetrics {
     problemResolved: boolean;
     medicationOptimized: boolean;
     adherenceImproved: boolean;
+    adherenceImprovement?: number;
     costSavings?: number;
     qualityOfLifeImproved?: boolean;
+    patientSatisfaction?: number;
 }
 export interface IInterventionOutcome {
     patientResponse: 'improved' | 'no_change' | 'worsened' | 'unknown';
@@ -57,7 +59,12 @@ export interface IClinicalIntervention extends Document {
     assignments: ITeamAssignment[];
     status: 'identified' | 'planning' | 'in_progress' | 'implemented' | 'completed' | 'cancelled';
     implementationNotes?: string;
+    type?: string;
+    outcome?: 'successful' | 'partially_successful' | 'unsuccessful' | 'unknown';
     outcomes?: IInterventionOutcome;
+    adherenceImprovement?: number;
+    costSavings?: number;
+    patientSatisfaction?: number;
     followUp: IFollowUp;
     startedAt: Date;
     completedAt?: Date;

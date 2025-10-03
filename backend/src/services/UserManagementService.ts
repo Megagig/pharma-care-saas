@@ -151,7 +151,7 @@ export class UserManagementService {
       // Check cache first
       const cacheKey = `user:${userId}`;
       const cached = await this.cacheService.get(cacheKey);
-      if (cached) {
+      if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
         return cached;
       }
 

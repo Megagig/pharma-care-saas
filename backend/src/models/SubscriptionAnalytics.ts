@@ -41,6 +41,10 @@ export interface ISubscriptionAnalytics extends Document {
   churnRate: number;
   upgradeRate: number;
   downgradeRate: number;
+  totalRevenue: number; // Added for revenue metrics
+  revenueGrowth: number; // Added for revenue metrics
+  averageRevenuePerUser: number; // Added for revenue metrics
+  churnedSubscriptions: number; // Added for churn analytics
   planDistribution: IPlanDistribution[];
   revenueByPlan: IRevenueByPlan[];
   churnAnalytics: IChurnAnalytics;
@@ -55,7 +59,7 @@ export interface ISubscriptionAnalytics extends Document {
   grossRevenueRetention: number;
   createdAt: Date;
   updatedAt: Date;
-  
+
   // Methods
   calculateGrowthRate(previousMrr: number): number;
   calculateLtvToCacRatio(): number;
@@ -215,6 +219,29 @@ const subscriptionAnalyticsSchema = new Schema<ISubscriptionAnalytics>(
       min: 0,
       max: 100,
     },
+    totalRevenue: {
+      type: Number,
+      required: false,
+      default: 0,
+      min: 0,
+    },
+    revenueGrowth: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    averageRevenuePerUser: {
+      type: Number,
+      required: false,
+      default: 0,
+      min: 0,
+    },
+    churnedSubscriptions: {
+      type: Number,
+      required: false,
+      default: 0,
+      min: 0,
+    },
     planDistribution: [planDistributionSchema],
     revenueByPlan: [revenueByPlanSchema],
     churnAnalytics: churnAnalyticsSchema,
@@ -304,7 +331,7 @@ subscriptionAnalyticsSchema.methods.getHealthScore = function (this: ISubscripti
   const churnScore = Math.max(0, 100 - this.churnRate * 2);
   const ltvCacScore = Math.min(100, (this.calculateLtvToCacRatio() / 3) * 100);
   const retentionScore = (this.netRevenueRetention + this.grossRevenueRetention) / 2;
-  
+
   return (churnScore + ltvCacScore + retentionScore) / 3;
 };
 

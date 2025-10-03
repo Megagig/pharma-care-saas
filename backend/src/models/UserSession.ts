@@ -42,6 +42,13 @@ export interface IUserSession extends Document {
   failedAttempts: number;
   createdAt: Date;
   updatedAt: Date;
+
+  // Convenience properties for backward compatibility
+  ipAddress?: string;
+  userAgent?: string;
+  location?: string;
+  terminatedAt?: Date;
+  terminationReason?: string;
 }
 
 const deviceInfoSchema = new Schema<IDeviceInfo>({
@@ -73,7 +80,7 @@ const locationInfoSchema = new Schema<ILocationInfo>({
     type: String,
     required: true,
     validate: {
-      validator: function(ip: string) {
+      validator: function (ip: string) {
         // Basic IP validation
         const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
         const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
@@ -254,8 +261,8 @@ userSessionSchema.statics.getActiveSessions = function (userId: mongoose.Types.O
 };
 
 userSessionSchema.statics.getSuspiciousSessions = function () {
-  return this.find({ 
-    isActive: true, 
+  return this.find({
+    isActive: true,
     $or: [
       { 'securityFlags.isSuspicious': true },
       { 'securityFlags.riskScore': { $gte: 70 } }
@@ -266,15 +273,41 @@ userSessionSchema.statics.getSuspiciousSessions = function () {
 userSessionSchema.statics.terminateUserSessions = function (userId: mongoose.Types.ObjectId, reason: string) {
   return this.updateMany(
     { userId, isActive: true },
-    { 
-      $set: { 
-        isActive: false, 
-        logoutTime: new Date(), 
+    {
+      $set: {
+        isActive: false,
+        logoutTime: new Date(),
         logoutReason: reason,
         refreshTokens: []
       }
     }
   );
 };
+
+// Add virtual properties for backward compatibility
+userSessionSchema.virtual('ipAddress').get(function () {
+  return this.locationInfo?.ipAddress;
+});
+
+userSessionSchema.virtual('userAgent').get(function () {
+  return this.deviceInfo?.userAgent;
+});
+
+userSessionSchema.virtual('location').get(function () {
+  const loc = this.locationInfo;
+  return loc ? `${loc.city || ''}, ${loc.region || ''}, ${loc.country || ''}`.replace(/^,\s*|,\s*$/g, '') : '';
+});
+
+userSessionSchema.virtual('terminatedAt').get(function () {
+  return this.logoutTime;
+});
+
+userSessionSchema.virtual('terminationReason').get(function () {
+  return this.logoutReason;
+});
+
+// Add virtual properties to JSON output
+userSessionSchema.set('toJSON', { virtuals: true });
+userSessionSchema.set('toObject', { virtuals: true });
 
 export const UserSession = mongoose.model<IUserSession>('UserSession', userSessionSchema);

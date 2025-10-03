@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import { AuthRequest } from '../middlewares/auth';
-import { SecurityMonitoringService } from '../services/SecurityMonitoringService';
+import { SecurityMonitoringService } from '../services/SaaSSecurityMonitoringService';
 import { sendSuccess, sendError } from '../utils/responseHelpers';
 import logger from '../utils/logger';
 
@@ -132,7 +132,7 @@ export class SaaSSecurityController {
         lockoutDuration: lockoutDuration || 30
       };
 
-      await this.securityMonitoringService.updatePasswordPolicy(passwordPolicy);
+      await this.securityMonitoringService.updatePasswordPolicy(passwordPolicy, req.user?._id.toString() || 'system');
 
       // Log the policy change for audit
       logger.warn('Password policy updated', {
@@ -204,17 +204,17 @@ export class SaaSSecurityController {
 
       // Apply filters and pagination (in a real implementation, this would be done in the service)
       let filteredSessions = sessions;
-      
+
       if (filters.userId) {
         filteredSessions = filteredSessions.filter(s => s.userId === filters.userId);
       }
-      
+
       if (filters.ipAddress) {
-        filteredSessions = filteredSessions.filter(s => 
+        filteredSessions = filteredSessions.filter(s =>
           s.ipAddress.includes(filters.ipAddress!)
         );
       }
-      
+
       if (filters.isActive !== undefined) {
         filteredSessions = filteredSessions.filter(s => s.isActive === filters.isActive);
       }
@@ -223,7 +223,7 @@ export class SaaSSecurityController {
       filteredSessions.sort((a, b) => {
         const aValue = (a as any)[sortBy as string];
         const bValue = (b as any)[sortBy as string];
-        
+
         if (sortOrder === 'desc') {
           return bValue > aValue ? 1 : -1;
         }
@@ -312,7 +312,7 @@ export class SaaSSecurityController {
       );
     } catch (error) {
       logger.error('Error terminating session:', error);
-      
+
       if (error instanceof Error && error.message.includes('Session not found')) {
         sendError(res, 'SESSION_NOT_FOUND', 'Session not found', 404);
       } else {
@@ -363,18 +363,18 @@ export class SaaSSecurityController {
       const auditLogs = await this.securityMonitoringService.getSecurityAuditLogs();
 
       // Apply filters (in a real implementation, this would be done in the service with database queries)
-      let filteredLogs = auditLogs;
-      
+      let filteredLogs = auditLogs.logs; // Access the logs array
+
       if (filters.userId) {
-        filteredLogs = filteredLogs.filter(log => log.userId === filters.userId);
+        filteredLogs = filteredLogs.filter(log => log.userId.toString() === filters.userId);
       }
-      
+
       if (filters.action) {
-        filteredLogs = filteredLogs.filter(log => 
+        filteredLogs = filteredLogs.filter(log =>
           log.action.toLowerCase().includes(filters.action!.toLowerCase())
         );
       }
-      
+
       if (filters.success !== undefined) {
         filteredLogs = filteredLogs.filter(log => log.success === filters.success);
       }
@@ -383,7 +383,7 @@ export class SaaSSecurityController {
       filteredLogs.sort((a, b) => {
         const aValue = (a as any)[sortBy as string];
         const bValue = (b as any)[sortBy as string];
-        
+
         if (sortOrder === 'desc') {
           return bValue > aValue ? 1 : -1;
         }
@@ -478,7 +478,7 @@ export class SaaSSecurityController {
       );
     } catch (error) {
       logger.error('Error locking user account:', error);
-      
+
       if (error instanceof Error && error.message.includes('User not found')) {
         sendError(res, 'USER_NOT_FOUND', 'User not found', 404);
       } else if (error instanceof Error && error.message.includes('already locked')) {
@@ -529,7 +529,7 @@ export class SaaSSecurityController {
       );
     } catch (error) {
       logger.error('Error unlocking user account:', error);
-      
+
       if (error instanceof Error && error.message.includes('User not found')) {
         sendError(res, 'USER_NOT_FOUND', 'User not found', 404);
       } else if (error instanceof Error && error.message.includes('not locked')) {
@@ -562,7 +562,7 @@ export class SaaSSecurityController {
       // Calculate metrics based on time range
       const now = new Date();
       let startTime: Date;
-      
+
       switch (timeRange) {
         case '1h':
           startTime = new Date(now.getTime() - 60 * 60 * 1000);
@@ -577,7 +577,7 @@ export class SaaSSecurityController {
           startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       }
 
-      const recentLogs = auditLogs.filter(log => log.timestamp >= startTime);
+      const recentLogs = auditLogs.logs.filter(log => log.timestamp >= startTime); // Access logs array
       const activeSessions = sessions.filter(session => session.isActive);
 
       const dashboard = {
@@ -586,19 +586,19 @@ export class SaaSSecurityController {
           active: activeSessions.length,
           inactive: sessions.length - activeSessions.length,
           uniqueUsers: new Set(activeSessions.map(s => s.userId)).size,
-          uniqueIPs: new Set(activeSessions.map(s => s.ipAddress)).size
+          uniqueIPs: new Set(activeSessions.map(s => (s as any).ipAddress)).size // Type assertion
         },
         security: {
-          failedLogins: recentLogs.filter(log => 
+          failedLogins: recentLogs.filter(log =>
             log.action === 'login' && !log.success
           ).length,
-          successfulLogins: recentLogs.filter(log => 
+          successfulLogins: recentLogs.filter(log =>
             log.action === 'login' && log.success
           ).length,
-          suspiciousActivities: recentLogs.filter(log => 
+          suspiciousActivities: recentLogs.filter(log =>
             log.action.includes('suspicious') || log.action.includes('anomaly')
           ).length,
-          accountLockouts: recentLogs.filter(log => 
+          accountLockouts: recentLogs.filter(log =>
             log.action === 'account_locked'
           ).length
         },

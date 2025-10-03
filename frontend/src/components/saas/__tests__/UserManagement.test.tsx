@@ -82,7 +82,7 @@ const mockMutations = {
 describe('UserManagement', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Setup default mock returns
     (saasQueries.useUsers as jest.Mock).mockReturnValue({
       data: mockUsersData,
@@ -184,7 +184,7 @@ describe('UserManagement', () => {
 
     const roleSelect = screen.getByLabelText('Role');
     fireEvent.mouseDown(roleSelect);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Super Admin')).toBeInTheDocument();
       expect(screen.getByText('Pharmacist')).toBeInTheDocument();
@@ -199,7 +199,7 @@ describe('UserManagement', () => {
 
     const statusSelect = screen.getByLabelText('Status');
     fireEvent.mouseDown(statusSelect);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Active')).toBeInTheDocument();
       expect(screen.getByText('Suspended')).toBeInTheDocument();
@@ -213,7 +213,7 @@ describe('UserManagement', () => {
     renderWithProviders(<UserManagement />);
 
     const actionButtons = screen.getAllByRole('button', { name: '' });
-    const firstActionButton = actionButtons.find(button => 
+    const firstActionButton = actionButtons.find(button =>
       button.querySelector('[data-testid="MoreVertIcon"]')
     );
 
@@ -232,7 +232,7 @@ describe('UserManagement', () => {
     renderWithProviders(<UserManagement />);
 
     const actionButtons = screen.getAllByRole('button', { name: '' });
-    const firstActionButton = actionButtons.find(button => 
+    const firstActionButton = actionButtons.find(button =>
       button.querySelector('[data-testid="MoreVertIcon"]')
     );
 
@@ -273,7 +273,7 @@ describe('UserManagement', () => {
     // Check that status chips are rendered
     const activeChips = screen.getAllByText('active');
     const suspendedChip = screen.getByText('suspended');
-    
+
     expect(activeChips.length).toBe(2);
     expect(suspendedChip).toBeInTheDocument();
   });
@@ -306,7 +306,7 @@ describe('UserManagement', () => {
 
     // Open actions menu and click edit
     const actionButtons = screen.getAllByRole('button', { name: '' });
-    const firstActionButton = actionButtons.find(button => 
+    const firstActionButton = actionButtons.find(button =>
       button.querySelector('[data-testid="MoreVertIcon"]')
     );
 
@@ -349,7 +349,7 @@ describe('UserManagement', () => {
 
     // Open actions menu and click suspend
     const actionButtons = screen.getAllByRole('button', { name: '' });
-    const firstActionButton = actionButtons.find(button => 
+    const firstActionButton = actionButtons.find(button =>
       button.querySelector('[data-testid="MoreVertIcon"]')
     );
 
@@ -379,7 +379,7 @@ describe('UserManagement', () => {
 
     // Open actions menu and click impersonate
     const actionButtons = screen.getAllByRole('button', { name: '' });
-    const firstActionButton = actionButtons.find(button => 
+    const firstActionButton = actionButtons.find(button =>
       button.querySelector('[data-testid="MoreVertIcon"]')
     );
 

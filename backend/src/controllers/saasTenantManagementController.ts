@@ -786,6 +786,146 @@ export class SaasTenantManagementController {
       });
     }
   }
+
+  /**
+   * Get tenant analytics
+   */
+  async getTenantAnalytics(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { tenantId } = req.params;
+      const { timeRange = '30d' } = req.query;
+
+      if (!validateObjectId(tenantId)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid tenant ID',
+          },
+        });
+        return;
+      }
+
+      // Mock analytics data
+      res.json({
+        success: true,
+        data: {
+          analytics: {
+            users: {
+              total: 25,
+              active: 18,
+              growth: 12.5
+            },
+            usage: {
+              patientsManaged: 150,
+              prescriptions: 320,
+              diagnostics: 85
+            },
+            engagement: {
+              dailyActiveUsers: 12,
+              weeklyActiveUsers: 18,
+              monthlyActiveUsers: 25
+            }
+          }
+        },
+      });
+    } catch (error) {
+      logger.error('Error getting tenant analytics:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'ANALYTICS_FETCH_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to get tenant analytics',
+        },
+      });
+    }
+  }
+
+  /**
+   * Get tenant performance metrics
+   */
+  async getTenantPerformanceMetrics(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { tenantId } = req.params;
+
+      if (!validateObjectId(tenantId)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid tenant ID',
+          },
+        });
+        return;
+      }
+
+      // Mock performance data
+      res.json({
+        success: true,
+        data: {
+          performance: {
+            responseTime: 235,
+            uptime: 99.8,
+            errorRate: 0.2,
+            requestsPerMinute: 45
+          }
+        },
+      });
+    } catch (error) {
+      logger.error('Error getting tenant performance metrics:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'PERFORMANCE_FETCH_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to get tenant performance metrics',
+        },
+      });
+    }
+  }
+
+  /**
+   * Get tenant billing analytics
+   */
+  async getTenantBillingAnalytics(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { tenantId } = req.params;
+      const { timeRange = '30d' } = req.query;
+
+      if (!validateObjectId(tenantId)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid tenant ID',
+          },
+        });
+        return;
+      }
+
+      // Mock billing data
+      res.json({
+        success: true,
+        data: {
+          billing: {
+            currentPlan: 'Professional',
+            monthlyRevenue: 99.99,
+            totalRevenue: 1199.88,
+            paymentStatus: 'current',
+            nextBillingDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
+          }
+        },
+      });
+    } catch (error) {
+      logger.error('Error getting tenant billing analytics:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'BILLING_ANALYTICS_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to get tenant billing analytics',
+        },
+      });
+    }
+  }
 }
 
 export const saasTenantManagementController = new SaasTenantManagementController();

@@ -131,7 +131,7 @@ export class SaaSAuditController {
 
       // Build query filters
       const filters: any = {};
-      
+
       if (userId) filters.userId = userId;
       if (action) filters.action = { $regex: action, $options: 'i' };
       if (resource) filters.resource = { $regex: resource, $options: 'i' };
@@ -628,7 +628,7 @@ export class SaaSAuditController {
         doc.fontSize(20).text('Compliance Report', 100, 100);
         doc.fontSize(12).text(`Report ID: ${report.reportId}`, 100, 130);
         doc.text(`Generated: ${format(report.generatedAt, 'MMMM dd, yyyy HH:mm')}`, 100, 150);
-        
+
         // Add summary
         doc.text('Summary:', 100, 180);
         doc.text(`Total Events: ${report.summary.totalEvents}`, 120, 200);
@@ -645,7 +645,7 @@ export class SaaSAuditController {
 
   private async generateComplianceExcel(report: ComplianceReport): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    
+
     // Summary sheet
     const summarySheet = workbook.addWorksheet('Summary');
     summarySheet.addRow(['Compliance Report Summary']);
@@ -658,7 +658,7 @@ export class SaaSAuditController {
     summarySheet.addRow(['Failed Events', report.summary.failedEvents]);
     summarySheet.addRow(['Flagged Events', report.summary.flaggedEvents]);
 
-    return await workbook.xlsx.writeBuffer() as Buffer;
+    return (await workbook.xlsx.writeBuffer()) as any as Buffer;
   }
 
   private generateAuditCSV(logs: any[], includeDetails: boolean): string {
@@ -743,7 +743,7 @@ export class SaaSAuditController {
       worksheet.addRow(row);
     });
 
-    return await workbook.xlsx.writeBuffer() as Buffer;
+    return (await workbook.xlsx.writeBuffer()) as any as Buffer;
   }
 }
 

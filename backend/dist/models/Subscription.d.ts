@@ -21,7 +21,9 @@ export interface ISubscription extends Document {
     trialEndDate?: Date;
     trialEndsAt?: Date;
     isTrial?: boolean;
+    amount?: number;
     priceAtPurchase: number;
+    billingCycle?: 'monthly' | 'yearly';
     billingInterval: 'monthly' | 'yearly';
     nextBillingDate?: Date;
     paymentHistory: mongoose.Types.ObjectId[];

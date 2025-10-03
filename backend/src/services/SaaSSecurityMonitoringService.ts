@@ -104,10 +104,10 @@ export class SecurityMonitoringService {
    */
   async getSecuritySettings(): Promise<ISecuritySettings> {
     try {
-      // Try cache first
-      const cached = await this.cacheService.get('security:settings');
-      if (cached) {
-        return cached;
+            // Try cache first  
+      const cached = await this.cacheService.get(cacheKey);
+      if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
+        return cached as ISecuritySettings;
       }
 
       let settings = await SecuritySettings.findOne({ isActive: true });

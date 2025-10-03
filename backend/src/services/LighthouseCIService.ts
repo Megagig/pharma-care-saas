@@ -159,7 +159,7 @@ export class LighthouseCIService {
     const cacheKey = `lighthouse-results:${JSON.stringify(filters)}`;
 
     const cached = await this.cacheService.get<LighthouseResult[]>(cacheKey);
-    if (cached) {
+    if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
       return cached;
     }
 
@@ -255,7 +255,7 @@ export class LighthouseCIService {
     const cacheKey = `lighthouse-trends:${branch}:${url}:${days}`;
 
     const cached = await this.cacheService.get<any[]>(cacheKey);
-    if (cached) {
+    if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
       return cached;
     }
 

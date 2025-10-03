@@ -94,7 +94,7 @@ export class SystemAnalyticsService {
     try {
       // Try to get from cache first
       const cached = await this.cacheService.get(this.METRICS_CACHE_KEY);
-      if (cached) {
+      if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
         return cached;
       }
 
@@ -182,7 +182,7 @@ export class SystemAnalyticsService {
 
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
-      if (cached) {
+      if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
         return cached;
       }
 
@@ -207,7 +207,7 @@ export class SystemAnalyticsService {
 
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
-      if (cached) {
+      if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
         return cached;
       }
 
@@ -250,7 +250,7 @@ export class SystemAnalyticsService {
     try {
       // Try cache first
       const cached = await this.cacheService.get(this.HEALTH_CACHE_KEY);
-      if (cached) {
+      if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
         return cached;
       }
 
@@ -294,7 +294,7 @@ export class SystemAnalyticsService {
 
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
-      if (cached) {
+      if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
         return cached;
       }
 

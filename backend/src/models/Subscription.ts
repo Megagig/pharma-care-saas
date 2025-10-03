@@ -33,7 +33,9 @@ export interface ISubscription extends Document {
   isTrial?: boolean; // Computed property
 
   // Billing information
+  amount?: number; // Subscription amount
   priceAtPurchase: number;
+  billingCycle?: 'monthly' | 'yearly'; // Billing cycle
   billingInterval: 'monthly' | 'yearly';
   nextBillingDate?: Date;
   paymentHistory: mongoose.Types.ObjectId[];

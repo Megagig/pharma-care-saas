@@ -45,6 +45,10 @@ export interface INotificationTemplate extends Document {
   approvedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+
+  // Convenience properties for backward compatibility
+  subject?: string;
+  body: string;
 }
 
 const templateVariableSchema = new Schema<ITemplateVariable>({
@@ -366,8 +370,8 @@ notificationTemplateSchema.methods.approve = function (approverId: mongoose.Type
 
 // Static methods
 notificationTemplateSchema.statics.findByChannelAndCategory = function (
-  channel: string, 
-  category: string, 
+  channel: string,
+  category: string,
   workspaceId?: mongoose.Types.ObjectId
 ) {
   const query: any = { channel, category, isActive: true };
@@ -377,17 +381,17 @@ notificationTemplateSchema.statics.findByChannelAndCategory = function (
     query.workspaceId = null;
     query.isDefault = true;
   }
-  
+
   return this.find(query).sort({ usageCount: -1 });
 };
 
 notificationTemplateSchema.statics.findDefaultTemplate = function (channel: string, category: string) {
-  return this.findOne({ 
-    channel, 
-    category, 
-    isDefault: true, 
+  return this.findOne({
+    channel,
+    category,
+    isDefault: true,
     isActive: true,
-    workspaceId: null 
+    workspaceId: null
   });
 };
 
@@ -396,7 +400,7 @@ notificationTemplateSchema.statics.getPopularTemplates = function (workspaceId?:
   if (workspaceId) {
     query.workspaceId = workspaceId;
   }
-  
+
   return this.find(query)
     .sort({ usageCount: -1, lastUsed: -1 })
     .limit(limit);
@@ -460,5 +464,14 @@ notificationTemplateSchema.statics.createDefaultTemplates = function (workspaceI
     )
   );
 };
+
+// Add virtual properties for backward compatibility
+notificationTemplateSchema.virtual('subject').get(function () {
+  return this.content.subject;
+});
+
+notificationTemplateSchema.virtual('body').get(function () {
+  return this.content.body;
+});
 
 export const NotificationTemplate = mongoose.model<INotificationTemplate>('NotificationTemplate', notificationTemplateSchema);

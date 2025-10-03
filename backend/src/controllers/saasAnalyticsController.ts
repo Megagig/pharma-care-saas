@@ -118,18 +118,18 @@ export class SaaSAnalyticsController {
       });
 
       const dateRange = this.getDateRange(timeRange as string);
-      
+
       // Get subscription data
       const subscriptions = await Subscription.find({
         createdAt: { $gte: dateRange.start, $lte: dateRange.end }
       }).populate('workspaceId');
 
       const activeSubscriptions = subscriptions.filter(sub => sub.status === 'active');
-      const cancelledSubscriptions = subscriptions.filter(sub => sub.status === 'cancelled');
+      const cancelledSubscriptions = subscriptions.filter(sub => sub.status === 'canceled'); // Fixed: 'canceled' not 'cancelled'
 
       // Calculate MRR (Monthly Recurring Revenue)
       const mrr = activeSubscriptions.reduce((sum, sub) => {
-        const monthlyAmount = this.getMonthlyAmount(sub.amount, sub.billingCycle);
+        const monthlyAmount = this.getMonthlyAmount(sub.amount || sub.priceAtPurchase, sub.billingCycle || sub.billingInterval);
         return sum + monthlyAmount;
       }, 0);
 
@@ -150,15 +150,15 @@ export class SaaSAnalyticsController {
 
       // Get plan distribution
       const planCounts = activeSubscriptions.reduce((acc, sub) => {
-        const planName = sub.planId || 'Unknown';
+        const planName = sub.planId.toString(); // Convert ObjectId to string
         acc[planName] = (acc[planName] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
       const planDistribution: PlanDistribution[] = Object.entries(planCounts).map(([planName, count]) => {
         const planRevenue = activeSubscriptions
-          .filter(sub => sub.planId === planName)
-          .reduce((sum, sub) => sum + this.getMonthlyAmount(sub.amount, sub.billingCycle), 0);
+          .filter(sub => sub.planId.toString() === planName) // Convert ObjectId to string
+          .reduce((sum, sub) => sum + this.getMonthlyAmount(sub.amount || sub.priceAtPurchase, sub.billingCycle || sub.billingInterval), 0);
 
         return {
           planName,
@@ -270,7 +270,7 @@ export class SaaSAnalyticsController {
           return {
             pharmacyId: workplace._id.toString(),
             pharmacyName: workplace.name,
-            subscriptionPlan: workplace.subscriptionId?.planId || 'Free',
+            subscriptionPlan: (workplace.subscriptionId as any)?.planId?.toString() || 'Free', // Type assertion for populated field
             prescriptionsProcessed: Math.floor(Math.random() * 1000) + 100, // Placeholder
             diagnosticsPerformed: Math.floor(Math.random() * 500) + 50, // Placeholder
             patientsManaged,
@@ -354,8 +354,8 @@ export class SaaSAnalyticsController {
       // Group outcomes by pharmacy
       const outcomesByPharmacy = interventions.reduce((acc, intervention) => {
         const pharmacyId = intervention.workplaceId._id.toString();
-        const pharmacyName = intervention.workplaceId.name;
-        
+        const pharmacyName = (intervention.workplaceId as any).name; // Type assertion for populated field
+
         if (!acc[pharmacyId]) {
           acc[pharmacyId] = {
             pharmacyId,
@@ -366,12 +366,12 @@ export class SaaSAnalyticsController {
             patientSatisfaction: 0
           };
         }
-        
+
         acc[pharmacyId].interventions++;
         acc[pharmacyId].adherenceImprovement += intervention.adherenceImprovement || 0;
         acc[pharmacyId].costSavings += intervention.costSavings || 0;
         acc[pharmacyId].patientSatisfaction += intervention.patientSatisfaction || 0;
-        
+
         return acc;
       }, {} as Record<string, any>);
 
@@ -446,7 +446,7 @@ export class SaaSAnalyticsController {
       switch (reportType) {
         case 'subscription':
           // Mock request for subscription analytics
-          const mockReq = { query: { timeRange: '30d' }, user: req.user } as AuthRequest;
+          const mockReq = { query: { timeRange: '30d' }, user: req.user } as unknown as AuthRequest;
           const mockRes = {
             json: (data: any) => { reportData = data.data; }
           } as any;
@@ -535,7 +535,7 @@ export class SaaSAnalyticsController {
 
       // In a real implementation, this would create a scheduled job
       // For now, we'll just log the schedule request
-      
+
       sendSuccess(
         res,
         {
@@ -615,7 +615,7 @@ export class SaaSAnalyticsController {
         // Add content to PDF
         doc.fontSize(20).text(`${reportType.toUpperCase()} Analytics Report`, 100, 100);
         doc.fontSize(12).text(`Generated on: ${format(new Date(), 'MMMM dd, yyyy')}`, 100, 130);
-        
+
         // Add report data (simplified)
         doc.text(JSON.stringify(data, null, 2), 100, 160);
 
@@ -634,7 +634,7 @@ export class SaaSAnalyticsController {
     worksheet.addRow(['Report Type', reportType]);
     worksheet.addRow(['Generated', format(new Date(), 'yyyy-MM-dd HH:mm:ss')]);
     worksheet.addRow([]);
-    
+
     // Add data rows based on report type
     if (data && typeof data === 'object') {
       Object.entries(data).forEach(([key, value]) => {
@@ -642,7 +642,7 @@ export class SaaSAnalyticsController {
       });
     }
 
-    return await workbook.xlsx.writeBuffer() as Buffer;
+    return (await workbook.xlsx.writeBuffer()) as any as Buffer;
   }
 
   private generateCSVReport(data: any, reportType: string): string {

@@ -555,7 +555,7 @@ class ClinicalInterventionService {
         const cached = await CacheManager.get<
           PaginatedResult<IClinicalIntervention>
         >(cacheKey);
-        if (cached) {
+        if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
           performanceCollector.recordInterventionMetrics(
             'getInterventions',
             filters.workplaceId.toString(),

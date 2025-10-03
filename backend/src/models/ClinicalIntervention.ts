@@ -42,8 +42,10 @@ export interface ISuccessMetrics {
     problemResolved: boolean;
     medicationOptimized: boolean;
     adherenceImproved: boolean;
+    adherenceImprovement?: number; // Percentage improvement in adherence
     costSavings?: number;
     qualityOfLifeImproved?: boolean;
+    patientSatisfaction?: number; // Rating 1-10
 }
 
 export interface IInterventionOutcome {
@@ -99,9 +101,14 @@ export interface IClinicalIntervention extends Document {
     | 'completed'
     | 'cancelled';
     implementationNotes?: string;
+    type?: string; // Intervention type
+    outcome?: 'successful' | 'partially_successful' | 'unsuccessful' | 'unknown'; // Simple outcome
 
     // Outcome Measurement
     outcomes?: IInterventionOutcome;
+    adherenceImprovement?: number; // Percentage improvement (0-100)
+    costSavings?: number; // Cost savings in currency
+    patientSatisfaction?: number; // Rating 1-10
 
     // Follow-up and Monitoring
     followUp: IFollowUp;

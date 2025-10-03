@@ -21,6 +21,7 @@ export interface IUser extends Document {
   | 'suspended'
   | 'license_pending'
   | 'license_rejected';
+  isActive: boolean; // Added for notification service compatibility
   emailVerified: boolean;
   verificationToken?: string;
   verificationCode?: string;
@@ -181,6 +182,11 @@ const userSchema = new Schema(
         'license_rejected',
       ],
       default: 'pending',
+      index: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
       index: true,
     },
     emailVerified: {

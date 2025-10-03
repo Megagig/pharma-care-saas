@@ -56,6 +56,10 @@ export interface INotificationSettings extends Document {
   lastModifiedBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+
+  // Methods
+  isChannelEnabled(channel: string): boolean;
+  isInQuietHours(): boolean;
 }
 
 const channelConfigSchema = new Schema<IChannelConfig>({
@@ -170,7 +174,7 @@ const notificationSettingsSchema = new Schema<INotificationSettings>(
         startTime: {
           type: String,
           validate: {
-            validator: function(time: string) {
+            validator: function (time: string) {
               return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
             },
             message: 'Invalid time format. Use HH:MM format.',
@@ -180,7 +184,7 @@ const notificationSettingsSchema = new Schema<INotificationSettings>(
         endTime: {
           type: String,
           validate: {
-            validator: function(time: string) {
+            validator: function (time: string) {
               return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
             },
             message: 'Invalid time format. Use HH:MM format.',
@@ -305,24 +309,24 @@ notificationSettingsSchema.methods.isChannelEnabled = function (channel: string)
 
 notificationSettingsSchema.methods.isInQuietHours = function (timezone?: string): boolean {
   if (!this.globalSettings.quietHours.enabled) return false;
-  
+
   const tz = timezone || this.globalSettings.quietHours.timezone;
   const now = new Date();
-  const currentTime = now.toLocaleTimeString('en-US', { 
-    timeZone: tz, 
-    hour12: false, 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  const currentTime = now.toLocaleTimeString('en-US', {
+    timeZone: tz,
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
   });
-  
+
   const startTime = this.globalSettings.quietHours.startTime;
   const endTime = this.globalSettings.quietHours.endTime;
-  
+
   // Handle overnight quiet hours (e.g., 22:00 to 08:00)
   if (startTime > endTime) {
     return currentTime >= startTime || currentTime <= endTime;
   }
-  
+
   return currentTime >= startTime && currentTime <= endTime;
 };
 
@@ -333,18 +337,18 @@ notificationSettingsSchema.methods.canSendNotification = function (channel: stri
 };
 
 notificationSettingsSchema.methods.getNextAvailableChannel = function (preferredChannels: string[] = []): string | null {
-  const allChannels = this.deliveryPreferences.priorityChannels.length > 0 
-    ? this.deliveryPreferences.priorityChannels 
+  const allChannels = this.deliveryPreferences.priorityChannels.length > 0
+    ? this.deliveryPreferences.priorityChannels
     : ['email', 'sms', 'push', 'whatsapp', 'inApp'];
-  
+
   const channelsToCheck = preferredChannels.length > 0 ? preferredChannels : allChannels;
-  
+
   for (const channel of channelsToCheck) {
     if (this.canSendNotification(channel)) {
       return channel;
     }
   }
-  
+
   return null;
 };
 
@@ -406,6 +410,21 @@ notificationSettingsSchema.statics.createDefaultSettings = function (workspaceId
     },
     lastModifiedBy: adminId,
   });
+};
+
+// Add instance methods
+notificationSettingsSchema.methods.isChannelEnabled = function (channel: string): boolean {
+  return this.channels[channel]?.enabled || false;
+};
+
+notificationSettingsSchema.methods.isInQuietHours = function (): boolean {
+  if (!this.globalSettings.quietHours.enabled) return false;
+
+  const now = new Date();
+  const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+
+  return currentTime >= this.globalSettings.quietHours.startTime &&
+    currentTime <= this.globalSettings.quietHours.endTime;
 };
 
 export const NotificationSettings = mongoose.model<INotificationSettings>('NotificationSettings', notificationSettingsSchema);
