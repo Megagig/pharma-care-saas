@@ -45,7 +45,7 @@ interface AIResponseSchema {
     disclaimer?: string;
 }
 
-const aiResponseSchema: JSONSchemaType<AIResponseSchema> = {
+const aiResponseSchema = {
     type: 'object',
     properties: {
         diagnoses: {
@@ -207,7 +207,7 @@ interface DrugInteractionSchema {
     }>;
 }
 
-const drugInteractionSchema: JSONSchemaType<DrugInteractionSchema> = {
+const drugInteractionSchema = {
     type: 'object',
     properties: {
         interactions: {

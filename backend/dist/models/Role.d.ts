@@ -17,8 +17,9 @@ export interface IRole extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-declare const _default: mongoose.Model<IRole, {}, {}, {}, mongoose.Document<unknown, {}, IRole> & IRole & {
+declare const Role: mongoose.Model<IRole, {}, {}, {}, mongoose.Document<unknown, {}, IRole> & IRole & {
     _id: mongoose.Types.ObjectId;
 }, any>;
-export default _default;
+export { Role };
+export default Role;
 //# sourceMappingURL=Role.d.ts.map

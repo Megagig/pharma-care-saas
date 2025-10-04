@@ -34,7 +34,7 @@ export declare const medicationEntrySchema: z.ZodObject<{
     dosage: z.ZodString;
     frequency: z.ZodString;
     route: z.ZodOptional<z.ZodString>;
-    startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     indication: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export declare const socialHistorySchema: z.ZodObject<{
@@ -87,7 +87,7 @@ export declare const inputSnapshotSchema: z.ZodObject<{
         dosage: z.ZodString;
         frequency: z.ZodString;
         route: z.ZodOptional<z.ZodString>;
-        startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+        startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
         indication: z.ZodOptional<z.ZodString>;
     }, z.core.$strip>>>;
     allergies: z.ZodDefault<z.ZodArray<z.ZodString>>;
@@ -147,7 +147,7 @@ export declare const createDiagnosticRequestSchema: z.ZodObject<{
             dosage: z.ZodString;
             frequency: z.ZodString;
             route: z.ZodOptional<z.ZodString>;
-            startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+            startDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
             indication: z.ZodOptional<z.ZodString>;
         }, z.core.$strip>>>;
         allergies: z.ZodDefault<z.ZodArray<z.ZodString>>;
@@ -175,8 +175,8 @@ export declare const createDiagnosticRequestSchema: z.ZodObject<{
         familyHistory: z.ZodDefault<z.ZodArray<z.ZodString>>;
     }, z.core.$strip>;
     priority: z.ZodDefault<z.ZodEnum<{
-        routine: "routine";
         urgent: "urgent";
+        routine: "routine";
         stat: "stat";
     }>>;
     consentObtained: z.ZodBoolean;
@@ -196,8 +196,8 @@ export declare const diagnosticQuerySchema: z.ZodObject<{
         processing: "processing";
     }>>;
     priority: z.ZodOptional<z.ZodEnum<{
-        routine: "routine";
         urgent: "urgent";
+        routine: "routine";
         stat: "stat";
     }>>;
     pharmacistId: z.ZodOptional<z.ZodString>;
@@ -216,13 +216,13 @@ export declare const rejectResultSchema: z.ZodObject<{
 }, z.core.$strip>;
 export declare const pendingReviewsQuerySchema: z.ZodObject<{
     priority: z.ZodOptional<z.ZodEnum<{
-        routine: "routine";
         urgent: "urgent";
+        routine: "routine";
         stat: "stat";
     }>>;
-    confidenceMin: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<number | undefined, string | undefined>>;
-    confidenceMax: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<number | undefined, string | undefined>>;
-    hasRedFlags: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<boolean | undefined, string | undefined>>;
+    confidenceMin: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<number, string>>;
+    confidenceMax: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<number, string>>;
+    hasRedFlags: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<boolean, string>>;
     orderBy: z.ZodDefault<z.ZodEnum<{
         priority: "priority";
         confidence: "confidence";
@@ -251,13 +251,13 @@ export declare const createInterventionSchema: z.ZodObject<{
     category: z.ZodString;
     recommendations: z.ZodArray<z.ZodString>;
     followUpRequired: z.ZodDefault<z.ZodBoolean>;
-    followUpDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    followUpDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     targetOutcome: z.ZodOptional<z.ZodString>;
     monitoringParameters: z.ZodDefault<z.ZodArray<z.ZodString>>;
 }, z.core.$strip>;
 export declare const analyticsQuerySchema: z.ZodObject<{
-    from: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
-    to: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    from: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
+    to: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
 }, z.core.$strip>;
 import { Request, Response, NextFunction } from 'express';
 type ValidationTarget = 'body' | 'params' | 'query';

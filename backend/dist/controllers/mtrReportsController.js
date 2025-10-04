@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getOutcomeMetricsReport = exports.getQualityAssuranceReport = exports.getPharmacistPerformanceReport = exports.getInterventionEffectivenessReport = exports.getMTRSummaryReport = void 0;
+exports.getEnhancedOutcomeMetricsReport = exports.getTrendForecastingAnalytics = exports.getOperationalEfficiencyMetrics = exports.getCostEffectivenessAnalysis = exports.getPatientOutcomeAnalytics = exports.getOutcomeMetricsReport = exports.getQualityAssuranceReport = exports.getPharmacistPerformanceReport = exports.getInterventionEffectivenessReport = exports.getMTRSummaryReport = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const MedicationTherapyReview_1 = __importDefault(require("../models/MedicationTherapyReview"));
 const DrugTherapyProblem_1 = __importDefault(require("../models/DrugTherapyProblem"));
@@ -717,9 +717,553 @@ const getOutcomeMetricsReport = async (req, res) => {
                     clinicalParametersImprovedCount: {
                         $sum: { $cond: ['$clinicalOutcomes.clinicalParametersImproved', 1, 0] }
                     },
+                    totalCostSavings: { $sum: '$clinicalOutcomes.costSavings' }
+                }
+            }
+        ]);
+        const outcomes = clinicalOutcomes[0] || {
+            totalReviews: 0,
+            totalProblemsResolved: 0,
+            totalMedicationsOptimized: 0,
+            adherenceImprovedCount: 0,
+            adverseEventsReducedCount: 0,
+            qualityOfLifeImprovedCount: 0,
+            clinicalParametersImprovedCount: 0,
+            totalCostSavings: 0
+        };
+        (0, responseHelpers_1.sendSuccess)(res, {
+            clinicalOutcomes: outcomes,
+            summary: {
+                totalReviews: outcomes.totalReviews,
+                totalCostSavings: outcomes.totalCostSavings,
+                avgProblemsResolvedPerReview: outcomes.totalReviews > 0
+                    ? Math.round((outcomes.totalProblemsResolved / outcomes.totalReviews) * 100) / 100
+                    : 0,
+                avgMedicationsOptimizedPerReview: outcomes.totalReviews > 0
+                    ? Math.round((outcomes.totalMedicationsOptimized / outcomes.totalReviews) * 100) / 100
+                    : 0
+            }
+        }, 'Outcome metrics report generated successfully');
+    }
+    catch (error) {
+        console.error('Error generating outcome metrics report:', error);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to generate outcome metrics report', 500);
+    }
+};
+exports.getOutcomeMetricsReport = getOutcomeMetricsReport;
+const getPatientOutcomeAnalytics = async (req, res) => {
+    try {
+        const { startDate, endDate, patientId, therapyType } = req.query;
+        const workplaceId = req.user?.workplaceId;
+        const dateFilter = {};
+        if (startDate || endDate) {
+            dateFilter.createdAt = {};
+            if (startDate)
+                dateFilter.createdAt.$gte = new Date(startDate);
+            if (endDate)
+                dateFilter.createdAt.$lte = new Date(endDate);
+        }
+        const additionalFilters = {};
+        if (patientId)
+            additionalFilters.patientId = new mongoose_1.default.Types.ObjectId(patientId);
+        if (therapyType)
+            additionalFilters.reviewType = therapyType;
+        const matchStage = {
+            workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
+            isDeleted: false,
+            ...dateFilter,
+            ...additionalFilters
+        };
+        const therapyEffectiveness = await MedicationTherapyReview_1.default.aggregate([
+            { $match: matchStage },
+            {
+                $group: {
+                    _id: '$reviewType',
+                    totalReviews: { $sum: 1 },
+                    completedReviews: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+                    avgCompletionTime: {
+                        $avg: {
+                            $cond: [
+                                { $ne: ['$completedAt', null] },
+                                { $divide: [{ $subtract: ['$completedAt', '$startedAt'] }, 1000 * 60 * 60 * 24] },
+                                null
+                            ]
+                        }
+                    },
+                    totalProblemsResolved: { $sum: '$clinicalOutcomes.problemsResolved' },
+                    totalCostSavings: { $sum: '$clinicalOutcomes.costSavings' }
+                }
+            },
+            {
+                $addFields: {
+                    completionRate: { $multiply: [{ $divide: ['$completedReviews', '$totalReviews'] }, 100] },
+                    avgProblemsPerReview: { $divide: ['$totalProblemsResolved', '$totalReviews'] }
+                }
+            }
+        ]);
+        const clinicalImprovements = await MedicationTherapyReview_1.default.aggregate([
+            { $match: { ...matchStage, status: 'completed' } },
+            {
+                $group: {
+                    _id: null,
+                    bloodPressureImproved: { $sum: { $cond: ['$clinicalOutcomes.bloodPressureImproved', 1, 0] } },
+                    bloodSugarImproved: { $sum: { $cond: ['$clinicalOutcomes.bloodSugarImproved', 1, 0] } },
+                    cholesterolImproved: { $sum: { $cond: ['$clinicalOutcomes.cholesterolImproved', 1, 0] } },
+                    painReduced: { $sum: { $cond: ['$clinicalOutcomes.painReduced', 1, 0] } },
+                    totalReviews: { $sum: 1 }
+                }
+            }
+        ]);
+        const adverseEventReduction = await MedicationTherapyReview_1.default.aggregate([
+            { $match: { ...matchStage, status: 'completed' } },
+            {
+                $group: {
+                    _id: '$reviewType',
+                    totalReviews: { $sum: 1 },
+                    adverseEventsReduced: { $sum: { $cond: ['$clinicalOutcomes.adverseEventsReduced', 1, 0] } },
+                    avgAdverseEventReduction: { $avg: '$clinicalOutcomes.adverseEventReductionScore' }
+                }
+            },
+            {
+                $addFields: {
+                    adverseEventReductionRate: { $multiply: [{ $divide: ['$adverseEventsReduced', '$totalReviews'] }, 100] }
+                }
+            }
+        ]);
+        (0, responseHelpers_1.sendSuccess)(res, {
+            therapyEffectiveness,
+            clinicalImprovements: clinicalImprovements[0] || {},
+            adverseEventReduction,
+            summary: {
+                totalTherapyTypes: therapyEffectiveness.length,
+                avgCompletionRate: therapyEffectiveness.length > 0
+                    ? therapyEffectiveness.reduce((sum, t) => sum + t.completionRate, 0) / therapyEffectiveness.length
+                    : 0,
+                totalCostSavings: therapyEffectiveness.reduce((sum, t) => sum + t.totalCostSavings, 0)
+            }
+        }, 'Patient outcome analytics generated successfully');
+    }
+    catch (error) {
+        console.error('Error generating patient outcome analytics:', error);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to generate patient outcome analytics', 500);
+    }
+};
+exports.getPatientOutcomeAnalytics = getPatientOutcomeAnalytics;
+const getCostEffectivenessAnalysis = async (req, res) => {
+    try {
+        const { startDate, endDate, interventionType } = req.query;
+        const workplaceId = req.user?.workplaceId;
+        const dateFilter = {};
+        if (startDate || endDate) {
+            dateFilter.createdAt = {};
+            if (startDate)
+                dateFilter.createdAt.$gte = new Date(startDate);
+            if (endDate)
+                dateFilter.createdAt.$lte = new Date(endDate);
+        }
+        const additionalFilters = {};
+        if (interventionType)
+            additionalFilters.type = interventionType;
+        const matchStage = {
+            workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
+            isDeleted: false,
+            ...dateFilter,
+            ...additionalFilters
+        };
+        const costSavingsByType = await MTRIntervention_1.default.aggregate([
+            { $match: matchStage },
+            {
+                $group: {
+                    _id: '$type',
+                    totalInterventions: { $sum: 1 },
+                    totalCostSavings: { $sum: '$costSavings' },
+                    avgCostSavings: { $avg: '$costSavings' },
+                    totalImplementationCost: { $sum: '$implementationCost' }
+                }
+            },
+            {
+                $addFields: {
+                    roi: {
+                        $multiply: [
+                            {
+                                $divide: [
+                                    { $subtract: ['$totalCostSavings', '$totalImplementationCost'] },
+                                    { $cond: [{ $eq: ['$totalImplementationCost', 0] }, 1, '$totalImplementationCost'] }
+                                ]
+                            },
+                            100
+                        ]
+                    }
+                }
+            },
+            { $sort: { totalCostSavings: -1 } }
+        ]);
+        const revenueImpact = await MedicationTherapyReview_1.default.aggregate([
+            { $match: { ...matchStage, status: 'completed' } },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$completedAt' },
+                        month: { $month: '$completedAt' }
+                    },
                     totalCostSavings: { $sum: '$clinicalOutcomes.costSavings' },
-                    avgProblemsPerReview: { $avg: '$clinicalOutcomes.problemsResolved' },
-                    avgMedicationsPerReview: { $avg: '$clinicalOutcomes.medicationsOptimized' }
+                    totalReviews: { $sum: 1 },
+                    avgCostSavingsPerReview: { $avg: '$clinicalOutcomes.costSavings' }
+                }
+            },
+            { $sort: { '_id.year': 1, '_id.month': 1 } }
+        ]);
+        const budgetInsights = await MedicationTherapyReview_1.default.aggregate([
+            { $match: { ...matchStage, status: 'completed' } },
+            {
+                $group: {
+                    _id: null,
+                    totalCostSavings: { $sum: '$clinicalOutcomes.costSavings' },
+                    totalReviews: { $sum: 1 },
+                    avgCostSavingsPerReview: { $avg: '$clinicalOutcomes.costSavings' },
+                    projectedAnnualSavings: {
+                        $sum: {
+                            $map: {
+                                input: { $range: [0, 12] },
+                                as: "month",
+                                in: { $avg: '$clinicalOutcomes.costSavings' }
+                            }
+                        }
+                    }
+                }
+            }
+        ]);
+        const formatCurrency = (amount) => new Intl.NumberFormat('en-NG', {
+            style: 'currency',
+            currency: 'NGN',
+            minimumFractionDigits: 2
+        }).format(amount);
+        const formattedCostSavings = costSavingsByType.map(item => ({
+            ...item,
+            formattedTotalCostSavings: formatCurrency(item.totalCostSavings),
+            formattedAvgCostSavings: formatCurrency(item.avgCostSavings),
+            formattedImplementationCost: formatCurrency(item.totalImplementationCost)
+        }));
+        const budget = budgetInsights[0] || {};
+        (0, responseHelpers_1.sendSuccess)(res, {
+            costSavingsByType: formattedCostSavings,
+            revenueImpact,
+            budgetInsights: {
+                ...budget,
+                formattedTotalCostSavings: formatCurrency(budget.totalCostSavings || 0),
+                formattedAvgCostSavingsPerReview: formatCurrency(budget.avgCostSavingsPerReview || 0),
+                formattedProjectedAnnualSavings: formatCurrency(budget.projectedAnnualSavings || 0)
+            },
+            currency: { code: 'NGN', symbol: '₦' }
+        }, 'Cost-effectiveness analysis generated successfully');
+    }
+    catch (error) {
+        console.error('Error generating cost-effectiveness analysis:', error);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to generate cost-effectiveness analysis', 500);
+    }
+};
+exports.getCostEffectivenessAnalysis = getCostEffectivenessAnalysis;
+const getOperationalEfficiencyMetrics = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        const workplaceId = req.user?.workplaceId;
+        const dateFilter = {};
+        if (startDate || endDate) {
+            dateFilter.createdAt = {};
+            if (startDate)
+                dateFilter.createdAt.$gte = new Date(startDate);
+            if (endDate)
+                dateFilter.createdAt.$lte = new Date(endDate);
+        }
+        const matchStage = {
+            workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
+            isDeleted: false,
+            ...dateFilter
+        };
+        const workflowMetrics = await MedicationTherapyReview_1.default.aggregate([
+            { $match: matchStage },
+            {
+                $group: {
+                    _id: '$status',
+                    count: { $sum: 1 },
+                    avgProcessingTime: {
+                        $avg: {
+                            $cond: [
+                                { $ne: ['$completedAt', null] },
+                                { $divide: [{ $subtract: ['$completedAt', '$createdAt'] }, 1000 * 60 * 60] },
+                                null
+                            ]
+                        }
+                    }
+                }
+            }
+        ]);
+        const resourceUtilization = await MedicationTherapyReview_1.default.aggregate([
+            { $match: matchStage },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'pharmacistId',
+                    foreignField: '_id',
+                    as: 'pharmacist'
+                }
+            },
+            { $unwind: '$pharmacist' },
+            {
+                $group: {
+                    _id: '$pharmacistId',
+                    pharmacistName: { $first: '$pharmacist.name' },
+                    totalReviews: { $sum: 1 },
+                    completedReviews: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+                    avgCompletionTime: {
+                        $avg: {
+                            $cond: [
+                                { $ne: ['$completedAt', null] },
+                                { $divide: [{ $subtract: ['$completedAt', '$startedAt'] }, 1000 * 60 * 60 * 24] },
+                                null
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $addFields: {
+                    utilizationRate: { $multiply: [{ $divide: ['$completedReviews', '$totalReviews'] }, 100] },
+                    efficiency: {
+                        $cond: [
+                            { $gt: ['$avgCompletionTime', 0] },
+                            { $divide: [100, '$avgCompletionTime'] },
+                            0
+                        ]
+                    }
+                }
+            }
+        ]);
+        const performanceBenchmarks = await MedicationTherapyReview_1.default.aggregate([
+            { $match: { ...matchStage, status: 'completed' } },
+            {
+                $group: {
+                    _id: null,
+                    avgCompletionTime: {
+                        $avg: { $divide: [{ $subtract: ['$completedAt', '$startedAt'] }, 1000 * 60 * 60 * 24] }
+                    },
+                    medianCompletionTime: {
+                        $avg: { $divide: [{ $subtract: ['$completedAt', '$startedAt'] }, 1000 * 60 * 60 * 24] }
+                    },
+                    totalReviews: { $sum: 1 },
+                    totalProblemsIdentified: { $sum: { $size: '$problems' } },
+                    totalInterventions: { $sum: { $size: '$interventions' } }
+                }
+            },
+            {
+                $addFields: {
+                    avgProblemsPerReview: { $divide: ['$totalProblemsIdentified', '$totalReviews'] },
+                    avgInterventionsPerReview: { $divide: ['$totalInterventions', '$totalReviews'] }
+                }
+            }
+        ]);
+        const benchmarks = performanceBenchmarks[0] || {};
+        (0, responseHelpers_1.sendSuccess)(res, {
+            workflowMetrics,
+            resourceUtilization,
+            performanceBenchmarks: benchmarks,
+            recommendations: [
+                {
+                    category: 'Workflow Optimization',
+                    suggestion: 'Focus on reducing average completion time for in-progress reviews',
+                    priority: 'high'
+                },
+                {
+                    category: 'Resource Allocation',
+                    suggestion: 'Balance workload distribution among pharmacists',
+                    priority: 'medium'
+                },
+                {
+                    category: 'Process Improvement',
+                    suggestion: 'Implement standardized review templates to improve efficiency',
+                    priority: 'medium'
+                }
+            ]
+        }, 'Operational efficiency metrics generated successfully');
+    }
+    catch (error) {
+        console.error('Error generating operational efficiency metrics:', error);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to generate operational efficiency metrics', 500);
+    }
+};
+exports.getOperationalEfficiencyMetrics = getOperationalEfficiencyMetrics;
+const getTrendForecastingAnalytics = async (req, res) => {
+    try {
+        const { period = '12months' } = req.query;
+        const workplaceId = req.user?.workplaceId;
+        const now = new Date();
+        let startDate;
+        switch (period) {
+            case '6months':
+                startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+                break;
+            case '12months':
+                startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+                break;
+            case '24months':
+                startDate = new Date(now.getFullYear() - 2, now.getMonth(), 1);
+                break;
+            default:
+                startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+        }
+        const matchStage = {
+            workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
+            isDeleted: false,
+            createdAt: { $gte: startDate }
+        };
+        const historicalTrends = await MedicationTherapyReview_1.default.aggregate([
+            { $match: matchStage },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$createdAt' },
+                        month: { $month: '$createdAt' }
+                    },
+                    totalReviews: { $sum: 1 },
+                    completedReviews: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+                    avgCompletionTime: {
+                        $avg: {
+                            $cond: [
+                                { $ne: ['$completedAt', null] },
+                                { $divide: [{ $subtract: ['$completedAt', '$startedAt'] }, 1000 * 60 * 60 * 24] },
+                                null
+                            ]
+                        }
+                    },
+                    totalCostSavings: { $sum: '$clinicalOutcomes.costSavings' }
+                }
+            },
+            { $sort: { '_id.year': 1, '_id.month': 1 } }
+        ]);
+        const seasonalPatterns = await MedicationTherapyReview_1.default.aggregate([
+            { $match: matchStage },
+            {
+                $group: {
+                    _id: { $month: '$createdAt' },
+                    avgReviews: { $avg: 1 },
+                    totalReviews: { $sum: 1 }
+                }
+            },
+            { $sort: { '_id': 1 } }
+        ]);
+        const growthAnalysis = historicalTrends.length > 1 ? {
+            reviewGrowthRate: calculateGrowthRate(historicalTrends.map(t => t.totalReviews)),
+            completionRateGrowth: calculateGrowthRate(historicalTrends.map(t => t.totalReviews > 0 ? (t.completedReviews / t.totalReviews) * 100 : 0)),
+            costSavingsGrowth: calculateGrowthRate(historicalTrends.map(t => t.totalCostSavings))
+        } : { reviewGrowthRate: 0, completionRateGrowth: 0, costSavingsGrowth: 0 };
+        const anomalies = historicalTrends.filter((trend, index) => {
+            if (index === 0)
+                return false;
+            const prevTrend = historicalTrends[index - 1];
+            const reviewChange = Math.abs(trend.totalReviews - prevTrend.totalReviews) / prevTrend.totalReviews;
+            return reviewChange > 0.5;
+        });
+        const forecast = generateForecast(historicalTrends, 3);
+        (0, responseHelpers_1.sendSuccess)(res, {
+            historicalTrends,
+            seasonalPatterns,
+            growthAnalysis,
+            anomalies,
+            forecast,
+            insights: [
+                {
+                    type: 'trend',
+                    message: `Review volume has ${growthAnalysis.reviewGrowthRate > 0 ? 'increased' : 'decreased'} by ${Math.abs(growthAnalysis.reviewGrowthRate).toFixed(1)}% over the period`,
+                    significance: Math.abs(growthAnalysis.reviewGrowthRate) > 10 ? 'high' : 'medium'
+                },
+                {
+                    type: 'seasonal',
+                    message: `Peak activity typically occurs in ${getMonthName(seasonalPatterns.reduce((max, curr) => curr.totalReviews > max.totalReviews ? curr : max)._id)}`,
+                    significance: 'medium'
+                }
+            ]
+        }, 'Trend forecasting analytics generated successfully');
+    }
+    catch (error) {
+        console.error('Error generating trend forecasting analytics:', error);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to generate trend forecasting analytics', 500);
+    }
+};
+exports.getTrendForecastingAnalytics = getTrendForecastingAnalytics;
+function calculateGrowthRate(values) {
+    if (values.length < 2)
+        return 0;
+    const first = values[0] || 1;
+    const last = values[values.length - 1] || 0;
+    return ((last - first) / first) * 100;
+}
+function generateForecast(historicalData, monthsAhead) {
+    if (historicalData.length < 2)
+        return [];
+    const forecast = [];
+    const lastTrend = historicalData[historicalData.length - 1];
+    const growthRate = calculateGrowthRate(historicalData.map(t => t.totalReviews)) / 100 / historicalData.length;
+    for (let i = 1; i <= monthsAhead; i++) {
+        const forecastDate = new Date(lastTrend._id.year, lastTrend._id.month - 1 + i, 1);
+        forecast.push({
+            _id: {
+                year: forecastDate.getFullYear(),
+                month: forecastDate.getMonth() + 1
+            },
+            projectedReviews: Math.round(lastTrend.totalReviews * (1 + growthRate * i)),
+            confidence: Math.max(0.5, 1 - (i * 0.1))
+        });
+    }
+    return forecast;
+}
+function getMonthName(monthNumber) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+    return months[monthNumber - 1] || 'Unknown';
+}
+const getEnhancedOutcomeMetricsReport = async (req, res) => {
+    try {
+        const { startDate, endDate, reviewType } = req.query;
+        const workplaceId = req.user?.workplaceId;
+        const dateFilter = {};
+        if (startDate || endDate) {
+            dateFilter.completedAt = {};
+            if (startDate)
+                dateFilter.completedAt.$gte = new Date(startDate);
+            if (endDate)
+                dateFilter.completedAt.$lte = new Date(endDate);
+        }
+        const additionalFilters = {};
+        if (reviewType)
+            additionalFilters.reviewType = reviewType;
+        const matchStage = {
+            workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
+            isDeleted: false,
+            status: 'completed',
+            ...dateFilter,
+            ...additionalFilters
+        };
+        const clinicalOutcomes = await MedicationTherapyReview_1.default.aggregate([
+            { $match: matchStage },
+            {
+                $group: {
+                    _id: null,
+                    totalReviews: { $sum: 1 },
+                    totalProblemsResolved: { $sum: '$clinicalOutcomes.problemsResolved' },
+                    totalMedicationsOptimized: { $sum: '$clinicalOutcomes.medicationsOptimized' },
+                    adherenceImprovedCount: {
+                        $sum: { $cond: ['$clinicalOutcomes.adherenceImproved', 1, 0] }
+                    },
+                    adverseEventsReducedCount: {
+                        $sum: { $cond: ['$clinicalOutcomes.adverseEventsReduced', 1, 0] }
+                    },
+                    qualityOfLifeImprovedCount: {
+                        $sum: { $cond: ['$clinicalOutcomes.qualityOfLifeImproved', 1, 0] }
+                    },
+                    clinicalParametersImprovedCount: {
+                        $sum: { $cond: ['$clinicalOutcomes.clinicalParametersImproved', 1, 0] }
+                    },
+                    totalCostSavings: { $sum: '$clinicalOutcomes.costSavings' }
                 }
             }
         ]);
@@ -738,10 +1282,13 @@ const getOutcomeMetricsReport = async (req, res) => {
                 }
             },
             {
-                $addFields: {
-                    adherenceImprovedRate: {
-                        $multiply: ['$adherenceImprovedRate', 100]
-                    }
+                $project: {
+                    _id: 1,
+                    totalReviews: 1,
+                    avgProblemsResolved: 1,
+                    avgMedicationsOptimized: 1,
+                    adherenceImprovedRate: { $multiply: ['$adherenceImprovedRate', 100] },
+                    avgCostSavings: 1
                 }
             }
         ]);
@@ -776,9 +1323,7 @@ const getOutcomeMetricsReport = async (req, res) => {
             adverseEventsReducedCount: 0,
             qualityOfLifeImprovedCount: 0,
             clinicalParametersImprovedCount: 0,
-            totalCostSavings: 0,
-            avgProblemsPerReview: 0,
-            avgMedicationsPerReview: 0
+            totalCostSavings: 0
         };
         const adherenceImprovementRate = outcomes.totalReviews > 0
             ? (outcomes.adherenceImprovedCount / outcomes.totalReviews) * 100
@@ -789,6 +1334,8 @@ const getOutcomeMetricsReport = async (req, res) => {
         (0, responseHelpers_1.sendSuccess)(res, {
             summary: {
                 ...outcomes,
+                avgProblemsPerReview: outcomes.totalReviews > 0 ? outcomes.totalProblemsResolved / outcomes.totalReviews : 0,
+                avgMedicationsPerReview: outcomes.totalReviews > 0 ? outcomes.totalMedicationsOptimized / outcomes.totalReviews : 0,
                 adherenceImprovementRate: Math.round(adherenceImprovementRate * 100) / 100,
                 adverseEventReductionRate: Math.round(adverseEventReductionRate * 100) / 100
             },
@@ -796,12 +1343,12 @@ const getOutcomeMetricsReport = async (req, res) => {
             trends: {
                 monthly: monthlyOutcomes
             }
-        }, 'Outcome metrics report generated successfully');
+        }, 'Enhanced outcome metrics report generated successfully');
     }
     catch (error) {
-        console.error('Error generating outcome metrics report:', error);
-        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to generate outcome metrics report', 500);
+        console.error('Error generating enhanced outcome metrics report:', error);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', 'Failed to generate enhanced outcome metrics report', 500);
     }
 };
-exports.getOutcomeMetricsReport = getOutcomeMetricsReport;
+exports.getEnhancedOutcomeMetricsReport = getEnhancedOutcomeMetricsReport;
 //# sourceMappingURL=mtrReportsController.js.map

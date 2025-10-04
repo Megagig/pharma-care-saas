@@ -156,7 +156,7 @@ const getPaymentMethods = async (req, res) => {
             type: 'card',
         });
         const customer = await stripe.customers.retrieve(user.stripeCustomerId);
-        const defaultPaymentMethodId = typeof customer !== 'string' && !customer.deleted && customer.invoice_settings?.default_payment_method;
+        const defaultPaymentMethodId = typeof customer !== 'string' && !customer.deleted && 'invoice_settings' in customer && customer.invoice_settings?.default_payment_method;
         const formattedMethods = paymentMethods.data.map(pm => ({
             id: pm.id,
             brand: pm.card?.brand,

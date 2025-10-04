@@ -1,5 +1,11 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import app from '../app';
+import { Express } from 'express';
+
+export function createTestApp(): Express {
+    return app;
+}
 
 let mongoServer: MongoMemoryServer;
 

@@ -41,15 +41,17 @@ class DynamicPermissionService {
 
     private roleHierarchyService: RoleHierarchyService;
     private cacheManager: CacheManager;
-    private cacheInvalidationService: CacheInvalidationService;
-    private dbOptimizationService: DatabaseOptimizationService;
+    private cacheInvalidationService: any;
+    private dbOptimizationService: any;
     private aggregationService: PermissionAggregationService;
 
     private constructor() {
         this.roleHierarchyService = RoleHierarchyService.getInstance();
         this.cacheManager = CacheManager.getInstance();
-        this.cacheInvalidationService = CacheInvalidationService.getInstance();
-        this.dbOptimizationService = DatabaseOptimizationService.getInstance();
+        // this.cacheInvalidationService = CacheInvalidationService.getInstance();
+        // this.dbOptimizationService = DatabaseOptimizationService.getInstance();
+        this.cacheInvalidationService = null; // Service initialization disabled for now
+        this.dbOptimizationService = null; // Service initialization disabled for now
         this.aggregationService = PermissionAggregationService.getInstance();
     }
 
@@ -240,14 +242,16 @@ class DynamicPermissionService {
         } finally {
             // Record performance metrics
             const executionTime = Date.now() - startTime;
-            this.dbOptimizationService.recordQueryMetrics({
-                query: `checkPermission:${action}`,
-                executionTime,
-                documentsExamined: 0, // Would need to be tracked per query
-                documentsReturned: 1,
-                indexUsed: true, // Assume cache hit or optimized query
-                timestamp: new Date()
-            });
+            if (this.dbOptimizationService) {
+                this.dbOptimizationService.recordQueryMetrics({
+                    query: `checkPermission:${action}`,
+                    executionTime,
+                    documentsExamined: 0, // Would need to be tracked per query
+                    documentsReturned: 1,
+                    indexUsed: true, // Assume cache hit or optimized query
+                    timestamp: new Date()
+                });
+            }
         }
     }
 
@@ -1195,3 +1199,4 @@ class DynamicPermissionService {
 }
 
 export default DynamicPermissionService;
+export { DynamicPermissionService };

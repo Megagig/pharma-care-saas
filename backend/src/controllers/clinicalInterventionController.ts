@@ -11,7 +11,7 @@ import ClinicalInterventionService, {
 } from '../services/clinicalInterventionService';
 
 // Import models
-import { IClinicalIntervention } from '../models/ClinicalIntervention';
+import ClinicalIntervention, { IClinicalIntervention } from '../models/ClinicalIntervention';
 
 // Import utilities
 import {
@@ -51,7 +51,8 @@ const getValidatedContext = (req: AuthRequest) => {
     return {
         ...context,
         userIdObj: new mongoose.Types.ObjectId(context.userId),
-        workplaceIdObj: new mongoose.Types.ObjectId(context.workplaceId)
+        workplaceIdObj: new mongoose.Types.ObjectId(context.workplaceId),
+        isSuperAdmin: context.isSuperAdmin || req.user?.role === 'super_admin'
     };
 };
 
@@ -93,7 +94,8 @@ export const getClinicalInterventions = asyncHandler(
             page: Math.max(1, parseInt(page) || 1),
             limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
             sortBy,
-            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
+            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+            isSuperAdmin: context.isSuperAdmin || req.user?.role === 'super_admin'
         };
 
         // Add optional filters
@@ -144,7 +146,7 @@ export const getClinicalInterventions = asyncHandler(
         const result: PaginatedResult<IClinicalIntervention> = await ClinicalInterventionService.getInterventions(filters);
 
         sendSuccess(res, {
-            interventions: result.data,
+            data: result.data,
             pagination: result.pagination
         }, 'Interventions retrieved successfully');
     }
@@ -210,18 +212,16 @@ export const createClinicalIntervention = asyncHandler(
         const intervention = await ClinicalInterventionService.createIntervention(interventionData);
 
         // Log access for audit trail
-        await ClinicalInterventionService.logInterventionAccess(
+        await ClinicalInterventionService.logActivity(
+            'CREATE_INTERVENTION',
             intervention._id.toString(),
             context.userIdObj,
             context.workplaceIdObj,
-            'create',
-            req,
-            { category: interventionData.category, priority: interventionData.priority }
+            { category: interventionData.category, priority: interventionData.priority },
+            req
         );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Clinical intervention created successfully', 201);
+        sendSuccess(res, intervention, 'Clinical intervention created successfully', 201);
     }
 );
 
@@ -241,7 +241,8 @@ export const getClinicalIntervention = asyncHandler(
         // Get intervention
         const intervention = await ClinicalInterventionService.getInterventionById(
             interventionId.toString(),
-            workplaceId
+            workplaceId,
+            req.user?.role === 'super_admin'
         );
 
         // Log access for audit trail
@@ -258,9 +259,7 @@ export const getClinicalIntervention = asyncHandler(
             req
         );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Intervention retrieved successfully');
+        sendSuccess(res, intervention, 'Intervention retrieved successfully');
     }
 );
 
@@ -311,7 +310,8 @@ export const updateClinicalIntervention = asyncHandler(
             id,
             updates,
             context.userIdObj,
-            context.workplaceIdObj
+            context.workplaceIdObj,
+            context.isSuperAdmin || req.user?.role === 'super_admin'
         );
 
         // Log access for audit trail
@@ -326,9 +326,7 @@ export const updateClinicalIntervention = asyncHandler(
             }
         );
 
-        sendSuccess(res, {
-            intervention
-        }, 'Intervention updated successfully');
+        sendSuccess(res, intervention, 'Intervention updated successfully');
     }
 );
 
@@ -350,7 +348,8 @@ export const deleteClinicalIntervention = asyncHandler(
         const success = await ClinicalInterventionService.deleteIntervention(
             id,
             context.userIdObj,
-            context.workplaceIdObj
+            context.workplaceIdObj,
+            context.isSuperAdmin || req.user?.role === 'super_admin'
         );
 
         if (!success) {
@@ -728,7 +727,8 @@ export const searchClinicalInterventions = asyncHandler(
             page: Math.max(1, parseInt(page) || 1),
             limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
             sortBy,
-            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
+            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+            isSuperAdmin: context.isSuperAdmin || req.user?.role === 'super_admin'
         };
 
         // Add search query
@@ -826,7 +826,8 @@ export const getPatientInterventions = asyncHandler(
             page: Math.max(1, parseInt(page) || 1),
             limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
             sortBy,
-            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
+            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+            isSuperAdmin: context.isSuperAdmin || req.user?.role === 'super_admin'
         };
 
         // Add optional filters
@@ -875,7 +876,8 @@ export const getAssignedInterventions = asyncHandler(
             page: Math.max(1, parseInt(page) || 1),
             limit: Math.min(50, Math.max(1, parseInt(limit) || 20)),
             sortBy,
-            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc'
+            sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+            isSuperAdmin: context.isSuperAdmin || req.user?.role === 'super_admin'
         };
 
         // Add optional filters
@@ -945,17 +947,11 @@ export const getInterventionAnalytics = asyncHandler(
         // Get dashboard metrics
         const metrics = await ClinicalInterventionService.getDashboardMetrics(
             context.workplaceIdObj,
-            { from: fromDate!, to: toDate! }
+            { from: fromDate!, to: toDate! },
+            context.isSuperAdmin || req.user?.role === 'super_admin'
         );
 
-        sendSuccess(res, {
-            metrics,
-            dateRange: {
-                from: fromDate,
-                to: toDate,
-                period
-            }
-        }, 'Analytics retrieved successfully');
+        sendSuccess(res, metrics, 'Analytics retrieved successfully');
     }
 );
 
@@ -1060,12 +1056,11 @@ export const getOutcomeReports = asyncHandler(
         // Generate outcome report
         const report = await ClinicalInterventionService.generateOutcomeReport(
             context.workplaceIdObj,
-            filters
+            filters,
+            context.isSuperAdmin || req.user?.role === 'super_admin'
         );
 
-        sendSuccess(res, {
-            report
-        }, 'Outcome report generated successfully');
+        sendSuccess(res, report, 'Outcome report generated successfully');
     }
 );
 
@@ -1855,8 +1850,12 @@ export const checkDuplicates = asyncHandler(
         }
 
         try {
-            // For now, return empty array as we don't have the service method implemented
-            const duplicates: any[] = [];
+            // Check for duplicate interventions using the service method
+            const duplicates = await ClinicalInterventionService.checkDuplicateInterventions(
+                new mongoose.Types.ObjectId(patientId),
+                category,
+                context.workplaceIdObj
+            );
 
             sendSuccess(res, {
                 duplicates,
@@ -1877,12 +1876,37 @@ export const getCategoryCounts = asyncHandler(
         const context = getValidatedContext(req);
 
         try {
-            // For now, return empty object as we don't have the service method implemented
-            const categoryCounts = {};
+            // Get category counts from database
+            const matchStage: any = {
+                isDeleted: { $ne: true }
+            };
 
-            sendSuccess(res, {
-                categories: categoryCounts
-            }, 'Category counts retrieved successfully');
+            // Add workplaceId filter only if not super_admin
+            if (!context.isSuperAdmin && req.user?.role !== 'super_admin') {
+                matchStage.workplaceId = context.workplaceIdObj;
+            }
+
+            const categoryStats = await ClinicalIntervention.aggregate([
+                {
+                    $match: matchStage
+                },
+                {
+                    $group: {
+                        _id: '$category',
+                        count: { $sum: 1 }
+                    }
+                },
+                {
+                    $sort: { count: -1 }
+                }
+            ]);
+
+            const categoryCounts: Record<string, number> = {};
+            categoryStats.forEach((stat: any) => {
+                categoryCounts[stat._id] = stat.count;
+            });
+
+            sendSuccess(res, categoryCounts, 'Category counts retrieved successfully');
         } catch (error) {
             throw createBusinessRuleError('Failed to get category counts');
         }
@@ -1898,12 +1922,37 @@ export const getPriorityDistribution = asyncHandler(
         const context = getValidatedContext(req);
 
         try {
-            // For now, return empty object as we don't have the service method implemented
-            const priorityDistribution = {};
+            // Get priority distribution from database
+            const matchStage: any = {
+                isDeleted: { $ne: true }
+            };
 
-            sendSuccess(res, {
-                priorities: priorityDistribution
-            }, 'Priority distribution retrieved successfully');
+            // Add workplaceId filter only if not super_admin
+            if (!context.isSuperAdmin && req.user?.role !== 'super_admin') {
+                matchStage.workplaceId = context.workplaceIdObj;
+            }
+
+            const priorityStats = await ClinicalIntervention.aggregate([
+                {
+                    $match: matchStage
+                },
+                {
+                    $group: {
+                        _id: '$priority',
+                        count: { $sum: 1 }
+                    }
+                },
+                {
+                    $sort: { count: -1 }
+                }
+            ]);
+
+            const priorityDistribution: Record<string, number> = {};
+            priorityStats.forEach((stat: any) => {
+                priorityDistribution[stat._id] = stat.count;
+            });
+
+            sendSuccess(res, priorityDistribution, 'Priority distribution retrieved successfully');
         } catch (error) {
             throw createBusinessRuleError('Failed to get priority distribution');
         }

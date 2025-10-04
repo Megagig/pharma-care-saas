@@ -5,7 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
-import { FeatureFlagService } from '../config/featureFlags';
+import featureFlagService from '../services/FeatureFlagService';
 import { AuditService } from './auditService';
 import { AuthRequest } from '../types/auth';
 
@@ -31,9 +31,9 @@ interface SystemCompatibility {
 export class SystemIntegrationService {
     private static instance: SystemIntegrationService;
     private healthChecks: Map<string, IntegrationHealth> = new Map();
-    private featureFlagService: FeatureFlagService;
+    private featureFlagService: typeof featureFlagService;
     private constructor() {
-        this.featureFlagService = FeatureFlagService.getInstance();
+        this.featureFlagService = featureFlagService;
         this.initializeHealthChecks();
     }
 
@@ -173,19 +173,12 @@ export class SystemIntegrationService {
      * Gradual rollout middleware
      */
     public gradualRolloutMiddleware(): (req: AuthRequest, res: Response, next: NextFunction) => void {
-        return (req: AuthRequest, res: Response, next: NextFunction): void => {
+        return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
             const userId = req.user?._id?.toString();
             const workplaceId = req.user?.workplaceId?.toString();
 
             // Check if manual lab features should be enabled for this user
-            const context = {
-                userId,
-                workplaceId,
-                environment: process.env.NODE_ENV,
-                userAgent: req.get('User-Agent')
-            };
-
-            const isEnabled = this.featureFlagService.isEnabled('manual_lab_orders', context);
+            const isEnabled = await this.featureFlagService.isFeatureEnabled('manual_lab_orders', userId || '', workplaceId || '');
 
             if (!isEnabled && req.path.startsWith('/api/manual-lab')) {
                 res.status(404).json({
@@ -223,11 +216,13 @@ export class SystemIntegrationService {
         }
 
         // Check manual lab feature status
-        const manualLabEnabled = this.featureFlagService.isEnabled('manual_lab_orders');
-        const criticalFeaturesEnabled = [
+        const manualLabResult = await this.featureFlagService.isFeatureEnabled('manual_lab_orders', 'system', 'system');
+        const manualLabEnabled = manualLabResult.enabled;
+        const criticalFeatureChecks = await Promise.all([
             'manual_lab_pdf_generation',
             'manual_lab_qr_scanning'
-        ].every(flag => this.featureFlagService.isEnabled(flag));
+        ].map(flag => this.featureFlagService.isFeatureEnabled(flag, 'system', 'system')));
+        const criticalFeaturesEnabled = criticalFeatureChecks.every(check => check.enabled);
 
         let manualLabStatus: 'enabled' | 'disabled' | 'partial';
         if (!manualLabEnabled) {
@@ -268,7 +263,7 @@ export class SystemIntegrationService {
 
             for (const flag of manualLabFlags) {
                 try {
-                    this.featureFlagService.updateFlag(flag, { enabled: false });
+                    await this.featureFlagService.setUserFeatureOverride(flag, 'system', false);
                     rollbackActions.push(`Disabled feature flag: ${flag}`);
                 } catch (error) {
                     errors.push(`Failed to disable ${flag}: ${error}`);

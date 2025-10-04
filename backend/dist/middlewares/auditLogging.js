@@ -3,27 +3,37 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAuditLogs = exports.auditOperations = exports.auditMiddleware = exports.createAuditLog = void 0;
+exports.getAuditLogs = exports.auditOperations = exports.auditMiddleware = exports.createAuditLog = exports.cleanupAuditLogging = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const auditLogs = [];
 const MAX_MEMORY_LOGS = 10000;
-setInterval(() => {
-    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const initialLength = auditLogs.length;
-    for (let i = auditLogs.length - 1; i >= 0; i--) {
-        const log = auditLogs[i];
-        if (log && log.timestamp < cutoff) {
-            auditLogs.splice(i, 1);
+let cleanupInterval = null;
+if (process.env.NODE_ENV === 'production') {
+    cleanupInterval = setInterval(() => {
+        const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const initialLength = auditLogs.length;
+        for (let i = auditLogs.length - 1; i >= 0; i--) {
+            const log = auditLogs[i];
+            if (log && log.timestamp < cutoff) {
+                auditLogs.splice(i, 1);
+            }
         }
+        if (auditLogs.length > MAX_MEMORY_LOGS) {
+            auditLogs.splice(0, auditLogs.length - MAX_MEMORY_LOGS);
+        }
+        if (initialLength !== auditLogs.length) {
+            logger_1.default.info(`Cleaned up ${initialLength - auditLogs.length} old audit logs`);
+        }
+    }, 60 * 60 * 1000);
+}
+const cleanupAuditLogging = () => {
+    if (cleanupInterval) {
+        clearInterval(cleanupInterval);
+        cleanupInterval = null;
     }
-    if (auditLogs.length > MAX_MEMORY_LOGS) {
-        auditLogs.splice(0, auditLogs.length - MAX_MEMORY_LOGS);
-    }
-    if (initialLength !== auditLogs.length) {
-        logger_1.default.info(`Cleaned up ${initialLength - auditLogs.length} old audit logs`);
-    }
-}, 60 * 60 * 1000);
+};
+exports.cleanupAuditLogging = cleanupAuditLogging;
 const createAuditLog = async (logData) => {
     try {
         const auditLog = {
@@ -73,10 +83,20 @@ const createAuditLog = async (logData) => {
             service: 'system-audit',
         });
         if (auditLog.severity === 'critical' || auditLog.severity === 'high') {
-            await triggerSecurityAlert(auditLog);
+            try {
+                await triggerSecurityAlert(auditLog);
+            }
+            catch (alertError) {
+                logger_1.default.error('Failed to trigger security alert', { error: alertError });
+            }
         }
         if (auditLog.suspicious || (auditLog.riskScore && auditLog.riskScore > 7)) {
-            await detectSuspiciousActivity(auditLog);
+            try {
+                await detectSuspiciousActivity(auditLog);
+            }
+            catch (suspiciousError) {
+                logger_1.default.error('Failed to detect suspicious activity', { error: suspiciousError });
+            }
         }
     }
     catch (error) {

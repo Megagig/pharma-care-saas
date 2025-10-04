@@ -310,7 +310,8 @@ describe('NotificationController', () => {
 
     describe('GET /api/notifications/unread-count', () => {
         it('should get unread count successfully', async () => {
-            jest.spyOn(Notification, 'getUnreadCountByUser').mockResolvedValue(5);
+            // Mock countDocuments instead of non-existent getUnreadCountByUser
+            jest.spyOn(Notification, 'countDocuments').mockResolvedValue(5);
 
             const response = await request(app)
                 .get('/api/notifications/unread-count')
@@ -463,7 +464,8 @@ describe('NotificationController', () => {
                 },
             ];
 
-            jest.spyOn(Notification, 'getNotificationStats').mockResolvedValue(mockStats as any);
+            // Mock aggregate instead of non-existent getNotificationStats
+            jest.spyOn(Notification, 'aggregate').mockResolvedValue(mockStats as any);
 
             const response = await request(app)
                 .get('/api/notifications/statistics')
@@ -548,7 +550,7 @@ describe('NotificationController', () => {
         });
 
         it('should handle database errors gracefully', async () => {
-            jest.spyOn(Notification, 'getUnreadCountByUser').mockRejectedValue(new Error('Database error'));
+            jest.spyOn(Notification, 'countDocuments').mockRejectedValue(new Error('Database error'));
 
             const response = await request(app)
                 .get('/api/notifications/unread-count')

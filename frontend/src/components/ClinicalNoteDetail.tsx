@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
   Card,
   CardContent,
-  CardActions,
   Button,
   IconButton,
   Chip,
   Stack,
-  Divider,
-  Grid,
   Paper,
   Dialog,
   DialogTitle,
@@ -29,31 +26,45 @@ import {
   ListItemText,
   ListItemIcon,
   Collapse,
-  Badge,
   useTheme,
   useMediaQuery,
+  Container,
 } from '@mui/material';
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  ArrowBack as ArrowBackIcon,
-  Security as SecurityIcon,
-  Schedule as ScheduleIcon,
-  AttachFile as AttachFileIcon,
-  Person as PersonIcon,
-  LocalPharmacy as PharmacyIcon,
-  CalendarToday as CalendarIcon,
-  Priority as PriorityIcon,
-  Visibility as VisibilityIcon,
-  Download as DownloadIcon,
-  History as HistoryIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  MedicalServices as MedicalIcon,
-  Assignment as AssignmentIcon,
-  Assessment as AssessmentIcon,
-  PlaylistAddCheck as PlanIcon,
-} from '@mui/icons-material';
+import Edit from '@mui/icons-material/Edit';
+import Delete from '@mui/icons-material/Delete';
+import ArrowBack from '@mui/icons-material/ArrowBack';
+import Security from '@mui/icons-material/Security';
+import Schedule from '@mui/icons-material/Schedule';
+import AttachFile from '@mui/icons-material/AttachFile';
+import Person from '@mui/icons-material/Person';
+import CalendarToday from '@mui/icons-material/CalendarToday';
+import Visibility from '@mui/icons-material/Visibility';
+import Download from '@mui/icons-material/Download';
+import History from '@mui/icons-material/History';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import MedicalServices from '@mui/icons-material/MedicalServices';
+import Assignment from '@mui/icons-material/Assignment';
+import Assessment from '@mui/icons-material/Assessment';
+import PlaylistAddCheck from '@mui/icons-material/PlaylistAddCheck';
+
+const EditIcon = Edit;
+const DeleteIcon = Delete;
+const ArrowBackIcon = ArrowBack;
+const SecurityIcon = Security;
+const ScheduleIcon = Schedule;
+const AttachFileIcon = AttachFile;
+const PersonIcon = Person;
+const CalendarIcon = CalendarToday;
+const VisibilityIcon = Visibility;
+const DownloadIcon = Download;
+const HistoryIcon = History;
+const ExpandMoreIcon = ExpandMore;
+const ExpandLessIcon = ExpandLess;
+const MedicalIcon = MedicalServices;
+const AssignmentIcon = Assignment;
+const AssessmentIcon = Assessment;
+const PlanIcon = PlaylistAddCheck;
 import { format, parseISO } from 'date-fns';
 import { useClinicalNote } from '../queries/clinicalNoteQueries';
 import { useEnhancedClinicalNoteStore } from '../stores/enhancedClinicalNoteStore';
@@ -115,7 +126,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   });
 
   // Store actions
-  const { deleteNote, downloadAttachment, deleteAttachment, loading, errors } =
+  const { deleteNote, downloadAttachment, deleteAttachment, loading } =
     useEnhancedClinicalNoteStore();
 
   // Fetch note data
@@ -238,6 +249,87 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
     return NOTE_PRIORITIES.find((p) => p.value === priority);
   };
 
+  // Helper function for priority colors (theme-aware)
+  const getPriorityColor = (priority: ClinicalNote['priority']) => {
+    const isDark = theme.palette.mode === 'dark';
+
+    switch (priority) {
+      case 'high':
+        return {
+          bg: isDark ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+          text: isDark ? '#fca5a5' : '#dc2626',
+          border: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fecaca',
+        };
+      case 'medium':
+        return {
+          bg: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb',
+          text: isDark ? '#fbbf24' : '#d97706',
+          border: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fed7aa',
+        };
+      case 'low':
+        return {
+          bg: isDark ? 'rgba(34, 197, 94, 0.1)' : '#f0fdf4',
+          text: isDark ? '#4ade80' : '#16a34a',
+          border: isDark ? 'rgba(34, 197, 94, 0.2)' : '#bbf7d0',
+        };
+      default:
+        return {
+          bg: isDark ? 'rgba(100, 116, 139, 0.1)' : '#f8fafc',
+          text: isDark ? '#94a3b8' : '#64748b',
+          border: isDark ? 'rgba(100, 116, 139, 0.2)' : '#e2e8f0',
+        };
+    }
+  };
+
+  // Helper function to get user initials
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
+
+  // Helper function for theme-aware backgrounds
+  const getThemeBackground = (lightColor: string, darkOpacity = 0.3) => {
+    return theme.palette.mode === 'dark'
+      ? `rgba(51, 65, 85, ${darkOpacity})`
+      : lightColor;
+  };
+
+  // Helper function for theme-aware gradients
+  const getThemeGradient = (section: string, isExpanded: boolean) => {
+    if (!isExpanded) return 'transparent';
+
+    if (theme.palette.mode === 'dark') {
+      switch (section) {
+        case 'content':
+          return 'linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%)';
+        case 'vitals':
+          return 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)';
+        case 'labs':
+          return 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%)';
+        case 'recommendations':
+          return 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)';
+        case 'attachments':
+          return 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)';
+        default:
+          return 'linear-gradient(135deg, rgba(100, 116, 139, 0.1) 0%, rgba(100, 116, 139, 0.05) 100%)';
+      }
+    } else {
+      switch (section) {
+        case 'content':
+          return 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)';
+        case 'vitals':
+          return 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';
+        case 'labs':
+          return 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
+        case 'recommendations':
+          return 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)';
+        case 'attachments':
+          return 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)';
+        default:
+          return 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)';
+      }
+    }
+  };
+
   // Check permissions
   const canEdit =
     !readonly &&
@@ -291,189 +383,464 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   const priorityInfo = getPriorityInfo(note.priority);
 
   return (
-    <Box
+    <Container
+      maxWidth="xl"
       sx={{
-        maxWidth: embedded ? '100%' : 1200,
-        mx: 'auto',
-        p: embedded ? 0 : 2,
+        py: embedded ? 0 : 3,
+        px: embedded ? 0 : { xs: 2, sm: 3 },
       }}
     >
-      {/* Header */}
+      {/* Modern Header */}
       {!embedded && (
-        <Box sx={{ mb: 3 }}>
-          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+        <Box sx={{ mb: 4 }}>
+          {/* Enhanced Breadcrumbs */}
+          <Breadcrumbs
+            aria-label="breadcrumb"
+            sx={{
+              mb: 3,
+              '& .MuiBreadcrumbs-separator': {
+                mx: 1.5,
+                color: 'text.secondary',
+              },
+            }}
+          >
             <Link
               component="button"
               variant="body2"
               onClick={handleBack}
-              sx={{ display: 'flex', alignItems: 'center' }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                color: 'primary.main',
+                textDecoration: 'none',
+                fontWeight: 500,
+                '&:hover': {
+                  textDecoration: 'underline',
+                },
+              }}
             >
               Clinical Notes
             </Link>
-            <Typography variant="body2" color="text.primary">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
+            >
               {note.title}
             </Typography>
           </Breadcrumbs>
 
-          <Stack
-            direction={isMobile ? 'column' : 'row'}
-            justifyContent="space-between"
-            alignItems={isMobile ? 'stretch' : 'center'}
-            spacing={2}
+          {/* Modern Header Card */}
+          <Card
+            elevation={1}
+            sx={{
+              p: 3,
+              background: theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.6) 100%)'
+                : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
           >
-            <Box>
-              <Typography
-                variant="h4"
-                component="h1"
-                sx={{ fontWeight: 600, mb: 1 }}
-              >
-                {note.title}
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                <Chip
-                  label={typeInfo?.label || note.type}
-                  size="small"
-                  variant="outlined"
-                  color="primary"
-                />
-                <Chip
-                  label={priorityInfo?.label || note.priority}
-                  size="small"
+            <Stack
+              direction={isMobile ? 'column' : 'row'}
+              justifyContent="space-between"
+              alignItems={isMobile ? 'stretch' : 'flex-start'}
+              spacing={3}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="h4"
+                  component="h1"
                   sx={{
-                    backgroundColor: priorityInfo?.color || '#757575',
-                    color: 'white',
-                    fontWeight: 500,
+                    fontWeight: 700,
+                    mb: 2,
+                    fontSize: { xs: '1.75rem', md: '2rem' },
+                    color: 'text.primary',
                   }}
-                />
-                {note.isConfidential && (
+                >
+                  {note.title}
+                </Typography>
+
+                {/* Enhanced Badge Stack */}
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  flexWrap="wrap"
+                  sx={{ gap: 1 }}
+                >
                   <Chip
-                    icon={<SecurityIcon />}
-                    label="Confidential"
-                    size="small"
-                    color="warning"
+                    label={typeInfo?.label || note.type}
+                    size="medium"
+                    sx={{
+                      backgroundColor: theme.palette.mode === 'dark'
+                        ? 'rgba(37, 99, 235, 0.2)'
+                        : 'primary.50',
+                      color: theme.palette.mode === 'dark'
+                        ? 'primary.200'
+                        : 'primary.700',
+                      fontWeight: 600,
+                      border: '1px solid',
+                      borderColor: theme.palette.mode === 'dark'
+                        ? 'rgba(37, 99, 235, 0.3)'
+                        : 'primary.200',
+                      '&:hover': {
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(37, 99, 235, 0.3)'
+                          : 'primary.100',
+                      },
+                    }}
                   />
+                  <Chip
+                    label={priorityInfo?.label || note.priority}
+                    size="medium"
+                    sx={{
+                      backgroundColor: getPriorityColor(note.priority).bg,
+                      color: getPriorityColor(note.priority).text,
+                      fontWeight: 600,
+                      border: '1px solid',
+                      borderColor: getPriorityColor(note.priority).border,
+                    }}
+                  />
+                  {note.isConfidential && (
+                    <Chip
+                      icon={<SecurityIcon sx={{ fontSize: '16px !important' }} />}
+                      label="Confidential"
+                      size="medium"
+                      sx={{
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(245, 158, 11, 0.2)'
+                          : 'warning.50',
+                        color: theme.palette.mode === 'dark'
+                          ? 'warning.200'
+                          : 'warning.700',
+                        fontWeight: 600,
+                        border: '1px solid',
+                        borderColor: theme.palette.mode === 'dark'
+                          ? 'rgba(245, 158, 11, 0.3)'
+                          : 'warning.200',
+                      }}
+                    />
+                  )}
+                  {note.followUpRequired && (
+                    <Chip
+                      icon={<ScheduleIcon sx={{ fontSize: '16px !important' }} />}
+                      label="Follow-up Required"
+                      size="medium"
+                      sx={{
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(59, 130, 246, 0.2)'
+                          : 'info.50',
+                        color: theme.palette.mode === 'dark'
+                          ? 'info.200'
+                          : 'info.700',
+                        fontWeight: 600,
+                        border: '1px solid',
+                        borderColor: theme.palette.mode === 'dark'
+                          ? 'rgba(59, 130, 246, 0.3)'
+                          : 'info.200',
+                      }}
+                    />
+                  )}
+                </Stack>
+              </Box>
+
+              {/* Enhanced Action Buttons */}
+              <Stack
+                direction={isMobile ? 'row' : 'row'}
+                spacing={1.5}
+                sx={{
+                  flexShrink: 0,
+                  justifyContent: isMobile ? 'flex-end' : 'flex-start',
+                }}
+              >
+                {!embedded && (
+                  <Button
+                    startIcon={<ArrowBackIcon />}
+                    onClick={handleBack}
+                    variant="outlined"
+                    sx={{
+                      borderRadius: 2,
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 600,
+                      borderColor: 'grey.300',
+                      color: 'text.secondary',
+                      '&:hover': {
+                        borderColor: 'grey.400',
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.1)'
+                          : 'grey.50',
+                      },
+                    }}
+                  >
+                    Back
+                  </Button>
                 )}
-                {note.followUpRequired && (
-                  <Chip
-                    icon={<ScheduleIcon />}
-                    label="Follow-up Required"
-                    size="small"
-                    color="info"
-                  />
+                {canEdit && (
+                  <Button
+                    startIcon={<EditIcon />}
+                    onClick={handleEdit}
+                    variant="contained"
+                    sx={{
+                      borderRadius: 2,
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 600,
+                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.2)',
+                      '&:hover': {
+                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+                        transform: 'translateY(-1px)',
+                      },
+                      transition: 'all 0.2s ease-in-out',
+                    }}
+                  >
+                    Edit
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    startIcon={<DeleteIcon />}
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                    variant="outlined"
+                    color="error"
+                    sx={{
+                      borderRadius: 2,
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 600,
+                      '&:hover': {
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(239, 68, 68, 0.1)'
+                          : 'error.50',
+                        transform: 'translateY(-1px)',
+                      },
+                      transition: 'all 0.2s ease-in-out',
+                    }}
+                  >
+                    Delete
+                  </Button>
                 )}
               </Stack>
-            </Box>
-
-            <Stack direction="row" spacing={1}>
-              {!embedded && (
-                <Button
-                  startIcon={<ArrowBackIcon />}
-                  onClick={handleBack}
-                  variant="outlined"
-                >
-                  Back
-                </Button>
-              )}
-              {canEdit && (
-                <Button
-                  startIcon={<EditIcon />}
-                  onClick={handleEdit}
-                  variant="contained"
-                  color="primary"
-                >
-                  Edit
-                </Button>
-              )}
-              {canDelete && (
-                <Button
-                  startIcon={<DeleteIcon />}
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  variant="outlined"
-                  color="error"
-                >
-                  Delete
-                </Button>
-              )}
             </Stack>
-          </Stack>
+          </Card>
         </Box>
       )}
 
-      <Grid container spacing={3}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
         {/* Main Content */}
-        <Grid item xs={12} md={8}>
-          {/* Patient and Clinician Information */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          {/* Enhanced Patient and Clinician Information */}
+          <Card
+            elevation={1}
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
               <Typography
                 variant="h6"
-                sx={{ mb: 2, display: 'flex', alignItems: 'center' }}
+                sx={{
+                  mb: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '1.125rem',
+                  fontWeight: 600,
+                  color: 'text.primary',
+                }}
               >
-                <PersonIcon sx={{ mr: 1 }} />
+                <PersonIcon sx={{ mr: 1.5, color: 'primary.main' }} />
                 Patient & Clinician Information
               </Typography>
 
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                <Box sx={{ width: { xs: '100%', sm: '50%' } }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      bgcolor: getThemeBackground('grey.50', 0.3),
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      height: '100%',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Avatar
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          bgcolor: 'primary.main',
+                          mr: 2,
+                          fontSize: '1.1rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {getInitials(note.patient.firstName, note.patient.lastName)}
+                      </Avatar>
+                      <Box>
+                        <Typography
+                          variant="subtitle2"
+                          color="primary.main"
+                          sx={{ mb: 0.5, fontWeight: 600, fontSize: '0.875rem' }}
+                        >
+                          Patient
+                        </Typography>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: '1.1rem',
+                            color: 'text.primary',
+                          }}
+                        >
+                          {formatPatientName(note.patient)}
+                        </Typography>
+                      </Box>
+                    </Box>
                     <Typography
-                      variant="subtitle2"
-                      color="primary"
-                      sx={{ mb: 1 }}
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                      }}
                     >
-                      Patient
-                    </Typography>
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      {formatPatientName(note.patient)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
                       MRN: {note.patient.mrn}
                     </Typography>
                   </Paper>
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} sm={6}>
-                  <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                <Box sx={{ width: { xs: '100%', sm: '50%' } }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      bgcolor: getThemeBackground('grey.50', 0.3),
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      height: '100%',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Avatar
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          bgcolor: 'secondary.main',
+                          mr: 2,
+                          fontSize: '1.1rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {getInitials(note.pharmacist.firstName, note.pharmacist.lastName)}
+                      </Avatar>
+                      <Box>
+                        <Typography
+                          variant="subtitle2"
+                          color="secondary.main"
+                          sx={{ mb: 0.5, fontWeight: 600, fontSize: '0.875rem' }}
+                        >
+                          Pharmacist
+                        </Typography>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: '1.1rem',
+                            color: 'text.primary',
+                          }}
+                        >
+                          {formatPharmacistName(note.pharmacist)}
+                        </Typography>
+                      </Box>
+                    </Box>
                     <Typography
-                      variant="subtitle2"
-                      color="primary"
-                      sx={{ mb: 1 }}
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                      }}
                     >
-                      Pharmacist
-                    </Typography>
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      {formatPharmacistName(note.pharmacist)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
                       Role: {note.pharmacist.role}
                     </Typography>
                   </Paper>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
 
-          {/* SOAP Note Content */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
+          {/* Enhanced SOAP Note Content */}
+          <Card
+            elevation={1}
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
+          >
+            <CardContent sx={{ p: 0 }}>
+              {/* Modern Collapsible Header */}
               <Box
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  mb: 2,
+                  p: 3,
+                  pb: expandedSections.content ? 2 : 3,
+                  background: getThemeGradient('content', expandedSections.content),
+                  borderRadius: expandedSections.content ? '12px 12px 0 0' : '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: expandedSections.content
+                      ? 'transparent'
+                      : getThemeBackground('grey.50', 0.1),
+                  },
                 }}
+                onClick={() => toggleSection('content')}
               >
                 <Typography
                   variant="h6"
-                  sx={{ display: 'flex', alignItems: 'center' }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '1.125rem',
+                    fontWeight: 600,
+                    color: expandedSections.content ? 'primary.main' : 'text.primary',
+                  }}
                 >
-                  <AssignmentIcon sx={{ mr: 1 }} />
+                  <AssignmentIcon sx={{ mr: 1.5, fontSize: 24 }} />
                   SOAP Note Content
                 </Typography>
                 <IconButton
-                  onClick={() => toggleSection('content')}
                   size="small"
+                  sx={{
+                    backgroundColor: expandedSections.content
+                      ? theme.palette.mode === 'dark'
+                        ? 'rgba(37, 99, 235, 0.2)'
+                        : 'primary.100'
+                      : theme.palette.mode === 'dark'
+                        ? 'rgba(100, 116, 139, 0.2)'
+                        : 'grey.100',
+                    color: expandedSections.content ? 'primary.main' : 'text.secondary',
+                    '&:hover': {
+                      backgroundColor: expandedSections.content
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(37, 99, 235, 0.3)'
+                          : 'primary.200'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.3)'
+                          : 'grey.200',
+                    },
+                  }}
                 >
                   {expandedSections.content ? (
                     <ExpandLessIcon />
@@ -484,107 +851,238 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
               </Box>
 
               <Collapse in={expandedSections.content}>
-                <Stack spacing={3}>
-                  {note.content.subjective && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <MedicalIcon sx={{ mr: 1, fontSize: 20 }} />
-                        Subjective
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                <Box sx={{ px: 3, pb: 3 }}>
+                  <Stack spacing={3}>
+                    {note.content.subjective && (
+                      <Box>
                         <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 600,
+                            color: 'primary.main',
+                            mb: 2,
+                            fontSize: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
                         >
-                          {note.content.subjective}
+                          <MedicalIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                          Subjective
                         </Typography>
-                      </Paper>
-                    </Box>
-                  )}
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            bgcolor: getThemeBackground('grey.50', 0.3),
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                          }}
+                        >
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              whiteSpace: 'pre-wrap',
+                              lineHeight: 1.6,
+                              fontSize: '0.95rem',
+                            }}
+                          >
+                            {note.content.subjective}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    )}
 
-                  {note.content.objective && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <VisibilityIcon sx={{ mr: 1, fontSize: 20 }} />
-                        Objective
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    {note.content.objective && (
+                      <Box>
                         <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 600,
+                            color: 'primary.main',
+                            mb: 2,
+                            fontSize: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
                         >
-                          {note.content.objective}
+                          <VisibilityIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                          Objective
                         </Typography>
-                      </Paper>
-                    </Box>
-                  )}
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            bgcolor: getThemeBackground('grey.50', 0.3),
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                          }}
+                        >
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              whiteSpace: 'pre-wrap',
+                              lineHeight: 1.6,
+                              fontSize: '0.95rem',
+                            }}
+                          >
+                            {note.content.objective}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    )}
 
-                  {note.content.assessment && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <AssessmentIcon sx={{ mr: 1, fontSize: 20 }} />
-                        Assessment
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    {note.content.assessment && (
+                      <Box>
                         <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 600,
+                            color: 'primary.main',
+                            mb: 2,
+                            fontSize: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
                         >
-                          {note.content.assessment}
+                          <AssessmentIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                          Assessment
                         </Typography>
-                      </Paper>
-                    </Box>
-                  )}
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            bgcolor: getThemeBackground('grey.50', 0.3),
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                          }}
+                        >
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              whiteSpace: 'pre-wrap',
+                              lineHeight: 1.6,
+                              fontSize: '0.95rem',
+                            }}
+                          >
+                            {note.content.assessment}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    )}
 
-                  {note.content.plan && (
-                    <Box>
-                      <Typography
-                        variant="subtitle1"
-                        sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}
-                      >
-                        <PlanIcon sx={{ mr: 1, fontSize: 20 }} />
-                        Plan
-                      </Typography>
-                      <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    {note.content.plan && (
+                      <Box>
                         <Typography
-                          variant="body1"
-                          sx={{ whiteSpace: 'pre-wrap' }}
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 600,
+                            color: 'primary.main',
+                            mb: 2,
+                            fontSize: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
                         >
-                          {note.content.plan}
+                          <PlanIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                          Plan
                         </Typography>
-                      </Paper>
-                    </Box>
-                  )}
-                </Stack>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 3,
+                            bgcolor: getThemeBackground('grey.50', 0.3),
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                          }}
+                        >
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              whiteSpace: 'pre-wrap',
+                              lineHeight: 1.6,
+                              fontSize: '0.95rem',
+                            }}
+                          >
+                            {note.content.plan}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    )}
+                  </Stack>
+                </Box>
               </Collapse>
             </CardContent>
           </Card>
 
-          {/* Vital Signs */}
+          {/* Enhanced Vital Signs */}
           {note.vitalSigns && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
+            <Card
+              elevation={1}
+              sx={{
+                mb: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'grey.200',
+              }}
+            >
+              <CardContent sx={{ p: 0 }}>
                 <Box
                   sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 2,
+                    p: 3,
+                    pb: expandedSections.vitals ? 2 : 3,
+                    background: getThemeGradient('vitals', expandedSections.vitals),
+                    borderRadius: expandedSections.vitals ? '12px 12px 0 0' : '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: expandedSections.vitals
+                        ? 'transparent'
+                        : getThemeBackground('grey.50', 0.1),
+                    },
                   }}
+                  onClick={() => toggleSection('vitals')}
                 >
-                  <Typography variant="h6">Vital Signs</Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      color: expandedSections.vitals ? 'success.main' : 'text.primary',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <MedicalIcon sx={{ mr: 1.5, fontSize: 24 }} />
+                    Vital Signs
+                  </Typography>
                   <IconButton
-                    onClick={() => toggleSection('vitals')}
                     size="small"
+                    sx={{
+                      backgroundColor: expandedSections.vitals
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(34, 197, 94, 0.2)'
+                          : 'success.100'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.2)'
+                          : 'grey.100',
+                      color: expandedSections.vitals ? 'success.main' : 'text.secondary',
+                      '&:hover': {
+                        backgroundColor: expandedSections.vitals
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(34, 197, 94, 0.3)'
+                            : 'success.200'
+                          : theme.palette.mode === 'dark'
+                            ? 'rgba(100, 116, 139, 0.3)'
+                            : 'grey.200',
+                      },
+                    }}
                   >
                     {expandedSections.vitals ? (
                       <ExpandLessIcon />
@@ -595,28 +1093,79 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 </Box>
 
                 <Collapse in={expandedSections.vitals}>
-                  <VitalSignsDisplay vitalSigns={note.vitalSigns} />
+                  <Box sx={{ px: 3, pb: 3 }}>
+                    <VitalSignsDisplay vitalSigns={note.vitalSigns} />
+                  </Box>
                 </Collapse>
               </CardContent>
             </Card>
           )}
 
-          {/* Lab Results */}
+          {/* Enhanced Lab Results */}
           {note.laborResults && note.laborResults.length > 0 && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
+            <Card
+              elevation={1}
+              sx={{
+                mb: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'grey.200',
+              }}
+            >
+              <CardContent sx={{ p: 0 }}>
                 <Box
                   sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 2,
+                    p: 3,
+                    pb: expandedSections.labs ? 2 : 3,
+                    background: getThemeGradient('labs', expandedSections.labs),
+                    borderRadius: expandedSections.labs ? '12px 12px 0 0' : '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: expandedSections.labs
+                        ? 'transparent'
+                        : getThemeBackground('grey.50', 0.1),
+                    },
                   }}
+                  onClick={() => toggleSection('labs')}
                 >
-                  <Typography variant="h6">Laboratory Results</Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      color: expandedSections.labs ? 'warning.main' : 'text.primary',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <AssessmentIcon sx={{ mr: 1.5, fontSize: 24 }} />
+                    Laboratory Results
+                  </Typography>
                   <IconButton
-                    onClick={() => toggleSection('labs')}
                     size="small"
+                    sx={{
+                      backgroundColor: expandedSections.labs
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(245, 158, 11, 0.2)'
+                          : 'warning.100'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.2)'
+                          : 'grey.100',
+                      color: expandedSections.labs ? 'warning.main' : 'text.secondary',
+                      '&:hover': {
+                        backgroundColor: expandedSections.labs
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(245, 158, 11, 0.3)'
+                            : 'warning.200'
+                          : theme.palette.mode === 'dark'
+                            ? 'rgba(100, 116, 139, 0.3)'
+                            : 'grey.200',
+                      },
+                    }}
                   >
                     {expandedSections.labs ? (
                       <ExpandLessIcon />
@@ -627,28 +1176,79 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 </Box>
 
                 <Collapse in={expandedSections.labs}>
-                  <LabResultsDisplay labResults={note.laborResults} />
+                  <Box sx={{ px: 3, pb: 3 }}>
+                    <LabResultsDisplay labResults={note.laborResults} />
+                  </Box>
                 </Collapse>
               </CardContent>
             </Card>
           )}
 
-          {/* Recommendations */}
+          {/* Enhanced Recommendations */}
           {note.recommendations && note.recommendations.length > 0 && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
+            <Card
+              elevation={1}
+              sx={{
+                mb: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'grey.200',
+              }}
+            >
+              <CardContent sx={{ p: 0 }}>
                 <Box
                   sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 2,
+                    p: 3,
+                    pb: expandedSections.recommendations ? 2 : 3,
+                    background: getThemeGradient('recommendations', expandedSections.recommendations),
+                    borderRadius: expandedSections.recommendations ? '12px 12px 0 0' : '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: expandedSections.recommendations
+                        ? 'transparent'
+                        : getThemeBackground('grey.50', 0.1),
+                    },
                   }}
+                  onClick={() => toggleSection('recommendations')}
                 >
-                  <Typography variant="h6">Recommendations</Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      color: expandedSections.recommendations ? 'secondary.main' : 'text.primary',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <PlanIcon sx={{ mr: 1.5, fontSize: 24 }} />
+                    Recommendations
+                  </Typography>
                   <IconButton
-                    onClick={() => toggleSection('recommendations')}
                     size="small"
+                    sx={{
+                      backgroundColor: expandedSections.recommendations
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(16, 185, 129, 0.2)'
+                          : 'secondary.100'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.2)'
+                          : 'grey.100',
+                      color: expandedSections.recommendations ? 'secondary.main' : 'text.secondary',
+                      '&:hover': {
+                        backgroundColor: expandedSections.recommendations
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(16, 185, 129, 0.3)'
+                            : 'secondary.200'
+                          : theme.palette.mode === 'dark'
+                            ? 'rgba(100, 116, 139, 0.3)'
+                            : 'grey.200',
+                      },
+                    }}
                   >
                     {expandedSections.recommendations ? (
                       <ExpandLessIcon />
@@ -659,52 +1259,150 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 </Box>
 
                 <Collapse in={expandedSections.recommendations}>
-                  <List>
-                    {note.recommendations.map((recommendation, index) => (
-                      <ListItem key={index}>
-                        <ListItemText
-                          primary={recommendation}
-                          primaryTypographyProps={{ variant: 'body1' }}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
+                  <Box sx={{ px: 3, pb: 3 }}>
+                    <List sx={{ p: 0 }}>
+                      {note.recommendations.map((recommendation, index) => (
+                        <ListItem
+                          key={index}
+                          sx={{
+                            px: 0,
+                            py: 1.5,
+                            borderBottom: index < note.recommendations.length - 1 ? '1px solid' : 'none',
+                            borderColor: 'grey.200',
+                          }}
+                        >
+                          <ListItemIcon sx={{ minWidth: 36 }}>
+                            <Box
+                              sx={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: '50%',
+                                backgroundColor: 'secondary.100',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: 'secondary.main',
+                                  fontSize: '0.75rem',
+                                }}
+                              >
+                                {index + 1}
+                              </Typography>
+                            </Box>
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={recommendation}
+                            primaryTypographyProps={{
+                              variant: 'body1',
+                              sx: {
+                                lineHeight: 1.6,
+                                fontSize: '0.95rem',
+                              },
+                            }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
                 </Collapse>
               </CardContent>
             </Card>
           )}
-        </Grid>
+        </Box>
 
-        {/* Sidebar */}
-        <Grid item xs={12} md={4}>
-          {/* Note Metadata */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
+        {/* Enhanced Sidebar */}
+        <Box sx={{ width: { xs: '100%', md: '33.333%' }, flexShrink: 0 }}>
+          {/* Enhanced Note Metadata */}
+          <Card
+            elevation={1}
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  mb: 3,
+                  fontSize: '1.125rem',
+                  fontWeight: 600,
+                  color: 'text.primary',
+                }}
+              >
                 Note Information
               </Typography>
 
-              <Stack spacing={2}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
+              <Stack spacing={3}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      backgroundColor: 'primary.50',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mr: 2,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <CalendarIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontWeight: 500, mb: 0.5 }}
+                    >
                       Created
                     </Typography>
-                    <Typography variant="body1">
+                    <Typography
+                      variant="body1"
+                      sx={{ fontWeight: 600, fontSize: '0.95rem' }}
+                    >
                       {formatDate(note.createdAt)}
                     </Typography>
                   </Box>
                 </Box>
 
                 {note.updatedAt !== note.createdAt && (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        backgroundColor: 'info.50',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mr: 2,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <CalendarIcon sx={{ fontSize: 20, color: 'info.main' }} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontWeight: 500, mb: 0.5 }}
+                      >
                         Last Updated
                       </Typography>
-                      <Typography variant="body1">
+                      <Typography
+                        variant="body1"
+                        sx={{ fontWeight: 600, fontSize: '0.95rem' }}
+                      >
                         {formatDate(note.updatedAt)}
                       </Typography>
                     </Box>
@@ -712,13 +1410,35 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 )}
 
                 {note.followUpRequired && note.followUpDate && (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <ScheduleIcon sx={{ mr: 1, color: 'warning.main' }} />
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        backgroundColor: 'warning.50',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mr: 2,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <ScheduleIcon sx={{ fontSize: 20, color: 'warning.main' }} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontWeight: 500, mb: 0.5 }}
+                      >
                         Follow-up Date
                       </Typography>
-                      <Typography variant="body1" color="warning.main">
+                      <Typography
+                        variant="body1"
+                        color="warning.main"
+                        sx={{ fontWeight: 600, fontSize: '0.95rem' }}
+                      >
                         {formatDate(note.followUpDate)}
                       </Typography>
                     </Box>
@@ -730,17 +1450,29 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                     <Typography
                       variant="body2"
                       color="text.secondary"
-                      sx={{ mb: 1 }}
+                      sx={{ mb: 2, fontWeight: 500 }}
                     >
                       Tags
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1 }}>
                       {note.tags.map((tag, index) => (
                         <Chip
                           key={index}
                           label={tag}
                           size="small"
-                          variant="outlined"
+                          sx={{
+                            backgroundColor: theme.palette.mode === 'dark'
+                              ? 'rgba(100, 116, 139, 0.3)'
+                              : 'grey.100',
+                            color: 'text.primary',
+                            fontWeight: 500,
+                            borderRadius: 2,
+                            '&:hover': {
+                              backgroundColor: theme.palette.mode === 'dark'
+                                ? 'rgba(100, 116, 139, 0.4)'
+                                : 'grey.200',
+                            },
+                          }}
                         />
                       ))}
                     </Stack>
@@ -750,28 +1482,71 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
             </CardContent>
           </Card>
 
-          {/* Attachments */}
+          {/* Enhanced Attachments */}
           {note.attachments && note.attachments.length > 0 && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
+            <Card
+              elevation={1}
+              sx={{
+                mb: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'grey.200',
+              }}
+            >
+              <CardContent sx={{ p: 0 }}>
                 <Box
                   sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 2,
+                    p: 3,
+                    pb: expandedSections.attachments ? 2 : 3,
+                    background: getThemeGradient('attachments', expandedSections.attachments),
+                    borderRadius: expandedSections.attachments ? '12px 12px 0 0' : '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: expandedSections.attachments
+                        ? 'transparent'
+                        : getThemeBackground('grey.50', 0.1),
+                    },
                   }}
+                  onClick={() => toggleSection('attachments')}
                 >
                   <Typography
                     variant="h6"
-                    sx={{ display: 'flex', alignItems: 'center' }}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      color: expandedSections.attachments ? 'info.main' : 'text.primary',
+                    }}
                   >
-                    <AttachFileIcon sx={{ mr: 1 }} />
+                    <AttachFileIcon sx={{ mr: 1.5, fontSize: 24 }} />
                     Attachments ({note.attachments.length})
                   </Typography>
                   <IconButton
-                    onClick={() => toggleSection('attachments')}
                     size="small"
+                    sx={{
+                      backgroundColor: expandedSections.attachments
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(59, 130, 246, 0.2)'
+                          : 'info.100'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.2)'
+                          : 'grey.100',
+                      color: expandedSections.attachments ? 'info.main' : 'text.secondary',
+                      '&:hover': {
+                        backgroundColor: expandedSections.attachments
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(59, 130, 246, 0.3)'
+                            : 'info.200'
+                          : theme.palette.mode === 'dark'
+                            ? 'rgba(100, 116, 139, 0.3)'
+                            : 'grey.200',
+                      },
+                    }}
                   >
                     {expandedSections.attachments ? (
                       <ExpandLessIcon />
@@ -782,49 +1557,95 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                 </Box>
 
                 <Collapse in={expandedSections.attachments}>
-                  <AttachmentsDisplay
-                    attachments={note.attachments}
-                    onDownload={handleDownloadAttachment}
-                    onDelete={canEdit ? handleDeleteAttachment : undefined}
-                  />
+                  <Box sx={{ px: 3, pb: 3 }}>
+                    <AttachmentsDisplay
+                      attachments={note.attachments}
+                      onDownload={handleDownloadAttachment}
+                      onDelete={canEdit ? handleDeleteAttachment : undefined}
+                    />
+                  </Box>
                 </Collapse>
               </CardContent>
             </Card>
           )}
 
-          {/* Audit Trail */}
-          <Card>
-            <CardContent>
+          {/* Enhanced Audit Trail */}
+          <Card
+            elevation={1}
+            sx={{
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
+          >
+            <CardContent sx={{ p: 0 }}>
               <Box
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  mb: 2,
+                  p: 3,
+                  pb: showAuditTrail ? 2 : 3,
+                  background: getThemeGradient('audit', showAuditTrail),
+                  borderRadius: showAuditTrail ? '12px 12px 0 0' : '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: showAuditTrail
+                      ? 'transparent'
+                      : getThemeBackground('grey.50', 0.1),
+                  },
                 }}
+                onClick={() => setShowAuditTrail(!showAuditTrail)}
               >
                 <Typography
                   variant="h6"
-                  sx={{ display: 'flex', alignItems: 'center' }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '1.125rem',
+                    fontWeight: 600,
+                    color: showAuditTrail ? 'text.primary' : 'text.primary',
+                  }}
                 >
-                  <HistoryIcon sx={{ mr: 1 }} />
+                  <HistoryIcon sx={{ mr: 1.5, fontSize: 24 }} />
                   Audit Trail
                 </Typography>
                 <IconButton
-                  onClick={() => setShowAuditTrail(!showAuditTrail)}
                   size="small"
+                  sx={{
+                    backgroundColor: showAuditTrail
+                      ? theme.palette.mode === 'dark'
+                        ? 'rgba(100, 116, 139, 0.3)'
+                        : 'grey.200'
+                      : theme.palette.mode === 'dark'
+                        ? 'rgba(100, 116, 139, 0.2)'
+                        : 'grey.100',
+                    color: 'text.secondary',
+                    '&:hover': {
+                      backgroundColor: showAuditTrail
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.4)'
+                          : 'grey.300'
+                        : theme.palette.mode === 'dark'
+                          ? 'rgba(100, 116, 139, 0.3)'
+                          : 'grey.200',
+                    },
+                  }}
                 >
                   {showAuditTrail ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </IconButton>
               </Box>
 
               <Collapse in={showAuditTrail}>
-                <AuditTrailDisplay note={note} />
+                <Box sx={{ px: 3, pb: 3 }}>
+                  <AuditTrailDisplay note={note} />
+                </Box>
               </Collapse>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* Edit Modal */}
       <Dialog
@@ -891,7 +1712,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </Container >
   );
 };
 
@@ -904,72 +1725,161 @@ interface VitalSignsDisplayProps {
 const VitalSignsDisplay: React.FC<VitalSignsDisplayProps> = ({
   vitalSigns,
 }) => {
+  const theme = useTheme();
+
+  const getVitalCardStyles = () => ({
+    p: 3,
+    textAlign: 'center',
+    borderRadius: 2,
+    border: '1px solid',
+    borderColor: 'divider',
+    backgroundColor: theme.palette.mode === 'dark'
+      ? 'rgba(51, 65, 85, 0.3)'
+      : 'grey.50',
+    transition: 'all 0.2s ease-in-out',
+    '&:hover': {
+      backgroundColor: theme.palette.mode === 'dark'
+        ? 'rgba(51, 65, 85, 0.4)'
+        : 'grey.100',
+      transform: 'translateY(-2px)',
+      boxShadow: theme.palette.mode === 'dark'
+        ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+        : '0 4px 12px rgba(0, 0, 0, 0.1)',
+    },
+  });
+
   return (
-    <Grid container spacing={2}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
       {vitalSigns.bloodPressure && (
-        <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
+        <Box sx={{ width: { xs: '50%', sm: '33.333%' } }}>
+          <Paper
+            elevation={0}
+            sx={getVitalCardStyles()}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500, mb: 1 }}
+            >
               Blood Pressure
             </Typography>
-            <Typography variant="h6">
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+            >
               {vitalSigns.bloodPressure.systolic}/
               {vitalSigns.bloodPressure.diastolic}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
+            >
               mmHg
             </Typography>
           </Paper>
-        </Grid>
+        </Box>
       )}
 
       {vitalSigns.heartRate && (
-        <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
+        <Box sx={{ width: { xs: '50%', sm: '33.333%' } }}>
+          <Paper
+            elevation={0}
+            sx={getVitalCardStyles()}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500, mb: 1 }}
+            >
               Heart Rate
             </Typography>
-            <Typography variant="h6">{vitalSigns.heartRate}</Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+            >
+              {vitalSigns.heartRate}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
+            >
               bpm
             </Typography>
           </Paper>
-        </Grid>
+        </Box>
       )}
 
       {vitalSigns.temperature && (
-        <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
+        <Box sx={{ width: { xs: '50%', sm: '33.333%' } }}>
+          <Paper
+            elevation={0}
+            sx={getVitalCardStyles()}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500, mb: 1 }}
+            >
               Temperature
             </Typography>
-            <Typography variant="h6">{vitalSigns.temperature}°C</Typography>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+            >
+              {vitalSigns.temperature}°C
+            </Typography>
           </Paper>
-        </Grid>
+        </Box>
       )}
 
       {vitalSigns.weight && (
-        <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
+        <Box sx={{ width: { xs: '50%', sm: '33.333%' } }}>
+          <Paper
+            elevation={0}
+            sx={getVitalCardStyles()}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500, mb: 1 }}
+            >
               Weight
             </Typography>
-            <Typography variant="h6">{vitalSigns.weight} kg</Typography>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+            >
+              {vitalSigns.weight} kg
+            </Typography>
           </Paper>
-        </Grid>
+        </Box>
       )}
 
       {vitalSigns.height && (
-        <Grid item xs={6} sm={4}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
+        <Box sx={{ width: { xs: '50%', sm: '33.333%' } }}>
+          <Paper
+            elevation={0}
+            sx={getVitalCardStyles()}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500, mb: 1 }}
+            >
               Height
             </Typography>
-            <Typography variant="h6">{vitalSigns.height} cm</Typography>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+            >
+              {vitalSigns.height} cm
+            </Typography>
           </Paper>
-        </Grid>
+        </Box>
       )}
-    </Grid>
+    </Box>
   );
 };
 

@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { CommunicationFileController } from '../../controllers/communicationFileController';
-import { Conversation } from '../../models/Conversation';
-import { Message } from '../../models/Message';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import app from '../../app';
+import Conversation, { IConversation } from '../../models/Conversation';
+import Message, { IMessage } from '../../models/Message';
 import { AuditLog } from '../../models/AuditLog';
 import { FileUploadService } from '../../services/fileUploadService';
 import { v2 as cloudinary } from 'cloudinary';

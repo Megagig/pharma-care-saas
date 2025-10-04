@@ -3,14 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DatabaseOptimizationService = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const logger_1 = __importDefault(require("../utils/logger"));
 class DatabaseOptimizationService {
     constructor() {
-        this.queryMetrics = [];
+        this.performanceMetrics = [];
         this.MAX_METRICS_HISTORY = 1000;
-        this.SLOW_QUERY_THRESHOLD = 100;
-        this.setupQueryProfiling();
+        this.setupIndexes();
     }
     static getInstance() {
         if (!DatabaseOptimizationService.instance) {
@@ -18,367 +18,499 @@ class DatabaseOptimizationService {
         }
         return DatabaseOptimizationService.instance;
     }
-    async createOptimizedIndexes() {
-        try {
-            logger_1.default.info('Creating optimized indexes for RBAC collections');
-            await this.createUserIndexes();
-            await this.createRoleIndexes();
-            await this.createUserRoleIndexes();
-            await this.createRolePermissionIndexes();
-            await this.createPermissionIndexes();
-            await this.createAuditLogIndexes();
-            logger_1.default.info('Optimized indexes created successfully');
-        }
-        catch (error) {
-            logger_1.default.error('Error creating optimized indexes:', error);
-            throw error;
-        }
-    }
-    async createUserIndexes() {
-        try {
-            const User = mongoose_1.default.model('User');
-            const indexes = [
-                { role: 1, status: 1, licenseStatus: 1 },
-                { directPermissions: 1, status: 1 },
-                { deniedPermissions: 1, status: 1 },
-                { assignedRoles: 1, status: 1 },
-                { roleLastModifiedAt: -1, status: 1 },
-                { licenseStatus: 1, role: 1 },
-            ];
-            for (const indexSpec of indexes) {
-                try {
-                    await User.collection.createIndex(indexSpec, { background: true });
-                    logger_1.default.debug(`Created User index: ${JSON.stringify(indexSpec)}`);
-                }
-                catch (error) {
-                    if (error.code !== 85) {
-                        logger_1.default.warn(`Failed to create User index ${JSON.stringify(indexSpec)}:`, error);
-                    }
-                }
-            }
-        }
-        catch (error) {
-            logger_1.default.warn('User model not available, skipping user indexes');
-        }
-    }
-    async createRoleIndexes() {
-        try {
-            const Role = mongoose_1.default.model('Role');
-            const indexes = [
-                { hierarchyLevel: 1, parentRole: 1, isActive: 1 },
-                { parentRole: 1, hierarchyLevel: 1, isActive: 1 },
-                { category: 1, isActive: 1, isSystemRole: 1 },
-                { workspaceId: 1, category: 1, isActive: 1 },
-                { hierarchyLevel: 1, isActive: 1 },
-            ];
-            for (const indexSpec of indexes) {
-                try {
-                    await Role.collection.createIndex(indexSpec, { background: true });
-                    logger_1.default.debug(`Created Role index: ${JSON.stringify(indexSpec)}`);
-                }
-                catch (error) {
-                    if (error.code !== 85) {
-                        logger_1.default.warn(`Failed to create Role index ${JSON.stringify(indexSpec)}:`, error);
-                    }
-                }
-            }
-        }
-        catch (error) {
-            logger_1.default.warn('Role model not available, skipping role indexes');
-        }
-    }
-    async createUserRoleIndexes() {
-        try {
-            const UserRole = mongoose_1.default.model('UserRole');
-            const indexes = [
-                { userId: 1, isActive: 1, isTemporary: 1, expiresAt: 1 },
-                { roleId: 1, workspaceId: 1, isActive: 1 },
-                { isTemporary: 1, expiresAt: 1, isActive: 1 },
-                { assignedBy: 1, assignedAt: -1, isActive: 1 },
-                { revokedBy: 1, revokedAt: -1 },
-                { workspaceId: 1, userId: 1, isActive: 1 },
-            ];
-            for (const indexSpec of indexes) {
-                try {
-                    await UserRole.collection.createIndex(indexSpec, { background: true });
-                    logger_1.default.debug(`Created UserRole index: ${JSON.stringify(indexSpec)}`);
-                }
-                catch (error) {
-                    if (error.code !== 85) {
-                        logger_1.default.warn(`Failed to create UserRole index ${JSON.stringify(indexSpec)}:`, error);
-                    }
-                }
-            }
-        }
-        catch (error) {
-            logger_1.default.warn('UserRole model not available, skipping user role indexes');
-        }
-    }
-    async createRolePermissionIndexes() {
-        try {
-            const RolePermission = mongoose_1.default.model('RolePermission');
-            const indexes = [
-                { roleId: 1, granted: 1, priority: -1, isActive: 1 },
-                { permissionAction: 1, granted: 1, priority: -1, isActive: 1 },
-                { permissionAction: 1, priority: -1, granted: 1, isActive: 1 },
-                { grantedBy: 1, grantedAt: -1, isActive: 1 },
-                { lastModifiedBy: 1, updatedAt: -1 },
-            ];
-            for (const indexSpec of indexes) {
-                try {
-                    await RolePermission.collection.createIndex(indexSpec, { background: true });
-                    logger_1.default.debug(`Created RolePermission index: ${JSON.stringify(indexSpec)}`);
-                }
-                catch (error) {
-                    if (error.code !== 85) {
-                        logger_1.default.warn(`Failed to create RolePermission index ${JSON.stringify(indexSpec)}:`, error);
-                    }
-                }
-            }
-        }
-        catch (error) {
-            logger_1.default.warn('RolePermission model not available, skipping role permission indexes');
-        }
-    }
-    async createPermissionIndexes() {
-        try {
-            const Permission = mongoose_1.default.model('Permission');
-            const indexes = [
-                { action: 1, isActive: 1 },
-                { resource: 1, isActive: 1 },
-                { category: 1, resource: 1, isActive: 1 },
-                { isSystemPermission: 1, isActive: 1 },
-            ];
-            for (const indexSpec of indexes) {
-                try {
-                    await Permission.collection.createIndex(indexSpec, { background: true });
-                    logger_1.default.debug(`Created Permission index: ${JSON.stringify(indexSpec)}`);
-                }
-                catch (error) {
-                    if (error.code !== 85) {
-                        logger_1.default.warn(`Failed to create Permission index ${JSON.stringify(indexSpec)}:`, error);
-                    }
-                }
-            }
-        }
-        catch (error) {
-            logger_1.default.warn('Permission model not available, skipping permission indexes');
-        }
-    }
-    async createAuditLogIndexes() {
-        try {
-            const AuditLog = mongoose_1.default.model('AuditLog');
-            const indexes = [
-                { userId: 1, timestamp: -1, action: 1 },
-                { 'details.permission': 1, timestamp: -1 },
-                { 'details.roleId': 1, timestamp: -1 },
-                { workspaceId: 1, timestamp: -1, action: 1 },
-                { action: 1, result: 1, timestamp: -1 },
-            ];
-            for (const indexSpec of indexes) {
-                try {
-                    const options = { background: true };
-                    await AuditLog.collection.createIndex(indexSpec, options);
-                    logger_1.default.debug(`Created AuditLog index: ${JSON.stringify(indexSpec)}`);
-                }
-                catch (error) {
-                    if (error.code !== 85) {
-                        logger_1.default.warn(`Failed to create AuditLog index ${JSON.stringify(indexSpec)}:`, error);
-                    }
-                }
-            }
-        }
-        catch (error) {
-            logger_1.default.warn('AuditLog model not available, skipping audit log indexes');
-        }
-    }
-    setupQueryProfiling() {
-        mongoose_1.default.connection.on('connected', async () => {
-            try {
-                const db = mongoose_1.default.connection.db;
-                await db.command({ profile: 2, slowms: this.SLOW_QUERY_THRESHOLD });
-                logger_1.default.info('Database profiling enabled for slow queries');
-            }
-            catch (error) {
-                logger_1.default.warn('Failed to enable database profiling:', error);
-            }
-        });
-    }
-    async analyzeQueryPerformance() {
-        try {
-            const slowQueries = await this.getSlowQueries();
-            const indexRecommendations = await this.generateIndexRecommendations(slowQueries);
-            const connectionPoolStats = await this.getConnectionPoolStats();
-            const collectionStats = await this.getCollectionStats();
-            const report = {
-                slowQueries,
-                indexRecommendations,
-                connectionPoolStats,
-                collectionStats,
-                timestamp: new Date()
-            };
-            logger_1.default.info('Database optimization analysis completed', {
-                slowQueriesCount: slowQueries.length,
-                recommendationsCount: indexRecommendations.length
-            });
-            return report;
-        }
-        catch (error) {
-            logger_1.default.error('Error analyzing query performance:', error);
-            throw error;
-        }
-    }
-    async getSlowQueries() {
-        try {
-            const db = mongoose_1.default.connection.db;
-            const profilerCollection = db.collection('system.profile');
-            const slowQueries = await profilerCollection
-                .find({
-                ts: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-                millis: { $gte: this.SLOW_QUERY_THRESHOLD }
-            })
-                .sort({ ts: -1 })
-                .limit(100)
-                .toArray();
-            return slowQueries.map(query => ({
-                query: JSON.stringify(query.command),
-                executionTime: query.millis,
-                documentsExamined: query.docsExamined || 0,
-                documentsReturned: query.docsReturned || 0,
-                indexUsed: !!query.planSummary && !query.planSummary.includes('COLLSCAN'),
-                indexName: query.planSummary,
-                timestamp: query.ts
-            }));
-        }
-        catch (error) {
-            logger_1.default.warn('Failed to get slow queries from profiler:', error);
-            return [];
-        }
-    }
-    async generateIndexRecommendations(slowQueries) {
-        const recommendations = [];
-        recommendations.push(...this.getRBACSpecificRecommendations());
-        return recommendations;
-    }
-    getRBACSpecificRecommendations() {
-        return [
+    async setupIndexes() {
+        const indexes = [
             {
                 collection: 'users',
-                indexSpec: { assignedRoles: 1, status: 1, licenseStatus: 1 },
-                reason: 'Optimize user permission resolution queries',
-                estimatedImprovement: 70,
-                priority: 'high'
+                index: { email: 1 },
+                options: { unique: true },
+                description: 'Unique index for user email lookups',
             },
             {
-                collection: 'user_roles',
-                indexSpec: { userId: 1, isActive: 1, expiresAt: 1 },
-                reason: 'Optimize active role lookup with expiration check',
-                estimatedImprovement: 60,
-                priority: 'high'
+                collection: 'users',
+                index: { workspaceId: 1, role: 1 },
+                description: 'Compound index for workspace user queries',
             },
             {
-                collection: 'role_permissions',
-                indexSpec: { roleId: 1, permissionAction: 1, priority: -1 },
-                reason: 'Optimize permission resolution with priority ordering',
-                estimatedImprovement: 80,
-                priority: 'high'
+                collection: 'users',
+                index: { createdAt: -1 },
+                description: 'Index for user registration analytics',
             },
             {
-                collection: 'roles',
-                indexSpec: { parentRole: 1, hierarchyLevel: 1, isActive: 1 },
-                reason: 'Optimize role hierarchy traversal',
-                estimatedImprovement: 65,
-                priority: 'medium'
+                collection: 'users',
+                index: { lastLoginAt: -1 },
+                description: 'Index for user activity analytics',
+            },
+            {
+                collection: 'users',
+                index: { isActive: 1, workspaceId: 1 },
+                description: 'Index for active user queries by workspace',
+            },
+            {
+                collection: 'systemmetrics',
+                index: { timestamp: -1 },
+                description: 'Index for time-series metrics queries',
+            },
+            {
+                collection: 'systemmetrics',
+                index: { metricType: 1, timestamp: -1 },
+                description: 'Compound index for metric type and time queries',
+            },
+            {
+                collection: 'useranalytics',
+                index: { userId: 1, timestamp: -1 },
+                description: 'Compound index for user analytics queries',
+            },
+            {
+                collection: 'useranalytics',
+                index: { workspaceId: 1, timestamp: -1 },
+                description: 'Compound index for workspace analytics',
+            },
+            {
+                collection: 'useranalytics',
+                index: { eventType: 1, timestamp: -1 },
+                description: 'Index for event-based analytics',
+            },
+            {
+                collection: 'subscriptionanalytics',
+                index: { subscriptionId: 1, timestamp: -1 },
+                description: 'Compound index for subscription analytics',
+            },
+            {
+                collection: 'subscriptionanalytics',
+                index: { planType: 1, timestamp: -1 },
+                description: 'Index for plan-based analytics',
+            },
+            {
+                collection: 'subscriptionanalytics',
+                index: { workspaceId: 1, status: 1 },
+                description: 'Index for workspace subscription queries',
+            },
+            {
+                collection: 'usersessions',
+                index: { userId: 1, isActive: 1 },
+                description: 'Index for active user sessions',
+            },
+            {
+                collection: 'usersessions',
+                index: { sessionId: 1 },
+                options: { unique: true },
+                description: 'Unique index for session lookups',
+            },
+            {
+                collection: 'usersessions',
+                index: { createdAt: -1 },
+                options: { expireAfterSeconds: 86400 * 30 },
+                description: 'TTL index for session cleanup',
+            },
+            {
+                collection: 'usersessions',
+                index: { ipAddress: 1, createdAt: -1 },
+                description: 'Index for IP-based security queries',
+            },
+            {
+                collection: 'securityauditlogs',
+                index: { userId: 1, timestamp: -1 },
+                description: 'Index for user audit queries',
+            },
+            {
+                collection: 'securityauditlogs',
+                index: { action: 1, timestamp: -1 },
+                description: 'Index for action-based audit queries',
+            },
+            {
+                collection: 'securityauditlogs',
+                index: { ipAddress: 1, timestamp: -1 },
+                description: 'Index for IP-based security analysis',
+            },
+            {
+                collection: 'securityauditlogs',
+                index: { timestamp: -1 },
+                options: { expireAfterSeconds: 86400 * 365 },
+                description: 'TTL index for audit log retention',
+            },
+            {
+                collection: 'notificationrules',
+                index: { isActive: 1, trigger: 1 },
+                description: 'Index for active notification rules',
+            },
+            {
+                collection: 'notificationtemplates',
+                index: { channel: 1, isActive: 1 },
+                description: 'Index for active templates by channel',
+            },
+            {
+                collection: 'tenants',
+                index: { status: 1, type: 1 },
+                description: 'Index for tenant status and type queries',
+            },
+            {
+                collection: 'tenants',
+                index: { subscriptionPlan: 1, status: 1 },
+                description: 'Index for subscription plan queries',
+            },
+            {
+                collection: 'tenants',
+                index: { createdAt: -1 },
+                description: 'Index for tenant creation analytics',
+            },
+            {
+                collection: 'tenants',
+                index: { lastActivity: -1 },
+                description: 'Index for tenant activity tracking',
+            },
+            {
+                collection: 'supporttickets',
+                index: { status: 1, priority: 1 },
+                description: 'Index for ticket status and priority queries',
+            },
+            {
+                collection: 'supporttickets',
+                index: { assignedTo: 1, status: 1 },
+                description: 'Index for assigned ticket queries',
+            },
+            {
+                collection: 'supporttickets',
+                index: { createdBy: 1, createdAt: -1 },
+                description: 'Index for user ticket history',
+            },
+            {
+                collection: 'supporttickets',
+                index: { tenantId: 1, status: 1 },
+                description: 'Index for tenant support queries',
+            },
+            {
+                collection: 'knowledgebasearticles',
+                index: { category: 1, isPublished: 1 },
+                description: 'Index for published articles by category',
+            },
+            {
+                collection: 'knowledgebasearticles',
+                index: { tags: 1, isPublished: 1 },
+                description: 'Index for article tag searches',
+            },
+            {
+                collection: 'knowledgebasearticles',
+                index: { title: 'text', content: 'text' },
+                description: 'Full-text search index for articles',
+            },
+            {
+                collection: 'apiendpoints',
+                index: { path: 1, method: 1 },
+                options: { unique: true },
+                description: 'Unique index for API endpoint identification',
+            },
+            {
+                collection: 'apiendpoints',
+                index: { isActive: 1, version: 1 },
+                description: 'Index for active API endpoints by version',
+            },
+            {
+                collection: 'apikeys',
+                index: { keyHash: 1 },
+                options: { unique: true },
+                description: 'Unique index for API key lookups',
+            },
+            {
+                collection: 'apikeys',
+                index: { developerId: 1, isActive: 1 },
+                description: 'Index for developer API keys',
+            },
+            {
+                collection: 'apikeys',
+                index: { expiresAt: 1 },
+                options: { expireAfterSeconds: 0 },
+                description: 'TTL index for API key expiration',
+            },
+            {
+                collection: 'apiusagemetrics',
+                index: { apiKeyId: 1, timestamp: -1 },
+                description: 'Index for API usage by key',
+            },
+            {
+                collection: 'apiusagemetrics',
+                index: { endpoint: 1, timestamp: -1 },
+                description: 'Index for endpoint usage analytics',
+            },
+            {
+                collection: 'apiusagemetrics',
+                index: { timestamp: -1 },
+                options: { expireAfterSeconds: 86400 * 90 },
+                description: 'TTL index for usage metrics retention',
+            },
+        ];
+        await this.createIndexes(indexes);
+    }
+    async createIndexes(indexes) {
+        logger_1.default.info(`Creating ${indexes.length} database indexes for optimization`);
+        for (const indexDef of indexes) {
+            try {
+                const collection = mongoose_1.default.connection.db?.collection(indexDef.collection);
+                if (!collection) {
+                    logger_1.default.warn(`Collection ${indexDef.collection} not found, skipping index creation`);
+                    continue;
+                }
+                await collection.createIndex(indexDef.index, indexDef.options || {});
+                logger_1.default.debug(`Created index for ${indexDef.collection}: ${indexDef.description}`);
             }
+            catch (error) {
+                if (error.code !== 85) {
+                    logger_1.default.error(`Failed to create index for ${indexDef.collection}:`, error);
+                }
+            }
+        }
+        logger_1.default.info('Database index creation completed');
+    }
+    async analyzeQueryPerformance(collection, operation, query) {
+        const startTime = Date.now();
+        try {
+            const db = mongoose_1.default.connection.db;
+            if (!db) {
+                throw new Error('Database connection not available');
+            }
+            const explainResult = await db.collection(collection).find(query).explain('executionStats');
+            const executionStats = explainResult.executionStats;
+            const metrics = {
+                collection,
+                operation,
+                executionTime: Date.now() - startTime,
+                documentsExamined: executionStats.totalDocsExamined || 0,
+                documentsReturned: executionStats.totalDocsReturned || 0,
+                indexUsed: executionStats.totalDocsExamined <= executionStats.totalDocsReturned * 2,
+                timestamp: new Date(),
+            };
+            this.recordPerformanceMetrics(metrics);
+            return metrics;
+        }
+        catch (error) {
+            logger_1.default.error(`Failed to analyze query performance for ${collection}:`, error);
+            throw error;
+        }
+    }
+    getOptimizedUserAnalyticsPipeline(timeRange) {
+        return [
+            {
+                $match: {
+                    createdAt: {
+                        $gte: timeRange.start,
+                        $lte: timeRange.end,
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: {
+                            format: '%Y-%m-%d',
+                            date: '$createdAt',
+                        },
+                    },
+                    count: { $sum: 1 },
+                    activeUsers: {
+                        $sum: {
+                            $cond: [{ $eq: ['$isActive', true] }, 1, 0],
+                        },
+                    },
+                },
+            },
+            {
+                $sort: { _id: 1 },
+            },
         ];
     }
-    async getConnectionPoolStats() {
-        try {
-            const db = mongoose_1.default.connection.db;
-            const serverStatus = await db.admin().serverStatus();
-            return {
-                connections: serverStatus.connections,
-                network: serverStatus.network,
-                opcounters: serverStatus.opcounters
-            };
-        }
-        catch (error) {
-            logger_1.default.warn('Failed to get connection pool stats:', error);
-            return {};
-        }
+    getOptimizedSubscriptionAnalyticsPipeline(timeRange) {
+        return [
+            {
+                $match: {
+                    timestamp: {
+                        $gte: timeRange.start,
+                        $lte: timeRange.end,
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: '$planType',
+                    totalRevenue: { $sum: '$revenue' },
+                    subscriptionCount: { $sum: 1 },
+                    avgRevenue: { $avg: '$revenue' },
+                },
+            },
+            {
+                $sort: { totalRevenue: -1 },
+            },
+        ];
     }
-    async getCollectionStats() {
-        try {
-            const db = mongoose_1.default.connection.db;
-            const collections = ['users', 'roles', 'user_roles', 'role_permissions', 'permissions', 'audit_logs'];
-            const stats = {};
-            for (const collectionName of collections) {
-                try {
-                    const collStats = await db.collection(collectionName).stats();
-                    stats[collectionName] = {
-                        count: collStats.count,
-                        size: collStats.size,
-                        avgObjSize: collStats.avgObjSize,
-                        indexCount: collStats.nindexes,
-                        totalIndexSize: collStats.totalIndexSize
-                    };
-                }
-                catch (error) {
-                    stats[collectionName] = { error: 'Collection not found' };
-                }
-            }
-            return stats;
-        }
-        catch (error) {
-            logger_1.default.warn('Failed to get collection stats:', error);
-            return {};
-        }
-    }
-    async optimizeConnectionPool() {
-        try {
-            const stats = await this.getConnectionPoolStats();
-            logger_1.default.info('Current connection pool configuration', {
-                currentConnections: stats.connections?.current || 0,
-                availableConnections: stats.connections?.available || 0
-            });
-        }
-        catch (error) {
-            logger_1.default.error('Error optimizing connection pool:', error);
-        }
-    }
-    recordQueryMetrics(metrics) {
-        this.queryMetrics.push(metrics);
-        if (this.queryMetrics.length > this.MAX_METRICS_HISTORY) {
-            this.queryMetrics = this.queryMetrics.slice(-this.MAX_METRICS_HISTORY);
-        }
-        if (metrics.executionTime > this.SLOW_QUERY_THRESHOLD) {
-            logger_1.default.warn('Slow query detected', {
-                query: metrics.query,
-                executionTime: metrics.executionTime,
-                documentsExamined: metrics.documentsExamined,
-                indexUsed: metrics.indexUsed
-            });
-        }
-    }
-    getQueryStats() {
-        if (this.queryMetrics.length === 0) {
-            return {
-                totalQueries: 0,
-                slowQueries: 0,
-                averageExecutionTime: 0,
-                indexUsageRate: 0
-            };
-        }
-        const slowQueries = this.queryMetrics.filter(m => m.executionTime > this.SLOW_QUERY_THRESHOLD);
-        const totalExecutionTime = this.queryMetrics.reduce((sum, m) => sum + m.executionTime, 0);
-        const indexedQueries = this.queryMetrics.filter(m => m.indexUsed);
+    getOptimizedActiveSessionsQuery() {
         return {
-            totalQueries: this.queryMetrics.length,
-            slowQueries: slowQueries.length,
-            averageExecutionTime: totalExecutionTime / this.queryMetrics.length,
-            indexUsageRate: (indexedQueries.length / this.queryMetrics.length) * 100
+            isActive: true,
+            lastActivity: {
+                $gte: new Date(Date.now() - 30 * 60 * 1000),
+            },
         };
     }
+    getOptimizedSecurityAuditQuery(filters) {
+        const query = {};
+        if (filters.userId) {
+            query.userId = filters.userId;
+        }
+        if (filters.action) {
+            query.action = filters.action;
+        }
+        if (filters.ipAddress) {
+            query.ipAddress = filters.ipAddress;
+        }
+        if (filters.timeRange) {
+            query.timestamp = {
+                $gte: filters.timeRange.start,
+                $lte: filters.timeRange.end,
+            };
+        }
+        return query;
+    }
+    async getCursorPaginatedResults(model, query = {}, options = {}) {
+        const { limit = 20, cursor, sortField = '_id', sortOrder = -1, } = options;
+        const paginatedQuery = { ...query };
+        if (cursor) {
+            const cursorCondition = sortOrder === 1 ? '$gt' : '$lt';
+            paginatedQuery[sortField] = { [cursorCondition]: cursor };
+        }
+        const results = await model
+            .find(paginatedQuery)
+            .sort({ [sortField]: sortOrder })
+            .limit(limit + 1)
+            .lean()
+            .exec();
+        const hasMore = results.length > limit;
+        if (hasMore) {
+            results.pop();
+        }
+        const nextCursor = hasMore && results.length > 0
+            ? results[results.length - 1][sortField]
+            : undefined;
+        return {
+            data: results,
+            nextCursor: nextCursor?.toString(),
+            hasMore,
+        };
+    }
+    async executeOptimizedAggregation(model, pipeline, options = {}) {
+        const { allowDiskUse = true, maxTimeMS = 30000, } = options;
+        const startTime = Date.now();
+        try {
+            const results = await model.aggregate(pipeline, {
+                allowDiskUse,
+                maxTimeMS,
+            });
+            const executionTime = Date.now() - startTime;
+            this.recordPerformanceMetrics({
+                collection: model.collection.name,
+                operation: 'aggregation',
+                executionTime,
+                documentsExamined: 0,
+                documentsReturned: results.length,
+                indexUsed: true,
+                timestamp: new Date(),
+            });
+            return results;
+        }
+        catch (error) {
+            logger_1.default.error(`Aggregation failed for ${model.collection.name}:`, error);
+            throw error;
+        }
+    }
+    recordPerformanceMetrics(metrics) {
+        this.performanceMetrics.push(metrics);
+        if (this.performanceMetrics.length > this.MAX_METRICS_HISTORY) {
+            this.performanceMetrics.shift();
+        }
+        if (metrics.executionTime > 1000) {
+            logger_1.default.warn(`Slow query detected in ${metrics.collection}:`, {
+                operation: metrics.operation,
+                executionTime: metrics.executionTime,
+                documentsExamined: metrics.documentsExamined,
+                documentsReturned: metrics.documentsReturned,
+                indexUsed: metrics.indexUsed,
+            });
+        }
+    }
+    getPerformanceStats() {
+        const totalQueries = this.performanceMetrics.length;
+        const averageExecutionTime = totalQueries > 0
+            ? this.performanceMetrics.reduce((sum, m) => sum + m.executionTime, 0) / totalQueries
+            : 0;
+        const slowQueries = this.performanceMetrics.filter(m => m.executionTime > 1000).length;
+        const indexUsageRate = totalQueries > 0
+            ? (this.performanceMetrics.filter(m => m.indexUsed).length / totalQueries) * 100
+            : 0;
+        return {
+            totalQueries,
+            averageExecutionTime,
+            slowQueries,
+            indexUsageRate,
+            recentMetrics: this.performanceMetrics.slice(-10),
+        };
+    }
+    async analyzeIndexUsage() {
+        const suggestions = [];
+        const unusedIndexes = [];
+        const collections = [];
+        try {
+            const db = mongoose_1.default.connection.db;
+            if (!db) {
+                throw new Error('Database connection not available');
+            }
+            const collectionNames = await db.listCollections().toArray();
+            for (const collectionInfo of collectionNames) {
+                const collectionName = collectionInfo.name;
+                collections.push(collectionName);
+                try {
+                    const collection = db.collection(collectionName);
+                    const indexStats = [];
+                    for (const indexStat of indexStats) {
+                        const indexName = indexStat.name;
+                        const usageCount = indexStat.accesses?.ops || 0;
+                        if (indexName === '_id_') {
+                            continue;
+                        }
+                        if (usageCount === 0) {
+                            unusedIndexes.push(`${collectionName}.${indexName}`);
+                        }
+                    }
+                }
+                catch (error) {
+                    logger_1.default.debug(`Could not analyze indexes for collection ${collectionName}:`, error);
+                }
+            }
+            const slowQueries = this.performanceMetrics.filter(m => m.executionTime > 1000);
+            if (slowQueries.length > 0) {
+                suggestions.push('Consider adding indexes for frequently queried fields in slow queries');
+            }
+            const lowIndexUsage = this.performanceMetrics.filter(m => !m.indexUsed);
+            const totalQueries = this.performanceMetrics.length;
+            if (lowIndexUsage.length > totalQueries * 0.2) {
+                suggestions.push('Review query patterns and add appropriate compound indexes');
+            }
+            return {
+                collections,
+                suggestions,
+                unusedIndexes,
+            };
+        }
+        catch (error) {
+            logger_1.default.error('Failed to analyze index usage:', error);
+            return {
+                collections: [],
+                suggestions: ['Failed to analyze index usage - check database connection'],
+                unusedIndexes: [],
+            };
+        }
+    }
+    clearPerformanceMetrics() {
+        this.performanceMetrics = [];
+        logger_1.default.info('Performance metrics history cleared');
+    }
 }
-exports.default = DatabaseOptimizationService;
+exports.DatabaseOptimizationService = DatabaseOptimizationService;
+exports.default = DatabaseOptimizationService.getInstance();
 //# sourceMappingURL=DatabaseOptimizationService.js.map

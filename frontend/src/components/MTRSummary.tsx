@@ -9,7 +9,6 @@ import {
   Button,
   Card,
   CardContent,
-  Grid,
   Chip,
   Alert,
   Divider,
@@ -19,16 +18,14 @@ import {
   ListItemIcon,
   Paper,
 } from '@mui/material';
-import {
-  CheckCircle as CheckCircleIcon,
-  NavigateNext as NavigateNextIcon,
-  ArrowBack as ArrowBackIcon,
-  Print as PrintIcon,
-  Download as DownloadIcon,
-  Schedule as ScheduleIcon,
-  Assignment as AssignmentIcon,
-  LocalPharmacy as LocalPharmacyIcon,
-} from '@mui/icons-material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PrintIcon from '@mui/icons-material/Print';
+import DownloadIcon from '@mui/icons-material/Download';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
 
 // Import store and types
 import { useMTRStore } from '../stores/mtrStore';
@@ -54,6 +51,7 @@ const MTRSummary: React.FC = () => {
   // Load review data
   useEffect(() => {
     if (reviewId && reviewId !== currentReview?._id) {
+      // Load session via API only
       loadReview(reviewId);
     }
   }, [reviewId, currentReview?._id, loadReview]);
@@ -173,116 +171,124 @@ const MTRSummary: React.FC = () => {
               .toUpperCase()}`}
             color="success"
             variant="outlined"
-            size="large"
+            size="medium"
+            sx={{
+              fontSize: '1rem',
+              height: 40,
+              '& .MuiChip-label': {
+                px: 2
+              }
+            }}
           />
         </Box>
       )}
 
-      <Grid container spacing={3}>
-        {/* Review Overview */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Review Overview
-              </Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemIcon>
-                    <AssignmentIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Review Type"
-                    secondary={
-                      currentReview.reviewType
-                        ?.replace('_', ' ')
-                        .toUpperCase() || 'Standard'
-                    }
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <ScheduleIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Duration"
-                    secondary={
-                      currentReview.startedAt && currentReview.completedAt
-                        ? `${Math.round(
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Review Overview and Clinical Outcomes Row */}
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+          {/* Review Overview */}
+          <Box sx={{ flex: 1 }}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Review Overview
+                </Typography>
+                <List dense>
+                  <ListItem>
+                    <ListItemIcon>
+                      <AssignmentIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Review Type"
+                      secondary={
+                        currentReview.reviewType
+                          ?.replace('_', ' ')
+                          .toUpperCase() || 'Standard'
+                      }
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <ScheduleIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Duration"
+                      secondary={
+                        currentReview.startedAt && currentReview.completedAt
+                          ? `${Math.round(
                             (new Date(currentReview.completedAt).getTime() -
                               new Date(currentReview.startedAt).getTime()) /
-                              (1000 * 60)
+                            (1000 * 60)
                           )} minutes`
-                        : 'N/A'
-                    }
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <LocalPharmacyIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Medications Reviewed"
-                    secondary={`${
-                      currentReview.medications?.length || 0
-                    } medications`}
-                  />
-                </ListItem>
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
+                          : 'N/A'
+                      }
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <LocalPharmacyIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Medications Reviewed"
+                      secondary={`${currentReview.medications?.length || 0
+                        } medications`}
+                    />
+                  </ListItem>
+                </List>
+              </CardContent>
+            </Card>
+          </Box>
 
-        {/* Clinical Outcomes */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Clinical Outcomes
-              </Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemText
-                    primary="Problems Identified"
-                    secondary={`${
-                      identifiedProblems?.length || 0
-                    } drug therapy problems`}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemText
-                    primary="Interventions Made"
-                    secondary={`${
-                      interventions?.length || 0
-                    } pharmacist interventions`}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemText
-                    primary="Follow-ups Scheduled"
-                    secondary={`${followUps?.length || 0} follow-up activities`}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemText
-                    primary="Next Review Date"
-                    secondary={
-                      currentReview.nextReviewDate
-                        ? new Date(
+          {/* Clinical Outcomes */}
+          <Box sx={{ flex: 1 }}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Clinical Outcomes
+                </Typography>
+                <List dense>
+                  <ListItem>
+                    <ListItemText
+                      primary="Problems Identified"
+                      secondary={`${identifiedProblems?.length || 0
+                        } drug therapy problems`}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText
+                      primary="Interventions Made"
+                      secondary={`${interventions?.length || 0
+                        } pharmacist interventions`}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText
+                      primary="Follow-ups Scheduled"
+                      secondary={`${followUps?.length || 0} follow-up activities`}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText
+                      primary="Next Review Date"
+                      secondary={
+                        currentReview.nextReviewDate
+                          ? new Date(
                             currentReview.nextReviewDate
                           ).toLocaleDateString()
-                        : 'Not scheduled'
-                    }
-                  />
-                </ListItem>
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
+                          : 'Not scheduled'
+                      }
+                    />
+                  </ListItem>
+                </List>
+              </CardContent>
+            </Card>
+          </Box>
+
+        </Box>
 
         {/* Identified Problems */}
         {identifiedProblems && identifiedProblems.length > 0 && (
-          <Grid item xs={12}>
+          <Box>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -309,10 +315,10 @@ const MTRSummary: React.FC = () => {
                           problem.severity === 'critical'
                             ? 'error'
                             : problem.severity === 'major'
-                            ? 'warning'
-                            : problem.severity === 'moderate'
-                            ? 'info'
-                            : 'default'
+                              ? 'warning'
+                              : problem.severity === 'moderate'
+                                ? 'info'
+                                : 'default'
                         }
                         size="small"
                       />
@@ -332,12 +338,12 @@ const MTRSummary: React.FC = () => {
                 ))}
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
         )}
 
         {/* Therapy Plan */}
         {therapyPlan && (
-          <Grid item xs={12}>
+          <Box>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -373,8 +379,8 @@ const MTRSummary: React.FC = () => {
                                 rec.priority === 'high'
                                   ? 'error'
                                   : rec.priority === 'medium'
-                                  ? 'warning'
-                                  : 'default'
+                                    ? 'warning'
+                                    : 'default'
                               }
                               size="small"
                             />
@@ -433,9 +439,9 @@ const MTRSummary: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
         )}
-      </Grid>
+      </Box>
 
       {/* Action Buttons */}
       <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>

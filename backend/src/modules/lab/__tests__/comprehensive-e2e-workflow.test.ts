@@ -852,16 +852,16 @@ describe('Manual Lab E2E Workflow Tests', () => {
                 })
             );
 
-       erify results were processed
+            // Verify results were processed
             expect(criticalResults.hasAbnormalResults()).toBe(true);
-        nst criticalValues = criticalResults.getCriticalResults();
+            const criticalValues = criticalResults.getCriticalResults();
             expect(criticalValues).toHaveLength(1);
         });
 
         it('should send patient notifications for completed results', async () => {
             // Mock patient notification service
             const mockNotificationService = require('../../../services/notificationService');
-            mockNotificationService.sendPatientNotification = olvedValue({
+            mockNotificationService.sendPatientNotification = jest.fn().mockResolvedValue({
                 success: true,
                 sms: { messageId: 'sms_123', delivered: true },
                 email: { messageId: 'email_456', delivered: true }

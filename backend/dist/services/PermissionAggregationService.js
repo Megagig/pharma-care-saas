@@ -337,7 +337,7 @@ class PermissionAggregationService {
     async checkAggregatedPermission(user, action, workspaceId) {
         try {
             const cached = await this.cacheManager.getCachedPermissionCheck(user._id, action, workspaceId);
-            if (cached) {
+            if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
                 return {
                     allowed: cached.allowed,
                     source: cached.source,

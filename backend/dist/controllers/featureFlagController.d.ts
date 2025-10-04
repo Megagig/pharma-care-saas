@@ -1,8 +1,5 @@
 import { Request, Response } from 'express';
-import { IUser } from '../models/User';
-interface AuthRequest extends Request {
-    user?: IUser;
-}
+import { AuthRequest } from '../types/auth';
 export declare const getAllFeatureFlags: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const getFeatureFlagById: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const createFeatureFlag: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;

@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Role = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const roleSchema = new mongoose_1.Schema({
     name: {
@@ -225,5 +226,7 @@ roleSchema.methods.getHierarchyPath = async function () {
     }
     return path;
 };
-exports.default = mongoose_1.default.model('Role', roleSchema);
+const Role = mongoose_1.default.model('Role', roleSchema);
+exports.Role = Role;
+exports.default = Role;
 //# sourceMappingURL=Role.js.map

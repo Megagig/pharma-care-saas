@@ -36,6 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DynamicPermissionService = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const User_1 = __importDefault(require("../models/User"));
 const Role_1 = __importDefault(require("../models/Role"));
@@ -44,8 +45,6 @@ const UserRole_1 = __importDefault(require("../models/UserRole"));
 const RolePermission_1 = __importDefault(require("../models/RolePermission"));
 const RoleHierarchyService_1 = __importDefault(require("./RoleHierarchyService"));
 const CacheManager_1 = __importDefault(require("./CacheManager"));
-const CacheInvalidationService_1 = __importDefault(require("./CacheInvalidationService"));
-const DatabaseOptimizationService_1 = __importDefault(require("./DatabaseOptimizationService"));
 const PermissionAggregationService_1 = __importDefault(require("./PermissionAggregationService"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const auditLogging_1 = require("../middlewares/auditLogging");
@@ -54,8 +53,8 @@ class DynamicPermissionService {
         this.CACHE_TTL = 5 * 60 * 1000;
         this.roleHierarchyService = RoleHierarchyService_1.default.getInstance();
         this.cacheManager = CacheManager_1.default.getInstance();
-        this.cacheInvalidationService = CacheInvalidationService_1.default.getInstance();
-        this.dbOptimizationService = DatabaseOptimizationService_1.default.getInstance();
+        this.cacheInvalidationService = null;
+        this.dbOptimizationService = null;
         this.aggregationService = PermissionAggregationService_1.default.getInstance();
     }
     static getInstance() {
@@ -148,14 +147,16 @@ class DynamicPermissionService {
         }
         finally {
             const executionTime = Date.now() - startTime;
-            this.dbOptimizationService.recordQueryMetrics({
-                query: `checkPermission:${action}`,
-                executionTime,
-                documentsExamined: 0,
-                documentsReturned: 1,
-                indexUsed: true,
-                timestamp: new Date()
-            });
+            if (this.dbOptimizationService) {
+                this.dbOptimizationService.recordQueryMetrics({
+                    query: `checkPermission:${action}`,
+                    executionTime,
+                    documentsExamined: 0,
+                    documentsReturned: 1,
+                    indexUsed: true,
+                    timestamp: new Date()
+                });
+            }
         }
     }
     async resolveUserPermissions(user, context, permissionContext = {}) {
@@ -760,5 +761,6 @@ class DynamicPermissionService {
         }
     }
 }
+exports.DynamicPermissionService = DynamicPermissionService;
 exports.default = DynamicPermissionService;
 //# sourceMappingURL=DynamicPermissionService.js.map

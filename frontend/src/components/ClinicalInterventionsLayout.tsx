@@ -35,7 +35,6 @@ import ClinicalInterventionForm from './ClinicalInterventionForm';
 import ClinicalInterventionDetails from './ClinicalInterventionDetails';
 import PatientInterventions from './PatientInterventions';
 import ClinicalInterventionReports from './ClinicalInterventionReports';
-import ClinicalInterventionAuditTrail from './ClinicalInterventionAuditTrail';
 import ClinicalInterventionComplianceReport from './ClinicalInterventionComplianceReport';
 
 const ClinicalInterventionsLayout: React.FC = () => {
@@ -80,11 +79,6 @@ const ClinicalInterventionsLayout: React.FC = () => {
       label: 'Reports',
       path: '/pharmacy/clinical-interventions/reports',
       icon: <ReportsIcon />,
-    },
-    {
-      label: 'Audit Trail',
-      path: '/pharmacy/clinical-interventions/audit',
-      icon: <History />,
     },
     {
       label: 'Compliance',
@@ -172,11 +166,6 @@ const ClinicalInterventionsLayout: React.FC = () => {
         <Route path="/patients" element={<PatientInterventions />} />
         <Route path="/patients/:patientId" element={<PatientInterventions />} />
         <Route path="/reports" element={<ClinicalInterventionReports />} />
-        <Route path="/audit" element={<ClinicalInterventionAuditTrail />} />
-        <Route
-          path="/audit/:interventionId"
-          element={<AuditTrailWithParams />}
-        />
         <Route
           path="/compliance"
           element={<ClinicalInterventionComplianceReport />}
@@ -194,9 +183,6 @@ const ClinicalInterventionsLayout: React.FC = () => {
 };
 
 // Wrapper component to pass interventionId from URL params
-const AuditTrailWithParams: React.FC = () => {
-  const { interventionId } = useParams<{ interventionId: string }>();
-  return <ClinicalInterventionAuditTrail interventionId={interventionId} />;
-};
+
 
 export default ClinicalInterventionsLayout;

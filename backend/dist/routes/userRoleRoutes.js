@@ -1,19 +1,20 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
+const express_1 = require("express");
 const auth_1 = require("../middlewares/auth");
-const rbac_1 = require("../middlewares/rbac");
 const userRoleController_1 = require("../controllers/userRoleController");
-const router = express_1.default.Router();
+const router = (0, express_1.Router)();
 router.use(auth_1.auth);
-router.use(auth_1.requireSuperAdmin);
-router.post('/:id/roles', (0, rbac_1.requireDynamicPermission)('user:update'), userRoleController_1.userRoleController.assignUserRoles);
-router.delete('/:id/roles/:roleId', (0, rbac_1.requireDynamicPermission)('user:update'), userRoleController_1.userRoleController.revokeUserRole);
-router.put('/:id/permissions', (0, rbac_1.requireDynamicPermission)('user:update'), userRoleController_1.userRoleController.updateUserPermissions);
-router.get('/:id/effective-permissions', (0, rbac_1.requireDynamicPermission)('user:read'), userRoleController_1.userRoleController.getUserEffectivePermissions);
-router.post('/bulk-update', (0, rbac_1.requireDynamicPermission)('user:update'), userRoleController_1.userRoleController.bulkUpdateUsers);
+router.get('/users/:id/roles', userRoleController_1.userRoleController.getUserRoles);
+router.get('/users/:id/effective-permissions', userRoleController_1.userRoleController.getUserEffectivePermissions);
+router.post('/users/:id/check-permission', userRoleController_1.userRoleController.checkUserPermission);
+router.post('/users/:id/preview-permissions', userRoleController_1.userRoleController.previewPermissionChanges);
+router.post('/users/:id/refresh-cache', userRoleController_1.userRoleController.refreshUserPermissionCache);
+router.post('/users/assign-roles', auth_1.requireSuperAdmin, userRoleController_1.userRoleController.assignUserRoles);
+router.delete('/users/:id/roles/:roleId', auth_1.requireSuperAdmin, userRoleController_1.userRoleController.revokeUserRole);
+router.put('/users/:id/permissions', auth_1.requireSuperAdmin, userRoleController_1.userRoleController.updateUserPermissions);
+router.post('/users/bulk-update', auth_1.requireSuperAdmin, userRoleController_1.userRoleController.bulkUpdateUsers);
+router.post('/users/:id/detect-conflicts', auth_1.requireSuperAdmin, userRoleController_1.userRoleController.detectRoleConflicts);
+router.post('/users/:id/resolve-conflicts', auth_1.requireSuperAdmin, userRoleController_1.userRoleController.resolveRoleConflicts);
 exports.default = router;
 //# sourceMappingURL=userRoleRoutes.js.map

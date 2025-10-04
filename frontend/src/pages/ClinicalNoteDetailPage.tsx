@@ -6,22 +6,22 @@ import {
   Breadcrumbs,
   Link,
   Button,
-  Paper,
   Container,
   Fade,
+  Card,
+  useTheme,
 } from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  Home as HomeIcon,
-  Note as NoteIcon,
-  Edit as EditIcon,
-} from '@mui/icons-material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import HomeIcon from '@mui/icons-material/Home';
+import NoteIcon from '@mui/icons-material/Note';
+import EditIcon from '@mui/icons-material/Edit';
 import { Link as RouterLink } from 'react-router-dom';
 import ClinicalNoteDetail from '../components/ClinicalNoteDetail';
 import { useClinicalNoteStore } from '../stores/clinicalNoteStore';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 const ClinicalNoteDetailPage: React.FC = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
@@ -83,9 +83,10 @@ const ClinicalNoteDetailPage: React.FC = () => {
       <Breadcrumbs
         aria-label="breadcrumb"
         sx={{
-          mb: 2,
+          mb: 3,
           '& .MuiBreadcrumbs-separator': {
-            mx: 1,
+            mx: 1.5,
+            color: 'text.secondary',
           },
         }}
       >
@@ -100,12 +101,12 @@ const ClinicalNoteDetailPage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 0.5,
-                  color: 'text.primary',
+                  color: 'text.secondary',
                   fontWeight: 500,
                 }}
               >
                 {crumb.icon}
-                <Typography variant="body2" color="textPrimary">
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                   {crumb.label}
                 </Typography>
               </Box>
@@ -121,16 +122,18 @@ const ClinicalNoteDetailPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
-                color: 'text.secondary',
+                color: 'primary.main',
                 textDecoration: 'none',
+                fontWeight: 500,
                 '&:hover': {
-                  color: 'primary.main',
                   textDecoration: 'underline',
                 },
               }}
             >
               {crumb.icon}
-              <Typography variant="body2">{crumb.label}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                {crumb.label}
+              </Typography>
             </Link>
           );
         })}
@@ -148,59 +151,96 @@ const ClinicalNoteDetailPage: React.FC = () => {
           minHeight: 'calc(100vh - 120px)',
         }}
       >
-        {/* Page Header */}
-        <Box sx={{ mb: 3 }}>
+        {/* Modern Page Header */}
+        <Box sx={{ mb: 4 }}>
           {renderBreadcrumbs()}
 
-          <Box
+          <Card
+            elevation={1}
             sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 2,
+              p: 3,
+              background: theme.palette.mode === 'dark' 
+                ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.6) 100%)'
+                : 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 3,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Button
-                variant="outlined"
-                startIcon={<ArrowBackIcon />}
-                onClick={handleBackNavigation}
-                size="sm"
-              >
-                Back
-              </Button>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 2,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<ArrowBackIcon />}
+                  onClick={handleBackNavigation}
+                  sx={{
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1.5,
+                    fontWeight: 600,
+                    borderColor: 'grey.300',
+                    color: 'text.secondary',
+                    '&:hover': {
+                      borderColor: 'grey.400',
+                      backgroundColor: 'grey.50',
+                    },
+                  }}
+                >
+                  Back
+                </Button>
 
-              <Typography
-                variant="h4"
-                component="h1"
+                <Typography
+                  variant="h4"
+                  component="h1"
+                  sx={{
+                    fontWeight: 700,
+                    color: 'text.primary',
+                    fontSize: { xs: '1.75rem', md: '2rem' },
+                  }}
+                >
+                  {selectedNote?.title || 'Clinical Note Details'}
+                </Typography>
+              </Box>
+
+              <Button
+                variant="contained"
+                startIcon={<EditIcon />}
+                onClick={handleNavigateToEdit}
                 sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  py: 1.5,
                   fontWeight: 600,
-                  color: 'text.primary',
+                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.2)',
+                  '&:hover': {
+                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+                    transform: 'translateY(-1px)',
+                  },
+                  transition: 'all 0.2s ease-in-out',
                 }}
               >
-                {selectedNote?.title || 'Clinical Note Details'}
-              </Typography>
+                Edit Note
+              </Button>
             </Box>
-
-            <Button
-              variant="outlined"
-              startIcon={<EditIcon />}
-              onClick={handleNavigateToEdit}
-            >
-              Edit Note
-            </Button>
-          </Box>
+          </Card>
         </Box>
 
-        {/* Detail Content */}
+        {/* Enhanced Detail Content */}
         <Fade in timeout={300}>
-          <Paper elevation={1} sx={{ p: 3 }}>
+          <Box>
             <ClinicalNoteDetail
               noteId={noteId}
               onEdit={handleNavigateToEdit}
               onDelete={handleNoteDeleted}
             />
-          </Paper>
+          </Box>
         </Fade>
       </Container>
     </ErrorBoundary>

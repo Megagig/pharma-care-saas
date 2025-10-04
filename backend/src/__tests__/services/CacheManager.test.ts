@@ -557,4 +557,3 @@ describe('Cache Warming', () => {
         });
     });
 });
-});

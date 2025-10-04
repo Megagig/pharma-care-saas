@@ -516,11 +516,13 @@ export class DatabaseIndexingService {
      */
     private async getSlowQueries(): Promise<any[]> {
         try {
-            // Enable profiler for slow operations (>100ms)
-            await mongoose.connection.db.admin().command({
-                profile: 2,
-                slowms: 100,
-            });
+            // Enable profiler for slow operations (>100ms) - skip for Atlas
+            if (!process.env.MONGODB_URI?.includes('mongodb.net') && process.env.DISABLE_PROFILING !== 'true') {
+                await mongoose.connection.db.admin().command({
+                    profile: 2,
+                    slowms: 100,
+                });
+            }
 
             // Get profiler data
             const profilerData = await mongoose.connection.db
@@ -661,4 +663,4 @@ export class DatabaseIndexingService {
     }
 }
 
-export default DatabaseIndexingService.getInstance();
+export default DatabaseIndexingService;

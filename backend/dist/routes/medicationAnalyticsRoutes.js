@@ -37,5 +37,7 @@ router.get('/prescriptions/:patientId', validatePatientId, medicationAnalyticsCo
 router.get('/interactions/:patientId', validatePatientId, medicationAnalyticsController_1.getMedicationInteractionAnalytics);
 router.get('/costs/:patientId', validatePatientId, medicationAnalyticsController_1.getMedicationCostAnalytics);
 router.get('/dashboard/:patientId', validatePatientId, medicationAnalyticsController_1.getDashboardAnalytics);
+router.get('/demographics/system', medicationAnalyticsController_1.getPatientDemographicsAnalytics);
+router.get('/inventory/system', medicationAnalyticsController_1.getMedicationInventoryAnalytics);
 exports.default = router;
 //# sourceMappingURL=medicationAnalyticsRoutes.js.map

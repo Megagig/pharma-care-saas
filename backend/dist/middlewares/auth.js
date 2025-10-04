@@ -8,7 +8,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const User_1 = __importDefault(require("../models/User"));
 const Subscription_1 = __importDefault(require("../models/Subscription"));
-const FeatureFlag_1 = __importDefault(require("../models/FeatureFlag"));
+const FeatureFlag_1 = require("../models/FeatureFlag");
 const ROLE_HIERARCHY = {
     super_admin: [
         'super_admin',
@@ -28,13 +28,13 @@ const auth = async (req, res, next) => {
     try {
         if (process.env.NODE_ENV === 'development' && req.header('X-Super-Admin-Test') === 'true') {
             req.user = {
-                _id: new mongoose_1.default.Types.ObjectId(),
+                _id: new mongoose_1.default.Types.ObjectId('68b5cb81f1f0f9758b8afadd'),
                 email: 'super_admin@test.com',
                 role: 'super_admin',
                 firstName: 'Super',
                 lastName: 'Admin',
                 isActive: true,
-                workplaceId: new mongoose_1.default.Types.ObjectId(),
+                workplaceId: new mongoose_1.default.Types.ObjectId('68b5cb82f1f0f9758b8afadf'),
             };
             next();
             return;
@@ -262,7 +262,7 @@ const requireFeature = (featureKey) => {
                 res.status(401).json({ message: 'Access denied.' });
                 return;
             }
-            const featureFlag = await FeatureFlag_1.default.findOne({
+            const featureFlag = await FeatureFlag_1.FeatureFlag.findOne({
                 key: featureKey,
                 isActive: true,
             });

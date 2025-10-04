@@ -15,6 +15,7 @@ interface SessionData {
         timezone?: string;
     };
 }
+export declare const cleanupSessionManagement: () => void;
 export declare const createUserSession: (userId: string, sessionId: string, req: Request) => SessionData;
 export declare const validateUserSession: (userId: string, sessionId: string, req: Request) => {
     isValid: boolean;

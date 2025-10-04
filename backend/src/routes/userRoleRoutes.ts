@@ -5,57 +5,57 @@ import { userRoleController } from '../controllers/userRoleController';
 const router = Router();
 
 // Apply authentication middleware to all routes
-router.use(auth);
+router.use(auth as any);
 
 // User role management routes - accessible by super admin and users with appropriate permissions
-router.get('/users/:id/roles', userRoleController.getUserRoles);
+router.get('/users/:id/roles', userRoleController.getUserRoles as any);
 router.get(
   '/users/:id/effective-permissions',
-  userRoleController.getUserEffectivePermissions
+  userRoleController.getUserEffectivePermissions as any
 );
 router.post(
   '/users/:id/check-permission',
-  userRoleController.checkUserPermission
+  userRoleController.checkUserPermission as any
 );
 router.post(
   '/users/:id/preview-permissions',
-  userRoleController.previewPermissionChanges
+  userRoleController.previewPermissionChanges as any
 );
 router.post(
   '/users/:id/refresh-cache',
-  userRoleController.refreshUserPermissionCache
+  userRoleController.refreshUserPermissionCache as any
 );
 
 // Admin-only routes
 router.post(
   '/users/assign-roles',
-  requireSuperAdmin,
-  userRoleController.assignUserRoles
+  requireSuperAdmin as any,
+  userRoleController.assignUserRoles as any
 );
 router.delete(
   '/users/:id/roles/:roleId',
-  requireSuperAdmin,
-  userRoleController.revokeUserRole
+  requireSuperAdmin as any,
+  userRoleController.revokeUserRole as any
 );
 router.put(
   '/users/:id/permissions',
-  requireSuperAdmin,
-  userRoleController.updateUserPermissions
+  requireSuperAdmin as any,
+  userRoleController.updateUserPermissions as any
 );
 router.post(
   '/users/bulk-update',
-  requireSuperAdmin,
-  userRoleController.bulkUpdateUsers
+  requireSuperAdmin as any,
+  userRoleController.bulkUpdateUsers as any
 );
 router.post(
   '/users/:id/detect-conflicts',
-  requireSuperAdmin,
-  userRoleController.detectRoleConflicts
+  requireSuperAdmin as any,
+  userRoleController.detectRoleConflicts as any
 );
 router.post(
   '/users/:id/resolve-conflicts',
-  requireSuperAdmin,
-  userRoleController.resolveRoleConflicts
+  requireSuperAdmin as any,
+  userRoleController.resolveRoleConflicts as any
 );
 
 export default router;

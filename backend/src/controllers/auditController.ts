@@ -6,7 +6,7 @@ import { createManualAuditLog } from '../middlewares/auditMiddleware';
 /**
  * Get audit trail for all interventions
  */
-export const getAllAuditTrail = async (req: Request, res: Response) => {
+export const getAllAuditTrail = async (req: AuthRequest, res: Response) => {
     try {
         const {
             page = 1,
@@ -59,7 +59,7 @@ export const getAllAuditTrail = async (req: Request, res: Response) => {
 /**
  * Get audit trail for a specific intervention
  */
-export const getInterventionAuditTrail = async (req: Request, res: Response) => {
+export const getInterventionAuditTrail = async (req: AuthRequest, res: Response) => {
     try {
         const { interventionId } = req.params;
 
@@ -119,7 +119,7 @@ export const getInterventionAuditTrail = async (req: Request, res: Response) => 
 /**
  * Export audit data
  */
-export const exportAuditData = async (req: Request, res: Response) => {
+export const exportAuditData = async (req: AuthRequest, res: Response) => {
     try {
         const {
             format = 'csv',
@@ -179,7 +179,7 @@ export const exportAuditData = async (req: Request, res: Response) => {
 /**
  * Get compliance report
  */
-export const getComplianceReport = async (req: Request, res: Response) => {
+export const getComplianceReport = async (req: AuthRequest, res: Response) => {
     try {
         const {
             startDate,

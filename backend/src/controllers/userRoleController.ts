@@ -15,8 +15,22 @@ export class UserRoleController {
   private roleHierarchyService: RoleHierarchyService;
 
   constructor() {
-    this.dynamicPermissionService = DynamicPermissionService.getInstance();
-    this.roleHierarchyService = RoleHierarchyService.getInstance();
+    try {
+      this.dynamicPermissionService = DynamicPermissionService.getInstance();
+      this.roleHierarchyService = RoleHierarchyService.getInstance();
+    } catch (error) {
+      logger.error('Error initializing UserRoleController services:', error);
+      // Initialize services with retry logic
+      setTimeout(() => {
+        try {
+          this.dynamicPermissionService = DynamicPermissionService.getInstance();
+          this.roleHierarchyService = RoleHierarchyService.getInstance();
+          logger.info('UserRoleController services initialized successfully on retry');
+        } catch (retryError) {
+          logger.error('Failed to initialize UserRoleController services on retry:', retryError);
+        }
+      }, 1000);
+    }
   }
 
   /**
@@ -284,10 +298,14 @@ export class UserRoleController {
             );
 
             // Invalidate user permission cache
-            await this.dynamicPermissionService.invalidateUserCache(
-              new mongoose.Types.ObjectId(userId),
-              workspaceId ? new mongoose.Types.ObjectId(workspaceId) : undefined
-            );
+            if (this.dynamicPermissionService) {
+              await this.dynamicPermissionService.invalidateUserCache(
+                new mongoose.Types.ObjectId(userId),
+                workspaceId ? new mongoose.Types.ObjectId(workspaceId) : undefined
+              );
+            } else {
+              logger.warn('DynamicPermissionService not available, skipping cache invalidation');
+            }
           }
 
           logger.info('User roles assigned successfully', {
@@ -400,10 +418,14 @@ export class UserRoleController {
       });
 
       // Invalidate user permission cache
-      await this.dynamicPermissionService.invalidateUserCache(
-        new mongoose.Types.ObjectId(id),
-        workspaceId ? new mongoose.Types.ObjectId(workspaceId) : undefined
-      );
+      if (this.dynamicPermissionService) {
+        await this.dynamicPermissionService.invalidateUserCache(
+          new mongoose.Types.ObjectId(id),
+          workspaceId ? new mongoose.Types.ObjectId(workspaceId) : undefined
+        );
+      } else {
+        logger.warn('DynamicPermissionService not available, skipping cache invalidation');
+      }
 
       // Get role details for response
       const role = await Role.findById(roleId).select(
@@ -528,7 +550,11 @@ export class UserRoleController {
       );
 
       // Invalidate user permission cache
-      await this.dynamicPermissionService.invalidateUserCache(user._id);
+      if (this.dynamicPermissionService) {
+        await this.dynamicPermissionService.invalidateUserCache(user._id);
+      } else {
+        logger.warn('DynamicPermissionService not available, skipping cache invalidation');
+      }
 
       logger.info('User permissions updated successfully', {
         userId: id,
@@ -614,6 +640,13 @@ export class UserRoleController {
       }
 
       // Get complete permission resolution
+      if (!this.dynamicPermissionService) {
+        return res.status(500).json({
+          success: false,
+          message: 'Permission service not available',
+        });
+      }
+
       const permissionResult =
         await this.dynamicPermissionService.resolveUserPermissions(
           user,
@@ -972,10 +1005,14 @@ export class UserRoleController {
             });
 
             // Invalidate user cache
-            await this.dynamicPermissionService.invalidateUserCache(
-              new mongoose.Types.ObjectId(userId),
-              workspaceId ? new mongoose.Types.ObjectId(workspaceId) : undefined
-            );
+            if (this.dynamicPermissionService) {
+              await this.dynamicPermissionService.invalidateUserCache(
+                new mongoose.Types.ObjectId(userId),
+                workspaceId ? new mongoose.Types.ObjectId(workspaceId) : undefined
+              );
+            } else {
+              logger.warn('DynamicPermissionService not available, skipping cache invalidation');
+            }
 
             results.push({
               userId,

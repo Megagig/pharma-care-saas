@@ -27,8 +27,8 @@ export declare const createManualLabOrderSchema: z.ZodObject<{
     }, z.core.$strip>>;
     indication: z.ZodString;
     priority: z.ZodDefault<z.ZodEnum<{
-        routine: "routine";
         urgent: "urgent";
+        routine: "routine";
         stat: "stat";
     }>>;
     notes: z.ZodOptional<z.ZodString>;
@@ -60,14 +60,14 @@ export declare const orderQuerySchema: z.ZodObject<{
         referred: "referred";
     }>>;
     priority: z.ZodOptional<z.ZodEnum<{
-        routine: "routine";
         urgent: "urgent";
+        routine: "routine";
         stat: "stat";
     }>>;
     orderedBy: z.ZodOptional<z.ZodString>;
     locationId: z.ZodOptional<z.ZodString>;
-    dateFrom: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
-    dateTo: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date | undefined, string | undefined>>;
+    dateFrom: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
+    dateTo: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
     search: z.ZodOptional<z.ZodString>;
     page: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     limit: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;

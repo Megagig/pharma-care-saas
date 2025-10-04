@@ -9,6 +9,8 @@ import {
   getPatientSummary,
   getPatientInterventions,
   searchPatientsWithInterventions,
+  getPatientDiagnosticHistory,
+  getPatientDiagnosticSummary,
 } from '../controllers/patientController';
 import { auth } from '../middlewares/auth';
 import {
@@ -27,6 +29,8 @@ import {
   searchSchema,
 } from '../validators/patientValidators';
 import { patientManagementErrorHandler } from '../utils/responseHelpers';
+import { patientListCacheMiddleware, searchCacheMiddleware } from '../middlewares/cacheMiddleware';
+import { responseOptimizationMiddleware, OptimizationPresets } from '../utils/payloadOptimization';
 
 const router = express.Router();
 
@@ -39,11 +43,26 @@ router.get(
   '/',
   requirePatientRead,
   validateRequest(searchSchema, 'query'),
+  // Temporarily disable optimization middleware - it was causing empty responses
+  // responseOptimizationMiddleware(
+  //   OptimizationPresets.list.projection,
+  //   OptimizationPresets.list.optimization
+  // ),
+  // Temporarily disable cache middleware - it was returning empty results
+  // patientListCacheMiddleware,
   getPatients
 );
 
 // GET /api/patients/search - Search patients
-router.get('/search', requirePatientRead, searchPatients);
+router.get('/search',
+  requirePatientRead,
+  responseOptimizationMiddleware(
+    OptimizationPresets.mobile.projection,
+    OptimizationPresets.mobile.optimization
+  ),
+  searchCacheMiddleware,
+  searchPatients
+);
 
 // GET /api/patients/search-with-interventions - Search patients with intervention context
 router.get('/search-with-interventions', requirePatientRead, searchPatientsWithInterventions);
@@ -96,6 +115,22 @@ router.delete(
   requirePatientDelete,
   validateRequest(patientParamsSchema, 'params'),
   deletePatient
+);
+
+// GET /api/patients/:id/diagnostic-history - Get patient diagnostic history
+router.get(
+  '/:id/diagnostic-history',
+  requirePatientRead,
+  validateRequest(patientParamsSchema, 'params'),
+  getPatientDiagnosticHistory
+);
+
+// GET /api/patients/:id/diagnostic-summary - Get patient diagnostic summary
+router.get(
+  '/:id/diagnostic-summary',
+  requirePatientRead,
+  validateRequest(patientParamsSchema, 'params'),
+  getPatientDiagnosticSummary
 );
 
 // Error handling middleware

@@ -1,288 +1,411 @@
-// Service Worker for Communication Hub Push Notifications
-const CACHE_NAME = 'communication-hub-v1';
-const urlsToCache = [
+/**
+ * Service Worker for PharmaCare Application
+ * Implements caching strategies for optimal performance and offline support
+ */
+
+const CACHE_NAME = 'pharmacare-v1';
+const STATIC_CACHE = 'pharmacare-static-v1';
+const DYNAMIC_CACHE = 'pharmacare-dynamic-v1';
+const API_CACHE = 'pharmacare-api-v1';
+
+// Assets to cache immediately on install
+const STATIC_ASSETS = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/icons/badge-72x72.png',
+  '/index.html',
+  '/manifest.json',
+  // Add critical CSS and JS files (will be populated by build process)
 ];
 
-// Install event - cache resources
+// API endpoints to cache with network-first strategy
+const API_ENDPOINTS = [
+  '/api/auth/me',
+  '/api/dashboard/overview',
+  '/api/patients',
+  '/api/medications',
+  '/api/clinical-notes',
+];
+
+// Cache strategies configuration
+const CACHE_STRATEGIES = {
+  // Static assets: Cache first, fallback to network
+  static: {
+    cacheName: STATIC_CACHE,
+    strategy: 'CacheFirst',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxEntries: 100,
+  },
+  
+  // API calls: Network first, fallback to cache
+  api: {
+    cacheName: API_CACHE,
+    strategy: 'NetworkFirst',
+    maxAge: 5 * 60, // 5 minutes
+    maxEntries: 50,
+  },
+  
+  // Dynamic content: Stale while revalidate
+  dynamic: {
+    cacheName: DYNAMIC_CACHE,
+    strategy: 'StaleWhileRevalidate',
+    maxAge: 24 * 60 * 60, // 24 hours
+    maxEntries: 200,
+  },
+};
+
+/**
+ * Service Worker Event Listeners
+ */
+
+// Install event - cache static assets
 self.addEventListener('install', (event) => {
+  console.log('[SW] Installing service worker...');
+  
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache);
-    })
-  );
-});
-
-// Fetch event - serve from cache when offline
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Return cached version or fetch from network
-      return response || fetch(event.request);
-    })
-  );
-});
-
-// Push event - handle push notifications
-self.addEventListener('push', (event) => {
-  console.log('Push event received:', event);
-
-  let notificationData = {
-    title: 'New Message',
-    body: 'You have a new message',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/badge-72x72.png',
-    tag: 'communication-notification',
-    data: {},
-  };
-
-  if (event.data) {
-    try {
-      const payload = event.data.json();
-      notificationData = {
-        ...notificationData,
-        ...payload,
-      };
-    } catch (error) {
-      console.error('Error parsing push payload:', error);
-      notificationData.body = event.data.text();
-    }
-  }
-
-  const notificationOptions = {
-    body: notificationData.body,
-    icon: notificationData.icon,
-    badge: notificationData.badge,
-    tag: notificationData.tag,
-    data: notificationData.data,
-    requireInteraction: notificationData.requireInteraction || false,
-    silent: notificationData.silent || false,
-    vibrate: notificationData.vibrate || [200, 100, 200],
-    actions: [
-      {
-        action: 'reply',
-        title: 'Reply',
-        icon: '/icons/reply-icon.png',
-      },
-      {
-        action: 'view',
-        title: 'View',
-        icon: '/icons/view-icon.png',
-      },
-      {
-        action: 'dismiss',
-        title: 'Dismiss',
-        icon: '/icons/dismiss-icon.png',
-      },
-    ],
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(
-      notificationData.title,
-      notificationOptions
-    )
-  );
-});
-
-// Notification click event
-self.addEventListener('notificationclick', (event) => {
-  console.log('Notification clicked:', event);
-
-  const notification = event.notification;
-  const action = event.action;
-  const data = notification.data || {};
-
-  notification.close();
-
-  if (action === 'dismiss') {
-    return;
-  }
-
-  // Handle different actions
-  let url = '/';
-
-  if (data.conversationId) {
-    if (action === 'reply') {
-      url = `/communication/${data.conversationId}?reply=true`;
-    } else {
-      url = `/communication/${data.conversationId}`;
-    }
-  }
-
-  event.waitUntil(
-    clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
-        // Check if there's already a window/tab open with the target URL
-        for (const client of clientList) {
-          if (client.url.includes('/communication') && 'focus' in client) {
-            // Send message to existing client
-            client.postMessage({
-              type: 'notification-click',
-              action: action,
-              data: data,
-            });
-            return client.focus();
-          }
-        }
-
-        // If no existing window, open a new one
-        if (clients.openWindow) {
-          return clients.openWindow(url);
-        }
+    caches.open(STATIC_CACHE)
+      .then((cache) => {
+        console.log('[SW] Caching static assets');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .then(() => {
+        console.log('[SW] Static assets cached successfully');
+        return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('[SW] Failed to cache static assets:', error);
       })
   );
 });
 
-// Background sync for offline message sending
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'background-sync-messages') {
-    event.waitUntil(syncMessages());
+// Activate event - clean up old caches
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating service worker...');
+  
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        const validCaches = [STATIC_CACHE, DYNAMIC_CACHE, API_CACHE];
+        
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (!validCaches.includes(cacheName)) {
+              console.log('[SW] Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+      .then(() => {
+        console.log('[SW] Service worker activated');
+        return self.clients.claim();
+      })
+  );
+});
+
+// Fetch event - handle requests with appropriate caching strategy
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+  
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
+    return;
+  }
+  
+  // Skip chrome-extension and other non-http requests
+  if (!url.protocol.startsWith('http')) {
+    return;
+  }
+  
+  // Determine caching strategy based on request type
+  if (isAPIRequest(request)) {
+    event.respondWith(handleAPIRequest(request));
+  } else if (isStaticAsset(request)) {
+    event.respondWith(handleStaticAsset(request));
+  } else {
+    event.respondWith(handleDynamicRequest(request));
   }
 });
 
-async function syncMessages() {
-  try {
-    // Get pending messages from IndexedDB
-    const pendingMessages = await getPendingMessages();
-
-    for (const message of pendingMessages) {
-      try {
-        // Attempt to send message
-        const response = await fetch('/api/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${message.token}`,
-          },
-          body: JSON.stringify(message.data),
-        });
-
-        if (response.ok) {
-          // Remove from pending messages
-          await removePendingMessage(message.id);
-
-          // Notify client of successful send
-          const clients = await self.clients.matchAll();
-          clients.forEach((client) => {
-            client.postMessage({
-              type: 'message-sent',
-              messageId: message.id,
-              success: true,
-            });
-          });
-        }
-      } catch (error) {
-        console.error('Failed to sync message:', error);
-      }
-    }
-  } catch (error) {
-    console.error('Background sync failed:', error);
-  }
-}
-
-// IndexedDB helpers for offline message storage
-async function getPendingMessages() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('CommunicationHub', 1);
-
-    request.onerror = () => reject(request.error);
-
-    request.onsuccess = () => {
-      const db = request.result;
-      const transaction = db.transaction(['pendingMessages'], 'readonly');
-      const store = transaction.objectStore('pendingMessages');
-      const getAllRequest = store.getAll();
-
-      getAllRequest.onsuccess = () => resolve(getAllRequest.result);
-      getAllRequest.onerror = () => reject(getAllRequest.error);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains('pendingMessages')) {
-        db.createObjectStore('pendingMessages', { keyPath: 'id' });
-      }
-    };
-  });
-}
-
-async function removePendingMessage(messageId) {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('CommunicationHub', 1);
-
-    request.onerror = () => reject(request.error);
-
-    request.onsuccess = () => {
-      const db = request.result;
-      const transaction = db.transaction(['pendingMessages'], 'readwrite');
-      const store = transaction.objectStore('pendingMessages');
-      const deleteRequest = store.delete(messageId);
-
-      deleteRequest.onsuccess = () => resolve();
-      deleteRequest.onerror = () => reject(deleteRequest.error);
-    };
-  });
-}
-
-// Message event for communication with main thread
+// Message event - handle messages from main thread
 self.addEventListener('message', (event) => {
-  const { type, data } = event.data;
-
+  const { type, payload } = event.data;
+  
   switch (type) {
-    case 'skip-waiting':
+    case 'SKIP_WAITING':
       self.skipWaiting();
       break;
-
-    case 'store-pending-message':
-      storePendingMessage(data);
+      
+    case 'CACHE_URLS':
+      cacheUrls(payload.urls);
       break;
-
-    case 'clear-notifications':
-      clearAllNotifications();
+      
+    case 'CLEAR_CACHE':
+      clearCache(payload.cacheName);
       break;
-
+      
+    case 'GET_CACHE_INFO':
+      getCacheInfo().then(info => {
+        event.ports[0].postMessage(info);
+      });
+      break;
+      
     default:
-      console.log('Unknown message type:', type);
+      console.log('[SW] Unknown message type:', type);
   }
 });
 
-async function storePendingMessage(messageData) {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('CommunicationHub', 1);
+/**
+ * Request Type Detection
+ */
 
-    request.onerror = () => reject(request.error);
+function isAPIRequest(request) {
+  const url = new URL(request.url);
+  return url.pathname.startsWith('/api/');
+}
 
-    request.onsuccess = () => {
-      const db = request.result;
-      const transaction = db.transaction(['pendingMessages'], 'readwrite');
-      const store = transaction.objectStore('pendingMessages');
-      const addRequest = store.add({
-        id: Date.now() + Math.random(),
-        ...messageData,
-        timestamp: Date.now(),
+function isStaticAsset(request) {
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+  
+  return (
+    pathname.endsWith('.js') ||
+    pathname.endsWith('.css') ||
+    pathname.endsWith('.woff2') ||
+    pathname.endsWith('.woff') ||
+    pathname.endsWith('.ttf') ||
+    pathname.endsWith('.png') ||
+    pathname.endsWith('.jpg') ||
+    pathname.endsWith('.jpeg') ||
+    pathname.endsWith('.svg') ||
+    pathname.endsWith('.ico') ||
+    pathname.includes('/assets/')
+  );
+}
+
+/**
+ * Caching Strategy Implementations
+ */
+
+async function handleAPIRequest(request) {
+  const cacheName = CACHE_STRATEGIES.api.cacheName;
+  const maxAge = CACHE_STRATEGIES.api.maxAge * 1000; // Convert to milliseconds
+  
+  try {
+    // Network first strategy
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok) {
+      // Cache successful responses
+      const cache = await caches.open(cacheName);
+      const responseClone = networkResponse.clone();
+      
+      // Add timestamp for cache expiration
+      const responseWithTimestamp = new Response(responseClone.body, {
+        status: responseClone.status,
+        statusText: responseClone.statusText,
+        headers: {
+          ...Object.fromEntries(responseClone.headers.entries()),
+          'sw-cached-at': Date.now().toString(),
+        },
       });
-
-      addRequest.onsuccess = () => resolve();
-      addRequest.onerror = () => reject(addRequest.error);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains('pendingMessages')) {
-        db.createObjectStore('pendingMessages', { keyPath: 'id' });
+      
+      cache.put(request, responseWithTimestamp);
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.log('[SW] Network failed for API request, trying cache:', request.url);
+    
+    // Fallback to cache
+    const cache = await caches.open(cacheName);
+    const cachedResponse = await cache.match(request);
+    
+    if (cachedResponse) {
+      const cachedAt = cachedResponse.headers.get('sw-cached-at');
+      const isExpired = cachedAt && (Date.now() - parseInt(cachedAt)) > maxAge;
+      
+      if (!isExpired) {
+        console.log('[SW] Serving from API cache:', request.url);
+        return cachedResponse;
+      } else {
+        console.log('[SW] Cached API response expired:', request.url);
+        cache.delete(request);
       }
-    };
-  });
+    }
+    
+    // Return offline fallback for critical API endpoints
+    if (isCriticalAPIEndpoint(request)) {
+      return createOfflineFallback(request);
+    }
+    
+    throw error;
+  }
 }
 
-async function clearAllNotifications() {
-  const notifications = await self.registration.getNotifications();
-  notifications.forEach((notification) => notification.close());
+async function handleStaticAsset(request) {
+  const cacheName = CACHE_STRATEGIES.static.cacheName;
+  
+  // Cache first strategy
+  const cache = await caches.open(cacheName);
+  const cachedResponse = await cache.match(request);
+  
+  if (cachedResponse) {
+    console.log('[SW] Serving static asset from cache:', request.url);
+    return cachedResponse;
+  }
+  
+  try {
+    console.log('[SW] Fetching static asset from network:', request.url);
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok) {
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.error('[SW] Failed to fetch static asset:', request.url, error);
+    throw error;
+  }
 }
+
+async function handleDynamicRequest(request) {
+  const cacheName = CACHE_STRATEGIES.dynamic.cacheName;
+  
+  // Stale while revalidate strategy
+  const cache = await caches.open(cacheName);
+  const cachedResponse = await cache.match(request);
+  
+  // Always try to fetch from network in background
+  const networkPromise = fetch(request)
+    .then((networkResponse) => {
+      if (networkResponse.ok) {
+        cache.put(request, networkResponse.clone());
+      }
+      return networkResponse;
+    })
+    .catch((error) => {
+      console.log('[SW] Network failed for dynamic request:', request.url);
+      return null;
+    });
+  
+  // Return cached response immediately if available
+  if (cachedResponse) {
+    console.log('[SW] Serving dynamic content from cache:', request.url);
+    return cachedResponse;
+  }
+  
+  // Wait for network response if no cache available
+  return networkPromise || createOfflineFallback(request);
+}
+
+/**
+ * Utility Functions
+ */
+
+function isCriticalAPIEndpoint(request) {
+  const url = new URL(request.url);
+  return API_ENDPOINTS.some(endpoint => url.pathname.startsWith(endpoint));
+}
+
+function createOfflineFallback(request) {
+  const url = new URL(request.url);
+  
+  if (isAPIRequest(request)) {
+    // Return offline API response
+    return new Response(
+      JSON.stringify({
+        error: 'Offline',
+        message: 'This feature is not available offline',
+        offline: true,
+      }),
+      {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  }
+  
+  // Return offline page for navigation requests
+  if (request.mode === 'navigate') {
+    return caches.match('/offline.html') || new Response(
+      '<!DOCTYPE html><html><head><title>Offline</title></head><body><h1>You are offline</h1><p>Please check your internet connection.</p></body></html>',
+      {
+        headers: { 'Content-Type': 'text/html' },
+      }
+    );
+  }
+  
+  return new Response('Offline', { status: 503 });
+}
+
+async function cacheUrls(urls) {
+  const cache = await caches.open(DYNAMIC_CACHE);
+  
+  for (const url of urls) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        await cache.put(url, response);
+        console.log('[SW] Cached URL:', url);
+      }
+    } catch (error) {
+      console.error('[SW] Failed to cache URL:', url, error);
+    }
+  }
+}
+
+async function clearCache(cacheName) {
+  if (cacheName) {
+    const deleted = await caches.delete(cacheName);
+    console.log('[SW] Cache cleared:', cacheName, deleted);
+  } else {
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map(name => caches.delete(name)));
+    console.log('[SW] All caches cleared');
+  }
+}
+
+async function getCacheInfo() {
+  const cacheNames = await caches.keys();
+  const cacheInfo = {};
+  
+  for (const cacheName of cacheNames) {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    cacheInfo[cacheName] = {
+      size: keys.length,
+      urls: keys.map(request => request.url),
+    };
+  }
+  
+  return cacheInfo;
+}
+
+/**
+ * Cache Cleanup
+ */
+
+// Clean up expired cache entries periodically
+setInterval(async () => {
+  console.log('[SW] Running cache cleanup...');
+  
+  const apiCache = await caches.open(API_CACHE);
+  const apiRequests = await apiCache.keys();
+  const maxAge = CACHE_STRATEGIES.api.maxAge * 1000;
+  
+  for (const request of apiRequests) {
+    const response = await apiCache.match(request);
+    const cachedAt = response?.headers.get('sw-cached-at');
+    
+    if (cachedAt && (Date.now() - parseInt(cachedAt)) > maxAge) {
+      await apiCache.delete(request);
+      console.log('[SW] Deleted expired cache entry:', request.url);
+    }
+  }
+}, 60 * 60 * 1000); // Run every hour
+
+console.log('[SW] Service worker script loaded');

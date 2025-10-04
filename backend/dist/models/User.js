@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.User = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const bcrypt = __importStar(require("bcryptjs"));
 const crypto = __importStar(require("crypto"));
@@ -91,6 +92,11 @@ const userSchema = new mongoose_1.Schema({
             'license_rejected',
         ],
         default: 'pending',
+        index: true,
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
         index: true,
     },
     emailVerified: {
@@ -164,6 +170,18 @@ const userSchema = new mongoose_1.Schema({
         ref: 'User',
     },
     licenseRejectionReason: String,
+    licenseExpirationDate: Date,
+    suspensionReason: String,
+    suspendedAt: Date,
+    suspendedBy: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    reactivatedAt: Date,
+    reactivatedBy: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'User',
+    },
     parentUserId: {
         type: mongoose_1.default.Schema.Types.ObjectId,
         ref: 'User',
@@ -335,7 +353,8 @@ userSchema.methods.getAllRoles = async function (workspaceId) {
     return userRoles.map((ur) => ur.roleId).filter(Boolean);
 };
 userSchema.methods.getAllPermissions = async function (workspaceId, useCache = true) {
-    if (useCache && this.cachedPermissions &&
+    if (useCache &&
+        this.cachedPermissions &&
         this.cachedPermissions.lastUpdated > new Date(Date.now() - 5 * 60 * 1000) &&
         (!workspaceId || this.cachedPermissions.workspaceId?.equals(workspaceId))) {
         return this.cachedPermissions.permissions;
@@ -472,11 +491,15 @@ userSchema.pre('save', function (next) {
     next();
 });
 userSchema.pre('save', function (next) {
-    if (this.isModified('assignedRoles') || this.isModified('directPermissions') || this.isModified('deniedPermissions')) {
+    if (this.isModified('assignedRoles') ||
+        this.isModified('directPermissions') ||
+        this.isModified('deniedPermissions')) {
         this.cachedPermissions = undefined;
         this.roleLastModifiedAt = new Date();
     }
     next();
 });
-exports.default = mongoose_1.default.model('User', userSchema);
+const User = mongoose_1.default.model('User', userSchema);
+exports.User = User;
+exports.default = User;
 //# sourceMappingURL=User.js.map

@@ -7,6 +7,7 @@ export interface IUser extends Document {
     lastName: string;
     role: 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin' | 'owner';
     status: 'pending' | 'active' | 'suspended' | 'license_pending' | 'license_rejected';
+    isActive: boolean;
     emailVerified: boolean;
     verificationToken?: string;
     verificationCode?: string;
@@ -29,6 +30,12 @@ export interface IUser extends Document {
     licenseVerifiedAt?: Date;
     licenseVerifiedBy?: mongoose.Types.ObjectId;
     licenseRejectionReason?: string;
+    licenseExpirationDate?: Date;
+    suspensionReason?: string;
+    suspendedAt?: Date;
+    suspendedBy?: mongoose.Types.ObjectId;
+    reactivatedAt?: Date;
+    reactivatedBy?: mongoose.Types.ObjectId;
     parentUserId?: mongoose.Types.ObjectId;
     teamMembers?: mongoose.Types.ObjectId[];
     permissions: string[];
@@ -75,8 +82,9 @@ export interface IUser extends Document {
     hasPermission(permission: string): boolean;
     hasFeature(feature: string): boolean;
 }
-declare const _default: mongoose.Model<IUser, {}, {}, {}, mongoose.Document<unknown, {}, IUser> & IUser & {
+declare const User: mongoose.Model<IUser, {}, {}, {}, mongoose.Document<unknown, {}, IUser> & IUser & {
     _id: mongoose.Types.ObjectId;
 }, any>;
-export default _default;
+export { User };
+export default User;
 //# sourceMappingURL=User.d.ts.map

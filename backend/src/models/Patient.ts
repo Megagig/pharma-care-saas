@@ -101,6 +101,8 @@ export interface IPatient extends Document {
   getInterventionCount(): Promise<number>;
   getActiveInterventionCount(): Promise<number>;
   updateInterventionFlags(): Promise<void>;
+  getDiagnosticHistoryCount(): Promise<number>;
+  getLatestDiagnosticHistory(): Promise<any>;
 }
 
 const patientSchema = new Schema(
@@ -443,6 +445,28 @@ patientSchema.methods.updateInterventionFlags = async function (
   await this.save();
 };
 
+patientSchema.methods.getDiagnosticHistoryCount = async function (
+  this: IPatient
+): Promise<number> {
+  const DiagnosticHistory = mongoose.model('DiagnosticHistory');
+  return await DiagnosticHistory.countDocuments({
+    patientId: this._id,
+    status: 'active',
+  });
+};
+
+patientSchema.methods.getLatestDiagnosticHistory = async function (
+  this: IPatient
+): Promise<any> {
+  const DiagnosticHistory = mongoose.model('DiagnosticHistory');
+  return await DiagnosticHistory.findOne({
+    patientId: this._id,
+    status: 'active',
+  })
+    .populate('pharmacistId', 'firstName lastName')
+    .sort({ createdAt: -1 });
+};
+
 // Pre-save middleware to validate and set computed fields
 patientSchema.pre('save', function (this: IPatient) {
   // Ensure either dob or age is provided
@@ -478,4 +502,7 @@ patientSchema.statics.generateNextMRN = async function (
   return generateMRN(workplaceCode, sequence);
 };
 
-export default mongoose.model<IPatient>('Patient', patientSchema);
+const Patient = mongoose.model<IPatient>('Patient', patientSchema);
+
+export { Patient };
+export default Patient;

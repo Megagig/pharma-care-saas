@@ -16,8 +16,9 @@ export interface IPermission extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-declare const _default: mongoose.Model<IPermission, {}, {}, {}, mongoose.Document<unknown, {}, IPermission> & IPermission & {
+declare const Permission: mongoose.Model<IPermission, {}, {}, {}, mongoose.Document<unknown, {}, IPermission> & IPermission & {
     _id: mongoose.Types.ObjectId;
 }, any>;
-export default _default;
+export { Permission };
+export default Permission;
 //# sourceMappingURL=Permission.d.ts.map

@@ -4,7 +4,7 @@ import { Request, Response, NextFunction } from 'express';
 import User, { IUser } from '../models/User';
 import SubscriptionPlan from '../models/SubscriptionPlan';
 import Subscription, { ISubscription } from '../models/Subscription';
-import FeatureFlag from '../models/FeatureFlag';
+import { FeatureFlag } from '../models/FeatureFlag';
 
 // Export AuthRequest interface for backward compatibility
 export interface AuthRequest extends Request {
@@ -50,14 +50,15 @@ export const auth = async (
     // Special bypass for super_admin testing (development only)
     if (process.env.NODE_ENV === 'development' && req.header('X-Super-Admin-Test') === 'true') {
       // Create a mock super_admin user for testing
+      // Use a consistent workplaceId that matches existing data
       req.user = {
-        _id: new mongoose.Types.ObjectId(),
+        _id: new mongoose.Types.ObjectId('68b5cb81f1f0f9758b8afadd'), // Consistent user ID
         email: 'super_admin@test.com',
         role: 'super_admin',
         firstName: 'Super',
         lastName: 'Admin',
         isActive: true,
-        workplaceId: new mongoose.Types.ObjectId(),
+        workplaceId: new mongoose.Types.ObjectId('68b5cb82f1f0f9758b8afadf'), // Match existing workplace
       } as any;
       next();
       return;

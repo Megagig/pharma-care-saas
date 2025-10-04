@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Patient = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const tenancyGuard_1 = require("../utils/tenancyGuard");
 const patientSchema = new mongoose_1.Schema({
@@ -328,6 +329,22 @@ patientSchema.methods.updateInterventionFlags = async function () {
     this.hasActiveInterventions = activeCount > 0;
     await this.save();
 };
+patientSchema.methods.getDiagnosticHistoryCount = async function () {
+    const DiagnosticHistory = mongoose_1.default.model('DiagnosticHistory');
+    return await DiagnosticHistory.countDocuments({
+        patientId: this._id,
+        status: 'active',
+    });
+};
+patientSchema.methods.getLatestDiagnosticHistory = async function () {
+    const DiagnosticHistory = mongoose_1.default.model('DiagnosticHistory');
+    return await DiagnosticHistory.findOne({
+        patientId: this._id,
+        status: 'active',
+    })
+        .populate('pharmacistId', 'firstName lastName')
+        .sort({ createdAt: -1 });
+};
 patientSchema.pre('save', function () {
     if (!this.dob && !this.age) {
         throw new Error('Either date of birth or age must be provided');
@@ -347,5 +364,7 @@ patientSchema.statics.generateNextMRN = async function (workplaceId, workplaceCo
     }
     return (0, tenancyGuard_1.generateMRN)(workplaceCode, sequence);
 };
-exports.default = mongoose_1.default.model('Patient', patientSchema);
+const Patient = mongoose_1.default.model('Patient', patientSchema);
+exports.Patient = Patient;
+exports.default = Patient;
 //# sourceMappingURL=Patient.js.map

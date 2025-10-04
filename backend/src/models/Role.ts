@@ -268,4 +268,7 @@ roleSchema.methods.getHierarchyPath = async function (): Promise<any[]> {
     return path;
 };
 
-export default mongoose.model<IRole>('Role', roleSchema);
+const Role = mongoose.model<IRole>('Role', roleSchema);
+
+export { Role };
+export default Role;

@@ -21,7 +21,7 @@ export declare class EncryptionService {
         keyLength: number;
         activeKeys: number;
         totalKeys: number;
-        currentKeyId: string | null;
+        currentKeyId: string;
         keyRotationInterval: number;
     };
 }

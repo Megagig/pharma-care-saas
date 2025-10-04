@@ -4,22 +4,50 @@ import { QueryClient } from '@tanstack/react-query';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Cache data for 5 minutes
-      staleTime: 5 * 60 * 1000,
-      // Keep data in cache for 10 minutes
-      gcTime: 10 * 60 * 1000,
-      // Retry failed requests 3 times
-      retry: 3,
-      // Retry with exponential backoff
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      // Refetch on window focus in production
-      refetchOnWindowFocus: false,
-      // Refetch on reconnect
-      refetchOnReconnect: true,
+      // Optimized stale time based on data type
+      staleTime: 5 * 60 * 1000, // 5 minutes for most data
+      // Optimized garbage collection time
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      // Smart retry strategy
+      retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors (client errors)
+        if (error?.response?.status >= 400 && error?.response?.status < 500) {
+          return false;
+        }
+        // Don't retry on network errors in offline mode
+        if (!navigator.onLine) {
+          return false;
+        }
+        // Retry up to 3 times for server errors
+        return failureCount < 3;
+      },
+      // Exponential backoff with jitter
+      retryDelay: (attemptIndex) => {
+        const baseDelay = Math.min(1000 * 2 ** attemptIndex, 30000);
+        const jitter = Math.random() * 0.1 * baseDelay;
+        return baseDelay + jitter;
+      },
+      // Smart refetch on window focus
+      refetchOnWindowFocus: (query) => {
+        // Only refetch critical data on focus
+        const criticalKeys = ['dashboard', 'notifications', 'active-interventions', 'pending-orders'];
+        return criticalKeys.some(key => query.queryKey.includes(key));
+      },
+      // Always refetch on reconnect
+      refetchOnReconnect: 'always',
+      // Enable background refetch for better UX
+      refetchInterval: false, // Will be set per query as needed
+      // Keep previous data during refetch for better UX
+      keepPreviousData: true,
+      // Network mode for offline support
+      networkMode: 'offlineFirst',
     },
     mutations: {
-      // Retry failed mutations once
+      // Retry mutations once with delay
       retry: 1,
+      retryDelay: 1000,
+      // Network mode for mutations
+      networkMode: 'online',
     },
   },
 });
@@ -207,4 +235,311 @@ export const queryKeys = {
     pregnancyInfo: (drugName: string) =>
       ['interactions', 'pregnancy', drugName] as const,
   },
+
+  // Dashboard and analytics queries
+  dashboard: {
+    overview: (workspaceId: string) => ['dashboard', 'overview', workspaceId] as const,
+    stats: (workspaceId: string, dateRange?: { start: string; end: string }) =>
+      ['dashboard', 'stats', workspaceId, dateRange] as const,
+    recentActivity: (workspaceId: string, limit?: number) =>
+      ['dashboard', 'recent-activity', workspaceId, limit] as const,
+  },
+
+  // User and workspace queries
+  user: {
+    profile: () => ['user', 'profile'] as const,
+    preferences: () => ['user', 'preferences'] as const,
+    notifications: (unreadOnly?: boolean) => ['user', 'notifications', unreadOnly] as const,
+  },
+
+  workspace: {
+    current: () => ['workspace', 'current'] as const,
+    settings: () => ['workspace', 'settings'] as const,
+    members: () => ['workspace', 'members'] as const,
+  },
 };
+
+// ===============================
+// PREFETCHING UTILITIES
+// ===============================
+
+export class QueryPrefetcher {
+  constructor(private queryClient: QueryClient) {}
+
+  /**
+   * Prefetch critical dashboard data
+   */
+  async prefetchDashboardData(workspaceId: string): Promise<void> {
+    const prefetchPromises = [
+      // Dashboard overview - high priority
+      this.queryClient.prefetchQuery({
+        queryKey: queryKeys.dashboard.overview(workspaceId),
+        queryFn: () => this.fetchDashboardOverview(workspaceId),
+        staleTime: 2 * 60 * 1000, // 2 minutes
+      }),
+
+      // User profile - medium priority
+      this.queryClient.prefetchQuery({
+        queryKey: queryKeys.user.profile(),
+        queryFn: () => this.fetchUserProfile(),
+        staleTime: 10 * 60 * 1000, // 10 minutes
+      }),
+
+      // Recent activity - low priority
+      this.queryClient.prefetchQuery({
+        queryKey: queryKeys.dashboard.recentActivity(workspaceId, 10),
+        queryFn: () => this.fetchRecentActivity(workspaceId, 10),
+        staleTime: 1 * 60 * 1000, // 1 minute
+      }),
+    ];
+
+    await Promise.allSettled(prefetchPromises);
+  }
+
+  /**
+   * Prefetch patient-related data when viewing patient details
+   */
+  async prefetchPatientData(patientId: string): Promise<void> {
+    const prefetchPromises = [
+      // Patient medications
+      this.queryClient.prefetchQuery({
+        queryKey: queryKeys.medications.byPatient(patientId),
+        queryFn: () => this.fetchPatientMedications(patientId),
+        staleTime: 5 * 60 * 1000,
+      }),
+
+      // Patient allergies
+      this.queryClient.prefetchQuery({
+        queryKey: queryKeys.allergies.byPatient(patientId),
+        queryFn: () => this.fetchPatientAllergies(patientId),
+        staleTime: 30 * 60 * 1000, // 30 minutes - allergies change less frequently
+      }),
+
+      // Patient conditions
+      this.queryClient.prefetchQuery({
+        queryKey: queryKeys.conditions.byPatient(patientId),
+        queryFn: () => this.fetchPatientConditions(patientId),
+        staleTime: 15 * 60 * 1000, // 15 minutes
+      }),
+    ];
+
+    await Promise.allSettled(prefetchPromises);
+  }
+
+  /**
+   * Prefetch likely navigation paths
+   */
+  async prefetchLikelyRoutes(): Promise<void> {
+    // Prefetch common navigation destinations based on user role and current page
+    const currentPath = window.location.pathname;
+
+    if (currentPath === '/dashboard') {
+      // From dashboard, users likely go to patients or medications
+      await Promise.allSettled([
+        this.queryClient.prefetchQuery({
+          queryKey: queryKeys.patients.lists(),
+          queryFn: () => this.fetchPatientsList({ limit: 20 }),
+          staleTime: 2 * 60 * 1000,
+        }),
+      ]);
+    } else if (currentPath.startsWith('/patients/')) {
+      // From patient page, users likely view medications or notes
+      const patientId = currentPath.split('/')[2];
+      if (patientId) {
+        await this.prefetchPatientData(patientId);
+      }
+    }
+  }
+
+  // Mock fetch functions - replace with actual API calls
+  private async fetchDashboardOverview(workspaceId: string): Promise<any> {
+    const response = await fetch(`/api/dashboard/overview?workspaceId=${workspaceId}`);
+    return response.json();
+  }
+
+  private async fetchUserProfile(): Promise<any> {
+    const response = await fetch('/api/user/profile');
+    return response.json();
+  }
+
+  private async fetchRecentActivity(workspaceId: string, limit: number): Promise<any> {
+    const response = await fetch(`/api/dashboard/recent-activity?workspaceId=${workspaceId}&limit=${limit}`);
+    return response.json();
+  }
+
+  private async fetchPatientMedications(patientId: string): Promise<any> {
+    const response = await fetch(`/api/patients/${patientId}/medications`);
+    return response.json();
+  }
+
+  private async fetchPatientAllergies(patientId: string): Promise<any> {
+    const response = await fetch(`/api/patients/${patientId}/allergies`);
+    return response.json();
+  }
+
+  private async fetchPatientConditions(patientId: string): Promise<any> {
+    const response = await fetch(`/api/patients/${patientId}/conditions`);
+    return response.json();
+  }
+
+  private async fetchPatientsList(params: { limit: number }): Promise<any> {
+    const response = await fetch(`/api/patients?limit=${params.limit}`);
+    return response.json();
+  }
+}
+
+// ===============================
+// QUERY INVALIDATION STRATEGIES
+// ===============================
+
+export class QueryInvalidationManager {
+  constructor(private queryClient: QueryClient) {}
+
+  /**
+   * Invalidate patient-related queries when patient data changes
+   */
+  async invalidatePatientQueries(patientId: string): Promise<void> {
+    const invalidationPromises = [
+      // Invalidate patient details
+      this.queryClient.invalidateQueries({
+        queryKey: queryKeys.patients.detail(patientId),
+      }),
+
+      // Invalidate patient medications
+      this.queryClient.invalidateQueries({
+        queryKey: queryKeys.medications.byPatient(patientId),
+      }),
+
+      // Invalidate patient allergies
+      this.queryClient.invalidateQueries({
+        queryKey: queryKeys.allergies.byPatient(patientId),
+      }),
+
+      // Invalidate patient conditions
+      this.queryClient.invalidateQueries({
+        queryKey: queryKeys.conditions.byPatient(patientId),
+      }),
+
+      // Invalidate patient lists (in case patient appears in lists)
+      this.queryClient.invalidateQueries({
+        queryKey: queryKeys.patients.lists(),
+      }),
+
+      // Invalidate dashboard if patient is featured
+      this.queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.overview,
+        exact: false,
+      }),
+    ];
+
+    await Promise.allSettled(invalidationPromises);
+  }
+
+  /**
+   * Invalidate medication-related queries
+   */
+  async invalidateMedicationQueries(patientId?: string, medicationId?: string): Promise<void> {
+    const invalidationPromises = [
+      // Invalidate all medication lists
+      this.queryClient.invalidateQueries({
+        queryKey: queryKeys.medications.all,
+      }),
+    ];
+
+    if (patientId) {
+      invalidationPromises.push(
+        // Invalidate patient-specific medications
+        this.queryClient.invalidateQueries({
+          queryKey: queryKeys.medications.byPatient(patientId),
+        }),
+
+        // Invalidate patient summary
+        this.queryClient.invalidateQueries({
+          queryKey: queryKeys.patients.summary(patientId),
+        })
+      );
+    }
+
+    if (medicationId) {
+      invalidationPromises.push(
+        // Invalidate specific medication
+        this.queryClient.invalidateQueries({
+          queryKey: queryKeys.medications.detail(medicationId),
+        })
+      );
+    }
+
+    await Promise.allSettled(invalidationPromises);
+  }
+
+  /**
+   * Invalidate dashboard queries
+   */
+  async invalidateDashboardQueries(workspaceId?: string): Promise<void> {
+    const invalidationPromises = [
+      // Invalidate all dashboard queries
+      this.queryClient.invalidateQueries({
+        queryKey: ['dashboard'],
+      }),
+    ];
+
+    if (workspaceId) {
+      invalidationPromises.push(
+        // Invalidate workspace-specific dashboard
+        this.queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard.overview(workspaceId),
+        }),
+
+        // Invalidate dashboard stats
+        this.queryClient.invalidateQueries({
+          queryKey: queryKeys.dashboard.stats(workspaceId),
+        })
+      );
+    }
+
+    await Promise.allSettled(invalidationPromises);
+  }
+
+  /**
+   * Smart invalidation based on mutation type
+   */
+  async smartInvalidation(mutationType: string, entityId?: string, additionalData?: any): Promise<void> {
+    switch (mutationType) {
+      case 'patient_created':
+      case 'patient_updated':
+        if (entityId) {
+          await this.invalidatePatientQueries(entityId);
+        }
+        break;
+
+      case 'medication_created':
+      case 'medication_updated':
+      case 'medication_deleted':
+        await this.invalidateMedicationQueries(additionalData?.patientId, entityId);
+        break;
+
+      case 'clinical_note_created':
+      case 'clinical_note_updated':
+        if (additionalData?.patientId) {
+          await this.queryClient.invalidateQueries({
+            queryKey: queryKeys.clinicalNotes.byPatient(additionalData.patientId),
+          });
+        }
+        break;
+
+      case 'user_profile_updated':
+        await this.queryClient.invalidateQueries({
+          queryKey: queryKeys.user.profile(),
+        });
+        break;
+
+      default:
+        // Fallback: invalidate dashboard
+        await this.invalidateDashboardQueries();
+    }
+  }
+}
+
+// Create instances for use throughout the app
+export const queryPrefetcher = new QueryPrefetcher(queryClient);
+export const queryInvalidationManager = new QueryInvalidationManager(queryClient);

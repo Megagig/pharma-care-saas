@@ -44,8 +44,11 @@ export class RoleController {
                 });
             }
 
+            // Sanitize role name: lowercase and replace spaces with underscores
+            const sanitizedName = name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '');
+
             // Check if role name already exists
-            const existingRole = await Role.findOne({ name: name.toLowerCase() });
+            const existingRole = await Role.findOne({ name: sanitizedName });
             if (existingRole) {
                 return res.status(409).json({
                     success: false,
@@ -111,7 +114,7 @@ export class RoleController {
 
             // Create the role
             const role = new Role({
-                name: name.toLowerCase(),
+                name: sanitizedName,
                 displayName,
                 description,
                 category,

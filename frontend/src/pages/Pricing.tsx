@@ -196,15 +196,16 @@ const Pricing = () => {
             Error fetching pricing plans. Please try again later.
           </Alert>
         )}
-        <Box
-          sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 4,
-            justifyContent: 'center',
-          }}
-        >
-          {plans?.map((plan, index) => (
+        {!isLoading && !error && (
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 4,
+              justifyContent: 'center',
+            }}
+          >
+            {(plans || []).map((plan, index) => (
             <Box
               key={plan._id || index}
               sx={{ flex: '1 1 300px', maxWidth: '400px' }}
@@ -288,7 +289,7 @@ const Pricing = () => {
                         />
                       )}
                       <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                        {plan.name}
+                        {plan.name || 'Plan'}
                       </Typography>
                     </Box>
                     {plan.isContactSales ? (
@@ -311,7 +312,7 @@ const Pricing = () => {
                           variant="h3"
                           sx={{ fontWeight: 700, color: 'primary.main' }}
                         >
-                          ₦{plan.priceNGN.toLocaleString()}
+                          ₦{(plan.priceNGN || 0).toLocaleString()}
                         </Typography>
                         <Typography
                           variant="h6"
@@ -339,7 +340,7 @@ const Pricing = () => {
                         textTransform: 'none',
                         fontWeight: 600,
                       }}
-                      onClick={() => handleContactSales(plan.whatsappNumber)}
+                      onClick={() => handleContactSales(plan.whatsappNumber || '')}
                     >
                       Contact Sales
                     </Button>
@@ -357,7 +358,7 @@ const Pricing = () => {
                         textTransform: 'none',
                         fontWeight: 600,
                       }}
-                      onClick={() => handleSubscribe(plan._id)}
+                      onClick={() => handleSubscribe(plan._id || '')}
                       disabled={createCheckoutSession.isPending}
                     >
                       {createCheckoutSession.isPending
@@ -376,7 +377,7 @@ const Pricing = () => {
                       What's included:
                     </Typography>
                     <List disablePadding>
-                      {plan.displayedFeatures.map(
+                      {(plan.displayedFeatures || []).map(
                         (feature: string, featureIndex: number) => (
                           <ListItem
                             key={featureIndex}
@@ -404,7 +405,8 @@ const Pricing = () => {
               </Card>
             </Box>
           ))}
-        </Box>
+          </Box>
+        )}
 
         {/* FAQ Section */}
         <Box sx={{ mt: 12 }}>

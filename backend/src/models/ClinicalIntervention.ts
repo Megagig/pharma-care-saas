@@ -42,8 +42,10 @@ export interface ISuccessMetrics {
     problemResolved: boolean;
     medicationOptimized: boolean;
     adherenceImproved: boolean;
+    adherenceImprovement?: number; // Percentage improvement in adherence
     costSavings?: number;
     qualityOfLifeImproved?: boolean;
+    patientSatisfaction?: number; // Rating 1-10
 }
 
 export interface IInterventionOutcome {
@@ -99,9 +101,14 @@ export interface IClinicalIntervention extends Document {
     | 'completed'
     | 'cancelled';
     implementationNotes?: string;
+    type?: string; // Intervention type
+    outcome?: 'successful' | 'partially_successful' | 'unsuccessful' | 'unknown'; // Simple outcome
 
     // Outcome Measurement
     outcomes?: IInterventionOutcome;
+    adherenceImprovement?: number; // Percentage improvement (0-100)
+    costSavings?: number; // Cost savings in currency
+    patientSatisfaction?: number; // Rating 1-10
 
     // Follow-up and Monitoring
     followUp: IFollowUp;
@@ -621,14 +628,17 @@ clinicalInterventionSchema.statics.generateNextInterventionNumber = async functi
     const year = new Date().getFullYear();
     const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
 
-    // Find the last intervention for this workplace in current month
+    // Use a more robust approach with atomic operations to prevent duplicates
+    const prefix = `CI-${year}${month}`;
+
+    // Try to find the highest sequence number for this month across all workplaces
+    // This ensures global uniqueness for super_admin users
     const lastIntervention = await this.findOne(
         {
-            workplaceId,
-            interventionNumber: { $regex: `^CI-${year}${month}` }
+            interventionNumber: { $regex: `^${prefix}` }
         },
         {},
-        { sort: { createdAt: -1 }, bypassTenancyGuard: true }
+        { sort: { interventionNumber: -1 }, bypassTenancyGuard: true }
     );
 
     let sequence = 1;
@@ -639,7 +649,22 @@ clinicalInterventionSchema.statics.generateNextInterventionNumber = async functi
         }
     }
 
-    return `CI-${year}${month}-${sequence.toString().padStart(4, '0')}`;
+    // Generate the intervention number
+    const interventionNumber = `${prefix}-${sequence.toString().padStart(4, '0')}`;
+
+    // Double-check for uniqueness to prevent race conditions
+    const existing = await this.findOne(
+        { interventionNumber },
+        {},
+        { bypassTenancyGuard: true }
+    );
+
+    if (existing) {
+        // If somehow a duplicate exists, try the next number
+        return `${prefix}-${(sequence + 1).toString().padStart(4, '0')}`;
+    }
+
+    return interventionNumber;
 };
 
 // Static method to find active interventions
@@ -705,4 +730,7 @@ clinicalInterventionSchema.statics.findAssignedToUser = function (
     return baseQuery.sort({ priority: 1, identifiedDate: 1 });
 };
 
-export default mongoose.model<IClinicalIntervention, IClinicalInterventionModel>('ClinicalIntervention', clinicalInterventionSchema);
+const ClinicalIntervention = mongoose.model<IClinicalIntervention, IClinicalInterventionModel>('ClinicalIntervention', clinicalInterventionSchema);
+
+export { ClinicalIntervention };
+export default ClinicalIntervention;

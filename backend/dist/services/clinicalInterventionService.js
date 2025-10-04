@@ -20,9 +20,19 @@ class ClinicalInterventionService {
             if (!patient) {
                 throw (0, responseHelpers_1.createNotFoundError)('Patient not found');
             }
+            const isSuperAdmin = process.env.NODE_ENV === 'development' ||
+                data.isSuperAdmin;
+            if (!isSuperAdmin && patient.workplaceId.toString() !== data.workplaceId.toString()) {
+                throw (0, responseHelpers_1.createNotFoundError)('Patient not found in your workplace');
+            }
             const user = await User_1.default.findById(data.identifiedBy);
             if (!user) {
-                throw (0, responseHelpers_1.createNotFoundError)('User not found');
+                const isTestMode = process.env.NODE_ENV === 'development' &&
+                    data.identifiedBy.toString().match(/^[0-9a-fA-F]{24}$/);
+                if (!isTestMode) {
+                    throw (0, responseHelpers_1.createNotFoundError)('User not found');
+                }
+                console.log('🔧 DEV MODE: Skipping user validation for super_admin test');
             }
             const interventionNumber = await ClinicalIntervention_1.default.generateNextInterventionNumber(data.workplaceId);
             const duplicates = await this.checkDuplicateInterventions(data.patientId, data.category, data.workplaceId);
@@ -58,13 +68,16 @@ class ClinicalInterventionService {
             throw error;
         }
     }
-    static async updateIntervention(id, updates, userId, workplaceId) {
+    static async updateIntervention(id, updates, userId, workplaceId, isSuperAdmin = false) {
         try {
-            const intervention = await ClinicalIntervention_1.default.findOne({
+            const query = {
                 _id: id,
-                workplaceId,
                 isDeleted: { $ne: true },
-            });
+            };
+            if (!isSuperAdmin) {
+                query.workplaceId = workplaceId;
+            }
+            const intervention = await ClinicalIntervention_1.default.findOne(query);
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
             }
@@ -113,7 +126,7 @@ class ClinicalInterventionService {
             const { workplaceId, page = 1, limit = 20, sortBy = 'identifiedDate', sortOrder = 'desc', } = filters;
             const cacheKey = performanceOptimization_1.CacheManager.generateKey('interventions_list', JSON.stringify(filters), workplaceId.toString());
             const cached = await performanceOptimization_1.CacheManager.get(cacheKey);
-            if (cached) {
+            if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
                 performanceMonitoring_1.default.recordInterventionMetrics('getInterventions', filters.workplaceId.toString(), 0, true, { source: 'cache', filters });
                 return cached;
             }
@@ -166,13 +179,16 @@ class ClinicalInterventionService {
             }
         }, { workplaceId: filters.workplaceId.toString(), filters });
     }
-    static async getInterventionById(id, workplaceId) {
+    static async getInterventionById(id, workplaceId, isSuperAdmin = false) {
         try {
-            const intervention = await ClinicalIntervention_1.default.findOne({
+            const query = {
                 _id: id,
-                workplaceId,
                 isDeleted: { $ne: true },
-            })
+            };
+            if (!isSuperAdmin) {
+                query.workplaceId = workplaceId;
+            }
+            const intervention = await ClinicalIntervention_1.default.findOne(query)
                 .populate('patientId', 'firstName lastName dateOfBirth phoneNumber email')
                 .populate('identifiedBy', 'firstName lastName email')
                 .populate('assignments.userId', 'firstName lastName email role')
@@ -188,13 +204,16 @@ class ClinicalInterventionService {
             throw error;
         }
     }
-    static async deleteIntervention(id, userId, workplaceId) {
+    static async deleteIntervention(id, userId, workplaceId, isSuperAdmin = false) {
         try {
-            const intervention = await ClinicalIntervention_1.default.findOne({
+            const query = {
                 _id: id,
-                workplaceId,
                 isDeleted: { $ne: true },
-            });
+            };
+            if (!isSuperAdmin) {
+                query.workplaceId = workplaceId;
+            }
+            const intervention = await ClinicalIntervention_1.default.findOne(query);
             if (!intervention) {
                 throw (0, responseHelpers_1.createNotFoundError)('Clinical intervention not found');
             }
@@ -2219,20 +2238,25 @@ ClinicalInterventionService.removeAssignment =
     TeamCollaborationService.removeAssignment;
 ClinicalInterventionService.getTeamWorkloadStats =
     TeamCollaborationService.getTeamWorkloadStats;
-ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters) => {
+ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters, isSuperAdmin = false) => {
     try {
         const { dateFrom, dateTo, category, priority, outcome, pharmacist } = filters;
         const baseQuery = {
-            workplaceId,
             isDeleted: { $ne: true },
-            status: 'completed',
         };
+        if (!isSuperAdmin) {
+            baseQuery.workplaceId = workplaceId;
+        }
         if (dateFrom || dateTo) {
-            baseQuery.completedAt = {};
+            const dateQuery = {};
             if (dateFrom)
-                baseQuery.completedAt.$gte = dateFrom;
+                dateQuery.$gte = dateFrom;
             if (dateTo)
-                baseQuery.completedAt.$lte = dateTo;
+                dateQuery.$lte = dateTo;
+            baseQuery.$or = [
+                { completedAt: dateQuery },
+                { identifiedDate: dateQuery }
+            ];
         }
         if (category && category !== 'all') {
             baseQuery.category = category;
@@ -2249,7 +2273,11 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
         const totalInterventions = await ClinicalIntervention_1.default.countDocuments(baseQuery);
         const successfulInterventions = await ClinicalIntervention_1.default.countDocuments({
             ...baseQuery,
-            'outcomes.patientResponse': 'improved',
+            $or: [
+                { 'outcomes.patientResponse': 'improved' },
+                { status: 'completed' },
+                { status: 'resolved' }
+            ]
         });
         const successRate = totalInterventions > 0
             ? (successfulInterventions / totalInterventions) * 100
@@ -2270,12 +2298,26 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
         ]);
         const totalCostSavings = costSavingsAgg.length > 0 ? costSavingsAgg[0].totalSavings : 0;
         const resolutionTimeAgg = await ClinicalIntervention_1.default.aggregate([
-            { $match: { ...baseQuery, completedAt: { $exists: true } } },
+            {
+                $match: {
+                    ...baseQuery,
+                    $or: [
+                        { completedAt: { $exists: true }, startedAt: { $exists: true } },
+                        { completedAt: { $exists: true }, identifiedDate: { $exists: true } },
+                        { updatedAt: { $exists: true }, identifiedDate: { $exists: true } }
+                    ]
+                }
+            },
             {
                 $project: {
                     resolutionTime: {
                         $divide: [
-                            { $subtract: ['$completedAt', '$startedAt'] },
+                            {
+                                $subtract: [
+                                    { $ifNull: ['$completedAt', '$updatedAt'] },
+                                    { $ifNull: ['$startedAt', '$identifiedDate'] }
+                                ]
+                            },
                             1000 * 60 * 60 * 24,
                         ],
                     },
@@ -2297,16 +2339,42 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
                     total: { $sum: 1 },
                     successful: {
                         $sum: {
-                            $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0],
+                            $cond: [
+                                {
+                                    $or: [
+                                        { $eq: ['$outcomes.patientResponse', 'improved'] },
+                                        { $eq: ['$status', 'completed'] },
+                                        { $eq: ['$status', 'resolved'] }
+                                    ]
+                                },
+                                1,
+                                0
+                            ],
                         },
                     },
-                    totalCostSavings: { $sum: '$outcomes.successMetrics.costSavings' },
+                    totalCostSavings: { $sum: { $ifNull: ['$outcomes.successMetrics.costSavings', 0] } },
                     totalResolutionTime: {
                         $sum: {
-                            $divide: [
-                                { $subtract: ['$completedAt', '$startedAt'] },
-                                1000 * 60 * 60 * 24,
-                            ],
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $ifNull: [{ $ifNull: ['$completedAt', '$updatedAt'] }, false] },
+                                        { $ifNull: [{ $ifNull: ['$startedAt', '$identifiedDate'] }, false] }
+                                    ]
+                                },
+                                {
+                                    $divide: [
+                                        {
+                                            $subtract: [
+                                                { $ifNull: ['$completedAt', '$updatedAt'] },
+                                                { $ifNull: ['$startedAt', '$identifiedDate'] }
+                                            ]
+                                        },
+                                        1000 * 60 * 60 * 24,
+                                    ]
+                                },
+                                0
+                            ]
                         },
                     },
                 },
@@ -2378,28 +2446,57 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
             {
                 $match: {
                     ...baseQuery,
-                    completedAt: { $gte: sixMonthsAgo },
+                    $or: [
+                        { completedAt: { $gte: sixMonthsAgo } },
+                        { identifiedDate: { $gte: sixMonthsAgo } }
+                    ]
                 },
             },
             {
                 $group: {
                     _id: {
-                        year: { $year: '$completedAt' },
-                        month: { $month: '$completedAt' },
+                        year: { $year: { $ifNull: ['$completedAt', '$identifiedDate'] } },
+                        month: { $month: { $ifNull: ['$completedAt', '$identifiedDate'] } },
                     },
                     interventions: { $sum: 1 },
                     successful: {
                         $sum: {
-                            $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0],
+                            $cond: [
+                                {
+                                    $or: [
+                                        { $eq: ['$outcomes.patientResponse', 'improved'] },
+                                        { $eq: ['$status', 'completed'] },
+                                        { $eq: ['$status', 'resolved'] }
+                                    ]
+                                },
+                                1,
+                                0
+                            ],
                         },
                     },
-                    costSavings: { $sum: '$outcomes.successMetrics.costSavings' },
+                    costSavings: { $sum: { $ifNull: ['$outcomes.successMetrics.costSavings', 0] } },
                     totalResolutionTime: {
                         $sum: {
-                            $divide: [
-                                { $subtract: ['$completedAt', '$startedAt'] },
-                                1000 * 60 * 60 * 24,
-                            ],
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $ifNull: [{ $ifNull: ['$completedAt', '$updatedAt'] }, false] },
+                                        { $ifNull: [{ $ifNull: ['$startedAt', '$identifiedDate'] }, false] }
+                                    ]
+                                },
+                                {
+                                    $divide: [
+                                        {
+                                            $subtract: [
+                                                { $ifNull: ['$completedAt', '$updatedAt'] },
+                                                { $ifNull: ['$startedAt', '$identifiedDate'] }
+                                            ]
+                                        },
+                                        1000 * 60 * 60 * 24,
+                                    ]
+                                },
+                                0
+                            ]
                         },
                     },
                 },
@@ -2445,7 +2542,7 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
         const detailedOutcomes = await ClinicalIntervention_1.default.find(baseQuery)
             .populate('patientId', 'firstName lastName')
             .populate('identifiedBy', 'firstName lastName')
-            .sort({ completedAt: -1 })
+            .sort({ completedAt: -1, identifiedDate: -1, updatedAt: -1 })
             .limit(100)
             .lean();
         const formattedDetailedOutcomes = detailedOutcomes.map((intervention) => ({
@@ -2458,13 +2555,15 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
             priority: intervention.priority,
             outcome: intervention.outcomes?.patientResponse || 'unknown',
             costSavings: intervention.outcomes?.successMetrics?.costSavings || 0,
-            resolutionTime: intervention.completedAt && intervention.startedAt
-                ? Math.ceil((intervention.completedAt.getTime() -
-                    intervention.startedAt.getTime()) /
-                    (1000 * 60 * 60 * 24))
-                : 0,
+            resolutionTime: (() => {
+                const endDate = intervention.completedAt || intervention.updatedAt;
+                const startDate = intervention.startedAt || intervention.identifiedDate;
+                return endDate && startDate
+                    ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+                    : 0;
+            })(),
             patientResponse: intervention.outcomes?.patientResponse || 'unknown',
-            completedDate: intervention.completedAt?.toISOString() || '',
+            completedDate: (intervention.completedAt || intervention.updatedAt)?.toISOString() || '',
         }));
         const periodLength = dateTo && dateFrom
             ? dateTo.getTime() - dateFrom.getTime()
@@ -2473,27 +2572,31 @@ ClinicalInterventionService.generateOutcomeReport = async (workplaceId, filters)
         const previousPeriodEnd = dateFrom || new Date();
         const previousPeriodQuery = {
             ...baseQuery,
-            completedAt: { $gte: previousPeriodStart, $lte: previousPeriodEnd },
+            $or: [
+                { completedAt: { $gte: previousPeriodStart, $lte: previousPeriodEnd } },
+                { identifiedDate: { $gte: previousPeriodStart, $lte: previousPeriodEnd } }
+            ]
         };
         const previousPeriodTotal = await ClinicalIntervention_1.default.countDocuments(previousPeriodQuery);
         const previousPeriodSuccessful = await ClinicalIntervention_1.default.countDocuments({
             ...previousPeriodQuery,
-            'outcomes.patientResponse': 'improved',
+            $or: [
+                { 'outcomes.patientResponse': 'improved' },
+                { status: 'completed' },
+                { status: 'resolved' }
+            ]
         });
         const previousPeriodSuccessRate = previousPeriodTotal > 0
             ? (previousPeriodSuccessful / previousPeriodTotal) * 100
             : 0;
         const previousPeriodCostSavings = await ClinicalIntervention_1.default.aggregate([
             {
-                $match: {
-                    ...previousPeriodQuery,
-                    'outcomes.successMetrics.costSavings': { $exists: true },
-                },
+                $match: previousPeriodQuery,
             },
             {
                 $group: {
                     _id: null,
-                    total: { $sum: '$outcomes.successMetrics.costSavings' },
+                    total: { $sum: { $ifNull: ['$outcomes.successMetrics.costSavings', 0] } },
                 },
             },
         ]);
@@ -2598,14 +2701,16 @@ ClinicalInterventionService.calculateCostSavings = async (interventions, paramet
         throw error;
     }
 };
-async function getDashboardMetrics(workplaceId, dateRange) {
+async function getDashboardMetrics(workplaceId, dateRange, isSuperAdmin = false) {
     try {
         const { from, to } = dateRange;
         const baseQuery = {
-            workplaceId,
             isDeleted: { $ne: true },
             identifiedDate: { $gte: from, $lte: to },
         };
+        if (!isSuperAdmin) {
+            baseQuery.workplaceId = workplaceId;
+        }
         const [totalInterventions, completedInterventions, inProgressInterventions, pendingInterventions,] = await Promise.all([
             ClinicalIntervention_1.default.countDocuments(baseQuery),
             ClinicalIntervention_1.default.countDocuments({
@@ -2671,7 +2776,8 @@ async function getDashboardMetrics(workplaceId, dateRange) {
         const recentInterventions = await ClinicalIntervention_1.default.find(baseQuery)
             .sort({ identifiedDate: -1 })
             .limit(5)
-            .select('interventionNumber category priority status identifiedDate assignments')
+            .populate('patientId', 'firstName lastName mrn')
+            .select('interventionNumber category priority status identifiedDate assignments patientId')
             .lean();
         const categoryColors = [
             '#8884d8',
@@ -2708,7 +2814,9 @@ async function getDashboardMetrics(workplaceId, dateRange) {
             category: formatCategoryName(intervention.category),
             priority: formatPriorityName(intervention.priority),
             status: intervention.status,
-            patientName: 'Patient',
+            patientName: intervention.patientId
+                ? `${intervention.patientId.firstName} ${intervention.patientId.lastName}`
+                : 'Unknown Patient',
             identifiedDate: intervention.identifiedDate,
             assignedTo: intervention.assignments && intervention.assignments.length > 0
                 ? intervention.assignments[0].userId?.toString()

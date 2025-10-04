@@ -101,6 +101,7 @@ export interface InterventionFilters {
   limit?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  isSuperAdmin?: boolean;
 }
 
 export interface PaginatedResult<T> {
@@ -253,7 +254,9 @@ class ClinicalInterventionService {
       category?: string;
       priority?: string;
       outcome?: string;
-    }
+      pharmacist?: string;
+    },
+    isSuperAdmin?: boolean
   ) => Promise<any>;
 
   static calculateCostSavings: (
@@ -305,7 +308,8 @@ class ClinicalInterventionService {
 
   static getDashboardMetrics: (
     workplaceId: mongoose.Types.ObjectId,
-    dateRange?: any
+    dateRange?: any,
+    isSuperAdmin?: boolean
   ) => Promise<any>;
 
   static getTrendAnalysis: (
@@ -336,10 +340,26 @@ class ClinicalInterventionService {
         throw createNotFoundError('Patient not found');
       }
 
-      // Validate user exists
+      // For super_admin, skip workplace validation
+      const isSuperAdmin = process.env.NODE_ENV === 'development' || 
+                          (data as any).isSuperAdmin;
+      if (!isSuperAdmin && patient.workplaceId.toString() !== data.workplaceId.toString()) {
+        throw createNotFoundError('Patient not found in your workplace');
+      }
+
+      // Validate user exists (skip for super_admin test mode in development)
       const user = await User.findById(data.identifiedBy);
       if (!user) {
-        throw createNotFoundError('User not found');
+        // Check if this is a super_admin test mode ObjectId (development only)
+        const isTestMode = process.env.NODE_ENV === 'development' && 
+                          data.identifiedBy.toString().match(/^[0-9a-fA-F]{24}$/);
+        
+        if (!isTestMode) {
+          throw createNotFoundError('User not found');
+        }
+        
+        // For test mode, we'll continue without the user validation
+        console.log('🔧 DEV MODE: Skipping user validation for super_admin test');
       }
 
       // Generate intervention number
@@ -415,14 +435,21 @@ class ClinicalInterventionService {
     id: string,
     updates: UpdateInterventionDTO,
     userId: mongoose.Types.ObjectId,
-    workplaceId: mongoose.Types.ObjectId
+    workplaceId: mongoose.Types.ObjectId,
+    isSuperAdmin: boolean = false
   ): Promise<IClinicalIntervention> {
     try {
-      const intervention = await ClinicalIntervention.findOne({
+      const query: any = {
         _id: id,
-        workplaceId,
         isDeleted: { $ne: true },
-      });
+      };
+
+      // Add workplaceId filter only if not super_admin
+      if (!isSuperAdmin) {
+        query.workplaceId = workplaceId;
+      }
+
+      const intervention = await ClinicalIntervention.findOne(query);
 
       if (!intervention) {
         throw createNotFoundError('Clinical intervention not found');
@@ -528,7 +555,7 @@ class ClinicalInterventionService {
         const cached = await CacheManager.get<
           PaginatedResult<IClinicalIntervention>
         >(cacheKey);
-        if (cached) {
+        if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
           performanceCollector.recordInterventionMetrics(
             'getInterventions',
             filters.workplaceId.toString(),
@@ -536,7 +563,7 @@ class ClinicalInterventionService {
             true,
             { source: 'cache', filters }
           );
-          return cached;
+          return cached as any;
         }
 
         const startTime = Date.now();
@@ -624,14 +651,21 @@ class ClinicalInterventionService {
    */
   static async getInterventionById(
     id: string,
-    workplaceId: mongoose.Types.ObjectId
+    workplaceId: mongoose.Types.ObjectId,
+    isSuperAdmin: boolean = false
   ): Promise<IClinicalIntervention> {
     try {
-      const intervention = await ClinicalIntervention.findOne({
+      const query: any = {
         _id: id,
-        workplaceId,
         isDeleted: { $ne: true },
-      })
+      };
+
+      // Add workplaceId filter only if not super_admin
+      if (!isSuperAdmin) {
+        query.workplaceId = workplaceId;
+      }
+
+      const intervention = await ClinicalIntervention.findOne(query)
         .populate(
           'patientId',
           'firstName lastName dateOfBirth phoneNumber email'
@@ -658,14 +692,21 @@ class ClinicalInterventionService {
   static async deleteIntervention(
     id: string,
     userId: mongoose.Types.ObjectId,
-    workplaceId: mongoose.Types.ObjectId
+    workplaceId: mongoose.Types.ObjectId,
+    isSuperAdmin: boolean = false
   ): Promise<boolean> {
     try {
-      const intervention = await ClinicalIntervention.findOne({
+      const query: any = {
         _id: id,
-        workplaceId,
         isDeleted: { $ne: true },
-      });
+      };
+
+      // Add workplaceId filter only if not super_admin
+      if (!isSuperAdmin) {
+        query.workplaceId = workplaceId;
+      }
+
+      const intervention = await ClinicalIntervention.findOne(query);
 
       if (!intervention) {
         throw createNotFoundError('Clinical intervention not found');
@@ -4051,7 +4092,8 @@ ClinicalInterventionService.generateOutcomeReport = async (
     priority?: string;
     outcome?: string;
     pharmacist?: string;
-  }
+  },
+  isSuperAdmin: boolean = false
 ): Promise<any> => {
   try {
     const { dateFrom, dateTo, category, priority, outcome, pharmacist } =
@@ -4059,16 +4101,26 @@ ClinicalInterventionService.generateOutcomeReport = async (
 
     // Build base query
     const baseQuery: any = {
-      workplaceId,
       isDeleted: { $ne: true },
-      status: 'completed',
+      // Include all interventions, not just completed ones for better reporting
     };
 
-    // Add date filter
+    // Add workplaceId filter only if not super_admin
+    if (!isSuperAdmin) {
+      baseQuery.workplaceId = workplaceId;
+    }
+
+    // Add date filter - use identifiedDate if completedAt is not available
     if (dateFrom || dateTo) {
-      baseQuery.completedAt = {};
-      if (dateFrom) baseQuery.completedAt.$gte = dateFrom;
-      if (dateTo) baseQuery.completedAt.$lte = dateTo;
+      const dateQuery: any = {};
+      if (dateFrom) dateQuery.$gte = dateFrom;
+      if (dateTo) dateQuery.$lte = dateTo;
+      
+      // Use $or to check both completedAt and identifiedDate
+      baseQuery.$or = [
+        { completedAt: dateQuery },
+        { identifiedDate: dateQuery }
+      ];
     }
 
     // Add category filter
@@ -4096,9 +4148,14 @@ ClinicalInterventionService.generateOutcomeReport = async (
       baseQuery
     );
 
+    // Count successful interventions - include both completed with outcomes and those with positive status
     const successfulInterventions = await ClinicalIntervention.countDocuments({
       ...baseQuery,
-      'outcomes.patientResponse': 'improved',
+      $or: [
+        { 'outcomes.patientResponse': 'improved' },
+        { status: 'completed' },
+        { status: 'resolved' }
+      ]
     });
 
     const successRate =
@@ -4125,14 +4182,28 @@ ClinicalInterventionService.generateOutcomeReport = async (
     const totalCostSavings =
       costSavingsAgg.length > 0 ? costSavingsAgg[0].totalSavings : 0;
 
-    // Calculate average resolution time
+    // Calculate average resolution time - use available date fields
     const resolutionTimeAgg = await ClinicalIntervention.aggregate([
-      { $match: { ...baseQuery, completedAt: { $exists: true } } },
+      { 
+        $match: { 
+          ...baseQuery, 
+          $or: [
+            { completedAt: { $exists: true }, startedAt: { $exists: true } },
+            { completedAt: { $exists: true }, identifiedDate: { $exists: true } },
+            { updatedAt: { $exists: true }, identifiedDate: { $exists: true } }
+          ]
+        } 
+      },
       {
         $project: {
           resolutionTime: {
             $divide: [
-              { $subtract: ['$completedAt', '$startedAt'] },
+              {
+                $subtract: [
+                  { $ifNull: ['$completedAt', '$updatedAt'] },
+                  { $ifNull: ['$startedAt', '$identifiedDate'] }
+                ]
+              },
               1000 * 60 * 60 * 24, // Convert to days
             ],
           },
@@ -4158,16 +4229,42 @@ ClinicalInterventionService.generateOutcomeReport = async (
           total: { $sum: 1 },
           successful: {
             $sum: {
-              $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0],
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ['$outcomes.patientResponse', 'improved'] },
+                    { $eq: ['$status', 'completed'] },
+                    { $eq: ['$status', 'resolved'] }
+                  ]
+                }, 
+                1, 
+                0
+              ],
             },
           },
-          totalCostSavings: { $sum: '$outcomes.successMetrics.costSavings' },
+          totalCostSavings: { $sum: { $ifNull: ['$outcomes.successMetrics.costSavings', 0] } },
           totalResolutionTime: {
             $sum: {
-              $divide: [
-                { $subtract: ['$completedAt', '$startedAt'] },
-                1000 * 60 * 60 * 24,
-              ],
+              $cond: [
+                {
+                  $and: [
+                    { $ifNull: [{ $ifNull: ['$completedAt', '$updatedAt'] }, false] },
+                    { $ifNull: [{ $ifNull: ['$startedAt', '$identifiedDate'] }, false] }
+                  ]
+                },
+                {
+                  $divide: [
+                    {
+                      $subtract: [
+                        { $ifNull: ['$completedAt', '$updatedAt'] },
+                        { $ifNull: ['$startedAt', '$identifiedDate'] }
+                      ]
+                    },
+                    1000 * 60 * 60 * 24,
+                  ]
+                },
+                0
+              ]
             },
           },
         },
@@ -4242,28 +4339,57 @@ ClinicalInterventionService.generateOutcomeReport = async (
       {
         $match: {
           ...baseQuery,
-          completedAt: { $gte: sixMonthsAgo },
+          $or: [
+            { completedAt: { $gte: sixMonthsAgo } },
+            { identifiedDate: { $gte: sixMonthsAgo } }
+          ]
         },
       },
       {
         $group: {
           _id: {
-            year: { $year: '$completedAt' },
-            month: { $month: '$completedAt' },
+            year: { $year: { $ifNull: ['$completedAt', '$identifiedDate'] } },
+            month: { $month: { $ifNull: ['$completedAt', '$identifiedDate'] } },
           },
           interventions: { $sum: 1 },
           successful: {
             $sum: {
-              $cond: [{ $eq: ['$outcomes.patientResponse', 'improved'] }, 1, 0],
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ['$outcomes.patientResponse', 'improved'] },
+                    { $eq: ['$status', 'completed'] },
+                    { $eq: ['$status', 'resolved'] }
+                  ]
+                }, 
+                1, 
+                0
+              ],
             },
           },
-          costSavings: { $sum: '$outcomes.successMetrics.costSavings' },
+          costSavings: { $sum: { $ifNull: ['$outcomes.successMetrics.costSavings', 0] } },
           totalResolutionTime: {
             $sum: {
-              $divide: [
-                { $subtract: ['$completedAt', '$startedAt'] },
-                1000 * 60 * 60 * 24,
-              ],
+              $cond: [
+                {
+                  $and: [
+                    { $ifNull: [{ $ifNull: ['$completedAt', '$updatedAt'] }, false] },
+                    { $ifNull: [{ $ifNull: ['$startedAt', '$identifiedDate'] }, false] }
+                  ]
+                },
+                {
+                  $divide: [
+                    {
+                      $subtract: [
+                        { $ifNull: ['$completedAt', '$updatedAt'] },
+                        { $ifNull: ['$startedAt', '$identifiedDate'] }
+                      ]
+                    },
+                    1000 * 60 * 60 * 24,
+                  ]
+                },
+                0
+              ]
             },
           },
         },
@@ -4307,11 +4433,11 @@ ClinicalInterventionService.generateOutcomeReport = async (
       { $sort: { '_id.year': 1, '_id.month': 1 } },
     ]);
 
-    // Get detailed outcomes
+    // Get detailed outcomes - sort by available date fields
     const detailedOutcomes = await ClinicalIntervention.find(baseQuery)
       .populate('patientId', 'firstName lastName')
       .populate('identifiedBy', 'firstName lastName')
-      .sort({ completedAt: -1 })
+      .sort({ completedAt: -1, identifiedDate: -1, updatedAt: -1 })
       .limit(100)
       .lean();
 
@@ -4326,16 +4452,15 @@ ClinicalInterventionService.generateOutcomeReport = async (
       priority: intervention.priority,
       outcome: intervention.outcomes?.patientResponse || 'unknown',
       costSavings: intervention.outcomes?.successMetrics?.costSavings || 0,
-      resolutionTime:
-        intervention.completedAt && intervention.startedAt
-          ? Math.ceil(
-            (intervention.completedAt.getTime() -
-              intervention.startedAt.getTime()) /
-            (1000 * 60 * 60 * 24)
-          )
-          : 0,
+      resolutionTime: (() => {
+        const endDate = intervention.completedAt || intervention.updatedAt;
+        const startDate = intervention.startedAt || intervention.identifiedDate;
+        return endDate && startDate
+          ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
+      })(),
       patientResponse: intervention.outcomes?.patientResponse || 'unknown',
-      completedDate: intervention.completedAt?.toISOString() || '',
+      completedDate: (intervention.completedAt || intervention.updatedAt)?.toISOString() || '',
     }));
 
     // Calculate comparative analysis (current vs previous period)
@@ -4351,7 +4476,10 @@ ClinicalInterventionService.generateOutcomeReport = async (
 
     const previousPeriodQuery = {
       ...baseQuery,
-      completedAt: { $gte: previousPeriodStart, $lte: previousPeriodEnd },
+      $or: [
+        { completedAt: { $gte: previousPeriodStart, $lte: previousPeriodEnd } },
+        { identifiedDate: { $gte: previousPeriodStart, $lte: previousPeriodEnd } }
+      ]
     };
 
     const previousPeriodTotal = await ClinicalIntervention.countDocuments(
@@ -4359,7 +4487,11 @@ ClinicalInterventionService.generateOutcomeReport = async (
     );
     const previousPeriodSuccessful = await ClinicalIntervention.countDocuments({
       ...previousPeriodQuery,
-      'outcomes.patientResponse': 'improved',
+      $or: [
+        { 'outcomes.patientResponse': 'improved' },
+        { status: 'completed' },
+        { status: 'resolved' }
+      ]
     });
 
     const previousPeriodSuccessRate =
@@ -4369,15 +4501,12 @@ ClinicalInterventionService.generateOutcomeReport = async (
 
     const previousPeriodCostSavings = await ClinicalIntervention.aggregate([
       {
-        $match: {
-          ...previousPeriodQuery,
-          'outcomes.successMetrics.costSavings': { $exists: true },
-        },
+        $match: previousPeriodQuery,
       },
       {
         $group: {
           _id: null,
-          total: { $sum: '$outcomes.successMetrics.costSavings' },
+          total: { $sum: { $ifNull: ['$outcomes.successMetrics.costSavings', 0] } },
         },
       },
     ]);
@@ -4542,17 +4671,22 @@ ClinicalInterventionService.calculateCostSavings = async (
 // Standalone function to avoid circular reference issues
 async function getDashboardMetrics(
   workplaceId: mongoose.Types.ObjectId,
-  dateRange: { from: Date; to: Date }
+  dateRange: { from: Date; to: Date },
+  isSuperAdmin: boolean = false
 ): Promise<any> {
   try {
     const { from, to } = dateRange;
 
     // Base query for the date range
-    const baseQuery = {
-      workplaceId,
+    const baseQuery: any = {
       isDeleted: { $ne: true },
       identifiedDate: { $gte: from, $lte: to },
     };
+
+    // Add workplaceId filter only if not super_admin
+    if (!isSuperAdmin) {
+      baseQuery.workplaceId = workplaceId;
+    }
 
     // Get basic counts
     const [
@@ -4636,12 +4770,13 @@ async function getDashboardMetrics(
         ? Math.round(averageResolutionResult[0].averageResolutionTime * 10) / 10
         : 0;
 
-    // Get recent interventions - simplified without populate for now
+    // Get recent interventions with patient data
     const recentInterventions = await ClinicalIntervention.find(baseQuery)
       .sort({ identifiedDate: -1 })
       .limit(5)
+      .populate('patientId', 'firstName lastName mrn')
       .select(
-        'interventionNumber category priority status identifiedDate assignments'
+        'interventionNumber category priority status identifiedDate assignments patientId'
       )
       .lean();
 
@@ -4690,7 +4825,9 @@ async function getDashboardMetrics(
         category: formatCategoryName(intervention.category),
         priority: formatPriorityName(intervention.priority),
         status: intervention.status,
-        patientName: 'Patient', // Simplified for now - would need proper population
+        patientName: intervention.patientId 
+          ? `${intervention.patientId.firstName} ${intervention.patientId.lastName}`
+          : 'Unknown Patient',
         identifiedDate: intervention.identifiedDate,
         assignedTo:
           intervention.assignments && intervention.assignments.length > 0

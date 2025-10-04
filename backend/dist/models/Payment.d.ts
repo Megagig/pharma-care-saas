@@ -35,6 +35,9 @@ export interface IPayment extends Document {
         refundAmount?: number;
         reason?: string;
     };
+    refundedAt?: Date;
+    refundAmount?: number;
+    refundReason?: string;
     createdAt: Date;
     updatedAt: Date;
 }

@@ -350,9 +350,14 @@ export class OptimizedQueryBuilder {
 
         // Match stage - use compound index
         const matchStage: any = {
-            workplaceId: new mongoose.Types.ObjectId(workplaceId),
             isDeleted: { $ne: true }
         };
+
+        // Add workplaceId filter only if not super_admin
+        // Super_admin can see interventions from all workplaces
+        if (workplaceId && !filters.isSuperAdmin) {
+            matchStage.workplaceId = new mongoose.Types.ObjectId(workplaceId);
+        }
 
         if (patientId) matchStage.patientId = new mongoose.Types.ObjectId(patientId);
         if (category) matchStage.category = category;

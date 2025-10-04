@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { config } from 'dotenv';
-import FeatureFlag from '../models/FeatureFlag';
+import { FeatureFlag } from '../models/FeatureFlag';
 import SubscriptionPlan from '../models/SubscriptionPlan';
 import User from '../models/User';
 import bcrypt from 'bcryptjs';

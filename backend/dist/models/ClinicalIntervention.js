@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ClinicalIntervention = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const tenancyGuard_1 = require("../utils/tenancyGuard");
 const clinicalInterventionSchema = new mongoose_1.Schema({
@@ -423,10 +424,10 @@ clinicalInterventionSchema.pre('save', function () {
 clinicalInterventionSchema.statics.generateNextInterventionNumber = async function (workplaceId) {
     const year = new Date().getFullYear();
     const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+    const prefix = `CI-${year}${month}`;
     const lastIntervention = await this.findOne({
-        workplaceId,
-        interventionNumber: { $regex: `^CI-${year}${month}` }
-    }, {}, { sort: { createdAt: -1 }, bypassTenancyGuard: true });
+        interventionNumber: { $regex: `^${prefix}` }
+    }, {}, { sort: { interventionNumber: -1 }, bypassTenancyGuard: true });
     let sequence = 1;
     if (lastIntervention?.interventionNumber) {
         const match = lastIntervention.interventionNumber.match(/-(\d+)$/);
@@ -434,7 +435,12 @@ clinicalInterventionSchema.statics.generateNextInterventionNumber = async functi
             sequence = parseInt(match[1]) + 1;
         }
     }
-    return `CI-${year}${month}-${sequence.toString().padStart(4, '0')}`;
+    const interventionNumber = `${prefix}-${sequence.toString().padStart(4, '0')}`;
+    const existing = await this.findOne({ interventionNumber }, {}, { bypassTenancyGuard: true });
+    if (existing) {
+        return `${prefix}-${(sequence + 1).toString().padStart(4, '0')}`;
+    }
+    return interventionNumber;
 };
 clinicalInterventionSchema.statics.findActive = function (workplaceId) {
     const query = { status: { $in: ['identified', 'planning', 'in_progress', 'implemented'] } };
@@ -476,5 +482,7 @@ clinicalInterventionSchema.statics.findAssignedToUser = function (userId, workpl
         : this.find(query);
     return baseQuery.sort({ priority: 1, identifiedDate: 1 });
 };
-exports.default = mongoose_1.default.model('ClinicalIntervention', clinicalInterventionSchema);
+const ClinicalIntervention = mongoose_1.default.model('ClinicalIntervention', clinicalInterventionSchema);
+exports.ClinicalIntervention = ClinicalIntervention;
+exports.default = ClinicalIntervention;
 //# sourceMappingURL=ClinicalIntervention.js.map

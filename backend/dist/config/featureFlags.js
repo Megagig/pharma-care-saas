@@ -1,250 +1,162 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireFeatureFlag = exports.injectFeatureFlags = exports.FeatureFlagService = exports.MANUAL_LAB_FEATURE_FLAGS = void 0;
-exports.MANUAL_LAB_FEATURE_FLAGS = {
-    MANUAL_LAB_ORDERS: {
-        key: 'manual_lab_orders',
-        name: 'Manual Lab Orders',
-        description: 'Enable manual lab order creation and management',
-        enabled: true,
-        rolloutPercentage: 100,
-        environments: ['development', 'staging', 'production'],
-        metadata: {
-            version: '1.0.0',
-            owner: 'lab-team',
-            supportContact: 'lab-support@pharmacare.com'
-        }
-    },
-    MANUAL_LAB_PDF_GENERATION: {
-        key: 'manual_lab_pdf_generation',
-        name: 'Manual Lab PDF Generation',
-        description: 'Enable PDF requisition generation for manual lab orders',
-        enabled: true,
-        rolloutPercentage: 100,
-        environments: ['development', 'staging', 'production'],
-        dependencies: ['manual_lab_orders'],
-        metadata: {
-            pdfEngine: 'puppeteer',
-            maxFileSize: '5MB'
-        }
-    },
-    MANUAL_LAB_QR_SCANNING: {
-        key: 'manual_lab_qr_scanning',
-        name: 'Manual Lab QR Scanning',
-        description: 'Enable QR/barcode scanning for lab order access',
-        enabled: true,
-        rolloutPercentage: 90,
-        environments: ['development', 'staging', 'production'],
-        dependencies: ['manual_lab_orders'],
-        metadata: {
-            scanningLibrary: 'zxing-js',
-            tokenExpiration: '30d'
-        }
-    },
-    MANUAL_LAB_AI_INTERPRETATION: {
-        key: 'manual_lab_ai_interpretation',
-        name: 'Manual Lab AI Interpretation',
-        description: 'Enable AI-powered interpretation of lab results',
-        enabled: true,
-        rolloutPercentage: 75,
-        environments: ['development', 'staging', 'production'],
-        dependencies: ['manual_lab_orders'],
-        metadata: {
-            aiProvider: 'openrouter',
-            model: 'deepseek-v3.1',
-            maxRetries: 3
-        }
-    },
-    MANUAL_LAB_FHIR_INTEGRATION: {
-        key: 'manual_lab_fhir_integration',
-        name: 'Manual Lab FHIR Integration',
-        description: 'Enable FHIR ServiceRequest and Observation creation',
-        enabled: false,
-        rolloutPercentage: 25,
-        environments: ['development', 'staging'],
-        dependencies: ['manual_lab_orders'],
-        metadata: {
-            fhirVersion: 'R4',
-            syncMode: 'async',
-            retryPolicy: 'exponential_backoff'
-        }
-    },
-    MANUAL_LAB_MOBILE_FEATURES: {
-        key: 'manual_lab_mobile_features',
-        name: 'Manual Lab Mobile Features',
-        description: 'Enable mobile-optimized interfaces and touch interactions',
-        enabled: true,
-        rolloutPercentage: 100,
-        environments: ['development', 'staging', 'production'],
-        dependencies: ['manual_lab_orders'],
-        metadata: {
-            touchTargetSize: '44px',
-            swipeGestures: true,
-            voiceInput: true
-        }
-    },
-    MANUAL_LAB_ENHANCED_SECURITY: {
-        key: 'manual_lab_enhanced_security',
-        name: 'Manual Lab Enhanced Security',
-        description: 'Enable advanced security monitoring and threat detection',
-        enabled: true,
-        rolloutPercentage: 100,
-        environments: ['staging', 'production'],
-        dependencies: ['manual_lab_orders'],
-        metadata: {
-            threatDetection: true,
-            anomalyDetection: true,
-            complianceMonitoring: true
-        }
-    },
-    MANUAL_LAB_PERFORMANCE_OPTIMIZATIONS: {
-        key: 'manual_lab_performance_optimizations',
-        name: 'Manual Lab Performance Optimizations',
-        description: 'Enable caching, lazy loading, and performance enhancements',
-        enabled: true,
-        rolloutPercentage: 100,
-        environments: ['development', 'staging', 'production'],
-        dependencies: ['manual_lab_orders'],
-        metadata: {
-            caching: true,
-            lazyLoading: true,
-            virtualScrolling: true,
-            imageOptimization: true
-        }
-    },
-    MANUAL_LAB_NOTIFICATIONS: {
-        key: 'manual_lab_notifications',
-        name: 'Manual Lab Notifications',
-        description: 'Enable SMS/email notifications for lab results',
-        enabled: false,
-        rolloutPercentage: 50,
-        environments: ['development', 'staging'],
-        dependencies: ['manual_lab_orders'],
-        metadata: {
-            smsProvider: 'twilio',
-            emailProvider: 'sendgrid',
-            criticalAlerts: true
-        }
-    },
-    MANUAL_LAB_ANALYTICS: {
-        key: 'manual_lab_analytics',
-        name: 'Manual Lab Analytics',
-        description: 'Enable usage analytics and performance reporting',
-        enabled: true,
-        rolloutPercentage: 100,
-        environments: ['staging', 'production'],
-        dependencies: ['manual_lab_orders'],
-        metadata: {
-            analyticsProvider: 'internal',
-            realTimeMetrics: true,
-            complianceReporting: true
-        }
+exports.requireFeatureFlag = exports.injectFeatureFlags = exports.FeatureFlagService = exports.FEATURE_FLAG_CATEGORIES = exports.FEATURE_FLAG_DESCRIPTIONS = exports.getDefaultFeatureFlags = exports.getFeatureFlagStatus = exports.validateFeatureFlags = exports.getPerformanceFeatureFlags = void 0;
+const getPerformanceFeatureFlags = () => {
+    return {
+        themeOptimization: process.env.FEATURE_THEME_OPTIMIZATION === 'true',
+        bundleOptimization: process.env.FEATURE_BUNDLE_OPTIMIZATION === 'true',
+        apiCaching: process.env.FEATURE_API_CACHING === 'true',
+        databaseOptimization: process.env.FEATURE_DATABASE_OPTIMIZATION === 'true',
+        performanceMonitoring: process.env.FEATURE_PERFORMANCE_MONITORING === 'true',
+        cursorPagination: process.env.FEATURE_CURSOR_PAGINATION === 'true',
+        backgroundJobs: process.env.FEATURE_BACKGROUND_JOBS === 'true',
+        serviceWorker: process.env.FEATURE_SERVICE_WORKER === 'true',
+        virtualization: process.env.FEATURE_VIRTUALIZATION === 'true',
+        reactQueryOptimization: process.env.FEATURE_REACT_QUERY_OPTIMIZATION === 'true',
+        rolloutPercentage: parseInt(process.env.FEATURE_ROLLOUT_PERCENTAGE || '0', 10),
+        internalTesting: process.env.FEATURE_INTERNAL_TESTING === 'true',
+        betaUsers: process.env.FEATURE_BETA_USERS === 'true',
+    };
+};
+exports.getPerformanceFeatureFlags = getPerformanceFeatureFlags;
+const validateFeatureFlags = (flags) => {
+    const errors = [];
+    if (flags.rolloutPercentage < 0 || flags.rolloutPercentage > 100) {
+        errors.push('Rollout percentage must be between 0 and 100');
+    }
+    if (flags.apiCaching && !flags.performanceMonitoring) {
+        errors.push('API caching requires performance monitoring to be enabled');
+    }
+    if (flags.backgroundJobs && !flags.apiCaching) {
+        errors.push('Background jobs require API caching to be enabled');
+    }
+    if (flags.cursorPagination && !flags.databaseOptimization) {
+        errors.push('Cursor pagination requires database optimization to be enabled');
+    }
+    return errors;
+};
+exports.validateFeatureFlags = validateFeatureFlags;
+const getFeatureFlagStatus = () => {
+    const flags = (0, exports.getPerformanceFeatureFlags)();
+    const errors = (0, exports.validateFeatureFlags)(flags);
+    return {
+        flags,
+        valid: errors.length === 0,
+        errors,
+        lastUpdated: new Date().toISOString(),
+    };
+};
+exports.getFeatureFlagStatus = getFeatureFlagStatus;
+const getDefaultFeatureFlags = (environment) => {
+    switch (environment) {
+        case 'development':
+            return {
+                themeOptimization: true,
+                bundleOptimization: true,
+                apiCaching: true,
+                databaseOptimization: true,
+                performanceMonitoring: true,
+                cursorPagination: true,
+                backgroundJobs: false,
+                serviceWorker: false,
+                virtualization: true,
+                reactQueryOptimization: true,
+                rolloutPercentage: 100,
+                internalTesting: true,
+                betaUsers: false,
+            };
+        case 'staging':
+            return {
+                themeOptimization: true,
+                bundleOptimization: true,
+                apiCaching: true,
+                databaseOptimization: true,
+                performanceMonitoring: true,
+                cursorPagination: true,
+                backgroundJobs: true,
+                serviceWorker: true,
+                virtualization: true,
+                reactQueryOptimization: true,
+                rolloutPercentage: 100,
+                internalTesting: false,
+                betaUsers: true,
+            };
+        case 'production':
+            return {
+                themeOptimization: false,
+                bundleOptimization: false,
+                apiCaching: false,
+                databaseOptimization: false,
+                performanceMonitoring: true,
+                cursorPagination: false,
+                backgroundJobs: false,
+                serviceWorker: false,
+                virtualization: false,
+                reactQueryOptimization: false,
+                rolloutPercentage: 0,
+                internalTesting: false,
+                betaUsers: false,
+            };
+        default:
+            return {
+                performanceMonitoring: true,
+                rolloutPercentage: 0,
+            };
     }
 };
-class FeatureFlagService {
-    constructor() {
-        this.flags = new Map();
-        Object.values(exports.MANUAL_LAB_FEATURE_FLAGS).forEach(flag => {
-            this.flags.set(flag.key, flag);
-        });
-    }
-    static getInstance() {
-        if (!FeatureFlagService.instance) {
-            FeatureFlagService.instance = new FeatureFlagService();
-        }
-        return FeatureFlagService.instance;
-    }
-    isEnabled(flagKey, context) {
-        const flag = this.flags.get(flagKey);
-        if (!flag) {
-            console.warn(`Feature flag '${flagKey}' not found`);
-            return false;
-        }
-        if (!flag.enabled) {
-            return false;
-        }
-        const currentEnv = context?.environment || process.env.NODE_ENV || 'development';
-        if (!flag.environments.includes(currentEnv)) {
-            return false;
-        }
-        if (flag.dependencies) {
-            for (const dependency of flag.dependencies) {
-                if (!this.isEnabled(dependency, context)) {
-                    return false;
-                }
-            }
-        }
-        if (flag.rolloutPercentage < 100) {
-            const hash = this.hashContext(flagKey, context);
-            const bucket = hash % 100;
-            return bucket < flag.rolloutPercentage;
-        }
-        return true;
-    }
-    getEnabledFeatures(context) {
-        const enabledFeatures = [];
-        for (const [key, flag] of this.flags) {
-            if (this.isEnabled(key, context)) {
-                enabledFeatures.push(key);
-            }
-        }
-        return enabledFeatures;
-    }
-    updateFlag(flagKey, updates) {
-        const existingFlag = this.flags.get(flagKey);
-        if (!existingFlag) {
-            throw new Error(`Feature flag '${flagKey}' not found`);
-        }
-        const updatedFlag = { ...existingFlag, ...updates };
-        this.flags.set(flagKey, updatedFlag);
-    }
-    getFlag(flagKey) {
-        return this.flags.get(flagKey);
-    }
-    hashContext(flagKey, context) {
-        const contextString = JSON.stringify({
-            flag: flagKey,
-            userId: context?.userId,
-            workplaceId: context?.workplaceId
-        });
-        let hash = 0;
-        for (let i = 0; i < contextString.length; i++) {
-            const char = contextString.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return Math.abs(hash);
-    }
-}
-exports.FeatureFlagService = FeatureFlagService;
+exports.getDefaultFeatureFlags = getDefaultFeatureFlags;
+exports.FEATURE_FLAG_DESCRIPTIONS = {
+    themeOptimization: 'Enables zero-flicker theme switching with inline scripts and CSS variables',
+    bundleOptimization: 'Enables code splitting, lazy loading, and bundle size optimizations',
+    apiCaching: 'Enables Redis-based API response caching for improved performance',
+    databaseOptimization: 'Enables optimized database indexes and query improvements',
+    performanceMonitoring: 'Enables Web Vitals collection and performance monitoring',
+    cursorPagination: 'Enables cursor-based pagination for better performance with large datasets',
+    backgroundJobs: 'Enables BullMQ background job processing for heavy operations',
+    serviceWorker: 'Enables service worker for offline functionality and caching',
+    virtualization: 'Enables virtualized lists and tables for better performance with large datasets',
+    reactQueryOptimization: 'Enables optimized React Query configuration and caching strategies',
+};
+exports.FEATURE_FLAG_CATEGORIES = {
+    core: ['themeOptimization', 'bundleOptimization', 'performanceMonitoring'],
+    backend: ['apiCaching', 'databaseOptimization', 'cursorPagination', 'backgroundJobs'],
+    frontend: ['virtualization', 'reactQueryOptimization', 'serviceWorker'],
+};
+const FeatureFlagService_1 = __importDefault(require("../services/FeatureFlagService"));
+exports.FeatureFlagService = FeatureFlagService_1.default;
 const injectFeatureFlags = (req, res, next) => {
-    const featureFlagService = FeatureFlagService.getInstance();
-    const context = {
-        userId: req.user?._id?.toString(),
-        workplaceId: req.user?.workplaceId?.toString(),
-        environment: process.env.NODE_ENV,
-        userAgent: req.get('User-Agent')
-    };
-    req.featureFlags = {
-        isEnabled: (flagKey) => featureFlagService.isEnabled(flagKey, context),
-        getEnabledFeatures: () => featureFlagService.getEnabledFeatures(context),
-        getFlag: (flagKey) => featureFlagService.getFlag(flagKey)
-    };
-    next();
+    try {
+        const flags = (0, exports.getPerformanceFeatureFlags)();
+        req.featureFlags = flags;
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
 };
 exports.injectFeatureFlags = injectFeatureFlags;
-const requireFeatureFlag = (flagKey) => {
+const requireFeatureFlag = (featureName) => {
     return (req, res, next) => {
-        if (!req.featureFlags?.isEnabled(flagKey)) {
-            return res.status(404).json({
-                success: false,
-                message: 'Feature not available',
-                code: 'FEATURE_DISABLED'
-            });
+        try {
+            const flags = req.featureFlags || (0, exports.getPerformanceFeatureFlags)();
+            if (flags[featureName]) {
+                next();
+            }
+            else {
+                res.status(403).json({
+                    success: false,
+                    message: `Feature '${featureName}' is not enabled`,
+                    code: 'FEATURE_NOT_ENABLED'
+                });
+            }
         }
-        next();
+        catch (error) {
+            next(error);
+        }
     };
 };
 exports.requireFeatureFlag = requireFeatureFlag;
-exports.default = FeatureFlagService;
 //# sourceMappingURL=featureFlags.js.map

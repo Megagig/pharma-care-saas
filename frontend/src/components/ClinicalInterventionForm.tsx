@@ -138,6 +138,8 @@ const ClinicalInterventionForm: React.FC = () => {
       relatedDTPIds: [],
     },
     validationSchema,
+    validateOnChange: true,
+    validateOnBlur: true,
     onSubmit: async (values) => {
       try {
         const formData = {
@@ -240,7 +242,8 @@ const ClinicalInterventionForm: React.FC = () => {
           <Button
             variant="contained"
             startIcon={<SaveIcon />}
-            onClick={() => formik.handleSubmit()}
+            type="submit"
+            form="intervention-form"
             disabled={
               formik.isSubmitting ||
               createMutation.isPending ||
@@ -258,7 +261,7 @@ const ClinicalInterventionForm: React.FC = () => {
         </Box>
       </Box>
 
-      <form onSubmit={formik.handleSubmit}>
+      <form id="intervention-form" onSubmit={formik.handleSubmit}>
         <Box display="flex" flexDirection="column" gap={3}>
           {/* Basic Information */}
           <Box>

@@ -164,9 +164,16 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       .select('+passwordHash')
       .populate('currentPlanId');
     if (!user || !(await user.comparePassword(password))) {
-      // Log failed login attempt
-      await auditOperations.login(req, user || { email }, false);
       res.status(401).json({ message: 'Invalid credentials' });
+      
+      // Log failed login attempt after response is sent (non-blocking)
+      setImmediate(async () => {
+        try {
+          await auditOperations.login(req, user || { email }, false);
+        } catch (auditError) {
+          console.error('Audit logging error:', auditError);
+        }
+      });
       return;
     }
 
@@ -227,9 +234,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       path: '/', // Ensure cookie is available on all paths
     });
 
-    // Log successful login
-    await auditOperations.login(req, user, true);
-
+    // Send response first
     res.json({
       success: true,
       user: {
@@ -244,8 +249,19 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         workplaceId: user.workplaceId,
       },
     });
+
+    // Log successful login after response is sent (non-blocking)
+    setImmediate(async () => {
+      try {
+        await auditOperations.login(req, user, true);
+      } catch (auditError) {
+        console.error('Audit logging error:', auditError);
+      }
+    });
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    if (!res.headersSent) {
+      res.status(400).json({ message: error.message });
+    }
   }
 };
 

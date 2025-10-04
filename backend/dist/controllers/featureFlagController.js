@@ -4,17 +4,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getFeatureFlagsByTier = exports.getFeatureFlagsByCategory = exports.toggleFeatureFlagStatus = exports.deleteFeatureFlag = exports.updateFeatureFlag = exports.createFeatureFlag = exports.getFeatureFlagById = exports.getAllFeatureFlags = void 0;
-const FeatureFlag_1 = __importDefault(require("../models/FeatureFlag"));
+const FeatureFlag_1 = require("../models/FeatureFlag");
 const express_validator_1 = require("express-validator");
 const mongoose_1 = __importDefault(require("mongoose"));
+const auth_1 = require("../types/auth");
 const getAllFeatureFlags = async (req, res) => {
     try {
         const user = req.user;
         let query = { isActive: true };
-        if (user && user.role === 'super_admin') {
+        if (user && (0, auth_1.isExtendedUser)(user) && user.role === 'super_admin') {
             query = {};
         }
-        const featureFlags = await FeatureFlag_1.default.find(query).sort({
+        const featureFlags = await FeatureFlag_1.FeatureFlag.find(query).sort({
             'metadata.category': 1,
             name: 1,
         });
@@ -53,10 +54,10 @@ const getFeatureFlagById = async (req, res) => {
         const query = {
             _id: new mongoose_1.default.Types.ObjectId(id),
         };
-        if (!user || user.role !== 'super_admin') {
+        if (!user || !(0, auth_1.isExtendedUser)(user) || user.role !== 'super_admin') {
             query.isActive = true;
         }
-        const featureFlag = await FeatureFlag_1.default.findOne(query);
+        const featureFlag = await FeatureFlag_1.FeatureFlag.findOne(query);
         if (!featureFlag) {
             return res.status(404).json({
                 success: false,
@@ -92,14 +93,14 @@ const createFeatureFlag = async (req, res) => {
             priority: 'medium',
             tags: [],
         }, } = req.body;
-        const existingFlag = await FeatureFlag_1.default.findOne({ key: key.toLowerCase() });
+        const existingFlag = await FeatureFlag_1.FeatureFlag.findOne({ key: key.toLowerCase() });
         if (existingFlag) {
             return res.status(400).json({
                 success: false,
                 message: `Feature flag with key '${key}' already exists`,
             });
         }
-        const featureFlag = new FeatureFlag_1.default({
+        const featureFlag = new FeatureFlag_1.FeatureFlag({
             name,
             key: key.toLowerCase(),
             description,
@@ -152,7 +153,7 @@ const updateFeatureFlag = async (req, res) => {
         if (req.body.key) {
             delete req.body.key;
         }
-        const featureFlag = await FeatureFlag_1.default.findById(id);
+        const featureFlag = await FeatureFlag_1.FeatureFlag.findById(id);
         if (!featureFlag) {
             return res.status(404).json({
                 success: false,
@@ -205,7 +206,7 @@ const deleteFeatureFlag = async (req, res) => {
                 message: 'Invalid feature flag ID',
             });
         }
-        const featureFlag = await FeatureFlag_1.default.findByIdAndDelete(id);
+        const featureFlag = await FeatureFlag_1.FeatureFlag.findByIdAndDelete(id);
         if (!featureFlag) {
             return res.status(404).json({
                 success: false,
@@ -243,7 +244,7 @@ const toggleFeatureFlagStatus = async (req, res) => {
                 message: 'Invalid feature flag ID',
             });
         }
-        const featureFlag = await FeatureFlag_1.default.findById(id);
+        const featureFlag = await FeatureFlag_1.FeatureFlag.findById(id);
         if (!featureFlag) {
             return res.status(404).json({
                 success: false,
@@ -271,7 +272,7 @@ exports.toggleFeatureFlagStatus = toggleFeatureFlagStatus;
 const getFeatureFlagsByCategory = async (req, res) => {
     try {
         const { category } = req.params;
-        const featureFlags = await FeatureFlag_1.default.find({
+        const featureFlags = await FeatureFlag_1.FeatureFlag.find({
             'metadata.category': category,
         }).sort({ name: 1 });
         return res.status(200).json({
@@ -293,7 +294,7 @@ exports.getFeatureFlagsByCategory = getFeatureFlagsByCategory;
 const getFeatureFlagsByTier = async (req, res) => {
     try {
         const { tier } = req.params;
-        const featureFlags = await FeatureFlag_1.default.find({
+        const featureFlags = await FeatureFlag_1.FeatureFlag.find({
             allowedTiers: tier,
         }).sort({ 'metadata.category': 1, name: 1 });
         return res.status(200).json({

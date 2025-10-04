@@ -233,9 +233,11 @@ class OptimizedQueryBuilder {
         const { workplaceId, patientId, category, priority, status, identifiedBy, assignedTo, dateFrom, dateTo, search } = filters;
         const pipeline = [];
         const matchStage = {
-            workplaceId: new mongoose_1.default.Types.ObjectId(workplaceId),
             isDeleted: { $ne: true }
         };
+        if (workplaceId && !filters.isSuperAdmin) {
+            matchStage.workplaceId = new mongoose_1.default.Types.ObjectId(workplaceId);
+        }
         if (patientId)
             matchStage.patientId = new mongoose_1.default.Types.ObjectId(patientId);
         if (category)

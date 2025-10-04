@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Permission = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const permissionSchema = new mongoose_1.Schema({
     action: {
@@ -228,5 +229,7 @@ permissionSchema.statics.getSystemPermissions = function () {
 permissionSchema.statics.getByRiskLevel = function (riskLevel) {
     return this.find({ riskLevel, isActive: true }).sort({ action: 1 });
 };
-exports.default = mongoose_1.default.model('Permission', permissionSchema);
+const Permission = mongoose_1.default.model('Permission', permissionSchema);
+exports.Permission = Permission;
+exports.default = Permission;
 //# sourceMappingURL=Permission.js.map

@@ -33,7 +33,9 @@ export interface ISubscription extends Document {
   isTrial?: boolean; // Computed property
 
   // Billing information
+  amount?: number; // Subscription amount
   priceAtPurchase: number;
+  billingCycle?: 'monthly' | 'yearly'; // Billing cycle
   billingInterval: 'monthly' | 'yearly';
   nextBillingDate?: Date;
   paymentHistory: mongoose.Types.ObjectId[];
@@ -318,7 +320,10 @@ subscriptionSchema.virtual('isTrial').get(function () {
 subscriptionSchema.set('toJSON', { virtuals: true });
 subscriptionSchema.set('toObject', { virtuals: true });
 
-export default mongoose.model<ISubscription>(
+const Subscription = mongoose.model<ISubscription>(
   'Subscription',
   subscriptionSchema
 );
+
+export { Subscription };
+export default Subscription;

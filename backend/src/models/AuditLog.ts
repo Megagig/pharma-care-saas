@@ -98,12 +98,30 @@ const auditLogSchema = new Schema<IAuditLog>({
             'PRIVILEGE_ESCALATION_ATTEMPT',
             'UNAUTHORIZED_ACCESS_ATTEMPT',
             'ROLE_INHERITANCE_MODIFIED',
+            // Diagnostic Actions
+            'AI_DIAGNOSTIC_REQUEST',
+            'AI_DIAGNOSTIC_ANALYSIS',
+            'VIEW_DIAGNOSTIC_CASE',
+            'VIEW_DIAGNOSTIC_ANALYTICS',
+            'VIEW_DIAGNOSTIC_REFERRALS',
+            'VIEW_ALL_DIAGNOSTIC_CASES',
+            'VIEW_PATIENT_DIAGNOSTIC_HISTORY',
+            'ADD_DIAGNOSTIC_HISTORY_NOTE',
+            'GENERATE_REFERRAL_DOCUMENT',
+            'COMPARE_DIAGNOSTIC_HISTORIES',
+            'EXPORT_DIAGNOSTIC_HISTORY_PDF',
             'PERMISSION_CACHE_INVALIDATED',
             'SECURITY_POLICY_VIOLATION',
             'ADMIN_ROLE_ASSIGNMENT',
             'SUPER_ADMIN_ACCESS',
             'RBAC_MIGRATION_EXECUTED',
-            'RBAC_ROLLBACK_EXECUTED'
+            'RBAC_ROLLBACK_EXECUTED',
+            // Diagnostic Actions
+            'VIEW_DIAGNOSTIC_HISTORY',
+            'DIAGNOSTIC_ANALYSIS_REQUESTED',
+            'DIAGNOSTIC_CASE_CREATED',
+            'DIAGNOSTIC_CASE_UPDATED',
+            'DIAGNOSTIC_CASE_DELETED'
         ]
     },
     timestamp: {

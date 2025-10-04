@@ -97,6 +97,43 @@ export interface IDiagnosticCase extends Document {
     counselingPoints: string[];
     followUpRequired: boolean;
     followUpDate?: Date;
+    notes?: string;
+    reviewedAt?: Date;
+    reviewedBy?: mongoose.Types.ObjectId;
+  };
+
+  // Follow-up Management
+  followUp?: {
+    scheduledDate: Date;
+    reason: string;
+    completed: boolean;
+    completedDate?: Date;
+    outcome?: string;
+    nextSteps?: string;
+  };
+
+  // Referral Management
+  referral?: {
+    generated: boolean;
+    generatedAt?: Date;
+    document?: {
+      content: string;
+      template: string;
+      lastModified: Date;
+      modifiedBy: mongoose.Types.ObjectId;
+    };
+    status: 'pending' | 'sent' | 'acknowledged' | 'completed';
+    sentAt?: Date;
+    sentTo?: {
+      physicianName: string;
+      physicianEmail?: string;
+      specialty: string;
+      institution?: string;
+    };
+    acknowledgedAt?: Date;
+    completedAt?: Date;
+    feedback?: string;
+    trackingId?: string;
   };
   
   // Patient Consent
@@ -116,7 +153,7 @@ export interface IDiagnosticCase extends Document {
     processingTime: number;
   };
   
-  status: 'draft' | 'completed' | 'referred' | 'cancelled';
+  status: 'draft' | 'pending_review' | 'follow_up' | 'completed' | 'referred' | 'cancelled';
   completedAt?: Date;
   
   createdAt: Date;
@@ -234,9 +271,22 @@ const diagnosticCaseSchema = new Schema(
         urgency: {
           type: String,
           enum: ['immediate', 'within_24h', 'routine'],
+          required: function(this: any) {
+            return this.recommended === true;
+          },
         },
-        specialty: String,
-        reason: String,
+        specialty: {
+          type: String,
+          required: function(this: any) {
+            return this.recommended === true;
+          },
+        },
+        reason: {
+          type: String,
+          required: function(this: any) {
+            return this.recommended === true;
+          },
+        },
       },
       disclaimer: String,
       confidenceScore: Number,
@@ -268,6 +318,12 @@ const diagnosticCaseSchema = new Schema(
         default: false,
       },
       followUpDate: Date,
+      notes: String,
+      reviewedAt: Date,
+      reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
     },
     patientConsent: {
       provided: {
@@ -294,11 +350,64 @@ const diagnosticCaseSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ['draft', 'completed', 'referred', 'cancelled'],
+      enum: ['draft', 'pending_review', 'follow_up', 'completed', 'referred', 'cancelled'],
       default: 'draft',
       index: true,
     },
     completedAt: Date,
+    followUp: {
+      scheduledDate: {
+        type: Date,
+        required: function(this: any) {
+          return this.parent().status === 'follow_up';
+        },
+      },
+      reason: {
+        type: String,
+        required: function(this: any) {
+          return this.parent().status === 'follow_up';
+        },
+      },
+      completed: {
+        type: Boolean,
+        default: false,
+      },
+      completedDate: Date,
+      outcome: String,
+      nextSteps: String,
+    },
+    referral: {
+      generated: {
+        type: Boolean,
+        default: false,
+      },
+      generatedAt: Date,
+      document: {
+        content: String,
+        template: String,
+        lastModified: Date,
+        modifiedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+      },
+      status: {
+        type: String,
+        enum: ['pending', 'sent', 'acknowledged', 'completed'],
+        default: 'pending',
+      },
+      sentAt: Date,
+      sentTo: {
+        physicianName: String,
+        physicianEmail: String,
+        specialty: String,
+        institution: String,
+      },
+      acknowledgedAt: Date,
+      completedAt: Date,
+      feedback: String,
+      trackingId: String,
+    },
   },
   { 
     timestamps: true,

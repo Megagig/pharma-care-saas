@@ -1,7 +1,7 @@
 import promClient from 'prom-client';
 declare const register: promClient.Registry<"text/plain; version=0.0.4; charset=utf-8">;
-export declare const httpRequestDuration: promClient.Histogram<"route" | "method" | "status_code">;
-export declare const httpRequestsTotal: promClient.Counter<"route" | "method" | "status_code">;
+export declare const httpRequestDuration: promClient.Histogram<"method" | "route" | "status_code">;
+export declare const httpRequestsTotal: promClient.Counter<"method" | "route" | "status_code">;
 export declare const subscriptionsTotal: promClient.Gauge<"status" | "tier">;
 export declare const trialConversionsTotal: promClient.Counter<"from_tier" | "to_tier">;
 export declare const trialsExpiredTotal: promClient.Counter<string>;
@@ -19,7 +19,7 @@ export declare const emailsFailedTotal: promClient.Counter<"type" | "reason">;
 export declare const emailQueueSize: promClient.Gauge<string>;
 export declare const authFailuresTotal: promClient.Counter<"reason" | "ip">;
 export declare const authSuccessTotal: promClient.Counter<string>;
-export declare const rateLimitViolationsTotal: promClient.Counter<"ip" | "endpoint">;
+export declare const rateLimitViolationsTotal: promClient.Counter<"endpoint" | "ip">;
 export declare const databaseOperationDuration: promClient.Histogram<"operation" | "collection">;
 export declare const databaseConnectionsActive: promClient.Gauge<string>;
 export declare const patientsTotal: promClient.Gauge<"workspace_id">;

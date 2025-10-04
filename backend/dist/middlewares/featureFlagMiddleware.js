@@ -1,14 +1,11 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.trackFeatureUsage = exports.requireFeatureAccess = exports.gateAccess = exports.loadFeatureFlag = void 0;
-const FeatureFlag_1 = __importDefault(require("../models/FeatureFlag"));
+const FeatureFlag_1 = require("../models/FeatureFlag");
 const loadFeatureFlag = (featureKey) => {
     return async (req, res, next) => {
         try {
-            const featureFlag = await FeatureFlag_1.default.findOne({
+            const featureFlag = await FeatureFlag_1.FeatureFlag.findOne({
                 key: featureKey,
                 isActive: true,
             });
