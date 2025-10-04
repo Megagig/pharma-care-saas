@@ -97,7 +97,14 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'https:'],
       fontSrc: ["'self'", 'https:'],
-      connectSrc: ["'self'", 'http://localhost:5000', 'http://127.0.0.1:5000'],
+      connectSrc: [
+        "'self'",
+        'http://localhost:5000',
+        'http://127.0.0.1:5000',
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://pharmacare-nttq.onrender.com'
+      ],
       mediaSrc: ["'self'"],
       objectSrc: ["'none'"],
       childSrc: ["'self'"],
@@ -109,18 +116,30 @@ app.use(helmet({
     }
   }
 }));
+// Configure CORS origins
+const corsOrigins = [
+  'http://localhost:3000', // Create React App dev server
+  'http://localhost:5173', // Vite dev server
+  'http://127.0.0.1:5173', // Alternative Vite URL
+  'http://192.168.8.167:5173', // Local network Vite URL
+  'https://pharmacare-nttq.onrender.com', // Production frontend
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+];
+
+// Add additional origins from environment variable
+if (process.env.CORS_ORIGINS) {
+  corsOrigins.push(...process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()));
+}
+
 app.use(
   cors({
-    origin: [
-      'http://localhost:3000', // Create React App dev server
-      'http://localhost:5173', // Vite dev server
-      'http://127.0.0.1:5173', // Alternative Vite URL
-      'http://192.168.8.167:5173', // Local network Vite URL
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-    ],
+    origin: corsOrigins,
     credentials: true,
     exposedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    preflightContinue: false,
+    optionsSuccessStatus: 200,
   })
 );
 
@@ -163,6 +182,16 @@ app.use(cookieParser());
 app.use(mongoSanitize()); // Against NoSQL query injection
 app.use(xss()); // Against XSS attacks
 app.use(hpp()); // Against HTTP Parameter Pollution
+
+// Handle preflight requests explicitly
+app.options('*', (req: Request, res: Response) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  res.sendStatus(200);
+});
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {

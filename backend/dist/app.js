@@ -114,7 +114,26 @@ if (process.env.MEMORY_MONITORING_ENABLED === 'true') {
     MemoryManagementService_1.default.startMonitoring();
     logger_1.default.info('Memory management service started');
 }
-app.use((0, helmet_1.default)());
+app.use((0, helmet_1.default)({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", 'data:', 'https:'],
+            fontSrc: ["'self'", 'https:'],
+            connectSrc: ["'self'", 'http://localhost:5000', 'http://127.0.0.1:5000'],
+            mediaSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            childSrc: ["'self'"],
+            workerSrc: ["'self'"],
+            frameAncestors: ["'none'"],
+            formAction: ["'self'"],
+            baseUri: ["'self'"],
+            manifestSrc: ["'self'"]
+        }
+    }
+}));
 app.use((0, cors_1.default)({
     origin: [
         'http://localhost:3000',

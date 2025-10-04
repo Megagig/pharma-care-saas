@@ -27,16 +27,25 @@ const PORT: number = parseInt(process.env.PORT || '5000', 10);
 // Create HTTP server
 const httpServer = createServer(app);
 
+// Configure Socket.IO CORS origins
+const socketCorsOrigins = [
+  'http://localhost:3000', // Create React App dev server
+  'http://localhost:5173', // Vite dev server
+  'http://127.0.0.1:5173', // Alternative Vite URL
+  'http://192.168.8.167:5173', // Local network Vite URL
+  'https://pharmacare-nttq.onrender.com', // Production frontend
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+];
+
+// Add additional origins from environment variable
+if (process.env.CORS_ORIGINS) {
+  socketCorsOrigins.push(...process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()));
+}
+
 // Setup Socket.IO server
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: [
-      'http://localhost:3000', // Create React App dev server
-      'http://localhost:5173', // Vite dev server
-      'http://127.0.0.1:5173', // Alternative Vite URL
-      'http://192.168.8.167:5173', // Local network Vite URL
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-    ],
+    origin: socketCorsOrigins,
     credentials: true,
     methods: ['GET', 'POST'],
   },
