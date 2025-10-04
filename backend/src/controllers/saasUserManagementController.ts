@@ -184,7 +184,14 @@ export class SaaSUserManagementController {
         return;
       }
 
-      if (!roleId || !mongoose.Types.ObjectId.isValid(roleId)) {
+      if (!roleId) {
+        sendError(res, 'INVALID_ROLE_ID', 'Role ID is required', 400);
+        return;
+      }
+
+      // Validate roleId format - accept both ObjectId and role name
+      if (!mongoose.Types.ObjectId.isValid(roleId) && 
+          (typeof roleId !== 'string' || !/^[a-z0-9_-]+$/.test(roleId))) {
         sendError(res, 'INVALID_ROLE_ID', 'Invalid role ID format', 400);
         return;
       }

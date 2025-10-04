@@ -190,7 +190,7 @@ export const useBillingData = (): UseBillingDataReturn => {
   const refreshData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       await Promise.all([
         fetchBillingAnalytics(),
@@ -205,8 +205,8 @@ export const useBillingData = (): UseBillingDataReturn => {
   }, [fetchBillingAnalytics, fetchInvoices, fetchSubscriptions]);
 
   const processRefund = useCallback(async (
-    paymentReference: string, 
-    amount?: number, 
+    paymentReference: string,
+    amount?: number,
     reason?: string
   ) => {
     try {
@@ -215,11 +215,11 @@ export const useBillingData = (): UseBillingDataReturn => {
         amount,
         reason
       });
-      
+
       if (!response.success) {
         throw new Error(response.message || 'Failed to process refund');
       }
-      
+
       // Refresh data after successful refund
       await refreshData();
     } catch (err) {

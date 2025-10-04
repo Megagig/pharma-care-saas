@@ -147,14 +147,16 @@ class DynamicPermissionService {
         }
         finally {
             const executionTime = Date.now() - startTime;
-            this.dbOptimizationService.recordQueryMetrics({
-                query: `checkPermission:${action}`,
-                executionTime,
-                documentsExamined: 0,
-                documentsReturned: 1,
-                indexUsed: true,
-                timestamp: new Date()
-            });
+            if (this.dbOptimizationService) {
+                this.dbOptimizationService.recordQueryMetrics({
+                    query: `checkPermission:${action}`,
+                    executionTime,
+                    documentsExamined: 0,
+                    documentsReturned: 1,
+                    indexUsed: true,
+                    timestamp: new Date()
+                });
+            }
         }
     }
     async resolveUserPermissions(user, context, permissionContext = {}) {

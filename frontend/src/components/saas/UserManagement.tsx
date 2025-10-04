@@ -30,20 +30,18 @@ import {
   DialogActions,
   Alert,
   Skeleton,
-  Tooltip,
   Grid,
 } from '@mui/material';
-import {
-  MoreVert as MoreVertIcon,
-  Search as SearchIcon,
-  PersonAdd as PersonAddIcon,
-  Edit as EditIcon,
-  Block as BlockIcon,
-  CheckCircle as CheckCircleIcon,
-  SupervisorAccount as SupervisorAccountIcon,
-  FilterList as FilterListIcon,
-} from '@mui/icons-material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import SearchIcon from '@mui/icons-material/Search';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import EditIcon from '@mui/icons-material/Edit';
+import BlockIcon from '@mui/icons-material/Block';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import { useUsers, useUpdateUserRole, useSuspendUser, useReactivateUser, useImpersonateUser } from '../../queries/useSaasSettings';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface UserActionsMenuProps {
   user: any;
@@ -145,7 +143,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
 
   const handleSave = () => {
     if (user && selectedRole) {
-      onSave(user.id, selectedRole);
+      onSave(user._id, selectedRole);
       onClose();
     }
   };
@@ -194,12 +192,15 @@ const UserManagement: React.FC = () => {
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data: usersData, isLoading, error } = useUsers(
     filters,
     { page: page + 1, limit: rowsPerPage }
   );
 
+  const queryClient = useQueryClient();
   const updateUserRoleMutation = useUpdateUserRole();
   const suspendUserMutation = useSuspendUser();
   const reactivateUserMutation = useReactivateUser();
@@ -226,27 +227,71 @@ const UserManagement: React.FC = () => {
 
   const handleSuspendUser = (user: any) => {
     suspendUserMutation.mutate({
-      userId: user.id,
+      userId: user._id,
       reason: 'Suspended by administrator',
+    }, {
+      onSuccess: () => {
+        setSuccessMessage(`User ${user.firstName} ${user.lastName} has been suspended successfully.`);
+        setErrorMessage(null);
+        // Manually invalidate all user-related queries to refresh the UI
+        queryClient.invalidateQueries({
+          predicate: (query) => query.queryKey[0] === 'saas' && query.queryKey.includes('users')
+        });
+      },
+      onError: (error: any) => {
+        setErrorMessage(`Failed to suspend user: ${error.message || 'Unknown error'}`);
+        setSuccessMessage(null);
+      }
     });
   };
 
   const handleReactivateUser = (user: any) => {
-    reactivateUserMutation.mutate(user.id);
+    reactivateUserMutation.mutate(user._id, {
+      onSuccess: () => {
+        setSuccessMessage(`User ${user.firstName} ${user.lastName} has been reactivated successfully.`);
+        setErrorMessage(null);
+        // Manually invalidate all user-related queries to refresh the UI
+        queryClient.invalidateQueries({
+          predicate: (query) => query.queryKey[0] === 'saas' && query.queryKey.includes('users')
+        });
+      },
+      onError: (error: any) => {
+        setErrorMessage(`Failed to reactivate user: ${error.message || 'Unknown error'}`);
+        setSuccessMessage(null);
+      }
+    });
   };
 
   const handleImpersonateUser = (user: any) => {
-    impersonateUserMutation.mutate(user.id, {
+    impersonateUserMutation.mutate(user._id, {
       onSuccess: (session) => {
-        // Handle impersonation session
+        setSuccessMessage(`Impersonation session created for ${user.firstName} ${user.lastName}.`);
+        setErrorMessage(null);
         console.log('Impersonation session created:', session);
         // You would typically redirect or update the auth context here
       },
+      onError: (error: any) => {
+        setErrorMessage(`Failed to create impersonation session: ${error.message || 'Unknown error'}`);
+        setSuccessMessage(null);
+      }
     });
   };
 
   const handleSaveUserRole = (userId: string, roleId: string) => {
-    updateUserRoleMutation.mutate({ userId, roleId });
+    updateUserRoleMutation.mutate({ userId, roleId }, {
+      onSuccess: () => {
+        setSuccessMessage('User role updated successfully.');
+        setErrorMessage(null);
+        // Manually invalidate all user-related queries to refresh the UI
+        queryClient.invalidateQueries({
+          predicate: (query) => query.queryKey[0] === 'saas' && query.queryKey.includes('users')
+        });
+      },
+      onError: (error: any) => {
+        setErrorMessage(`Failed to update user role: ${error.message || 'Unknown error'}`);
+        setSuccessMessage(null);
+      }
+    });
   };
 
   const getRoleColor = (role: string) => {
@@ -294,6 +339,18 @@ const UserManagement: React.FC = () => {
 
   return (
     <Box>
+      {/* Success/Error Messages */}
+      {successMessage && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage(null)}>
+          {successMessage}
+        </Alert>
+      )}
+      {errorMessage && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErrorMessage(null)}>
+          {errorMessage}
+        </Alert>
+      )}
+
       <Card>
         <CardHeader
           title="User Management"
@@ -302,7 +359,7 @@ const UserManagement: React.FC = () => {
             <Button
               variant="contained"
               startIcon={<PersonAddIcon />}
-              onClick={() => {/* Handle add user */}}
+              onClick={() => {/* Handle add user */ }}
             >
               Add User
             </Button>
@@ -311,7 +368,7 @@ const UserManagement: React.FC = () => {
         <CardContent>
           {/* Filters */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 fullWidth
                 placeholder="Search users..."
@@ -322,7 +379,7 @@ const UserManagement: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <FormControl fullWidth>
                 <InputLabel>Role</InputLabel>
                 <Select
@@ -339,7 +396,7 @@ const UserManagement: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <FormControl fullWidth>
                 <InputLabel>Status</InputLabel>
                 <Select
@@ -354,7 +411,7 @@ const UserManagement: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid size={{ xs: 12, md: 2 }}>
               <Button
                 fullWidth
                 variant="outlined"
@@ -433,7 +490,7 @@ const UserManagement: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {user.workspaceName || 'N/A'}
+                          {user.workplaceId?.name || 'N/A'}
                         </Typography>
                       </TableCell>
                       <TableCell>

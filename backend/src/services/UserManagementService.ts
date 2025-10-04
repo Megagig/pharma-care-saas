@@ -186,8 +186,15 @@ export class UserManagementService {
         throw new Error('User not found');
       }
 
-      // Validate role exists
-      const role = await Role.findById(roleId);
+      // Validate role exists - support both ObjectId and role name
+      let role: IRole | null;
+      if (mongoose.Types.ObjectId.isValid(roleId)) {
+        role = await Role.findById(roleId);
+      } else {
+        // Look up role by name
+        role = await Role.findOne({ name: roleId, isActive: true });
+      }
+      
       if (!role) {
         throw new Error('Role not found');
       }
@@ -231,7 +238,7 @@ export class UserManagementService {
       // Create audit log
       if (adminId) {
         await this.auditService.createAuditLog({
-          action: 'USER_ROLE_ASSIGNED',
+          action: 'ROLE_ASSIGNED',
           userId: adminId,
           resourceType: 'User',
           resourceId: userId,
@@ -241,7 +248,7 @@ export class UserManagementService {
             roleName: role.name,
             workspaceId
           },
-          complianceCategory: 'user_management',
+          complianceCategory: 'access_control',
           riskLevel: 'medium',
           changedFields: ['roles'],
           oldValues: { roles: oldRoles },
@@ -313,7 +320,7 @@ export class UserManagementService {
       if (adminId) {
         const role = await Role.findById(roleId);
         await this.auditService.createAuditLog({
-          action: 'USER_ROLE_REVOKED',
+          action: 'ROLE_REVOKED',
           userId: adminId,
           resourceType: 'User',
           resourceId: userId,
@@ -323,7 +330,7 @@ export class UserManagementService {
             roleName: role?.name,
             workspaceId
           },
-          complianceCategory: 'user_management',
+          complianceCategory: 'access_control',
           riskLevel: 'medium',
           changedFields: ['roles'],
           oldValues: { roles: oldRoles },
@@ -366,16 +373,17 @@ export class UserManagementService {
       // Create audit log
       if (adminId) {
         await this.auditService.createAuditLog({
-          action: 'USER_SUSPENDED',
+          action: 'PERMISSION_REVOKED',
           userId: adminId,
           resourceType: 'User',
           resourceId: userId,
           details: {
+            action: 'USER_SUSPENDED',
             targetUserId: userId,
             reason,
             suspendedAt: new Date()
           },
-          complianceCategory: 'user_management',
+          complianceCategory: 'access_control',
           riskLevel: 'high',
           changedFields: ['isActive', 'suspendedAt', 'suspensionReason'],
           oldValues: { isActive: true },
@@ -416,15 +424,16 @@ export class UserManagementService {
       // Create audit log
       if (adminId) {
         await this.auditService.createAuditLog({
-          action: 'USER_REACTIVATED',
+          action: 'PERMISSION_GRANTED',
           userId: adminId,
           resourceType: 'User',
           resourceId: userId,
           details: {
+            action: 'USER_REACTIVATED',
             targetUserId: userId,
             reactivatedAt: new Date()
           },
-          complianceCategory: 'user_management',
+          complianceCategory: 'access_control',
           riskLevel: 'medium',
           changedFields: ['isActive', 'suspendedAt', 'suspensionReason'],
           oldValues: { isActive: false },
@@ -483,7 +492,7 @@ export class UserManagementService {
             failedCount: result.failed,
             errors: result.errors
           },
-          complianceCategory: 'user_management',
+          complianceCategory: 'access_control',
           riskLevel: 'high'
         });
       }
@@ -530,9 +539,10 @@ export class UserManagementService {
       // Create bulk audit log
       if (adminId) {
         await this.auditService.createAuditLog({
-          action: 'BULK_ROLE_REVOCATION',
+          action: 'BULK_ROLE_ASSIGNMENT',
           userId: adminId,
           details: {
+            action: 'BULK_ROLE_REVOCATION',
             roleId,
             roleName: role.name,
             userIds,
@@ -540,7 +550,7 @@ export class UserManagementService {
             failedCount: result.failed,
             errors: result.errors
           },
-          complianceCategory: 'user_management',
+          complianceCategory: 'access_control',
           riskLevel: 'high'
         });
       }
@@ -639,17 +649,18 @@ export class UserManagementService {
 
       // Create audit log
       await this.auditService.createAuditLog({
-        action: 'USER_IMPERSONATION_STARTED',
+        action: 'SUPER_ADMIN_ACCESS',
         userId: adminId,
         resourceType: 'User',
         resourceId: targetUserId,
         details: {
+          action: 'USER_IMPERSONATION_STARTED',
           targetUserId,
           targetUserEmail: targetUser.email,
           sessionToken: sessionToken.substring(0, 10) + '...',
           expiresAt
         },
-        complianceCategory: 'user_management',
+        complianceCategory: 'access_control',
         riskLevel: 'critical'
       });
 
@@ -681,16 +692,17 @@ export class UserManagementService {
 
         // Create audit log
         await this.auditService.createAuditLog({
-          action: 'USER_IMPERSONATION_ENDED',
+          action: 'SUPER_ADMIN_ACCESS',
           userId: (session as any).adminId,
           resourceType: 'User',
           resourceId: (session as any).targetUserId,
           details: {
+            action: 'USER_IMPERSONATION_ENDED',
             targetUserId: (session as any).targetUserId,
             sessionToken: sessionToken.substring(0, 10) + '...',
             endedAt: new Date()
           },
-          complianceCategory: 'user_management',
+          complianceCategory: 'access_control',
           riskLevel: 'medium'
         });
 
@@ -732,15 +744,16 @@ export class UserManagementService {
       // Create audit log
       if (adminId) {
         await this.auditService.createAuditLog({
-          action: 'USER_UPDATED',
+          action: 'PERMISSION_CHANGED',
           userId: adminId,
           resourceType: 'User',
           resourceId: userId,
           details: {
+            action: 'USER_UPDATED',
             targetUserId: userId,
             updatedFields: Object.keys(updateData)
           },
-          complianceCategory: 'user_management',
+          complianceCategory: 'access_control',
           riskLevel: 'low',
           changedFields: Object.keys(updateData),
           oldValues,

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { body, param, query } from 'express-validator';
+import mongoose from 'mongoose';
 import { auth, requireSuperAdmin } from '../middlewares/auth';
 import { saasUserManagementController } from '../controllers/saasUserManagementController';
 import { validateRequest } from '../middlewares/validation';
@@ -94,7 +95,17 @@ router.post(
         }
         return true;
       }),
-    body('roleId').isMongoId().withMessage('Role ID must be a valid MongoDB ObjectId'),
+    body('roleId').custom((value) => {
+      // Accept either MongoDB ObjectId or role name
+      if (mongoose.Types.ObjectId.isValid(value)) {
+        return true;
+      }
+      // Check if it's a valid role name format
+      if (typeof value === 'string' && /^[a-z0-9_-]+$/.test(value)) {
+        return true;
+      }
+      throw new Error('Role ID must be a valid MongoDB ObjectId or role name');
+    }),
     body('workspaceId').optional().isMongoId().withMessage('Workspace ID must be a valid MongoDB ObjectId')
   ],
   validateRequest,
@@ -116,7 +127,17 @@ router.put(
   '/:userId/role',
   [
     param('userId').isMongoId().withMessage('User ID must be a valid MongoDB ObjectId'),
-    body('roleId').isMongoId().withMessage('Role ID must be a valid MongoDB ObjectId'),
+    body('roleId').custom((value) => {
+      // Accept either MongoDB ObjectId or role name
+      if (mongoose.Types.ObjectId.isValid(value)) {
+        return true;
+      }
+      // Check if it's a valid role name format
+      if (typeof value === 'string' && /^[a-z0-9_-]+$/.test(value)) {
+        return true;
+      }
+      throw new Error('Role ID must be a valid MongoDB ObjectId or role name');
+    }),
     body('workspaceId').optional().isMongoId().withMessage('Workspace ID must be a valid MongoDB ObjectId'),
     body('reason').optional().isString().isLength({ min: 1, max: 500 }).withMessage('Reason must be between 1 and 500 characters')
   ],

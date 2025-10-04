@@ -105,6 +105,7 @@ const permissionRoutes_1 = __importDefault(require("./routes/permissionRoutes"))
 const rbacAudit_1 = __importDefault(require("./routes/rbacAudit"));
 const roleRoutes_1 = __importDefault(require("./routes/roleRoutes"));
 const pricingManagementRoutes_1 = __importDefault(require("./routes/pricingManagementRoutes"));
+const saasRoutes_1 = __importDefault(require("./routes/saasRoutes"));
 const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
 const systemIntegration = systemIntegrationService_1.default.getInstance();
@@ -309,6 +310,7 @@ app.use('/api/migration', migrationDashboardRoutes_1.default);
 app.use('/api/email', emailWebhookRoutes_1.default);
 app.use('/api/admin', admin_1.default);
 app.use('/api/admin/dashboard', adminDashboardRoutes_1.default);
+app.use('/api/admin/saas', saasRoutes_1.default);
 app.use('/api/roles', roleRoutes_1.default);
 app.use('/api/role-hierarchy', roleHierarchyRoutes_1.default);
 app.use('/api/permissions', permissionRoutes_1.default);
