@@ -105,8 +105,8 @@ export class PerformanceMonitoringService {
     const cacheKey = `performance-overview:${workspaceId || 'global'}`;
 
     const cached = await this.cacheService.get<PerformanceOverview>(cacheKey);
-    if (cached) {
-      return cached;
+    if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
+      return cached as any;
     }
 
     try {

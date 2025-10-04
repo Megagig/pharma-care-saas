@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.User = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const bcrypt = __importStar(require("bcryptjs"));
 const crypto = __importStar(require("crypto"));
@@ -91,6 +92,11 @@ const userSchema = new mongoose_1.Schema({
             'license_rejected',
         ],
         default: 'pending',
+        index: true,
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
         index: true,
     },
     emailVerified: {
@@ -493,5 +499,7 @@ userSchema.pre('save', function (next) {
     }
     next();
 });
-exports.default = mongoose_1.default.model('User', userSchema);
+const User = mongoose_1.default.model('User', userSchema);
+exports.User = User;
+exports.default = User;
 //# sourceMappingURL=User.js.map

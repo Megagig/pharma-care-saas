@@ -1,0 +1,1035 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Grid,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
+  CircularProgress,
+  Tooltip,
+  Badge,
+  LinearProgress,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  InputAdornment,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
+} from '@mui/material';
+import {
+  Support as SupportIcon,
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Visibility as ViewIcon,
+  Assignment as TicketIcon,
+  Book as KnowledgeIcon,
+  Analytics as AnalyticsIcon,
+  Search as SearchIcon,
+  FilterList as FilterIcon,
+  Refresh as RefreshIcon,
+  Flag as PriorityIcon,
+  Schedule as ScheduleIcon,
+  Person as PersonIcon,
+  Comment as CommentIcon,
+  TrendingUp as EscalationIcon,
+  CheckCircle as ResolvedIcon,
+  Cancel as ClosedIcon,
+  HourglassEmpty as PendingIcon,
+  PlayArrow as InProgressIcon,
+  ExpandMore as ExpandMoreIcon,
+  ThumbUp as ThumbUpIcon,
+  ThumbDown as ThumbDownIcon,
+  TrendingUp as TrendingUpIcon,
+  Timer as TimerIcon,
+  Star as StarIcon
+} from '@mui/icons-material';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`support-tabpanel-${index}`}
+      aria-labelledby={`support-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
+
+interface SupportTicket {
+  id: string;
+  ticketNumber: string;
+  title: string;
+  description: string;
+  status: 'open' | 'in_progress' | 'pending_customer' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  category: 'technical' | 'billing' | 'feature_request' | 'bug_report' | 'general';
+  userId: string;
+  userEmail: string;
+  userName: string;
+  assignedTo?: string;
+  assignedToName?: string;
+  createdAt: string;
+  updatedAt: string;
+  responseCount: number;
+  tags: string[];
+}
+
+interface KnowledgeBaseArticle {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  category: string;
+  subcategory?: string;
+  tags: string[];
+  status: 'draft' | 'published' | 'archived';
+  isPublic: boolean;
+  viewCount: number;
+  helpfulVotes: number;
+  notHelpfulVotes: number;
+  authorName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface SupportMetrics {
+  totalTickets: number;
+  openTickets: number;
+  resolvedTickets: number;
+  criticalTickets: number;
+  averageResponseTime: number;
+  averageResolutionTime: number;
+  customerSatisfactionScore: number;
+  ticketsByStatus: { status: string; count: number }[];
+  ticketsByPriority: { priority: string; count: number }[];
+  ticketsByCategory: { category: string; count: number }[];
+}
+
+const SupportHelpdesk: React.FC = () => {
+  const [tabValue, setTabValue] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Tickets state
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
+  const [createTicketDialogOpen, setCreateTicketDialogOpen] = useState(false);
+  
+  // Knowledge base state
+  const [articles, setArticles] = useState<KnowledgeBaseArticle[]>([]);
+  const [selectedArticle, setSelectedArticle] = useState<KnowledgeBaseArticle | null>(null);
+  const [articleDialogOpen, setArticleDialogOpen] = useState(false);
+  const [createArticleDialogOpen, setCreateArticleDialogOpen] = useState(false);
+  
+  // Metrics state
+  const [metrics, setMetrics] = useState<SupportMetrics | null>(null);
+  
+  // Filters and search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+
+  // Mock data for demonstration
+  const mockTickets: SupportTicket[] = [
+    {
+      id: '1',
+      ticketNumber: 'TKT-000001',
+      title: 'Unable to access dashboard',
+      description: 'I cannot log into my dashboard. Getting authentication errors.',
+      status: 'open',
+      priority: 'high',
+      category: 'technical',
+      userId: 'user1',
+      userEmail: 'john@example.com',
+      userName: 'John Doe',
+      assignedTo: 'agent1',
+      assignedToName: 'Sarah Wilson',
+      createdAt: '2024-01-15T10:30:00Z',
+      updatedAt: '2024-01-15T10:30:00Z',
+      responseCount: 0,
+      tags: ['authentication', 'dashboard']
+    },
+    {
+      id: '2',
+      ticketNumber: 'TKT-000002',
+      title: 'Billing inquiry about subscription',
+      description: 'I have questions about my current subscription plan and billing cycle.',
+      status: 'in_progress',
+      priority: 'medium',
+      category: 'billing',
+      userId: 'user2',
+      userEmail: 'jane@example.com',
+      userName: 'Jane Smith',
+      assignedTo: 'agent2',
+      assignedToName: 'Mike Johnson',
+      createdAt: '2024-01-14T14:20:00Z',
+      updatedAt: '2024-01-15T09:15:00Z',
+      responseCount: 2,
+      tags: ['billing', 'subscription']
+    },
+    {
+      id: '3',
+      ticketNumber: 'TKT-000003',
+      title: 'Feature request: Dark mode',
+      description: 'Would love to see a dark mode option in the application.',
+      status: 'resolved',
+      priority: 'low',
+      category: 'feature_request',
+      userId: 'user3',
+      userEmail: 'bob@example.com',
+      userName: 'Bob Johnson',
+      assignedTo: 'agent1',
+      assignedToName: 'Sarah Wilson',
+      createdAt: '2024-01-10T16:45:00Z',
+      updatedAt: '2024-01-12T11:30:00Z',
+      responseCount: 4,
+      tags: ['feature', 'ui', 'dark-mode']
+    }
+  ];
+
+  const mockArticles: KnowledgeBaseArticle[] = [
+    {
+      id: '1',
+      title: 'How to Reset Your Password',
+      slug: 'how-to-reset-password',
+      excerpt: 'Step-by-step guide to reset your account password',
+      category: 'Account Management',
+      subcategory: 'Password',
+      tags: ['password', 'reset', 'account'],
+      status: 'published',
+      isPublic: true,
+      viewCount: 245,
+      helpfulVotes: 18,
+      notHelpfulVotes: 2,
+      authorName: 'Support Team',
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-10T15:30:00Z'
+    },
+    {
+      id: '2',
+      title: 'Understanding Billing Cycles',
+      slug: 'understanding-billing-cycles',
+      excerpt: 'Learn about how billing cycles work and when charges occur',
+      category: 'Billing',
+      subcategory: 'Cycles',
+      tags: ['billing', 'cycles', 'charges'],
+      status: 'published',
+      isPublic: true,
+      viewCount: 189,
+      helpfulVotes: 15,
+      notHelpfulVotes: 1,
+      authorName: 'Billing Team',
+      createdAt: '2024-01-05T00:00:00Z',
+      updatedAt: '2024-01-08T12:00:00Z'
+    },
+    {
+      id: '3',
+      title: 'API Integration Guide',
+      slug: 'api-integration-guide',
+      excerpt: 'Complete guide for integrating with our API',
+      category: 'Technical',
+      subcategory: 'API',
+      tags: ['api', 'integration', 'development'],
+      status: 'published',
+      isPublic: true,
+      viewCount: 156,
+      helpfulVotes: 22,
+      notHelpfulVotes: 3,
+      authorName: 'Technical Team',
+      createdAt: '2024-01-03T00:00:00Z',
+      updatedAt: '2024-01-12T09:45:00Z'
+    }
+  ];
+
+  const mockMetrics: SupportMetrics = {
+    totalTickets: 156,
+    openTickets: 23,
+    resolvedTickets: 118,
+    criticalTickets: 3,
+    averageResponseTime: 4.2,
+    averageResolutionTime: 18.5,
+    customerSatisfactionScore: 4.3,
+    ticketsByStatus: [
+      { status: 'open', count: 23 },
+      { status: 'in_progress', count: 15 },
+      { status: 'resolved', count: 118 }
+    ],
+    ticketsByPriority: [
+      { priority: 'low', count: 45 },
+      { priority: 'medium', count: 78 },
+      { priority: 'high', count: 30 },
+      { priority: 'critical', count: 3 }
+    ],
+    ticketsByCategory: [
+      { category: 'technical', count: 67 },
+      { category: 'billing', count: 34 },
+      { category: 'general', count: 28 },
+      { category: 'feature_request', count: 27 }
+    ]
+  };
+
+  useEffect(() => {
+    // Initialize with mock data
+    setTickets(mockTickets);
+    setArticles(mockArticles);
+    setMetrics(mockMetrics);
+  }, []);
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'open':
+        return <TicketIcon color="error" />;
+      case 'in_progress':
+        return <InProgressIcon color="warning" />;
+      case 'pending_customer':
+        return <PendingIcon color="info" />;
+      case 'resolved':
+        return <ResolvedIcon color="success" />;
+      case 'closed':
+        return <ClosedIcon color="disabled" />;
+      default:
+        return <TicketIcon />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open':
+        return 'error';
+      case 'in_progress':
+        return 'warning';
+      case 'pending_customer':
+        return 'info';
+      case 'resolved':
+        return 'success';
+      case 'closed':
+        return 'default';
+      default:
+        return 'default';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical':
+        return 'error';
+      case 'high':
+        return 'warning';
+      case 'medium':
+        return 'info';
+      case 'low':
+        return 'success';
+      default:
+        return 'default';
+    }
+  };
+
+  const filteredTickets = tickets.filter(ticket => {
+    const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         ticket.ticketNumber.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+    const matchesCategory = categoryFilter === 'all' || ticket.category === categoryFilter;
+    
+    return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
+  });
+
+  const filteredArticles = articles.filter(article => {
+    return article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           article.category.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const renderTicketsTab = () => (
+    <Box>
+      {/* Tickets Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" component="h2">
+          Support Tickets
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setCreateTicketDialogOpen(true)}
+        >
+          Create Ticket
+        </Button>
+      </Box>
+
+      {/* Filters */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                placeholder="Search tickets..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={statusFilter}
+                  label="Status"
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <MenuItem value="all">All Status</MenuItem>
+                  <MenuItem value="open">Open</MenuItem>
+                  <MenuItem value="in_progress">In Progress</MenuItem>
+                  <MenuItem value="pending_customer">Pending Customer</MenuItem>
+                  <MenuItem value="resolved">Resolved</MenuItem>
+                  <MenuItem value="closed">Closed</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth>
+                <InputLabel>Priority</InputLabel>
+                <Select
+                  value={priorityFilter}
+                  label="Priority"
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                >
+                  <MenuItem value="all">All Priority</MenuItem>
+                  <MenuItem value="critical">Critical</MenuItem>
+                  <MenuItem value="high">High</MenuItem>
+                  <MenuItem value="medium">Medium</MenuItem>
+                  <MenuItem value="low">Low</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={categoryFilter}
+                  label="Category"
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                >
+                  <MenuItem value="all">All Categories</MenuItem>
+                  <MenuItem value="technical">Technical</MenuItem>
+                  <MenuItem value="billing">Billing</MenuItem>
+                  <MenuItem value="feature_request">Feature Request</MenuItem>
+                  <MenuItem value="bug_report">Bug Report</MenuItem>
+                  <MenuItem value="general">General</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={2}>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('all');
+                  setPriorityFilter('all');
+                  setCategoryFilter('all');
+                }}
+              >
+                Clear
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* Tickets Table */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Ticket #</TableCell>
+              <TableCell>Title</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Priority</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Assigned To</TableCell>
+              <TableCell>Created</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredTickets.map((ticket) => (
+              <TableRow key={ticket.id} hover>
+                <TableCell>
+                  <Typography variant="body2" fontWeight="medium">
+                    {ticket.ticketNumber}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Box>
+                    <Typography variant="body2" fontWeight="medium">
+                      {ticket.title}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {ticket.userName} ({ticket.userEmail})
+                    </Typography>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    icon={getStatusIcon(ticket.status)}
+                    label={ticket.status.replace('_', ' ').toUpperCase()}
+                    color={getStatusColor(ticket.status) as any}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={ticket.priority.toUpperCase()}
+                    color={getPriorityColor(ticket.priority) as any}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={ticket.category.replace('_', ' ')}
+                    variant="outlined"
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>
+                  {ticket.assignedToName ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <PersonIcon fontSize="small" />
+                      <Typography variant="body2">
+                        {ticket.assignedToName}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      Unassigned
+                    </Typography>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2">
+                    {new Date(ticket.createdAt).toLocaleDateString()}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Tooltip title="View Details">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setSelectedTicket(ticket);
+                          setTicketDialogOpen(true);
+                        }}
+                      >
+                        <ViewIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Edit">
+                      <IconButton size="small">
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
+  );
+
+  const renderKnowledgeBaseTab = () => (
+    <Box>
+      {/* Knowledge Base Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" component="h2">
+          Knowledge Base
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setCreateArticleDialogOpen(true)}
+        >
+          Create Article
+        </Button>
+      </Box>
+
+      {/* Search */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <TextField
+            fullWidth
+            placeholder="Search articles..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Articles Grid */}
+      <Grid container spacing={3}>
+        {filteredArticles.map((article) => (
+          <Grid item xs={12} md={6} lg={4} key={article.id}>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Chip
+                    label={article.category}
+                    color="primary"
+                    size="small"
+                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Chip
+                      icon={<ViewIcon />}
+                      label={article.viewCount}
+                      size="small"
+                      variant="outlined"
+                    />
+                  </Box>
+                </Box>
+                
+                <Typography variant="h6" component="h3" gutterBottom>
+                  {article.title}
+                </Typography>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {article.excerpt}
+                </Typography>
+                
+                <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                  {article.tags.slice(0, 3).map((tag) => (
+                    <Chip
+                      key={tag}
+                      label={tag}
+                      size="small"
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+                
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <ThumbUpIcon fontSize="small" color="success" />
+                    <Typography variant="caption">
+                      {article.helpfulVotes}
+                    </Typography>
+                    <ThumbDownIcon fontSize="small" color="error" />
+                    <Typography variant="caption">
+                      {article.notHelpfulVotes}
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    by {article.authorName}
+                  </Typography>
+                </Box>
+              </CardContent>
+              
+              <Box sx={{ p: 2, pt: 0 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => {
+                    setSelectedArticle(article);
+                    setArticleDialogOpen(true);
+                  }}
+                >
+                  Read Article
+                </Button>
+              </Box>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
+
+  const renderMetricsTab = () => (
+    <Box>
+      <Typography variant="h5" component="h2" gutterBottom>
+        Support Metrics & Analytics
+      </Typography>
+
+      {metrics && (
+        <>
+          {/* Key Metrics */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography color="textSecondary" gutterBottom>
+                        Total Tickets
+                      </Typography>
+                      <Typography variant="h4">
+                        {metrics.totalTickets}
+                      </Typography>
+                    </Box>
+                    <TicketIcon color="primary" sx={{ fontSize: 40 }} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography color="textSecondary" gutterBottom>
+                        Open Tickets
+                      </Typography>
+                      <Typography variant="h4" color="error">
+                        {metrics.openTickets}
+                      </Typography>
+                    </Box>
+                    <Badge badgeContent={metrics.criticalTickets} color="error">
+                      <PriorityIcon color="error" sx={{ fontSize: 40 }} />
+                    </Badge>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography color="textSecondary" gutterBottom>
+                        Avg Response Time
+                      </Typography>
+                      <Typography variant="h4">
+                        {metrics.averageResponseTime}h
+                      </Typography>
+                    </Box>
+                    <TimerIcon color="info" sx={{ fontSize: 40 }} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography color="textSecondary" gutterBottom>
+                        Satisfaction Score
+                      </Typography>
+                      <Typography variant="h4" color="success.main">
+                        {metrics.customerSatisfactionScore}/5
+                      </Typography>
+                    </Box>
+                    <StarIcon color="warning" sx={{ fontSize: 40 }} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {/* Charts */}
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={4}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Tickets by Status
+                  </Typography>
+                  <List>
+                    {metrics.ticketsByStatus.map((item) => (
+                      <ListItem key={item.status}>
+                        <ListItemIcon>
+                          {getStatusIcon(item.status)}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={item.status.replace('_', ' ').toUpperCase()}
+                          secondary={`${item.count} tickets`}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} md={4}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Tickets by Priority
+                  </Typography>
+                  <List>
+                    {metrics.ticketsByPriority.map((item) => (
+                      <ListItem key={item.priority}>
+                        <ListItemIcon>
+                          <PriorityIcon color={getPriorityColor(item.priority) as any} />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={item.priority.toUpperCase()}
+                          secondary={`${item.count} tickets`}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} md={4}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Tickets by Category
+                  </Typography>
+                  <List>
+                    {metrics.ticketsByCategory.map((item) => (
+                      <ListItem key={item.category}>
+                        <ListItemText
+                          primary={item.category.replace('_', ' ').toUpperCase()}
+                          secondary={`${item.count} tickets`}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </>
+      )}
+    </Box>
+  );
+
+  return (
+    <Box>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={tabValue} onChange={handleTabChange} aria-label="support helpdesk tabs">
+          <Tab
+            icon={<TicketIcon />}
+            label="Tickets"
+            id="support-tab-0"
+            aria-controls="support-tabpanel-0"
+          />
+          <Tab
+            icon={<KnowledgeIcon />}
+            label="Knowledge Base"
+            id="support-tab-1"
+            aria-controls="support-tabpanel-1"
+          />
+          <Tab
+            icon={<AnalyticsIcon />}
+            label="Metrics"
+            id="support-tab-2"
+            aria-controls="support-tabpanel-2"
+          />
+        </Tabs>
+      </Box>
+
+      <TabPanel value={tabValue} index={0}>
+        {renderTicketsTab()}
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={1}>
+        {renderKnowledgeBaseTab()}
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={2}>
+        {renderMetricsTab()}
+      </TabPanel>
+
+      {/* Ticket Details Dialog */}
+      <Dialog
+        open={ticketDialogOpen}
+        onClose={() => setTicketDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Ticket Details - {selectedTicket?.ticketNumber}
+        </DialogTitle>
+        <DialogContent>
+          {selectedTicket && (
+            <Box sx={{ pt: 1 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom>
+                    {selectedTicket.title}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Status
+                  </Typography>
+                  <Chip
+                    icon={getStatusIcon(selectedTicket.status)}
+                    label={selectedTicket.status.replace('_', ' ').toUpperCase()}
+                    color={getStatusColor(selectedTicket.status) as any}
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Priority
+                  </Typography>
+                  <Chip
+                    label={selectedTicket.priority.toUpperCase()}
+                    color={getPriorityColor(selectedTicket.priority) as any}
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    Description
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedTicket.description}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    Customer
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedTicket.userName} ({selectedTicket.userEmail})
+                  </Typography>
+                </Grid>
+                {selectedTicket.assignedToName && (
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      Assigned To
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedTicket.assignedToName}
+                    </Typography>
+                  </Grid>
+                )}
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    Tags
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+                    {selectedTicket.tags.map((tag) => (
+                      <Chip key={tag} label={tag} size="small" variant="outlined" />
+                    ))}
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTicketDialogOpen(false)}>
+            Close
+          </Button>
+          <Button variant="contained" startIcon={<EditIcon />}>
+            Edit Ticket
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Article Details Dialog */}
+      <Dialog
+        open={articleDialogOpen}
+        onClose={() => setArticleDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {selectedArticle?.title}
+        </DialogTitle>
+        <DialogContent>
+          {selectedArticle && (
+            <Box sx={{ pt: 1 }}>
+              <Typography variant="body1" paragraph>
+                {selectedArticle.excerpt}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                <Chip label={selectedArticle.category} color="primary" size="small" />
+                {selectedArticle.subcategory && (
+                  <Chip label={selectedArticle.subcategory} variant="outlined" size="small" />
+                )}
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                This article would contain the full content here...
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setArticleDialogOpen(false)}>
+            Close
+          </Button>
+          <Button variant="contained" startIcon={<EditIcon />}>
+            Edit Article
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default SupportHelpdesk;

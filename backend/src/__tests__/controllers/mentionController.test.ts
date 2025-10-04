@@ -30,13 +30,15 @@ describe('MentionController', () => {
         mockStatus = jest.fn().mockReturnValue({ json: mockJson });
 
         req = {
-            params: { conversationId: 'conv123' },
+            params: {
+                conversationId: 'conv123',
+                workplaceId: new mongoose.Types.ObjectId().toString()
+            },
             query: {},
             user: {
                 _id: new mongoose.Types.ObjectId(),
                 workplaceId: new mongoose.Types.ObjectId(),
             } as any,
-            workplaceId: new mongoose.Types.ObjectId(),
         };
 
         res = {
@@ -87,7 +89,7 @@ describe('MentionController', () => {
 
             expect(MockConversation.findOne).toHaveBeenCalledWith({
                 _id: 'conv123',
-                workplaceId: req.workplaceId,
+                workplaceId: req.params.workplaceId,
                 'participants.userId': req.user!._id,
             });
 
@@ -342,7 +344,7 @@ describe('MentionController', () => {
         });
 
         it('should return 400 if workplaceId is missing', async () => {
-            req.workplaceId = undefined;
+            req.params.workplaceId = undefined;
 
             await getUserSuggestions(req as any, res as Response);
 

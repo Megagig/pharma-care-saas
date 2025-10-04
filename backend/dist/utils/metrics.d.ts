@@ -19,7 +19,7 @@ export declare const emailsFailedTotal: promClient.Counter<"type" | "reason">;
 export declare const emailQueueSize: promClient.Gauge<string>;
 export declare const authFailuresTotal: promClient.Counter<"reason" | "ip">;
 export declare const authSuccessTotal: promClient.Counter<string>;
-export declare const rateLimitViolationsTotal: promClient.Counter<"ip" | "endpoint">;
+export declare const rateLimitViolationsTotal: promClient.Counter<"endpoint" | "ip">;
 export declare const databaseOperationDuration: promClient.Histogram<"operation" | "collection">;
 export declare const databaseConnectionsActive: promClient.Gauge<string>;
 export declare const patientsTotal: promClient.Gauge<"workspace_id">;

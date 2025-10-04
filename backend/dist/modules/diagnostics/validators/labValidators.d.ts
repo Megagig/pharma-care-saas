@@ -9,8 +9,8 @@ export declare const labTestSchema: z.ZodObject<{
     loincCode: z.ZodOptional<z.ZodString>;
     indication: z.ZodString;
     priority: z.ZodDefault<z.ZodEnum<{
-        routine: "routine";
         urgent: "urgent";
+        routine: "routine";
         stat: "stat";
     }>>;
 }, z.core.$strip>;
@@ -22,15 +22,15 @@ export declare const createLabOrderSchema: z.ZodObject<{
         loincCode: z.ZodOptional<z.ZodString>;
         indication: z.ZodString;
         priority: z.ZodDefault<z.ZodEnum<{
-            routine: "routine";
             urgent: "urgent";
+            routine: "routine";
             stat: "stat";
         }>>;
     }, z.core.$strip>>;
     indication: z.ZodString;
     priority: z.ZodDefault<z.ZodEnum<{
-        routine: "routine";
         urgent: "urgent";
+        routine: "routine";
         stat: "stat";
     }>>;
     expectedDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
@@ -43,15 +43,15 @@ export declare const updateLabOrderSchema: z.ZodObject<{
         loincCode: z.ZodOptional<z.ZodString>;
         indication: z.ZodString;
         priority: z.ZodDefault<z.ZodEnum<{
-            routine: "routine";
             urgent: "urgent";
+            routine: "routine";
             stat: "stat";
         }>>;
     }, z.core.$strip>>>;
     indication: z.ZodOptional<z.ZodString>;
     priority: z.ZodOptional<z.ZodEnum<{
-        routine: "routine";
         urgent: "urgent";
+        routine: "routine";
         stat: "stat";
     }>>;
     status: z.ZodOptional<z.ZodEnum<{
@@ -77,8 +77,8 @@ export declare const labOrderQuerySchema: z.ZodObject<{
         collected: "collected";
     }>>;
     priority: z.ZodOptional<z.ZodEnum<{
-        routine: "routine";
         urgent: "urgent";
+        routine: "routine";
         stat: "stat";
     }>>;
     orderedBy: z.ZodOptional<z.ZodString>;

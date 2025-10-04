@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Subscription = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const subscriptionSchema = new mongoose_1.Schema({
     workspaceId: {
@@ -247,5 +248,7 @@ subscriptionSchema.virtual('isTrial').get(function () {
 });
 subscriptionSchema.set('toJSON', { virtuals: true });
 subscriptionSchema.set('toObject', { virtuals: true });
-exports.default = mongoose_1.default.model('Subscription', subscriptionSchema);
+const Subscription = mongoose_1.default.model('Subscription', subscriptionSchema);
+exports.Subscription = Subscription;
+exports.default = Subscription;
 //# sourceMappingURL=Subscription.js.map

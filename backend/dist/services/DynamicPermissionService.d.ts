@@ -68,4 +68,5 @@ declare class DynamicPermissionService {
     private auditPermissionCheck;
 }
 export default DynamicPermissionService;
+export { DynamicPermissionService };
 //# sourceMappingURL=DynamicPermissionService.d.ts.map

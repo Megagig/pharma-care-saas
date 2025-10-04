@@ -48,8 +48,9 @@ export interface IWorkplace extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
-declare const _default: mongoose.Model<IWorkplace, {}, {}, {}, mongoose.Document<unknown, {}, IWorkplace> & IWorkplace & {
+declare const Workplace: mongoose.Model<IWorkplace, {}, {}, {}, mongoose.Document<unknown, {}, IWorkplace> & IWorkplace & {
     _id: mongoose.Types.ObjectId;
 }, any>;
-export default _default;
+export { Workplace };
+export default Workplace;
 //# sourceMappingURL=Workplace.d.ts.map

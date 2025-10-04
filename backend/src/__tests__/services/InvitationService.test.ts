@@ -1,10 +1,11 @@
 import { InvitationService } from '../../services/InvitationService';
-import { Invitation } from '../../models/Invitation';
-import { User } from '../../models/User';
-import { Workplace } from '../../models/Workplace';
-import { SubscriptionPlan } from '../../models/SubscriptionPlan';
+import Invitation, { IInvitation } from '../../models/Invitation';
+import User from '../../models/User';
+import Workplace from '../../models/Workplace';
+import SubscriptionPlan, { ISubscriptionPlan } from '../../models/SubscriptionPlan';
 import { emailService } from '../../utils/emailService';
-import { PermissionService } from '../../services/PermissionService';
+import PermissionService from '../../services/PermissionService';
+import { testUtils } from '../utils/testUtils';
 
 // Mock dependencies
 jest.mock('../../models/Invitation');
@@ -58,13 +59,17 @@ describe('InvitationService', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        invitationService = new InvitationService();
+        invitationService = InvitationService.getInstance();
 
         // Setup default mocks
         mockWorkplace.findById.mockResolvedValue(mockWorkspaceData as any);
         mockSubscriptionPlan.findById.mockResolvedValue(mockPlanData as any);
         mockUser.findById.mockResolvedValue(mockInviterData as any);
-        mockPermissionService.prototype.checkPermission.mockResolvedValue({
+        mockUser.findOne.mockResolvedValue(null); // Default: no existing user
+        mockInvitation.findOne.mockResolvedValue(null); // Default: no existing invitation
+
+        // Mock PermissionService as static methods since it's a default export
+        (PermissionService as any).checkPermission = jest.fn().mockResolvedValue({
             allowed: true,
             reason: 'workplace_role_match'
         });
@@ -73,9 +78,9 @@ describe('InvitationService', () => {
     describe('createInvitation', () => {
         const invitationData = {
             email: 'newuser@example.com',
-            role: 'Pharmacist',
-            workspaceId: mockWorkspaceData._id,
-            invitedBy: mockInviterData._id
+            role: 'Pharmacist' as const,
+            workspaceId: mockWorkspaceData._id.toString(),
+            inviterId: mockInviterData._id.toString()
         };
 
         it('should create invitation successfully', async () => {
@@ -91,7 +96,7 @@ describe('InvitationService', () => {
             mockInvitation.findOne.mockResolvedValue(null); // No existing invitation
             mockUser.findOne.mockResolvedValue(null); // User doesn't exist
             mockInvitation.prototype.save.mockResolvedValue(mockCreatedInvitation as any);
-            mockEmailService.sendInvitationEmail.mockResolvedValue(true);
+            mockEmailService.sendInvitationEmail.mockResolvedValue({ success: true, messageId: 'test-message-id' });
 
             const result = await invitationService.createInvitation(invitationData);
 
@@ -166,7 +171,7 @@ describe('InvitationService', () => {
                 _id: testUtils.createObjectId(),
                 ...invitationData
             } as any);
-            mockEmailService.sendInvitationEmail.mockResolvedValue(false);
+            mockEmailService.sendInvitationEmail.mockResolvedValue({ success: false, error: 'Email delivery failed' });
 
             const result = await invitationService.createInvitation(invitationData);
 
@@ -275,7 +280,7 @@ describe('InvitationService', () => {
             };
 
             mockInvitation.findById.mockResolvedValue(mockInvitationData as any);
-            mockEmailService.sendInvitationEmail.mockResolvedValue(true);
+            mockEmailService.sendInvitationEmail.mockResolvedValue({ success: true, messageId: 'resend-message-id' });
 
             const result = await invitationService.resendInvitation(invitationId, mockInviterData._id);
 

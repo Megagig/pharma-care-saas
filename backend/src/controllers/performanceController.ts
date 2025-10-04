@@ -14,7 +14,7 @@ export class PerformanceController {
     private dynamicPermissionService: DynamicPermissionService;
     private cacheManager: CacheManager;
     private performanceCacheService: PerformanceCacheService;
-    private dbOptimizationService: DatabaseOptimizationService;
+    private dbOptimizationService: any;
     private performanceDatabaseOptimizer: PerformanceDatabaseOptimizer;
     private performanceJobService: PerformanceJobService;
 
@@ -22,7 +22,8 @@ export class PerformanceController {
         this.dynamicPermissionService = DynamicPermissionService.getInstance();
         this.cacheManager = CacheManager.getInstance();
         this.performanceCacheService = PerformanceCacheService.getInstance();
-        this.dbOptimizationService = DatabaseOptimizationService.getInstance();
+        // this.dbOptimizationService = DatabaseOptimizationService.getInstance();
+        this.dbOptimizationService = null; // Service initialization disabled for now
         this.performanceDatabaseOptimizer = PerformanceDatabaseOptimizer.getInstance();
         this.performanceJobService = PerformanceJobService.getInstance();
     }

@@ -21,7 +21,9 @@ export interface ISubscription extends Document {
     trialEndDate?: Date;
     trialEndsAt?: Date;
     isTrial?: boolean;
+    amount?: number;
     priceAtPurchase: number;
+    billingCycle?: 'monthly' | 'yearly';
     billingInterval: 'monthly' | 'yearly';
     nextBillingDate?: Date;
     paymentHistory: mongoose.Types.ObjectId[];
@@ -55,8 +57,9 @@ export interface ISubscription extends Document {
     isExpired(): boolean;
     canRenew(): boolean;
 }
-declare const _default: mongoose.Model<ISubscription, {}, {}, {}, mongoose.Document<unknown, {}, ISubscription> & ISubscription & {
+declare const Subscription: mongoose.Model<ISubscription, {}, {}, {}, mongoose.Document<unknown, {}, ISubscription> & ISubscription & {
     _id: mongoose.Types.ObjectId;
 }, any>;
-export default _default;
+export { Subscription };
+export default Subscription;
 //# sourceMappingURL=Subscription.d.ts.map

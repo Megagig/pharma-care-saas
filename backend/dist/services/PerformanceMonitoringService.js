@@ -18,7 +18,7 @@ class PerformanceMonitoringService {
     async getPerformanceOverview(workspaceId) {
         const cacheKey = `performance-overview:${workspaceId || 'global'}`;
         const cached = await this.cacheService.get(cacheKey);
-        if (cached) {
+        if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
             return cached;
         }
         try {

@@ -488,418 +488,418 @@ describe('RBAC Security Tests', () => {
             expect(timingDifference).toBeLessThan(5); // Less than 5ms difference
         });
     });
-}); descr
-ibe('Audit Logging Security', () => {
-    it('should log all permission changes with complete audit trail', async () => {
-        const initialAuditCount = await AuditLog.countDocuments();
 
-        // Perform a permission-changing operation
-        await request(app)
-            .post(`/api/admin/users/${normalUser._id}/roles`)
-            .set('Authorization', superAdminToken)
-            .send({
-                roleId: adminRole._id,
-                workspaceId: testWorkplace._id
-            })
-            .expect(200);
+    describe('Audit Logging Security', () => {
+        it('should log all permission changes with complete audit trail', async () => {
+            const initialAuditCount = await AuditLog.countDocuments();
 
-        // Verify audit log was created
-        const finalAuditCount = await AuditLog.countDocuments();
-        expect(finalAuditCount).toBeGreaterThan(initialAuditCount);
-
-        const auditLog = await AuditLog.findOne({
-            userId: normalUser._id,
-            action: 'role_assigned'
-        }).sort({ createdAt: -1 });
-
-        expect(auditLog).toBeTruthy();
-        expect(auditLog?.details).toContain(adminRole._id.toString());
-        expect(auditLog?.performedBy).toBeDefined();
-    });
-
-    it('should log failed permission attempts', async () => {
-        const initialAuditCount = await AuditLog.countDocuments({
-            action: 'permission_denied'
-        });
-
-        // Attempt unauthorized action
-        await request(app)
-            .delete(`/api/admin/users/${adminUser._id}`)
-            .set('Authorization', normalToken)
-            .expect(403);
-
-        // Verify failed attempt was logged
-        const finalAuditCount = await AuditLog.countDocuments({
-            action: 'permission_denied'
-        });
-        expect(finalAuditCount).toBeGreaterThan(initialAuditCount);
-
-        const auditLog = await AuditLog.findOne({
-            userId: normalUser._id,
-            action: 'permission_denied'
-        }).sort({ createdAt: -1 });
-
-        expect(auditLog).toBeTruthy();
-        expect(auditLog?.details).toContain('admin.delete_user');
-    });
-
-    it('should prevent audit log tampering', async () => {
-        // Create an audit log entry
-        const auditLog = await AuditLog.create({
-            userId: normalUser._id,
-            action: 'test_action',
-            details: 'Original details',
-            performedBy: superAdminUser._id,
-            timestamp: new Date(),
-            ipAddress: '127.0.0.1',
-            userAgent: 'Test Agent'
-        });
-
-        // Attempt to modify audit log (should be prevented)
-        try {
+            // Perform a permission-changing operation
             await request(app)
-                .put(`/api/admin/audit-logs/${auditLog._id}`)
+                .post(`/api/admin/users/${normalUser._id}/roles`)
                 .set('Authorization', superAdminToken)
                 .send({
-                    details: 'Modified details'
+                    roleId: adminRole._id,
+                    workspaceId: testWorkplace._id
                 })
-                .expect(405); // Method not allowed
-        } catch (error) {
-            // Expected to fail
-        }
+                .expect(200);
 
-        // Verify audit log was not modified
-        const unchangedLog = await AuditLog.findById(auditLog._id);
-        expect(unchangedLog?.details).toBe('Original details');
-    });
+            // Verify audit log was created
+            const finalAuditCount = await AuditLog.countDocuments();
+            expect(finalAuditCount).toBeGreaterThan(initialAuditCount);
 
-    it('should maintain audit log integrity under concurrent operations', async () => {
-        const concurrentOperations = 50;
-        const operationPromises: Promise<any>[] = [];
+            const auditLog = await AuditLog.findOne({
+                userId: normalUser._id,
+                action: 'role_assigned'
+            }).sort({ createdAt: -1 });
 
-        // Perform concurrent operations that should generate audit logs
-        for (let i = 0; i < concurrentOperations; i++) {
-            operationPromises.push(
-                request(app)
-                    .get(`/api/admin/users/${normalUser._id}/effective-permissions`)
-                    .set('Authorization', superAdminToken)
-            );
-        }
-
-        await Promise.all(operationPromises);
-
-        // Verify all operations were logged
-        const auditLogs = await AuditLog.find({
-            action: 'permission_check',
-            userId: normalUser._id
-        }).sort({ createdAt: -1 }).limit(concurrentOperations);
-
-        expect(auditLogs.length).toBe(concurrentOperations);
-
-        // Verify no duplicate or corrupted entries
-        const timestamps = auditLogs.map(log => log.timestamp.getTime());
-        const uniqueTimestamps = new Set(timestamps);
-        expect(uniqueTimestamps.size).toBe(timestamps.length);
-    });
-});
-
-describe('Session Security', () => {
-    it('should invalidate sessions when critical permissions are revoked', async () => {
-        // Assign admin role to user
-        await UserRole.create({
-            userId: normalUser._id,
-            roleId: adminRole._id,
-            workspaceId: testWorkplace._id,
-            assignedBy: superAdminUser._id,
-            assignedAt: new Date(),
-            isActive: true,
-            isTemporary: false,
-            lastModifiedBy: superAdminUser._id,
-            lastModifiedAt: new Date()
+            expect(auditLog).toBeTruthy();
+            expect(auditLog?.details).toContain(adminRole._id.toString());
+            expect(auditLog?.performedBy).toBeDefined();
         });
 
-        // Verify user has admin permission
-        let permissionResult = await dynamicPermissionService.checkPermission(
-            normalUser,
-            'admin.delete_user',
-            {
-                workspace: testWorkplace,
-                plan: null,
-                subscription: null,
-                permissions: [],
-                limits: {},
-                isSubscriptionActive: true,
-                isTrialExpired: false
-            }
-        );
-        expect(permissionResult.allowed).toBe(true);
+        it('should log failed permission attempts', async () => {
+            const initialAuditCount = await AuditLog.countDocuments({
+                action: 'permission_denied'
+            });
 
-        // Revoke admin role
-        await UserRole.findOneAndUpdate(
-            { userId: normalUser._id, roleId: adminRole._id },
-            { isActive: false }
-        );
+            // Attempt unauthorized action
+            await request(app)
+                .delete(`/api/admin/users/${adminUser._id}`)
+                .set('Authorization', normalToken)
+                .expect(403);
 
-        // Invalidate user cache (simulates session invalidation)
-        await dynamicPermissionService.invalidateUserCache(normalUser._id);
+            // Verify failed attempt was logged
+            const finalAuditCount = await AuditLog.countDocuments({
+                action: 'permission_denied'
+            });
+            expect(finalAuditCount).toBeGreaterThan(initialAuditCount);
 
-        // Verify permission is now denied
-        permissionResult = await dynamicPermissionService.checkPermission(
-            normalUser,
-            'admin.delete_user',
-            {
-                workspace: testWorkplace,
-                plan: null,
-                subscription: null,
-                permissions: [],
-                limits: {},
-                isSubscriptionActive: true,
-                isTrialExpired: false
-            }
-        );
-        expect(permissionResult.allowed).toBe(false);
-    });
+            const auditLog = await AuditLog.findOne({
+                userId: normalUser._id,
+                action: 'permission_denied'
+            }).sort({ createdAt: -1 });
 
-    it('should prevent session fixation attacks', async () => {
-        // This test would verify that session IDs are regenerated after privilege changes
-        // For now, we'll test that cache invalidation works properly
+            expect(auditLog).toBeTruthy();
+            expect(auditLog?.details).toContain('admin.delete_user');
+        });
 
-        // Cache a permission result
-        await dynamicPermissionService.checkPermission(
-            normalUser,
-            'patient.read',
-            {
-                workspace: testWorkplace,
-                plan: null,
-                subscription: null,
-                permissions: [],
-                limits: {},
-                isSubscriptionActive: true,
-                isTrialExpired: false
-            }
-        );
+        it('should prevent audit log tampering', async () => {
+            // Create an audit log entry
+            const auditLog = await AuditLog.create({
+                userId: normalUser._id,
+                action: 'test_action',
+                details: 'Original details',
+                performedBy: superAdminUser._id,
+                timestamp: new Date(),
+                ipAddress: '127.0.0.1',
+                userAgent: 'Test Agent'
+            });
 
-        // Verify cache exists
-        let cachedResult = await cacheManager.getCachedPermissionCheck(
-            normalUser._id,
-            'patient.read',
-            testWorkplace._id
-        );
-        expect(cachedResult).toBeTruthy();
-
-        // Simulate privilege change (should invalidate cache)
-        await dynamicPermissionService.invalidateUserCache(normalUser._id);
-
-        // Verify cache was cleared
-        cachedResult = await cacheManager.getCachedPermissionCheck(
-            normalUser._id,
-            'patient.read',
-            testWorkplace._id
-        );
-        expect(cachedResult).toBeNull();
-    });
-});
-
-describe('Input Validation Security', () => {
-    it('should validate and sanitize role names', async () => {
-        const maliciousRoleName = '<script>alert("xss")</script>';
-
-        const response = await request(app)
-            .post('/api/admin/roles')
-            .set('Authorization', superAdminToken)
-            .send({
-                name: maliciousRoleName,
-                displayName: 'Test Role',
-                description: 'Test description',
-                permissions: []
-            })
-            .expect(400);
-
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain('Invalid role name');
-
-        // Verify role was not created
-        const createdRole = await Role.findOne({ name: maliciousRoleName });
-        expect(createdRole).toBeNull();
-    });
-
-    it('should validate permission action formats', async () => {
-        const maliciousPermission = '../../../etc/passwd';
-
-        const permissionResult = await dynamicPermissionService.checkPermission(
-            normalUser,
-            maliciousPermission,
-            {
-                workspace: testWorkplace,
-                plan: null,
-                subscription: null,
-                permissions: [],
-                limits: {},
-                isSubscriptionActive: true,
-                isTrialExpired: false
-            }
-        );
-
-        expect(permissionResult.allowed).toBe(false);
-        expect(permissionResult.reason).toContain('Permission not defined');
-    });
-
-    it('should prevent buffer overflow attacks in permission strings', async () => {
-        const longPermissionString = 'a'.repeat(10000); // Very long string
-
-        const permissionResult = await dynamicPermissionService.checkPermission(
-            normalUser,
-            longPermissionString,
-            {
-                workspace: testWorkplace,
-                plan: null,
-                subscription: null,
-                permissions: [],
-                limits: {},
-                isSubscriptionActive: true,
-                isTrialExpired: false
-            }
-        );
-
-        expect(permissionResult.allowed).toBe(false);
-        // Should handle gracefully without crashing
-    });
-});
-
-describe('Rate Limiting Security', () => {
-    it('should prevent brute force permission enumeration', async () => {
-        const maxAttempts = 100;
-        const attempts: Promise<any>[] = [];
-
-        // Attempt rapid permission checks
-        for (let i = 0; i < maxAttempts; i++) {
-            attempts.push(
-                request(app)
-                    .get(`/api/admin/users/${normalUser._id}/effective-permissions`)
-                    .set('Authorization', normalToken)
-            );
-        }
-
-        const results = await Promise.allSettled(attempts);
-        const failedAttempts = results.filter(r => r.status === 'rejected' ||
-            (r.status === 'fulfilled' && r.value.status === 429));
-
-        // Should have some rate limiting after many attempts
-        expect(failedAttempts.length).toBeGreaterThan(0);
-    });
-
-    it('should prevent DoS attacks through expensive operations', async () => {
-        const startTime = Date.now();
-        const expensiveOperations: Promise<any>[] = [];
-
-        // Attempt multiple expensive hierarchy traversals
-        for (let i = 0; i < 50; i++) {
-            expensiveOperations.push(
-                dynamicPermissionService.resolveUserPermissions(
-                    normalUser,
-                    {
-                        workspace: testWorkplace,
-                        plan: null,
-                        subscription: null,
-                        permissions: [],
-                        limits: {},
-                        isSubscriptionActive: true,
-                        isTrialExpired: false
-                    }
-                )
-            );
-        }
-
-        await Promise.all(expensiveOperations);
-        const endTime = Date.now();
-
-        // Should complete within reasonable time (not hang indefinitely)
-        expect(endTime - startTime).toBeLessThan(30000); // 30 seconds max
-    });
-});
-
-describe('Data Integrity Security', () => {
-    it('should maintain referential integrity during concurrent modifications', async () => {
-        const concurrentModifications: Promise<any>[] = [];
-
-        // Perform concurrent role assignments and revocations
-        for (let i = 0; i < 20; i++) {
-            if (i % 2 === 0) {
-                concurrentModifications.push(
-                    UserRole.create({
-                        userId: normalUser._id,
-                        roleId: testRole._id,
-                        workspaceId: testWorkplace._id,
-                        assignedBy: superAdminUser._id,
-                        assignedAt: new Date(),
-                        isActive: true,
-                        isTemporary: false,
-                        lastModifiedBy: superAdminUser._id,
-                        lastModifiedAt: new Date()
+            // Attempt to modify audit log (should be prevented)
+            try {
+                await request(app)
+                    .put(`/api/admin/audit-logs/${auditLog._id}`)
+                    .set('Authorization', superAdminToken)
+                    .send({
+                        details: 'Modified details'
                     })
+                    .expect(405); // Method not allowed
+            } catch (error) {
+                // Expected to fail
+            }
+
+            // Verify audit log was not modified
+            const unchangedLog = await AuditLog.findById(auditLog._id);
+            expect(unchangedLog?.details).toBe('Original details');
+        });
+
+        it('should maintain audit log integrity under concurrent operations', async () => {
+            const concurrentOperations = 50;
+            const operationPromises: Promise<any>[] = [];
+
+            // Perform concurrent operations that should generate audit logs
+            for (let i = 0; i < concurrentOperations; i++) {
+                operationPromises.push(
+                    request(app)
+                        .get(`/api/admin/users/${normalUser._id}/effective-permissions`)
+                        .set('Authorization', superAdminToken)
                 );
-            } else {
-                concurrentModifications.push(
-                    UserRole.findOneAndUpdate(
-                        { userId: normalUser._id, roleId: testRole._id },
-                        { isActive: false }
+            }
+
+            await Promise.all(operationPromises);
+
+            // Verify all operations were logged
+            const auditLogs = await AuditLog.find({
+                action: 'permission_check',
+                userId: normalUser._id
+            }).sort({ createdAt: -1 }).limit(concurrentOperations);
+
+            expect(auditLogs.length).toBe(concurrentOperations);
+
+            // Verify no duplicate or corrupted entries
+            const timestamps = auditLogs.map(log => log.timestamp.getTime());
+            const uniqueTimestamps = new Set(timestamps);
+            expect(uniqueTimestamps.size).toBe(timestamps.length);
+        });
+    });
+
+    describe('Session Security', () => {
+        it('should invalidate sessions when critical permissions are revoked', async () => {
+            // Assign admin role to user
+            await UserRole.create({
+                userId: normalUser._id,
+                roleId: adminRole._id,
+                workspaceId: testWorkplace._id,
+                assignedBy: superAdminUser._id,
+                assignedAt: new Date(),
+                isActive: true,
+                isTemporary: false,
+                lastModifiedBy: superAdminUser._id,
+                lastModifiedAt: new Date()
+            });
+
+            // Verify user has admin permission
+            let permissionResult = await dynamicPermissionService.checkPermission(
+                normalUser,
+                'admin.delete_user',
+                {
+                    workspace: testWorkplace,
+                    plan: null,
+                    subscription: null,
+                    permissions: [],
+                    limits: {},
+                    isSubscriptionActive: true,
+                    isTrialExpired: false
+                }
+            );
+            expect(permissionResult.allowed).toBe(true);
+
+            // Revoke admin role
+            await UserRole.findOneAndUpdate(
+                { userId: normalUser._id, roleId: adminRole._id },
+                { isActive: false }
+            );
+
+            // Invalidate user cache (simulates session invalidation)
+            await dynamicPermissionService.invalidateUserCache(normalUser._id);
+
+            // Verify permission is now denied
+            permissionResult = await dynamicPermissionService.checkPermission(
+                normalUser,
+                'admin.delete_user',
+                {
+                    workspace: testWorkplace,
+                    plan: null,
+                    subscription: null,
+                    permissions: [],
+                    limits: {},
+                    isSubscriptionActive: true,
+                    isTrialExpired: false
+                }
+            );
+            expect(permissionResult.allowed).toBe(false);
+        });
+
+        it('should prevent session fixation attacks', async () => {
+            // This test would verify that session IDs are regenerated after privilege changes
+            // For now, we'll test that cache invalidation works properly
+
+            // Cache a permission result
+            await dynamicPermissionService.checkPermission(
+                normalUser,
+                'patient.read',
+                {
+                    workspace: testWorkplace,
+                    plan: null,
+                    subscription: null,
+                    permissions: [],
+                    limits: {},
+                    isSubscriptionActive: true,
+                    isTrialExpired: false
+                }
+            );
+
+            // Verify cache exists
+            let cachedResult = await cacheManager.getCachedPermissionCheck(
+                normalUser._id,
+                'patient.read',
+                testWorkplace._id
+            );
+            expect(cachedResult).toBeTruthy();
+
+            // Simulate privilege change (should invalidate cache)
+            await dynamicPermissionService.invalidateUserCache(normalUser._id);
+
+            // Verify cache was cleared
+            cachedResult = await cacheManager.getCachedPermissionCheck(
+                normalUser._id,
+                'patient.read',
+                testWorkplace._id
+            );
+            expect(cachedResult).toBeNull();
+        });
+    });
+
+    describe('Input Validation Security', () => {
+        it('should validate and sanitize role names', async () => {
+            const maliciousRoleName = '<script>alert("xss")</script>';
+
+            const response = await request(app)
+                .post('/api/admin/roles')
+                .set('Authorization', superAdminToken)
+                .send({
+                    name: maliciousRoleName,
+                    displayName: 'Test Role',
+                    description: 'Test description',
+                    permissions: []
+                })
+                .expect(400);
+
+            expect(response.body.success).toBe(false);
+            expect(response.body.message).toContain('Invalid role name');
+
+            // Verify role was not created
+            const createdRole = await Role.findOne({ name: maliciousRoleName });
+            expect(createdRole).toBeNull();
+        });
+
+        it('should validate permission action formats', async () => {
+            const maliciousPermission = '../../../etc/passwd';
+
+            const permissionResult = await dynamicPermissionService.checkPermission(
+                normalUser,
+                maliciousPermission,
+                {
+                    workspace: testWorkplace,
+                    plan: null,
+                    subscription: null,
+                    permissions: [],
+                    limits: {},
+                    isSubscriptionActive: true,
+                    isTrialExpired: false
+                }
+            );
+
+            expect(permissionResult.allowed).toBe(false);
+            expect(permissionResult.reason).toContain('Permission not defined');
+        });
+
+        it('should prevent buffer overflow attacks in permission strings', async () => {
+            const longPermissionString = 'a'.repeat(10000); // Very long string
+
+            const permissionResult = await dynamicPermissionService.checkPermission(
+                normalUser,
+                longPermissionString,
+                {
+                    workspace: testWorkplace,
+                    plan: null,
+                    subscription: null,
+                    permissions: [],
+                    limits: {},
+                    isSubscriptionActive: true,
+                    isTrialExpired: false
+                }
+            );
+
+            expect(permissionResult.allowed).toBe(false);
+            // Should handle gracefully without crashing
+        });
+    });
+
+    describe('Rate Limiting Security', () => {
+        it('should prevent brute force permission enumeration', async () => {
+            const maxAttempts = 100;
+            const attempts: Promise<any>[] = [];
+
+            // Attempt rapid permission checks
+            for (let i = 0; i < maxAttempts; i++) {
+                attempts.push(
+                    request(app)
+                        .get(`/api/admin/users/${normalUser._id}/effective-permissions`)
+                        .set('Authorization', normalToken)
+                );
+            }
+
+            const results = await Promise.allSettled(attempts);
+            const failedAttempts = results.filter(r => r.status === 'rejected' ||
+                (r.status === 'fulfilled' && r.value.status === 429));
+
+            // Should have some rate limiting after many attempts
+            expect(failedAttempts.length).toBeGreaterThan(0);
+        });
+
+        it('should prevent DoS attacks through expensive operations', async () => {
+            const startTime = Date.now();
+            const expensiveOperations: Promise<any>[] = [];
+
+            // Attempt multiple expensive hierarchy traversals
+            for (let i = 0; i < 50; i++) {
+                expensiveOperations.push(
+                    dynamicPermissionService.resolveUserPermissions(
+                        normalUser,
+                        {
+                            workspace: testWorkplace,
+                            plan: null,
+                            subscription: null,
+                            permissions: [],
+                            limits: {},
+                            isSubscriptionActive: true,
+                            isTrialExpired: false
+                        }
                     )
                 );
             }
-        }
 
-        await Promise.allSettled(concurrentModifications);
+            await Promise.all(expensiveOperations);
+            const endTime = Date.now();
 
-        // Verify data integrity
-        const userRoles = await UserRole.find({ userId: normalUser._id });
-        const activeRoles = userRoles.filter(ur => ur.isActive);
-        const inactiveRoles = userRoles.filter(ur => !ur.isActive);
-
-        // Should have consistent state
-        expect(activeRoles.length + inactiveRoles.length).toBe(userRoles.length);
+            // Should complete within reasonable time (not hang indefinitely)
+            expect(endTime - startTime).toBeLessThan(30000); // 30 seconds max
+        });
     });
 
-    it('should prevent orphaned permission assignments', async () => {
-        // Create a role with permissions
-        const tempRole = await Role.create({
-            name: 'temp_role',
-            displayName: 'Temporary Role',
-            description: 'Temporary role for testing',
-            category: 'test',
-            permissions: ['temp.permission'],
-            isActive: true,
-            isSystemRole: false,
-            hierarchyLevel: 1,
-            createdBy: superAdminUser._id,
-            lastModifiedBy: superAdminUser._id
+    describe('Data Integrity Security', () => {
+        it('should maintain referential integrity during concurrent modifications', async () => {
+            const concurrentModifications: Promise<any>[] = [];
+
+            // Perform concurrent role assignments and revocations
+            for (let i = 0; i < 20; i++) {
+                if (i % 2 === 0) {
+                    concurrentModifications.push(
+                        UserRole.create({
+                            userId: normalUser._id,
+                            roleId: testRole._id,
+                            workspaceId: testWorkplace._id,
+                            assignedBy: superAdminUser._id,
+                            assignedAt: new Date(),
+                            isActive: true,
+                            isTemporary: false,
+                            lastModifiedBy: superAdminUser._id,
+                            lastModifiedAt: new Date()
+                        })
+                    );
+                } else {
+                    concurrentModifications.push(
+                        UserRole.findOneAndUpdate(
+                            { userId: normalUser._id, roleId: testRole._id },
+                            { isActive: false }
+                        )
+                    );
+                }
+            }
+
+            await Promise.allSettled(concurrentModifications);
+
+            // Verify data integrity
+            const userRoles = await UserRole.find({ userId: normalUser._id });
+            const activeRoles = userRoles.filter(ur => ur.isActive);
+            const inactiveRoles = userRoles.filter(ur => !ur.isActive);
+
+            // Should have consistent state
+            expect(activeRoles.length + inactiveRoles.length).toBe(userRoles.length);
         });
 
-        // Assign role to user
-        await UserRole.create({
-            userId: normalUser._id,
-            roleId: tempRole._id,
-            workspaceId: testWorkplace._id,
-            assignedBy: superAdminUser._id,
-            assignedAt: new Date(),
-            isActive: true,
-            isTemporary: false,
-            lastModifiedBy: superAdminUser._id,
-            lastModifiedAt: new Date()
+        it('should prevent orphaned permission assignments', async () => {
+            // Create a role with permissions
+            const tempRole = await Role.create({
+                name: 'temp_role',
+                displayName: 'Temporary Role',
+                description: 'Temporary role for testing',
+                category: 'test',
+                permissions: ['temp.permission'],
+                isActive: true,
+                isSystemRole: false,
+                hierarchyLevel: 1,
+                createdBy: superAdminUser._id,
+                lastModifiedBy: superAdminUser._id
+            });
+
+            // Assign role to user
+            await UserRole.create({
+                userId: normalUser._id,
+                roleId: tempRole._id,
+                workspaceId: testWorkplace._id,
+                assignedBy: superAdminUser._id,
+                assignedAt: new Date(),
+                isActive: true,
+                isTemporary: false,
+                lastModifiedBy: superAdminUser._id,
+                lastModifiedAt: new Date()
+            });
+
+            // Delete the role
+            await Role.findByIdAndDelete(tempRole._id);
+
+            // Verify user role assignment is handled properly
+            const orphanedUserRole = await UserRole.findOne({
+                userId: normalUser._id,
+                roleId: tempRole._id
+            });
+
+            if (orphanedUserRole) {
+                // Should be marked as inactive or cleaned up
+                expect(orphanedUserRole.isActive).toBe(false);
+            }
         });
-
-        // Delete the role
-        await Role.findByIdAndDelete(tempRole._id);
-
-        // Verify user role assignment is handled properly
-        const orphanedUserRole = await UserRole.findOne({
-            userId: normalUser._id,
-            roleId: tempRole._id
-        });
-
-        if (orphanedUserRole) {
-            // Should be marked as inactive or cleaned up
-            expect(orphanedUserRole.isActive).toBe(false);
-        }
     });
-});
 });

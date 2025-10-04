@@ -218,8 +218,8 @@ export class PerformanceBudgetService {
     const cacheKey = `performance-budgets:${workspaceId || 'global'}`;
 
     const cached = await this.cacheService.getCachedApiResponse<PerformanceBudget[]>(cacheKey);
-    if (cached) {
-      return cached;
+    if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
+      return cached as any;
     }
 
     try {

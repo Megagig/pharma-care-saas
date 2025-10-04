@@ -29,6 +29,39 @@ interface NombaVerifyResponse {
     };
     message?: string;
 }
+interface NombaCustomerData {
+    email: string;
+    name: string;
+    phone?: string;
+    metadata?: Record<string, any>;
+}
+interface NombaCustomerResponse {
+    success: boolean;
+    data?: {
+        customerId: string;
+        email: string;
+        name: string;
+    };
+    message?: string;
+}
+interface NombaSubscriptionData {
+    customerId: string;
+    planCode: string;
+    amount: number;
+    currency: string;
+    startDate?: Date;
+    metadata?: Record<string, any>;
+}
+interface NombaSubscriptionResponse {
+    success: boolean;
+    data?: {
+        subscriptionId: string;
+        subscriptionCode: string;
+        status: string;
+        nextPaymentDate: string;
+    };
+    message?: string;
+}
 declare class NombaService {
     private clientId;
     private privateKey;
@@ -45,6 +78,14 @@ declare class NombaService {
         success: boolean;
         message?: string;
     }>;
+    createCustomer(customerData: NombaCustomerData): Promise<NombaCustomerResponse>;
+    createSubscription(subscriptionData: NombaSubscriptionData): Promise<NombaSubscriptionResponse>;
+    cancelSubscription(subscriptionCode: string): Promise<{
+        success: boolean;
+        message?: string;
+    }>;
+    getSubscription(subscriptionCode: string): Promise<NombaSubscriptionResponse>;
+    processInvoicePayment(customerId: string, amount: number, description: string, metadata?: Record<string, any>): Promise<NombaPaymentResponse>;
     verifyWebhookSignature(payload: string, signature: string, timestamp: string): boolean;
 }
 export declare const nombaService: NombaService;

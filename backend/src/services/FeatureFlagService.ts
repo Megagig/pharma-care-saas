@@ -46,7 +46,7 @@ class FeatureFlagService {
       const cached = this.cache.get(cacheKey);
       if (cached && Date.now() - cached.lastEvaluated.getTime() < this.cacheTimeout) {
         this.updateMetrics(featureName, cached.enabled);
-        return cached;
+        return cached as any;
       }
 
       // Get global feature flag configuration

@@ -272,4 +272,7 @@ permissionSchema.statics.getByRiskLevel = function (riskLevel: string) {
     return this.find({ riskLevel, isActive: true }).sort({ action: 1 });
 };
 
-export default mongoose.model<IPermission>('Permission', permissionSchema);
+const Permission = mongoose.model<IPermission>('Permission', permissionSchema);
+
+export { Permission };
+export default Permission;

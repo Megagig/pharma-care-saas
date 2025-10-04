@@ -611,7 +611,7 @@ class PermissionAggregationService {
                 workspaceId
             );
 
-            if (cached) {
+            if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
                 return {
                     allowed: cached.allowed,
                     source: cached.source,

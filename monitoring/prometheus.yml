@@ -1,60 +1,136 @@
-# Prometheus configuration for Pharmacare Workspace Subscription monitoring
+# Prometheus Configuration for PharmaCare SaaS Settings Module
 
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    monitor: 'pharmacare-saas-monitor'
+    environment: 'production'
 
-rule_files:
-  - 'alert_rules.yml'
-
+# Alertmanager configuration
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
-            - alertmanager:9093
+          - alertmanager:9093
 
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alerts.yml"
+
+# Scrape configurations
 scrape_configs:
-  # Pharmacare API metrics
-  - job_name: 'pharmacare-api'
+  # Prometheus itself
+  - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:5000']
-    metrics_path: '/metrics'
-    scrape_interval: 15s
-    scrape_timeout: 10s
-
-  # MongoDB metrics
-  - job_name: 'mongodb'
-    static_configs:
-      - targets: ['localhost:9216']
+      - targets: ['localhost:9090']
     scrape_interval: 30s
+    metrics_path: /metrics
 
-  # Node.js application metrics
+  # PharmaCare SaaS Settings Application
+  - job_name: 'pharmacare-saas-app'
+    static_configs:
+      - targets: ['app:3000']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: app:3000
+
+  # Node Exporter (System Metrics)
   - job_name: 'node-exporter'
     static_configs:
-      - targets: ['localhost:9100']
+      - targets: ['node-exporter:9100']
     scrape_interval: 15s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*):(.*)'
+        target_label: instance
+        replacement: '${1}'
 
-  # PM2 process metrics
-  - job_name: 'pm2-metrics'
+  # PostgreSQL Exporter
+  - job_name: 'postgres-exporter'
     static_configs:
-      - targets: ['localhost:9209']
-    scrape_interval: 15s
-
-  # Redis metrics (if using Redis for caching)
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['localhost:9121']
+      - targets: ['postgres-exporter:9187']
     scrape_interval: 30s
+    metrics_path: /metrics
 
-  # Nginx metrics (if using Nginx as reverse proxy)
-  - job_name: 'nginx'
+  # Redis Exporter
+  - job_name: 'redis-exporter'
     static_configs:
-      - targets: ['localhost:9113']
+      - targets: ['redis-exporter:9121']
     scrape_interval: 30s
+    metrics_path: /metrics
 
-  # Custom application metrics
+  # Nginx Exporter
+  - job_name: 'nginx-exporter'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Blackbox Exporter (External Monitoring)
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - https://admin.pharmacare.com/health
+        - https://api.pharmacare.com/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Custom Application Metrics
   - job_name: 'pharmacare-custom-metrics'
     static_configs:
-      - targets: ['localhost:5001']
-    metrics_path: '/custom-metrics'
+      - targets: ['app:9464']
     scrape_interval: 30s
+    metrics_path: /custom-metrics
+    honor_labels: true
+
+# Remote write configuration (for long-term storage)
+remote_write:
+  - url: "https://prometheus-remote-write.pharmacare.com/api/v1/write"
+    basic_auth:
+      username: "pharmacare"
+      password: "remote_write_password"
+    write_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'go_.*'
+        action: drop
+    queue_config:
+      max_samples_per_send: 1000
+      max_shards: 200
+      capacity: 2500
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 15d
+    retention.size: 10GB
+    wal-compression: true
+
+# Web configuration
+web:
+  console.libraries: /etc/prometheus/console_libraries
+  console.templates: /etc/prometheus/consoles
+  enable-lifecycle: true
+  enable-admin-api: true
+  max-connections: 512
+  read-timeout: 30s

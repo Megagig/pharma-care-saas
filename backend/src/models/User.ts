@@ -9,30 +9,31 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   role:
-    | 'pharmacist'
-    | 'pharmacy_team'
-    | 'pharmacy_outlet'
-    | 'intern_pharmacist'
-    | 'super_admin'
-    | 'owner';
+  | 'pharmacist'
+  | 'pharmacy_team'
+  | 'pharmacy_outlet'
+  | 'intern_pharmacist'
+  | 'super_admin'
+  | 'owner';
   status:
-    | 'pending'
-    | 'active'
-    | 'suspended'
-    | 'license_pending'
-    | 'license_rejected';
+  | 'pending'
+  | 'active'
+  | 'suspended'
+  | 'license_pending'
+  | 'license_rejected';
+  isActive: boolean; // Added for notification service compatibility
   emailVerified: boolean;
   verificationToken?: string;
   verificationCode?: string;
   resetToken?: string;
   workplaceId?: mongoose.Types.ObjectId; // Changed from pharmacyId
   workplaceRole?:
-    | 'Owner'
-    | 'Staff'
-    | 'Pharmacist'
-    | 'Cashier'
-    | 'Technician'
-    | 'Assistant'; // Role within workplace
+  | 'Owner'
+  | 'Staff'
+  | 'Pharmacist'
+  | 'Cashier'
+  | 'Technician'
+  | 'Assistant'; // Role within workplace
   currentPlanId: mongoose.Types.ObjectId;
   planOverride?: Record<string, any>;
   currentSubscriptionId?: mongoose.Types.ObjectId;
@@ -83,12 +84,12 @@ export interface IUser extends Document {
 
   // Subscription and access
   subscriptionTier:
-    | 'free_trial'
-    | 'basic'
-    | 'pro'
-    | 'pharmily'
-    | 'network'
-    | 'enterprise';
+  | 'free_trial'
+  | 'basic'
+  | 'pro'
+  | 'pharmily'
+  | 'network'
+  | 'enterprise';
   trialStartDate?: Date;
   trialEndDate?: Date;
   features: string[]; // Enabled features for this user
@@ -181,6 +182,11 @@ const userSchema = new Schema(
         'license_rejected',
       ],
       default: 'pending',
+      index: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
       index: true,
     },
     emailVerified: {
@@ -727,4 +733,6 @@ userSchema.pre<IUser>('save', function (next) {
   next();
 });
 
-export default mongoose.model<IUser>('User', userSchema);
+const User = mongoose.model<IUser>('User', userSchema);
+export { User };
+export default User;

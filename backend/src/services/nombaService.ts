@@ -38,6 +38,43 @@ interface NombaVerifyResponse {
   message?: string;
 }
 
+interface NombaCustomerData {
+  email: string;
+  name: string;
+  phone?: string;
+  metadata?: Record<string, any>;
+}
+
+interface NombaCustomerResponse {
+  success: boolean;
+  data?: {
+    customerId: string;
+    email: string;
+    name: string;
+  };
+  message?: string;
+}
+
+interface NombaSubscriptionData {
+  customerId: string;
+  planCode: string;
+  amount: number;
+  currency: string;
+  startDate?: Date;
+  metadata?: Record<string, any>;
+}
+
+interface NombaSubscriptionResponse {
+  success: boolean;
+  data?: {
+    subscriptionId: string;
+    subscriptionCode: string;
+    status: string;
+    nextPaymentDate: string;
+  };
+  message?: string;
+}
+
 class NombaService {
   private clientId: string;
   private privateKey: string;
@@ -208,6 +245,214 @@ class NombaService {
       return {
         success: false,
         message: error.response?.data?.message || 'Refund failed',
+      };
+    }
+  }
+
+  /**
+   * Create a customer in Nomba for subscription management
+   */
+  async createCustomer(customerData: NombaCustomerData): Promise<NombaCustomerResponse> {
+    try {
+      const payload = {
+        email: customerData.email,
+        name: customerData.name,
+        phone: customerData.phone,
+        metadata: customerData.metadata || {},
+      };
+
+      const payloadString = JSON.stringify(payload);
+      const headers = this.getHeaders(payloadString);
+
+      const response = await axios.post(
+        `${this.baseURL}/customers`,
+        payload,
+        { headers }
+      );
+
+      if (response.data.status === 'success') {
+        return {
+          success: true,
+          data: {
+            customerId: response.data.data.customer_code,
+            email: response.data.data.email,
+            name: response.data.data.name,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || 'Customer creation failed',
+        };
+      }
+    } catch (error: any) {
+      console.error('Nomba customer creation error:', error.response?.data || error.message);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Customer creation failed',
+      };
+    }
+  }
+
+  /**
+   * Create a subscription in Nomba
+   */
+  async createSubscription(subscriptionData: NombaSubscriptionData): Promise<NombaSubscriptionResponse> {
+    try {
+      const payload = {
+        customer: subscriptionData.customerId,
+        plan: subscriptionData.planCode,
+        amount: subscriptionData.amount * 100, // Convert to kobo
+        currency: subscriptionData.currency || 'NGN',
+        start_date: subscriptionData.startDate?.toISOString(),
+        metadata: subscriptionData.metadata || {},
+      };
+
+      const payloadString = JSON.stringify(payload);
+      const headers = this.getHeaders(payloadString);
+
+      const response = await axios.post(
+        `${this.baseURL}/subscriptions`,
+        payload,
+        { headers }
+      );
+
+      if (response.data.status === 'success') {
+        return {
+          success: true,
+          data: {
+            subscriptionId: response.data.data.subscription_code,
+            subscriptionCode: response.data.data.subscription_code,
+            status: response.data.data.status,
+            nextPaymentDate: response.data.data.next_payment_date,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || 'Subscription creation failed',
+        };
+      }
+    } catch (error: any) {
+      console.error('Nomba subscription creation error:', error.response?.data || error.message);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Subscription creation failed',
+      };
+    }
+  }
+
+  /**
+   * Cancel a subscription in Nomba
+   */
+  async cancelSubscription(subscriptionCode: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const headers = this.getHeaders();
+
+      const response = await axios.post(
+        `${this.baseURL}/subscriptions/${subscriptionCode}/cancel`,
+        {},
+        { headers }
+      );
+
+      return {
+        success: response.data.status === 'success',
+        message: response.data.message,
+      };
+    } catch (error: any) {
+      console.error('Nomba subscription cancellation error:', error.response?.data || error.message);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Subscription cancellation failed',
+      };
+    }
+  }
+
+  /**
+   * Get subscription details from Nomba
+   */
+  async getSubscription(subscriptionCode: string): Promise<NombaSubscriptionResponse> {
+    try {
+      const headers = this.getHeaders();
+
+      const response = await axios.get(
+        `${this.baseURL}/subscriptions/${subscriptionCode}`,
+        { headers }
+      );
+
+      if (response.data.status === 'success') {
+        const data = response.data.data;
+        return {
+          success: true,
+          data: {
+            subscriptionId: data.subscription_code,
+            subscriptionCode: data.subscription_code,
+            status: data.status,
+            nextPaymentDate: data.next_payment_date,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || 'Failed to fetch subscription',
+        };
+      }
+    } catch (error: any) {
+      console.error('Nomba subscription fetch error:', error.response?.data || error.message);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch subscription',
+      };
+    }
+  }
+
+  /**
+   * Process a payment for an invoice
+   */
+  async processInvoicePayment(
+    customerId: string,
+    amount: number,
+    description: string,
+    metadata?: Record<string, any>
+  ): Promise<NombaPaymentResponse> {
+    try {
+      const payload = {
+        customer: customerId,
+        amount: amount * 100, // Convert to kobo
+        currency: 'NGN',
+        description,
+        metadata: metadata || {},
+      };
+
+      const payloadString = JSON.stringify(payload);
+      const headers = this.getHeaders(payloadString);
+
+      const response = await axios.post(
+        `${this.baseURL}/charges`,
+        payload,
+        { headers }
+      );
+
+      if (response.data.status === 'success') {
+        return {
+          success: true,
+          data: {
+            reference: response.data.data.reference,
+            checkoutUrl: response.data.data.authorization_url,
+            accessCode: response.data.data.access_code,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || 'Payment processing failed',
+        };
+      }
+    } catch (error: any) {
+      console.error('Nomba invoice payment error:', error.response?.data || error.message);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Payment processing failed',
       };
     }
   }

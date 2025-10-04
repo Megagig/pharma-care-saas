@@ -104,7 +104,7 @@ class WebVitalsService {
     async getWebVitalsSummary(period = '24h', filters = {}) {
         const cacheKey = `web-vitals-summary:${period}:${JSON.stringify(filters)}`;
         const cached = await this.cacheService.get(cacheKey);
-        if (cached) {
+        if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
             return cached;
         }
         try {
@@ -143,7 +143,7 @@ class WebVitalsService {
     async getWebVitalsTimeSeries(metric, period = '24h', interval = '1h', filters = {}) {
         const cacheKey = `web-vitals-timeseries:${metric}:${period}:${interval}:${JSON.stringify(filters)}`;
         const cached = await this.cacheService.get(cacheKey);
-        if (cached) {
+        if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
             return cached;
         }
         try {

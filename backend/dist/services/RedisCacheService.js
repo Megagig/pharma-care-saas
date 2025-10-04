@@ -218,6 +218,42 @@ class RedisCacheService {
             return false;
         }
     }
+    async delPattern(pattern) {
+        if (!this.redis) {
+            return 0;
+        }
+        try {
+            const keys = await this.redis.keys(pattern);
+            if (keys.length === 0) {
+                return 0;
+            }
+            const pipeline = this.redis.pipeline();
+            keys.forEach(key => {
+                pipeline.del(key);
+                pipeline.del(`compressed:${key}`);
+                pipeline.del(`meta:${key}`);
+            });
+            const results = await pipeline.exec();
+            return results?.filter(([err, result]) => !err && result).length || 0;
+        }
+        catch (error) {
+            logger_1.default.error('Redis delPattern error:', error);
+            return 0;
+        }
+    }
+    async ping() {
+        if (!this.redis) {
+            return false;
+        }
+        try {
+            const result = await this.redis.ping();
+            return result === 'PONG';
+        }
+        catch (error) {
+            logger_1.default.error('Redis ping error:', error);
+            return false;
+        }
+    }
     async exists(key) {
         if (!this.redis) {
             return false;
