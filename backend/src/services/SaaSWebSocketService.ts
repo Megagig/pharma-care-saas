@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { RedisCacheService } from './RedisCacheService';
 import { CacheInvalidationService } from './CacheInvalidationService';
 import { SystemAnalyticsService } from './SystemAnalyticsService';
-import { SecurityMonitoringService } from './SecurityMonitoringService';
+import { SecurityMonitoringService } from './SaaSSecurityMonitoringService';
 import logger from '../utils/logger';
 
 interface AuthenticatedSocket extends Socket {
@@ -37,12 +37,12 @@ export class SaaSWebSocketService {
   private cacheInvalidation: CacheInvalidationService;
   private systemAnalytics: SystemAnalyticsService;
   private securityMonitoring: SecurityMonitoringService;
-  
+
   // Connection management
   private connectedClients: Map<string, AuthenticatedSocket> = new Map();
   private userSubscriptions: Map<string, Set<string>> = new Map(); // userId -> Set of event types
   private workspaceSubscriptions: Map<string, Set<string>> = new Map(); // workspaceId -> Set of socketIds
-  
+
   // Rate limiting
   private rateLimits: Map<string, { count: number; resetTime: number }> = new Map();
   private readonly RATE_LIMIT_WINDOW = 60000; // 1 minute
@@ -84,14 +84,14 @@ export class SaaSWebSocketService {
     this.io.use(async (socket: AuthenticatedSocket, next) => {
       try {
         const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
-        
+
         if (!token) {
           return next(new Error('Authentication token required'));
         }
 
         // Verify JWT token
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-        
+
         socket.userId = decoded.userId;
         socket.workspaceId = decoded.workspaceId;
         socket.role = decoded.role;
@@ -155,7 +155,7 @@ export class SaaSWebSocketService {
    */
   private handleConnection(socket: AuthenticatedSocket): void {
     const { userId, workspaceId } = socket;
-    
+
     if (!userId) return;
 
     // Store connection
@@ -171,7 +171,7 @@ export class SaaSWebSocketService {
 
     // Join user-specific room
     socket.join(`user:${userId}`);
-    
+
     // Join workspace room if applicable
     if (workspaceId) {
       socket.join(`workspace:${workspaceId}`);
@@ -221,14 +221,14 @@ export class SaaSWebSocketService {
     if (!this.userSubscriptions.has(userId)) {
       this.userSubscriptions.set(userId, new Set());
     }
-    
+
     const userSubs = this.userSubscriptions.get(userId)!;
     validEventTypes.forEach(type => userSubs.add(type));
 
     // Join event-specific rooms
     validEventTypes.forEach(eventType => {
       socket.join(`event:${eventType}`);
-      
+
       // Join filtered rooms if applicable
       if (filters?.workspaceId) {
         socket.join(`event:${eventType}:workspace:${filters.workspaceId}`);
@@ -256,7 +256,7 @@ export class SaaSWebSocketService {
 
     const { eventTypes } = data;
     const userSubs = this.userSubscriptions.get(userId);
-    
+
     if (!userSubs) return;
 
     // Remove from user subscriptions
@@ -326,7 +326,7 @@ export class SaaSWebSocketService {
    */
   private handleDisconnection(socket: AuthenticatedSocket, reason: string): void {
     const { userId, workspaceId } = socket;
-    
+
     // Remove from connected clients
     this.connectedClients.delete(socket.id);
 
@@ -478,7 +478,7 @@ export class SaaSWebSocketService {
    */
   private hasWebSocketPermission(socket: AuthenticatedSocket): boolean {
     const { role, permissions } = socket;
-    
+
     // Admin users always have access
     if (role === 'admin' || role === 'super_admin') {
       return true;
@@ -493,9 +493,9 @@ export class SaaSWebSocketService {
    */
   private getAllowedEventTypes(socket: AuthenticatedSocket): string[] {
     const { role, permissions } = socket;
-    
+
     const baseEvents = ['system_metrics_updated', 'notification'];
-    
+
     if (role === 'admin' || role === 'super_admin') {
       return [
         ...baseEvents,
@@ -509,11 +509,11 @@ export class SaaSWebSocketService {
     }
 
     const allowedEvents = [...baseEvents];
-    
+
     if (permissions?.includes('analytics:read')) {
       allowedEvents.push('user_activity_updated');
     }
-    
+
     if (permissions?.includes('security:read')) {
       allowedEvents.push('security_alert', 'active_sessions_updated');
     }
@@ -591,19 +591,19 @@ export class SaaSWebSocketService {
    */
   async shutdown(): Promise<void> {
     logger.info('Shutting down SaaS WebSocket service...');
-    
+
     // Notify all connected clients
     this.io.emit('server_shutdown', { message: 'Server is shutting down' });
-    
+
     // Close all connections
     this.io.close();
-    
+
     // Clear internal state
     this.connectedClients.clear();
     this.userSubscriptions.clear();
     this.workspaceSubscriptions.clear();
     this.rateLimits.clear();
-    
+
     logger.info('SaaS WebSocket service shut down successfully');
   }
 }

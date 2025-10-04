@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { body, query, param } from 'express-validator';
 import IntegrationController from '../controllers/integrationController';
-import { authenticateToken } from '../middlewares/auth';
+import { auth } from '../middlewares/auth';
 import { requireSuperAdmin } from '../middlewares/rbac';
 
 const router = Router();
 
 // Apply authentication and super admin requirement to all routes
-router.use(authenticateToken);
+router.use(auth);
 router.use(requireSuperAdmin);
 
 /**

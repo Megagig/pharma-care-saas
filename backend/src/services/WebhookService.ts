@@ -97,7 +97,7 @@ export class WebhookService {
    */
   async createWebhook(webhookData: Partial<IWebhook>): Promise<IWebhook> {
     const secret = this.generateWebhookSecret();
-    
+
     const webhook = new Webhook({
       ...webhookData,
       secret
@@ -156,7 +156,7 @@ export class WebhookService {
     };
 
     const deliveryPromises = webhooks
-      .filter(webhook => webhook.shouldTrigger(eventType, eventData))
+      .filter(webhook => (webhook as any).shouldTrigger(eventType, eventData))
       .map(webhook => this.createWebhookDelivery(webhook, event));
 
     await Promise.all(deliveryPromises);
@@ -215,7 +215,7 @@ export class WebhookService {
       throw new Error('Webhook delivery not found');
     }
 
-    const webhook = delivery.webhookId as IWebhook;
+    const webhook = delivery.webhookId as unknown as IWebhook;
     if (!webhook) {
       throw new Error('Associated webhook not found');
     }
@@ -235,7 +235,7 @@ export class WebhookService {
       const responseTime = Date.now() - startTime;
       const success = response.status >= 200 && response.status < 300;
 
-      delivery.addAttempt({
+      (delivery as any).addAttempt({
         responseStatus: response.status,
         responseHeaders: response.headers,
         responseBody: JSON.stringify(response.data).substring(0, 10000), // Limit response body size
@@ -243,12 +243,12 @@ export class WebhookService {
         success
       });
 
-      webhook.updateStatistics(responseTime, success);
+      (webhook as any).updateStatistics(responseTime, success);
 
-      if (!success && delivery.isRetryable(webhook.retryPolicy.maxRetries)) {
-        delivery.scheduleRetry(webhook.retryPolicy.retryDelay, webhook.retryPolicy.backoffMultiplier);
+      if (!success && (delivery as any).isRetryable(webhook.retryPolicy.maxRetries)) {
+        (delivery as any).scheduleRetry(webhook.retryPolicy.retryDelay, webhook.retryPolicy.backoffMultiplier);
       } else if (!success) {
-        delivery.markAsFailed();
+        (delivery as any).markAsFailed();
         webhook.lastError = `HTTP ${response.status}: ${response.statusText}`;
       }
 
@@ -256,18 +256,18 @@ export class WebhookService {
       const responseTime = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      delivery.addAttempt({
+      (delivery as any).addAttempt({
         responseTime,
         error: errorMessage,
         success: false
       });
 
-      webhook.updateStatistics(responseTime, false);
+      (webhook as any).updateStatistics(responseTime, false);
 
-      if (delivery.isRetryable(webhook.retryPolicy.maxRetries)) {
-        delivery.scheduleRetry(webhook.retryPolicy.retryDelay, webhook.retryPolicy.backoffMultiplier);
+      if ((delivery as any).isRetryable(webhook.retryPolicy.maxRetries)) {
+        (delivery as any).scheduleRetry(webhook.retryPolicy.retryDelay, webhook.retryPolicy.backoffMultiplier);
       } else {
-        delivery.markAsFailed();
+        (delivery as any).markAsFailed();
         webhook.lastError = errorMessage;
       }
     }
@@ -284,7 +284,7 @@ export class WebhookService {
       nextRetryAt: { $lte: new Date() }
     }).limit(100);
 
-    const retryPromises = pendingDeliveries.map(delivery => 
+    const retryPromises = pendingDeliveries.map(delivery =>
       this.deliverWebhook(delivery._id.toString()).catch(error => {
         console.error(`Retry failed for delivery ${delivery._id}:`, error);
       })
@@ -474,8 +474,8 @@ export class WebhookService {
       averageResponseTime: 0
     };
 
-    const successRate = stats.totalDeliveries > 0 
-      ? (stats.successfulDeliveries / stats.totalDeliveries) * 100 
+    const successRate = stats.totalDeliveries > 0
+      ? (stats.successfulDeliveries / stats.totalDeliveries) * 100
       : 0;
 
     return {

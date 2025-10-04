@@ -209,7 +209,7 @@ export class IntegrationService {
       const duration = Date.now() - startTime;
       result.duration = duration;
 
-      integration.updateSyncStatistics(
+      (integration as any).updateSyncStatistics(
         result.success,
         result.recordsProcessed,
         duration,
@@ -224,7 +224,7 @@ export class IntegrationService {
       const duration = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      integration.updateSyncStatistics(false, 0, duration, errorMessage);
+      (integration as any).updateSyncStatistics(false, 0, duration, errorMessage);
       await integration.save();
 
       return {
@@ -246,8 +246,8 @@ export class IntegrationService {
     });
 
     const syncPromises = integrations
-      .filter(integration => integration.shouldSync())
-      .map(integration => 
+      .filter(integration => (integration as any).shouldSync())
+      .map(integration =>
         this.executeSync(integration._id.toString()).catch(error => {
           console.error(`Scheduled sync failed for integration ${integration._id}:`, error);
         })
@@ -350,8 +350,8 @@ export class IntegrationService {
       recordsProcessed: 0
     };
 
-    const successRate = stats.totalSyncs > 0 
-      ? (stats.successfulSyncs / stats.totalSyncs) * 100 
+    const successRate = stats.totalSyncs > 0
+      ? (stats.successfulSyncs / stats.totalSyncs) * 100
       : 0;
 
     return {
@@ -457,7 +457,7 @@ export class IntegrationService {
    */
   private async testApiIntegration(integration: IIntegration): Promise<any> {
     const config = integration.configuration;
-    
+
     if (!config.endpoint) {
       throw new Error('API endpoint is required');
     }
@@ -495,7 +495,7 @@ export class IntegrationService {
    */
   private async testWebhookIntegration(integration: IIntegration): Promise<any> {
     const config = integration.configuration;
-    
+
     if (!config.endpoint) {
       throw new Error('Webhook endpoint is required');
     }
@@ -548,7 +548,7 @@ export class IntegrationService {
     // Implementation would depend on the specific API
     // This is a simplified example
     const config = integration.configuration;
-    
+
     const response = await axios({
       method: 'GET',
       url: `${config.endpoint}/data`,
@@ -561,15 +561,15 @@ export class IntegrationService {
 
     const data = response.data;
     const records = Array.isArray(data) ? data : [data];
-    
+
     // Apply mapping and filters
     const processedRecords = records
       .filter(record => this.applyFilters(record, integration.filters))
-      .map(record => integration.applyMapping(record));
+      .map(record => (integration as any).applyMapping(record));
 
     // Here you would save the processed records to your database
     // For now, we'll just return the count
-    
+
     return {
       success: true,
       recordsProcessed: processedRecords.length,

@@ -203,7 +203,15 @@ export class UserManagementService {
         const canAssignRole = await this.permissionService.checkPermission(
           admin,
           'ASSIGN_ROLES',
-          { workspace: null }
+          {
+            workspace: null,
+            subscription: null,
+            plan: null,
+            permissions: [],
+            limits: {},
+            features: {},
+            usage: {}
+          }
         );
         if (!canAssignRole) {
           throw new Error('Insufficient permissions to assign role');
@@ -276,7 +284,15 @@ export class UserManagementService {
         const canRevokeRole = await this.permissionService.checkPermission(
           admin,
           'REVOKE_ROLES',
-          { workspace: null }
+          {
+            workspace: null,
+            subscription: null,
+            plan: null,
+            permissions: [],
+            limits: {},
+            features: {},
+            usage: {}
+          }
         );
         if (!canRevokeRole) {
           throw new Error('Insufficient permissions to revoke role');
@@ -576,7 +592,15 @@ export class UserManagementService {
       const canImpersonate = await this.permissionService.checkPermission(
         admin,
         'IMPERSONATE_USERS',
-        { workspace: null }
+        {
+          workspace: null,
+          subscription: null,
+          plan: null,
+          permissions: [],
+          limits: {},
+          features: {},
+          usage: {}
+        }
       );
       if (!canImpersonate) {
         throw new Error('Insufficient permissions to impersonate users');

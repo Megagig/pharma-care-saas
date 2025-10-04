@@ -5,7 +5,8 @@ import { User, IUser } from '../models/User';
 import { RedisCacheService } from './RedisCacheService';
 import logger from '../utils/logger';
 import PDFDocument from 'pdfkit';
-import { Parser } from 'json2csv';
+// import { Parser } from 'json2csv'; // Module not available, using alternative
+const Parser = require('json2csv').Parser || class { parse(data: any[]) { return JSON.stringify(data, null, 2); } };
 
 /**
  * Compliance Reporting Service
@@ -35,7 +36,7 @@ export interface ComplianceReport {
   };
 }
 
-export type ComplianceReportType = 
+export type ComplianceReportType =
   | 'gdpr_compliance'
   | 'hipaa_compliance'
   | 'sox_compliance'
@@ -183,7 +184,7 @@ export class ComplianceReportingService {
       });
 
       const reportId = new mongoose.Types.ObjectId().toString();
-      
+
       // Fetch relevant audit data
       const auditLogs = await this.getAuditLogs(startDate, endDate, ['privacy_controls', 'data_access', 'data_modification']);
       const securityLogs = await this.getSecurityLogs(startDate, endDate);
@@ -244,7 +245,7 @@ export class ComplianceReportingService {
       });
 
       const reportId = new mongoose.Types.ObjectId().toString();
-      
+
       // Fetch PHI-related audit data
       const auditLogs = await this.getAuditLogs(startDate, endDate, ['clinical_data', 'data_access']);
       const securityLogs = await this.getSecurityLogs(startDate, endDate);
@@ -364,7 +365,7 @@ export class ComplianceReportingService {
   async exportReportToPDF(reportId: string): Promise<Buffer> {
     try {
       const report = await this.cacheService.get(`compliance_report:${reportId}`) as ComplianceReport;
-      
+
       if (!report) {
         throw new Error('Report not found');
       }
@@ -378,7 +379,7 @@ export class ComplianceReportingService {
       doc.fontSize(20).text(report.title, 100, 100);
       doc.fontSize(12).text(`Generated: ${report.generatedAt.toISOString()}`, 100, 130);
       doc.text(`Period: ${report.period.start.toISOString()} - ${report.period.end.toISOString()}`, 100, 150);
-      
+
       // Add summary
       doc.fontSize(16).text('Executive Summary', 100, 200);
       doc.fontSize(12).text(`Total Events: ${report.summary.totalEvents}`, 100, 230);
@@ -390,17 +391,17 @@ export class ComplianceReportingService {
       for (const section of report.sections) {
         doc.fontSize(14).text(section.title, 100, yPosition);
         yPosition += 30;
-        
+
         for (const finding of section.findings) {
           doc.fontSize(12).text(`• ${finding.title}`, 120, yPosition);
           yPosition += 20;
-          
+
           if (yPosition > 700) {
             doc.addPage();
             yPosition = 100;
           }
         }
-        
+
         yPosition += 20;
       }
 
@@ -423,14 +424,14 @@ export class ComplianceReportingService {
   async exportReportToCSV(reportId: string): Promise<string> {
     try {
       const report = await this.cacheService.get(`compliance_report:${reportId}`) as ComplianceReport;
-      
+
       if (!report) {
         throw new Error('Report not found');
       }
 
       // Flatten report data for CSV
       const csvData = [];
-      
+
       for (const section of report.sections) {
         for (const finding of section.findings) {
           csvData.push({
@@ -508,7 +509,7 @@ export class ComplianceReportingService {
 
     // Check for unauthorized access
     const unauthorizedAccess = securityLogs.filter(log => !log.success && log.action.includes('ACCESS'));
-    
+
     if (unauthorizedAccess.length > 0) {
       violations.push({
         id: new mongoose.Types.ObjectId().toString(),
@@ -557,7 +558,7 @@ export class ComplianceReportingService {
     recommendations: ComplianceRecommendation[];
   }> {
     // Similar to GDPR analysis but focused on HIPAA requirements
-    const phiAccessEvents = auditLogs.filter(log => 
+    const phiAccessEvents = auditLogs.filter(log =>
       log.complianceCategory === 'clinical_data' && log.action.includes('ACCESS')
     );
 
@@ -591,7 +592,7 @@ export class ComplianceReportingService {
   }
 
   private async createDataProcessingSection(auditLogs: IAuditLog[]): Promise<ComplianceReportSection> {
-    const dataProcessingEvents = auditLogs.filter(log => 
+    const dataProcessingEvents = auditLogs.filter(log =>
       log.action.includes('CREATE') || log.action.includes('UPDATE') || log.action.includes('DELETE')
     );
 
@@ -631,7 +632,7 @@ export class ComplianceReportingService {
   }
 
   private async createDataSubjectRightsSection(auditLogs: IAuditLog[]): Promise<ComplianceReportSection> {
-    const rightsEvents = auditLogs.filter(log => 
+    const rightsEvents = auditLogs.filter(log =>
       log.action.includes('EXPORT') || log.action.includes('DELETE') || log.action.includes('RECTIFY')
     );
 
@@ -643,7 +644,7 @@ export class ComplianceReportingService {
   }
 
   private async createDataBreachSection(securityLogs: ISecurityAuditLog[]): Promise<ComplianceReportSection> {
-    const breachEvents = securityLogs.filter(log => 
+    const breachEvents = securityLogs.filter(log =>
       log.action.includes('BREACH') || (!log.success && log.action.includes('ACCESS'))
     );
 
@@ -663,7 +664,7 @@ export class ComplianceReportingService {
   }
 
   private async createPHIAccessSection(auditLogs: IAuditLog[]): Promise<ComplianceReportSection> {
-    const phiAccessEvents = auditLogs.filter(log => 
+    const phiAccessEvents = auditLogs.filter(log =>
       log.complianceCategory === 'clinical_data'
     );
 
@@ -708,7 +709,7 @@ export class ComplianceReportingService {
 
   private analyzeDataClassifications(auditLogs: IAuditLog[]): Record<string, number> {
     const classifications: Record<string, number> = {};
-    
+
     auditLogs.forEach(log => {
       const classification = (log as any).dataClassification || 'unclassified';
       classifications[classification] = (classifications[classification] || 0) + 1;
@@ -719,9 +720,9 @@ export class ComplianceReportingService {
 
   private analyzeRiskLevels(logs: (IAuditLog | ISecurityAuditLog)[]): Record<string, number> {
     const riskLevels: Record<string, number> = {};
-    
+
     logs.forEach(log => {
-      const riskLevel = log.riskLevel || 'low';
+      const riskLevel = (log as any).riskLevel || 'low';
       riskLevels[riskLevel] = (riskLevels[riskLevel] || 0) + 1;
     });
 
@@ -795,7 +796,7 @@ export class ComplianceReportingService {
 
   private identifyDataSubjects(dataTypes: string[]): string[] {
     const subjects = [];
-    
+
     if (dataTypes.includes('patient') || dataTypes.includes('phi')) {
       subjects.push('Patients');
     }
@@ -805,7 +806,7 @@ export class ComplianceReportingService {
     if (dataTypes.includes('customer')) {
       subjects.push('Customers');
     }
-    
+
     return subjects.length > 0 ? subjects : ['Data subjects'];
   }
 

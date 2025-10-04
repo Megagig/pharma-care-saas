@@ -1,55 +1,25 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = __importDefault(require("mongoose"));
-const CacheManager_1 = __importDefault(require("./CacheManager"));
+exports.CacheInvalidationService = void 0;
+const RedisCacheService_1 = require("./RedisCacheService");
+const CacheWarmingService_1 = require("./CacheWarmingService");
+const cacheConfig_1 = require("../config/cacheConfig");
 const logger_1 = __importDefault(require("../utils/logger"));
-const events_1 = require("events");
-class CacheInvalidationService extends events_1.EventEmitter {
+class CacheInvalidationService {
     constructor() {
-        super();
-        this.invalidationQueue = [];
-        this.isProcessingQueue = false;
-        this.BATCH_SIZE = 50;
-        this.QUEUE_PROCESS_INTERVAL = 1000;
-        this.cacheManager = CacheManager_1.default.getInstance();
-        this.startQueueProcessor();
-        this.setupEventHandlers();
+        this.invalidationRules = new Map();
+        this.invalidationStats = {
+            totalInvalidations: 0,
+            successfulInvalidations: 0,
+            failedInvalidations: 0,
+            lastInvalidationTime: null,
+        };
+        this.cacheService = RedisCacheService_1.RedisCacheService.getInstance();
+        this.warmingService = CacheWarmingService_1.CacheWarmingService.getInstance();
+        this.setupInvalidationRules();
     }
     static getInstance() {
         if (!CacheInvalidationService.instance) {
@@ -57,420 +27,315 @@ class CacheInvalidationService extends events_1.EventEmitter {
         }
         return CacheInvalidationService.instance;
     }
-    async invalidateUserPermissions(userId, options) {
-        const strategy = {
-            immediate: true,
-            cascade: true,
-            selective: true,
-            distributed: true,
-            ...options.strategy
-        };
-        const event = {
-            type: 'user_permissions',
-            targetId: userId,
-            workspaceId: options.workspaceId,
-            reason: options.reason,
+    setupInvalidationRules() {
+        this.addInvalidationRule({
+            event: 'user.created',
+            patterns: ['saas:users:list:*', 'saas:system:metrics'],
+            tags: [cacheConfig_1.SaaSCacheTags.USERS, cacheConfig_1.SaaSCacheTags.SYSTEM],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'user.updated',
+            patterns: ['saas:user:*', 'saas:users:list:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.USERS],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'user.deleted',
+            patterns: ['saas:user:*', 'saas:users:list:*', 'saas:system:metrics'],
+            tags: [cacheConfig_1.SaaSCacheTags.USERS, cacheConfig_1.SaaSCacheTags.SYSTEM],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'user.role.changed',
+            patterns: ['saas:user:*', 'saas:users:list:*', 'saas:analytics:users:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.USERS, cacheConfig_1.SaaSCacheTags.ANALYTICS],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'security.settings.updated',
+            patterns: ['saas:security:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.SECURITY],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'security.session.created',
+            patterns: ['saas:security:sessions:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.SECURITY],
+            warmAfterInvalidation: false,
+        });
+        this.addInvalidationRule({
+            event: 'security.session.terminated',
+            patterns: ['saas:security:sessions:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.SECURITY],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'security.audit.logged',
+            patterns: ['saas:security:audit:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.SECURITY],
+            warmAfterInvalidation: false,
+        });
+        this.addInvalidationRule({
+            event: 'feature.flag.updated',
+            patterns: ['saas:feature:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.FEATURE_FLAGS],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'feature.flag.toggled',
+            patterns: ['saas:feature:flags', 'saas:feature:*:usage'],
+            tags: [cacheConfig_1.SaaSCacheTags.FEATURE_FLAGS],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'system.metrics.updated',
+            patterns: ['saas:system:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.SYSTEM],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'system.health.changed',
+            patterns: ['saas:system:health'],
+            tags: [cacheConfig_1.SaaSCacheTags.SYSTEM],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'tenant.created',
+            patterns: ['saas:tenants:*', 'saas:system:metrics'],
+            tags: [cacheConfig_1.SaaSCacheTags.TENANTS, cacheConfig_1.SaaSCacheTags.SYSTEM],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'tenant.updated',
+            patterns: ['saas:tenant:*', 'saas:tenants:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.TENANTS],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'tenant.deleted',
+            patterns: ['saas:tenant:*', 'saas:tenants:*', 'saas:system:metrics'],
+            tags: [cacheConfig_1.SaaSCacheTags.TENANTS, cacheConfig_1.SaaSCacheTags.SYSTEM],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'billing.subscription.created',
+            patterns: ['saas:billing:*', 'saas:analytics:*', 'saas:system:metrics'],
+            tags: [cacheConfig_1.SaaSCacheTags.BILLING, cacheConfig_1.SaaSCacheTags.ANALYTICS, cacheConfig_1.SaaSCacheTags.SYSTEM],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'billing.subscription.updated',
+            patterns: ['saas:billing:subscription:*', 'saas:billing:overview'],
+            tags: [cacheConfig_1.SaaSCacheTags.BILLING],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'billing.payment.processed',
+            patterns: ['saas:billing:*', 'saas:analytics:revenue:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.BILLING, cacheConfig_1.SaaSCacheTags.ANALYTICS],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'notification.sent',
+            patterns: ['saas:notifications:history:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.NOTIFICATIONS],
+            warmAfterInvalidation: false,
+        });
+        this.addInvalidationRule({
+            event: 'notification.settings.updated',
+            patterns: ['saas:notifications:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.NOTIFICATIONS],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'support.ticket.created',
+            patterns: ['saas:support:tickets:*', 'saas:support:metrics'],
+            tags: [cacheConfig_1.SaaSCacheTags.SUPPORT],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'support.ticket.updated',
+            patterns: ['saas:support:tickets:*', 'saas:support:metrics'],
+            tags: [cacheConfig_1.SaaSCacheTags.SUPPORT],
+            warmAfterInvalidation: false,
+        });
+        this.addInvalidationRule({
+            event: 'api.endpoint.created',
+            patterns: ['saas:api:endpoints'],
+            tags: [cacheConfig_1.SaaSCacheTags.API],
+            warmAfterInvalidation: true,
+        });
+        this.addInvalidationRule({
+            event: 'api.usage.recorded',
+            patterns: ['saas:api:usage:*'],
+            tags: [cacheConfig_1.SaaSCacheTags.API],
+            warmAfterInvalidation: false,
+        });
+        logger_1.default.info(`Initialized ${this.invalidationRules.size} cache invalidation rules`);
+    }
+    addInvalidationRule(rule) {
+        this.invalidationRules.set(rule.event, rule);
+    }
+    async handleInvalidationEvent(event) {
+        const startTime = Date.now();
+        try {
+            const rule = this.invalidationRules.get(event.type);
+            if (!rule) {
+                logger_1.default.debug(`No invalidation rule found for event: ${event.type}`);
+                return;
+            }
+            logger_1.default.info(`Processing invalidation event: ${event.type}`);
+            if (rule.patterns.length > 0) {
+                await this.invalidateByPatterns(rule.patterns, event);
+            }
+            if (rule.tags.length > 0) {
+                if (rule.warmAfterInvalidation) {
+                    await this.warmingService.invalidateByTagsAndWarm(rule.tags);
+                }
+                else {
+                    await this.cacheService.invalidateByTags(rule.tags);
+                }
+            }
+            this.invalidationStats.successfulInvalidations++;
+            this.invalidationStats.totalInvalidations++;
+            this.invalidationStats.lastInvalidationTime = new Date();
+            const duration = Date.now() - startTime;
+            logger_1.default.info(`Invalidation event ${event.type} processed in ${duration}ms`);
+        }
+        catch (error) {
+            this.invalidationStats.failedInvalidations++;
+            this.invalidationStats.totalInvalidations++;
+            logger_1.default.error(`Failed to process invalidation event ${event.type}:`, error);
+        }
+    }
+    async invalidateByPatterns(patterns, event) {
+        for (const pattern of patterns) {
+            try {
+                const resolvedPattern = this.resolvePattern(pattern, event);
+                const deletedCount = await this.cacheService.delPattern(resolvedPattern);
+                if (deletedCount > 0) {
+                    logger_1.default.debug(`Invalidated ${deletedCount} cache entries matching pattern: ${resolvedPattern}`);
+                }
+            }
+            catch (error) {
+                logger_1.default.error(`Failed to invalidate pattern ${pattern}:`, error);
+            }
+        }
+    }
+    resolvePattern(pattern, event) {
+        let resolvedPattern = pattern;
+        if (event.entityId) {
+            resolvedPattern = resolvedPattern.replace(/\{entityId\}/g, event.entityId);
+        }
+        if (event.entityType) {
+            resolvedPattern = resolvedPattern.replace(/\{entityType\}/g, event.entityType);
+        }
+        if (event.metadata) {
+            Object.entries(event.metadata).forEach(([key, value]) => {
+                resolvedPattern = resolvedPattern.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));
+            });
+        }
+        return resolvedPattern;
+    }
+    async invalidateUserCaches(userId) {
+        await this.handleInvalidationEvent({
+            type: 'user.updated',
+            entityId: userId,
+            entityType: 'user',
             timestamp: new Date(),
-            initiatedBy: options.initiatedBy
-        };
-        if (strategy.immediate) {
-            await this.processUserPermissionInvalidation(event, strategy);
-        }
-        else {
-            this.queueInvalidation(event);
-        }
-        if (strategy.distributed) {
-            this.emit('cache_invalidation', event);
-        }
-        logger_1.default.debug('User permission cache invalidation initiated', {
-            userId,
-            workspaceId: options.workspaceId,
-            reason: options.reason,
-            strategy
         });
     }
-    async invalidateRolePermissions(roleId, options) {
-        const strategy = {
-            immediate: true,
-            cascade: true,
-            selective: true,
-            distributed: true,
-            ...options.strategy
-        };
-        const [affectedUsers, childRoles] = await Promise.all([
-            this.getAffectedUsersByRole(roleId),
-            this.getChildRoles(roleId)
-        ]);
-        const event = {
-            type: 'role_permissions',
-            targetId: roleId,
-            affectedUsers,
-            affectedRoles: childRoles,
-            reason: options.reason,
+    async invalidateTenantCaches(tenantId) {
+        await this.handleInvalidationEvent({
+            type: 'tenant.updated',
+            entityId: tenantId,
+            entityType: 'tenant',
             timestamp: new Date(),
-            initiatedBy: options.initiatedBy
-        };
-        if (strategy.immediate) {
-            await this.processRolePermissionInvalidation(event, strategy);
-        }
-        else {
-            this.queueInvalidation(event);
-        }
-        if (strategy.distributed) {
-            this.emit('cache_invalidation', event);
-        }
-        logger_1.default.debug('Role permission cache invalidation initiated', {
-            roleId,
-            affectedUsersCount: affectedUsers.length,
-            childRolesCount: childRoles.length,
-            reason: options.reason,
-            strategy
         });
     }
-    async invalidateRoleHierarchy(roleId, options) {
-        const strategy = {
-            immediate: true,
-            cascade: true,
-            selective: true,
-            distributed: true,
-            ...options.strategy
-        };
-        const [parentRoles, childRoles] = await Promise.all([
-            this.getParentRoles(roleId),
-            this.getAllChildRoles(roleId)
-        ]);
-        const affectedRoles = [roleId, ...parentRoles, ...childRoles];
-        const affectedUsers = await this.getAffectedUsersByRoles(affectedRoles);
-        const event = {
-            type: 'role_hierarchy',
-            targetId: roleId,
-            affectedUsers,
-            affectedRoles,
-            reason: options.reason,
+    async invalidateSystemCaches() {
+        await this.handleInvalidationEvent({
+            type: 'system.metrics.updated',
             timestamp: new Date(),
-            initiatedBy: options.initiatedBy
-        };
-        if (strategy.immediate) {
-            await this.processRoleHierarchyInvalidation(event, strategy);
-        }
-        else {
-            this.queueInvalidation(event);
-        }
-        if (strategy.distributed) {
-            this.emit('cache_invalidation', event);
-        }
-        logger_1.default.debug('Role hierarchy cache invalidation initiated', {
-            roleId,
-            affectedRolesCount: affectedRoles.length,
-            affectedUsersCount: affectedUsers.length,
-            reason: options.reason,
-            strategy
         });
     }
-    async bulkInvalidate(invalidations, options = {}) {
-        const strategy = {
-            immediate: false,
-            cascade: true,
-            selective: true,
-            distributed: true,
-            ...options.strategy
-        };
-        const events = [];
-        for (const invalidation of invalidations) {
-            let event;
-            switch (invalidation.type) {
-                case 'user':
-                    event = {
-                        type: 'user_permissions',
-                        targetId: invalidation.targetId,
-                        workspaceId: invalidation.workspaceId,
-                        reason: invalidation.reason,
-                        timestamp: new Date(),
-                        initiatedBy: options.initiatedBy
-                    };
-                    break;
-                case 'role':
-                    const affectedUsers = await this.getAffectedUsersByRole(invalidation.targetId);
-                    event = {
-                        type: 'role_permissions',
-                        targetId: invalidation.targetId,
-                        affectedUsers,
-                        reason: invalidation.reason,
-                        timestamp: new Date(),
-                        initiatedBy: options.initiatedBy
-                    };
-                    break;
-                case 'hierarchy':
-                    const [parentRoles, childRoles] = await Promise.all([
-                        this.getParentRoles(invalidation.targetId),
-                        this.getAllChildRoles(invalidation.targetId)
-                    ]);
-                    const allAffectedRoles = [invalidation.targetId, ...parentRoles, ...childRoles];
-                    const allAffectedUsers = await this.getAffectedUsersByRoles(allAffectedRoles);
-                    event = {
-                        type: 'role_hierarchy',
-                        targetId: invalidation.targetId,
-                        affectedUsers: allAffectedUsers,
-                        affectedRoles: allAffectedRoles,
-                        reason: invalidation.reason,
-                        timestamp: new Date(),
-                        initiatedBy: options.initiatedBy
-                    };
-                    break;
-                default:
-                    continue;
-            }
-            events.push(event);
-        }
-        this.invalidationQueue.push(...events);
-        if (strategy.distributed) {
-            events.forEach(event => this.emit('cache_invalidation', event));
-        }
-        logger_1.default.info('Bulk cache invalidation queued', {
-            count: events.length,
-            initiatedBy: options.initiatedBy,
-            strategy
+    async invalidateSecurityCaches() {
+        await this.handleInvalidationEvent({
+            type: 'security.settings.updated',
+            timestamp: new Date(),
         });
     }
-    async processUserPermissionInvalidation(event, strategy) {
-        try {
-            await this.cacheManager.invalidateUserCache(event.targetId, event.workspaceId);
-            logger_1.default.debug('User permission cache invalidated', {
-                userId: event.targetId,
-                workspaceId: event.workspaceId,
-                reason: event.reason
-            });
-        }
-        catch (error) {
-            logger_1.default.error('Error processing user permission invalidation:', error);
-        }
-    }
-    async processRolePermissionInvalidation(event, strategy) {
-        try {
-            await this.cacheManager.invalidateRoleCache(event.targetId);
-            if (strategy.cascade && event.affectedUsers && event.affectedUsers.length > 0) {
-                for (const userId of event.affectedUsers) {
-                    await this.cacheManager.invalidateUserCache(userId, event.workspaceId);
-                }
-            }
-            if (strategy.cascade && event.affectedRoles && event.affectedRoles.length > 0) {
-                for (const roleId of event.affectedRoles) {
-                    await this.cacheManager.invalidateRoleCache(roleId);
-                }
-            }
-            logger_1.default.debug('Role permission cache invalidated', {
-                roleId: event.targetId,
-                affectedUsersCount: event.affectedUsers?.length || 0,
-                affectedRolesCount: event.affectedRoles?.length || 0,
-                reason: event.reason
-            });
-        }
-        catch (error) {
-            logger_1.default.error('Error processing role permission invalidation:', error);
-        }
-    }
-    async processRoleHierarchyInvalidation(event, strategy) {
-        try {
-            if (event.affectedRoles && event.affectedRoles.length > 0) {
-                for (const roleId of event.affectedRoles) {
-                    await this.cacheManager.invalidateRoleCache(roleId);
-                }
-            }
-            if (strategy.cascade && event.affectedUsers && event.affectedUsers.length > 0) {
-                for (const userId of event.affectedUsers) {
-                    await this.cacheManager.invalidateUserCache(userId, event.workspaceId);
-                }
-            }
-            await this.cacheManager.invalidatePattern(`role_hier:*${event.targetId}*`);
-            await this.cacheManager.invalidatePattern(`role_hier:${event.targetId}:*`);
-            logger_1.default.debug('Role hierarchy cache invalidated', {
-                roleId: event.targetId,
-                affectedRolesCount: event.affectedRoles?.length || 0,
-                affectedUsersCount: event.affectedUsers?.length || 0,
-                reason: event.reason
-            });
-        }
-        catch (error) {
-            logger_1.default.error('Error processing role hierarchy invalidation:', error);
-        }
-    }
-    queueInvalidation(event) {
-        this.invalidationQueue.push(event);
-    }
-    startQueueProcessor() {
-        setInterval(async () => {
-            if (!this.isProcessingQueue && this.invalidationQueue.length > 0) {
-                await this.processInvalidationQueue();
-            }
-        }, this.QUEUE_PROCESS_INTERVAL);
-    }
-    async processInvalidationQueue() {
-        if (this.isProcessingQueue || this.invalidationQueue.length === 0) {
-            return;
-        }
-        this.isProcessingQueue = true;
-        try {
-            const batch = this.invalidationQueue.splice(0, this.BATCH_SIZE);
-            logger_1.default.debug(`Processing cache invalidation batch of ${batch.length} items`);
-            const userEvents = batch.filter(e => e.type === 'user_permissions');
-            const roleEvents = batch.filter(e => e.type === 'role_permissions');
-            const hierarchyEvents = batch.filter(e => e.type === 'role_hierarchy');
-            await Promise.all([
-                this.processBatchUserInvalidations(userEvents),
-                this.processBatchRoleInvalidations(roleEvents),
-                this.processBatchHierarchyInvalidations(hierarchyEvents)
-            ]);
-            logger_1.default.debug(`Completed cache invalidation batch processing`);
-        }
-        catch (error) {
-            logger_1.default.error('Error processing invalidation queue:', error);
-        }
-        finally {
-            this.isProcessingQueue = false;
-        }
-    }
-    async processBatchUserInvalidations(events) {
-        const strategy = {
-            immediate: true,
-            cascade: false,
-            selective: true,
-            distributed: false
-        };
-        for (const event of events) {
-            await this.processUserPermissionInvalidation(event, strategy);
-        }
-    }
-    async processBatchRoleInvalidations(events) {
-        const strategy = {
-            immediate: true,
-            cascade: true,
-            selective: true,
-            distributed: false
-        };
-        for (const event of events) {
-            await this.processRolePermissionInvalidation(event, strategy);
-        }
-    }
-    async processBatchHierarchyInvalidations(events) {
-        const strategy = {
-            immediate: true,
-            cascade: true,
-            selective: true,
-            distributed: false
-        };
-        for (const event of events) {
-            await this.processRoleHierarchyInvalidation(event, strategy);
-        }
-    }
-    setupEventHandlers() {
-        this.on('cache_invalidation', (event) => {
-            logger_1.default.debug('Cache invalidation event emitted', {
-                type: event.type,
-                targetId: event.targetId,
-                reason: event.reason
-            });
+    async invalidateFeatureFlagCaches(flagId) {
+        await this.handleInvalidationEvent({
+            type: 'feature.flag.updated',
+            entityId: flagId,
+            entityType: 'feature_flag',
+            timestamp: new Date(),
         });
     }
-    async getAffectedUsersByRole(roleId) {
-        try {
-            const UserRole = (await Promise.resolve().then(() => __importStar(require('../models/UserRole')))).default;
-            const userRoles = await UserRole.find({ roleId, isActive: true }).select('userId');
-            return userRoles.map(ur => ur.userId);
-        }
-        catch (error) {
-            logger_1.default.error('Error getting affected users by role:', error);
-            return [];
-        }
+    async invalidateBillingCaches(subscriptionId) {
+        await this.handleInvalidationEvent({
+            type: 'billing.subscription.updated',
+            entityId: subscriptionId,
+            entityType: 'subscription',
+            timestamp: new Date(),
+        });
     }
-    async getAffectedUsersByRoles(roleIds) {
-        try {
-            const UserRole = (await Promise.resolve().then(() => __importStar(require('../models/UserRole')))).default;
-            const userRoles = await UserRole.find({
-                roleId: { $in: roleIds },
-                isActive: true
-            }).select('userId');
-            const uniqueUserIds = [...new Set(userRoles.map(ur => ur.userId.toString()))]
-                .map(id => new mongoose_1.default.Types.ObjectId(id));
-            return uniqueUserIds;
-        }
-        catch (error) {
-            logger_1.default.error('Error getting affected users by roles:', error);
-            return [];
-        }
+    async invalidateNotificationCaches() {
+        await this.handleInvalidationEvent({
+            type: 'notification.settings.updated',
+            timestamp: new Date(),
+        });
     }
-    async getChildRoles(roleId) {
-        try {
-            const Role = (await Promise.resolve().then(() => __importStar(require('../models/Role')))).default;
-            const role = await Role.findById(roleId).select('childRoles');
-            return role?.childRoles || [];
-        }
-        catch (error) {
-            logger_1.default.error('Error getting child roles:', error);
-            return [];
-        }
+    async invalidateSupportCaches() {
+        await this.handleInvalidationEvent({
+            type: 'support.ticket.created',
+            timestamp: new Date(),
+        });
     }
-    async getAllChildRoles(roleId) {
-        try {
-            const Role = (await Promise.resolve().then(() => __importStar(require('../models/Role')))).default;
-            const allChildren = [];
-            const visited = new Set();
-            const getChildren = async (currentRoleId) => {
-                if (visited.has(currentRoleId.toString())) {
-                    return;
-                }
-                visited.add(currentRoleId.toString());
-                const role = await Role.findById(currentRoleId).select('childRoles');
-                if (role && role.childRoles && role.childRoles.length > 0) {
-                    allChildren.push(...role.childRoles);
-                    for (const childId of role.childRoles) {
-                        await getChildren(childId);
-                    }
-                }
-            };
-            await getChildren(roleId);
-            return allChildren;
-        }
-        catch (error) {
-            logger_1.default.error('Error getting all child roles:', error);
-            return [];
-        }
+    async invalidateApiCaches() {
+        await this.handleInvalidationEvent({
+            type: 'api.endpoint.created',
+            timestamp: new Date(),
+        });
     }
-    async getParentRoles(roleId) {
-        try {
-            const Role = (await Promise.resolve().then(() => __importStar(require('../models/Role')))).default;
-            const parents = [];
-            const visited = new Set();
-            const getParents = async (currentRoleId) => {
-                if (visited.has(currentRoleId.toString())) {
-                    return;
-                }
-                visited.add(currentRoleId.toString());
-                const role = await Role.findById(currentRoleId).select('parentRole');
-                if (role && role.parentRole) {
-                    parents.push(role.parentRole);
-                    await getParents(role.parentRole);
-                }
-            };
-            await getParents(roleId);
-            return parents;
-        }
-        catch (error) {
-            logger_1.default.error('Error getting parent roles:', error);
-            return [];
-        }
+    async smartInvalidate(changes) {
+        const eventType = `${changes.collection}.${changes.operation}`;
+        await this.handleInvalidationEvent({
+            type: eventType,
+            entityId: changes.documentId,
+            entityType: changes.collection,
+            metadata: {
+                fields: changes.fields,
+            },
+            timestamp: new Date(),
+        });
     }
     getInvalidationStats() {
-        return {
-            queueSize: this.invalidationQueue.length,
-            isProcessing: this.isProcessingQueue,
-            batchSize: this.BATCH_SIZE,
-            processInterval: this.QUEUE_PROCESS_INTERVAL
-        };
+        return { ...this.invalidationStats };
     }
-    clearQueue() {
-        this.invalidationQueue = [];
-        logger_1.default.info('Cache invalidation queue cleared');
+    getInvalidationRules() {
+        return Array.from(this.invalidationRules.entries()).map(([event, rule]) => ({
+            event,
+            rule,
+        }));
+    }
+    async clearAllCaches() {
+        try {
+            logger_1.default.warn('Clearing all caches - this should only be used in emergencies');
+            const result = await this.cacheService.clear();
+            if (result) {
+                await this.warmingService.warmCriticalCaches();
+            }
+            return result;
+        }
+        catch (error) {
+            logger_1.default.error('Failed to clear all caches:', error);
+            return false;
+        }
     }
 }
-exports.default = CacheInvalidationService;
+exports.CacheInvalidationService = CacheInvalidationService;
+exports.default = CacheInvalidationService.getInstance();
 //# sourceMappingURL=CacheInvalidationService.js.map

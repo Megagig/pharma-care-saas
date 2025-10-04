@@ -27,8 +27,8 @@ export declare const createManualLabOrderSchema: z.ZodObject<{
     }, z.core.$strip>>;
     indication: z.ZodString;
     priority: z.ZodDefault<z.ZodEnum<{
-        routine: "routine";
         urgent: "urgent";
+        routine: "routine";
         stat: "stat";
     }>>;
     notes: z.ZodOptional<z.ZodString>;
@@ -60,8 +60,8 @@ export declare const orderQuerySchema: z.ZodObject<{
         referred: "referred";
     }>>;
     priority: z.ZodOptional<z.ZodEnum<{
-        routine: "routine";
         urgent: "urgent";
+        routine: "routine";
         stat: "stat";
     }>>;
     orderedBy: z.ZodOptional<z.ZodString>;

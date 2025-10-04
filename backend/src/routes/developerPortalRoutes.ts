@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body, query, param } from 'express-validator';
 import DeveloperPortalController from '../controllers/developerPortalController';
-import { authenticateToken } from '../middlewares/auth';
+import { auth } from '../middlewares/auth';
 import { requireSuperAdmin } from '../middlewares/rbac';
 
 const router = Router();
@@ -24,7 +24,7 @@ router.post('/verify/:token',
  */
 
 // Apply authentication to all routes below
-router.use(authenticateToken);
+router.use(auth);
 
 // Get current developer account
 router.get('/account', DeveloperPortalController.getCurrentDeveloperAccount);
