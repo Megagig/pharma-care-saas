@@ -265,13 +265,17 @@ export class SupportTicketService {
       });
 
       // Send notification to assigned agent
-      await this.notificationService.sendNotification("notification-template", "email", {
-        userId: assignedToId,
-        type: 'ticket_assigned',
-        title: 'New Ticket Assigned',
-        message: `You have been assigned ticket ${ticket.ticketNumber}: ${ticket.title}`,
-        data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
-      });
+      await this.notificationService.sendNotification(
+        assignedToId,
+        "notification-template",
+        "email",
+        {
+          type: 'ticket_assigned',
+          title: 'New Ticket Assigned',
+          message: `You have been assigned ticket ${ticket.ticketNumber}: ${ticket.title}`,
+          data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
+        }
+      );
 
       // Clear cache
       await this.clearTicketCache();
@@ -664,23 +668,29 @@ export class SupportTicketService {
   private async sendTicketCreatedNotifications(ticket: ISupportTicket): Promise<void> {
     try {
       // Notify customer
-      await this.notificationService.sendNotification("notification-template", "email", {
-        userId: ticket.userId.toString(),
-        type: 'ticket_created',
-        title: 'Support Ticket Created',
-        message: `Your support ticket ${ticket.ticketNumber} has been created and will be reviewed shortly.`,
-        data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
-      });
+      await this.notificationService.sendNotification(
+        ticket.userId.toString(),
+        "notification-template",
+        "email",
+        {
+          type: 'ticket_created',
+          title: 'Support Ticket Created',
+          message: `Your support ticket ${ticket.ticketNumber} has been created and will be reviewed shortly.`,
+          data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
+        });
 
       // Notify assigned agent if auto-assigned
       if (ticket.assignedTo) {
-        await this.notificationService.sendNotification("notification-template", "email", {
-          userId: ticket.assignedTo.toString(),
-          type: 'ticket_assigned',
-          title: 'New Ticket Assigned',
-          message: `You have been assigned ticket ${ticket.ticketNumber}: ${ticket.title}`,
-          data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
-        });
+        await this.notificationService.sendNotification(
+          ticket.assignedTo.toString(),
+          "notification-template",
+          "email",
+          {
+            type: 'ticket_assigned',
+            title: 'New Ticket Assigned',
+            message: `You have been assigned ticket ${ticket.ticketNumber}: ${ticket.title}`,
+            data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
+          });
       }
     } catch (error) {
       logger.error('Error sending ticket created notifications:', error);
@@ -689,13 +699,16 @@ export class SupportTicketService {
 
   private async sendTicketResolvedNotifications(ticket: ISupportTicket): Promise<void> {
     try {
-      await this.notificationService.sendNotification("notification-template", "email", {
-        userId: ticket.userId.toString(),
-        type: 'ticket_resolved',
-        title: 'Support Ticket Resolved',
-        message: `Your support ticket ${ticket.ticketNumber} has been resolved. Please rate your experience.`,
-        data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
-      });
+      await this.notificationService.sendNotification(
+        ticket.userId.toString(),
+        "notification-template",
+        "email",
+        {
+          type: 'ticket_resolved',
+          title: 'Support Ticket Resolved',
+          message: `Your support ticket ${ticket.ticketNumber} has been resolved. Please rate your experience.`,
+          data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
+        });
     } catch (error) {
       logger.error('Error sending ticket resolved notifications:', error);
     }
@@ -704,24 +717,30 @@ export class SupportTicketService {
   private async sendTicketEscalatedNotifications(ticket: ISupportTicket, reason: string): Promise<void> {
     try {
       // Notify customer
-      await this.notificationService.sendNotification("notification-template", "email", {
-        userId: ticket.userId.toString(),
-        type: 'ticket_escalated',
-        title: 'Support Ticket Escalated',
-        message: `Your support ticket ${ticket.ticketNumber} has been escalated for priority handling.`,
-        data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
-      });
+      await this.notificationService.sendNotification(
+        ticket.userId.toString(),
+        "notification-template",
+        "email",
+        {
+          type: 'ticket_escalated',
+          title: 'Support Ticket Escalated',
+          message: `Your support ticket ${ticket.ticketNumber} has been escalated for priority handling.`,
+          data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
+        });
 
       // Notify management
       const managers = await User.find({ role: { $in: ['admin', 'super_admin'] }, isActive: true });
       for (const manager of managers) {
-        await this.notificationService.sendNotification("notification-template", "email", {
-          userId: manager._id.toString(),
-          type: 'ticket_escalated',
-          title: 'Ticket Escalated',
-          message: `Ticket ${ticket.ticketNumber} has been escalated. Reason: ${reason}`,
-          data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
-        });
+        await this.notificationService.sendNotification(
+          manager._id.toString(),
+          "notification-template",
+          "email",
+          {
+            type: 'ticket_escalated',
+            title: 'Ticket Escalated',
+            message: `Ticket ${ticket.ticketNumber} has been escalated. Reason: ${reason}`,
+            data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
+          });
       }
     } catch (error) {
       logger.error('Error sending ticket escalated notifications:', error);
@@ -735,13 +754,16 @@ export class SupportTicketService {
         ticket.userId.toString();
 
       if (targetUserId) {
-        await this.notificationService.sendNotification("notification-template", "email", {
-          userId: targetUserId,
-          type: 'ticket_comment',
-          title: 'New Comment on Ticket',
-          message: `New comment added to ticket ${ticket.ticketNumber}`,
-          data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber, commentId: comment._id }
-        });
+        await this.notificationService.sendNotification(
+          targetUserId,
+          "notification-template",
+          "email",
+          {
+            type: 'ticket_comment',
+            title: 'New Comment on Ticket',
+            message: `New comment added to ticket ${ticket.ticketNumber}`,
+            data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber, commentId: comment._id }
+          });
       }
     } catch (error) {
       logger.error('Error sending comment notifications:', error);

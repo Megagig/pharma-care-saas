@@ -71,6 +71,7 @@ import permissionRoutes from './routes/permissionRoutes';
 import rbacAuditRoutes from './routes/rbacAudit';
 import roleRoutes from './routes/roleRoutes';
 import pricingManagementRoutes from './routes/pricingManagementRoutes';
+import saasRoutes from './routes/saasRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -368,6 +369,7 @@ app.use('/api/email', emailWebhookRoutes);
 // RBAC and enhanced features
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
+app.use('/api/admin/saas', saasRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/role-hierarchy', roleHierarchyRoutes);
 app.use('/api/permissions', permissionRoutes);

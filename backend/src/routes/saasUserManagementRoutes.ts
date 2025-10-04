@@ -23,13 +23,34 @@ router.get(
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
     query('sortBy').optional().isString().withMessage('Sort by must be a string'),
     query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be asc or desc'),
-    query('search').optional().isString().withMessage('Search must be a string'),
-    query('role').optional().isString().withMessage('Role must be a string'),
-    query('status').optional().isIn(['active', 'inactive', 'suspended', 'pending']).withMessage('Invalid status'),
-    query('workspaceId').optional().isMongoId().withMessage('Invalid workspace ID'),
-    query('subscriptionPlan').optional().isString().withMessage('Subscription plan must be a string'),
-    query('lastLoginAfter').optional().isISO8601().withMessage('Invalid date format for lastLoginAfter'),
-    query('lastLoginBefore').optional().isISO8601().withMessage('Invalid date format for lastLoginBefore')
+    query('search').optional().custom((value) => {
+      if (value === '' || value === undefined || value === null) return true;
+      return typeof value === 'string';
+    }).withMessage('Search must be a string'),
+    query('role').optional().custom((value) => {
+      if (value === '' || value === undefined || value === null) return true;
+      return typeof value === 'string';
+    }).withMessage('Role must be a string'),
+    query('status').optional().custom((value) => {
+      if (value === '' || value === undefined || value === null) return true;
+      return ['active', 'inactive', 'suspended', 'pending'].includes(value);
+    }).withMessage('Invalid status'),
+    query('workspaceId').optional().custom((value) => {
+      if (value === '' || value === undefined || value === null) return true;
+      return /^[0-9a-fA-F]{24}$/.test(value);
+    }).withMessage('Invalid workspace ID'),
+    query('subscriptionPlan').optional().custom((value) => {
+      if (value === '' || value === undefined || value === null) return true;
+      return typeof value === 'string';
+    }).withMessage('Subscription plan must be a string'),
+    query('lastLoginAfter').optional().custom((value) => {
+      if (value === '' || value === undefined || value === null) return true;
+      return !isNaN(Date.parse(value));
+    }).withMessage('Invalid date format for lastLoginAfter'),
+    query('lastLoginBefore').optional().custom((value) => {
+      if (value === '' || value === undefined || value === null) return true;
+      return !isNaN(Date.parse(value));
+    }).withMessage('Invalid date format for lastLoginBefore')
   ],
   validateRequest,
   saasUserManagementController.getAllUsers.bind(saasUserManagementController)

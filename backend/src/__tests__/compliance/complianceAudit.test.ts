@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { app } from '../../app';
+import app from '../../app';
 import { User } from '../../models/User';
 import { AuditLog } from '../../models/AuditLog';
 import { SecurityAuditLog } from '../../models/SecurityAuditLog';
@@ -27,10 +27,10 @@ describe('Compliance and Audit Tests', () => {
     cacheService = RedisCacheService.getInstance();
     complianceService = ComplianceReportingService.getInstance();
     retentionService = DataRetentionService.getInstance();
-    
+
     // Create test users
     const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
-    
+
     adminUser = await User.create({
       email: 'admin@test.com',
       password: hashedPassword,
@@ -67,7 +67,7 @@ describe('Compliance and Audit Tests', () => {
     await User.deleteMany({});
     await AuditLog.deleteMany({});
     await SecurityAuditLog.deleteMany({});
-    await cacheService.flushAll();
+    await cacheService.clear();
   });
 
   describe('Audit Logging Tests', () => {
@@ -88,7 +88,7 @@ describe('Compliance and Audit Tests', () => {
       });
 
       expect(auditLogs.length).toBeGreaterThan(0);
-      
+
       const auditLog = auditLogs[0];
       expect(auditLog.userId.toString()).toBe(adminUser._id.toString());
       expect(auditLog.complianceCategory).toBe('user_management');
@@ -140,7 +140,7 @@ describe('Compliance and Audit Tests', () => {
     test('should maintain audit trail integrity', async () => {
       // Create multiple audit events
       const actions = ['CREATE', 'UPDATE', 'DELETE'];
-      
+
       for (const action of actions) {
         await AuditLog.create({
           action: `TEST_${action}`,
@@ -159,11 +159,11 @@ describe('Compliance and Audit Tests', () => {
       }).sort({ createdAt: 1 });
 
       expect(auditLogs.length).toBe(3);
-      
+
       // Check timestamps are sequential
       for (let i = 1; i < auditLogs.length; i++) {
-        expect(auditLogs[i].createdAt.getTime()).toBeGreaterThanOrEqual(
-          auditLogs[i - 1].createdAt.getTime()
+        expect(auditLogs[i].timestamp.getTime()).toBeGreaterThanOrEqual(
+          auditLogs[i - 1].timestamp.getTime()
         );
       }
     });
@@ -187,7 +187,7 @@ describe('Compliance and Audit Tests', () => {
 
       // Verify sensitive fields are redacted when retrieved
       const retrievedLog = await AuditLog.findById(auditLog._id);
-      
+
       // In a real implementation, sensitive fields would be redacted
       expect(retrievedLog?.details).toBeDefined();
     });
@@ -247,7 +247,7 @@ describe('Compliance and Audit Tests', () => {
 
       expect(pdfBuffer).toBeInstanceOf(Buffer);
       expect(pdfBuffer.length).toBeGreaterThan(0);
-      
+
       // Check PDF header
       const pdfHeader = pdfBuffer.slice(0, 4).toString();
       expect(pdfHeader).toBe('%PDF');
@@ -267,7 +267,7 @@ describe('Compliance and Audit Tests', () => {
 
       expect(typeof csvData).toBe('string');
       expect(csvData.length).toBeGreaterThan(0);
-      
+
       // Check CSV structure
       const lines = csvData.split('\n');
       expect(lines.length).toBeGreaterThan(1); // At least header + 1 row
@@ -310,7 +310,8 @@ describe('Compliance and Audit Tests', () => {
           approvalRequired: true,
           notificationRequired: true,
           encryptionRequired: true,
-          isActive: true
+          isActive: true,
+          createdBy: adminUser._id.toString()
         },
         adminUser._id.toString()
       );
@@ -338,13 +339,14 @@ describe('Compliance and Audit Tests', () => {
           approvalRequired: false,
           notificationRequired: false,
           encryptionRequired: false,
-          isActive: true
+          isActive: true,
+          createdBy: adminUser._id.toString()
         },
         adminUser._id.toString()
       );
 
       const scheduledAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
-      
+
       const job = await retentionService.scheduleDeletionJob(
         policy.id,
         scheduledAt,
@@ -415,7 +417,8 @@ describe('Compliance and Audit Tests', () => {
           approvalRequired: true,
           notificationRequired: true,
           encryptionRequired: true,
-          isActive: true
+          isActive: true,
+          createdBy: adminUser._id.toString()
         },
         adminUser._id.toString()
       );
@@ -453,7 +456,7 @@ describe('Compliance and Audit Tests', () => {
 
       // Check if violation was detected
       const violations = report.metadata.violations;
-      const unauthorizedAccessViolation = violations.find(v => 
+      const unauthorizedAccessViolation = violations.find(v =>
         v.type === 'unauthorized_access'
       );
 
@@ -466,7 +469,7 @@ describe('Compliance and Audit Tests', () => {
     test('should detect data retention violations', async () => {
       // Create old audit log that should be deleted
       const oldDate = new Date(Date.now() - 400 * 24 * 60 * 60 * 1000); // 400 days ago
-      
+
       await AuditLog.create({
         action: 'OLD_ACTION',
         userId: adminUser._id,
@@ -581,7 +584,7 @@ describe('Compliance and Audit Tests', () => {
       });
 
       expect(breachLogs.length).toBeGreaterThan(0);
-      
+
       const breachLog = breachLogs[0];
       expect(breachLog.details.breachType).toBe('unauthorized_access');
       expect(breachLog.details.severity).toBe('high');
@@ -618,11 +621,11 @@ describe('Compliance and Audit Tests', () => {
       });
 
       expect(financialLogs.length).toBe(financialActions.length);
-      
+
       // Each log should have required SOX fields
       financialLogs.forEach(log => {
         expect(log.userId).toBeDefined();
-        expect(log.createdAt).toBeDefined();
+        expect(log.timestamp).toBeDefined();
         expect(log.details).toBeDefined();
         expect(log.complianceCategory).toBe('financial_transaction');
       });
@@ -633,7 +636,7 @@ describe('Compliance and Audit Tests', () => {
     test('should detect compliance threshold breaches', async () => {
       // Create multiple failed access attempts
       const failedAttempts = 10;
-      
+
       for (let i = 0; i < failedAttempts; i++) {
         await SecurityAuditLog.create({
           action: 'LOGIN_FAILED',
@@ -658,7 +661,7 @@ describe('Compliance and Audit Tests', () => {
       });
 
       expect(recentFailures.length).toBe(failedAttempts);
-      
+
       // In a real implementation, this would trigger alerts
       if (recentFailures.length > 5) {
         // Alert should be triggered
@@ -697,7 +700,7 @@ describe('Compliance and Audit Tests', () => {
       });
 
       expect(userAccess.length).toBe(unusualAccess.length);
-      
+
       // Check if pattern is flagged as unusual
       const highRiskAccess = userAccess.filter(log => log.riskLevel === 'high');
       expect(highRiskAccess.length).toBeGreaterThan(0);

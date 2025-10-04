@@ -417,25 +417,27 @@ const SystemOverview: React.FC = () => {
               </Box>
             ) : (
               <List>
-                {activities?.slice(0, 3).map((activity) => (
-                  <ListItem key={activity.id}>
-                    <ListItemIcon>
-                      <Avatar
-                        sx={{ 
-                          bgcolor: getActivityColor(activity.type), 
-                          width: 32, 
-                          height: 32 
-                        }}
-                      >
-                        {getActivityIcon(activity.type)}
-                      </Avatar>
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={activity.title}
-                      secondary={formatTimeAgo(activity.timestamp)}
-                    />
-                  </ListItem>
-                )) || (
+                {Array.isArray(activities) && activities.length > 0 ? (
+                  activities.slice(0, 3).map((activity) => (
+                    <ListItem key={activity.id}>
+                      <ListItemIcon>
+                        <Avatar
+                          sx={{ 
+                            bgcolor: getActivityColor(activity.type), 
+                            width: 32, 
+                            height: 32 
+                          }}
+                        >
+                          {getActivityIcon(activity.type)}
+                        </Avatar>
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={activity.title}
+                        secondary={formatTimeAgo(activity.timestamp)}
+                      />
+                    </ListItem>
+                  ))
+                ) : (
                   <ListItem>
                     <ListItemText
                       primary="No recent activities"

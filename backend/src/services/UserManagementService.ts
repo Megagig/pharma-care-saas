@@ -117,7 +117,6 @@ export class UserManagementService {
       // Execute queries in parallel
       const [users, total] = await Promise.all([
         User.find(query)
-          .populate('roles', 'name displayName permissions')
           .populate('workplaceId', 'name type')
           .sort(sortOptions)
           .skip(skip)
@@ -156,7 +155,6 @@ export class UserManagementService {
       }
 
       const user = await User.findById(userId)
-        .populate('roles', 'name displayName permissions')
         .populate('workplaceId', 'name type')
         .lean();
 
@@ -207,10 +205,10 @@ export class UserManagementService {
             workspace: null,
             subscription: null,
             plan: null,
-            permissions: [],
-            limits: {},
-            features: {},
-            usage: {}
+            permissions: [], isTrialExpired: false, isSubscriptionActive: true,
+            limits: { patients: 0, users: 0, locations: 0, storage: 0, apiCalls: 0 },
+            
+            
           }
         );
         if (!canAssignRole) {
@@ -288,10 +286,10 @@ export class UserManagementService {
             workspace: null,
             subscription: null,
             plan: null,
-            permissions: [],
-            limits: {},
-            features: {},
-            usage: {}
+            permissions: [], isTrialExpired: false, isSubscriptionActive: true,
+            limits: { patients: 0, users: 0, locations: 0, storage: 0, apiCalls: 0 },
+            
+            
           }
         );
         if (!canRevokeRole) {
@@ -596,10 +594,10 @@ export class UserManagementService {
           workspace: null,
           subscription: null,
           plan: null,
-          permissions: [],
-          limits: {},
-          features: {},
-          usage: {}
+          permissions: [], isTrialExpired: false, isSubscriptionActive: true,
+          limits: { patients: 0, users: 0, locations: 0, storage: 0, apiCalls: 0 },
+          
+          
         }
       );
       if (!canImpersonate) {
@@ -722,8 +720,7 @@ export class UserManagementService {
         userId,
         { ...updateData, updatedAt: new Date() },
         { new: true }
-      ).populate('roles', 'name displayName permissions')
-        .populate('workplaceId', 'name type');
+      ).populate('workplaceId', 'name type');
 
       if (!updatedUser) {
         throw new Error('Failed to update user');

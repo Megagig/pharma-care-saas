@@ -37,7 +37,7 @@ import {
 import {
   Security as SecurityIcon,
   VpnKey as VpnKeyIcon,
-  Sessions as SessionsIcon,
+  AccountCircle as SessionsIcon,
   History as HistoryIcon,
   Block as BlockIcon,
   LockOpen as LockOpenIcon,

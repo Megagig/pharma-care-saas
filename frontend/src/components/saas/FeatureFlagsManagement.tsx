@@ -346,7 +346,7 @@ const FeatureFlagsManagement: React.FC = () => {
                   ))
                 ) : (
                   flags?.map((flag: FeatureFlag) => (
-                    <TableRow key={flag.id} hover>
+                    <TableRow key={flag._id || flag.id} hover>
                       <TableCell>
                         <Box>
                           <Typography variant="subtitle2">
@@ -378,7 +378,7 @@ const FeatureFlagsManagement: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                          {flag.targetingRules.pharmacies && (
+                          {flag.targetingRules?.pharmacies && (
                             <Chip
                               icon={<BusinessIcon />}
                               label={`${flag.targetingRules.pharmacies.length} pharmacies`}
@@ -386,7 +386,7 @@ const FeatureFlagsManagement: React.FC = () => {
                               variant="outlined"
                             />
                           )}
-                          {flag.targetingRules.userGroups && (
+                          {flag.targetingRules?.userGroups && (
                             <Chip
                               icon={<GroupIcon />}
                               label={`${flag.targetingRules.userGroups.length} groups`}
@@ -394,7 +394,7 @@ const FeatureFlagsManagement: React.FC = () => {
                               variant="outlined"
                             />
                           )}
-                          {flag.targetingRules.percentage && (
+                          {flag.targetingRules?.percentage && (
                             <Chip
                               icon={<PercentIcon />}
                               label={`${flag.targetingRules.percentage}%`}

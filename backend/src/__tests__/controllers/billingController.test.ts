@@ -23,7 +23,7 @@ describe('BillingController', () => {
 
   beforeEach(() => {
     billingController = new BillingController();
-    
+
     mockRequest = {
       user: {
         _id: 'user123',
@@ -341,7 +341,13 @@ describe('BillingController', () => {
 
       const mockVerificationResult = {
         success: true,
-        data: { status: 'success' }
+        data: {
+          status: 'success',
+          reference: 'PAY_123456',
+          amount: 5000,
+          currency: 'NGN',
+          customerEmail: 'test@example.com'
+        }
       };
 
       MockedPayment.findOne.mockResolvedValue(mockPaymentRecord as any);

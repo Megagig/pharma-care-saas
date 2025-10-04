@@ -640,4 +640,3 @@ describe('Stress Tests', () => {
         expect(maxResponseTime).toBeLessThan(PERFORMANCE_THRESHOLDS.PERMISSION_CHECK_MS * 2);
     });
 });
-});

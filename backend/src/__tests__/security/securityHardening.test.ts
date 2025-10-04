@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { app } from '../../app';
+import app from '../../app';
 import { User } from '../../models/User';
 import { SecuritySettings } from '../../models/SecuritySettings';
 import { RedisCacheService } from '../../services/RedisCacheService';
@@ -20,10 +20,10 @@ describe('Security Hardening Tests', () => {
 
   beforeAll(async () => {
     cacheService = RedisCacheService.getInstance();
-    
+
     // Create test users
     const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
-    
+
     adminUser = await User.create({
       email: 'admin@test.com',
       password: hashedPassword,
@@ -59,7 +59,7 @@ describe('Security Hardening Tests', () => {
   afterAll(async () => {
     await User.deleteMany({});
     await SecuritySettings.deleteMany({});
-    await cacheService.flushAll();
+    await cacheService.clear();
   });
 
   describe('Input Validation Tests', () => {
@@ -234,7 +234,7 @@ describe('Security Hardening Tests', () => {
   describe('Rate Limiting Tests', () => {
     test('should enforce API rate limits', async () => {
       const requests = [];
-      
+
       // Make multiple rapid requests
       for (let i = 0; i < 15; i++) {
         requests.push(
@@ -246,13 +246,13 @@ describe('Security Hardening Tests', () => {
 
       const responses = await Promise.all(requests);
       const rateLimitedResponses = responses.filter(res => res.status === 429);
-      
+
       expect(rateLimitedResponses.length).toBeGreaterThan(0);
     });
 
     test('should enforce authentication rate limits', async () => {
       const requests = [];
-      
+
       // Make multiple failed login attempts
       for (let i = 0; i < 12; i++) {
         requests.push(
@@ -267,14 +267,14 @@ describe('Security Hardening Tests', () => {
 
       const responses = await Promise.all(requests);
       const rateLimitedResponses = responses.filter(res => res.status === 429);
-      
+
       expect(rateLimitedResponses.length).toBeGreaterThan(0);
     });
 
     test('should implement burst protection', async () => {
       const startTime = Date.now();
       const requests = [];
-      
+
       // Make rapid burst requests
       for (let i = 0; i < 25; i++) {
         requests.push(
@@ -285,7 +285,7 @@ describe('Security Hardening Tests', () => {
 
       const responses = await Promise.all(requests);
       const endTime = Date.now();
-      
+
       // Should have some rate limited responses for burst
       const rateLimitedResponses = responses.filter(res => res.status === 429);
       expect(rateLimitedResponses.length).toBeGreaterThan(0);
@@ -293,7 +293,7 @@ describe('Security Hardening Tests', () => {
 
     test('should bypass rate limits for super admins', async () => {
       const requests = [];
-      
+
       // Make multiple requests as super admin
       for (let i = 0; i < 10; i++) {
         requests.push(
@@ -305,7 +305,7 @@ describe('Security Hardening Tests', () => {
 
       const responses = await Promise.all(requests);
       const successfulResponses = responses.filter(res => res.status === 200);
-      
+
       // Super admin should have higher limits or bypass
       expect(successfulResponses.length).toBeGreaterThan(5);
     });
@@ -314,7 +314,7 @@ describe('Security Hardening Tests', () => {
   describe('DDoS Protection Tests', () => {
     test('should detect suspicious request patterns', async () => {
       const suspiciousRequests = [];
-      
+
       // Simulate bot-like behavior
       for (let i = 0; i < 100; i++) {
         suspiciousRequests.push(
@@ -326,7 +326,7 @@ describe('Security Hardening Tests', () => {
 
       const responses = await Promise.all(suspiciousRequests);
       const blockedResponses = responses.filter(res => res.status === 429 || res.status === 403);
-      
+
       expect(blockedResponses.length).toBeGreaterThan(0);
     });
 
@@ -361,7 +361,7 @@ describe('Security Hardening Tests', () => {
       );
 
       const responses = await Promise.all(requests);
-      
+
       // Should detect scanning pattern and block subsequent requests
       const lastResponse = await request(app)
         .get('/api/health')
@@ -391,7 +391,7 @@ describe('Security Hardening Tests', () => {
         .get('/api/health');
 
       expect(response.headers['strict-transport-security']).toBeDefined();
-      
+
       process.env.NODE_ENV = originalEnv;
     });
 
@@ -417,7 +417,7 @@ describe('Security Hardening Tests', () => {
   describe('Authentication Security Tests', () => {
     test('should prevent timing attacks on login', async () => {
       const startTime = Date.now();
-      
+
       // Test with non-existent user
       await request(app)
         .post('/api/auth/login')
@@ -429,7 +429,7 @@ describe('Security Hardening Tests', () => {
       const nonExistentTime = Date.now() - startTime;
 
       const startTime2 = Date.now();
-      
+
       // Test with existing user but wrong password
       await request(app)
         .post('/api/auth/login')
@@ -448,7 +448,7 @@ describe('Security Hardening Tests', () => {
     test('should lock account after failed attempts', async () => {
       const testEmail = 'locktest@example.com';
       const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
-      
+
       const testUser = await User.create({
         email: testEmail,
         password: hashedPassword,
@@ -631,7 +631,7 @@ describe('Security Hardening Tests', () => {
       if (loginResponse.status === 200) {
         const sessionCookie = loginResponse.headers['set-cookie'];
         expect(sessionCookie).toBeDefined();
-        
+
         // Session ID should be regenerated on login
         expect(sessionCookie[0]).toContain('sessionid');
       }
@@ -661,7 +661,7 @@ describe('Security Hardening Tests', () => {
 
     test('should limit file size', async () => {
       const largeBuffer = Buffer.alloc(15 * 1024 * 1024); // 15MB
-      
+
       const response = await request(app)
         .post('/api/upload')
         .set('Authorization', `Bearer ${adminToken}`)
@@ -672,7 +672,7 @@ describe('Security Hardening Tests', () => {
 
     test('should scan for malicious content', async () => {
       const maliciousContent = Buffer.from('GIF89a<script>alert("XSS")</script>');
-      
+
       const response = await request(app)
         .post('/api/upload')
         .set('Authorization', `Bearer ${adminToken}`)

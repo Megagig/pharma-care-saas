@@ -1,4 +1,4 @@
-import { apiClient } from '../lib/apiClient';
+import { api as apiClient } from '../lib/api';
 
 // Types for SaaS Settings
 export interface SystemMetrics {
@@ -128,7 +128,7 @@ export interface UserSession {
  * SaaS Service - Handles all SaaS Settings API calls
  */
 class SaaSService {
-  private baseUrl = '/api/admin/saas';
+  private baseUrl = '/admin/saas';
 
   // System Overview APIs
   async getSystemMetrics(): Promise<SystemMetrics> {
@@ -143,7 +143,7 @@ class SaaSService {
 
   async getRecentActivities(): Promise<Activity[]> {
     const response = await apiClient.get(`${this.baseUrl}/overview/activities`);
-    return response.data.data;
+    return response.data.data.activities || [];
   }
 
   // User Management APIs
@@ -189,7 +189,7 @@ class SaaSService {
   // Feature Flags APIs
   async getFeatureFlags(): Promise<any[]> {
     const response = await apiClient.get(`${this.baseUrl}/feature-flags`);
-    return response.data.data.flags;
+    return response.data.data.featureFlags || [];
   }
 
   async updateFeatureFlagTargeting(flagId: string, targeting: FeatureFlagTargeting): Promise<void> {

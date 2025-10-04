@@ -131,7 +131,7 @@ export class NotificationService {
 
       // Try cache first
       const cached = await this.cacheService.get(cacheKey);
-      if (cached && typeof cached === 'object' && 'channels' in cached) {
+      if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
         return cached as INotificationSettings;
       }
 
@@ -148,7 +148,7 @@ export class NotificationService {
       // Cache the settings
       await this.cacheService.set(cacheKey, settings, { ttl: this.CACHE_TTL / 1000 });
 
-      return settings;
+      return settings as INotificationSettings;
     } catch (error) {
       logger.error('Error getting notification settings:', error);
       throw new Error('Failed to retrieve notification settings');

@@ -56,7 +56,7 @@ import {
   Settings as SettingsIcon,
   ExpandMore as ExpandMoreIcon,
   Rule as RuleIcon,
-  Template as TemplateIcon,
+  Description as TemplateIcon,
   Send as SendIcon,
   Schedule as ScheduleIcon,
   CheckCircle as CheckCircleIcon,

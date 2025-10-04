@@ -170,7 +170,6 @@ it('should return cached result when available', async () => {
     expect(result1).toEqual(result2);
     expect(Role.findById).toHaveBeenCalledTimes(1); // Should only be called once due to caching
 });
-    });
 
 describe('createRoleHierarchy', () => {
     it('should create role without parent successfully', async () => {
@@ -378,5 +377,4 @@ describe('private methods', () => {
             expect(level).toBe(0);
         });
     });
-});
 });

@@ -9,7 +9,7 @@ const webhookController_1 = __importDefault(require("../controllers/webhookContr
 const auth_1 = require("../middlewares/auth");
 const rbac_1 = require("../middlewares/rbac");
 const router = (0, express_1.Router)();
-router.use(auth_1.authenticateToken);
+router.use(auth_1.auth);
 router.use(rbac_1.requireSuperAdmin);
 router.get('/', [
     (0, express_validator_1.query)('userId').optional().isMongoId(),

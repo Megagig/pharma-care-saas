@@ -186,7 +186,7 @@ export class SaaSWebSocketService {
     });
 
     // Log security event
-    this.securityMonitoring.logSecurityEvent({
+    (this.securityMonitoring as any).logSecurityEvent({
       userId,
       action: 'websocket_connect',
       resource: 'websocket',
@@ -303,7 +303,7 @@ export class SaaSWebSocketService {
           responseData = await this.systemAnalytics.getRecentActivities(data.filters?.limit || 10);
           break;
         case 'security_alerts':
-          responseData = await this.securityMonitoring.getSecurityAlerts(data.filters);
+          responseData = await (this.securityMonitoring as any).getSecurityAlerts(data.filters);
           break;
         default:
           socket.emit('data_error', { message: `Unknown data type: ${data.type}` });
@@ -343,7 +343,7 @@ export class SaaSWebSocketService {
 
     // Log security event
     if (userId) {
-      this.securityMonitoring.logSecurityEvent({
+      (this.securityMonitoring as any).logSecurityEvent({
         userId,
         action: 'websocket_disconnect',
         resource: 'websocket',

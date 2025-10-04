@@ -107,8 +107,8 @@ class EnhancedRateLimit {
           rateLimitInfo.blocked = true;
           rateLimitInfo.blockExpires = now + (config.windowMs * 2); // Block for 2x window time
 
-          await this.cacheService.set(rateLimitKey, rateLimitInfo, { 
-            ttl: Math.ceil((rateLimitInfo.blockExpires - now) / 1000) 
+          await this.cacheService.set(rateLimitKey, rateLimitInfo, {
+            ttl: Math.ceil((rateLimitInfo.blockExpires - now) / 1000)
           });
 
           // Log rate limit exceeded
@@ -134,8 +134,8 @@ class EnhancedRateLimit {
         }
 
         // Save updated rate limit info
-        await this.cacheService.set(rateLimitKey, rateLimitInfo, { 
-          ttl: Math.ceil((rateLimitInfo.resetTime - now) / 1000) 
+        await this.cacheService.set(rateLimitKey, rateLimitInfo, {
+          ttl: Math.ceil((rateLimitInfo.resetTime - now) / 1000)
         });
 
         // Set rate limit headers
@@ -181,7 +181,7 @@ class EnhancedRateLimit {
         // Check if IP is currently blocked
         const blockKey = `${this.BLOCK_PREFIX}${ip}`;
         const isBlocked = await this.cacheService.get(blockKey);
-        
+
         if (isBlocked) {
           logger.warn('Blocked IP attempted access', {
             ip,
@@ -215,7 +215,7 @@ class EnhancedRateLimit {
           // Block if threshold exceeded
           if (metrics.requestCount > config.blockThreshold) {
             await this.blockIP(ip, config.blockDuration, 'DDoS attack detected');
-            
+
             res.status(429).json({
               success: false,
               code: 'DDOS_DETECTED',
@@ -325,7 +325,7 @@ class EnhancedRateLimit {
       try {
         // Find matching endpoint configuration
         let matchedConfig: RateLimitConfig | null = null;
-        
+
         for (const [pattern, config] of Object.entries(endpointLimits)) {
           if (req.originalUrl.match(new RegExp(pattern))) {
             matchedConfig = config;
@@ -368,9 +368,9 @@ class EnhancedRateLimit {
 
     // Suspicious user agent patterns
     const userAgent = req.get('User-Agent') || '';
-    if (userAgent.toLowerCase().includes('bot') || 
-        userAgent.toLowerCase().includes('crawler') ||
-        userAgent.toLowerCase().includes('spider')) {
+    if (userAgent.toLowerCase().includes('bot') ||
+      userAgent.toLowerCase().includes('crawler') ||
+      userAgent.toLowerCase().includes('spider')) {
       score += 2;
     }
 
@@ -394,7 +394,7 @@ class EnhancedRateLimit {
 
     // Get existing metrics
     let metrics = await this.cacheService.get(metricsKey) as DDoSMetrics;
-    
+
     if (!metrics) {
       metrics = {
         requestCount: 0,
@@ -472,8 +472,8 @@ class EnhancedRateLimit {
   }
 
   private async calculateAdaptiveLimits(
-    baseConfig: RateLimitConfig, 
-    userId?: string, 
+    baseConfig: RateLimitConfig,
+    userId?: string,
     ip?: string
   ): Promise<RateLimitConfig> {
     let multiplier = 1;
@@ -482,7 +482,7 @@ class EnhancedRateLimit {
     if (userId) {
       const userReputationKey = `reputation:user:${userId}`;
       const reputation = await this.cacheService.get(userReputationKey) as number || 5; // Default neutral
-      
+
       if (reputation > 8) multiplier = 2; // Good user, higher limits
       else if (reputation < 3) multiplier = 0.5; // Bad user, lower limits
     }
@@ -491,7 +491,7 @@ class EnhancedRateLimit {
     if (ip) {
       const ipReputationKey = `reputation:ip:${ip}`;
       const ipReputation = await this.cacheService.get(ipReputationKey) as number || 5;
-      
+
       if (ipReputation < 3) multiplier *= 0.5; // Bad IP, further reduce limits
     }
 
@@ -502,8 +502,8 @@ class EnhancedRateLimit {
   }
 
   private sendRateLimitResponse(
-    res: Response, 
-    config: RateLimitConfig, 
+    res: Response,
+    config: RateLimitConfig,
     rateLimitInfo: RateLimitInfo,
     type: 'EXCEEDED' | 'BLOCKED'
   ): void {

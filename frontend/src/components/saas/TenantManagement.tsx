@@ -43,8 +43,8 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Refresh as RefreshIcon,
-} from '@mui/material-icons';
-import { useSaasSettings } from '../../queries/useSaasSettings';
+} from '@mui/icons-material';
+import saasService from '../../services/saasService';
 
 interface TenantBranding {
   logo?: string;
@@ -136,7 +136,7 @@ const TenantManagement: React.FC = () => {
   const [editingLimits, setEditingLimits] = useState(false);
   const [editingFeatures, setEditingFeatures] = useState(false);
 
-  const { saasService } = useSaasSettings();
+  // Using saasService directly since tenant methods aren't in useSaasSettings hook
 
   // Available features for selection
   const availableFeatures = [

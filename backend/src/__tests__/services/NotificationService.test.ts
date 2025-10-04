@@ -1,4 +1,4 @@
-import { NotificationService } from '../../services/NotificationService';
+import { NotificationService } from '../../services/SaaSNotificationService';
 import { NotificationSettings } from '../../models/NotificationSettings';
 import { NotificationRule } from '../../models/NotificationRule';
 import { NotificationTemplate } from '../../models/NotificationTemplate';
@@ -109,7 +109,12 @@ describe('NotificationService', () => {
 
     // Mock BackgroundJobService
     mockBackgroundJobService = {
-      addJob: jest.fn(),
+      queueExportJob: jest.fn(),
+      queueScheduledReport: jest.fn(),
+      getJobStatus: jest.fn(),
+      cancelJob: jest.fn(),
+      getQueueStats: jest.fn(),
+      shutdown: jest.fn(),
     } as any;
 
     // Mock AuditService
@@ -126,7 +131,7 @@ describe('NotificationService', () => {
     (RedisCacheService.getInstance as jest.Mock).mockReturnValue(mockCacheService);
     (BackgroundJobService.getInstance as jest.Mock).mockReturnValue(mockBackgroundJobService);
     (AuditService as any) = mockAuditService;
-    (nodemailer.createTransporter as jest.Mock).mockReturnValue(mockEmailTransporter);
+    (nodemailer.createTransport as jest.Mock).mockReturnValue(mockEmailTransporter);
 
     service = NotificationService.getInstance();
   });
@@ -267,7 +272,7 @@ describe('NotificationService', () => {
 
       (NotificationTemplate.findById as jest.Mock).mockResolvedValue(mockTemplate);
       (User.find as jest.Mock).mockResolvedValue(mockUsers);
-      jest.spyOn(service as any, 'checkRateLimits').mockResolvedValue();
+      jest.spyOn(service as any, 'checkRateLimits').mockResolvedValue(undefined);
 
       const result = await service.sendBulkNotification(bulkNotification, 'admin123');
 
@@ -277,7 +282,7 @@ describe('NotificationService', () => {
         isActive: true
       });
 
-      expect(mockBackgroundJobService.addJob).toHaveBeenCalledTimes(3);
+      expect(mockBackgroundJobService.queueExportJob).toHaveBeenCalledTimes(3);
       expect(mockCacheService.set).toHaveBeenCalledWith(
         `notification:result:${result.id}`,
         expect.objectContaining({
@@ -430,7 +435,7 @@ describe('NotificationService', () => {
     it('should successfully create notification template', async () => {
       const templateData = {
         name: 'New Template',
-        channel: 'email',
+        channel: 'email' as const,
         subject: 'Test Subject',
         body: 'Test Body',
         variables: []
@@ -512,8 +517,8 @@ describe('NotificationService', () => {
       (User.findById as jest.Mock).mockResolvedValue(mockUser);
       (NotificationTemplate.findById as jest.Mock).mockResolvedValue(mockTemplate);
       jest.spyOn(service, 'getNotificationSettings').mockResolvedValue(mockNotificationSettings as any);
-      jest.spyOn(service as any, 'checkRateLimits').mockResolvedValue();
-      jest.spyOn(service as any, 'sendByChannel').mockResolvedValue();
+      jest.spyOn(service as any, 'checkRateLimits').mockResolvedValue(undefined);
+      jest.spyOn(service as any, 'sendByChannel').mockResolvedValue({ success: true });
 
       const result = await service.sendNotification(
         'user123',
@@ -551,7 +556,7 @@ describe('NotificationService', () => {
     it('should throw error if channel is not enabled', async () => {
       (User.findById as jest.Mock).mockResolvedValue(mockUser);
       (NotificationTemplate.findById as jest.Mock).mockResolvedValue(mockTemplate);
-      
+
       const disabledChannelSettings = {
         ...mockNotificationSettings,
         isChannelEnabled: jest.fn().mockReturnValue(false)
@@ -564,7 +569,7 @@ describe('NotificationService', () => {
     it('should throw error during quiet hours', async () => {
       (User.findById as jest.Mock).mockResolvedValue(mockUser);
       (NotificationTemplate.findById as jest.Mock).mockResolvedValue(mockTemplate);
-      
+
       const quietHoursSettings = {
         ...mockNotificationSettings,
         isInQuietHours: jest.fn().mockReturnValue(true)

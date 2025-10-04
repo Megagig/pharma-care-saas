@@ -401,7 +401,7 @@ const UserManagement: React.FC = () => {
                   ))
                 ) : (
                   usersData?.users?.map((user) => (
-                    <TableRow key={user.id} hover>
+                    <TableRow key={user._id} hover>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Avatar sx={{ mr: 2 }}>

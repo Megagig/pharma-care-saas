@@ -1,5 +1,6 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { validationResult } from 'express-validator';
+import { AuthRequest } from '../middlewares/auth';
 import DeveloperPortalService from '../services/DeveloperPortalService';
 
 export class DeveloperPortalController {
@@ -7,7 +8,7 @@ export class DeveloperPortalController {
    * Get developer accounts (Admin only)
    * GET /api/admin/developer-portal/accounts
    */
-  async getDeveloperAccounts(req: Request, res: Response): Promise<void> {
+  async getDeveloperAccounts(req: AuthRequest, res: Response): Promise<void> {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -64,7 +65,7 @@ export class DeveloperPortalController {
    * Get current developer account
    * GET /api/developer-portal/account
    */
-  async getCurrentDeveloperAccount(req: Request, res: Response): Promise<void> {
+  async getCurrentDeveloperAccount(req: AuthRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -111,7 +112,7 @@ export class DeveloperPortalController {
    * Create or update developer account
    * POST /api/developer-portal/account
    */
-  async createOrUpdateDeveloperAccount(req: Request, res: Response): Promise<void> {
+  async createOrUpdateDeveloperAccount(req: AuthRequest, res: Response): Promise<void> {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -165,7 +166,7 @@ export class DeveloperPortalController {
    * Verify developer account
    * POST /api/developer-portal/verify/:token
    */
-  async verifyDeveloperAccount(req: Request, res: Response): Promise<void> {
+  async verifyDeveloperAccount(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { token } = req.params;
 
@@ -192,7 +193,7 @@ export class DeveloperPortalController {
    * Resend verification email
    * POST /api/developer-portal/resend-verification
    */
-  async resendVerification(req: Request, res: Response): Promise<void> {
+  async resendVerification(req: AuthRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -231,7 +232,7 @@ export class DeveloperPortalController {
    * Get onboarding progress
    * GET /api/developer-portal/onboarding
    */
-  async getOnboardingProgress(req: Request, res: Response): Promise<void> {
+  async getOnboardingProgress(req: AuthRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -267,7 +268,7 @@ export class DeveloperPortalController {
    * Update onboarding step
    * POST /api/developer-portal/onboarding/:step
    */
-  async updateOnboardingStep(req: Request, res: Response): Promise<void> {
+  async updateOnboardingStep(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { step } = req.params;
       const { completed = true } = req.body;
@@ -306,7 +307,7 @@ export class DeveloperPortalController {
    * Get API documentation
    * GET /api/developer-portal/documentation
    */
-  async getApiDocumentation(req: Request, res: Response): Promise<void> {
+  async getApiDocumentation(req: AuthRequest, res: Response): Promise<void> {
     try {
       const {
         category,
@@ -351,7 +352,7 @@ export class DeveloperPortalController {
    * Get documentation by endpoint
    * GET /api/developer-portal/documentation/endpoint/:endpointId
    */
-  async getDocumentationByEndpoint(req: Request, res: Response): Promise<void> {
+  async getDocumentationByEndpoint(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { endpointId } = req.params;
 
@@ -388,7 +389,7 @@ export class DeveloperPortalController {
    * Create sandbox session
    * POST /api/developer-portal/sandbox/sessions
    */
-  async createSandboxSession(req: Request, res: Response): Promise<void> {
+  async createSandboxSession(req: AuthRequest, res: Response): Promise<void> {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -453,7 +454,7 @@ export class DeveloperPortalController {
    * Get sandbox sessions
    * GET /api/developer-portal/sandbox/sessions
    */
-  async getSandboxSessions(req: Request, res: Response): Promise<void> {
+  async getSandboxSessions(req: AuthRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -519,7 +520,7 @@ export class DeveloperPortalController {
    * Get sandbox session
    * GET /api/developer-portal/sandbox/sessions/:sessionId
    */
-  async getSandboxSession(req: Request, res: Response): Promise<void> {
+  async getSandboxSession(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
 
@@ -556,7 +557,7 @@ export class DeveloperPortalController {
    * Execute API test in sandbox
    * POST /api/developer-portal/sandbox/sessions/:sessionId/test
    */
-  async executeApiTest(req: Request, res: Response): Promise<void> {
+  async executeApiTest(req: AuthRequest, res: Response): Promise<void> {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -596,7 +597,7 @@ export class DeveloperPortalController {
    * Get developer API keys
    * GET /api/developer-portal/api-keys
    */
-  async getDeveloperApiKeys(req: Request, res: Response): Promise<void> {
+  async getDeveloperApiKeys(req: AuthRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -644,7 +645,7 @@ export class DeveloperPortalController {
    * Generate code examples
    * GET /api/developer-portal/code-examples/:endpointId
    */
-  async generateCodeExamples(req: Request, res: Response): Promise<void> {
+  async generateCodeExamples(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { endpointId } = req.params;
       const { apiKey } = req.query;
@@ -688,7 +689,7 @@ export class DeveloperPortalController {
    * Get documentation categories
    * GET /api/developer-portal/documentation/categories
    */
-  async getDocumentationCategories(req: Request, res: Response): Promise<void> {
+  async getDocumentationCategories(req: AuthRequest, res: Response): Promise<void> {
     try {
       const categories = await DeveloperPortalService.getDocumentationCategories();
 
@@ -712,7 +713,7 @@ export class DeveloperPortalController {
    * Get documentation tags
    * GET /api/developer-portal/documentation/tags
    */
-  async getDocumentationTags(req: Request, res: Response): Promise<void> {
+  async getDocumentationTags(req: AuthRequest, res: Response): Promise<void> {
     try {
       const tags = await DeveloperPortalService.getDocumentationTags();
 

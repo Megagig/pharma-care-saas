@@ -45,8 +45,6 @@ const UserRole_1 = __importDefault(require("../models/UserRole"));
 const RolePermission_1 = __importDefault(require("../models/RolePermission"));
 const RoleHierarchyService_1 = __importDefault(require("./RoleHierarchyService"));
 const CacheManager_1 = __importDefault(require("./CacheManager"));
-const CacheInvalidationService_1 = __importDefault(require("./CacheInvalidationService"));
-const DatabaseOptimizationService_1 = __importDefault(require("./DatabaseOptimizationService"));
 const PermissionAggregationService_1 = __importDefault(require("./PermissionAggregationService"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const auditLogging_1 = require("../middlewares/auditLogging");
@@ -55,8 +53,8 @@ class DynamicPermissionService {
         this.CACHE_TTL = 5 * 60 * 1000;
         this.roleHierarchyService = RoleHierarchyService_1.default.getInstance();
         this.cacheManager = CacheManager_1.default.getInstance();
-        this.cacheInvalidationService = CacheInvalidationService_1.default.getInstance();
-        this.dbOptimizationService = DatabaseOptimizationService_1.default.getInstance();
+        this.cacheInvalidationService = null;
+        this.dbOptimizationService = null;
         this.aggregationService = PermissionAggregationService_1.default.getInstance();
     }
     static getInstance() {

@@ -7,7 +7,6 @@ exports.performanceController = exports.PerformanceController = void 0;
 const DynamicPermissionService_1 = __importDefault(require("../services/DynamicPermissionService"));
 const CacheManager_1 = __importDefault(require("../services/CacheManager"));
 const PerformanceCacheService_1 = __importDefault(require("../services/PerformanceCacheService"));
-const DatabaseOptimizationService_1 = __importDefault(require("../services/DatabaseOptimizationService"));
 const PerformanceDatabaseOptimizer_1 = __importDefault(require("../services/PerformanceDatabaseOptimizer"));
 const PerformanceJobService_1 = __importDefault(require("../services/PerformanceJobService"));
 const DatabaseProfiler_1 = __importDefault(require("../services/DatabaseProfiler"));
@@ -18,7 +17,7 @@ class PerformanceController {
         this.dynamicPermissionService = DynamicPermissionService_1.default.getInstance();
         this.cacheManager = CacheManager_1.default.getInstance();
         this.performanceCacheService = PerformanceCacheService_1.default.getInstance();
-        this.dbOptimizationService = DatabaseOptimizationService_1.default.getInstance();
+        this.dbOptimizationService = null;
         this.performanceDatabaseOptimizer = PerformanceDatabaseOptimizer_1.default.getInstance();
         this.performanceJobService = PerformanceJobService_1.default.getInstance();
     }
