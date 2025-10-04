@@ -45,6 +45,7 @@ const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const express_mongo_sanitize_1 = __importDefault(require("express-mongo-sanitize"));
 const xss_clean_1 = __importDefault(require("xss-clean"));
 const hpp_1 = __importDefault(require("hpp"));
+const path_1 = __importDefault(require("path"));
 const errorHandler_1 = __importDefault(require("./middlewares/errorHandler"));
 const MemoryManagementService_1 = __importDefault(require("./services/MemoryManagementService"));
 const logger_1 = __importDefault(require("./utils/logger"));
@@ -331,8 +332,17 @@ app.use('/uploads', express_1.default.static('uploads', {
         }
     },
 }));
-app.all('*', (req, res) => {
-    res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+app.use(express_1.default.static(path_1.default.join(__dirname, "../../frontend/build")));
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+        res.sendFile(path_1.default.join(__dirname, "../../frontend/build/index.html"));
+    }
+    else {
+        res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+    }
+});
+app.all('/api/*', (req, res) => {
+    res.status(404).json({ message: `API Route ${req.originalUrl} not found` });
 });
 app.use(errorHandler_1.default);
 exports.default = app;

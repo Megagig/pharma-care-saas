@@ -7,6 +7,8 @@ import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
+import path from 'path';
+
 
 // Import custom types (automatically loaded from src/types/)
 import errorHandler from './middlewares/errorHandler';
@@ -163,6 +165,7 @@ app.use('/api/', intelligentCompressionMiddleware({
   threshold: 1024, // 1KB minimum
   level: 6, // Balanced compression
 }));
+
 app.use('/api/', responseSizeMonitoringMiddleware());
 
 // Health check routes
@@ -301,6 +304,7 @@ app.use('/api/communication', communicationRoutes);
 
 // Communication Audit routes
 import communicationAuditRoutes from './routes/communicationAuditRoutes';
+
 app.use('/api/communication/audit', communicationAuditRoutes);
 
 // Notification routes
@@ -403,9 +407,22 @@ app.use(
   })
 );
 
-// 404 handler
-app.all('*', (req: Request, res: Response) => {
-  res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+// Serve static files from React build
+app.use(express.static(path.join(__dirname, "../../frontend/build")));
+
+// Catch all handler: send back React's index.html file for client-side routing
+app.get('*', (req: Request, res: Response) => {
+  // Only serve index.html for non-API routes
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, "../../frontend/build/index.html"));
+  } else {
+    res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+  }
+});
+
+// 404 handler for API routes only
+app.all('/api/*', (req: Request, res: Response) => {
+  res.status(404).json({ message: `API Route ${req.originalUrl} not found` });
 });
 
 // Global error handler
