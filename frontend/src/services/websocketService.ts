@@ -35,7 +35,7 @@ class WebSocketService {
 
     constructor(config?: Partial<WebSocketConfig>) {
         this.config = {
-            url: import.meta.env.VITE_WS_URL || 'ws://localhost:5000/ws',
+            url: import.meta.env.VITE_WS_URL || 'wss://pharmacare-nttq.onrender.com/ws',
             reconnectInterval: 5000,
             maxReconnectAttempts: 3, // Reduced from 10 to 3
             heartbeatInterval: 30000,

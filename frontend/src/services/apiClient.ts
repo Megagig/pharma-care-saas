@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api',
   timeout: 300000, // 5 minutes to match main api service
   headers: {
     'Content-Type': 'application/json',
@@ -66,8 +66,8 @@ apiClient.interceptors.response.use(
         try {
           // Try to refresh the token
           const res = await axios.post(
-            `${import.meta.env.VITE_API_URL || 'http://localhost:5000'
-            }/api/auth/refresh-token`,
+            `${import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api'
+            }/auth/refresh-token`,
             {},
             { withCredentials: true }
           );

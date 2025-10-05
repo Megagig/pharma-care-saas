@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Default API instance
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ api.interceptors.response.use(
 
 // Form data API instance (for file uploads)
 export const formDataApi = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api',
   withCredentials: true,
   headers: {
     'Content-Type': 'multipart/form-data',

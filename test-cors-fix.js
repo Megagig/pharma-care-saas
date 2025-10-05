@@ -8,7 +8,7 @@
 const https = require('https');
 const http = require('http');
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = process.env.BACKEND_URL || process.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
 const FRONTEND_ORIGIN = 'https://pharmacare-nttq.onrender.com';
 
 console.log('🔍 Testing CORS configuration...');
@@ -143,8 +143,20 @@ async function main() {
   const isHealthy = await testHealth();
   
   if (!isHealthy) {
-    console.log('❌ Backend is not responding. Please make sure it\'s running.');
-    console.log('   Start the backend with: npm run dev (in backend directory)');
+    console.log('❌ Backend is not responding.');
+    console.log('   If testing locally: Start the backend with: npm run dev (in backend directory)');
+    console.log('   If testing production: The backend might be deployed elsewhere');
+    console.log('   Current backend URL:', BACKEND_URL);
+    
+    // Try to provide helpful guidance
+    if (BACKEND_URL.includes('localhost')) {
+      console.log('\n💡 To start the backend locally:');
+      console.log('   cd backend && npm run dev');
+    } else {
+      console.log('\n💡 Testing against production backend...');
+      console.log('   Make sure the production backend is deployed and running');
+    }
+    
     process.exit(1);
   }
   
@@ -155,6 +167,7 @@ async function main() {
   console.log('   1. Restart the backend server');
   console.log('   2. Check that FRONTEND_URL environment variable is set correctly');
   console.log('   3. Verify the production frontend URL is correct');
+  console.log('   4. Clear browser cache and try again');
 }
 
 main().catch(console.error);

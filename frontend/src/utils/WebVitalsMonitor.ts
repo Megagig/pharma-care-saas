@@ -31,7 +31,7 @@ export class WebVitalsMonitor {
     enabled?: boolean;
   } = {}) {
     // Use backend URL for API endpoints
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const backendUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://pharmacare-nttq.onrender.com';
     this.apiEndpoint = options.apiEndpoint || `${backendUrl}/api/analytics/web-vitals`;
     this.performanceBudgets = options.performanceBudgets || {
       CLS: 0.1,
@@ -154,7 +154,7 @@ export class WebVitalsMonitor {
         connectionType: entry.connectionType,
       };
 
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const backendUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://pharmacare-nttq.onrender.com';
       fetch(`${backendUrl}/api/alerts/performance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -3,10 +3,10 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 // Create axios instance with base configuration
 const getBaseURL = () => {
   try {
-    // Always use direct backend URL to bypass proxy issues
-    return 'http://localhost:5000/api';
+    // Use environment variable or fallback to production URL
+    return import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api';
   } catch {
-    return 'http://localhost:5000/api';
+    return 'https://pharmacare-nttq.onrender.com/api';
   }
 };
 

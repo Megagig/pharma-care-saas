@@ -9,9 +9,9 @@ import {
   DrugIndication,
 } from '../types/drugTypes';
 
-// Use direct connection to backend during development
-const API_BASE_URL = 'http://localhost:5000/api/drugs';
-const PUBLIC_API_BASE_URL = 'http://localhost:5000/api/public';
+// Use environment variable or production URL
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api'}/drugs`;
+const PUBLIC_API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api'}/public`;
 
 // Create axios instance with default config
 const apiClient = axios.create({

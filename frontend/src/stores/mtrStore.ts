@@ -409,7 +409,7 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
 
-        const testResponse = await fetch('http://localhost:5000/api/health', {
+        const testResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api'}/health`, {
           method: 'GET',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
