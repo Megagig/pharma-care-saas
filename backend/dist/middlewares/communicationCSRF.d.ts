@@ -8,8 +8,8 @@ export declare const doubleSubmitCSRF: (req: AuthRequest, res: Response, next: N
 export declare const setCSRFCookie: (req: AuthRequest, res: Response, next: NextFunction) => void;
 export declare const validateOrigin: (req: Request, res: Response, next: NextFunction) => void;
 export declare const enforceSameSite: (req: Request, res: Response, next: NextFunction) => void;
-export declare const comprehensiveCSRFProtection: ((req: AuthRequest, res: Response, next: NextFunction) => void)[];
-export declare const lightweightCSRFProtection: ((req: AuthRequest, res: Response, next: NextFunction) => void)[];
+export declare const comprehensiveCSRFProtection: (((req: AuthRequest, res: Response, next: NextFunction) => void) | ((req: Request, res: Response, next: NextFunction) => void))[];
+export declare const lightweightCSRFProtection: (((req: AuthRequest, res: Response, next: NextFunction) => void) | ((req: Request, res: Response, next: NextFunction) => void))[];
 declare const _default: {
     generateCSRFToken: (userId: string, sessionId?: string) => string;
     validateCSRFToken: (userId: string, token: string, sessionId?: string) => boolean;
@@ -19,8 +19,8 @@ declare const _default: {
     setCSRFCookie: (req: AuthRequest, res: Response, next: NextFunction) => void;
     validateOrigin: (req: Request, res: Response, next: NextFunction) => void;
     enforceSameSite: (req: Request, res: Response, next: NextFunction) => void;
-    comprehensiveCSRFProtection: ((req: AuthRequest, res: Response, next: NextFunction) => void)[];
-    lightweightCSRFProtection: ((req: AuthRequest, res: Response, next: NextFunction) => void)[];
+    comprehensiveCSRFProtection: (((req: AuthRequest, res: Response, next: NextFunction) => void) | ((req: Request, res: Response, next: NextFunction) => void))[];
+    lightweightCSRFProtection: (((req: AuthRequest, res: Response, next: NextFunction) => void) | ((req: Request, res: Response, next: NextFunction) => void))[];
 };
 export default _default;
 //# sourceMappingURL=communicationCSRF.d.ts.map

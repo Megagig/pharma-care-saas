@@ -8,9 +8,9 @@ export declare const validateClinicalData: (req: Request, res: Response, next: N
 export declare const monitorSuspiciousPatterns: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const validateApiKeys: (req: Request, res: Response, next: NextFunction) => void;
 export declare const validateDataEncryption: (req: AuthRequest, res: Response, next: NextFunction) => void;
-export declare const aiDiagnosticSecurityMiddleware: ((req: Request, res: Response, next: NextFunction) => void)[];
+export declare const aiDiagnosticSecurityMiddleware: (((req: Request, res: Response, next: NextFunction) => void) | ((req: AuthRequest, res: Response, next: NextFunction) => void))[];
 export declare const externalApiSecurityMiddleware: ((req: Request, res: Response, next: NextFunction) => void)[];
-export declare const labDataSecurityMiddleware: ((req: Request, res: Response, next: NextFunction) => void)[];
+export declare const labDataSecurityMiddleware: (((req: Request, res: Response, next: NextFunction) => void) | ((req: AuthRequest, res: Response, next: NextFunction) => void))[];
 declare const _default: {
     aiDiagnosticRateLimit: import("express-rate-limit").RateLimitRequestHandler;
     externalApiRateLimit: import("express-rate-limit").RateLimitRequestHandler;
@@ -20,9 +20,9 @@ declare const _default: {
     monitorSuspiciousPatterns: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
     validateApiKeys: (req: Request, res: Response, next: NextFunction) => void;
     validateDataEncryption: (req: AuthRequest, res: Response, next: NextFunction) => void;
-    aiDiagnosticSecurityMiddleware: ((req: Request, res: Response, next: NextFunction) => void)[];
+    aiDiagnosticSecurityMiddleware: (((req: Request, res: Response, next: NextFunction) => void) | ((req: AuthRequest, res: Response, next: NextFunction) => void))[];
     externalApiSecurityMiddleware: ((req: Request, res: Response, next: NextFunction) => void)[];
-    labDataSecurityMiddleware: ((req: Request, res: Response, next: NextFunction) => void)[];
+    labDataSecurityMiddleware: (((req: Request, res: Response, next: NextFunction) => void) | ((req: AuthRequest, res: Response, next: NextFunction) => void))[];
 };
 export default _default;
 //# sourceMappingURL=securityMiddleware.d.ts.map

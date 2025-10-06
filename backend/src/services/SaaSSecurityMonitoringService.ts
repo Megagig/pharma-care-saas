@@ -6,6 +6,7 @@ import { User, IUser } from '../models/User';
 import { RedisCacheService } from './RedisCacheService';
 import { AuditService } from './auditService';
 import logger from '../utils/logger';
+// @ts-ignore - bcrypt types not available in production build
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 

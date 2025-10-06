@@ -1,11 +1,5 @@
-import { Request, Response } from "express";
-interface AuthenticatedRequest extends Request {
-    user?: {
-        id: string;
-        workplaceId: string;
-        role: string;
-    };
-}
+import { Response } from "express";
+import { AuthenticatedRequest } from "../types/auth";
 export declare class CommunicationController {
     getConversations(req: AuthenticatedRequest, res: Response): Promise<void>;
     createConversation(req: AuthenticatedRequest, res: Response): Promise<void>;

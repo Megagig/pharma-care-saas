@@ -11,6 +11,11 @@ import logger from "../utils/logger";
 import FileUploadService from "../services/fileUploadService";
 import { AuthenticatedRequest } from "../types/auth";
 
+// Helper function to convert ObjectId to string
+const toStringId = (id: string | mongoose.Types.ObjectId): string => {
+  return typeof id === 'string' ? id : id.toString();
+};
+
 /**
  * Controller for communication hub endpoints
  */
@@ -24,7 +29,9 @@ export class CommunicationController {
   ): Promise<void> {
     try {
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = typeof req.user!.workplaceId === 'string'
+        ? req.user!.workplaceId
+        : req.user!.workplaceId.toString();
 
       const filters = {
         status: req.query.status as
@@ -267,7 +274,7 @@ export class CommunicationController {
       const conversationId = req.params.id;
       const { userId: newUserId, role } = req.body;
       const addedBy = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       if (!conversationId || typeof conversationId !== "string") {
         res.status(400).json({
@@ -329,7 +336,7 @@ export class CommunicationController {
         return;
       }
       const removedBy = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       if (!conversationId || typeof conversationId !== "string") {
         res.status(400).json({
@@ -378,7 +385,7 @@ export class CommunicationController {
     try {
       const conversationId = req.params.id;
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       const filters = {
         type: req.query.type as
@@ -502,7 +509,7 @@ export class CommunicationController {
     try {
       const messageId = req.params.id;
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       if (!messageId || typeof messageId !== "string") {
         res.status(400).json({
@@ -540,7 +547,7 @@ export class CommunicationController {
       const messageId = req.params.id;
       const { emoji } = req.body;
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       if (!messageId || typeof messageId !== "string") {
         res.status(400).json({
@@ -608,7 +615,7 @@ export class CommunicationController {
         return;
       }
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       if (!messageId || typeof messageId !== "string") {
         res.status(400).json({
@@ -665,7 +672,7 @@ export class CommunicationController {
       const messageId = req.params.id;
       const { content, reason } = req.body;
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       const message = await Message.findOne({
         _id: messageId,
@@ -740,7 +747,7 @@ export class CommunicationController {
       const messageId = req.params.id;
       const { reason } = req.body;
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       if (!messageId || typeof messageId !== "string") {
         res.status(400).json({
@@ -798,7 +805,7 @@ export class CommunicationController {
     try {
       const { messageIds } = req.body;
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       if (!Array.isArray(messageIds) || messageIds.length === 0) {
         res.status(400).json({
@@ -840,7 +847,7 @@ export class CommunicationController {
     try {
       const query = req.query.q as string;
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       const filters = {
         query,
@@ -972,7 +979,7 @@ export class CommunicationController {
     try {
       const query = req.query.q as string;
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       const filters = {
         query,
@@ -1053,7 +1060,7 @@ export class CommunicationController {
     try {
       const patientId = req.params.patientId;
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       // Verify patient exists and user has access
       const patient = await Patient.findOne({
@@ -1123,7 +1130,7 @@ export class CommunicationController {
       const patientId = req.params.patientId;
       const { title, message, priority, tags } = req.body;
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       // Verify patient exists
       const patient = await Patient.findOne({
@@ -1333,16 +1340,16 @@ export class CommunicationController {
         },
         responseTime: responseTimeStats[0]
           ? {
-              average: Math.round(
-                responseTimeStats[0].avgResponseTime / (1000 * 60),
-              ), // minutes
-              min: Math.round(
-                responseTimeStats[0].minResponseTime / (1000 * 60),
-              ),
-              max: Math.round(
-                responseTimeStats[0].maxResponseTime / (1000 * 60),
-              ),
-            }
+            average: Math.round(
+              responseTimeStats[0].avgResponseTime / (1000 * 60),
+            ), // minutes
+            min: Math.round(
+              responseTimeStats[0].minResponseTime / (1000 * 60),
+            ),
+            max: Math.round(
+              responseTimeStats[0].maxResponseTime / (1000 * 60),
+            ),
+          }
           : null,
       };
 
@@ -1365,10 +1372,10 @@ export class CommunicationController {
    */
   async uploadFiles(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const files = req.files as Express.Multer.File[];
+      const files = req.files as any[];
       const { conversationId, messageType = "file" } = req.body;
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
 
       if (!files || files.length === 0) {
         res.status(400).json({
@@ -1551,10 +1558,10 @@ export class CommunicationController {
           messageId: message._id,
           stats: fileStats
             ? {
-                size: fileStats.size,
-                created: fileStats.birthtime,
-                modified: fileStats.mtime,
-              }
+              size: fileStats.size,
+              created: fileStats.birthtime,
+              modified: fileStats.mtime,
+            }
             : null,
         },
       });
@@ -1724,7 +1731,7 @@ export class CommunicationController {
   ): Promise<void> {
     try {
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
       const query = req.query.q as string;
 
       const suggestions = await messageSearchService.getSearchSuggestions(
@@ -1989,7 +1996,7 @@ export class CommunicationController {
   async createThread(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
       const { messageId } = req.params;
 
       if (!messageId || !mongoose.Types.ObjectId.isValid(messageId)) {
@@ -2030,7 +2037,7 @@ export class CommunicationController {
   ): Promise<void> {
     try {
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
       const { threadId } = req.params;
 
       if (!threadId || !mongoose.Types.ObjectId.isValid(threadId)) {
@@ -2083,7 +2090,7 @@ export class CommunicationController {
   ): Promise<void> {
     try {
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
       const { threadId } = req.params;
 
       if (!threadId || !mongoose.Types.ObjectId.isValid(threadId)) {
@@ -2121,7 +2128,7 @@ export class CommunicationController {
   async replyToThread(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
       const { threadId } = req.params;
 
       if (!threadId || !mongoose.Types.ObjectId.isValid(threadId)) {
@@ -2189,7 +2196,7 @@ export class CommunicationController {
   ): Promise<void> {
     try {
       const userId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = toStringId(req.user!.workplaceId);
       const { conversationId } = req.params;
 
       if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) {

@@ -124,6 +124,10 @@ export interface AuthRequest extends Request {
         inheritedFrom?: string;
     };
     sessionId?: string;
+    file?: any;
+    files?: any;
+}
+export interface AuthenticatedRequest extends AuthRequest {
 }
 export interface UsageLimitResult {
     allowed: boolean;

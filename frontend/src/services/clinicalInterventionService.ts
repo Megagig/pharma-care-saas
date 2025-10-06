@@ -391,9 +391,10 @@ class ClinicalInterventionService {
         const queryParams = new URLSearchParams();
 
         Object.entries(filters).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== '') {
+            if (value !== undefined && value !== null && (typeof value !== 'string' || value !== '')) {
                 if (value instanceof Date) {
                     queryParams.append(key, value.toISOString());
+
                 } else {
                     queryParams.append(key, String(value));
                 }

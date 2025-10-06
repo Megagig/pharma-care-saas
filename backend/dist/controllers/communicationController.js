@@ -14,11 +14,16 @@ const Patient_1 = __importDefault(require("../models/Patient"));
 const SearchHistory_1 = require("../models/SearchHistory");
 const logger_1 = __importDefault(require("../utils/logger"));
 const fileUploadService_1 = __importDefault(require("../services/fileUploadService"));
+const toStringId = (id) => {
+    return typeof id === 'string' ? id : id.toString();
+};
 class CommunicationController {
     async getConversations(req, res) {
         try {
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = typeof req.user.workplaceId === 'string'
+                ? req.user.workplaceId
+                : req.user.workplaceId.toString();
             const filters = {
                 status: req.query.status,
                 type: req.query.type,
@@ -198,7 +203,7 @@ class CommunicationController {
             const conversationId = req.params.id;
             const { userId: newUserId, role } = req.body;
             const addedBy = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             if (!conversationId || typeof conversationId !== "string") {
                 res.status(400).json({
                     success: false,
@@ -242,7 +247,7 @@ class CommunicationController {
                 return;
             }
             const removedBy = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             if (!conversationId || typeof conversationId !== "string") {
                 res.status(400).json({
                     success: false,
@@ -278,7 +283,7 @@ class CommunicationController {
         try {
             const conversationId = req.params.id;
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const filters = {
                 type: req.query.type,
                 senderId: req.query.senderId,
@@ -363,7 +368,7 @@ class CommunicationController {
         try {
             const messageId = req.params.id;
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             if (!messageId || typeof messageId !== "string") {
                 res.status(400).json({
                     success: false,
@@ -391,7 +396,7 @@ class CommunicationController {
             const messageId = req.params.id;
             const { emoji } = req.body;
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             if (!messageId || typeof messageId !== "string") {
                 res.status(400).json({
                     success: false,
@@ -440,7 +445,7 @@ class CommunicationController {
                 return;
             }
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             if (!messageId || typeof messageId !== "string") {
                 res.status(400).json({
                     success: false,
@@ -482,7 +487,7 @@ class CommunicationController {
             const messageId = req.params.id;
             const { content, reason } = req.body;
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const message = await Message_1.default.findOne({
                 _id: messageId,
                 senderId: userId,
@@ -539,7 +544,7 @@ class CommunicationController {
             const messageId = req.params.id;
             const { reason } = req.body;
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             if (!messageId || typeof messageId !== "string") {
                 res.status(400).json({
                     success: false,
@@ -579,7 +584,7 @@ class CommunicationController {
         try {
             const { messageIds } = req.body;
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             if (!Array.isArray(messageIds) || messageIds.length === 0) {
                 res.status(400).json({
                     success: false,
@@ -607,7 +612,7 @@ class CommunicationController {
         try {
             const query = req.query.q;
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const filters = {
                 query,
                 conversationId: req.query.conversationId,
@@ -710,7 +715,7 @@ class CommunicationController {
         try {
             const query = req.query.q;
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const filters = {
                 query,
                 priority: req.query.priority,
@@ -775,7 +780,7 @@ class CommunicationController {
         try {
             const patientId = req.params.patientId;
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const patient = await Patient_1.default.findOne({
                 _id: patientId,
                 workplaceId,
@@ -819,7 +824,7 @@ class CommunicationController {
             const patientId = req.params.patientId;
             const { title, message, priority, tags } = req.body;
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const patient = await Patient_1.default.findOne({
                 _id: patientId,
                 workplaceId,
@@ -1024,7 +1029,7 @@ class CommunicationController {
             const files = req.files;
             const { conversationId, messageType = "file" } = req.body;
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             if (!files || files.length === 0) {
                 res.status(400).json({
                     success: false,
@@ -1306,7 +1311,7 @@ class CommunicationController {
     async getSearchSuggestions(req, res) {
         try {
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const query = req.query.q;
             const suggestions = await messageSearchService_1.messageSearchService.getSearchSuggestions(workplaceId, userId, query);
             res.json({
@@ -1493,7 +1498,7 @@ class CommunicationController {
     async createThread(req, res) {
         try {
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const { messageId } = req.params;
             if (!messageId || !mongoose_1.default.Types.ObjectId.isValid(messageId)) {
                 res.status(400).json({
@@ -1521,7 +1526,7 @@ class CommunicationController {
     async getThreadMessages(req, res) {
         try {
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const { threadId } = req.params;
             if (!threadId || !mongoose_1.default.Types.ObjectId.isValid(threadId)) {
                 res.status(400).json({
@@ -1559,7 +1564,7 @@ class CommunicationController {
     async getThreadSummary(req, res) {
         try {
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const { threadId } = req.params;
             if (!threadId || !mongoose_1.default.Types.ObjectId.isValid(threadId)) {
                 res.status(400).json({
@@ -1587,7 +1592,7 @@ class CommunicationController {
     async replyToThread(req, res) {
         try {
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const { threadId } = req.params;
             if (!threadId || !mongoose_1.default.Types.ObjectId.isValid(threadId)) {
                 res.status(400).json({
@@ -1638,7 +1643,7 @@ class CommunicationController {
     async getConversationThreads(req, res) {
         try {
             const userId = req.user.id;
-            const workplaceId = req.user.workplaceId;
+            const workplaceId = toStringId(req.user.workplaceId);
             const { conversationId } = req.params;
             if (!conversationId || !mongoose_1.default.Types.ObjectId.isValid(conversationId)) {
                 res.status(400).json({
