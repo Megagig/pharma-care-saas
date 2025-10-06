@@ -40,11 +40,11 @@ import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import { 
-  useUsers, 
-  useUpdateUserRole, 
-  useSuspendUser, 
-  useReactivateUser, 
+import {
+  useUsers,
+  useUpdateUserRole,
+  useSuspendUser,
+  useReactivateUser,
   useImpersonateUser,
   useApproveUser,
   useRejectUser,
@@ -54,7 +54,6 @@ import {
   useCreateUser
 } from '../../queries/useSaasSettings';
 import { useQueryClient } from '@tanstack/react-query';
-import CancelIcon from '@mui/icons-material/Cancel';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import Checkbox from '@mui/material/Checkbox';
@@ -163,7 +162,14 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
   onClose,
   onSave,
 }) => {
-  const [selectedRole, setSelectedRole] = useState(user?.role || '');
+  const [selectedRole, setSelectedRole] = useState('');
+
+  // Update selectedRole when user changes or dialog opens
+  React.useEffect(() => {
+    if (user && open) {
+      setSelectedRole(user.role || '');
+    }
+  }, [user, open]);
 
   const roles = [
     { id: 'super_admin', name: 'Super Admin' },
@@ -329,6 +335,10 @@ const UserManagement: React.FC = () => {
         queryClient.invalidateQueries({
           predicate: (query) => query.queryKey[0] === 'saas' && query.queryKey.includes('users')
         });
+        // Also force refetch the users query to ensure immediate UI update
+        queryClient.refetchQueries({
+          predicate: (query) => query.queryKey[0] === 'saas' && query.queryKey.includes('users')
+        });
       },
       onError: (error: any) => {
         setErrorMessage(`Failed to update user role: ${error.message || 'Unknown error'}`);
@@ -360,7 +370,7 @@ const UserManagement: React.FC = () => {
 
   const confirmRejectUser = () => {
     if (!selectedUser) return;
-    
+
     rejectUserMutation.mutate({ userId: selectedUser._id, reason: rejectReason }, {
       onSuccess: () => {
         setSuccessMessage(`User ${selectedUser.firstName} ${selectedUser.lastName} has been rejected.`);
@@ -380,7 +390,7 @@ const UserManagement: React.FC = () => {
   };
 
   const handleSelectUser = (userId: string) => {
-    setSelectedUsers(prev => 
+    setSelectedUsers(prev =>
       prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
     );
   };
@@ -395,7 +405,7 @@ const UserManagement: React.FC = () => {
 
   const handleBulkApprove = () => {
     if (selectedUsers.length === 0) return;
-    
+
     bulkApproveUsersMutation.mutate(selectedUsers, {
       onSuccess: (result: any) => {
         setSuccessMessage(`Successfully approved ${result.successfulApprovals} users.`);
@@ -414,7 +424,7 @@ const UserManagement: React.FC = () => {
 
   const handleBulkReject = () => {
     if (selectedUsers.length === 0) return;
-    
+
     const reason = prompt('Enter rejection reason (optional):');
     bulkRejectUsersMutation.mutate({ userIds: selectedUsers, reason: reason || undefined }, {
       onSuccess: (result: any) => {
@@ -434,13 +444,13 @@ const UserManagement: React.FC = () => {
 
   const handleBulkSuspend = () => {
     if (selectedUsers.length === 0) return;
-    
+
     const reason = prompt('Enter suspension reason (required):');
     if (!reason) {
       setErrorMessage('Suspension reason is required');
       return;
     }
-    
+
     bulkSuspendUsersMutation.mutate({ userIds: selectedUsers, reason }, {
       onSuccess: (result: any) => {
         setSuccessMessage(`Successfully suspended ${result.successfulSuspensions} users.`);
@@ -871,7 +881,7 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onClose, onSuccess 
       <DialogContent>
         <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
           {error && <Alert severity="error">{error}</Alert>}
-          
+
           <TextField
             fullWidth
             required
@@ -880,7 +890,7 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onClose, onSuccess 
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           />
-          
+
           <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField
               fullWidth
@@ -941,8 +951,8 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onClose, onSuccess 
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button 
-          onClick={handleSubmit} 
+        <Button
+          onClick={handleSubmit}
           variant="contained"
           disabled={createUserMutation.isPending}
         >

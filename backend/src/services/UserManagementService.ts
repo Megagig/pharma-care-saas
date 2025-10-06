@@ -225,15 +225,27 @@ export class UserManagementService {
       }
 
       // Store old values for audit
-      const oldRoles = [user.role];
+      const oldRole = user.role;
+      const oldAssignedRoles = user.assignedRoles || [];
 
-      // Update user role
+      // Determine the role name to set in the primary role field
+      let primaryRoleName: string;
+      if (mongoose.Types.ObjectId.isValid(roleId)) {
+        primaryRoleName = role.name;
+      } else {
+        primaryRoleName = roleId;
+      }
+
+      // Update user role - both the primary role field and the assignedRoles array
       await User.findByIdAndUpdate(userId, {
-        $addToSet: { roles: roleId },
-        updatedAt: new Date()
+        role: primaryRoleName, // Update primary role field for UI display
+        $addToSet: { assignedRoles: role._id }, // Add to assignedRoles for RBAC
+        updatedAt: new Date(),
+        roleLastModifiedAt: new Date(),
+        roleLastModifiedBy: adminId
       });
 
-      // Clear user cache
+      // Clear user cache to ensure fresh data is returned
       await this.cacheService.del(`user:${userId}`);
 
       // Send role assignment email
@@ -264,9 +276,9 @@ export class UserManagementService {
           },
           complianceCategory: 'access_control',
           riskLevel: 'medium',
-          changedFields: ['roles'],
-          oldValues: { roles: oldRoles },
-          newValues: { roles: [...(oldRoles || []), roleId] },
+          changedFields: ['role', 'assignedRoles'],
+          oldValues: { role: oldRole, assignedRoles: oldAssignedRoles },
+          newValues: { role: primaryRoleName, assignedRoles: [...oldAssignedRoles, role._id] },
           workspaceId
         });
       }
