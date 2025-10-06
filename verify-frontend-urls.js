@@ -18,12 +18,12 @@ const LOCALHOST_PATTERNS = [
 
 function scanDirectory(dir) {
   const results = [];
-  
+
   function scanFile(filePath) {
     try {
       const content = fs.readFileSync(filePath, 'utf8');
       const relativePath = path.relative('.', filePath);
-      
+
       LOCALHOST_PATTERNS.forEach((pattern, index) => {
         const matches = content.match(pattern);
         if (matches) {
@@ -44,15 +44,15 @@ function scanDirectory(dir) {
       console.warn(`Warning: Could not read file ${filePath}:`, error.message);
     }
   }
-  
+
   function walkDirectory(currentDir) {
     try {
       const items = fs.readdirSync(currentDir);
-      
+
       for (const item of items) {
         const fullPath = path.join(currentDir, item);
         const stat = fs.statSync(fullPath);
-        
+
         if (stat.isDirectory()) {
           // Skip node_modules and other build directories
           if (!['node_modules', 'build', 'dist', '.git'].includes(item)) {
@@ -69,7 +69,7 @@ function scanDirectory(dir) {
       console.warn(`Warning: Could not read directory ${currentDir}:`, error.message);
     }
   }
-  
+
   walkDirectory(dir);
   return results;
 }
@@ -81,7 +81,7 @@ const results = scanDirectory(FRONTEND_DIR);
 if (results.length === 0) {
   console.log('✅ No hardcoded localhost URLs found in frontend!');
   console.log('🎉 All URLs have been successfully updated to use environment variables or production URLs.\n');
-  
+
   // Check .env file
   try {
     const envContent = fs.readFileSync('./frontend/.env', 'utf8');
@@ -92,7 +92,7 @@ if (results.length === 0) {
   }
 } else {
   console.log('❌ Found hardcoded localhost URLs that need to be fixed:\n');
-  
+
   results.forEach((result, index) => {
     console.log(`${index + 1}. File: ${result.file}`);
     console.log(`   Pattern: ${result.pattern}`);
@@ -103,7 +103,7 @@ if (results.length === 0) {
     });
     console.log('');
   });
-  
+
   console.log('🔧 Please update these files to use environment variables or production URLs.');
   process.exit(1);
 }
