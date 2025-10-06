@@ -155,17 +155,18 @@ app.use(detectAnomalies as any);
 app.use(systemIntegration.backwardCompatibilityMiddleware());
 app.use(systemIntegration.gradualRolloutMiddleware() as any);
 
-// Rate limiting - more lenient for development
+// Rate limiting - more lenient for development and production
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit for development
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes default
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '5000'), // 5000 requests default
   message: 'Too many requests from this IP, please try again later.',
   skip: (req) => {
-    // Skip rate limiting for health checks and certain endpoints in development
-    if (
-      process.env.NODE_ENV === 'development' &&
-      (req.path.includes('/health') || req.path.includes('/mtr/summary'))
-    ) {
+    // Skip rate limiting if disabled via env var
+    if (process.env.DISABLE_RATE_LIMITING === 'true') {
+      return true;
+    }
+    // Skip rate limiting for health checks
+    if (req.path.includes('/health')) {
       return true;
     }
     return false;
