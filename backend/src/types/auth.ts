@@ -213,7 +213,7 @@ export interface AuthRequest extends Request {
 }
 
 // Alias for AuthenticatedRequest (used in some controllers)
-export interface AuthenticatedRequest extends AuthRequest {}
+export interface AuthenticatedRequest extends AuthRequest { }
 
 export interface UsageLimitResult {
   allowed: boolean;

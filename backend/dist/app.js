@@ -167,12 +167,14 @@ app.use(securityMonitoring_1.detectAnomalies);
 app.use(systemIntegration.backwardCompatibilityMiddleware());
 app.use(systemIntegration.gradualRolloutMiddleware());
 const limiter = (0, express_rate_limit_1.default)({
-    windowMs: 15 * 60 * 1000,
-    max: process.env.NODE_ENV === 'development' ? 1000 : 100,
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '5000'),
     message: 'Too many requests from this IP, please try again later.',
     skip: (req) => {
-        if (process.env.NODE_ENV === 'development' &&
-            (req.path.includes('/health') || req.path.includes('/mtr/summary'))) {
+        if (process.env.DISABLE_RATE_LIMITING === 'true') {
+            return true;
+        }
+        if (req.path.includes('/health')) {
             return true;
         }
         return false;
