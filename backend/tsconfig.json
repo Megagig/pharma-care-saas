@@ -69,7 +69,11 @@
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "src/__tests__/**/*",
+    "src/**/tests/**/*",
+    "src/**/__tests__/**/*",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "**/tests/**/*",
+    "**/__tests__/**/*"
   ]
 }

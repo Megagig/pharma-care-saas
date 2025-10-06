@@ -208,7 +208,12 @@ export interface AuthRequest extends Request {
     inheritedFrom?: string;
   };
   sessionId?: string;
+  file?: any; // Multer single file upload
+  files?: any; // Multer multiple files upload
 }
+
+// Alias for AuthenticatedRequest (used in some controllers)
+export interface AuthenticatedRequest extends AuthRequest {}
 
 export interface UsageLimitResult {
   allowed: boolean;
