@@ -158,6 +158,7 @@ export class WebVitalsMonitor {
       fetch(`${backendUrl}/api/alerts/performance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify(alertData),
         keepalive: true,
       }).catch(error => {

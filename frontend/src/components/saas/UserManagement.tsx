@@ -40,8 +40,24 @@ import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import { useUsers, useUpdateUserRole, useSuspendUser, useReactivateUser, useImpersonateUser } from '../../queries/useSaasSettings';
+import { 
+  useUsers, 
+  useUpdateUserRole, 
+  useSuspendUser, 
+  useReactivateUser, 
+  useImpersonateUser,
+  useApproveUser,
+  useRejectUser,
+  useBulkApproveUsers,
+  useBulkRejectUsers,
+  useBulkSuspendUsers,
+  useCreateUser
+} from '../../queries/useSaasSettings';
 import { useQueryClient } from '@tanstack/react-query';
+import CancelIcon from '@mui/icons-material/Cancel';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import Checkbox from '@mui/material/Checkbox';
 
 interface UserActionsMenuProps {
   user: any;
@@ -49,6 +65,8 @@ interface UserActionsMenuProps {
   onSuspend: (user: any) => void;
   onReactivate: (user: any) => void;
   onImpersonate: (user: any) => void;
+  onApprove: (user: any) => void;
+  onReject: (user: any) => void;
 }
 
 const UserActionsMenu: React.FC<UserActionsMenuProps> = ({
@@ -57,6 +75,8 @@ const UserActionsMenu: React.FC<UserActionsMenuProps> = ({
   onSuspend,
   onReactivate,
   onImpersonate,
+  onApprove,
+  onReject,
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -93,21 +113,33 @@ const UserActionsMenu: React.FC<UserActionsMenuProps> = ({
         }}
       >
         <MenuList>
+          {user.status === 'pending' && (
+            <>
+              <MenuItemComponent onClick={() => handleAction(() => onApprove(user))}>
+                <ThumbUpIcon sx={{ mr: 1 }} fontSize="small" />
+                Approve User
+              </MenuItemComponent>
+              <MenuItemComponent onClick={() => handleAction(() => onReject(user))}>
+                <ThumbDownIcon sx={{ mr: 1 }} fontSize="small" />
+                Reject User
+              </MenuItemComponent>
+            </>
+          )}
           <MenuItemComponent onClick={() => handleAction(() => onEdit(user))}>
             <EditIcon sx={{ mr: 1 }} fontSize="small" />
-            Edit User
+            Assign Role
           </MenuItemComponent>
           {user.status === 'active' ? (
             <MenuItemComponent onClick={() => handleAction(() => onSuspend(user))}>
               <BlockIcon sx={{ mr: 1 }} fontSize="small" />
               Suspend User
             </MenuItemComponent>
-          ) : (
+          ) : user.status === 'suspended' ? (
             <MenuItemComponent onClick={() => handleAction(() => onReactivate(user))}>
               <CheckCircleIcon sx={{ mr: 1 }} fontSize="small" />
               Reactivate User
             </MenuItemComponent>
-          )}
+          ) : null}
           <MenuItemComponent onClick={() => handleAction(() => onImpersonate(user))}>
             <SupervisorAccountIcon sx={{ mr: 1 }} fontSize="small" />
             Impersonate User
@@ -205,6 +237,17 @@ const UserManagement: React.FC = () => {
   const suspendUserMutation = useSuspendUser();
   const reactivateUserMutation = useReactivateUser();
   const impersonateUserMutation = useImpersonateUser();
+  const approveUserMutation = useApproveUser();
+  const rejectUserMutation = useRejectUser();
+  const bulkApproveUsersMutation = useBulkApproveUsers();
+  const bulkRejectUsersMutation = useBulkRejectUsers();
+  const bulkSuspendUsersMutation = useBulkSuspendUsers();
+  const createUserMutation = useCreateUser();
+
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -294,6 +337,126 @@ const UserManagement: React.FC = () => {
     });
   };
 
+  const handleApproveUser = (user: any) => {
+    approveUserMutation.mutate(user._id, {
+      onSuccess: () => {
+        setSuccessMessage(`User ${user.firstName} ${user.lastName} has been approved successfully.`);
+        setErrorMessage(null);
+        queryClient.invalidateQueries({
+          predicate: (query) => query.queryKey[0] === 'saas' && query.queryKey.includes('users')
+        });
+      },
+      onError: (error: any) => {
+        setErrorMessage(`Failed to approve user: ${error.message || 'Unknown error'}`);
+        setSuccessMessage(null);
+      }
+    });
+  };
+
+  const handleRejectUser = (user: any) => {
+    setSelectedUser(user);
+    setRejectDialogOpen(true);
+  };
+
+  const confirmRejectUser = () => {
+    if (!selectedUser) return;
+    
+    rejectUserMutation.mutate({ userId: selectedUser._id, reason: rejectReason }, {
+      onSuccess: () => {
+        setSuccessMessage(`User ${selectedUser.firstName} ${selectedUser.lastName} has been rejected.`);
+        setErrorMessage(null);
+        setRejectDialogOpen(false);
+        setRejectReason('');
+        setSelectedUser(null);
+        queryClient.invalidateQueries({
+          predicate: (query) => query.queryKey[0] === 'saas' && query.queryKey.includes('users')
+        });
+      },
+      onError: (error: any) => {
+        setErrorMessage(`Failed to reject user: ${error.message || 'Unknown error'}`);
+        setSuccessMessage(null);
+      }
+    });
+  };
+
+  const handleSelectUser = (userId: string) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedUsers.length === usersData?.users?.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(usersData?.users?.map((u: any) => u._id) || []);
+    }
+  };
+
+  const handleBulkApprove = () => {
+    if (selectedUsers.length === 0) return;
+    
+    bulkApproveUsersMutation.mutate(selectedUsers, {
+      onSuccess: (result: any) => {
+        setSuccessMessage(`Successfully approved ${result.successfulApprovals} users.`);
+        setErrorMessage(null);
+        setSelectedUsers([]);
+        queryClient.invalidateQueries({
+          predicate: (query) => query.queryKey[0] === 'saas' && query.queryKey.includes('users')
+        });
+      },
+      onError: (error: any) => {
+        setErrorMessage(`Failed to approve users: ${error.message || 'Unknown error'}`);
+        setSuccessMessage(null);
+      }
+    });
+  };
+
+  const handleBulkReject = () => {
+    if (selectedUsers.length === 0) return;
+    
+    const reason = prompt('Enter rejection reason (optional):');
+    bulkRejectUsersMutation.mutate({ userIds: selectedUsers, reason: reason || undefined }, {
+      onSuccess: (result: any) => {
+        setSuccessMessage(`Successfully rejected ${result.successfulRejections} users.`);
+        setErrorMessage(null);
+        setSelectedUsers([]);
+        queryClient.invalidateQueries({
+          predicate: (query) => query.queryKey[0] === 'saas' && query.queryKey.includes('users')
+        });
+      },
+      onError: (error: any) => {
+        setErrorMessage(`Failed to reject users: ${error.message || 'Unknown error'}`);
+        setSuccessMessage(null);
+      }
+    });
+  };
+
+  const handleBulkSuspend = () => {
+    if (selectedUsers.length === 0) return;
+    
+    const reason = prompt('Enter suspension reason (required):');
+    if (!reason) {
+      setErrorMessage('Suspension reason is required');
+      return;
+    }
+    
+    bulkSuspendUsersMutation.mutate({ userIds: selectedUsers, reason }, {
+      onSuccess: (result: any) => {
+        setSuccessMessage(`Successfully suspended ${result.successfulSuspensions} users.`);
+        setErrorMessage(null);
+        setSelectedUsers([]);
+        queryClient.invalidateQueries({
+          predicate: (query) => query.queryKey[0] === 'saas' && query.queryKey.includes('users')
+        });
+      },
+      onError: (error: any) => {
+        setErrorMessage(`Failed to suspend users: ${error.message || 'Unknown error'}`);
+        setSuccessMessage(null);
+      }
+    });
+  };
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'super_admin':
@@ -359,7 +522,7 @@ const UserManagement: React.FC = () => {
             <Button
               variant="contained"
               startIcon={<PersonAddIcon />}
-              onClick={() => {/* Handle add user */ }}
+              onClick={() => setAddUserDialogOpen(true)}
             >
               Add User
             </Button>
@@ -424,10 +587,60 @@ const UserManagement: React.FC = () => {
           </Grid>
 
           {/* Users Table */}
+          {/* Bulk Actions */}
+          {selectedUsers.length > 0 && (
+            <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Typography variant="body2">
+                {selectedUsers.length} user(s) selected
+              </Typography>
+              <Button
+                variant="contained"
+                color="success"
+                size="small"
+                startIcon={<ThumbUpIcon />}
+                onClick={handleBulkApprove}
+              >
+                Bulk Approve
+              </Button>
+              <Button
+                variant="contained"
+                color="warning"
+                size="small"
+                startIcon={<ThumbDownIcon />}
+                onClick={handleBulkReject}
+              >
+                Bulk Reject
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                size="small"
+                startIcon={<BlockIcon />}
+                onClick={handleBulkSuspend}
+              >
+                Bulk Suspend
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setSelectedUsers([])}
+              >
+                Clear Selection
+              </Button>
+            </Box>
+          )}
+
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedUsers.length === usersData?.users?.length && usersData?.users?.length > 0}
+                      indeterminate={selectedUsers.length > 0 && selectedUsers.length < (usersData?.users?.length || 0)}
+                      onChange={handleSelectAll}
+                    />
+                  </TableCell>
                   <TableCell>User</TableCell>
                   <TableCell>Role</TableCell>
                   <TableCell>Status</TableCell>
@@ -440,6 +653,9 @@ const UserManagement: React.FC = () => {
                 {isLoading ? (
                   Array.from({ length: rowsPerPage }).map((_, index) => (
                     <TableRow key={index}>
+                      <TableCell padding="checkbox">
+                        <Skeleton variant="circular" width={24} height={24} />
+                      </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
@@ -459,6 +675,12 @@ const UserManagement: React.FC = () => {
                 ) : (
                   usersData?.users?.map((user) => (
                     <TableRow key={user._id} hover>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={selectedUsers.includes(user._id)}
+                          onChange={() => handleSelectUser(user._id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Avatar sx={{ mr: 2 }}>
@@ -505,12 +727,14 @@ const UserManagement: React.FC = () => {
                           onSuspend={handleSuspendUser}
                           onReactivate={handleReactivateUser}
                           onImpersonate={handleImpersonateUser}
+                          onApprove={handleApproveUser}
+                          onReject={handleRejectUser}
                         />
                       </TableCell>
                     </TableRow>
                   )) || (
                     <TableRow>
-                      <TableCell colSpan={6} align="center">
+                      <TableCell colSpan={7} align="center">
                         <Typography variant="body2" color="text.secondary">
                           No users found
                         </Typography>
@@ -545,7 +769,187 @@ const UserManagement: React.FC = () => {
         }}
         onSave={handleSaveUserRole}
       />
+
+      {/* Reject User Dialog */}
+      <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Reject User</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="body1" gutterBottom>
+              Are you sure you want to reject {selectedUser?.firstName} {selectedUser?.lastName}?
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Rejection Reason (Optional)"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              sx={{ mt: 2 }}
+              placeholder="Enter reason for rejection..."
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setRejectDialogOpen(false);
+            setRejectReason('');
+          }}>
+            Cancel
+          </Button>
+          <Button onClick={confirmRejectUser} variant="contained" color="error">
+            Reject User
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add User Dialog */}
+      <AddUserDialog
+        open={addUserDialogOpen}
+        onClose={() => setAddUserDialogOpen(false)}
+        onSuccess={() => {
+          setAddUserDialogOpen(false);
+          setSuccessMessage('User created successfully');
+          queryClient.invalidateQueries({
+            predicate: (query) => query.queryKey[0] === 'saas' && query.queryKey.includes('users')
+          });
+        }}
+      />
     </Box>
+  );
+};
+
+// Add User Dialog Component
+interface AddUserDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const AddUserDialog: React.FC<AddUserDialogProps> = ({ open, onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    password: '',
+    role: 'pharmacist',
+    workplaceId: '',
+    phone: ''
+  });
+  const [error, setError] = useState('');
+  const createUserMutation = useCreateUser();
+
+  const handleSubmit = () => {
+    if (!formData.email || !formData.firstName || !formData.lastName || !formData.password || !formData.role) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    createUserMutation.mutate(formData, {
+      onSuccess: () => {
+        setFormData({
+          email: '',
+          firstName: '',
+          lastName: '',
+          password: '',
+          role: 'pharmacist',
+          workplaceId: '',
+          phone: ''
+        });
+        setError('');
+        onSuccess();
+      },
+      onError: (err: any) => {
+        setError(err.message || 'Failed to create user');
+      }
+    });
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Add New User</DialogTitle>
+      <DialogContent>
+        <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {error && <Alert severity="error">{error}</Alert>}
+          
+          <TextField
+            fullWidth
+            required
+            label="Email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          />
+          
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <TextField
+              fullWidth
+              required
+              label="First Name"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              required
+              label="Last Name"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            />
+          </Box>
+
+          <TextField
+            fullWidth
+            required
+            label="Password"
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            helperText="User will receive this password via email"
+          />
+
+          <FormControl fullWidth required>
+            <InputLabel>Role</InputLabel>
+            <Select
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              label="Role"
+            >
+              <MenuItem value="super_admin">Super Admin</MenuItem>
+              <MenuItem value="pharmacy_outlet">Pharmacy Owner</MenuItem>
+              <MenuItem value="pharmacist">Pharmacist</MenuItem>
+              <MenuItem value="intern_pharmacist">Intern Pharmacist</MenuItem>
+              <MenuItem value="pharmacy_team">Pharmacy Team</MenuItem>
+            </Select>
+          </FormControl>
+
+          <TextField
+            fullWidth
+            label="Phone (Optional)"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          />
+
+          <TextField
+            fullWidth
+            label="Workplace ID (Optional)"
+            value={formData.workplaceId}
+            onChange={(e) => setFormData({ ...formData, workplaceId: e.target.value })}
+            helperText="Leave empty if not assigning to a workspace"
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button 
+          onClick={handleSubmit} 
+          variant="contained"
+          disabled={createUserMutation.isPending}
+        >
+          {createUserMutation.isPending ? 'Creating...' : 'Create User'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

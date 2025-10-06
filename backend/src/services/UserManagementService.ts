@@ -7,6 +7,7 @@ import { SecurityAuditLog } from '../models/SecurityAuditLog';
 import { DynamicPermissionService } from './DynamicPermissionService';
 import { RedisCacheService } from './RedisCacheService';
 import { AuditService } from './auditService';
+import { emailService } from '../utils/emailService';
 import logger from '../utils/logger';
 import jwt from 'jsonwebtoken';
 
@@ -194,7 +195,7 @@ export class UserManagementService {
         // Look up role by name
         role = await Role.findOne({ name: roleId, isActive: true });
       }
-      
+
       if (!role) {
         throw new Error('Role not found');
       }
@@ -214,8 +215,8 @@ export class UserManagementService {
             plan: null,
             permissions: [], isTrialExpired: false, isSubscriptionActive: true,
             limits: { patients: 0, users: 0, locations: 0, storage: 0, apiCalls: 0 },
-            
-            
+
+
           }
         );
         if (!canAssignRole) {
@@ -234,6 +235,19 @@ export class UserManagementService {
 
       // Clear user cache
       await this.cacheService.del(`user:${userId}`);
+
+      // Send role assignment email
+      try {
+        await emailService.sendRoleAssignmentNotification(user.email, {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          newRole: role.name,
+          workspaceName: user.workplaceId ? (user.workplaceId as any).name : undefined
+        });
+      } catch (emailError) {
+        logger.error('Failed to send role assignment email:', emailError);
+        // Don't throw - email failure shouldn't block the role assignment
+      }
 
       // Create audit log
       if (adminId) {
@@ -295,8 +309,8 @@ export class UserManagementService {
             plan: null,
             permissions: [], isTrialExpired: false, isSubscriptionActive: true,
             limits: { patients: 0, users: 0, locations: 0, storage: 0, apiCalls: 0 },
-            
-            
+
+
           }
         );
         if (!canRevokeRole) {
@@ -358,6 +372,7 @@ export class UserManagementService {
 
       // Update user status
       await User.findByIdAndUpdate(userId, {
+        status: 'suspended',
         isActive: false,
         suspendedAt: new Date(),
         suspensionReason: reason,
@@ -369,6 +384,18 @@ export class UserManagementService {
 
       // Clear user cache
       await this.cacheService.del(`user:${userId}`);
+
+      // Send suspension email
+      try {
+        await emailService.sendUserSuspensionNotification(user.email, {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          reason
+        });
+      } catch (emailError) {
+        logger.error('Failed to send suspension email:', emailError);
+        // Don't throw - email failure shouldn't block the suspension
+      }
 
       // Create audit log
       if (adminId) {
@@ -410,6 +437,7 @@ export class UserManagementService {
 
       // Update user status
       await User.findByIdAndUpdate(userId, {
+        status: 'active',
         isActive: true,
         $unset: {
           suspendedAt: 1,
@@ -606,8 +634,8 @@ export class UserManagementService {
           plan: null,
           permissions: [], isTrialExpired: false, isSubscriptionActive: true,
           limits: { patients: 0, users: 0, locations: 0, storage: 0, apiCalls: 0 },
-          
-          
+
+
         }
       );
       if (!canImpersonate) {
@@ -898,6 +926,366 @@ export class UserManagementService {
     } catch (error) {
       logger.error('Error clearing user cache:', error);
       throw new Error('Failed to clear user cache');
+    }
+  }
+
+  /**
+   * Approve pending user
+   */
+  async approveUser(userId: string, adminId?: string): Promise<void> {
+    try {
+      const user = await this.getUserById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      if (user.status !== 'pending') {
+        throw new Error('User is not in pending status');
+      }
+
+      // Update user status to active
+      await User.findByIdAndUpdate(userId, {
+        status: 'active',
+        isActive: true,
+        updatedAt: new Date()
+      });
+
+      // Clear user cache
+      await this.cacheService.del(`user:${userId}`);
+
+      // Send approval email
+      try {
+        await emailService.sendUserApprovalNotification(user.email, {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          workspaceName: user.workplaceId ? (user.workplaceId as any).name : undefined
+        });
+      } catch (emailError) {
+        logger.error('Failed to send approval email:', emailError);
+        // Don't throw - email failure shouldn't block the approval
+      }
+
+      // Create audit log
+      if (adminId) {
+        await this.auditService.createAuditLog({
+          action: 'PERMISSION_GRANTED',
+          userId: adminId,
+          resourceType: 'User',
+          resourceId: userId,
+          details: {
+            action: 'USER_APPROVED',
+            targetUserId: userId,
+            approvedAt: new Date()
+          },
+          complianceCategory: 'access_control',
+          riskLevel: 'medium',
+          changedFields: ['status', 'isActive'],
+          oldValues: { status: 'pending', isActive: false },
+          newValues: { status: 'active', isActive: true }
+        });
+      }
+
+      logger.info(`User ${userId} approved by admin ${adminId}`);
+    } catch (error) {
+      logger.error('Error approving user:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reject pending user
+   */
+  async rejectUser(userId: string, reason?: string, adminId?: string): Promise<void> {
+    try {
+      const user = await this.getUserById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      if (user.status !== 'pending') {
+        throw new Error('User is not in pending status');
+      }
+
+      // Update user status to rejected
+      await User.findByIdAndUpdate(userId, {
+        status: 'suspended',
+        isActive: false,
+        suspensionReason: reason || 'Registration rejected',
+        suspendedAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      // Clear user cache
+      await this.cacheService.del(`user:${userId}`);
+
+      // Send rejection email
+      try {
+        await emailService.sendUserRejectionNotification(user.email, {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          reason
+        });
+      } catch (emailError) {
+        logger.error('Failed to send rejection email:', emailError);
+        // Don't throw - email failure shouldn't block the rejection
+      }
+
+      // Create audit log
+      if (adminId) {
+        await this.auditService.createAuditLog({
+          action: 'PERMISSION_REVOKED',
+          userId: adminId,
+          resourceType: 'User',
+          resourceId: userId,
+          details: {
+            action: 'USER_REJECTED',
+            targetUserId: userId,
+            reason: reason || 'Registration rejected',
+            rejectedAt: new Date()
+          },
+          complianceCategory: 'access_control',
+          riskLevel: 'medium',
+          changedFields: ['status', 'isActive', 'suspensionReason'],
+          oldValues: { status: 'pending' },
+          newValues: { status: 'suspended', isActive: false, suspensionReason: reason }
+        });
+      }
+
+      logger.info(`User ${userId} rejected by admin ${adminId}. Reason: ${reason}`);
+    } catch (error) {
+      logger.error('Error rejecting user:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk approve users
+   */
+  async bulkApproveUsers(userIds: string[], adminId?: string): Promise<BulkOperationResult> {
+    const result: BulkOperationResult = {
+      success: 0,
+      failed: 0,
+      errors: []
+    };
+
+    try {
+      for (const userId of userIds) {
+        try {
+          await this.approveUser(userId, adminId);
+          result.success++;
+        } catch (error) {
+          result.failed++;
+          result.errors.push({
+            userId,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      // Create bulk audit log
+      if (adminId) {
+        await this.auditService.createAuditLog({
+          action: 'BULK_OPERATION',
+          userId: adminId,
+          details: {
+            action: 'BULK_USER_APPROVAL',
+            userIds,
+            successCount: result.success,
+            failedCount: result.failed,
+            errors: result.errors
+          },
+          complianceCategory: 'access_control',
+          riskLevel: 'high'
+        });
+      }
+
+      logger.info(`Bulk user approval completed. Success: ${result.success}, Failed: ${result.failed}`);
+      return result;
+    } catch (error) {
+      logger.error('Error in bulk user approval:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk reject users
+   */
+  async bulkRejectUsers(userIds: string[], reason?: string, adminId?: string): Promise<BulkOperationResult> {
+    const result: BulkOperationResult = {
+      success: 0,
+      failed: 0,
+      errors: []
+    };
+
+    try {
+      for (const userId of userIds) {
+        try {
+          await this.rejectUser(userId, reason, adminId);
+          result.success++;
+        } catch (error) {
+          result.failed++;
+          result.errors.push({
+            userId,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      // Create bulk audit log
+      if (adminId) {
+        await this.auditService.createAuditLog({
+          action: 'BULK_OPERATION',
+          userId: adminId,
+          details: {
+            action: 'BULK_USER_REJECTION',
+            userIds,
+            reason,
+            successCount: result.success,
+            failedCount: result.failed,
+            errors: result.errors
+          },
+          complianceCategory: 'access_control',
+          riskLevel: 'high'
+        });
+      }
+
+      logger.info(`Bulk user rejection completed. Success: ${result.success}, Failed: ${result.failed}`);
+      return result;
+    } catch (error) {
+      logger.error('Error in bulk user rejection:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk suspend users
+   */
+  async bulkSuspendUsers(userIds: string[], reason: string, adminId?: string): Promise<BulkOperationResult> {
+    const result: BulkOperationResult = {
+      success: 0,
+      failed: 0,
+      errors: []
+    };
+
+    try {
+      for (const userId of userIds) {
+        try {
+          await this.suspendUser(userId, reason, adminId);
+          result.success++;
+        } catch (error) {
+          result.failed++;
+          result.errors.push({
+            userId,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      // Create bulk audit log
+      if (adminId) {
+        await this.auditService.createAuditLog({
+          action: 'BULK_OPERATION',
+          userId: adminId,
+          details: {
+            action: 'BULK_USER_SUSPENSION',
+            userIds,
+            reason,
+            successCount: result.success,
+            failedCount: result.failed,
+            errors: result.errors
+          },
+          complianceCategory: 'access_control',
+          riskLevel: 'critical'
+        });
+      }
+
+      logger.info(`Bulk user suspension completed. Success: ${result.success}, Failed: ${result.failed}`);
+      return result;
+    } catch (error) {
+      logger.error('Error in bulk user suspension:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create new user (by super admin)
+   */
+  async createUser(userData: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    password: string;
+    role: string;
+    workplaceId?: string;
+    phone?: string;
+  }, adminId?: string): Promise<IUser> {
+    try {
+      // Check if user already exists
+      const existingUser = await User.findOne({ email: userData.email });
+      if (existingUser) {
+        throw new Error('User with this email already exists');
+      }
+
+      // Hash password
+      const bcrypt = require('bcryptjs');
+      const passwordHash = await bcrypt.hash(userData.password, 10);
+
+      // Create user
+      const newUser = await User.create({
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        passwordHash,
+        role: userData.role,
+        workplaceId: userData.workplaceId,
+        phone: userData.phone,
+        status: 'active',
+        isActive: true,
+        emailVerified: true, // Auto-verify for admin-created users
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      // Populate workplaceId for email
+      const populatedUser = await User.findById(newUser._id).populate('workplaceId', 'name');
+
+      // Send welcome email with credentials
+      try {
+        await emailService.sendUserCreatedNotification(userData.email, {
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          tempPassword: userData.password,
+          workspaceName: populatedUser?.workplaceId ? (populatedUser.workplaceId as any).name : undefined
+        });
+      } catch (emailError) {
+        logger.error('Failed to send user creation email:', emailError);
+        // Don't throw - email failure shouldn't block user creation
+      }
+
+      // Create audit log
+      if (adminId) {
+        await this.auditService.createAuditLog({
+          action: 'USER_CREATED',
+          userId: adminId,
+          resourceType: 'User',
+          resourceId: newUser._id.toString(),
+          details: {
+            action: 'USER_CREATED_BY_ADMIN',
+            targetUserId: newUser._id.toString(),
+            email: userData.email,
+            role: userData.role,
+            workplaceId: userData.workplaceId
+          },
+          complianceCategory: 'access_control',
+          riskLevel: 'medium'
+        });
+      }
+
+      logger.info(`User ${newUser._id} created by admin ${adminId}`);
+      return newUser;
+    } catch (error) {
+      logger.error('Error creating user:', error);
+      throw error;
     }
   }
 }
