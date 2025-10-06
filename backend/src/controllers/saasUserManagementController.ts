@@ -190,8 +190,8 @@ export class SaaSUserManagementController {
       }
 
       // Validate roleId format - accept both ObjectId and role name
-      if (!mongoose.Types.ObjectId.isValid(roleId) && 
-          (typeof roleId !== 'string' || !/^[a-z0-9_-]+$/.test(roleId))) {
+      if (!mongoose.Types.ObjectId.isValid(roleId) &&
+        (typeof roleId !== 'string' || !/^[a-z0-9_-]+$/.test(roleId))) {
         sendError(res, 'INVALID_ROLE_ID', 'Invalid role ID format', 400);
         return;
       }
@@ -562,6 +562,303 @@ export class SaaSUserManagementController {
         'Failed to search users',
         500
       );
+    }
+  }
+
+  /**
+   * Approve pending user
+   * PUT /api/admin/saas/users/:userId/approve
+   */
+  async approveUser(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { userId } = req.params;
+
+      if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        sendError(res, 'INVALID_USER_ID', 'Invalid user ID format', 400);
+        return;
+      }
+
+      logger.info('Approving user', {
+        adminId: req.user?._id,
+        targetUserId: userId
+      });
+
+      await this.userManagementService.approveUser(userId, req.user?._id.toString());
+
+      sendSuccess(
+        res,
+        {
+          userId,
+          status: 'active',
+          approvedBy: req.user?._id,
+          approvedAt: new Date()
+        },
+        'User approved successfully'
+      );
+    } catch (error) {
+      logger.error('Error approving user:', error);
+
+      if (error instanceof Error && error.message.includes('User not found')) {
+        sendError(res, 'USER_NOT_FOUND', 'User not found', 404);
+      } else if (error instanceof Error && error.message.includes('not in pending status')) {
+        sendError(res, 'USER_NOT_PENDING', 'User is not in pending status', 400);
+      } else {
+        sendError(res, 'APPROVE_ERROR', 'Failed to approve user', 500);
+      }
+    }
+  }
+
+  /**
+   * Reject pending user
+   * PUT /api/admin/saas/users/:userId/reject
+   */
+  async rejectUser(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { userId } = req.params;
+      const { reason } = req.body;
+
+      if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        sendError(res, 'INVALID_USER_ID', 'Invalid user ID format', 400);
+        return;
+      }
+
+      logger.info('Rejecting user', {
+        adminId: req.user?._id,
+        targetUserId: userId,
+        reason
+      });
+
+      await this.userManagementService.rejectUser(userId, reason, req.user?._id.toString());
+
+      sendSuccess(
+        res,
+        {
+          userId,
+          status: 'rejected',
+          reason,
+          rejectedBy: req.user?._id,
+          rejectedAt: new Date()
+        },
+        'User rejected successfully'
+      );
+    } catch (error) {
+      logger.error('Error rejecting user:', error);
+
+      if (error instanceof Error && error.message.includes('User not found')) {
+        sendError(res, 'USER_NOT_FOUND', 'User not found', 404);
+      } else if (error instanceof Error && error.message.includes('not in pending status')) {
+        sendError(res, 'USER_NOT_PENDING', 'User is not in pending status', 400);
+      } else {
+        sendError(res, 'REJECT_ERROR', 'Failed to reject user', 500);
+      }
+    }
+  }
+
+  /**
+   * Bulk approve users
+   * POST /api/admin/saas/users/bulk-approve
+   */
+  async bulkApproveUsers(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { userIds } = req.body;
+
+      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+        sendError(res, 'INVALID_USER_IDS', 'User IDs array is required and cannot be empty', 400);
+        return;
+      }
+
+      logger.info('Bulk approving users', {
+        adminId: req.user?._id,
+        userIds
+      });
+
+      const result = await this.userManagementService.bulkApproveUsers(
+        userIds,
+        req.user?._id.toString()
+      );
+
+      sendSuccess(
+        res,
+        {
+          totalUsers: userIds.length,
+          successfulApprovals: result.success,
+          failedApprovals: result.failed,
+          approvedBy: req.user?._id,
+          approvedAt: new Date(),
+          errors: result.errors
+        },
+        'Bulk user approval completed'
+      );
+    } catch (error) {
+      logger.error('Error in bulk user approval:', error);
+      sendError(
+        res,
+        'BULK_APPROVE_ERROR',
+        'Failed to perform bulk user approval',
+        500
+      );
+    }
+  }
+
+  /**
+   * Bulk reject users
+   * POST /api/admin/saas/users/bulk-reject
+   */
+  async bulkRejectUsers(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { userIds, reason } = req.body;
+
+      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+        sendError(res, 'INVALID_USER_IDS', 'User IDs array is required and cannot be empty', 400);
+        return;
+      }
+
+      logger.info('Bulk rejecting users', {
+        adminId: req.user?._id,
+        userIds,
+        reason
+      });
+
+      const result = await this.userManagementService.bulkRejectUsers(
+        userIds,
+        reason,
+        req.user?._id.toString()
+      );
+
+      sendSuccess(
+        res,
+        {
+          totalUsers: userIds.length,
+          successfulRejections: result.success,
+          failedRejections: result.failed,
+          rejectedBy: req.user?._id,
+          rejectedAt: new Date(),
+          errors: result.errors
+        },
+        'Bulk user rejection completed'
+      );
+    } catch (error) {
+      logger.error('Error in bulk user rejection:', error);
+      sendError(
+        res,
+        'BULK_REJECT_ERROR',
+        'Failed to perform bulk user rejection',
+        500
+      );
+    }
+  }
+
+  /**
+   * Bulk suspend users
+   * POST /api/admin/saas/users/bulk-suspend
+   */
+  async bulkSuspendUsers(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { userIds, reason } = req.body;
+
+      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+        sendError(res, 'INVALID_USER_IDS', 'User IDs array is required and cannot be empty', 400);
+        return;
+      }
+
+      if (!reason || reason.trim().length === 0) {
+        sendError(res, 'REASON_REQUIRED', 'Suspension reason is required', 400);
+        return;
+      }
+
+      logger.info('Bulk suspending users', {
+        adminId: req.user?._id,
+        userIds,
+        reason
+      });
+
+      const result = await this.userManagementService.bulkSuspendUsers(
+        userIds,
+        reason,
+        req.user?._id.toString()
+      );
+
+      sendSuccess(
+        res,
+        {
+          totalUsers: userIds.length,
+          successfulSuspensions: result.success,
+          failedSuspensions: result.failed,
+          suspendedBy: req.user?._id,
+          suspendedAt: new Date(),
+          errors: result.errors
+        },
+        'Bulk user suspension completed'
+      );
+    } catch (error) {
+      logger.error('Error in bulk user suspension:', error);
+      sendError(
+        res,
+        'BULK_SUSPEND_ERROR',
+        'Failed to perform bulk user suspension',
+        500
+      );
+    }
+  }
+
+  /**
+   * Create new user
+   * POST /api/admin/saas/users
+   */
+  async createUser(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { email, firstName, lastName, password, role, workplaceId, phone } = req.body;
+
+      if (!email || !firstName || !lastName || !password || !role) {
+        sendError(res, 'MISSING_FIELDS', 'Email, first name, last name, password, and role are required', 400);
+        return;
+      }
+
+      logger.info('Creating new user', {
+        adminId: req.user?._id,
+        email,
+        role,
+        workplaceId
+      });
+
+      const newUser = await this.userManagementService.createUser(
+        {
+          email,
+          firstName,
+          lastName,
+          password,
+          role,
+          workplaceId,
+          phone
+        },
+        req.user?._id.toString()
+      );
+
+      sendSuccess(
+        res,
+        {
+          user: {
+            _id: newUser._id,
+            email: newUser.email,
+            firstName: newUser.firstName,
+            lastName: newUser.lastName,
+            role: newUser.role,
+            status: newUser.status,
+            workplaceId: newUser.workplaceId
+          },
+          createdBy: req.user?._id,
+          createdAt: new Date()
+        },
+        'User created successfully'
+      );
+    } catch (error) {
+      logger.error('Error creating user:', error);
+
+      if (error instanceof Error && error.message.includes('already exists')) {
+        sendError(res, 'USER_EXISTS', 'User with this email already exists', 409);
+      } else {
+        sendError(res, 'CREATE_ERROR', 'Failed to create user', 500);
+      }
     }
   }
 }

@@ -129,15 +129,40 @@ export const auth = async (
     }
 
     // Check if user account is active
-    // In development, allow pending users to access the system for testing
-    const allowedStatuses =
-      process.env.NODE_ENV === 'development'
-        ? ['active', 'license_pending', 'pending']
-        : ['active', 'license_pending'];
+    // Block suspended users explicitly
+    if (user.status === 'suspended') {
+      res.status(401).json({
+        message: 'Account is suspended. Please contact support.',
+        status: user.status,
+        requiresAction: 'contact_support',
+      });
+      return;
+    }
+
+    // Block license_rejected users
+    if (user.status === 'license_rejected') {
+      res.status(401).json({
+        message: 'License verification was rejected. Please resubmit your license.',
+        status: user.status,
+        requiresAction: 'license_resubmission',
+      });
+      return;
+    }
+
+    // Allow active and license_pending users in all environments
+    // In development, also allow pending users for testing
+    const allowedStatuses = ['active', 'license_pending'];
+    
+    // In development, also allow pending users
+    if (process.env.NODE_ENV === 'development') {
+      allowedStatuses.push('pending');
+    }
 
     if (!allowedStatuses.includes(user.status)) {
       res.status(401).json({
-        message: 'Account is not active.',
+        message: user.status === 'pending' 
+          ? 'Please verify your email before logging in.'
+          : 'Account is not active.',
         status: user.status,
         requiresAction:
           user.status === 'license_pending'

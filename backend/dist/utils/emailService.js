@@ -982,6 +982,110 @@ class EmailService {
         };
         return this.sendEmail(email, template);
     }
+    async sendUserApprovalNotification(email, data) {
+        const template = {
+            subject: 'Account Approved - Welcome to PharmaCare!',
+            html: `
+        <h2>Account Approved!</h2>
+        <p>Dear ${data.firstName} ${data.lastName},</p>
+        <p>Great news! Your PharmaCare account has been approved and activated.</p>
+        ${data.workspaceName ? `<p>You now have access to <strong>${data.workspaceName}</strong>.</p>` : ''}
+        <p>You can now log in and start using all the features available to you.</p>
+        <p style="margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL}/login" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Log In Now</a>
+        </p>
+        <p>If you have any questions, feel free to reach out to our support team.</p>
+        <br>
+        <p>Best regards,<br>PharmaCare Team</p>
+      `,
+            text: `Account Approved! Dear ${data.firstName} ${data.lastName}, Your PharmaCare account has been approved and activated. You can now log in at ${process.env.FRONTEND_URL}/login`,
+        };
+        return this.sendEmail(email, template);
+    }
+    async sendUserRejectionNotification(email, data) {
+        const template = {
+            subject: 'Account Registration Update - PharmaCare',
+            html: `
+        <h2>Account Registration Update</h2>
+        <p>Dear ${data.firstName} ${data.lastName},</p>
+        <p>Thank you for your interest in PharmaCare. Unfortunately, we are unable to approve your account registration at this time.</p>
+        ${data.reason ? `<p><strong>Reason:</strong> ${data.reason}</p>` : ''}
+        <p>If you believe this is an error or would like to discuss this decision, please contact our support team at ${process.env.SUPPORT_EMAIL || 'support@pharmacare.com'}.</p>
+        <br>
+        <p>Best regards,<br>PharmaCare Team</p>
+      `,
+            text: `Account Registration Update. Dear ${data.firstName} ${data.lastName}, We are unable to approve your account registration at this time. ${data.reason ? `Reason: ${data.reason}` : ''} Contact support at ${process.env.SUPPORT_EMAIL || 'support@pharmacare.com'} for more information.`,
+        };
+        return this.sendEmail(email, template);
+    }
+    async sendRoleAssignmentNotification(email, data) {
+        const roleDisplayNames = {
+            super_admin: 'Super Administrator',
+            pharmacy_outlet: 'Pharmacy Owner',
+            pharmacist: 'Pharmacist',
+            intern_pharmacist: 'Intern Pharmacist',
+            pharmacy_team: 'Pharmacy Team Member'
+        };
+        const roleDisplay = roleDisplayNames[data.newRole] || data.newRole;
+        const template = {
+            subject: 'Role Updated - PharmaCare',
+            html: `
+        <h2>Your Role Has Been Updated</h2>
+        <p>Dear ${data.firstName} ${data.lastName},</p>
+        <p>Your role in PharmaCare has been updated.</p>
+        <p><strong>New Role:</strong> ${roleDisplay}</p>
+        ${data.workspaceName ? `<p><strong>Workspace:</strong> ${data.workspaceName}</p>` : ''}
+        <p>This change may affect your access permissions and available features. Please log in to see your updated capabilities.</p>
+        <p style="margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL}/login" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Log In</a>
+        </p>
+        <p>If you have questions about your new role, please contact your administrator or our support team.</p>
+        <br>
+        <p>Best regards,<br>PharmaCare Team</p>
+      `,
+            text: `Your Role Has Been Updated. Dear ${data.firstName} ${data.lastName}, Your role in PharmaCare has been updated to ${roleDisplay}. ${data.workspaceName ? `Workspace: ${data.workspaceName}` : ''} Log in at ${process.env.FRONTEND_URL}/login to see your updated capabilities.`,
+        };
+        return this.sendEmail(email, template);
+    }
+    async sendUserSuspensionNotification(email, data) {
+        const template = {
+            subject: 'Account Suspended - PharmaCare',
+            html: `
+        <h2>Account Suspended</h2>
+        <p>Dear ${data.firstName} ${data.lastName},</p>
+        <p>Your PharmaCare account has been suspended.</p>
+        <p><strong>Reason:</strong> ${data.reason}</p>
+        <p>You will not be able to log in until your account is reactivated.</p>
+        <p>If you believe this is an error or would like to appeal this decision, please contact our support team at ${process.env.SUPPORT_EMAIL || 'support@pharmacare.com'}.</p>
+        <br>
+        <p>Best regards,<br>PharmaCare Team</p>
+      `,
+            text: `Account Suspended. Dear ${data.firstName} ${data.lastName}, Your PharmaCare account has been suspended. Reason: ${data.reason}. Contact support at ${process.env.SUPPORT_EMAIL || 'support@pharmacare.com'} for assistance.`,
+        };
+        return this.sendEmail(email, template);
+    }
+    async sendUserCreatedNotification(email, data) {
+        const template = {
+            subject: 'Welcome to PharmaCare - Account Created',
+            html: `
+        <h2>Welcome to PharmaCare!</h2>
+        <p>Dear ${data.firstName} ${data.lastName},</p>
+        <p>An account has been created for you on PharmaCare.</p>
+        ${data.workspaceName ? `<p><strong>Workspace:</strong> ${data.workspaceName}</p>` : ''}
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Temporary Password:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">${data.tempPassword}</code></p>
+        <p style="color: #dc2626; font-weight: 600;">⚠️ Please change your password after your first login for security.</p>
+        <p style="margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL}/login" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Log In Now</a>
+        </p>
+        <p>If you have any questions, feel free to reach out to our support team.</p>
+        <br>
+        <p>Best regards,<br>PharmaCare Team</p>
+      `,
+            text: `Welcome to PharmaCare! Dear ${data.firstName} ${data.lastName}, An account has been created for you. Email: ${email}, Temporary Password: ${data.tempPassword}. Please change your password after your first login. Log in at ${process.env.FRONTEND_URL}/login`,
+        };
+        return this.sendEmail(email, template);
+    }
 }
 exports.emailService = new EmailService();
 exports.default = exports.emailService;

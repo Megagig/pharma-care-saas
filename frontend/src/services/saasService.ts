@@ -186,6 +186,42 @@ class SaaSService {
     return response.data.data;
   }
 
+  async approveUser(userId: string): Promise<void> {
+    await apiClient.put(`${this.baseUrl}/users/${userId}/approve`);
+  }
+
+  async rejectUser(userId: string, reason?: string): Promise<void> {
+    await apiClient.put(`${this.baseUrl}/users/${userId}/reject`, { reason });
+  }
+
+  async bulkApproveUsers(userIds: string[]): Promise<BulkOperationResult> {
+    const response = await apiClient.post(`${this.baseUrl}/users/bulk-approve`, { userIds });
+    return response.data.data;
+  }
+
+  async bulkRejectUsers(userIds: string[], reason?: string): Promise<BulkOperationResult> {
+    const response = await apiClient.post(`${this.baseUrl}/users/bulk-reject`, { userIds, reason });
+    return response.data.data;
+  }
+
+  async bulkSuspendUsers(userIds: string[], reason: string): Promise<BulkOperationResult> {
+    const response = await apiClient.post(`${this.baseUrl}/users/bulk-suspend`, { userIds, reason });
+    return response.data.data;
+  }
+
+  async createUser(userData: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    password: string;
+    role: string;
+    workplaceId?: string;
+    phone?: string;
+  }): Promise<any> {
+    const response = await apiClient.post(`${this.baseUrl}/users`, userData);
+    return response.data.data;
+  }
+
   // Feature Flags APIs
   async getFeatureFlags(): Promise<any[]> {
     const response = await apiClient.get(`${this.baseUrl}/feature-flags`);

@@ -184,4 +184,101 @@ router.post(
   saasUserManagementController.impersonateUser.bind(saasUserManagementController)
 );
 
+// Approve user
+router.put(
+  '/:userId/approve',
+  [
+    param('userId').isMongoId().withMessage('User ID must be a valid MongoDB ObjectId')
+  ],
+  validateRequest,
+  saasUserManagementController.approveUser.bind(saasUserManagementController)
+);
+
+// Reject user
+router.put(
+  '/:userId/reject',
+  [
+    param('userId').isMongoId().withMessage('User ID must be a valid MongoDB ObjectId'),
+    body('reason').optional().isString().isLength({ max: 500 }).withMessage('Reason must be a string with max 500 characters')
+  ],
+  validateRequest,
+  saasUserManagementController.rejectUser.bind(saasUserManagementController)
+);
+
+// Bulk approve users
+router.post(
+  '/bulk-approve',
+  [
+    body('userIds')
+      .isArray({ min: 1 })
+      .withMessage('User IDs must be a non-empty array')
+      .custom((userIds) => {
+        if (!userIds.every((id: any) => typeof id === 'string' && id.match(/^[0-9a-fA-F]{24}$/))) {
+          throw new Error('All user IDs must be valid MongoDB ObjectIds');
+        }
+        return true;
+      })
+  ],
+  validateRequest,
+  saasUserManagementController.bulkApproveUsers.bind(saasUserManagementController)
+);
+
+// Bulk reject users
+router.post(
+  '/bulk-reject',
+  [
+    body('userIds')
+      .isArray({ min: 1 })
+      .withMessage('User IDs must be a non-empty array')
+      .custom((userIds) => {
+        if (!userIds.every((id: any) => typeof id === 'string' && id.match(/^[0-9a-fA-F]{24}$/))) {
+          throw new Error('All user IDs must be valid MongoDB ObjectIds');
+        }
+        return true;
+      }),
+    body('reason').optional().isString().isLength({ max: 500 }).withMessage('Reason must be a string with max 500 characters')
+  ],
+  validateRequest,
+  saasUserManagementController.bulkRejectUsers.bind(saasUserManagementController)
+);
+
+// Bulk suspend users
+router.post(
+  '/bulk-suspend',
+  [
+    body('userIds')
+      .isArray({ min: 1 })
+      .withMessage('User IDs must be a non-empty array')
+      .custom((userIds) => {
+        if (!userIds.every((id: any) => typeof id === 'string' && id.match(/^[0-9a-fA-F]{24}$/))) {
+          throw new Error('All user IDs must be valid MongoDB ObjectIds');
+        }
+        return true;
+      }),
+    body('reason')
+      .notEmpty()
+      .withMessage('Suspension reason is required')
+      .isLength({ min: 10, max: 1000 })
+      .withMessage('Reason must be between 10 and 1000 characters')
+  ],
+  validateRequest,
+  saasUserManagementController.bulkSuspendUsers.bind(saasUserManagementController)
+);
+
+// Create new user
+router.post(
+  '/',
+  [
+    body('email').isEmail().withMessage('Valid email is required'),
+    body('firstName').notEmpty().isString().withMessage('First name is required'),
+    body('lastName').notEmpty().isString().withMessage('Last name is required'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('role').isIn(['super_admin', 'pharmacy_outlet', 'pharmacist', 'intern_pharmacist', 'pharmacy_team']).withMessage('Invalid role'),
+    body('workplaceId').optional().isMongoId().withMessage('Workplace ID must be a valid MongoDB ObjectId'),
+    body('phone').optional().isString().withMessage('Phone must be a string')
+  ],
+  validateRequest,
+  saasUserManagementController.createUser.bind(saasUserManagementController)
+);
+
 export default router;

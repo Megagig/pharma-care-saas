@@ -470,6 +470,73 @@ declare class EmailService {
         error: string;
         messageId?: undefined;
     }>;
+    sendUserApprovalNotification(email: string, data: {
+        firstName: string;
+        lastName: string;
+        workspaceName?: string;
+    }): Promise<{
+        success: boolean;
+        messageId: any;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: string;
+        messageId?: undefined;
+    }>;
+    sendUserRejectionNotification(email: string, data: {
+        firstName: string;
+        lastName: string;
+        reason?: string;
+    }): Promise<{
+        success: boolean;
+        messageId: any;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: string;
+        messageId?: undefined;
+    }>;
+    sendRoleAssignmentNotification(email: string, data: {
+        firstName: string;
+        lastName: string;
+        newRole: string;
+        workspaceName?: string;
+    }): Promise<{
+        success: boolean;
+        messageId: any;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: string;
+        messageId?: undefined;
+    }>;
+    sendUserSuspensionNotification(email: string, data: {
+        firstName: string;
+        lastName: string;
+        reason: string;
+    }): Promise<{
+        success: boolean;
+        messageId: any;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: string;
+        messageId?: undefined;
+    }>;
+    sendUserCreatedNotification(email: string, data: {
+        firstName: string;
+        lastName: string;
+        tempPassword: string;
+        workspaceName?: string;
+    }): Promise<{
+        success: boolean;
+        messageId: any;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: string;
+        messageId?: undefined;
+    }>;
 }
 export declare const emailService: EmailService;
 export default emailService;
