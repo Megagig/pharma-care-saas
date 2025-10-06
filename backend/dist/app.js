@@ -122,7 +122,14 @@ app.use((0, helmet_1.default)({
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", 'data:', 'https:'],
             fontSrc: ["'self'", 'https:'],
-            connectSrc: ["'self'", 'http://localhost:5000', 'http://127.0.0.1:5000'],
+            connectSrc: [
+                "'self'",
+                'http://localhost:5000',
+                'http://127.0.0.1:5000',
+                'http://localhost:3000',
+                'http://localhost:5173',
+                'https://pharmacare-nttq.onrender.com'
+            ],
             mediaSrc: ["'self'"],
             objectSrc: ["'none'"],
             childSrc: ["'self'"],
@@ -134,17 +141,25 @@ app.use((0, helmet_1.default)({
         }
     }
 }));
+const corsOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://192.168.8.167:5173',
+    'https://pharmacare-nttq.onrender.com',
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+];
+if (process.env.CORS_ORIGINS) {
+    corsOrigins.push(...process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()));
+}
 app.use((0, cors_1.default)({
-    origin: [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'http://192.168.8.167:5173',
-        process.env.FRONTEND_URL || 'http://localhost:3000',
-    ],
+    origin: corsOrigins,
     credentials: true,
     exposedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    preflightContinue: false,
+    optionsSuccessStatus: 200,
 }));
 const securityMonitoring_1 = require("./middlewares/securityMonitoring");
 app.use(securityMonitoring_1.blockSuspiciousIPs);
@@ -170,6 +185,14 @@ app.use((0, cookie_parser_1.default)());
 app.use((0, express_mongo_sanitize_1.default)());
 app.use((0, xss_clean_1.default)());
 app.use((0, hpp_1.default)());
+app.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400');
+    res.sendStatus(200);
+});
 if (process.env.NODE_ENV === 'development') {
     app.use((0, morgan_1.default)('dev'));
 }
