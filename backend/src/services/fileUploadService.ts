@@ -51,7 +51,7 @@ export class FileUploadService {
     /**
      * Validate file type and security
      */
-    private static validateFile(file: Express.Multer.File): { isValid: boolean; error?: string } {
+    private static validateFile(file: any): { isValid: boolean; error?: string } {
         // Check file size
         if (file.size > this.MAX_FILE_SIZE) {
             return {
@@ -141,11 +141,11 @@ export class FileUploadService {
      */
     static createStorage(): multer.StorageEngine {
         return multer.diskStorage({
-            destination: (req: Request, file: Express.Multer.File, cb) => {
+            destination: (req: Request, file: any, cb) => {
                 this.initializeUploadDirectory();
                 cb(null, this.UPLOAD_DIR);
             },
-            filename: (req: Request, file: Express.Multer.File, cb) => {
+            filename: (req: Request, file: any, cb) => {
                 const secureFilename = this.generateSecureFilename(file.originalname);
                 cb(null, secureFilename);
             }
@@ -156,7 +156,7 @@ export class FileUploadService {
      * Create file filter for multer
      */
     static createFileFilter(): multer.Options['fileFilter'] {
-        return (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+        return (req: Request, file: any, cb: multer.FileFilterCallback) => {
             const validation = this.validateFile(file);
 
             if (!validation.isValid) {
@@ -186,7 +186,7 @@ export class FileUploadService {
     /**
      * Process uploaded file with security scanning
      */
-    static async processUploadedFile(file: Express.Multer.File): Promise<{
+    static async processUploadedFile(file: any): Promise<{
         success: boolean;
         fileData?: any;
         error?: string;

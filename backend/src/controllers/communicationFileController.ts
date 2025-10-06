@@ -8,14 +8,7 @@ import Conversation from "../models/Conversation";
 import { AuditLog } from "../models/AuditLog";
 import logger from "../utils/logger";
 import { FileUploadService } from "../services/fileUploadService";
-
-interface AuthenticatedRequest extends Request {
-  user?: {
-    _id: string;
-    role: string;
-    workplaceId: string;
-  };
-}
+import { AuthenticatedRequest } from "../types/auth";
 
 interface FileUploadData {
   fileName: string;

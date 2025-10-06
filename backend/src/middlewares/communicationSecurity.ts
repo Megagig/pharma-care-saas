@@ -341,7 +341,7 @@ export const validateFileUpload = (
   next: NextFunction
 ): void => {
   try {
-    const files = req.files as Express.Multer.File[];
+    const files = req.files as any[];
 
     if (files && files.length > 0) {
       // Define allowed file types and sizes

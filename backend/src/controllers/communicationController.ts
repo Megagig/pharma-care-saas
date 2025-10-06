@@ -9,14 +9,7 @@ import Patient from "../models/Patient";
 import { SearchHistory, SavedSearch } from "../models/SearchHistory";
 import logger from "../utils/logger";
 import FileUploadService from "../services/fileUploadService";
-
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    workplaceId: string;
-    role: string;
-  };
-}
+import { AuthenticatedRequest } from "../types/auth";
 
 /**
  * Controller for communication hub endpoints
