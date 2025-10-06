@@ -114,6 +114,83 @@ export const useImpersonateUser = () => {
   });
 };
 
+export const useApproveUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => saasService.approveUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: saasKeys.users() });
+    },
+  });
+};
+
+export const useRejectUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, reason }: { userId: string; reason?: string }) =>
+      saasService.rejectUser(userId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: saasKeys.users() });
+    },
+  });
+};
+
+export const useBulkApproveUsers = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userIds: string[]) => saasService.bulkApproveUsers(userIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: saasKeys.users() });
+    },
+  });
+};
+
+export const useBulkRejectUsers = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userIds, reason }: { userIds: string[]; reason?: string }) =>
+      saasService.bulkRejectUsers(userIds, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: saasKeys.users() });
+    },
+  });
+};
+
+export const useBulkSuspendUsers = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userIds, reason }: { userIds: string[]; reason: string }) =>
+      saasService.bulkSuspendUsers(userIds, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: saasKeys.users() });
+    },
+  });
+};
+
+export const useCreateUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userData: {
+      email: string;
+      firstName: string;
+      lastName: string;
+      password: string;
+      role: string;
+      workplaceId?: string;
+      phone?: string;
+    }) => saasService.createUser(userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: saasKeys.users() });
+    },
+  });
+};
+
 // Feature Flags Queries
 export const useSaasFeatureFlags = () => {
   return useQuery({

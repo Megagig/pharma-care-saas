@@ -82,12 +82,31 @@ const auth = async (req, res, next) => {
             res.status(401).json({ message: 'Invalid token.' });
             return;
         }
-        const allowedStatuses = process.env.NODE_ENV === 'development'
-            ? ['active', 'license_pending', 'pending']
-            : ['active', 'license_pending'];
+        if (user.status === 'suspended') {
+            res.status(401).json({
+                message: 'Account is suspended. Please contact support.',
+                status: user.status,
+                requiresAction: 'contact_support',
+            });
+            return;
+        }
+        if (user.status === 'license_rejected') {
+            res.status(401).json({
+                message: 'License verification was rejected. Please resubmit your license.',
+                status: user.status,
+                requiresAction: 'license_resubmission',
+            });
+            return;
+        }
+        const allowedStatuses = ['active', 'license_pending'];
+        if (process.env.NODE_ENV === 'development') {
+            allowedStatuses.push('pending');
+        }
         if (!allowedStatuses.includes(user.status)) {
             res.status(401).json({
-                message: 'Account is not active.',
+                message: user.status === 'pending'
+                    ? 'Please verify your email before logging in.'
+                    : 'Account is not active.',
                 status: user.status,
                 requiresAction: user.status === 'license_pending'
                     ? 'license_verification'

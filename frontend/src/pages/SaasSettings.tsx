@@ -13,7 +13,6 @@ import {
   useTheme,
   useMediaQuery,
   CircularProgress,
-  Skeleton,
 } from '@mui/material';
 import SecurityIcon from '@mui/icons-material/Security';
 import PeopleIcon from '@mui/icons-material/People';
@@ -240,7 +239,7 @@ const SaasSettings: React.FC = () => {
           {settingsCategories.map((category) => (
             <Tab
               key={category.id}
-              icon={category.icon}
+              icon={category.icon as React.ReactElement}
               label={category.label}
               iconPosition="start"
               sx={{ minHeight: 64 }}
