@@ -49,14 +49,16 @@ const requirePatientPermission = (action, resource) => {
         }
         const userRole = req.user.role;
         const hasPermission = (0, exports.hasPatientManagementPermission)(userRole, action, resource);
-        console.log('RBAC check:', {
-            userRole,
-            action,
-            resource,
-            hasPermission,
-            mappedRole: mapToPatientManagementRole(userRole),
-            userId: req.user._id,
-        });
+        if (process.env.NODE_ENV === 'development') {
+            console.log('RBAC check:', {
+                userRole,
+                action,
+                resource,
+                hasPermission,
+                mappedRole: mapToPatientManagementRole(userRole),
+                userId: req.user._id,
+            });
+        }
         if (!hasPermission) {
             res.status(403).json({
                 message: 'Insufficient permissions for this action',
@@ -83,7 +85,6 @@ exports.requireClinicalAssessmentAccess = (0, exports.requirePatientPermission)(
 exports.requireVitalsAccess = (0, exports.requirePatientPermission)('create', 'vitals');
 const checkWorkplaceAccess = async (req, res, next) => {
     if (req.isAdmin || req.user?.role === 'super_admin') {
-        console.log('Super admin access granted');
         next();
         return;
     }

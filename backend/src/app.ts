@@ -88,6 +88,9 @@ if (process.env.MEMORY_MONITORING_ENABLED === 'true') {
   logger.info('Memory management service started');
 }
 
+// Trust proxy - CRITICAL for Render deployment
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -365,9 +368,9 @@ app.use('/api/communication/notifications', notificationRoutes);
 // Mention routes (already imported above)
 app.use('/api/mentions', mentionRoutes);
 
-// Clinical Notes routes - added special debug log
+// Clinical Notes routes (debug logging disabled in production for performance)
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api/notes')) {
+  if (process.env.NODE_ENV === 'development' && req.path.startsWith('/api/notes')) {
     console.log(
       `[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`
     );

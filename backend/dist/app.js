@@ -114,6 +114,7 @@ if (process.env.MEMORY_MONITORING_ENABLED === 'true') {
     MemoryManagementService_1.default.startMonitoring();
     logger_1.default.info('Memory management service started');
 }
+app.set('trust proxy', 1);
 app.use((0, helmet_1.default)({
     contentSecurityPolicy: {
         directives: {
@@ -314,7 +315,7 @@ app.use('/api/notifications', notificationRoutes_1.default);
 app.use('/api/communication/notifications', notificationRoutes_1.default);
 app.use('/api/mentions', mentionRoutes_1.default);
 app.use((req, res, next) => {
-    if (req.path.startsWith('/api/notes')) {
+    if (process.env.NODE_ENV === 'development' && req.path.startsWith('/api/notes')) {
         console.log(`[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`);
     }
     next();

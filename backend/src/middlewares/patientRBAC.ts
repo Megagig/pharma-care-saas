@@ -120,14 +120,17 @@ export const requirePatientPermission = (
       resource
     );
 
-    console.log('RBAC check:', {
-      userRole,
-      action,
-      resource,
-      hasPermission,
-      mappedRole: mapToPatientManagementRole(userRole),
-      userId: req.user._id,
-    });
+    // RBAC check (logging disabled for performance in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('RBAC check:', {
+        userRole,
+        action,
+        resource,
+        hasPermission,
+        mappedRole: mapToPatientManagementRole(userRole),
+        userId: req.user._id,
+      });
+    }
 
     if (!hasPermission) {
       res.status(403).json({
@@ -175,7 +178,7 @@ export const checkWorkplaceAccess = async (
 ): Promise<void> => {
   // Skip workplace check for admin users (they have cross-tenant access)
   if (req.isAdmin || req.user?.role === 'super_admin') {
-    console.log('Super admin access granted');
+    // Super admin access granted (logging disabled for performance)
     next();
     return;
   }

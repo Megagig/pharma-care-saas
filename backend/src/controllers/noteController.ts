@@ -18,10 +18,13 @@ export const getNotes = async (
   res: Response
 ): Promise<void> => {
   try {
-    console.log('=== GET NOTES DEBUG ===');
-    console.log('User role:', req.user?.role);
-    console.log('User workplaceId:', req.user?.workplaceId);
-    console.log('Tenancy filter from middleware:', req.tenancyFilter);
+    // Debug logging (disabled in production for performance)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('=== GET NOTES DEBUG ===');
+      console.log('User role:', req.user?.role);
+      console.log('User workplaceId:', req.user?.workplaceId);
+      console.log('Tenancy filter from middleware:', req.tenancyFilter);
+    }
 
     const {
       cursor,
@@ -221,7 +224,9 @@ export const getNotes = async (
       });
     }
 
-    console.log('=== END GET NOTES DEBUG ===');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('=== END GET NOTES DEBUG ===');
+    }
   } catch (error: any) {
     res.status(400).json({
       success: false,

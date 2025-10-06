@@ -27,9 +27,10 @@ import { clinicalNotesCacheMiddleware, searchCacheMiddleware } from '../middlewa
 
 const router = express.Router();
 
-// Debugging middleware to log all requests
+// Debugging middleware (disabled in production for performance)
 router.use((req, res, next) => {
-  console.log(`
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`
 ========== NOTE ROUTE DEBUG ==========
 Request URL: ${req.originalUrl}
 Request method: ${req.method}
@@ -37,7 +38,8 @@ Request params: ${JSON.stringify(req.params)}
 Note ID from params: ${req.params.id}
 Path: ${req.path}
 ========== END DEBUG ==========
-  `);
+    `);
+  }
   next();
 });
 
