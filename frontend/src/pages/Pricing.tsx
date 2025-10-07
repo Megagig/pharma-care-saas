@@ -50,12 +50,12 @@ const Pricing = () => {
   };
 
   const handleContactSales = (whatsappNumber?: string) => {
-    if (whatsappNumber) {
-      const message = encodeURIComponent(
-        "Hello, I'm interested in the Enterprise plan. Please provide more information."
-      );
-      window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
-    }
+    // Use provided number or fallback to your WhatsApp number
+    const phoneNumber = whatsappNumber || '2348060374755';
+    const message = encodeURIComponent(
+      "Hello, I'm interested in the Enterprise plan. Please provide more information."
+    );
+    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
 
   const handleBillingIntervalChange = (
@@ -96,7 +96,7 @@ const Pricing = () => {
               variant="h6"
               sx={{ fontWeight: 600, color: 'text.primary' }}
             >
-              PharmaCare
+              PharmaPilot
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -206,205 +206,205 @@ const Pricing = () => {
             }}
           >
             {(plans || []).map((plan, index) => (
-            <Box
-              key={plan._id || index}
-              sx={{ flex: '1 1 300px', maxWidth: '400px' }}
-            >
-              <Card
-                sx={{
-                  height: '100%',
-                  position: 'relative',
-                  border: plan.metadata?.mostPopular ? 2 : 1,
-                  borderColor: plan.metadata?.mostPopular
-                    ? 'primary.main'
-                    : 'grey.200',
-                  transform: plan.metadata?.mostPopular
-                    ? 'scale(1.05)'
-                    : 'scale(1)',
-                  transition: 'all 0.3s ease-in-out',
-                  '&:hover': {
+              <Box
+                key={plan._id || index}
+                sx={{ flex: '1 1 300px', maxWidth: '400px' }}
+              >
+                <Card
+                  sx={{
+                    height: '100%',
+                    position: 'relative',
+                    border: plan.metadata?.mostPopular ? 2 : 1,
+                    borderColor: plan.metadata?.mostPopular
+                      ? 'primary.main'
+                      : 'grey.200',
                     transform: plan.metadata?.mostPopular
                       ? 'scale(1.05)'
-                      : 'scale(1.02)',
-                    boxShadow: plan.metadata?.mostPopular ? 6 : 4,
-                  },
-                }}
-              >
-                {plan.metadata?.mostPopular && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: -1,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      bgcolor: 'primary.main',
-                      color: 'white',
-                      px: 3,
-                      py: 0.5,
-                      borderRadius: '0 0 12px 12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                    }}
-                  >
-                    <StarIcon fontSize="small" />
-                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                      Most Popular
-                    </Typography>
-                  </Box>
-                )}
-
-                <CardContent
-                  sx={{
-                    p: 4,
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
+                      : 'scale(1)',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      transform: plan.metadata?.mostPopular
+                        ? 'scale(1.05)'
+                        : 'scale(1.02)',
+                      boxShadow: plan.metadata?.mostPopular ? 6 : 4,
+                    },
                   }}
                 >
-                  <Box sx={{ textAlign: 'center', mb: 4 }}>
+                  {plan.metadata?.mostPopular && (
                     <Box
                       sx={{
+                        position: 'absolute',
+                        top: -1,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        px: 3,
+                        py: 0.5,
+                        borderRadius: '0 0 12px 12px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        mb: 2,
+                        gap: 0.5,
                       }}
                     >
-                      {plan.name === 'Enterprise' ? (
-                        <StarsIcon
-                          sx={{
-                            fontSize: 32,
-                            color: 'warning.main',
-                            mr: 1,
-                          }}
-                        />
-                      ) : (
-                        <BoltIcon
-                          sx={{
-                            fontSize: 32,
-                            color: 'primary.main',
-                            mr: 1,
-                          }}
-                        />
-                      )}
-                      <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                        {plan.name || 'Plan'}
+                      <StarIcon fontSize="small" />
+                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                        Most Popular
                       </Typography>
                     </Box>
-                    {plan.isContactSales ? (
-                      <Typography
-                        variant="h4"
-                        sx={{ fontWeight: 700, color: 'primary.main' }}
-                      >
-                        Contact Sales
-                      </Typography>
-                    ) : (
+                  )}
+
+                  <CardContent
+                    sx={{
+                      p: 4,
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                    }}
+                  >
+                    <Box sx={{ textAlign: 'center', mb: 4 }}>
                       <Box
                         sx={{
                           display: 'flex',
-                          alignItems: 'baseline',
+                          alignItems: 'center',
                           justifyContent: 'center',
                           mb: 2,
                         }}
                       >
-                        <Typography
-                          variant="h3"
-                          sx={{ fontWeight: 700, color: 'primary.main' }}
-                        >
-                          ₦{(plan.priceNGN || 0).toLocaleString()}
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          color="text.secondary"
-                          sx={{ ml: 1 }}
-                        >
-                          /{billingInterval === 'monthly' ? 'month' : 'year'}
+                        {plan.name === 'Enterprise' ? (
+                          <StarsIcon
+                            sx={{
+                              fontSize: 32,
+                              color: 'warning.main',
+                              mr: 1,
+                            }}
+                          />
+                        ) : (
+                          <BoltIcon
+                            sx={{
+                              fontSize: 32,
+                              color: 'primary.main',
+                              mr: 1,
+                            }}
+                          />
+                        )}
+                        <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                          {plan.name || 'Plan'}
                         </Typography>
                       </Box>
-                    )}
-                    <Typography variant="caption" color="text.secondary">
-                      Billed {billingInterval}
-                    </Typography>
-                  </Box>
-
-                  {plan.isContactSales ? (
-                    <Button
-                      variant="contained"
-                      size="large"
-                      fullWidth
-                      sx={{
-                        mb: 4,
-                        py: 1.5,
-                        borderRadius: 3,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                      }}
-                      onClick={() => handleContactSales(plan.whatsappNumber || '')}
-                    >
-                      Contact Sales
-                    </Button>
-                  ) : (
-                    <Button
-                      variant={
-                        plan.metadata?.mostPopular ? 'contained' : 'outlined'
-                      }
-                      size="large"
-                      fullWidth
-                      sx={{
-                        mb: 4,
-                        py: 1.5,
-                        borderRadius: 3,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                      }}
-                      onClick={() => handleSubscribe(plan._id || '')}
-                      disabled={createCheckoutSession.isPending}
-                    >
-                      {createCheckoutSession.isPending
-                        ? 'Processing...'
-                        : plan.metadata?.mostPopular
-                        ? 'Start Free Trial'
-                        : 'Get Started'}
-                    </Button>
-                  )}
-
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, mb: 2 }}
-                    >
-                      What's included:
-                    </Typography>
-                    <List disablePadding>
-                      {(plan.displayedFeatures || []).map(
-                        (feature: string, featureIndex: number) => (
-                          <ListItem
-                            key={featureIndex}
-                            disablePadding
-                            sx={{ py: 0.5 }}
+                      {plan.isContactSales ? (
+                        <Typography
+                          variant="h4"
+                          sx={{ fontWeight: 700, color: 'primary.main' }}
+                        >
+                          Contact Sales
+                        </Typography>
+                      ) : (
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'baseline',
+                            justifyContent: 'center',
+                            mb: 2,
+                          }}
+                        >
+                          <Typography
+                            variant="h3"
+                            sx={{ fontWeight: 700, color: 'primary.main' }}
                           >
-                            <ListItemIcon sx={{ minWidth: 32 }}>
-                              <CheckIcon
-                                sx={{
-                                  fontSize: 20,
-                                  color: 'success.main',
-                                }}
-                              />
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={feature}
-                              primaryTypographyProps={{ variant: 'body2' }}
-                            />
-                          </ListItem>
-                        )
+                            ₦{(plan.priceNGN || 0).toLocaleString()}
+                          </Typography>
+                          <Typography
+                            variant="h6"
+                            color="text.secondary"
+                            sx={{ ml: 1 }}
+                          >
+                            /{billingInterval === 'monthly' ? 'month' : 'year'}
+                          </Typography>
+                        </Box>
                       )}
-                    </List>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
-          ))}
+                      <Typography variant="caption" color="text.secondary">
+                        Billed {billingInterval}
+                      </Typography>
+                    </Box>
+
+                    {plan.isContactSales ? (
+                      <Button
+                        variant="contained"
+                        size="large"
+                        fullWidth
+                        sx={{
+                          mb: 4,
+                          py: 1.5,
+                          borderRadius: 3,
+                          textTransform: 'none',
+                          fontWeight: 600,
+                        }}
+                        onClick={() => handleContactSales(plan.whatsappNumber || '')}
+                      >
+                        Contact Sales
+                      </Button>
+                    ) : (
+                      <Button
+                        variant={
+                          plan.metadata?.mostPopular ? 'contained' : 'outlined'
+                        }
+                        size="large"
+                        fullWidth
+                        sx={{
+                          mb: 4,
+                          py: 1.5,
+                          borderRadius: 3,
+                          textTransform: 'none',
+                          fontWeight: 600,
+                        }}
+                        onClick={() => handleSubscribe(plan._id || '')}
+                        disabled={createCheckoutSession.isPending}
+                      >
+                        {createCheckoutSession.isPending
+                          ? 'Processing...'
+                          : plan.metadata?.mostPopular
+                            ? 'Start Free Trial'
+                            : 'Get Started'}
+                      </Button>
+                    )}
+
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ fontWeight: 600, mb: 2 }}
+                      >
+                        What's included:
+                      </Typography>
+                      <List disablePadding>
+                        {(plan.displayedFeatures || []).map(
+                          (feature: string, featureIndex: number) => (
+                            <ListItem
+                              key={featureIndex}
+                              disablePadding
+                              sx={{ py: 0.5 }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 32 }}>
+                                <CheckIcon
+                                  sx={{
+                                    fontSize: 20,
+                                    color: 'success.main',
+                                  }}
+                                />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={feature}
+                                primaryTypographyProps={{ variant: 'body2' }}
+                              />
+                            </ListItem>
+                          )
+                        )}
+                      </List>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Box>
+            ))}
           </Box>
         )}
 

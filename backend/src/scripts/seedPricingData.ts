@@ -394,7 +394,7 @@ const plans = [
         isPopular: false,
         isActive: true,
         isContactSales: true,
-        whatsappNumber: '2348012345678', // Replace with actual WhatsApp number
+        whatsappNumber: '2348060374755',
         order: 6,
         metadata: {
             buttonText: 'Book a Demo',
