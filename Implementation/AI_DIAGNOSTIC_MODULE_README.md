@@ -2,7 +2,7 @@
 
 ## Overview
 
-The AI Diagnostic Module integrates advanced AI capabilities into the PharmaCare SaaS platform, enabling pharmacists to receive AI-assisted diagnostic analysis for patient symptoms and clinical presentations. This module uses OpenRouter API with DeepSeek V3.1 (reasoning mode) to provide structured medical diagnostic analysis.
+The AI Diagnostic Module integrates advanced AI capabilities into the PharmacyCopilot SaaS platform, enabling pharmacists to receive AI-assisted diagnostic analysis for patient symptoms and clinical presentations. This module uses OpenRouter API with DeepSeek V3.1 (reasoning mode) to provide structured medical diagnostic analysis.
 
 ## Features
 
@@ -410,7 +410,7 @@ For technical support or questions:
 
 ## License & Compliance
 
-- Module integrates with existing PharmaCare SaaS licensing
+- Module integrates with existing PharmacyCopilot SaaS licensing
 - Compliant with healthcare data privacy regulations
 - Audit trails support regulatory compliance
 - Medical disclaimers meet professional standards

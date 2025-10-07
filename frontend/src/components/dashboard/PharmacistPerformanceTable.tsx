@@ -63,7 +63,7 @@ const mockPharmacistData: PharmacistPerformance[] = [
   {
     id: '1',
     name: 'Dr. Sarah Johnson',
-    email: 'sarah.johnson@pharmacare.com',
+    email: 'sarah.johnson@PharmacyCopilot.com',
     metrics: {
       totalMTRs: 45,
       completedMTRs: 42,
@@ -86,7 +86,7 @@ const mockPharmacistData: PharmacistPerformance[] = [
   {
     id: '2',
     name: 'Dr. Michael Chen',
-    email: 'michael.chen@pharmacare.com',
+    email: 'michael.chen@PharmacyCopilot.com',
     metrics: {
       totalMTRs: 38,
       completedMTRs: 35,
@@ -109,7 +109,7 @@ const mockPharmacistData: PharmacistPerformance[] = [
   {
     id: '3',
     name: 'Dr. Emily Rodriguez',
-    email: 'emily.rodriguez@pharmacare.com',
+    email: 'emily.rodriguez@PharmacyCopilot.com',
     metrics: {
       totalMTRs: 52,
       completedMTRs: 48,
@@ -132,7 +132,7 @@ const mockPharmacistData: PharmacistPerformance[] = [
   {
     id: '4',
     name: 'Dr. James Wilson',
-    email: 'james.wilson@pharmacare.com',
+    email: 'james.wilson@PharmacyCopilot.com',
     metrics: {
       totalMTRs: 31,
       completedMTRs: 28,

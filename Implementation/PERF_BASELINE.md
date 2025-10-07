@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document establishes the performance baseline for the PharmaCare MERN-stack SaaS application as of the Phase 0: Discovery & Baseline Measurement implementation. All measurements are taken after the MUI to shadcn/ui migration and serve as the foundation for tracking performance improvements throughout the optimization process.
+This document establishes the performance baseline for the PharmacyCopilot MERN-stack SaaS application as of the Phase 0: Discovery & Baseline Measurement implementation. All measurements are taken after the MUI to shadcn/ui migration and serve as the foundation for tracking performance improvements throughout the optimization process.
 
 ## Measurement Environment
 

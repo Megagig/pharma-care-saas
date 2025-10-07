@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides step-by-step instructions for setting up comprehensive performance monitoring for the PharmaCare application, including baseline measurement, continuous monitoring, and automated alerting.
+This guide provides step-by-step instructions for setting up comprehensive performance monitoring for the PharmacyCopilot application, including baseline measurement, continuous monitoring, and automated alerting.
 
 ## Prerequisites
 

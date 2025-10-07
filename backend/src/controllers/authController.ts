@@ -101,11 +101,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
     await sendEmail({
       to: email,
-      subject: 'Verify Your Email - PharmaCare',
+      subject: 'Verify Your Email - PharmacyCopilot',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2563eb; margin-bottom: 10px;">Welcome to PharmaCare!</h1>
+            <h1 style="color: #2563eb; margin-bottom: 10px;">Welcome to PharmacyCopilot!</h1>
             <p style="color: #6b7280; font-size: 16px;">Hi ${firstName}, please verify your email address</p>
           </div>
           
@@ -352,7 +352,7 @@ export const forgotPassword = async (
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
     await sendEmail({
       to: email,
-      subject: 'Password Reset Request - PharmaCare',
+      subject: 'Password Reset Request - PharmacyCopilot',
       html: `
         <h2>Password Reset Request</h2>
         <p>Hi ${user.firstName},</p>
@@ -979,11 +979,11 @@ export const registerWithWorkplace = async (
       // Send verification email
       const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
-      let emailSubject = 'Welcome to PharmaCare - Verify Your Email';
+      let emailSubject = 'Welcome to PharmacyCopilot - Verify Your Email';
       let emailContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2563eb; margin-bottom: 10px;">Welcome to PharmaCare!</h1>
+            <h1 style="color: #2563eb; margin-bottom: 10px;">Welcome to PharmacyCopilot!</h1>
             <p style="color: #6b7280; font-size: 16px;">Hi ${firstName}, please verify your email address</p>
           </div>`;
 

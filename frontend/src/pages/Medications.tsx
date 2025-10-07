@@ -61,7 +61,7 @@ const Medications = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Helmet>
-          <title>Medications | PharmaCare</title>
+          <title>Medications | PharmacyCopilot</title>
         </Helmet>
         <Box
           sx={{
@@ -139,7 +139,7 @@ const Medications = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Helmet>
-        <title>Medication Management | PharmaCare</title>
+        <title>Medication Management | PharmacyCopilot</title>
       </Helmet>
       <Box
         sx={{

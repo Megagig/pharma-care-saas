@@ -187,7 +187,7 @@ const Login = () => {
                 Welcome Back
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Sign in to your PharmaCare account
+                Sign in to your PharmacyCopilot account
               </Typography>
             </Box>
 

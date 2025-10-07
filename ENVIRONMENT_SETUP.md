@@ -10,9 +10,9 @@ This project uses different environment configurations for development and produ
 Contains production URLs. This file is committed to git and used for production builds.
 
 ```env
-VITE_API_BASE_URL=https://pharmacare-nttq.onrender.com/api
-VITE_API_URL=https://pharmacare-nttq.onrender.com
-VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
+VITE_API_BASE_URL=https://PharmacyCopilot-nttq.onrender.com/api
+VITE_API_URL=https://PharmacyCopilot-nttq.onrender.com
+VITE_FRONTEND_URL=https://PharmacyCopilot-nttq.onrender.com
 ```
 
 ### `.env.local` (Development - NOT Committed)
@@ -128,9 +128,9 @@ For production builds:
 
 | Variable | Development | Production |
 |----------|-------------|------------|
-| `VITE_API_BASE_URL` | `http://localhost:5000/api` | `https://pharmacare-nttq.onrender.com/api` |
-| `VITE_API_URL` | `http://localhost:5000` | `https://pharmacare-nttq.onrender.com` |
-| `VITE_FRONTEND_URL` | `http://localhost:5173` | `https://pharmacare-nttq.onrender.com` |
+| `VITE_API_BASE_URL` | `http://localhost:5000/api` | `https://PharmacyCopilot-nttq.onrender.com/api` |
+| `VITE_API_URL` | `http://localhost:5000` | `https://PharmacyCopilot-nttq.onrender.com` |
+| `VITE_FRONTEND_URL` | `http://localhost:5173` | `https://PharmacyCopilot-nttq.onrender.com` |
 
 ## Best Practices
 

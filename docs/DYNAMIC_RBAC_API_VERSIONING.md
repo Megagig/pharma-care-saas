@@ -569,7 +569,7 @@ const addDeprecationWarnings = (req, res, next) => {
 
 ```javascript
 // V1 Client Code
-const client = new PharmaCareClient({
+const client = new PharmacyCopilotClient({
   baseURL: 'https://api.pharma-care.com/api/v1',
   apiKey: 'your-api-key',
 });
@@ -588,7 +588,7 @@ await client.post(`/users/${userId}/roles`, {
 
 ```javascript
 // V2 Client Code
-const client = new PharmaCareClient({
+const client = new PharmacyCopilotClient({
   baseURL: 'https://api.pharma-care.com/api/v2',
   apiKey: 'your-api-key',
 });
@@ -609,8 +609,8 @@ await client.post(`/admin/users/${userId}/roles`, {
 // utils/clientMigrationHelper.js
 class ClientMigrationHelper {
   constructor(baseURL, apiKey) {
-    this.v1Client = new PharmaCareClient({ baseURL: `${baseURL}/v1`, apiKey });
-    this.v2Client = new PharmaCareClient({ baseURL: `${baseURL}/v2`, apiKey });
+    this.v1Client = new PharmacyCopilotClient({ baseURL: `${baseURL}/v1`, apiKey });
+    this.v2Client = new PharmacyCopilotClient({ baseURL: `${baseURL}/v2`, apiKey });
     this.roleMapping = new Map();
   }
 

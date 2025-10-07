@@ -335,7 +335,7 @@ describe('OpenRouterService', () => {
                         'Authorization': 'Bearer test-api-key',
                         'Content-Type': 'application/json',
                         'HTTP-Referer': 'http://localhost:5173',
-                        'X-Title': 'PharmaCare SaaS - AI Diagnostic Module',
+                        'X-Title': 'PharmacyCopilot SaaS - AI Diagnostic Module',
                     }),
                 })
             );

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This comprehensive guide documents all performance optimizations implemented in the PharmaCare MERN-stack SaaS application. The optimization project achieved significant improvements across frontend rendering, backend API response times, and overall user experience while maintaining all existing functionality.
+This comprehensive guide documents all performance optimizations implemented in the PharmacyCopilot MERN-stack SaaS application. The optimization project achieved significant improvements across frontend rendering, backend API response times, and overall user experience while maintaining all existing functionality.
 
 ## Performance Achievements
 

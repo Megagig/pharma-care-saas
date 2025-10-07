@@ -298,7 +298,7 @@ Chat with Sales Team
 3. Compare plans and features
 4. Click "Get Started" on desired plan
 5. Complete registration
-6. Start using PharmaCare!
+6. Start using PharmacyCopilot!
 
 ---
 

@@ -54,7 +54,7 @@ const About: React.FC = () => {
               variant="h6"
               sx={{ fontWeight: 600, color: 'text.primary' }}
             >
-              PharmaCare
+              PharmacyCopilot
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -108,7 +108,7 @@ const About: React.FC = () => {
                 fontSize: { xs: '2.5rem', md: '3.5rem' },
               }}
             >
-              About PharmaCare
+              About PharmacyCopilot
             </Typography>
             <Typography
               variant="h6"
@@ -608,7 +608,7 @@ const About: React.FC = () => {
               Ready to Transform Your Pharmacy?
             </Typography>
             <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
-              Join thousands of pharmacists already using PharmaCare to deliver
+              Join thousands of pharmacists already using PharmacyCopilot to deliver
               better patient care.
             </Typography>
             <Button

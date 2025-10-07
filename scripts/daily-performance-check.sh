@@ -54,10 +54,10 @@ check_web_vitals() {
     log_info "Checking Web Vitals performance..."
     
     # This would query your actual Web Vitals API
-    local lcp=$(curl -s "https://api.pharmacare.com/api/analytics/web-vitals/average?metric=LCP&period=24h" | jq -r '.value // 2200')
-    local fid=$(curl -s "https://api.pharmacare.com/api/analytics/web-vitals/average?metric=FID&period=24h" | jq -r '.value // 85')
-    local cls=$(curl -s "https://api.pharmacare.com/api/analytics/web-vitals/average?metric=CLS&period=24h" | jq -r '.value // 0.08')
-    local ttfb=$(curl -s "https://api.pharmacare.com/api/analytics/web-vitals/average?metric=TTFB&period=24h" | jq -r '.value // 650')
+    local lcp=$(curl -s "https://api.PharmacyCopilot.com/api/analytics/web-vitals/average?metric=LCP&period=24h" | jq -r '.value // 2200')
+    local fid=$(curl -s "https://api.PharmacyCopilot.com/api/analytics/web-vitals/average?metric=FID&period=24h" | jq -r '.value // 85')
+    local cls=$(curl -s "https://api.PharmacyCopilot.com/api/analytics/web-vitals/average?metric=CLS&period=24h" | jq -r '.value // 0.08')
+    local ttfb=$(curl -s "https://api.PharmacyCopilot.com/api/analytics/web-vitals/average?metric=TTFB&period=24h" | jq -r '.value // 650')
     
     # Check thresholds
     local web_vitals_status="✅ GOOD"
@@ -204,7 +204,7 @@ check_api_performance() {
         log_info "Testing endpoint: $endpoint"
         
         # Measure API latency
-        local response=$(curl -w "%{http_code},%{time_total}" -s -o /dev/null "https://api.pharmacare.com$endpoint" || echo "000,999")
+        local response=$(curl -w "%{http_code},%{time_total}" -s -o /dev/null "https://api.PharmacyCopilot.com$endpoint" || echo "000,999")
         local http_code=$(echo $response | cut -d',' -f1)
         local latency=$(echo $response | cut -d',' -f2)
         local latency_ms=$(echo "$latency * 1000" | bc -l | cut -d. -f1)

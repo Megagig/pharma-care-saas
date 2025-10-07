@@ -74,7 +74,7 @@ function generateEmailTemplate(template: string, data: Record<string, any>): str
                 <p><strong>Format:</strong> ${data.format || 'PDF'}</p>
                 <p><a href="${data.downloadLink || '#'}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Download Report</a></p>
             </div>
-            <p>This report was generated automatically by PharmaCare SaaS.</p>
+            <p>This report was generated automatically by PharmacyCopilot SaaS.</p>
         `,
         'export-failed': `
             <h2>Report Export Failed</h2>
@@ -93,7 +93,7 @@ function generateEmailTemplate(template: string, data: Record<string, any>): str
                 <p><strong>Generated:</strong> ${data.generatedAt || new Date().toLocaleString()}</p>
                 <p><strong>Formats:</strong> ${data.formats || 'PDF'}</p>
             </div>
-            <p>This report was generated automatically by PharmaCare SaaS.</p>
+            <p>This report was generated automatically by PharmacyCopilot SaaS.</p>
         `,
         'scheduled-report-failed': `
             <h2>Scheduled Report Failed</h2>

@@ -389,7 +389,7 @@ const seedSubscriptionPlans = async (): Promise<void> => {
       adminUser = await User.create({
         firstName: 'System',
         lastName: 'Admin',
-        email: 'admin@pharmacaresaas.com',
+        email: 'admin@PharmacyCopilotsaas.com',
         passwordHash: 'adminPassword123', // Will be hashed by pre-save hook
         role: 'super_admin',
         status: 'active',

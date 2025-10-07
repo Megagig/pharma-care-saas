@@ -541,7 +541,7 @@ class ManualLabNotificationService {
 
                 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
                 <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated alert from the PharmaCare Manual Lab system. 
+                    This is an automated alert from the PharmacyCopilot Manual Lab system. 
                     Please log in to your account to review the full details and take appropriate action.
                 </p>
             </div>
@@ -597,7 +597,7 @@ class ManualLabNotificationService {
 
                 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
                 <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated notification from the PharmaCare Manual Lab system. 
+                    This is an automated notification from the PharmacyCopilot Manual Lab system. 
                     Please log in to your account to review the complete AI interpretation and patient recommendations.
                 </p>
             </div>
@@ -687,7 +687,7 @@ class ManualLabNotificationService {
 
                 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
                 <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated reminder from the PharmaCare Manual Lab system. 
+                    This is an automated reminder from the PharmacyCopilot Manual Lab system. 
                     Please log in to your account to update the order status.
                 </p>
             </div>

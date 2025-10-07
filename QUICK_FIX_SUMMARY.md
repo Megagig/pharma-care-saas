@@ -1,7 +1,7 @@
 # Quick Fix Summary - Session Expiration Issue
 
 ## Root Cause
-Your frontend `.env` file was pointing to the **production API** (`https://pharmacare-nttq.onrender.com`) instead of your **local backend** (`http://localhost:5000`).
+Your frontend `.env` file was pointing to the **production API** (`https://PharmacyCopilot-nttq.onrender.com`) instead of your **local backend** (`http://localhost:5000`).
 
 This caused:
 - Login to work (because it went to production)
@@ -23,9 +23,9 @@ Created a proper environment setup that works for both development and productio
 
 2. **`frontend/.env`** (UPDATED - for production)
    ```env
-   VITE_API_BASE_URL=https://pharmacare-nttq.onrender.com/api
-   VITE_API_URL=https://pharmacare-nttq.onrender.com
-   VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
+   VITE_API_BASE_URL=https://PharmacyCopilot-nttq.onrender.com/api
+   VITE_API_URL=https://PharmacyCopilot-nttq.onrender.com
+   VITE_FRONTEND_URL=https://PharmacyCopilot-nttq.onrender.com
    ```
 
 3. **`frontend/.env.example`** (NEW - template for developers)
@@ -101,13 +101,13 @@ console.log(import.meta.env.VITE_API_BASE_URL)
 
 # Should show:
 # Development: "http://localhost:5000/api"
-# Production: "https://pharmacare-nttq.onrender.com/api"
+# Production: "https://PharmacyCopilot-nttq.onrender.com/api"
 ```
 
 ## Summary
 
 - ✅ Local development uses `localhost:5000`
-- ✅ Production uses `pharmacare-nttq.onrender.com`
+- ✅ Production uses `PharmacyCopilot-nttq.onrender.com`
 - ✅ No manual changes needed when deploying
 - ✅ Session expiration issue is fixed
 - ✅ All new features work correctly

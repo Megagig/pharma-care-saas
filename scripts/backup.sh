@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# PharmaCare SaaS Settings Module - Backup Script
+# PharmacyCopilot SaaS Settings Module - Backup Script
 # This script creates comprehensive backups of the application, database, and user data
 
 set -euo pipefail
@@ -8,8 +8,8 @@ set -euo pipefail
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-BACKUP_BASE_DIR="/opt/pharmacare/backups"
-LOG_FILE="/var/log/pharmacare/backup.log"
+BACKUP_BASE_DIR="/opt/PharmacyCopilot/backups"
+LOG_FILE="/var/log/PharmacyCopilot/backup.log"
 RETENTION_DAYS=30
 
 # AWS S3 Configuration (optional)
@@ -91,8 +91,8 @@ backup_database() {
         
         # Create compressed database dump
         docker-compose -f "$PROJECT_ROOT/docker-compose.yml" exec -T db pg_dump \
-            -U "${DB_USER:-pharmacare_user}" \
-            -d "${DB_NAME:-pharmacare_production}" \
+            -U "${DB_USER:-PharmacyCopilot_user}" \
+            -d "${DB_NAME:-PharmacyCopilot_production}" \
             --verbose \
             --no-owner \
             --no-privileges \
@@ -101,16 +101,16 @@ backup_database() {
         
         # Create schema-only dump for quick restoration testing
         docker-compose -f "$PROJECT_ROOT/docker-compose.yml" exec -T db pg_dump \
-            -U "${DB_USER:-pharmacare_user}" \
-            -d "${DB_NAME:-pharmacare_production}" \
+            -U "${DB_USER:-PharmacyCopilot_user}" \
+            -d "${DB_NAME:-PharmacyCopilot_production}" \
             --schema-only \
             --no-owner \
             --no-privileges > "$backup_dir/database/schema.sql"
         
         # Export database statistics
         docker-compose -f "$PROJECT_ROOT/docker-compose.yml" exec -T db psql \
-            -U "${DB_USER:-pharmacare_user}" \
-            -d "${DB_NAME:-pharmacare_production}" \
+            -U "${DB_USER:-PharmacyCopilot_user}" \
+            -d "${DB_NAME:-PharmacyCopilot_production}" \
             -c "SELECT schemaname, tablename, n_tup_ins, n_tup_upd, n_tup_del FROM pg_stat_user_tables;" \
             > "$backup_dir/database/statistics.txt"
         
@@ -202,14 +202,14 @@ backup_uploads() {
     log INFO "Starting uploads backup..."
     
     # Backup user uploads
-    if [[ -d "/var/lib/pharmacare/uploads" ]]; then
-        tar -czf "$backup_dir/uploads/user-uploads.tar.gz" -C "/var/lib/pharmacare" uploads
+    if [[ -d "/var/lib/PharmacyCopilot/uploads" ]]; then
+        tar -czf "$backup_dir/uploads/user-uploads.tar.gz" -C "/var/lib/PharmacyCopilot" uploads
         
         # Create file inventory
-        find "/var/lib/pharmacare/uploads" -type f -exec ls -la {} \; > "$backup_dir/uploads/file-inventory.txt"
+        find "/var/lib/PharmacyCopilot/uploads" -type f -exec ls -la {} \; > "$backup_dir/uploads/file-inventory.txt"
         
         # Calculate total size
-        du -sh "/var/lib/pharmacare/uploads" > "$backup_dir/uploads/size-summary.txt"
+        du -sh "/var/lib/PharmacyCopilot/uploads" > "$backup_dir/uploads/size-summary.txt"
         
         log INFO "Uploads backup completed"
     else
@@ -217,8 +217,8 @@ backup_uploads() {
     fi
     
     # Backup temporary files if they exist
-    if [[ -d "/var/lib/pharmacare/temp" ]]; then
-        tar -czf "$backup_dir/uploads/temp-files.tar.gz" -C "/var/lib/pharmacare" temp
+    if [[ -d "/var/lib/PharmacyCopilot/temp" ]]; then
+        tar -czf "$backup_dir/uploads/temp-files.tar.gz" -C "/var/lib/PharmacyCopilot" temp
     fi
 }
 
@@ -261,12 +261,12 @@ backup_logs() {
     log INFO "Starting logs backup..."
     
     # Backup application logs
-    if [[ -d "/var/log/pharmacare" ]]; then
+    if [[ -d "/var/log/PharmacyCopilot" ]]; then
         # Compress and backup recent logs (last 7 days)
-        find "/var/log/pharmacare" -name "*.log" -mtime -7 -exec tar -czf "$backup_dir/logs/application-logs.tar.gz" {} +
+        find "/var/log/PharmacyCopilot" -name "*.log" -mtime -7 -exec tar -czf "$backup_dir/logs/application-logs.tar.gz" {} +
         
         # Create log summary
-        find "/var/log/pharmacare" -name "*.log" -exec wc -l {} \; > "$backup_dir/logs/log-summary.txt"
+        find "/var/log/PharmacyCopilot" -name "*.log" -exec wc -l {} \; > "$backup_dir/logs/log-summary.txt"
     fi
     
     # Backup Docker logs
@@ -297,7 +297,7 @@ create_backup_metadata() {
     "hostname": "$(hostname)",
     "user": "$(whoami)",
     "backup_type": "full",
-    "application": "pharmacare-saas-settings",
+    "application": "PharmacyCopilot-saas-settings",
     "version": "$(cat "$PROJECT_ROOT/package.json" | grep '"version"' | cut -d'"' -f4 2>/dev/null || echo 'unknown')",
     "git_commit": "$(cd "$PROJECT_ROOT" && git rev-parse HEAD 2>/dev/null || echo 'unknown')",
     "backup_size": "$(du -sh "$backup_dir" | cut -f1)",
@@ -329,7 +329,7 @@ upload_to_s3() {
         # Check if AWS CLI is available
         if command -v aws &> /dev/null; then
             # Create compressed archive
-            local archive_name="pharmacare-saas-backup-$backup_timestamp.tar.gz"
+            local archive_name="PharmacyCopilot-saas-backup-$backup_timestamp.tar.gz"
             tar -czf "/tmp/$archive_name" -C "$BACKUP_BASE_DIR" "$backup_timestamp"
             
             # Upload to S3
@@ -424,7 +424,7 @@ send_notification() {
     local backup_dir=$2
     local backup_size=$(du -sh "$backup_dir" | cut -f1)
     
-    local message="PharmaCare SaaS Backup $status
+    local message="PharmacyCopilot SaaS Backup $status
 Backup Directory: $backup_dir
 Backup Size: $backup_size
 Timestamp: $(date)"
@@ -437,13 +437,13 @@ Timestamp: $(date)"
     
     # Send email notification if configured
     if [[ -n "${NOTIFICATION_EMAIL:-}" ]]; then
-        echo "$message" | mail -s "PharmaCare SaaS Backup $status" "$NOTIFICATION_EMAIL" || true
+        echo "$message" | mail -s "PharmacyCopilot SaaS Backup $status" "$NOTIFICATION_EMAIL" || true
     fi
 }
 
 # Main backup function
 main() {
-    log INFO "Starting PharmaCare SaaS Settings backup..."
+    log INFO "Starting PharmacyCopilot SaaS Settings backup..."
     
     # Load environment variables
     if [[ -f "$PROJECT_ROOT/.env.production" ]]; then

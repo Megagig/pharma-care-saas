@@ -75,7 +75,7 @@ export class SaaSNotificationsController {
           enabled: settings.channels?.email?.enabled || true,
           config: {
             provider: 'sendgrid',
-            fromAddress: 'noreply@pharmacare.com'
+            fromAddress: 'noreply@PharmacyCopilot.com'
           },
           dailyLimit: 10000,
           monthlyLimit: 300000,

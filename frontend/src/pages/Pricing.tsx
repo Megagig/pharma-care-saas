@@ -35,19 +35,19 @@ import { usePricingPlans } from '../queries/usePricing';
 
 const faqData = [
   {
-    question: 'What is PharmaPilot?',
-    answer: 'PharmaPilot is a cloud-based platform designed for pharmacists and pharmacy owners to manage, document, and optimize their daily pharmaceutical care activities. It simplifies patient record-keeping, prescription monitoring, inventory management, reporting, and compliance — all in one secure platform.',
+    question: 'What is PharmacyCopilot?',
+    answer: 'PharmacyCopilot is a cloud-based platform designed for pharmacists and pharmacy owners to manage, document, and optimize their daily pharmaceutical care activities. It simplifies patient record-keeping, prescription monitoring, inventory management, reporting, and compliance — all in one secure platform.',
   },
   {
-    question: 'Who can use PharmaPilot?',
-    answer: 'PharmaPilot is built for: Community and hospital pharmacists, Pharmacy managers and owners, Chain pharmacies and independent outlets, Clinical pharmacists providing direct patient care. Whether you\'re running a single outlet or managing multiple branches, PharmaPilot adapts to your workflow.',
+    question: 'Who can use PharmacyCopilot?',
+    answer: 'PharmacyCopilot is built for: Community and hospital pharmacists, Pharmacy managers and owners, Chain pharmacies and independent outlets, Clinical pharmacists providing direct patient care. Whether you\'re running a single outlet or managing multiple branches, PharmacyCopilot adapts to your workflow.',
   },
   {
-    question: 'Is my data secure on PharmaPilot?',
-    answer: 'Absolutely. PharmaPilot uses bank-grade encryption and secure cloud hosting to protect your data. We follow strict data privacy standards and are compliant with applicable healthcare data protection regulations. Your data is always yours — we never share it with third parties.',
+    question: 'Is my data secure on PharmacyCopilot?',
+    answer: 'Absolutely. PharmacyCopilot uses bank-grade encryption and secure cloud hosting to protect your data. We follow strict data privacy standards and are compliant with applicable healthcare data protection regulations. Your data is always yours — we never share it with third parties.',
   },
   {
-    question: 'Can I try PharmaPilot before paying?',
+    question: 'Can I try PharmacyCopilot before paying?',
     answer: 'Yes. We offer a free trial period that allows you to explore all core features without any commitment. You can upgrade or cancel anytime during or after the trial.',
   },
   {
@@ -68,27 +68,27 @@ const faqData = [
   },
   {
     question: 'Can multiple users access one pharmacy account?',
-    answer: 'Yes. PharmaPilot supports multi-user access with role-based permissions. Pharmacy managers can add team members (pharmacists, technicians, cashiers) and assign access rights for better collaboration and accountability.',
+    answer: 'Yes. PharmacyCopilot supports multi-user access with role-based permissions. Pharmacy managers can add team members (pharmacists, technicians, cashiers) and assign access rights for better collaboration and accountability.',
   },
   {
-    question: 'Does PharmaPilot support multiple pharmacy branches?',
+    question: 'Does PharmacyCopilot support multiple pharmacy branches?',
     answer: 'Yes. Our multi-tenant system allows you to manage multiple outlets or branches under one organization account — each with separate inventory, users, and reports, but unified under your main dashboard.',
   },
   {
-    question: 'Does PharmaPilot offer customer support?',
+    question: 'Does PharmacyCopilot offer customer support?',
     answer: 'Yes. We provide: Email and live chat support, In-app help center with tutorials and documentation, Priority support for premium and enterprise plans. Our support team is made up of pharmacists and technical experts who understand your workflow.',
   },
   {
-    question: 'Can PharmaPilot work offline?',
-    answer: 'PharmaPilot is primarily cloud-based, but certain key features (like patient lookup and dispensing records) have limited offline capabilities. Data syncs automatically once you\'re back online.',
+    question: 'Can PharmacyCopilot work offline?',
+    answer: 'PharmacyCopilot is primarily cloud-based, but certain key features (like patient lookup and dispensing records) have limited offline capabilities. Data syncs automatically once you\'re back online.',
   },
   {
     question: 'Do you offer training or onboarding support?',
-    answer: 'Yes. We provide guided onboarding, video tutorials, and one-on-one setup assistance for enterprise users. Our goal is to get your pharmacy fully operational on PharmaPilot within days — not weeks.',
+    answer: 'Yes. We provide guided onboarding, video tutorials, and one-on-one setup assistance for enterprise users. Our goal is to get your pharmacy fully operational on PharmacyCopilot within days — not weeks.',
   },
   {
-    question: 'What makes PharmaPilot different from regular pharmacy software?',
-    answer: 'PharmaPilot isn\'t just a management tool — it\'s a pharmaceutical care platform built by pharmacists, for pharmacists. It combines clinical documentation, analytics, and patient engagement with modern automation, giving you full control of your professional practice and business performance.',
+    question: 'What makes PharmacyCopilot different from regular pharmacy software?',
+    answer: 'PharmacyCopilot isn\'t just a management tool — it\'s a pharmaceutical care platform built by pharmacists, for pharmacists. It combines clinical documentation, analytics, and patient engagement with modern automation, giving you full control of your professional practice and business performance.',
   },
 ];
 
@@ -225,7 +225,7 @@ const Pricing = () => {
               </Typography>
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary' }}>
-              PharmaCare
+              PharmacyCopilot
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -686,7 +686,7 @@ const Pricing = () => {
               mx: 'auto',
             }}
           >
-            Everything you need to know about PharmaPilot
+            Everything you need to know about PharmacyCopilot
           </Typography>
           <Box sx={{ maxWidth: '900px', mx: 'auto' }}>
             {faqData.map((faq, index) => (
@@ -770,7 +770,7 @@ const Pricing = () => {
           }}
         >
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-            Why Choose PharmaCare?
+            Why Choose PharmacyCopilot?
           </Typography>
           <Box
             sx={{

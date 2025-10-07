@@ -78,7 +78,7 @@ const plans = [
         currency: 'NGN',
         billingPeriod: 'one-time',
         tier: 'free_trial',
-        description: 'Experience the full power of PharmaCare for 14 days',
+        description: 'Experience the full power of PharmacyCopilot for 14 days',
         features: features.map(f => f.featureId), // All features for trial
         isPopular: false,
         isActive: true,

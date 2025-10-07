@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide covers the deployment of the AI-Powered Diagnostics & Therapeutics module for the PharmaCare SaaS platform. The module provides comprehensive clinical decision support through AI analysis, lab integration, and drug interaction checking.
+This guide covers the deployment of the AI-Powered Diagnostics & Therapeutics module for the PharmacyCopilot SaaS platform. The module provides comprehensive clinical decision support through AI analysis, lab integration, and drug interaction checking.
 
 ## Prerequisites
 
@@ -291,10 +291,10 @@ Configure alerts for:
 
 ```bash
 # Create backup
-mongodump --db pharmacare --collection diagnosticrequests --out /backup/diagnostic-$(date +%Y%m%d)
+mongodump --db PharmacyCopilot --collection diagnosticrequests --out /backup/diagnostic-$(date +%Y%m%d)
 
 # Restore from backup
-mongorestore --db pharmacare /backup/diagnostic-20241201
+mongorestore --db PharmacyCopilot /backup/diagnostic-20241201
 ```
 
 ### Configuration Backup
@@ -340,13 +340,13 @@ If critical issues are detected:
    npm run migration:rollback create_diagnostic_collections
 
    # Restore from backup
-   mongorestore --drop --db pharmacare /backup/pre-deployment
+   mongorestore --drop --db PharmacyCopilot /backup/pre-deployment
    ```
 
 3. **Service Restart**:
    ```bash
    # Restart with previous configuration
-   pm2 restart pharmacare-backend --update-env
+   pm2 restart PharmacyCopilot-backend --update-env
    ```
 
 ### Gradual Rollback
@@ -425,10 +425,10 @@ npm run cache:clear
 
 Important log locations:
 
-- Application logs: `/var/log/pharmacare/app.log`
-- Error logs: `/var/log/pharmacare/error.log`
-- Audit logs: `/var/log/pharmacare/audit.log`
-- Performance logs: `/var/log/pharmacare/performance.log`
+- Application logs: `/var/log/PharmacyCopilot/app.log`
+- Error logs: `/var/log/PharmacyCopilot/error.log`
+- Audit logs: `/var/log/PharmacyCopilot/audit.log`
+- Performance logs: `/var/log/PharmacyCopilot/performance.log`
 
 ### Performance Optimization
 
@@ -556,8 +556,8 @@ As usage grows, consider:
 
 ### Support Contacts
 
-- **Technical Support**: support@pharmacare.com
-- **Security Issues**: security@pharmacare.com
+- **Technical Support**: support@PharmacyCopilot.com
+- **Security Issues**: security@PharmacyCopilot.com
 - **Emergency Contact**: +1-800-PHARMA-HELP
 
 ### Version Information
@@ -565,4 +565,4 @@ As usage grows, consider:
 - **Module Version**: 1.0.0
 - **API Version**: v1
 - **Last Updated**: December 2024
-- **Compatibility**: PharmaCare Platform v2.0+
+- **Compatibility**: PharmacyCopilot Platform v2.0+

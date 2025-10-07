@@ -534,7 +534,7 @@ export default defineConfig({
 
 ```env
 # API Configuration
-REACT_APP_API_URL=https://api.pharmacare.com
+REACT_APP_API_URL=https://api.PharmacyCopilot.com
 REACT_APP_AI_TIMEOUT=30000
 
 # Feature Flags
@@ -584,7 +584,7 @@ const sanitizeInput = (input: string): string => {
   content="default-src 'self'; 
                script-src 'self' 'unsafe-inline'; 
                style-src 'self' 'unsafe-inline';
-               connect-src 'self' https://api.pharmacare.com;"
+               connect-src 'self' https://api.PharmacyCopilot.com;"
 />
 ```
 

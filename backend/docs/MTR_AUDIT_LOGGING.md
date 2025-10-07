@@ -338,10 +338,10 @@ db.mtrauditlogs.explain().find({ workplaceId: ObjectId("...") })
 
 ### Support Contacts
 
-- **Technical Support**: support@pharmacare.com
-- **Compliance Team**: compliance@pharmacare.com
-- **Security Team**: security@pharmacare.com
+- **Technical Support**: support@PharmacyCopilot.com
+- **Compliance Team**: compliance@PharmacyCopilot.com
+- **Security Team**: security@PharmacyCopilot.com
 
 ---
 
-_This documentation is maintained by the PharmaCare Development Team and is updated with each system release._
+_This documentation is maintained by the PharmacyCopilot Development Team and is updated with each system release._

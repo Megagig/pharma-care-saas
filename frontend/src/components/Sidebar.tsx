@@ -437,7 +437,7 @@ const Sidebar = () => {
                   textShadow: '0 2px 4px rgba(33, 150, 243, 0.1)',
                 }}
               >
-                PharmaCare
+                PharmacyCopilot
               </Typography>
             </Box>
           )}
@@ -861,7 +861,7 @@ const Sidebar = () => {
                 color="primary.dark"
                 sx={{ fontWeight: 500, letterSpacing: '0.03em' }}
               >
-                PharmaCare v2.1.0
+                PharmacyCopilot v2.1.0
               </Typography>
             </Box>
           </Box>

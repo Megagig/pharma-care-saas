@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# PharmaCare SaaS Settings Module - Production Deployment Script
+# PharmacyCopilot SaaS Settings Module - Production Deployment Script
 # This script handles the complete deployment process for the SaaS Settings Module
 
 set -euo pipefail
@@ -8,10 +8,10 @@ set -euo pipefail
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-APP_NAME="pharmacare-saas-settings"
-DEPLOY_USER="pharmacare"
-BACKUP_DIR="/opt/pharmacare/backups"
-LOG_FILE="/var/log/pharmacare/deploy.log"
+APP_NAME="PharmacyCopilot-saas-settings"
+DEPLOY_USER="PharmacyCopilot"
+BACKUP_DIR="/opt/PharmacyCopilot/backups"
+LOG_FILE="/var/log/PharmacyCopilot/deploy.log"
 
 # Colors for output
 RED='\033[0;31m'
@@ -120,8 +120,8 @@ create_backup() {
     fi
     
     # Backup uploads
-    if [[ -d "/var/lib/pharmacare/uploads" ]]; then
-        cp -r "/var/lib/pharmacare/uploads" "$backup_path/uploads"
+    if [[ -d "/var/lib/PharmacyCopilot/uploads" ]]; then
+        cp -r "/var/lib/PharmacyCopilot/uploads" "$backup_path/uploads"
         log INFO "Uploads backed up to $backup_path/uploads"
     fi
     
@@ -281,8 +281,8 @@ rollback_deployment() {
             
             # Restore uploads
             if [[ -d "$backup_path/uploads" ]]; then
-                rm -rf "/var/lib/pharmacare/uploads"
-                cp -r "$backup_path/uploads" "/var/lib/pharmacare/uploads"
+                rm -rf "/var/lib/PharmacyCopilot/uploads"
+                cp -r "$backup_path/uploads" "/var/lib/PharmacyCopilot/uploads"
             fi
             
             # Start containers
@@ -314,19 +314,19 @@ send_notification() {
     
     # Send Slack notification if webhook URL is configured
     if [[ -n "${SLACK_WEBHOOK_URL:-}" ]]; then
-        local payload="{\"text\":\"🚀 PharmaCare SaaS Deployment $status: $message\"}"
+        local payload="{\"text\":\"🚀 PharmacyCopilot SaaS Deployment $status: $message\"}"
         curl -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" || true
     fi
     
     # Send email notification if configured
     if [[ -n "${NOTIFICATION_EMAIL:-}" ]]; then
-        echo "$message" | mail -s "PharmaCare SaaS Deployment $status" "$NOTIFICATION_EMAIL" || true
+        echo "$message" | mail -s "PharmacyCopilot SaaS Deployment $status" "$NOTIFICATION_EMAIL" || true
     fi
 }
 
 # Main deployment function
 main() {
-    log INFO "Starting PharmaCare SaaS Settings deployment..."
+    log INFO "Starting PharmacyCopilot SaaS Settings deployment..."
     
     # Load environment variables
     if [[ -f "$PROJECT_ROOT/.env.production" ]]; then

@@ -9,10 +9,10 @@ This document outlines comprehensive rollback procedures and emergency response 
 ### Primary Contacts
 
 - **On-Call Engineer**: +1-XXX-XXX-XXXX (24/7)
-- **DevOps Lead**: devops-lead@pharmacare.com
-- **AI/ML Engineer**: ai-team@pharmacare.com
-- **Security Team**: security@pharmacare.com
-- **Clinical Team Lead**: clinical-lead@pharmacare.com
+- **DevOps Lead**: devops-lead@PharmacyCopilot.com
+- **AI/ML Engineer**: ai-team@PharmacyCopilot.com
+- **Security Team**: security@PharmacyCopilot.com
+- **Clinical Team Lead**: clinical-lead@PharmacyCopilot.com
 
 ### Escalation Matrix
 
@@ -56,7 +56,7 @@ echo "Timestamp: $(date)"
 echo "Initiated by: ${USER}"
 
 # Set variables
-NAMESPACE="pharmacare-prod"
+NAMESPACE="PharmacyCopilot-prod"
 DEPLOYMENT="ai-diagnostics-api"
 PREVIOUS_VERSION="${1:-previous}"
 
@@ -98,26 +98,26 @@ echo "=== ROLLBACK COMPLETED ==="
 # Comprehensive rollback procedure
 
 # 1. Stop traffic to affected pods
-kubectl patch service ai-diagnostics-api-service -n pharmacare-prod -p '{"spec":{"selector":{"version":"stable"}}}'
+kubectl patch service ai-diagnostics-api-service -n PharmacyCopilot-prod -p '{"spec":{"selector":{"version":"stable"}}}'
 
 # 2. Scale down current deployment
-kubectl scale deployment ai-diagnostics-api -n pharmacare-prod --replicas=0
+kubectl scale deployment ai-diagnostics-api -n PharmacyCopilot-prod --replicas=0
 
 # 3. Rollback to previous version
-kubectl rollout undo deployment/ai-diagnostics-api -n pharmacare-prod
+kubectl rollout undo deployment/ai-diagnostics-api -n PharmacyCopilot-prod
 
 # 4. Scale up previous version
-kubectl scale deployment ai-diagnostics-api -n pharmacare-prod --replicas=3
+kubectl scale deployment ai-diagnostics-api -n PharmacyCopilot-prod --replicas=3
 
 # 5. Wait for pods to be ready
-kubectl wait --for=condition=ready pod -l app=ai-diagnostics-api -n pharmacare-prod --timeout=300s
+kubectl wait --for=condition=ready pod -l app=ai-diagnostics-api -n PharmacyCopilot-prod --timeout=300s
 
 # 6. Restore traffic
-kubectl patch service ai-diagnostics-api-service -n pharmacare-prod -p '{"spec":{"selector":{"app":"ai-diagnostics-api"}}}'
+kubectl patch service ai-diagnostics-api-service -n PharmacyCopilot-prod -p '{"spec":{"selector":{"app":"ai-diagnostics-api"}}}'
 
 # 7. Verify rollback
-kubectl get pods -n pharmacare-prod -l app=ai-diagnostics-api
-kubectl logs -n pharmacare-prod deployment/ai-diagnostics-api --tail=50
+kubectl get pods -n PharmacyCopilot-prod -l app=ai-diagnostics-api
+kubectl logs -n PharmacyCopilot-prod deployment/ai-diagnostics-api --tail=50
 ```
 
 ### 2. Database Rollback
@@ -147,7 +147,7 @@ echo "Creating emergency backup..."
 mongodump --uri="$MONGODB_URI" --gzip --out="/tmp/emergency_backup_$(date +%Y%m%d_%H%M%S)"
 
 # 2. Stop application
-kubectl scale deployment ai-diagnostics-api -n pharmacare-prod --replicas=0
+kubectl scale deployment ai-diagnostics-api -n PharmacyCopilot-prod --replicas=0
 
 # 3. Restore from backup
 echo "Restoring from backup..."
@@ -162,7 +162,7 @@ echo "Verifying database integrity..."
 npm run migration:validate
 
 # 6. Restart application
-kubectl scale deployment ai-diagnostics-api -n pharmacare-prod --replicas=3
+kubectl scale deployment ai-diagnostics-api -n PharmacyCopilot-prod --replicas=3
 
 echo "=== DATABASE ROLLBACK COMPLETED ==="
 ```
@@ -178,22 +178,22 @@ echo "=== DATABASE ROLLBACK COMPLETED ==="
 echo "=== EMERGENCY FEATURE DISABLE ==="
 
 # Disable AI diagnostics completely
-kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
   npm run feature-flags:set ai_diagnostics_enabled --enabled false
 
 # Disable specific features
-kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
   npm run feature-flags:set lab_integration_enabled --enabled false
 
-kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
   npm run feature-flags:set fhir_integration_enabled --enabled false
 
 # Reduce rollout to 0%
-kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
   npm run feature-flags:set ai_diagnostics_rollout --percentage 0
 
 # Verify changes
-kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
   npm run feature-flags:status
 
 echo "=== FEATURE DISABLE COMPLETED ==="
@@ -219,10 +219,10 @@ echo "=== FEATURE DISABLE COMPLETED ==="
 
    ```bash
    # Check pod status
-   kubectl get pods -n pharmacare-prod -l app=ai-diagnostics-api
+   kubectl get pods -n PharmacyCopilot-prod -l app=ai-diagnostics-api
 
    # Check recent logs
-   kubectl logs -n pharmacare-prod deployment/ai-diagnostics-api --tail=100
+   kubectl logs -n PharmacyCopilot-prod deployment/ai-diagnostics-api --tail=100
 
    # Check metrics
    curl -s http://prometheus:9090/api/v1/query?query=up{job="ai-diagnostics-api"}
@@ -240,10 +240,10 @@ echo "=== FEATURE DISABLE COMPLETED ==="
 
    ```bash
    # Export logs
-   kubectl logs -n pharmacare-prod deployment/ai-diagnostics-api --since=1h > /tmp/incident-logs.txt
+   kubectl logs -n PharmacyCopilot-prod deployment/ai-diagnostics-api --since=1h > /tmp/incident-logs.txt
 
    # Check resource usage
-   kubectl top pods -n pharmacare-prod -l app=ai-diagnostics-api
+   kubectl top pods -n PharmacyCopilot-prod -l app=ai-diagnostics-api
 
    # Check external dependencies
    curl -f https://openrouter.ai/api/v1/health || echo "OpenRouter API down"
@@ -253,13 +253,13 @@ echo "=== FEATURE DISABLE COMPLETED ==="
 2. **Check database connectivity**
 
    ```bash
-   kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+   kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
      npm run db:health-check
    ```
 
 3. **Verify network connectivity**
    ```bash
-   kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+   kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
      nslookup mongodb-cluster
    ```
 
@@ -271,10 +271,10 @@ echo "=== FEATURE DISABLE COMPLETED ==="
 
    ```bash
    # Scale down to prevent further corruption
-   kubectl scale deployment ai-diagnostics-api -n pharmacare-prod --replicas=0
+   kubectl scale deployment ai-diagnostics-api -n PharmacyCopilot-prod --replicas=0
 
    # Enable read-only mode
-   kubectl create configmap emergency-config -n pharmacare-prod \
+   kubectl create configmap emergency-config -n PharmacyCopilot-prod \
      --from-literal=READ_ONLY_MODE=true
    ```
 
@@ -282,7 +282,7 @@ echo "=== FEATURE DISABLE COMPLETED ==="
 
    ```bash
    # Run data integrity checks
-   kubectl run data-integrity-check -n pharmacare-prod --rm -i --tty \
+   kubectl run data-integrity-check -n PharmacyCopilot-prod --rm -i --tty \
      --image=mongo:7.0 -- bash -c "
      mongo '$MONGODB_URI' --eval '
        db.diagnosticrequests.find({createdAt: {\$gte: new Date(Date.now() - 24*60*60*1000)}}).count();
@@ -295,10 +295,10 @@ echo "=== FEATURE DISABLE COMPLETED ==="
 
    ```bash
    # Find latest clean backup
-   aws s3 ls s3://pharmacare-backups-prod/mongodb-backups/ | tail -5
+   aws s3 ls s3://PharmacyCopilot-backups-prod/mongodb-backups/ | tail -5
 
    # Initiate restore
-   kubectl create job restore-from-backup -n pharmacare-prod \
+   kubectl create job restore-from-backup -n PharmacyCopilot-prod \
      --from=cronjob/mongodb-backup \
      --dry-run=client -o yaml | \
      sed 's/mongodb-backup/disaster-recovery-restore/' | \
@@ -318,7 +318,7 @@ echo "=== FEATURE DISABLE COMPLETED ==="
    kind: NetworkPolicy
    metadata:
      name: emergency-isolation
-     namespace: pharmacare-prod
+     namespace: PharmacyCopilot-prod
    spec:
      podSelector:
        matchLabels:
@@ -335,11 +335,11 @@ echo "=== FEATURE DISABLE COMPLETED ==="
 
    ```bash
    # Capture memory dumps
-   kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+   kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
      kill -USR1 $(pgrep node)
 
    # Export all logs
-   kubectl logs -n pharmacare-prod deployment/ai-diagnostics-api --all-containers=true > \
+   kubectl logs -n PharmacyCopilot-prod deployment/ai-diagnostics-api --all-containers=true > \
      /tmp/security-incident-logs-$(date +%Y%m%d_%H%M%S).txt
    ```
 
@@ -347,12 +347,12 @@ echo "=== FEATURE DISABLE COMPLETED ==="
 
    ```bash
    # Generate new secrets
-   kubectl create secret generic ai-diagnostics-secrets-new -n pharmacare-prod \
+   kubectl create secret generic ai-diagnostics-secrets-new -n PharmacyCopilot-prod \
      --from-literal=JWT_SECRET="$(openssl rand -base64 32)" \
      --from-literal=OPENROUTER_API_KEY="new-api-key"
 
    # Update deployment
-   kubectl patch deployment ai-diagnostics-api -n pharmacare-prod \
+   kubectl patch deployment ai-diagnostics-api -n PharmacyCopilot-prod \
      -p '{"spec":{"template":{"spec":{"containers":[{"name":"ai-diagnostics-api","envFrom":[{"secretRef":{"name":"ai-diagnostics-secrets-new"}}]}]}}}}'
    ```
 
@@ -369,7 +369,7 @@ echo "=== POST-RECOVERY VERIFICATION ==="
 # 1. Service health
 echo "Checking service health..."
 for endpoint in /api/health /api/health/database /api/health/redis /api/health/ai-services; do
-  if curl -f "http://ai-diagnostics-api-service.pharmacare-prod.svc.cluster.local:80$endpoint"; then
+  if curl -f "http://ai-diagnostics-api-service.PharmacyCopilot-prod.svc.cluster.local:80$endpoint"; then
     echo "✓ $endpoint - OK"
   else
     echo "✗ $endpoint - FAILED"
@@ -378,22 +378,22 @@ done
 
 # 2. Database connectivity
 echo "Checking database connectivity..."
-kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
   npm run db:health-check
 
 # 3. External API connectivity
 echo "Checking external APIs..."
-kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
   npm run external-apis:health-check
 
 # 4. Feature flags
 echo "Checking feature flags..."
-kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
   npm run feature-flags:status
 
 # 5. Sample diagnostic request
 echo "Testing diagnostic workflow..."
-kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
   npm run test:smoke:diagnostic-workflow
 
 echo "=== VERIFICATION COMPLETED ==="
@@ -410,16 +410,16 @@ echo "=== PERFORMANCE VERIFICATION ==="
 # Check response times
 echo "Checking response times..."
 for i in {1..10}; do
-  time curl -s http://ai-diagnostics-api-service.pharmacare-prod.svc.cluster.local:80/api/health > /dev/null
+  time curl -s http://ai-diagnostics-api-service.PharmacyCopilot-prod.svc.cluster.local:80/api/health > /dev/null
 done
 
 # Check resource usage
 echo "Checking resource usage..."
-kubectl top pods -n pharmacare-prod -l app=ai-diagnostics-api
+kubectl top pods -n PharmacyCopilot-prod -l app=ai-diagnostics-api
 
 # Check error rates
 echo "Checking error rates..."
-kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmacyCopilot-prod deployment/ai-diagnostics-api -- \
   npm run metrics:error-rate
 
 echo "=== PERFORMANCE VERIFICATION COMPLETED ==="
@@ -489,7 +489,7 @@ data:
 '
 
 # 2. Implement additional circuit breakers
-kubectl patch deployment ai-diagnostics-api -n pharmacare-prod --patch '
+kubectl patch deployment ai-diagnostics-api -n PharmacyCopilot-prod --patch '
 spec:
   template:
     spec:
@@ -517,17 +517,17 @@ kubectl apply -f chaos-engineering/network-partition-test.yml
 echo "=== ROLLBACK TESTING ==="
 
 # 1. Deploy test version
-kubectl set image deployment/ai-diagnostics-api -n pharmacare-staging \
-  ai-diagnostics-api=pharmacare/ai-diagnostics-api:test-rollback
+kubectl set image deployment/ai-diagnostics-api -n PharmacyCopilot-staging \
+  ai-diagnostics-api=PharmacyCopilot/ai-diagnostics-api:test-rollback
 
 # 2. Verify deployment
-kubectl rollout status deployment/ai-diagnostics-api -n pharmacare-staging
+kubectl rollout status deployment/ai-diagnostics-api -n PharmacyCopilot-staging
 
 # 3. Perform rollback
-kubectl rollout undo deployment/ai-diagnostics-api -n pharmacare-staging
+kubectl rollout undo deployment/ai-diagnostics-api -n PharmacyCopilot-staging
 
 # 4. Verify rollback
-kubectl rollout status deployment/ai-diagnostics-api -n pharmacare-staging
+kubectl rollout status deployment/ai-diagnostics-api -n PharmacyCopilot-staging
 
 # 5. Test functionality
 npm run test:e2e:rollback-verification
@@ -544,19 +544,19 @@ echo "=== ROLLBACK TESTING COMPLETED ==="
 echo "=== DISASTER RECOVERY TESTING ==="
 
 # 1. Create test backup
-kubectl create job test-backup -n pharmacare-staging \
+kubectl create job test-backup -n PharmacyCopilot-staging \
   --from=cronjob/mongodb-backup
 
 # 2. Simulate data loss
-kubectl exec -n pharmacare-staging deployment/mongodb -- \
+kubectl exec -n PharmacyCopilot-staging deployment/mongodb -- \
   mongo --eval "db.diagnosticrequests.drop()"
 
 # 3. Restore from backup
-kubectl create job test-restore -n pharmacare-staging \
+kubectl create job test-restore -n PharmacyCopilot-staging \
   --from=job/disaster-recovery-restore
 
 # 4. Verify restoration
-kubectl exec -n pharmacare-staging deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmacyCopilot-staging deployment/ai-diagnostics-api -- \
   npm run test:data-integrity
 
 echo "=== DISASTER RECOVERY TESTING COMPLETED ==="
@@ -579,12 +579,12 @@ curl -X POST "https://api.statuspage.io/v1/pages/PAGE_ID/incidents" \
   -d "incident[status]=scheduled"
 
 # 2. Enable maintenance mode
-kubectl patch configmap ai-diagnostics-config -n pharmacare-prod \
+kubectl patch configmap ai-diagnostics-config -n PharmacyCopilot-prod \
   --patch '{"data":{"MAINTENANCE_MODE":"true"}}'
 
 # 3. Drain traffic gradually
 for i in {3..1}; do
-  kubectl scale deployment ai-diagnostics-api -n pharmacare-prod --replicas=$i
+  kubectl scale deployment ai-diagnostics-api -n PharmacyCopilot-prod --replicas=$i
   sleep 30
 done
 
@@ -592,8 +592,8 @@ done
 # [Maintenance tasks here]
 
 # 5. Restore service
-kubectl scale deployment ai-diagnostics-api -n pharmacare-prod --replicas=3
-kubectl patch configmap ai-diagnostics-config -n pharmacare-prod \
+kubectl scale deployment ai-diagnostics-api -n PharmacyCopilot-prod --replicas=3
+kubectl patch configmap ai-diagnostics-config -n PharmacyCopilot-prod \
   --patch '{"data":{"MAINTENANCE_MODE":"false"}}'
 
 # 6. Update status
