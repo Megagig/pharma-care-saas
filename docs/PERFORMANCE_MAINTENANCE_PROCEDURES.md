@@ -1,6 +1,6 @@
 # Performance Maintenance Procedures
 
-This document outlines the ongoing performance monitoring, optimization, and maintenance procedures for the PharmaPilot application.
+This document outlines the ongoing performance monitoring, optimization, and maintenance procedures for the PharmacyCopilot application.
 
 ## Table of Contents
 
@@ -54,7 +54,7 @@ The following checks run automatically and require review:
    ```bash
    # Access performance monitoring dashboard
    curl -H "Authorization: Bearer $API_TOKEN" \
-        https://api.PharmaPilot.com/api/performance-monitoring/dashboard
+        https://api.PharmacyCopilot.com/api/performance-monitoring/dashboard
    ```
 
 2. **Review Overnight Alerts**
@@ -72,7 +72,7 @@ The following checks run automatically and require review:
    ```bash
    # Review feature flag metrics
    curl -H "Authorization: Bearer $API_TOKEN" \
-        https://api.PharmaPilot.com/api/deployment/feature-flags/metrics
+        https://api.PharmacyCopilot.com/api/deployment/feature-flags/metrics
    ```
 
 #### End-of-Day Review (5:00 PM)
@@ -186,7 +186,7 @@ When automated monitoring detects a regression:
 ```bash
 # Get regression details
 curl -H "Authorization: Bearer $API_TOKEN" \
-     https://api.PharmaPilot.com/api/continuous-monitoring/status
+     https://api.PharmacyCopilot.com/api/continuous-monitoring/status
 ```
 
 #### 2. Initial Assessment
@@ -217,7 +217,7 @@ git log --oneline --since="24 hours ago"
 
 # Check feature flag changes
 curl -H "Authorization: Bearer $API_TOKEN" \
-     https://api.PharmaPilot.com/api/deployment/feature-flags/overrides
+     https://api.PharmacyCopilot.com/api/deployment/feature-flags/overrides
 ```
 
 #### 2. Performance Profiling
@@ -382,7 +382,7 @@ curl -H "Authorization: Bearer $API_TOKEN" \
 
 #### Internal Communication
 - **Slack**: #performance-alerts for immediate notifications
-- **Email**: performance-team@PharmaPilot.com for detailed reports
+- **Email**: performance-team@PharmacyCopilot.com for detailed reports
 - **Jira**: Create performance incident tickets for tracking
 
 #### External Communication

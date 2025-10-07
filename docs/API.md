@@ -1,8 +1,8 @@
-# PharmaPilot SaaS API Documentation
+# PharmacyCopilot SaaS API Documentation
 
 ## Overview
 
-This document provides comprehensive documentation for the PharmaPilot SaaS REST API.
+This document provides comprehensive documentation for the PharmacyCopilot SaaS REST API.
 
 ## Base URL
 

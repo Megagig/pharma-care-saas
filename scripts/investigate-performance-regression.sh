@@ -127,7 +127,7 @@ EOF
     # Get current feature flag status
     if command -v curl &> /dev/null; then
         local flag_status=$(curl -s -H "Authorization: Bearer $API_TOKEN" \
-            "https://api.PharmaPilot.com/api/deployment/feature-flags/metrics" 2>/dev/null || echo "[]")
+            "https://api.PharmacyCopilot.com/api/deployment/feature-flags/metrics" 2>/dev/null || echo "[]")
         
         if [[ "$flag_status" != "[]" ]]; then
             echo "\`\`\`json" >> "$INVESTIGATION_REPORT"
@@ -359,7 +359,7 @@ generate_recommendations() {
    curl -X POST -H "Authorization: Bearer \$API_TOKEN" \\
         -H "Content-Type: application/json" \\
         -d '{"featureName": "problematic_feature", "enabled": false, "reason": "Performance regression"}' \\
-        https://api.PharmaPilot.com/api/deployment/feature-flags/override
+        https://api.PharmacyCopilot.com/api/deployment/feature-flags/override
    \`\`\`
 
 3. **Enhanced Monitoring:**

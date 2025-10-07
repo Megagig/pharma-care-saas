@@ -1,9 +1,9 @@
 apiVersion: 1
 
 providers:
-  - name: 'PharmaPilot-dashboards'
+  - name: 'PharmacyCopilot-dashboards'
     orgId: 1
-    folder: 'PharmaPilot'
+    folder: 'PharmacyCopilot'
     type: file
     disableDeletion: false
     updateIntervalSeconds: 10

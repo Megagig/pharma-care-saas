@@ -12,7 +12,7 @@ class ApiClient {
         this.retryDelay = config.retryDelay || 1000;
         const defaultHeaders = {
             'Content-Type': 'application/json',
-            'User-Agent': 'PharmaCare-SaaS/1.0'
+            'User-Agent': 'PharmacyCopilot-SaaS/1.0'
         };
         if (config.apiKey) {
             defaultHeaders['Authorization'] = `Bearer ${config.apiKey}`;

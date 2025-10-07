@@ -44,7 +44,7 @@ db.workplaces.findOne({
 })
 
 # Check migration logs
-grep "migration" /var/log/PharmaPilot/combined.log | tail -50
+grep "migration" /var/log/PharmacyCopilot/combined.log | tail -50
 ```
 
 **Solutions:**
@@ -72,7 +72,7 @@ grep "migration" /var/log/PharmaPilot/combined.log | tail -50
 3. **Reset Password:**
    ```bash
    # Generate password reset token
-   curl -X POST https://api.PharmaPilot.com/api/auth/forgot-password \
+   curl -X POST https://api.PharmacyCopilot.com/api/auth/forgot-password \
      -H "Content-Type: application/json" \
      -d '{"email": "user@example.com"}'
    ```
@@ -130,7 +130,7 @@ console.log(jwt.decode(token));
 
 ```bash
 # Check auth middleware logs
-grep "workspace context" /var/log/PharmaPilot/combined.log
+grep "workspace context" /var/log/PharmacyCopilot/combined.log
 
 # Verify database relationships
 db.users.aggregate([
@@ -173,7 +173,7 @@ db.users.aggregate([
 
    ```bash
    # Restart auth service
-   pm2 restart PharmaPilot-api
+   pm2 restart PharmacyCopilot-api
 
    # Clear Redis cache if using
    redis-cli FLUSHDB
@@ -195,7 +195,7 @@ db.users.aggregate([
 
 ```bash
 # Check email service logs
-grep "invitation email" /var/log/PharmaPilot/combined.log
+grep "invitation email" /var/log/PharmacyCopilot/combined.log
 
 # Check email delivery records
 db.emaildeliveries.find({
@@ -207,7 +207,7 @@ db.emaildeliveries.find({
 curl -X POST https://api.resend.com/emails \
   -H "Authorization: Bearer YOUR_RESEND_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"from": "test@PharmaPilot.com", "to": "test@example.com", "subject": "Test", "html": "Test"}'
+  -d '{"from": "test@PharmacyCopilot.com", "to": "test@example.com", "subject": "Test", "html": "Test"}'
 ```
 
 **Solutions:**
@@ -224,7 +224,7 @@ curl -X POST https://api.resend.com/emails \
    const { Resend } = require('resend');
    const resend = new Resend(process.env.RESEND_API_KEY);
    resend.emails.send({
-     from: 'test@PharmaPilot.com',
+     from: 'test@PharmacyCopilot.com',
      to: 'test@example.com',
      subject: 'Test Email',
      html: '<p>Test</p>'
@@ -298,10 +298,10 @@ db.invitations.getIndexes()
 
    ```bash
    # Cancel old invitation and create new one
-   curl -X DELETE https://api.PharmaPilot.com/api/invitations/INVITATION_ID \
+   curl -X DELETE https://api.PharmacyCopilot.com/api/invitations/INVITATION_ID \
      -H "Authorization: Bearer OWNER_TOKEN"
 
-   curl -X POST https://api.PharmaPilot.com/api/workspaces/WORKSPACE_ID/invitations \
+   curl -X POST https://api.PharmacyCopilot.com/api/workspaces/WORKSPACE_ID/invitations \
      -H "Authorization: Bearer OWNER_TOKEN" \
      -H "Content-Type: application/json" \
      -d '{"email": "user@example.com", "role": "Pharmacist"}'
@@ -350,18 +350,18 @@ db.subscriptions.findOne({ workspaceId: ObjectId("workspace_id") })
 
    ```bash
    # List pending invitations
-   curl -X GET https://api.PharmaPilot.com/api/workspaces/WORKSPACE_ID/invitations \
+   curl -X GET https://api.PharmacyCopilot.com/api/workspaces/WORKSPACE_ID/invitations \
      -H "Authorization: Bearer OWNER_TOKEN"
 
    # Cancel specific invitation
-   curl -X DELETE https://api.PharmaPilot.com/api/invitations/INVITATION_ID \
+   curl -X DELETE https://api.PharmacyCopilot.com/api/invitations/INVITATION_ID \
      -H "Authorization: Bearer OWNER_TOKEN"
    ```
 
 3. **Upgrade Plan:**
    ```bash
    # Check available plans
-   curl -X GET https://api.PharmaPilot.com/api/subscription-plans \
+   curl -X GET https://api.PharmacyCopilot.com/api/subscription-plans \
      -H "Authorization: Bearer TOKEN"
    ```
 
@@ -387,7 +387,7 @@ db.payments.find({ workspaceId: ObjectId("workspace_id") }).sort({ createdAt: -1
 db.subscriptions.findOne({ workspaceId: ObjectId("workspace_id") })
 
 # Check webhook logs
-grep "webhook" /var/log/PharmaPilot/combined.log | tail -20
+grep "webhook" /var/log/PharmacyCopilot/combined.log | tail -20
 
 # Verify Paystack webhook
 curl -X GET https://api.paystack.co/transaction/verify/REFERENCE \
@@ -416,7 +416,7 @@ curl -X GET https://api.paystack.co/transaction/verify/REFERENCE \
 
    ```bash
    # Simulate webhook call
-   curl -X POST https://api.PharmaPilot.com/api/webhooks/paystack \
+   curl -X POST https://api.PharmacyCopilot.com/api/webhooks/paystack \
      -H "Content-Type: application/json" \
      -d '{
        "event": "charge.success",
@@ -430,7 +430,7 @@ curl -X GET https://api.paystack.co/transaction/verify/REFERENCE \
 3. **Refresh Plan Features:**
    ```bash
    # Trigger plan cache refresh
-   curl -X POST https://api.PharmaPilot.com/api/admin/refresh-plans \
+   curl -X POST https://api.PharmacyCopilot.com/api/admin/refresh-plans \
      -H "Authorization: Bearer ADMIN_TOKEN"
    ```
 
@@ -452,7 +452,7 @@ db.workplaces.findOne(
 )
 
 # Check subscription expiry service
-grep "trial expiry" /var/log/PharmaPilot/combined.log
+grep "trial expiry" /var/log/PharmacyCopilot/combined.log
 
 # Check cron job status
 crontab -l | grep expiry
@@ -484,7 +484,7 @@ crontab -l | grep expiry
 
 3. **Enable Paywall Mode:**
    ```bash
-   curl -X POST https://api.PharmaPilot.com/api/subscriptions/workspace/WORKSPACE_ID/paywall/enable \
+   curl -X POST https://api.PharmacyCopilot.com/api/subscriptions/workspace/WORKSPACE_ID/paywall/enable \
      -H "Authorization: Bearer ADMIN_TOKEN"
    ```
 
@@ -504,7 +504,7 @@ crontab -l | grep expiry
 
 ```bash
 # Check user permissions
-curl -X GET https://api.PharmaPilot.com/api/auth/permissions \
+curl -X GET https://api.PharmacyCopilot.com/api/auth/permissions \
   -H "Authorization: Bearer USER_TOKEN"
 
 # Check permission matrix
@@ -545,10 +545,10 @@ db.workplaces.findOne(
 
    ```bash
    # Restart API server to clear cache
-   pm2 restart PharmaPilot-api
+   pm2 restart PharmacyCopilot-api
 
    # Clear user session
-   curl -X POST https://api.PharmaPilot.com/api/auth/logout \
+   curl -X POST https://api.PharmacyCopilot.com/api/auth/logout \
      -H "Authorization: Bearer USER_TOKEN"
    ```
 
@@ -564,7 +564,7 @@ db.workplaces.findOne(
 
 ```bash
 # Check user role
-db.users.findOne({ email: "admin@PharmaPilot.com" }, { role: 1, status: 1 })
+db.users.findOne({ email: "admin@PharmacyCopilot.com" }, { role: 1, status: 1 })
 
 # Check admin middleware
 grep "super_admin" backend/src/middlewares/rbac.ts
@@ -580,7 +580,7 @@ grep "requireRole.*admin" backend/src/routes/*.ts
    ```javascript
    // Set user as super admin
    db.users.updateOne(
-     { email: 'admin@PharmaPilot.com' },
+     { email: 'admin@PharmacyCopilot.com' },
      { $set: { role: 'super_admin', status: 'active' } }
    );
    ```
@@ -615,7 +615,7 @@ db.workplaces.findOne(
 )
 
 # Check usage update logs
-grep "usage update" /var/log/PharmaPilot/combined.log
+grep "usage update" /var/log/PharmacyCopilot/combined.log
 
 # Check cron job status
 ps aux | grep WorkspaceStatsCronService
@@ -627,7 +627,7 @@ ps aux | grep WorkspaceStatsCronService
 
    ```bash
    # Trigger stats recalculation
-   curl -X POST https://api.PharmaPilot.com/api/usage/recalculate \
+   curl -X POST https://api.PharmacyCopilot.com/api/usage/recalculate \
      -H "Authorization: Bearer OWNER_TOKEN"
    ```
 
@@ -673,7 +673,7 @@ grep -A 20 "enforcePlanLimit" backend/src/middlewares/usageLimits.ts
 db.subscriptionplans.findOne({ _id: ObjectId("plan_id") }, { limits: 1 })
 
 # Test limit enforcement
-curl -X POST https://api.PharmaPilot.com/api/patients \
+curl -X POST https://api.PharmacyCopilot.com/api/patients \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name": "Test Patient"}'
@@ -707,7 +707,7 @@ curl -X POST https://api.PharmaPilot.com/api/patients \
    ```bash
    # Create test patients to verify limits
    for i in {1..105}; do
-     curl -X POST https://api.PharmaPilot.com/api/patients \
+     curl -X POST https://api.PharmacyCopilot.com/api/patients \
        -H "Authorization: Bearer TOKEN" \
        -H "Content-Type: application/json" \
        -d "{\"name\": \"Test Patient $i\"}"
@@ -734,8 +734,8 @@ curl -X GET https://api.resend.com/emails/EMAIL_ID \
   -H "Authorization: Bearer YOUR_RESEND_KEY"
 
 # Check domain reputation
-dig TXT PharmaPilot.com | grep -i spf
-dig TXT _dmarc.PharmaPilot.com
+dig TXT PharmacyCopilot.com | grep -i spf
+dig TXT _dmarc.PharmacyCopilot.com
 
 # Check email content
 cat backend/src/templates/email/workspaceInvitation.html
@@ -749,7 +749,7 @@ cat backend/src/templates/email/workspaceInvitation.html
    # Add DNS records
    # SPF: "v=spf1 include:_spf.resend.com ~all"
    # DKIM: Get from Resend dashboard
-   # DMARC: "v=DMARC1; p=quarantine; rua=mailto:dmarc@PharmaPilot.com"
+   # DMARC: "v=DMARC1; p=quarantine; rua=mailto:dmarc@PharmacyCopilot.com"
    ```
 
 2. **Improve Email Content:**
@@ -797,7 +797,7 @@ console.log('Placeholders found:', template.match(/\{\{.*?\}\}/g));
 "
 
 # Check email service logs
-grep "template" /var/log/PharmaPilot/combined.log
+grep "template" /var/log/PharmacyCopilot/combined.log
 ```
 
 **Solutions:**
@@ -843,7 +843,7 @@ grep "template" /var/log/PharmaPilot/combined.log
 
 ```bash
 # Check API response times
-curl -w "@curl-format.txt" -o /dev/null -s https://api.PharmaPilot.com/api/auth/profile
+curl -w "@curl-format.txt" -o /dev/null -s https://api.PharmacyCopilot.com/api/auth/profile
 
 # Check database performance
 db.runCommand({ currentOp: true })
@@ -991,7 +991,7 @@ node -e "console.log(process.listenerCount('uncaughtException'))"
 
 ```bash
 # Check migration logs
-grep "migration" /var/log/PharmaPilot/combined.log | grep -i error
+grep "migration" /var/log/PharmacyCopilot/combined.log | grep -i error
 
 # Check migration status
 db.migrations.find().sort({ createdAt: -1 })
@@ -1125,9 +1125,9 @@ tail -f /var/log/mongodb/mongod.log
 grep -i cors backend/src/app.ts
 
 # Test API endpoint directly
-curl -X GET https://api.PharmaPilot.com/api/auth/profile \
+curl -X GET https://api.PharmacyCopilot.com/api/auth/profile \
   -H "Authorization: Bearer TOKEN" \
-  -H "Origin: https://app.PharmaPilot.com"
+  -H "Origin: https://app.PharmacyCopilot.com"
 
 # Check browser network tab
 # Look for preflight OPTIONS requests
@@ -1143,8 +1143,8 @@ curl -X GET https://api.PharmaPilot.com/api/auth/profile \
      cors({
        origin: [
          'http://localhost:3000',
-         'https://app.PharmaPilot.com',
-         'https://PharmaPilot.com',
+         'https://app.PharmacyCopilot.com',
+         'https://PharmacyCopilot.com',
        ],
        credentials: true,
        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -1181,7 +1181,7 @@ curl -X GET https://api.PharmaPilot.com/api/auth/profile \
 
 ```bash
 # Check webhook logs
-grep "webhook" /var/log/PharmaPilot/combined.log
+grep "webhook" /var/log/PharmacyCopilot/combined.log
 
 # Test webhook signature
 node -e "
@@ -1193,7 +1193,7 @@ console.log('Expected signature:', signature);
 "
 
 # Check webhook endpoint
-curl -X POST https://api.PharmaPilot.com/api/webhooks/paystack \
+curl -X POST https://api.PharmacyCopilot.com/api/webhooks/paystack \
   -H "Content-Type: application/json" \
   -H "X-Paystack-Signature: SIGNATURE" \
   -d '{"event": "charge.success"}'
@@ -1366,7 +1366,7 @@ curl -X POST https://api.PharmaPilot.com/api/webhooks/paystack \
    pm2 restart all
 
    # Restart specific service
-   pm2 restart PharmaPilot-api
+   pm2 restart PharmacyCopilot-api
 
    # Check service status
    pm2 status
@@ -1392,18 +1392,18 @@ curl -X POST https://api.PharmaPilot.com/api/webhooks/paystack \
    redis-cli FLUSHALL
 
    # Clear application cache
-   rm -rf /tmp/PharmaPilot-cache/*
+   rm -rf /tmp/PharmacyCopilot-cache/*
 
    # Restart with fresh cache
-   pm2 restart PharmaPilot-api
+   pm2 restart PharmacyCopilot-api
    ```
 
 ### Contact Information
 
-- **Technical Support:** tech-support@PharmaPilot.com
+- **Technical Support:** tech-support@PharmacyCopilot.com
 - **Emergency Hotline:** +234-800-PHARMA-1
-- **DevOps Team:** devops@PharmaPilot.com
-- **Database Admin:** dba@PharmaPilot.com
+- **DevOps Team:** devops@PharmacyCopilot.com
+- **Database Admin:** dba@PharmacyCopilot.com
 
 ---
 

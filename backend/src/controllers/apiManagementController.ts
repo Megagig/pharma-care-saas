@@ -134,13 +134,13 @@ export class ApiManagementController {
   async generateOpenApiSpec(req: Request, res: Response): Promise<void> {
     try {
       const config = {
-        title: 'PharmaPilot API',
+        title: 'PharmacyCopilot API',
         version: '1.0.0',
-        description: 'Comprehensive API for PharmaPilot SaaS platform',
-        baseUrl: process.env.API_BASE_URL || 'https://api.PharmaPilot.com',
+        description: 'Comprehensive API for PharmacyCopilot SaaS platform',
+        baseUrl: process.env.API_BASE_URL || 'https://api.PharmacyCopilot.com',
         contact: {
-          name: 'PharmaPilot API Support',
-          email: 'api-support@PharmaPilot.com'
+          name: 'PharmacyCopilot API Support',
+          email: 'api-support@PharmacyCopilot.com'
         },
         license: {
           name: 'MIT',

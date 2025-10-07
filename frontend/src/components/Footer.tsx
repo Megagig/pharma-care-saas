@@ -59,7 +59,7 @@ const Footer = () => {
                 variant="h6"
                 sx={{ fontWeight: 'bold', color: 'primary.main' }}
               >
-                PharmaPilot
+                PharmacyCopilot
               </Typography>
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -458,7 +458,7 @@ const Footer = () => {
           }}
         >
           <Typography variant="body2" color="text.secondary">
-            © {new Date().getFullYear()} PharmaPilot. All rights reserved.
+            © {new Date().getFullYear()} PharmacyCopilot. All rights reserved.
           </Typography>
 
           {/* Social Media Links */}
@@ -512,7 +512,7 @@ const Footer = () => {
               <GitHubIcon fontSize="small" />
             </IconButton>
             <IconButton
-              href="mailto:support@PharmaPilot.com"
+              href="mailto:support@PharmacyCopilot.com"
               size="small"
               sx={{
                 color: 'text.secondary',

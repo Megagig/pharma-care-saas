@@ -3,7 +3,7 @@ import { UserSession, IUserSession } from '../../models/UserSession';
 
 describe('UserSession Model', () => {
   beforeAll(async () => {
-    const mongoUri = process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/test_PharmaPilot';
+    const mongoUri = process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/test_PharmacyCopilot';
     await mongoose.connect(mongoUri);
   });
 

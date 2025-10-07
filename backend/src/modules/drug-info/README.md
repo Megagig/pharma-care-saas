@@ -1,7 +1,7 @@
 # Drug Information Center Module
 
 ## Overview
-The Drug Information Center module provides comprehensive drug information services for the PharmaPilot SaaS application. This module integrates with multiple external APIs to provide drug search, monograph viewing, interaction checking, adverse effect profiles, and formulary management.
+The Drug Information Center module provides comprehensive drug information services for the PharmacyCopilot SaaS application. This module integrates with multiple external APIs to provide drug search, monograph viewing, interaction checking, adverse effect profiles, and formulary management.
 
 ## Features
 - Drug search with autocomplete (RxNorm API)

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This comprehensive guide provides detailed instructions for monitoring, maintaining, and optimizing the performance of the PharmaPilot MERN-stack SaaS application. It covers Web Vitals monitoring, Lighthouse CI maintenance, Redis cache management, database performance optimization, and performance budget management.
+This comprehensive guide provides detailed instructions for monitoring, maintaining, and optimizing the performance of the PharmacyCopilot MERN-stack SaaS application. It covers Web Vitals monitoring, Lighthouse CI maintenance, Redis cache management, database performance optimization, and performance budget management.
 
 ## Web Vitals Monitoring Setup and Interpretation
 
@@ -1141,4 +1141,4 @@ echo "Monthly performance audit completed"
    node scripts/analyze-index-usage.js
    ```
 
-This comprehensive monitoring and maintenance guide ensures optimal performance of the PharmaPilot application through proactive monitoring, regular maintenance, and systematic troubleshooting procedures.
+This comprehensive monitoring and maintenance guide ensures optimal performance of the PharmacyCopilot application through proactive monitoring, regular maintenance, and systematic troubleshooting procedures.

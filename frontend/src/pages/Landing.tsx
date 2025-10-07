@@ -118,7 +118,7 @@ const Landing = () => {
       name: 'Dr. Sarah Johnson',
       role: 'Clinical Pharmacist',
       content:
-        'PharmaPilot has transformed how I manage my patients. The clinical notes feature is incredibly detailed and saves me hours each week.',
+        'PharmacyCopilot has transformed how I manage my patients. The clinical notes feature is incredibly detailed and saves me hours each week.',
       rating: 5,
       avatar: 'S',
     },
@@ -155,17 +155,17 @@ const Landing = () => {
 
   const faqs = [
     {
-      question: 'What is PharmaPilot?',
+      question: 'What is PharmacyCopilot?',
       answer:
-        'PharmaPilot is a comprehensive pharmaceutical care management platform designed specifically for pharmacists. It helps manage patient profiles, clinical documentation, medication therapy reviews, and provides advanced analytics to improve patient outcomes.',
+        'PharmacyCopilot is a comprehensive pharmaceutical care management platform designed specifically for pharmacists. It helps manage patient profiles, clinical documentation, medication therapy reviews, and provides advanced analytics to improve patient outcomes.',
     },
     {
-      question: 'Is PharmaPilot HIPAA compliant?',
+      question: 'Is PharmacyCopilot HIPAA compliant?',
       answer:
-        'Yes, PharmaPilot is fully HIPAA compliant with enterprise-grade security measures. All patient data is encrypted both in transit and at rest, and we follow strict security protocols to ensure your data remains protected.',
+        'Yes, PharmacyCopilot is fully HIPAA compliant with enterprise-grade security measures. All patient data is encrypted both in transit and at rest, and we follow strict security protocols to ensure your data remains protected.',
     },
     {
-      question: 'What are patient medical records made up of in PharmaPilot?',
+      question: 'What are patient medical records made up of in PharmacyCopilot?',
       answer:
         'Patient records include comprehensive medication profiles, medical history, allergies, clinical notes (SOAP format), medication therapy reviews, adherence tracking, lab results, and communication logs with healthcare providers.',
     },
@@ -175,9 +175,9 @@ const Landing = () => {
         'Yes, with proper patient consent and authorization, records can be securely shared with other healthcare providers through our secure communication hub. All sharing activities are logged and auditable for compliance.',
     },
     {
-      question: 'Does PharmaPilot support clinic appointments?',
+      question: 'Does PharmacyCopilot support clinic appointments?',
       answer:
-        'Yes, PharmaPilot includes appointment scheduling features, automated reminders, and follow-up tracking to help you manage your clinical workflow efficiently.',
+        'Yes, PharmacyCopilot includes appointment scheduling features, automated reminders, and follow-up tracking to help you manage your clinical workflow efficiently.',
     },
     {
       question: 'How does the free trial work?',
@@ -216,7 +216,7 @@ const Landing = () => {
               variant="h6"
               sx={{ fontWeight: 700, color: 'text.primary' }}
             >
-              PharmaPilot
+              PharmacyCopilot
             </Typography>
           </Box>
 
@@ -827,7 +827,7 @@ const Landing = () => {
               What they say about our product's
             </Typography>
             <Typography variant="h6" color="text.secondary">
-              See what pharmacists are saying about PharmaPilot
+              See what pharmacists are saying about PharmacyCopilot
             </Typography>
           </Box>
 
@@ -896,7 +896,7 @@ const Landing = () => {
             Got questions? We've got answers.
           </Typography>
           <Typography variant="h6" color="text.secondary">
-            Everything you need to know about PharmaPilot
+            Everything you need to know about PharmacyCopilot
           </Typography>
         </Box>
 
@@ -958,7 +958,7 @@ const Landing = () => {
               Ready to Transform Your Practice?
             </Typography>
             <Typography variant="h6" sx={{ mb: 4, opacity: 0.9 }}>
-              Join thousands of pharmacists already using PharmaPilot to improve
+              Join thousands of pharmacists already using PharmacyCopilot to improve
               patient outcomes
             </Typography>
             <Box

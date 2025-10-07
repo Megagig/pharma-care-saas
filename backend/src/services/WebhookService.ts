@@ -151,7 +151,7 @@ export class WebhookService {
       type: eventType,
       data: eventData,
       timestamp: new Date(),
-      source: 'PharmaPilot-api',
+      source: 'PharmacyCopilot-api',
       version: '1.0'
     };
 
@@ -187,7 +187,7 @@ export class WebhookService {
       httpMethod: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'PharmaPilot-Webhooks/1.0',
+        'User-Agent': 'PharmacyCopilot-Webhooks/1.0',
         'X-Webhook-Signature': this.generateSignature(payload, webhook.secret),
         'X-Webhook-Event': event.type,
         'X-Webhook-ID': event.id,
@@ -512,7 +512,7 @@ export class WebhookService {
         timestamp: new Date().toISOString()
       },
       timestamp: new Date(),
-      source: 'PharmaPilot-api',
+      source: 'PharmacyCopilot-api',
       version: '1.0'
     };
 
@@ -536,7 +536,7 @@ export class WebhookService {
         url: webhook.url,
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'PharmaPilot-Webhooks/1.0',
+          'User-Agent': 'PharmacyCopilot-Webhooks/1.0',
           'X-Webhook-Signature': this.generateSignature(payload, webhook.secret),
           'X-Webhook-Event': testEvent.type,
           'X-Webhook-ID': testEvent.id,

@@ -346,14 +346,14 @@ export class NotificationTemplateService {
 
         // System Notification Templates
         this.templates.set('system_notification', {
-            subject: 'PharmaPilot System Notification',
+            subject: 'PharmacyCopilot System Notification',
             content: '{{notificationMessage}}',
             htmlTemplate: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <div style="background-color: #f1f5f9; border-left: 4px solid #64748b; padding: 20px; margin-bottom: 20px;">
                         <h2 style="color: #475569; margin-top: 0;">🔔 System Notification</h2>
                         <p style="font-size: 16px; margin: 0;">
-                            PharmaPilot System Update
+                            PharmacyCopilot System Update
                         </p>
                     </div>
                     
@@ -372,7 +372,7 @@ export class NotificationTemplateService {
                     {{/if}}
                 </div>
             `,
-            smsTemplate: 'PharmaPilot: {{notificationMessage}}',
+            smsTemplate: 'PharmacyCopilot: {{notificationMessage}}',
         });
     }
 
@@ -381,19 +381,19 @@ export class NotificationTemplateService {
      */
     private getDefaultTemplate(variables: TemplateVariables): NotificationTemplate {
         return {
-            subject: variables.title || 'PharmaPilot Notification',
-            content: variables.content || 'You have a new notification from PharmaPilot',
+            subject: variables.title || 'PharmacyCopilot Notification',
+            content: variables.content || 'You have a new notification from PharmacyCopilot',
             htmlTemplate: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px;">
-                        <h2 style="color: #2563eb; margin-top: 0;">PharmaPilot Notification</h2>
+                        <h2 style="color: #2563eb; margin-top: 0;">PharmacyCopilot Notification</h2>
                         <p style="margin: 0; color: #4b5563;">
-                            ${variables.content || 'You have a new notification from PharmaPilot'}
+                            ${variables.content || 'You have a new notification from PharmacyCopilot'}
                         </p>
                     </div>
                 </div>
             `,
-            smsTemplate: variables.content || 'PharmaPilot notification',
+            smsTemplate: variables.content || 'PharmacyCopilot notification',
         };
     }
 

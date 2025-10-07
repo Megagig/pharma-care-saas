@@ -6,156 +6,156 @@ const register = new promClient.Registry();
 // Add default metrics
 promClient.collectDefaultMetrics({
     register,
-    prefix: 'PharmaPilot_',
+    prefix: 'PharmacyCopilot_',
 });
 
-// Custom metrics for PharmaPilot application
+// Custom metrics for PharmacyCopilot application
 
 // HTTP request metrics
 export const httpRequestDuration = new promClient.Histogram({
-    name: 'PharmaPilot_http_request_duration_seconds',
+    name: 'PharmacyCopilot_http_request_duration_seconds',
     help: 'Duration of HTTP requests in seconds',
     labelNames: ['method', 'route', 'status_code'],
     buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10],
 });
 
 export const httpRequestsTotal = new promClient.Counter({
-    name: 'PharmaPilot_http_requests_total',
+    name: 'PharmacyCopilot_http_requests_total',
     help: 'Total number of HTTP requests',
     labelNames: ['method', 'route', 'status_code'],
 });
 
 // Subscription metrics
 export const subscriptionsTotal = new promClient.Gauge({
-    name: 'PharmaPilot_subscriptions_total',
+    name: 'PharmacyCopilot_subscriptions_total',
     help: 'Total number of subscriptions by status',
     labelNames: ['status', 'tier'],
 });
 
 export const trialConversionsTotal = new promClient.Counter({
-    name: 'PharmaPilot_trial_conversions_total',
+    name: 'PharmacyCopilot_trial_conversions_total',
     help: 'Total number of trial conversions',
     labelNames: ['from_tier', 'to_tier'],
 });
 
 export const trialsExpiredTotal = new promClient.Counter({
-    name: 'PharmaPilot_trials_expired_total',
+    name: 'PharmacyCopilot_trials_expired_total',
     help: 'Total number of expired trials',
 });
 
 export const paymentFailuresTotal = new promClient.Counter({
-    name: 'PharmaPilot_payment_failures_total',
+    name: 'PharmacyCopilot_payment_failures_total',
     help: 'Total number of payment failures',
     labelNames: ['reason', 'tier'],
 });
 
 // Workspace metrics
 export const workspacesActiveTotal = new promClient.Gauge({
-    name: 'PharmaPilot_workspaces_active_total',
+    name: 'PharmacyCopilot_workspaces_active_total',
     help: 'Total number of active workspaces',
 });
 
 export const workspacesCreatedTotal = new promClient.Counter({
-    name: 'PharmaPilot_workspaces_created_total',
+    name: 'PharmacyCopilot_workspaces_created_total',
     help: 'Total number of workspaces created',
 });
 
 // Invitation metrics
 export const invitationsSentTotal = new promClient.Counter({
-    name: 'PharmaPilot_invitations_sent_total',
+    name: 'PharmacyCopilot_invitations_sent_total',
     help: 'Total number of invitations sent',
     labelNames: ['workspace_id', 'role'],
 });
 
 export const invitationsAcceptedTotal = new promClient.Counter({
-    name: 'PharmaPilot_invitations_accepted_total',
+    name: 'PharmacyCopilot_invitations_accepted_total',
     help: 'Total number of invitations accepted',
     labelNames: ['workspace_id', 'role'],
 });
 
 export const invitationsFailedTotal = new promClient.Counter({
-    name: 'PharmaPilot_invitations_failed_total',
+    name: 'PharmacyCopilot_invitations_failed_total',
     help: 'Total number of failed invitations',
     labelNames: ['reason'],
 });
 
 export const invitationsPendingTotal = new promClient.Gauge({
-    name: 'PharmaPilot_invitations_pending_total',
+    name: 'PharmacyCopilot_invitations_pending_total',
     help: 'Total number of pending invitations',
 });
 
 // Usage limit metrics
 export const usageLimitViolationsTotal = new promClient.Counter({
-    name: 'PharmaPilot_usage_limit_violations_total',
+    name: 'PharmacyCopilot_usage_limit_violations_total',
     help: 'Total number of usage limit violations',
     labelNames: ['resource', 'workspace_id', 'tier'],
 });
 
 export const usageStatsGauge = new promClient.Gauge({
-    name: 'PharmaPilot_usage_stats',
+    name: 'PharmacyCopilot_usage_stats',
     help: 'Current usage statistics',
     labelNames: ['resource', 'workspace_id', 'tier'],
 });
 
 // Email metrics
 export const emailsSentTotal = new promClient.Counter({
-    name: 'PharmaPilot_emails_sent_total',
+    name: 'PharmacyCopilot_emails_sent_total',
     help: 'Total number of emails sent',
     labelNames: ['type', 'status'],
 });
 
 export const emailsFailedTotal = new promClient.Counter({
-    name: 'PharmaPilot_emails_failed_total',
+    name: 'PharmacyCopilot_emails_failed_total',
     help: 'Total number of failed emails',
     labelNames: ['type', 'reason'],
 });
 
 export const emailQueueSize = new promClient.Gauge({
-    name: 'PharmaPilot_email_queue_size',
+    name: 'PharmacyCopilot_email_queue_size',
     help: 'Current size of email queue',
 });
 
 // Authentication metrics
 export const authFailuresTotal = new promClient.Counter({
-    name: 'PharmaPilot_auth_failures_total',
+    name: 'PharmacyCopilot_auth_failures_total',
     help: 'Total number of authentication failures',
     labelNames: ['reason', 'ip'],
 });
 
 export const authSuccessTotal = new promClient.Counter({
-    name: 'PharmaPilot_auth_success_total',
+    name: 'PharmacyCopilot_auth_success_total',
     help: 'Total number of successful authentications',
 });
 
 // Rate limiting metrics
 export const rateLimitViolationsTotal = new promClient.Counter({
-    name: 'PharmaPilot_rate_limit_violations_total',
+    name: 'PharmacyCopilot_rate_limit_violations_total',
     help: 'Total number of rate limit violations',
     labelNames: ['endpoint', 'ip'],
 });
 
 // Database metrics
 export const databaseOperationDuration = new promClient.Histogram({
-    name: 'PharmaPilot_database_operation_duration_seconds',
+    name: 'PharmacyCopilot_database_operation_duration_seconds',
     help: 'Duration of database operations in seconds',
     labelNames: ['operation', 'collection'],
     buckets: [0.01, 0.05, 0.1, 0.3, 0.5, 1, 3, 5],
 });
 
 export const databaseConnectionsActive = new promClient.Gauge({
-    name: 'PharmaPilot_database_connections_active',
+    name: 'PharmacyCopilot_database_connections_active',
     help: 'Number of active database connections',
 });
 
 // Business metrics
 export const patientsTotal = new promClient.Gauge({
-    name: 'PharmaPilot_patients_total',
+    name: 'PharmacyCopilot_patients_total',
     help: 'Total number of patients',
     labelNames: ['workspace_id'],
 });
 
 export const usersTotal = new promClient.Gauge({
-    name: 'PharmaPilot_users_total',
+    name: 'PharmacyCopilot_users_total',
     help: 'Total number of users',
     labelNames: ['role', 'status'],
 });

@@ -1,10 +1,10 @@
-# Prometheus Configuration for PharmaPilot SaaS Settings Module
+# Prometheus Configuration for PharmacyCopilot SaaS Settings Module
 
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    monitor: 'PharmaPilot-saas-monitor'
+    monitor: 'PharmacyCopilot-saas-monitor'
     environment: 'production'
 
 # Alertmanager configuration
@@ -27,8 +27,8 @@ scrape_configs:
     scrape_interval: 30s
     metrics_path: /metrics
 
-  # PharmaPilot SaaS Settings Application
-  - job_name: 'PharmaPilot-saas-app'
+  # PharmacyCopilot SaaS Settings Application
+  - job_name: 'PharmacyCopilot-saas-app'
     static_configs:
       - targets: ['app:3000']
     scrape_interval: 15s
@@ -85,8 +85,8 @@ scrape_configs:
       module: [http_2xx]
     static_configs:
       - targets:
-        - https://admin.PharmaPilot.com/health
-        - https://api.PharmaPilot.com/health
+        - https://admin.PharmacyCopilot.com/health
+        - https://api.PharmacyCopilot.com/health
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -96,7 +96,7 @@ scrape_configs:
         replacement: blackbox-exporter:9115
 
   # Custom Application Metrics
-  - job_name: 'PharmaPilot-custom-metrics'
+  - job_name: 'PharmacyCopilot-custom-metrics'
     static_configs:
       - targets: ['app:9464']
     scrape_interval: 30s
@@ -105,9 +105,9 @@ scrape_configs:
 
 # Remote write configuration (for long-term storage)
 remote_write:
-  - url: "https://prometheus-remote-write.PharmaPilot.com/api/v1/write"
+  - url: "https://prometheus-remote-write.PharmacyCopilot.com/api/v1/write"
     basic_auth:
-      username: "PharmaPilot"
+      username: "PharmacyCopilot"
       password: "remote_write_password"
     write_relabel_configs:
       - source_labels: [__name__]

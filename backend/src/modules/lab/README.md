@@ -1,6 +1,6 @@
 # Manual Lab Module
 
-This module provides manual lab order and result entry functionality that operates alongside the existing FHIR-based lab integration in the MERN PharmaPilot application.
+This module provides manual lab order and result entry functionality that operates alongside the existing FHIR-based lab integration in the MERN PharmacyCopilot application.
 
 ## Overview
 

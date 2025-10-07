@@ -72,7 +72,7 @@ const sendWithResend = async (options: EmailOptions): Promise<any> => {
   try {
     const resendClient = getResendClient();
     const { data, error } = await resendClient.emails.send({
-      from: `${process.env.SENDER_NAME || 'PharmaPilot Hub'} <${process.env.SENDER_EMAIL}>`,
+      from: `${process.env.SENDER_NAME || 'PharmacyCopilot Hub'} <${process.env.SENDER_EMAIL}>`,
       to: [options.to],
       subject: options.subject,
       html: options.html || options.text || '',
@@ -103,7 +103,7 @@ const sendWithSMTP = async (options: EmailOptions): Promise<any> => {
 
   try {
     const message = {
-      from: `${process.env.FROM_NAME || 'PharmaPilot Hub'} <${process.env.FROM_EMAIL || process.env.SENDER_EMAIL}>`,
+      from: `${process.env.FROM_NAME || 'PharmacyCopilot Hub'} <${process.env.FROM_EMAIL || process.env.SENDER_EMAIL}>`,
       to: options.to,
       subject: options.subject,
       text: options.text,
@@ -182,10 +182,10 @@ export const sendEmail = async (options: EmailOptions): Promise<any> => {
 export const sendWelcomeEmail = async (user: User): Promise<any> => {
   const message: EmailOptions = {
     to: user.email,
-    subject: 'Welcome to PharmaPilot SaaS',
+    subject: 'Welcome to PharmacyCopilot SaaS',
     text: `Welcome ${user.firstName}! Your pharmaceutical care management account is ready.`,
     html: `
-      <h1>Welcome to PharmaPilot SaaS, ${user.firstName}!</h1>
+      <h1>Welcome to PharmacyCopilot SaaS, ${user.firstName}!</h1>
       <p>Your account for ${user.pharmacyName} is now active.</p>
       <p>You can now start managing your patients and clinical notes.</p>
     `
@@ -198,11 +198,11 @@ export const sendSubscriptionReminder = async (user: User, subscription: Subscri
   const message: EmailOptions = {
     to: user.email,
     subject: 'Subscription Renewal Reminder',
-    text: `Your PharmaPilot subscription expires on ${subscription.endDate}`,
+    text: `Your PharmacyCopilot subscription expires on ${subscription.endDate}`,
     html: `
       <h2>Subscription Renewal Reminder</h2>
       <p>Hi ${user.firstName},</p>
-      <p>Your PharmaPilot subscription (${subscription.plan}) expires on ${subscription.endDate}.</p>
+      <p>Your PharmacyCopilot subscription (${subscription.plan}) expires on ${subscription.endDate}.</p>
       <p>Renew now to continue accessing all features.</p>
     `
   };

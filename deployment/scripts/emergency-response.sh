@@ -183,9 +183,9 @@ enable_emergency_mode() {
     
     # Restart service to apply changes
     if command -v pm2 &> /dev/null; then
-        pm2 restart PharmaPilot-backend || log ERROR "Failed to restart service"
+        pm2 restart PharmacyCopilot-backend || log ERROR "Failed to restart service"
     elif command -v systemctl &> /dev/null; then
-        systemctl restart PharmaPilot-backend || log ERROR "Failed to restart service"
+        systemctl restart PharmacyCopilot-backend || log ERROR "Failed to restart service"
     fi
     
     send_alert "HIGH" "RBAC emergency mode enabled"
@@ -211,9 +211,9 @@ disable_emergency_mode() {
     
     # Restart service
     if command -v pm2 &> /dev/null; then
-        pm2 restart PharmaPilot-backend || log ERROR "Failed to restart service"
+        pm2 restart PharmacyCopilot-backend || log ERROR "Failed to restart service"
     elif command -v systemctl &> /dev/null; then
-        systemctl restart PharmaPilot-backend || log ERROR "Failed to restart service"
+        systemctl restart PharmacyCopilot-backend || log ERROR "Failed to restart service"
     fi
     
     send_alert "INFO" "RBAC emergency mode disabled"
@@ -227,8 +227,8 @@ collect_incident_data() {
     mkdir -p "$incident_dir"
     
     # Collect system logs
-    if [[ -f "/var/log/PharmaPilot-backend.log" ]]; then
-        tail -n 1000 /var/log/PharmaPilot-backend.log > "$incident_dir/backend.log"
+    if [[ -f "/var/log/PharmacyCopilot-backend.log" ]]; then
+        tail -n 1000 /var/log/PharmacyCopilot-backend.log > "$incident_dir/backend.log"
     fi
     
     # Collect RBAC metrics
@@ -247,7 +247,7 @@ collect_incident_data() {
         if command -v pm2 &> /dev/null; then
             pm2 status
         elif command -v systemctl &> /dev/null; then
-            systemctl status PharmaPilot-backend
+            systemctl status PharmacyCopilot-backend
         fi
         echo ""
         echo "=== Database Status ==="

@@ -463,8 +463,8 @@ function validateOrderData(data) {
 
 ### Contact Information
 
-- **Technical Support**: support@PharmaPilot.com
-- **Security Issues**: security@PharmaPilot.com
+- **Technical Support**: support@PharmacyCopilot.com
+- **Security Issues**: security@PharmacyCopilot.com
 - **Emergency Escalation**: +1-XXX-XXX-XXXX
 
 ---

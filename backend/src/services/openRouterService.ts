@@ -174,7 +174,7 @@ class OpenRouterService {
               Authorization: `Bearer ${this.apiKey}`,
               'Content-Type': 'application/json',
               'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
-              'X-Title': 'PharmaPilot SaaS - AI Diagnostic Module',
+              'X-Title': 'PharmacyCopilot SaaS - AI Diagnostic Module',
             },
             timeout: this.timeout,
           }
@@ -656,7 +656,7 @@ Your response must be valid JSON in this exact format:
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
           'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
-          'X-Title': 'PharmaPilot SaaS - AI Diagnostic Module',
+          'X-Title': 'PharmacyCopilot SaaS - AI Diagnostic Module',
         },
         timeout: 30000, // 30 seconds for connection test
       });

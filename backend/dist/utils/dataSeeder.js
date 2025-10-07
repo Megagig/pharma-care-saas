@@ -677,7 +677,7 @@ class DataSeeder {
                 }
                 const hashedPassword = await bcryptjs_1.default.hash('admin123!', 12);
                 adminUser = await User_1.default.create({
-                    email: 'admin@pharmacare.com',
+                    email: 'admin@PharmacyCopilot.com',
                     passwordHash: hashedPassword,
                     firstName: 'System',
                     lastName: 'Administrator',

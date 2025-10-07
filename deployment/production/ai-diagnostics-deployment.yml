@@ -4,9 +4,9 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: PharmaPilot-prod
+  name: PharmacyCopilot-prod
   labels:
-    name: PharmaPilot-prod
+    name: PharmacyCopilot-prod
     environment: production
 
 ---
@@ -15,7 +15,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ai-diagnostics-config
-  namespace: PharmaPilot-prod
+  namespace: PharmacyCopilot-prod
 data:
   NODE_ENV: 'production'
   PORT: '5000'
@@ -38,10 +38,10 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: ai-diagnostics-secrets
-  namespace: PharmaPilot-prod
+  namespace: PharmacyCopilot-prod
 type: Opaque
 stringData:
-  MONGODB_URI: 'mongodb://username:password@mongodb-cluster:27017/PharmaPilot-prod?authSource=admin&replicaSet=rs0&ssl=true'
+  MONGODB_URI: 'mongodb://username:password@mongodb-cluster:27017/PharmacyCopilot-prod?authSource=admin&replicaSet=rs0&ssl=true'
   JWT_SECRET: 'your-super-secure-jwt-secret-256-bits-minimum'
   JWT_REFRESH_SECRET: 'your-super-secure-refresh-secret-256-bits-minimum'
   SESSION_SECRET: 'your-super-secure-session-secret-256-bits-minimum'
@@ -61,7 +61,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ai-diagnostics-api
-  namespace: PharmaPilot-prod
+  namespace: PharmacyCopilot-prod
   labels:
     app: ai-diagnostics-api
     version: v1.0.0
@@ -93,7 +93,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: ai-diagnostics-api
-          image: PharmaPilot/ai-diagnostics-api:v1.0.0
+          image: PharmacyCopilot/ai-diagnostics-api:v1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
@@ -148,9 +148,9 @@ spec:
             failureThreshold: 30
           volumeMounts:
             - name: logs
-              mountPath: /var/log/PharmaPilot
+              mountPath: /var/log/PharmacyCopilot
             - name: uploads
-              mountPath: /var/uploads/PharmaPilot
+              mountPath: /var/uploads/PharmacyCopilot
             - name: ssl-certs
               mountPath: /etc/ssl/certs
               readOnly: true
@@ -184,7 +184,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ai-diagnostics-api-service
-  namespace: PharmaPilot-prod
+  namespace: PharmacyCopilot-prod
   labels:
     app: ai-diagnostics-api
   annotations:
@@ -210,7 +210,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: ai-diagnostics-api-hpa
-  namespace: PharmaPilot-prod
+  namespace: PharmacyCopilot-prod
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -251,7 +251,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: ai-diagnostics-logs-pvc
-  namespace: PharmaPilot-prod
+  namespace: PharmacyCopilot-prod
 spec:
   accessModes:
     - ReadWriteMany
@@ -266,7 +266,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: ai-diagnostics-uploads-pvc
-  namespace: PharmaPilot-prod
+  namespace: PharmacyCopilot-prod
 spec:
   accessModes:
     - ReadWriteMany
@@ -281,7 +281,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: ai-diagnostics-service-account
-  namespace: PharmaPilot-prod
+  namespace: PharmacyCopilot-prod
   annotations:
     eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT-ID:role/ai-diagnostics-pod-role
 
@@ -291,7 +291,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: ai-diagnostics-network-policy
-  namespace: PharmaPilot-prod
+  namespace: PharmacyCopilot-prod
 spec:
   podSelector:
     matchLabels:
@@ -303,7 +303,7 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              name: PharmaPilot-prod
+              name: PharmacyCopilot-prod
         - podSelector:
             matchLabels:
               app: nginx-ingress
@@ -330,7 +330,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: ai-diagnostics-api-pdb
-  namespace: PharmaPilot-prod
+  namespace: PharmacyCopilot-prod
 spec:
   minAvailable: 2
   selector:

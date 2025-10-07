@@ -79,7 +79,7 @@ const Contact: React.FC = () => {
               variant="h6"
               sx={{ fontWeight: 600, color: 'text.primary' }}
             >
-              PharmaPilot
+              PharmacyCopilot
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -145,7 +145,7 @@ const Contact: React.FC = () => {
                 mx: 'auto',
               }}
             >
-              Have questions about PharmaPilot? We're here to help. Reach out to
+              Have questions about PharmacyCopilot? We're here to help. Reach out to
               our team and we'll get back to you as soon as possible.
             </Typography>
           </Box>
@@ -219,10 +219,10 @@ const Contact: React.FC = () => {
                       color="text.secondary"
                       sx={{ mb: 0.5 }}
                     >
-                      support@PharmaPilot.ng
+                      support@PharmacyCopilot.ng
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      sales@PharmaPilot.ng
+                      sales@PharmacyCopilot.ng
                     </Typography>
                   </Box>
                 </Box>
@@ -546,7 +546,7 @@ const Contact: React.FC = () => {
               Frequently Asked Questions
             </Typography>
             <Typography variant="h6" color="text.secondary">
-              Quick answers to common questions about PharmaPilot
+              Quick answers to common questions about PharmacyCopilot
             </Typography>
           </Box>
           <Box sx={{ maxWidth: '800px', mx: 'auto' }}>
@@ -560,7 +560,7 @@ const Contact: React.FC = () => {
             >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  How do I get started with PharmaPilot?
+                  How do I get started with PharmacyCopilot?
                 </Typography>
               </AccordionSummary>
               <AccordionDetails>
@@ -634,7 +634,7 @@ const Contact: React.FC = () => {
                 <Typography variant="body1" color="text.secondary">
                   Yes, we provide comprehensive onboarding, training materials,
                   video tutorials, and ongoing customer support to help you get
-                  the most out of PharmaPilot. Enterprise plans include dedicated
+                  the most out of PharmacyCopilot. Enterprise plans include dedicated
                   support.
                 </Typography>
               </AccordionDetails>

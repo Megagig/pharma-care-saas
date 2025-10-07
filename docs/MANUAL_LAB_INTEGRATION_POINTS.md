@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines how the Manual Lab Order API integrates with existing systems in the MERN PharmaPilot application. The integration is designed to be non-destructive and additive, leveraging existing infrastructure while maintaining backward compatibility.
+This document outlines how the Manual Lab Order API integrates with existing systems in the MERN PharmacyCopilot application. The integration is designed to be non-destructive and additive, leveraging existing infrastructure while maintaining backward compatibility.
 
 ## Architecture Integration
 
@@ -389,7 +389,7 @@ Manual Lab module reuses existing configuration:
 
 ```bash
 # Database (existing)
-MONGODB_URI=mongodb://localhost:27017/PharmaPilot
+MONGODB_URI=mongodb://localhost:27017/PharmacyCopilot
 
 # JWT (existing)
 JWT_SECRET=your_jwt_secret
@@ -401,7 +401,7 @@ OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 
 # Email Service (existing)
 EMAIL_SERVICE_API_KEY=your_email_key
-EMAIL_FROM_ADDRESS=noreply@PharmaPilot.com
+EMAIL_FROM_ADDRESS=noreply@PharmacyCopilot.com
 
 # SMS Service (existing)
 SMS_SERVICE_API_KEY=your_sms_key

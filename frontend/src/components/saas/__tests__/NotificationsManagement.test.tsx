@@ -61,7 +61,7 @@ const mockChannels = [
     enabled: true,
     config: {
       provider: 'sendgrid',
-      fromAddress: 'noreply@PharmaPilot.com',
+      fromAddress: 'noreply@PharmacyCopilot.com',
     },
     dailyLimit: 10000,
     monthlyLimit: 300000,
@@ -129,7 +129,7 @@ const mockTemplates = [
     name: 'Welcome Email',
     description: 'Welcome new users to the platform',
     channel: 'email',
-    subject: 'Welcome to PharmaPilot!',
+    subject: 'Welcome to PharmacyCopilot!',
     body: 'Hello {{name}}, welcome to our platform!',
     variables: [
       {
@@ -481,7 +481,7 @@ describe('NotificationsManagement Component', () => {
       await waitFor(() => {
         expect(screen.getByText('Welcome new users to the platform')).toBeInTheDocument();
         expect(screen.getByText('Channel: EMAIL | Category: onboarding')).toBeInTheDocument();
-        expect(screen.getByText('Welcome to PharmaPilot!')).toBeInTheDocument();
+        expect(screen.getByText('Welcome to PharmacyCopilot!')).toBeInTheDocument();
       });
     });
 

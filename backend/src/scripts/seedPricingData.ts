@@ -78,7 +78,7 @@ const plans = [
         currency: 'NGN',
         billingPeriod: 'one-time',
         tier: 'free_trial',
-        description: 'Experience the full power of PharmaPilot for 14 days',
+        description: 'Experience the full power of PharmacyCopilot for 14 days',
         features: features.map(f => f.featureId), // All features for trial
         isPopular: false,
         isActive: true,
@@ -394,7 +394,7 @@ const plans = [
         isPopular: false,
         isActive: true,
         isContactSales: true,
-        whatsappNumber: '2348060374755',
+        whatsappNumber: '2348012345678', // Replace with actual WhatsApp number
         order: 6,
         metadata: {
             buttonText: 'Book a Demo',

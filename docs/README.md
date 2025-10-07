@@ -1,7 +1,7 @@
-# PharmaPilot SaaS - Pharmaceutical Care Management Platform
+# PharmacyCopilot SaaS - Pharmaceutical Care Management Platform
 
 ## Overview
-PharmaPilot SaaS is a comprehensive pharmaceutical care management platform designed specifically for pharmacists. It provides tools for patient management, clinical documentation, medication tracking, and practice analytics.
+PharmacyCopilot SaaS is a comprehensive pharmaceutical care management platform designed specifically for pharmacists. It provides tools for patient management, clinical documentation, medication tracking, and practice analytics.
 
 ## Features
 
@@ -169,7 +169,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 For support and questions, please contact:
-- Email: support@PharmaPilot.com
+- Email: support@PharmacyCopilot.com
 - Documentation: [docs/API.md](docs/API.md)
 - Issues: GitHub Issues page
 

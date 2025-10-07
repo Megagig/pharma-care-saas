@@ -2,12 +2,12 @@
 
 ## Overview
 
-This document provides comprehensive API documentation for the workspace-level subscription management, invitation system, usage enforcement, and enhanced RBAC features in the PharmaPilot SaaS application.
+This document provides comprehensive API documentation for the workspace-level subscription management, invitation system, usage enforcement, and enhanced RBAC features in the PharmacyCopilot SaaS application.
 
 ## Base URL
 
 ```
-Production: https://api.PharmaPilot.com
+Production: https://api.PharmacyCopilot.com
 Development: http://localhost:5000
 ```
 
@@ -978,7 +978,7 @@ apiClientWithRetry.interceptors.response.use(
 
 ```bash
 curl -X GET \
-  "https://api.PharmaPilot.com/api/workspaces/64a1b2c3d4e5f6789012345/invitations" \
+  "https://api.PharmacyCopilot.com/api/workspaces/64a1b2c3d4e5f6789012345/invitations" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -1027,7 +1027,7 @@ curl -X GET \
 
 ```bash
 curl -X GET \
-  "https://api.PharmaPilot.com/api/user/permissions" \
+  "https://api.PharmacyCopilot.com/api/user/permissions" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -1097,9 +1097,9 @@ curl -X GET \
 
 ## Support Contacts
 
-- **Technical Support:** tech-support@PharmaPilot.com
-- **Billing Issues:** billing@PharmaPilot.com
-- **API Documentation:** developers@PharmaPilot.com
+- **Technical Support:** tech-support@PharmacyCopilot.com
+- **Billing Issues:** billing@PharmacyCopilot.com
+- **API Documentation:** developers@PharmacyCopilot.com
 - **Emergency Support:** +234-800-PHARMA-1
 
 ---

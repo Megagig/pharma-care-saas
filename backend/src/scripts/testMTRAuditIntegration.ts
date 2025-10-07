@@ -18,7 +18,7 @@ config();
 
 async function connectToDatabase() {
     try {
-        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmaPilot';
+        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmacyCopilot';
         await mongoose.connect(mongoUri);
         console.log('✅ Connected to MongoDB');
     } catch (error) {

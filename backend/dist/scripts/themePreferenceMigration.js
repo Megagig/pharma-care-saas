@@ -61,7 +61,7 @@ exports.rollbackThemePreferenceField = rollbackThemePreferenceField;
 if (require.main === module) {
     const action = process.argv[2];
     const connectDB = async () => {
-        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/pharmacare';
+        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmacyCopilot';
         await mongoose_1.default.connect(mongoUri);
         console.log('Connected to MongoDB');
     };

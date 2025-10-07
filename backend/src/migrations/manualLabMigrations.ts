@@ -656,7 +656,7 @@ if (require.main === module) {
     const { MongoClient } = require('mongodb');
 
     async function runMigrationsCLI() {
-        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmaPilot';
+        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmacyCopilot';
         const client = new MongoClient(mongoUri);
 
         try {

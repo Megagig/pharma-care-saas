@@ -922,7 +922,7 @@ Sample test data is available for development and testing:
 For API support and questions:
 
 - **Documentation**: [API Documentation](http://localhost:5000/api-docs)
-- **Support Email**: support@PharmaPilot.com
+- **Support Email**: support@PharmacyCopilot.com
 - **Developer Portal**: [Developer Resources](http://localhost:5000/developers)
 
 ## Changelog

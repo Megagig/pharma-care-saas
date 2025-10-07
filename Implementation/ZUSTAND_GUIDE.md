@@ -1,6 +1,6 @@
 # Zustand State Management Guide
 
-This document provides a comprehensive guide on how to use Zustand state management in the PharmaPilot SaaS application.
+This document provides a comprehensive guide on how to use Zustand state management in the PharmacyCopilot SaaS application.
 
 ## Overview
 
@@ -330,4 +330,4 @@ Potential future improvements:
 
 ## Conclusion
 
-This Zustand setup provides a robust, scalable state management solution for the PharmaPilot SaaS application. It offers type safety, persistence, error handling, and a clean API for managing complex application state while maintaining excellent performance and developer experience.
+This Zustand setup provides a robust, scalable state management solution for the PharmacyCopilot SaaS application. It offers type safety, persistence, error handling, and a clean API for managing complex application state while maintaining excellent performance and developer experience.

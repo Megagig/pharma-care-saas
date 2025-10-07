@@ -476,7 +476,7 @@ class MTRNotificationService {
 
                 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
                 <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated reminder from the PharmaPilot MTR system. 
+                    This is an automated reminder from the PharmacyCopilot MTR system. 
                     To update your notification preferences, please log in to your account.
                 </p>
             </div>
@@ -527,7 +527,7 @@ class MTRNotificationService {
 
                 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
                 <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated alert from the PharmaPilot MTR system. 
+                    This is an automated alert from the PharmacyCopilot MTR system. 
                     Please log in to your account to review the full details and take appropriate action.
                 </p>
             </div>
@@ -570,7 +570,7 @@ class MTRNotificationService {
 
                 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
                 <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated reminder from the PharmaPilot MTR system. 
+                    This is an automated reminder from the PharmacyCopilot MTR system. 
                     Please log in to your account to update the follow-up status.
                 </p>
             </div>

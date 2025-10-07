@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -14,113 +14,253 @@ import {
   Chip,
   AppBar,
   Toolbar,
+  CircularProgress,
+  Alert,
+  alpha,
+  useTheme,
+  ToggleButtonGroup,
+  ToggleButton,
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  CircularProgress,
-  Alert,
-  ToggleButtonGroup,
-  ToggleButton,
 } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import StarIcon from '@mui/icons-material/Star';
-import BoltIcon from '@mui/icons-material/Bolt';
-import StarsIcon from '@mui/icons-material/Stars';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Footer from '../components/Footer';
 import ThemeToggle from '../components/common/ThemeToggle';
-import {
-  useAvailablePlansQuery,
-  useCreateCheckoutSessionMutation,
-} from '../queries/useSubscription';
+import { usePricingPlans } from '../queries/usePricing';
+
+const faqData = [
+  {
+    question: 'What is PharmacyCopilot?',
+    answer: 'PharmacyCopilot is a cloud-based platform designed for pharmacists and pharmacy owners to manage, document, and optimize their daily pharmaceutical care activities. It simplifies patient record-keeping, prescription monitoring, inventory management, reporting, and compliance — all in one secure platform.',
+  },
+  {
+    question: 'Who can use PharmacyCopilot?',
+    answer: 'PharmacyCopilot is built for: Community and hospital pharmacists, Pharmacy managers and owners, Chain pharmacies and independent outlets, Clinical pharmacists providing direct patient care. Whether you\'re running a single outlet or managing multiple branches, PharmacyCopilot adapts to your workflow.',
+  },
+  {
+    question: 'Is my data secure on PharmacyCopilot?',
+    answer: 'Absolutely. PharmacyCopilot uses bank-grade encryption and secure cloud hosting to protect your data. We follow strict data privacy standards and are compliant with applicable healthcare data protection regulations. Your data is always yours — we never share it with third parties.',
+  },
+  {
+    question: 'Can I try PharmacyCopilot before paying?',
+    answer: 'Yes. We offer a free trial period that allows you to explore all core features without any commitment. You can upgrade or cancel anytime during or after the trial.',
+  },
+  {
+    question: 'How does the pricing work?',
+    answer: 'Our pricing is subscription-based, with flexible plans for individual pharmacists, pharmacy outlets, and enterprise networks. You pay monthly or annually, depending on your preference. Each plan includes access to specific modules (like Medication Therapy Review, Billing, or Reports) — with higher tiers unlocking advanced analytics and automation.',
+  },
+  {
+    question: 'What payment methods do you accept?',
+    answer: 'We accept major payment methods including: Debit/Credit cards, Bank transfers, Nomba (for local payments), Automated invoicing for enterprise clients.',
+  },
+  {
+    question: 'Can I cancel my subscription anytime?',
+    answer: 'Yes. You can cancel your subscription at any time directly from your dashboard. Once canceled, your account remains active until the end of your billing cycle. You can also export your data before cancellation.',
+  },
+  {
+    question: 'What happens to my data if I cancel my subscription?',
+    answer: 'Your data remains securely stored for a grace period after cancellation. You can reactivate your account or request a full export of your data at any time. After the grace period, data is permanently deleted to maintain privacy compliance.',
+  },
+  {
+    question: 'Can multiple users access one pharmacy account?',
+    answer: 'Yes. PharmacyCopilot supports multi-user access with role-based permissions. Pharmacy managers can add team members (pharmacists, technicians, cashiers) and assign access rights for better collaboration and accountability.',
+  },
+  {
+    question: 'Does PharmacyCopilot support multiple pharmacy branches?',
+    answer: 'Yes. Our multi-tenant system allows you to manage multiple outlets or branches under one organization account — each with separate inventory, users, and reports, but unified under your main dashboard.',
+  },
+  {
+    question: 'Does PharmacyCopilot offer customer support?',
+    answer: 'Yes. We provide: Email and live chat support, In-app help center with tutorials and documentation, Priority support for premium and enterprise plans. Our support team is made up of pharmacists and technical experts who understand your workflow.',
+  },
+  {
+    question: 'Can PharmacyCopilot work offline?',
+    answer: 'PharmacyCopilot is primarily cloud-based, but certain key features (like patient lookup and dispensing records) have limited offline capabilities. Data syncs automatically once you\'re back online.',
+  },
+  {
+    question: 'Do you offer training or onboarding support?',
+    answer: 'Yes. We provide guided onboarding, video tutorials, and one-on-one setup assistance for enterprise users. Our goal is to get your pharmacy fully operational on PharmacyCopilot within days — not weeks.',
+  },
+  {
+    question: 'What makes PharmacyCopilot different from regular pharmacy software?',
+    answer: 'PharmacyCopilot isn\'t just a management tool — it\'s a pharmaceutical care platform built by pharmacists, for pharmacists. It combines clinical documentation, analytics, and patient engagement with modern automation, giving you full control of your professional practice and business performance.',
+  },
+];
 
 const Pricing = () => {
-  const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>(
-    'monthly'
-  );
-  const {
-    data: plans,
-    isLoading,
-    error,
-  } = useAvailablePlansQuery(billingInterval);
-  const createCheckoutSession = useCreateCheckoutSessionMutation();
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [expandedFaq, setExpandedFaq] = useState<number | false>(false);
+  const { data, isLoading, error } = usePricingPlans(billingPeriod);
 
-  const handleSubscribe = (planId: string) => {
-    createCheckoutSession.mutate({ planId, billingInterval });
+  const handleBillingPeriodChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newPeriod: 'monthly' | 'yearly' | null
+  ) => {
+    if (newPeriod !== null) {
+      setBillingPeriod(newPeriod);
+    }
+  };
+
+  const handleGetStarted = (planSlug: string, planName: string) => {
+    // Navigate to registration with selected plan
+    navigate(`/register?plan=${planSlug}&planName=${encodeURIComponent(planName)}`);
   };
 
   const handleContactSales = (whatsappNumber?: string) => {
-    // Use provided number or fallback to your WhatsApp number
-    const phoneNumber = whatsappNumber || '2348060374755';
-    const message = encodeURIComponent(
-      "Hello, I'm interested in the Enterprise plan. Please provide more information."
-    );
-    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+    if (whatsappNumber) {
+      const message = encodeURIComponent(
+        "Hello, I'm interested in the Enterprise plan. Please provide more information."
+      );
+      window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+    }
   };
 
-  const handleBillingIntervalChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    newInterval: 'monthly' | 'yearly'
-  ) => {
-    if (newInterval !== null) {
-      setBillingInterval(newInterval);
+  const handleFaqChange = (panel: number) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
+    setExpandedFaq(isExpanded ? panel : false);
+  };
+
+  const getGradientForPlan = (tier: string) => {
+    switch (tier) {
+      case 'free_trial':
+        return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      case 'basic':
+        return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+      case 'pro':
+        return 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+      case 'pharmily':
+        return 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)';
+      case 'network':
+        return 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)';
+      case 'enterprise':
+        return 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)';
+      default:
+        return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
     }
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background:
+          theme.palette.mode === 'dark'
+            ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)'
+            : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Animated background elements */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          opacity: 0.1,
+          pointerEvents: 'none',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            width: '500px',
+            height: '500px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, #667eea 0%, transparent 70%)',
+            top: '-250px',
+            right: '-250px',
+            animation: 'float 20s ease-in-out infinite',
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            width: '400px',
+            height: '400px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, #f5576c 0%, transparent 70%)',
+            bottom: '-200px',
+            left: '-200px',
+            animation: 'float 15s ease-in-out infinite reverse',
+          },
+          '@keyframes float': {
+            '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+            '50%': { transform: 'translate(50px, 50px) scale(1.1)' },
+          },
+        }}
+      />
+
       {/* Navigation */}
-      <AppBar position="static" color="transparent" elevation={0}>
+      <AppBar
+        position="static"
+        sx={{
+          background: alpha(theme.palette.background.paper, 0.8),
+          backdropFilter: 'blur(20px)',
+          boxShadow: `0 8px 32px 0 ${alpha(theme.palette.primary.main, 0.1)}`,
+        }}
+      >
         <Toolbar>
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
             <Box
               sx={{
-                width: 32,
-                height: 32,
-                bgcolor: 'primary.main',
+                width: 40,
+                height: 40,
+                background: getGradientForPlan('free_trial'),
                 borderRadius: 2,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                mr: 1,
+                mr: 1.5,
+                boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
               }}
             >
-              <Typography
-                variant="h6"
-                sx={{ color: 'white', fontWeight: 'bold' }}
-              >
+              <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>
                 P
               </Typography>
             </Box>
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 600, color: 'text.primary' }}
-            >
-              PharmaPilot
+            <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              PharmacyCopilot
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <Button component={Link} to="/" color="inherit">
+            <Button component={Link} to="/" color="inherit" sx={{ fontWeight: 600 }}>
               Home
             </Button>
-            <Button component={Link} to="/about" color="inherit">
+            <Button component={Link} to="/about" color="inherit" sx={{ fontWeight: 600 }}>
               About
             </Button>
-            <Button component={Link} to="/contact" color="inherit">
+            <Button component={Link} to="/contact" color="inherit" sx={{ fontWeight: 600 }}>
               Contact
             </Button>
-            <Button component={Link} to="/pricing" color="inherit">
+            <Button component={Link} to="/pricing" color="inherit" sx={{ fontWeight: 600 }}>
               Pricing
             </Button>
             <ThemeToggle size="sm" variant="button" />
-            <Button component={Link} to="/login" color="inherit">
+            <Button component={Link} to="/login" color="inherit" sx={{ fontWeight: 600 }}>
               Sign In
             </Button>
             <Button
               component={Link}
               to="/register"
               variant="contained"
-              sx={{ borderRadius: 3 }}
+              sx={{
+                borderRadius: 3,
+                px: 3,
+                background: getGradientForPlan('pro'),
+                fontWeight: 600,
+                boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: `0 6px 16px ${alpha(theme.palette.primary.main, 0.4)}`,
+                },
+                transition: 'all 0.3s ease',
+              }}
             >
               Get Started
             </Button>
@@ -129,281 +269,392 @@ const Pricing = () => {
       </AppBar>
 
       {/* Hero Section */}
-      <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 }, position: 'relative', zIndex: 1 }}>
         <Box sx={{ textAlign: 'center', mb: 8 }}>
+          <Chip
+            icon={<StarIcon />}
+            label="PRICING PLANS"
+            sx={{
+              mb: 3,
+              px: 2,
+              py: 2.5,
+              height: 'auto',
+              background: alpha(theme.palette.primary.main, 0.1),
+              backdropFilter: 'blur(10px)',
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              letterSpacing: 1,
+            }}
+          />
           <Typography
             variant="h2"
             component="h1"
             sx={{
-              fontWeight: 700,
-              mb: 3,
-              color: 'text.primary',
-              fontSize: { xs: '2.5rem', md: '3.5rem' },
+              fontWeight: 800,
+              mb: 2,
+              background: getGradientForPlan('pro'),
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontSize: { xs: '2.5rem', md: '4rem' },
             }}
           >
-            Simple, Transparent Pricing
+            Choose Your Perfect Plan
           </Typography>
           <Typography
-            variant="h6"
+            variant="h5"
             sx={{
               mb: 4,
               color: 'text.secondary',
-              maxWidth: '600px',
+              maxWidth: '700px',
               mx: 'auto',
+              fontWeight: 400,
+              lineHeight: 1.6,
             }}
           >
-            Choose the perfect plan for your pharmacy practice. Upgrade or
-            downgrade at any time.
+            Simple, transparent pricing that scales with your pharmacy practice
           </Typography>
           <Chip
-            label="🎉 30-day free trial on all plans"
+            icon={<RocketLaunchIcon />}
+            label="14-DAY FREE TRIAL • NO CREDIT CARD REQUIRED"
             sx={{
-              bgcolor: 'success.light',
-              color: 'success.dark',
-              fontWeight: 600,
-              py: 2,
-              px: 1,
+              px: 3,
+              py: 3,
               height: 'auto',
+              background: `linear-gradient(135deg, ${alpha('#43e97b', 0.2)}, ${alpha('#38f9d7', 0.2)})`,
+              backdropFilter: 'blur(10px)',
+              border: `1px solid ${alpha('#43e97b', 0.3)}`,
+              fontWeight: 700,
+              fontSize: '0.875rem',
+              color: theme.palette.mode === 'dark' ? '#43e97b' : '#1e8449',
+              boxShadow: `0 4px 12px ${alpha('#43e97b', 0.2)}`,
             }}
           />
         </Box>
 
-        {/* Billing Interval Toggle */}
+        {/* Billing Period Toggle */}
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 6 }}>
-          <ToggleButtonGroup
-            value={billingInterval}
-            exclusive
-            onChange={handleBillingIntervalChange}
-            aria-label="billing interval"
-          >
-            <ToggleButton value="monthly" aria-label="monthly billing">
-              Monthly
-            </ToggleButton>
-            <ToggleButton value="yearly" aria-label="yearly billing">
-              Yearly (Save 25%)
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        {/* Pricing Cards */}
-        {isLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <CircularProgress />
-          </Box>
-        )}
-        {error && (
-          <Alert severity="error">
-            Error fetching pricing plans. Please try again later.
-          </Alert>
-        )}
-        {!isLoading && !error && (
           <Box
             sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 4,
-              justifyContent: 'center',
+              background: alpha(theme.palette.background.paper, 0.7),
+              backdropFilter: 'blur(20px)',
+              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              borderRadius: 4,
+              p: 0.5,
             }}
           >
-            {(plans || []).map((plan, index) => (
-              <Box
-                key={plan._id || index}
-                sx={{ flex: '1 1 300px', maxWidth: '400px' }}
-              >
-                <Card
-                  sx={{
-                    height: '100%',
-                    position: 'relative',
-                    border: plan.metadata?.mostPopular ? 2 : 1,
-                    borderColor: plan.metadata?.mostPopular
-                      ? 'primary.main'
-                      : 'grey.200',
-                    transform: plan.metadata?.mostPopular
-                      ? 'scale(1.05)'
-                      : 'scale(1)',
-                    transition: 'all 0.3s ease-in-out',
+            <ToggleButtonGroup
+              value={billingPeriod}
+              exclusive
+              onChange={handleBillingPeriodChange}
+              aria-label="billing period"
+              sx={{
+                '& .MuiToggleButton-root': {
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 3,
+                  border: 'none',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  textTransform: 'none',
+                  '&.Mui-selected': {
+                    background: getGradientForPlan('pro'),
+                    color: 'white',
                     '&:hover': {
-                      transform: plan.metadata?.mostPopular
-                        ? 'scale(1.05)'
-                        : 'scale(1.02)',
-                      boxShadow: plan.metadata?.mostPopular ? 6 : 4,
+                      background: getGradientForPlan('pro'),
                     },
-                  }}
-                >
-                  {plan.metadata?.mostPopular && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: -1,
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        bgcolor: 'primary.main',
-                        color: 'white',
-                        px: 3,
-                        py: 0.5,
-                        borderRadius: '0 0 12px 12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                      }}
-                    >
-                      <StarIcon fontSize="small" />
-                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                        Most Popular
-                      </Typography>
-                    </Box>
-                  )}
-
-                  <CardContent
+                  },
+                },
+              }}
+            >
+              <ToggleButton value="monthly" aria-label="monthly billing">
+                Monthly
+              </ToggleButton>
+              <ToggleButton value="yearly" aria-label="yearly billing">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  Yearly
+                  <Chip
+                    label="Save 10%"
+                    size="small"
                     sx={{
-                      p: 4,
-                      height: '100%',
+                      height: 20,
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      background: billingPeriod === 'yearly'
+                        ? alpha('#fff', 0.2)
+                        : alpha('#43e97b', 0.2),
+                      color: billingPeriod === 'yearly'
+                        ? 'white'
+                        : '#1e8449',
+                    }}
+                  />
+                </Box>
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        </Box>
+
+        {/* Loading State */}
+        {isLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <CircularProgress size={60} thickness={4} />
+          </Box>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Alert
+            severity="error"
+            sx={{
+              maxWidth: '600px',
+              mx: 'auto',
+              backdropFilter: 'blur(10px)',
+              background: alpha(theme.palette.error.main, 0.1),
+              border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
+            }}
+          >
+            Unable to load pricing plans. Please try again later.
+          </Alert>
+        )}
+
+        {/* Pricing Cards */}
+        {!isLoading && !error && data && (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+              },
+              gap: 4,
+            }}
+          >
+            {data.plans.map((plan) => (
+              <Card
+                key={plan._id}
+                sx={{
+                  position: 'relative',
+                  height: '100%',
+                  background: alpha(theme.palette.background.paper, plan.isPopular ? 0.95 : 0.7),
+                  backdropFilter: 'blur(20px)',
+                  border: plan.isPopular
+                    ? `2px solid ${theme.palette.primary.main}`
+                    : `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  borderRadius: 4,
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: plan.isPopular ? 'scale(1.05)' : 'scale(1)',
+                  boxShadow: plan.isPopular
+                    ? `0 20px 60px ${alpha(theme.palette.primary.main, 0.3)}`
+                    : `0 8px 32px ${alpha(theme.palette.common.black, 0.1)}`,
+                  '&:hover': {
+                    transform: plan.isPopular ? 'scale(1.08)' : 'scale(1.03)',
+                    boxShadow: plan.isPopular
+                      ? `0 25px 70px ${alpha(theme.palette.primary.main, 0.4)}`
+                      : `0 12px 40px ${alpha(theme.palette.common.black, 0.15)}`,
+                  },
+                }}
+              >
+                {/* Popular Badge */}
+                {plan.isPopular && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: -16,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      px: 3,
+                      py: 1,
+                      background: getGradientForPlan(plan.tier),
+                      borderRadius: 3,
+                      boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}`,
                       display: 'flex',
-                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 0.5,
                     }}
                   >
-                    <Box sx={{ textAlign: 'center', mb: 4 }}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          mb: 2,
-                        }}
-                      >
-                        {plan.name === 'Enterprise' ? (
-                          <StarsIcon
-                            sx={{
-                              fontSize: 32,
-                              color: 'warning.main',
-                              mr: 1,
-                            }}
-                          />
-                        ) : (
-                          <BoltIcon
-                            sx={{
-                              fontSize: 32,
-                              color: 'primary.main',
-                              mr: 1,
-                            }}
-                          />
-                        )}
-                        <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                          {plan.name || 'Plan'}
+                    <StarIcon sx={{ fontSize: 16, color: 'white' }} />
+                    <Typography variant="caption" sx={{ color: 'white', fontWeight: 700, letterSpacing: 1 }}>
+                      {plan.metadata?.badge || 'MOST POPULAR'}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* Trial Badge */}
+                {plan.trialDays && plan.tier === 'free_trial' && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: -16,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      px: 3,
+                      py: 1,
+                      background: getGradientForPlan(plan.tier),
+                      borderRadius: 3,
+                      boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}`,
+                    }}
+                  >
+                    <Typography variant="caption" sx={{ color: 'white', fontWeight: 700, letterSpacing: 1 }}>
+                      {plan.trialDays} DAYS FREE
+                    </Typography>
+                  </Box>
+                )}
+
+                <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  {/* Plan Header */}
+                  <Box sx={{ textAlign: 'center', mb: 3 }}>
+                    <Box
+                      sx={{
+                        width: 80,
+                        height: 80,
+                        mx: 'auto',
+                        mb: 2,
+                        background: getGradientForPlan(plan.tier),
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}`,
+                      }}
+                    >
+                      {plan.tier === 'enterprise' ? (
+                        <BusinessCenterIcon sx={{ fontSize: 40, color: 'white' }} />
+                      ) : (
+                        <RocketLaunchIcon sx={{ fontSize: 40, color: 'white' }} />
+                      )}
+                    </Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                      {plan.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {plan.description}
+                    </Typography>
+
+                    {/* Price */}
+                    {plan.isContactSales ? (
+                      <Box>
+                        <Typography variant="h3" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                          Custom
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Contact us for pricing
                         </Typography>
                       </Box>
-                      {plan.isContactSales ? (
-                        <Typography
-                          variant="h4"
-                          sx={{ fontWeight: 700, color: 'primary.main' }}
-                        >
-                          Contact Sales
+                    ) : plan.tier === 'free_trial' ? (
+                      <Box>
+                        <Typography variant="h2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                          Free
                         </Typography>
-                      ) : (
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'baseline',
-                            justifyContent: 'center',
-                            mb: 2,
-                          }}
-                        >
-                          <Typography
-                            variant="h3"
-                            sx={{ fontWeight: 700, color: 'primary.main' }}
-                          >
-                            ₦{(plan.priceNGN || 0).toLocaleString()}
-                          </Typography>
-                          <Typography
-                            variant="h6"
-                            color="text.secondary"
-                            sx={{ ml: 1 }}
-                          >
-                            /{billingInterval === 'monthly' ? 'month' : 'year'}
-                          </Typography>
-                        </Box>
-                      )}
-                      <Typography variant="caption" color="text.secondary">
-                        Billed {billingInterval}
-                      </Typography>
-                    </Box>
-
-                    {plan.isContactSales ? (
-                      <Button
-                        variant="contained"
-                        size="large"
-                        fullWidth
-                        sx={{
-                          mb: 4,
-                          py: 1.5,
-                          borderRadius: 3,
-                          textTransform: 'none',
-                          fontWeight: 600,
-                        }}
-                        onClick={() => handleContactSales(plan.whatsappNumber || '')}
-                      >
-                        Contact Sales
-                      </Button>
+                        <Typography variant="body2" color="text.secondary">
+                          14-day trial
+                        </Typography>
+                      </Box>
                     ) : (
-                      <Button
-                        variant={
-                          plan.metadata?.mostPopular ? 'contained' : 'outlined'
-                        }
-                        size="large"
-                        fullWidth
-                        sx={{
-                          mb: 4,
-                          py: 1.5,
-                          borderRadius: 3,
-                          textTransform: 'none',
-                          fontWeight: 600,
-                        }}
-                        onClick={() => handleSubscribe(plan._id || '')}
-                        disabled={createCheckoutSession.isPending}
-                      >
-                        {createCheckoutSession.isPending
-                          ? 'Processing...'
-                          : plan.metadata?.mostPopular
-                            ? 'Start Free Trial'
-                            : 'Get Started'}
-                      </Button>
-                    )}
-
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ fontWeight: 600, mb: 2 }}
-                      >
-                        What's included:
-                      </Typography>
-                      <List disablePadding>
-                        {(plan.displayedFeatures || []).map(
-                          (feature: string, featureIndex: number) => (
-                            <ListItem
-                              key={featureIndex}
-                              disablePadding
-                              sx={{ py: 0.5 }}
-                            >
-                              <ListItemIcon sx={{ minWidth: 32 }}>
-                                <CheckIcon
-                                  sx={{
-                                    fontSize: 20,
-                                    color: 'success.main',
-                                  }}
-                                />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={feature}
-                                primaryTypographyProps={{ variant: 'body2' }}
-                              />
-                            </ListItem>
-                          )
+                      <Box>
+                        {plan.billingPeriod === 'yearly' ? (
+                          <>
+                            <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', mb: 0.5 }}>
+                              <Typography variant="h6" color="text.secondary" sx={{ mr: 0.5 }}>
+                                ₦
+                              </Typography>
+                              <Typography variant="h2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                                {plan.price.toLocaleString()}
+                              </Typography>
+                              <Typography variant="h6" color="text.secondary" sx={{ ml: 0.5 }}>
+                                /year
+                              </Typography>
+                            </Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                              Billed annually
+                            </Typography>
+                            <Chip
+                              label="10% OFF"
+                              size="small"
+                              sx={{
+                                background: alpha('#43e97b', 0.2),
+                                color: '#1e8449',
+                                fontWeight: 700,
+                                fontSize: '0.65rem',
+                              }}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', mb: 1 }}>
+                              <Typography variant="h6" color="text.secondary" sx={{ mr: 0.5 }}>
+                                ₦
+                              </Typography>
+                              <Typography variant="h2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                                {plan.price.toLocaleString()}
+                              </Typography>
+                              <Typography variant="h6" color="text.secondary" sx={{ ml: 0.5 }}>
+                                /mo
+                              </Typography>
+                            </Box>
+                            <Typography variant="caption" color="text.secondary">
+                              Billed monthly
+                            </Typography>
+                          </>
                         )}
-                      </List>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Box>
+                      </Box>
+                    )}
+                  </Box>
+
+                  {/* CTA Button */}
+                  <Button
+                    variant={plan.isPopular ? 'contained' : 'outlined'}
+                    size="large"
+                    fullWidth
+                    onClick={() =>
+                      plan.isContactSales
+                        ? handleContactSales(plan.whatsappNumber)
+                        : handleGetStarted(plan.slug, plan.name)
+                    }
+                    sx={{
+                      mb: 3,
+                      py: 1.5,
+                      borderRadius: 3,
+                      fontWeight: 700,
+                      fontSize: '1rem',
+                      textTransform: 'none',
+                      ...(plan.isPopular && {
+                        background: getGradientForPlan(plan.tier),
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
+                        '&:hover': {
+                          boxShadow: `0 6px 16px ${alpha(theme.palette.primary.main, 0.4)}`,
+                        },
+                      }),
+                    }}
+                  >
+                    {plan.metadata?.buttonText || 'Get Started'}
+                  </Button>
+
+                  {/* Features List */}
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: 'text.secondary' }}>
+                      WHAT'S INCLUDED:
+                    </Typography>
+                    <List disablePadding sx={{ maxHeight: '300px', overflow: 'auto' }}>
+                      {plan.featuresDetails?.map((feature) => (
+                        <ListItem key={feature._id} disablePadding sx={{ py: 0.75 }}>
+                          <ListItemIcon sx={{ minWidth: 32 }}>
+                            <CheckCircleIcon sx={{ fontSize: 20, color: 'success.main' }} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={feature.name}
+                            primaryTypographyProps={{
+                              variant: 'body2',
+                              fontWeight: 500,
+                            }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                </CardContent>
+              </Card>
             ))}
           </Box>
         )}
@@ -411,253 +662,140 @@ const Pricing = () => {
         {/* FAQ Section */}
         <Box sx={{ mt: 12 }}>
           <Typography
-            variant="h4"
+            variant="h3"
             component="h2"
-            sx={{ fontWeight: 600, mb: 6, textAlign: 'center' }}
+            sx={{
+              fontWeight: 800,
+              mb: 2,
+              textAlign: 'center',
+              background: getGradientForPlan('pro'),
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
           >
             Frequently Asked Questions
           </Typography>
-          <Box sx={{ maxWidth: '800px', mx: 'auto' }}>
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
+          <Typography
+            variant="body1"
+            sx={{
+              mb: 6,
+              textAlign: 'center',
+              color: 'text.secondary',
+              maxWidth: '700px',
+              mx: 'auto',
+            }}
+          >
+            Everything you need to know about PharmacyCopilot
+          </Typography>
+          <Box sx={{ maxWidth: '900px', mx: 'auto' }}>
+            {faqData.map((faq, index) => (
+              <Accordion
+                key={index}
+                expanded={expandedFaq === index}
+                onChange={handleFaqChange(index)}
                 sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
+                  mb: 2,
+                  borderRadius: 3,
+                  '&:before': { display: 'none' },
+                  background: alpha(theme.palette.background.paper, 0.7),
+                  backdropFilter: 'blur(20px)',
+                  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  boxShadow: `0 4px 16px ${alpha(theme.palette.common.black, 0.08)}`,
+                  '&:hover': {
+                    boxShadow: `0 6px 20px ${alpha(theme.palette.common.black, 0.12)}`,
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                   },
+                  transition: 'all 0.3s ease',
                 }}
               >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Can I change my plan later?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  Yes! You can upgrade or downgrade your plan at any time from
-                  your account settings. Changes take effect immediately, and
-                  you'll be charged or refunded the prorated amount based on
-                  your billing cycle. There are no penalties for changing plans.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                  },
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  What happens during the free trial?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  You get full access to all features for 30 days with no
-                  restrictions. No credit card is required to start your trial.
-                  After the trial period ends, you can choose to continue with a
-                  paid plan or your account will be paused until you subscribe.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                  },
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Is my data secure and HIPAA compliant?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  Absolutely! All plans include enterprise-grade security with
-                  end-to-end encryption, secure data centers, and full HIPAA
-                  compliance. We undergo regular security audits and maintain
-                  SOC 2 Type II certification to ensure your patient data is
-                  always protected.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                  },
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Do you offer discounts for annual plans?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  Yes! Save 20% when you choose annual billing instead of
-                  monthly. We also offer volume discounts for Enterprise plans
-                  with multiple users. Contact our sales team to discuss custom
-                  pricing for larger organizations.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                  },
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  What payment methods do you accept?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  We accept all major Nigerian payment methods including bank
-                  transfers, debit cards, and mobile money platforms like
-                  Paystack and Flutterwave. International payments are also
-                  supported through Visa and Mastercard.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion
-              sx={{
-                mb: 2,
-                borderRadius: 2,
-                '&:before': { display: 'none' },
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  py: 2,
-                  '& .MuiAccordionSummary-content': {
-                    margin: '12px 0',
-                  },
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Can I cancel my subscription anytime?
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 3 }}>
-                <Typography variant="body1" color="text.secondary">
-                  Yes, you can cancel your subscription at any time with no
-                  cancellation fees or long-term contracts. Your access will
-                  continue until the end of your current billing period, and you
-                  can export your data before cancellation.
-                </Typography>
-              </AccordionDetails>
-            </Accordion>
+                <AccordionSummary
+                  expandIcon={
+                    <ExpandMoreIcon
+                      sx={{
+                        color: 'primary.main',
+                        fontSize: 28,
+                      }}
+                    />
+                  }
+                  sx={{
+                    py: 2,
+                    px: 3,
+                    '& .MuiAccordionSummary-content': {
+                      margin: '12px 0',
+                    },
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: { xs: '1rem', md: '1.15rem' },
+                      color: 'text.primary',
+                    }}
+                  >
+                    {faq.question}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails sx={{ pt: 0, pb: 3, px: 3 }}>
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{
+                      lineHeight: 1.8,
+                      fontSize: { xs: '0.95rem', md: '1rem' },
+                    }}
+                  >
+                    {faq.answer}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+            ))}
           </Box>
         </Box>
 
-        {/* CTA Section */}
+        {/* Trust Indicators */}
         <Box
           sx={{
             mt: 12,
-            textAlign: 'center',
-            py: 8,
-            bgcolor: 'grey.50',
+            p: 4,
             borderRadius: 4,
+            background: alpha(theme.palette.background.paper, 0.7),
+            backdropFilter: 'blur(20px)',
+            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            textAlign: 'center',
           }}
         >
-          <Typography
-            variant="h4"
-            component="h2"
-            sx={{ fontWeight: 600, mb: 2 }}
-          >
-            Ready to Transform Your Practice?
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
-          >
-            Join thousands of pharmacists already using PharmaPilot to improve
-            patient outcomes and streamline their workflow.
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
+            Why Choose PharmacyCopilot?
           </Typography>
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: 2,
-              justifyContent: 'center',
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+              gap: 4,
             }}
           >
-            <Button
-              component={Link}
-              to="/register"
-              variant="contained"
-              size="large"
-              sx={{ py: 1.5, px: 4, borderRadius: 3 }}
-            >
-              Start Free Trial
-            </Button>
-            <Button
-              component={Link}
-              to="/contact"
-              variant="outlined"
-              size="large"
-              sx={{ py: 1.5, px: 4, borderRadius: 3 }}
-            >
-              Contact Sales
-            </Button>
+            {[
+              { icon: '🔒', title: 'Secure & Compliant', desc: 'Bank-level security with HIPAA compliance' },
+              { icon: '🚀', title: 'Fast Setup', desc: 'Get started in minutes, not days' },
+              { icon: '💬', title: '24/7 Support', desc: 'Always here to help you succeed' },
+            ].map((item, index) => (
+              <Box key={index}>
+                <Typography variant="h2" sx={{ mb: 1 }}>
+                  {item.icon}
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                  {item.title}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {item.desc}
+                </Typography>
+              </Box>
+            ))}
           </Box>
         </Box>
       </Container>

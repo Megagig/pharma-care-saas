@@ -17,7 +17,7 @@ class TokenService {
             };
             const token = jsonwebtoken_1.default.sign(payload, TokenService.TOKEN_SECRET, {
                 expiresIn: `${expiryDays}d`,
-                issuer: 'pharmacare-lab-module',
+                issuer: 'PharmacyCopilot-lab-module',
                 audience: 'lab-order-access'
             });
             const hashedToken = TokenService.hashToken(token);
@@ -44,7 +44,7 @@ class TokenService {
     static validateToken(token) {
         try {
             const decoded = jsonwebtoken_1.default.verify(token, TokenService.TOKEN_SECRET, {
-                issuer: 'pharmacare-lab-module',
+                issuer: 'PharmacyCopilot-lab-module',
                 audience: 'lab-order-access'
             });
             if (!decoded.orderId || !decoded.workplaceId || decoded.type !== 'lab_order_access') {
@@ -103,7 +103,7 @@ class TokenService {
     }
     static generateQRCodeData(token, baseUrl) {
         try {
-            const scanUrl = baseUrl || process.env.FRONTEND_URL || 'https://app.pharmacare.com';
+            const scanUrl = baseUrl || process.env.FRONTEND_URL || 'https://app.PharmacyCopilot.com';
             return `${scanUrl}/lab/scan?token=${encodeURIComponent(token)}`;
         }
         catch (error) {

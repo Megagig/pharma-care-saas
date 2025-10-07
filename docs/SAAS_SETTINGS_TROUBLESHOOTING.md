@@ -1032,31 +1032,31 @@ A: Navigate to API Management → Usage Metrics → View requests, response time
 ### Technical Support
 
 **Primary Support**
-- **Email**: saas-support@PharmaPilot.com
+- **Email**: saas-support@PharmacyCopilot.com
 - **Phone**: +234-XXX-XXX-XXXX
 - **Hours**: 24/7 for critical issues, 8 AM - 6 PM WAT for general support
 
 **Emergency Escalation**
 - **Critical System Issues**: Call +234-XXX-XXX-XXXX (24/7 hotline)
-- **Security Incidents**: security-incident@PharmaPilot.com
-- **Data Loss/Corruption**: data-recovery@PharmaPilot.com
+- **Security Incidents**: security-incident@PharmacyCopilot.com
+- **Data Loss/Corruption**: data-recovery@PharmacyCopilot.com
 
 ### Internal Teams
 
 **Development Team**
-- **Lead Developer**: dev-lead@PharmaPilot.com
-- **Backend Team**: backend-team@PharmaPilot.com
-- **Frontend Team**: frontend-team@PharmaPilot.com
+- **Lead Developer**: dev-lead@PharmacyCopilot.com
+- **Backend Team**: backend-team@PharmacyCopilot.com
+- **Frontend Team**: frontend-team@PharmacyCopilot.com
 
 **Operations Team**
-- **DevOps Lead**: devops@PharmaPilot.com
-- **Database Administrator**: dba@PharmaPilot.com
-- **System Administrator**: sysadmin@PharmaPilot.com
+- **DevOps Lead**: devops@PharmacyCopilot.com
+- **Database Administrator**: dba@PharmacyCopilot.com
+- **System Administrator**: sysadmin@PharmacyCopilot.com
 
 **Management**
-- **Technical Director**: tech-director@PharmaPilot.com
-- **Product Manager**: product@PharmaPilot.com
-- **Customer Success**: success@PharmaPilot.com
+- **Technical Director**: tech-director@PharmacyCopilot.com
+- **Product Manager**: product@PharmacyCopilot.com
+- **Customer Success**: success@PharmacyCopilot.com
 
 ### External Vendors
 
@@ -1075,31 +1075,31 @@ A: Navigate to API Management → Usage Metrics → View requests, response time
 ### Documentation and Resources
 
 **Online Resources**
-- **Documentation Portal**: https://docs.PharmaPilot.com
-- **API Documentation**: https://api-docs.PharmaPilot.com
-- **Status Page**: https://status.PharmaPilot.com
-- **Developer Portal**: https://developers.PharmaPilot.com
+- **Documentation Portal**: https://docs.PharmacyCopilot.com
+- **API Documentation**: https://api-docs.PharmacyCopilot.com
+- **Status Page**: https://status.PharmacyCopilot.com
+- **Developer Portal**: https://developers.PharmacyCopilot.com
 
 **Training Materials**
-- **Video Tutorials**: https://learn.PharmaPilot.com
-- **Webinar Schedule**: https://training.PharmaPilot.com
-- **Best Practices Guide**: https://docs.PharmaPilot.com/best-practices
+- **Video Tutorials**: https://learn.PharmacyCopilot.com
+- **Webinar Schedule**: https://training.PharmacyCopilot.com
+- **Best Practices Guide**: https://docs.PharmacyCopilot.com/best-practices
 
 ### Reporting Issues
 
 **Bug Reports**
-- **Email**: bugs@PharmaPilot.com
-- **Issue Tracker**: https://issues.PharmaPilot.com
+- **Email**: bugs@PharmacyCopilot.com
+- **Issue Tracker**: https://issues.PharmacyCopilot.com
 - **Include**: Steps to reproduce, expected vs actual behavior, screenshots
 
 **Feature Requests**
-- **Email**: features@PharmaPilot.com
-- **Portal**: https://feedback.PharmaPilot.com
+- **Email**: features@PharmacyCopilot.com
+- **Portal**: https://feedback.PharmacyCopilot.com
 - **Include**: Use case, business justification, priority level
 
 **Security Vulnerabilities**
-- **Email**: security@PharmaPilot.com (encrypted)
-- **PGP Key**: Available at https://PharmaPilot.com/security
+- **Email**: security@PharmacyCopilot.com (encrypted)
+- **PGP Key**: Available at https://PharmacyCopilot.com/security
 - **Response Time**: 24 hours for acknowledgment
 
 ---
@@ -1108,4 +1108,4 @@ A: Navigate to API Management → Usage Metrics → View requests, response time
 **Version**: 1.0  
 **Next Review**: April 2024
 
-For the most current version of this troubleshooting guide, visit: https://docs.PharmaPilot.com/saas-settings/troubleshooting
+For the most current version of this troubleshooting guide, visit: https://docs.PharmacyCopilot.com/saas-settings/troubleshooting

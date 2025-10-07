@@ -19,7 +19,7 @@ export interface DatabaseOptimizationSummary {
 }
 
 /**
- * Performance Database Optimizer for PharmaPilot application
+ * Performance Database Optimizer for PharmacyCopilot application
  * Creates optimized indexes for high-frequency queries across all collections
  */
 class PerformanceDatabaseOptimizer {

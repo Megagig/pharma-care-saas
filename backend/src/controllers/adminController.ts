@@ -1755,7 +1755,7 @@ export class AdminController {
       // Get system configuration from database or environment variables
       const config = {
         app: {
-          name: process.env.APP_NAME || 'PharmaPilot SaaS',
+          name: process.env.APP_NAME || 'PharmacyCopilot SaaS',
           version: process.env.APP_VERSION || '1.0.0',
           environment: process.env.NODE_ENV || 'development',
           url: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -1768,7 +1768,7 @@ export class AdminController {
         },
         email: {
           provider: process.env.EMAIL_PROVIDER || 'sendgrid',
-          from: process.env.EMAIL_FROM || 'noreply@PharmaPilot.com',
+          from: process.env.EMAIL_FROM || 'noreply@PharmacyCopilot.com',
           maxRecipients: parseInt(
             process.env.MAX_EMAIL_RECIPIENTS || '100',
             10

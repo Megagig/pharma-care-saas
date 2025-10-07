@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the comprehensive dark/light mode system implemented in the PharmaPilot SaaS application. The system provides seamless theme switching with persistence across sessions and real-time system preference detection.
+This document describes the comprehensive dark/light mode system implemented in the PharmacyCopilot SaaS application. The system provides seamless theme switching with persistence across sessions and real-time system preference detection.
 
 ## Architecture
 

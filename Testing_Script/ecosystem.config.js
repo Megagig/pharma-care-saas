@@ -1,8 +1,8 @@
-// PM2 Ecosystem Configuration for PharmaPilot SaaS Settings Module
+// PM2 Ecosystem Configuration for PharmacyCopilot SaaS Settings Module
 module.exports = {
   apps: [
     {
-      name: 'PharmaPilot-saas-settings',
+      name: 'PharmacyCopilot-saas-settings',
       script: './backend/dist/server.js',
       instances: process.env.NODE_ENV === 'production' ? 'max' : 1,
       exec_mode: 'cluster',
@@ -27,9 +27,9 @@ module.exports = {
       },
       
       // Logging configuration
-      error_file: '/var/log/PharmaPilot/saas-settings-error.log',
-      out_file: '/var/log/PharmaPilot/saas-settings-out.log',
-      log_file: '/var/log/PharmaPilot/saas-settings-combined.log',
+      error_file: '/var/log/PharmacyCopilot/saas-settings-error.log',
+      out_file: '/var/log/PharmacyCopilot/saas-settings-out.log',
+      log_file: '/var/log/PharmacyCopilot/saas-settings-combined.log',
       time: true,
       
       // Performance and reliability settings
@@ -90,22 +90,22 @@ module.exports = {
   // Deployment configuration
   deploy: {
     production: {
-      user: 'PharmaPilot',
+      user: 'PharmacyCopilot',
       host: ['production-server-1', 'production-server-2'],
       ref: 'origin/main',
-      repo: 'git@github.com:PharmaPilot/saas-settings.git',
-      path: '/opt/PharmaPilot/saas-settings',
+      repo: 'git@github.com:PharmacyCopilot/saas-settings.git',
+      path: '/opt/PharmacyCopilot/saas-settings',
       'pre-deploy-local': '',
       'post-deploy': 'npm install && npm run build && pm2 reload ecosystem.config.js --env production',
       'pre-setup': 'apt update && apt install git -y'
     },
     
     staging: {
-      user: 'PharmaPilot',
+      user: 'PharmacyCopilot',
       host: 'staging-server',
       ref: 'origin/develop',
-      repo: 'git@github.com:PharmaPilot/saas-settings.git',
-      path: '/opt/PharmaPilot/saas-settings-staging',
+      repo: 'git@github.com:PharmacyCopilot/saas-settings.git',
+      path: '/opt/PharmacyCopilot/saas-settings-staging',
       'post-deploy': 'npm install && npm run build && pm2 reload ecosystem.config.js --env staging'
     }
   }

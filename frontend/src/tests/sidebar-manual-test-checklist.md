@@ -15,7 +15,7 @@
 1. **Initial State Check**
 
    - [ ] Sidebar starts in expanded state (280px width)
-   - [ ] "PharmaPilot" logo is visible in header
+   - [ ] "PharmacyCopilot" logo is visible in header
    - [ ] All section headers are visible ("MAIN MENU", "PHARMACY TOOLS", "ADMINISTRATION", "ACCOUNT")
 
 2. **Toggle Button Visibility**

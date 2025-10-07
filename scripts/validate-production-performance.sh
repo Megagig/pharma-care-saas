@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-PRODUCTION_URL=${1:-"https://app.PharmaPilot.com"}
+PRODUCTION_URL=${1:-"https://app.PharmacyCopilot.com"}
 BASELINE_FILE=${2:-"PERF_BASELINE.md"}
 VALIDATION_REPORT=${3:-"PRODUCTION_VALIDATION_REPORT.md"}
 
@@ -405,7 +405,7 @@ usage() {
     echo "Usage: $0 [production_url] [baseline_file] [validation_report]"
     echo ""
     echo "Arguments:"
-    echo "  production_url     URL to validate (default: https://app.PharmaPilot.com)"
+    echo "  production_url     URL to validate (default: https://app.PharmacyCopilot.com)"
     echo "  baseline_file      Baseline metrics file (default: PERF_BASELINE.md)"
     echo "  validation_report  Output report file (default: PRODUCTION_VALIDATION_REPORT.md)"
     echo ""
@@ -415,8 +415,8 @@ usage() {
     echo ""
     echo "Examples:"
     echo "  $0                                           # Use defaults"
-    echo "  $0 https://staging.PharmaPilot.com           # Validate staging"
-    echo "  $0 https://app.PharmaPilot.com baseline.md   # Custom baseline file"
+    echo "  $0 https://staging.PharmacyCopilot.com           # Validate staging"
+    echo "  $0 https://app.PharmacyCopilot.com baseline.md   # Custom baseline file"
 }
 
 # Check if help is requested

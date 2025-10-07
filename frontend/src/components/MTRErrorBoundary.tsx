@@ -288,7 +288,7 @@ Please describe what you were doing when this error occurred:
     `);
 
     window.open(
-      `mailto:support@PharmaPilot.com?subject=${subject}&body=${body}`
+      `mailto:support@PharmacyCopilot.com?subject=${subject}&body=${body}`
     );
   };
 

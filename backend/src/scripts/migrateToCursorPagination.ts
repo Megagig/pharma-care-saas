@@ -27,7 +27,7 @@ async function analyzePaginationPerformance() {
     logger.info('Starting pagination performance analysis');
 
     // Connect to MongoDB
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmaPilot';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmacyCopilot';
     await mongoose.connect(mongoUri);
     logger.info('Connected to MongoDB');
 

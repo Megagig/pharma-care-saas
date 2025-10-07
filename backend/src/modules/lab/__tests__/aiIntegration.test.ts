@@ -26,7 +26,7 @@ describe('Manual Lab AI Integration', () => {
 
     beforeAll(async () => {
         // Connect to test database
-        await mongoose.connect(process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/PharmaPilot_test');
+        await mongoose.connect(process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/PharmacyCopilot_test');
     });
 
     afterAll(async () => {

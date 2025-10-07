@@ -511,7 +511,7 @@ export class DeveloperPortalService {
    */
   generateCodeExamples(endpoint: any, apiKey: string): Record<string, string> {
     const examples: Record<string, string> = {};
-    const url = `${process.env.API_BASE_URL || 'https://api.PharmaPilot.com'}${endpoint.path}`;
+    const url = `${process.env.API_BASE_URL || 'https://api.PharmacyCopilot.com'}${endpoint.path}`;
     const method = endpoint.method;
 
     // JavaScript/Node.js example

@@ -3,7 +3,7 @@ import { NotificationTemplate, INotificationTemplate } from '../../models/Notifi
 
 describe('NotificationTemplate Model', () => {
   beforeAll(async () => {
-    const mongoUri = process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/test_PharmaPilot';
+    const mongoUri = process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/test_PharmacyCopilot';
     await mongoose.connect(mongoUri);
   });
 
@@ -30,7 +30,7 @@ describe('NotificationTemplate Model', () => {
         },
         variables: [
           { name: 'firstName', type: 'string', required: true },
-          { name: 'appName', type: 'string', required: true, defaultValue: 'PharmaPilot' },
+          { name: 'appName', type: 'string', required: true, defaultValue: 'PharmacyCopilot' },
         ],
         createdBy: adminId,
         lastModifiedBy: adminId,
@@ -120,7 +120,7 @@ describe('NotificationTemplate Model', () => {
         },
         variables: [
           { name: 'firstName', type: 'string', required: true },
-          { name: 'appName', type: 'string', required: true, defaultValue: 'PharmaPilot' },
+          { name: 'appName', type: 'string', required: true, defaultValue: 'PharmacyCopilot' },
           { name: 'isPremium', type: 'boolean', required: false },
           { name: 'items', type: 'array', required: false },
         ],
@@ -160,7 +160,7 @@ describe('NotificationTemplate Model', () => {
 
       const rendered = template.render(variables);
       
-      expect(rendered.subject).toBe('Hello Jane from PharmaPilot');
+      expect(rendered.subject).toBe('Hello Jane from PharmacyCopilot');
     });
 
     it('should handle conditional blocks correctly', () => {

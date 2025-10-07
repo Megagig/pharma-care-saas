@@ -206,9 +206,9 @@ npm run build
 npm run deploy:production
 
 # Or using Docker
-docker build -t PharmaPilot-app:manual-lab .
-docker push your-registry/PharmaPilot-app:manual-lab
-docker service update --image your-registry/PharmaPilot-app:manual-lab PharmaPilot-app
+docker build -t PharmacyCopilot-app:manual-lab .
+docker push your-registry/PharmacyCopilot-app:manual-lab
+docker service update --image your-registry/PharmacyCopilot-app:manual-lab PharmacyCopilot-app
 ```
 
 ### Step 4: Feature Flag Configuration
@@ -295,7 +295,7 @@ curl -X PUT "https://your-api.com/api/admin/feature-flags/manual_lab_orders" \
   -d '{"enabled": false}'
 
 # 2. Revert to previous application version
-docker service update --image your-registry/PharmaPilot-app:previous-version PharmaPilot-app
+docker service update --image your-registry/PharmacyCopilot-app:previous-version PharmacyCopilot-app
 
 # 3. Monitor for stability
 curl -X GET "https://your-api.com/api/health"
@@ -331,7 +331,7 @@ If database issues occur:
 
 ```bash
 # Stop application
-docker service scale PharmaPilot-app=0
+docker service scale PharmacyCopilot-app=0
 
 # Restore database from backup
 mongorestore --uri="mongodb://your-production-uri" --drop /path/to/backup
@@ -340,8 +340,8 @@ mongorestore --uri="mongodb://your-production-uri" --drop /path/to/backup
 node src/migrations/manualLabMigrations.js down
 
 # Restart application with previous version
-docker service update --image your-registry/PharmaPilot-app:previous-version PharmaPilot-app
-docker service scale PharmaPilot-app=3
+docker service update --image your-registry/PharmacyCopilot-app:previous-version PharmacyCopilot-app
+docker service scale PharmacyCopilot-app=3
 ```
 
 ---
@@ -379,7 +379,7 @@ curl -w "@curl-format.txt" -X GET "https://your-api.com/api/manual-lab-orders" \
   -H "Authorization: Bearer $TOKEN"
 
 # Monitor resource usage
-kubectl top pods -l app=PharmaPilot-app
+kubectl top pods -l app=PharmacyCopilot-app
 
 # Check database performance
 mongo --eval "db.manuallaborders.getIndexes()"
@@ -663,8 +663,8 @@ kubectl get configmap manual-lab-config -o yaml > /backup/config-$(date +%Y%m%d)
 
 ### Contact Information
 
-- **Technical Support**: support@PharmaPilot.com
-- **Security Issues**: security@PharmaPilot.com
+- **Technical Support**: support@PharmacyCopilot.com
+- **Security Issues**: security@PharmacyCopilot.com
 - **Emergency Escalation**: +1-XXX-XXX-XXXX
 
 ### Documentation

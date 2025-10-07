@@ -11,7 +11,7 @@
       - generic [ref=e17]:
         - heading "P" [level=4] [ref=e19]
         - heading "Welcome Back" [level=1] [ref=e20]
-        - paragraph [ref=e21]: Sign in to your PharmaPilot account
+        - paragraph [ref=e21]: Sign in to your PharmacyCopilot account
       - generic [ref=e22]:
         - generic [ref=e23]:
           - generic [ref=e24]:

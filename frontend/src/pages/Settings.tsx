@@ -124,7 +124,7 @@ const Settings: React.FC = () => {
       avatar: user?.avatar || '',
       bio: '',
       location: 'Lagos, Nigeria',
-      organization: 'PharmaPilot SaaS',
+      organization: 'PharmacyCopilot SaaS',
       role: user?.role || 'pharmacist',
     },
     preferences: {

@@ -47,7 +47,7 @@ const TailwindNavbar: React.FC = () => {
               to="/dashboard"
               className="text-xl font-bold text-primary-600 dark:text-accent-400 hover:text-primary-700 dark:hover:text-accent-300 transition-colors"
             >
-              PharmaPilot
+              PharmacyCopilot
             </Link>
           </div>
 

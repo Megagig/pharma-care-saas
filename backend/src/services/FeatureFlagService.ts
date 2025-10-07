@@ -253,7 +253,7 @@ class FeatureFlagService {
       // This is a placeholder - implement based on your user structure
       const User = require('../models/User').default;
       const user = await User.findById(userId);
-      return user?.email?.endsWith('@PharmaPilot.com') || false;
+      return user?.email?.endsWith('@PharmacyCopilot.com') || false;
     } catch (error) {
       logger.error('Error checking internal user:', error);
       return false;

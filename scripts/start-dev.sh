@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Development startup script for PharmaPilotSaaS
-echo "🚀 Starting PharmaPilotSaaS Development Environment..."
+# Development startup script for PharmacyCopilotSaaS
+echo "🚀 Starting PharmacyCopilotSaaS Development Environment..."
 
 # Check if .env files exist
 echo "📋 Checking environment configuration..."
@@ -16,7 +16,7 @@ if [ ! -f "./frontend/.env" ]; then
     echo "⚠️  Frontend .env file not found. Creating basic config..."
     cat > ./frontend/.env << EOL
 VITE_API_URL=http://localhost:5000/api
-VITE_APP_NAME=PharmaPilotSaaS
+VITE_APP_NAME=PharmacyCopilotSaaS
 VITE_APP_VERSION=1.0.0
 EOL
     echo "✅ Created frontend/.env file."
