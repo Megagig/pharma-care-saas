@@ -8,15 +8,15 @@ export const createAppTheme = (mode: 'light' | 'dark'): Theme => {
     palette: {
       mode,
       primary: {
-        main: '#2563eb', // Blue-600
-        light: '#3b82f6', // Blue-500
-        dark: '#1e40af', // Blue-700
+        main: '#0891b2', // Healthcare Cyan-600
+        light: '#06b6d4', // Cyan-500
+        dark: '#0e7490', // Cyan-700
         contrastText: '#ffffff',
       },
       secondary: {
-        main: '#10b981', // Green-500
-        light: '#34d399', // Green-400
-        dark: '#047857', // Green-700
+        main: '#0284c7', // Healthcare Blue-600
+        light: '#0ea5e9', // Sky-500
+        dark: '#075985', // Sky-700
         contrastText: '#ffffff',
       },
       success: {
