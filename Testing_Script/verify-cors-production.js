@@ -7,8 +7,8 @@
 
 const https = require('https');
 
-const PRODUCTION_BACKEND = 'https://pharmacare-nttq.onrender.com'; // Update this with your actual backend URL
-const FRONTEND_ORIGIN = 'https://pharmacare-nttq.onrender.com';
+const PRODUCTION_BACKEND = 'https://PharmaPilot-nttq.onrender.com'; // Update this with your actual backend URL
+const FRONTEND_ORIGIN = 'https://PharmaPilot-nttq.onrender.com';
 
 console.log('🔍 Testing CORS configuration against production backend...');
 console.log(`Backend URL: ${PRODUCTION_BACKEND}`);

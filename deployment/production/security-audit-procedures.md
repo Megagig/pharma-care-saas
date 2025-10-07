@@ -64,7 +64,7 @@ echo "=== CONTAINER SECURITY SCAN ==="
 
 # Scan base images
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-  aquasec/trivy image pharmacare/ai-diagnostics-api:latest \
+  aquasec/trivy image PharmaPilot/ai-diagnostics-api:latest \
   --severity HIGH,CRITICAL \
   --format json > /tmp/container-scan-results.json
 
@@ -165,7 +165,7 @@ fi
 
 echo "=== AUTHENTICATION SECURITY TESTING ==="
 
-API_BASE="https://api.pharmacare.com"
+API_BASE="https://api.PharmaPilot.com"
 
 # Test 1: Invalid credentials
 echo "Testing invalid credentials..."
@@ -216,7 +216,7 @@ fi
 
 echo "=== INPUT VALIDATION TESTING ==="
 
-API_BASE="https://api.pharmacare.com"
+API_BASE="https://api.PharmaPilot.com"
 # Assume we have a valid token for testing
 TOKEN="valid-jwt-token-here"
 
@@ -277,7 +277,7 @@ rm /tmp/malicious.php
 
 echo "=== AUTHORIZATION TESTING ==="
 
-API_BASE="https://api.pharmacare.com"
+API_BASE="https://api.PharmaPilot.com"
 
 # Test different user roles
 PHARMACIST_TOKEN="pharmacist-jwt-token"
@@ -340,7 +340,7 @@ sleep 30
 
 # Configure ZAP
 ZAP_URL="http://localhost:8080"
-TARGET_URL="https://api.pharmacare.com"
+TARGET_URL="https://api.PharmaPilot.com"
 
 # Spider the application
 curl -s "$ZAP_URL/JSON/spider/action/scan/?url=$TARGET_URL" > /dev/null
@@ -437,26 +437,26 @@ echo "=== HIPAA TECHNICAL SAFEGUARDS AUDIT ==="
 
 # Access Control (§164.312(a))
 echo "Checking access controls..."
-kubectl get rolebindings -n pharmacare-prod -o json | \
+kubectl get rolebindings -n PharmaPilot-prod -o json | \
   jq '.items[] | {name: .metadata.name, subjects: .subjects, roleRef: .roleRef}'
 
 # Audit Controls (§164.312(b))
 echo "Checking audit logging..."
-kubectl logs -n pharmacare-prod deployment/ai-diagnostics-api --tail=100 | \
+kubectl logs -n PharmaPilot-prod deployment/ai-diagnostics-api --tail=100 | \
   grep -E "(LOGIN|LOGOUT|ACCESS|MODIFY|DELETE)" | wc -l
 
 # Integrity (§164.312(c))
 echo "Checking data integrity controls..."
-kubectl exec -n pharmacare-prod deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmaPilot-prod deployment/ai-diagnostics-api -- \
   npm run audit:data-integrity
 
 # Person or Entity Authentication (§164.312(d))
 echo "Checking authentication mechanisms..."
-kubectl get secrets -n pharmacare-prod | grep -E "(jwt|auth|token)"
+kubectl get secrets -n PharmaPilot-prod | grep -E "(jwt|auth|token)"
 
 # Transmission Security (§164.312(e))
 echo "Checking transmission security..."
-kubectl get ingress -n pharmacare-prod -o json | \
+kubectl get ingress -n PharmaPilot-prod -o json | \
   jq '.items[] | {name: .metadata.name, tls: .spec.tls}'
 ```
 

@@ -23,13 +23,13 @@
 
 ### Prerequisites
 
-- Super administrator access to the PharmaCare platform
+- Super administrator access to the PharmaPilot platform
 - Modern web browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
 - Understanding of pharmacy operations and user roles
 
 ### Accessing the SaaS Settings Module
 
-1. **Login** to the PharmaCare platform with your super administrator credentials
+1. **Login** to the PharmaPilot platform with your super administrator credentials
 2. **Navigate** to the main menu and select "System Administration"
 3. **Click** on "SaaS Settings" to access the module
 4. **Verify** your permissions - you should see all administrative options
@@ -1006,14 +1006,14 @@ Monitor integration health:
 #### Internal Support
 
 **Technical Support:**
-- **Email**: tech-support@pharmacare.com
+- **Email**: tech-support@PharmaPilot.com
 - **Phone**: +234-XXX-XXX-XXXX (24/7 for critical issues)
 - **Slack**: #saas-admin-support channel
 
 **Documentation:**
-- **API Documentation**: [https://docs.pharmacare.com/api](https://docs.pharmacare.com/api)
-- **User Guides**: [https://docs.pharmacare.com/guides](https://docs.pharmacare.com/guides)
-- **Video Tutorials**: [https://learn.pharmacare.com](https://learn.pharmacare.com)
+- **API Documentation**: [https://docs.PharmaPilot.com/api](https://docs.PharmaPilot.com/api)
+- **User Guides**: [https://docs.PharmaPilot.com/guides](https://docs.PharmaPilot.com/guides)
+- **Video Tutorials**: [https://learn.PharmaPilot.com](https://learn.PharmaPilot.com)
 
 #### External Resources
 
@@ -1086,7 +1086,7 @@ Monitor integration health:
 
 ## Conclusion
 
-The SaaS Settings Module provides comprehensive tools for managing your PharmaCare platform. This guide covers the essential functions and best practices for effective system administration.
+The SaaS Settings Module provides comprehensive tools for managing your PharmaPilot platform. This guide covers the essential functions and best practices for effective system administration.
 
 For additional support or questions not covered in this guide, please contact the technical support team or refer to the online documentation portal.
 

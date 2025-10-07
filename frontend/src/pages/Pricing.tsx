@@ -629,7 +629,7 @@ const Pricing = () => {
             color="text.secondary"
             sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}
           >
-            Join thousands of pharmacists already using PharmaCare to improve
+            Join thousands of pharmacists already using PharmaPilot to improve
             patient outcomes and streamline their workflow.
           </Typography>
           <Box

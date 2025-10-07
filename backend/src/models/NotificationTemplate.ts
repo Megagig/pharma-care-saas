@@ -419,7 +419,7 @@ notificationTemplateSchema.statics.createDefaultTemplates = function (workspaceI
       },
       variables: [
         { name: 'firstName', type: 'string', required: true },
-        { name: 'appName', type: 'string', required: true, defaultValue: 'PharmaCare' },
+        { name: 'appName', type: 'string', required: true, defaultValue: 'PharmaPilot' },
       ],
       isDefault: !workspaceId,
     },

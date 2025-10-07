@@ -123,7 +123,7 @@ class ReportsService {
       const url = `/reports/${reportType}${queryString ? `?${queryString}` : ''}`;
       
       console.log(`📡 Making API call to: ${url}`);
-      console.log(`🔗 Full URL: ${import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api'}${url}`);
+      console.log(`🔗 Full URL: ${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}${url}`);
       
       // Add timeout and better error handling
       console.log('🔐 Making authenticated API request...');

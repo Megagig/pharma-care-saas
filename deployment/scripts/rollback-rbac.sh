@@ -112,10 +112,10 @@ stop_services() {
     # Stop backend service
     if command -v pm2 &> /dev/null; then
         log INFO "Stopping backend with PM2..."
-        pm2 stop pharmacare-backend || log WARN "Failed to stop backend with PM2"
+        pm2 stop PharmaPilot-backend || log WARN "Failed to stop backend with PM2"
     elif command -v systemctl &> /dev/null; then
         log INFO "Stopping backend with systemctl..."
-        systemctl stop pharmacare-backend || log WARN "Failed to stop backend with systemctl"
+        systemctl stop PharmaPilot-backend || log WARN "Failed to stop backend with systemctl"
     else
         log WARN "No process manager found. Manual service stop required."
     fi
@@ -136,16 +136,16 @@ rollback_database() {
             
             # Drop current database first
             if command -v mongosh &> /dev/null; then
-                mongosh "${MONGO_DB:-pharmacare}" --eval "db.dropDatabase()" --quiet || log WARN "Failed to drop current database"
+                mongosh "${MONGO_DB:-PharmaPilot}" --eval "db.dropDatabase()" --quiet || log WARN "Failed to drop current database"
             elif command -v mongo &> /dev/null; then
-                mongo "${MONGO_DB:-pharmacare}" --eval "db.dropDatabase()" --quiet || log WARN "Failed to drop current database"
+                mongo "${MONGO_DB:-PharmaPilot}" --eval "db.dropDatabase()" --quiet || log WARN "Failed to drop current database"
             fi
             
             # Restore from backup
             mongorestore --host "${MONGO_HOST:-localhost:27017}" \
-                       --db "${MONGO_DB:-pharmacare}" \
+                       --db "${MONGO_DB:-PharmaPilot}" \
                        --drop \
-                       "$BACKUP_DIR/mongodb/pharmacare" \
+                       "$BACKUP_DIR/mongodb/PharmaPilot" \
                        --quiet || {
                 log ERROR "Database restore failed"
                 return 1
@@ -296,13 +296,13 @@ start_services() {
             pm2 resurrect || log WARN "Failed to restore PM2 configuration"
         fi
         
-        pm2 start pharmacare-backend || {
+        pm2 start PharmaPilot-backend || {
             log ERROR "Failed to start backend with PM2"
             return 1
         }
     elif command -v systemctl &> /dev/null; then
         log INFO "Starting backend with systemctl..."
-        systemctl start pharmacare-backend || {
+        systemctl start PharmaPilot-backend || {
             log ERROR "Failed to start backend with systemctl"
             return 1
         }
@@ -358,8 +358,8 @@ validate_rollback() {
     fi
     
     # Check for any critical errors in logs
-    if [[ -f "/var/log/pharmacare-backend.log" ]]; then
-        local error_count=$(grep -c "ERROR\|FATAL" /var/log/pharmacare-backend.log | tail -n 100 || echo "0")
+    if [[ -f "/var/log/PharmaPilot-backend.log" ]]; then
+        local error_count=$(grep -c "ERROR\|FATAL" /var/log/PharmaPilot-backend.log | tail -n 100 || echo "0")
         if [[ $error_count -gt 0 ]]; then
             log WARN "Found $error_count errors in recent logs"
         else
@@ -443,7 +443,7 @@ Environment Variables:
     ROLLBACK_ENV     Rollback environment (default: production)
     BACKUP_DIR       Specific backup directory to use
     MONGO_HOST       MongoDB host (default: localhost:27017)
-    MONGO_DB         MongoDB database name (default: pharmacare)
+    MONGO_DB         MongoDB database name (default: PharmaPilot)
 
 Examples:
     $0                                    # Rollback using latest backup

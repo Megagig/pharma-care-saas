@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Manual Lab Order API provides a comprehensive workflow for creating, managing, and processing manual lab orders in the MERN Pharmacare application. This API enables pharmacists to create printable lab requisitions, track order status, manually enter results, and leverage AI interpretation for diagnostic insights.
+The Manual Lab Order API provides a comprehensive workflow for creating, managing, and processing manual lab orders in the MERN PharmaPilot application. This API enables pharmacists to create printable lab requisitions, track order status, manually enter results, and leverage AI interpretation for diagnostic insights.
 
 ## Base URL
 

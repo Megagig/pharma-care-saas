@@ -496,7 +496,7 @@ class SecurityMonitoringService {
                 id: `alert_${threat.id}_email`,
                 threatId: threat.id,
                 type: 'email',
-                recipient: 'security@pharmacare.com', // Configure as needed
+                recipient: 'security@PharmaPilot.com', // Configure as needed
                 message: `SECURITY ALERT: ${threat.description}`,
                 sent: false,
             });
@@ -509,7 +509,7 @@ class SecurityMonitoringService {
                 message: JSON.stringify({
                     threat,
                     timestamp: new Date().toISOString(),
-                    source: 'pharmacare-security-monitoring',
+                    source: 'PharmaPilot-security-monitoring',
                 }),
                 sent: false,
             });

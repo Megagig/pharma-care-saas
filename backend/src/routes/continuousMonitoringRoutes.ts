@@ -149,7 +149,7 @@ router.get('/default-config', auth, rbac.requireRole('admin', 'deployment_manage
         enabled: true,
         schedule: '0 */6 * * *', // Every 6 hours
         urls: [
-          process.env.PRODUCTION_URL || 'https://app.pharmacare.com',
+          process.env.PRODUCTION_URL || 'https://app.PharmaPilot.com',
         ],
         alertThresholds: {
           performance: 85,

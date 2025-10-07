@@ -464,7 +464,7 @@ export class IntegrationService {
 
     const headers: any = {
       'Content-Type': 'application/json',
-      'User-Agent': 'PharmaCare-Integration/1.0'
+      'User-Agent': 'PharmaPilot-Integration/1.0'
     };
 
     if (config.apiKey) {
@@ -511,7 +511,7 @@ export class IntegrationService {
       url: config.endpoint,
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'PharmaCare-Integration/1.0'
+        'User-Agent': 'PharmaPilot-Integration/1.0'
       },
       data: testPayload,
       timeout: 30000,

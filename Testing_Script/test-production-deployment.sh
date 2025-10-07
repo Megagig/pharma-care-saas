@@ -15,8 +15,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-BACKEND_URL="https://pharmacare-nttq.onrender.com"
-FRONTEND_URL="https://pharmacare-nttq.onrender.com"
+BACKEND_URL="https://PharmaPilot-nttq.onrender.com"
+FRONTEND_URL="https://PharmaPilot-nttq.onrender.com"
 API_URL="${BACKEND_URL}/api"
 
 TESTS_PASSED=0

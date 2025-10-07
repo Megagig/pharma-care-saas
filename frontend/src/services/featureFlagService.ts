@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create API instance
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

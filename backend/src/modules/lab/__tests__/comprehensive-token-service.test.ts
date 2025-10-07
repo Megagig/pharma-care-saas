@@ -18,7 +18,7 @@ describe('TokenService - Comprehensive Tests', () => {
         // Set up test environment variables
         process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-minimum-32-characters-long';
         process.env.LAB_TOKEN_SECRET = 'test-lab-token-secret-key-minimum-32-characters-long';
-        process.env.FRONTEND_URL = 'https://test.pharmacare.com';
+        process.env.FRONTEND_URL = 'https://test.PharmaPilot.com';
     });
 
     afterAll(() => {
@@ -80,7 +80,7 @@ describe('TokenService - Comprehensive Tests', () => {
             expect(decoded?.payload).toHaveProperty('orderId', mockOrderId);
             expect(decoded?.payload).toHaveProperty('workplaceId', mockWorkplaceId);
             expect(decoded?.payload).toHaveProperty('type', 'lab_order_access');
-            expect(decoded?.payload).toHaveProperty('iss', 'pharmacare-lab-module');
+            expect(decoded?.payload).toHaveProperty('iss', 'PharmaPilot-lab-module');
             expect(decoded?.payload).toHaveProperty('aud', 'lab-order-access');
             expect(decoded?.payload).toHaveProperty('exp');
             expect(decoded?.payload).toHaveProperty('iat');
@@ -210,7 +210,7 @@ describe('TokenService - Comprehensive Tests', () => {
                 payload,
                 process.env.LAB_TOKEN_SECRET!,
                 {
-                    issuer: 'pharmacare-lab-module',
+                    issuer: 'PharmaPilot-lab-module',
                     audience: 'lab-order-access',
                     noTimestamp: true
                 }
@@ -238,7 +238,7 @@ describe('TokenService - Comprehensive Tests', () => {
                     invalidPayload,
                     process.env.LAB_TOKEN_SECRET!,
                     {
-                        issuer: 'pharmacare-lab-module',
+                        issuer: 'PharmaPilot-lab-module',
                         audience: 'lab-order-access'
                     }
                 );
@@ -268,7 +268,7 @@ describe('TokenService - Comprehensive Tests', () => {
                     invalidPayload,
                     process.env.LAB_TOKEN_SECRET!,
                     {
-                        issuer: 'pharmacare-lab-module',
+                        issuer: 'PharmaPilot-lab-module',
                         audience: 'lab-order-access'
                     }
                 );
@@ -290,7 +290,7 @@ describe('TokenService - Comprehensive Tests', () => {
                 payload,
                 'wrong-secret',
                 {
-                    issuer: 'pharmacare-lab-module',
+                    issuer: 'PharmaPilot-lab-module',
                     audience: 'lab-order-access'
                 }
             );
@@ -325,7 +325,7 @@ describe('TokenService - Comprehensive Tests', () => {
                 payload,
                 process.env.LAB_TOKEN_SECRET!,
                 {
-                    issuer: 'pharmacare-lab-module',
+                    issuer: 'PharmaPilot-lab-module',
                     audience: 'wrong-audience'
                 }
             );

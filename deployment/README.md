@@ -203,7 +203,7 @@ RBAC_ENHANCED_LOGGING=false
 
 # Database Settings
 MONGO_HOST=localhost:27017
-MONGO_DB=pharmacare
+MONGO_DB=PharmaPilot
 
 # Monitoring Settings
 PROMETHEUS_URL=http://localhost:9090
@@ -273,7 +273,7 @@ find /var/backups -name "rbac-deployment-*" -type d -mtime +7 -exec rm -rf {} +
 
    ```bash
    # Check logs
-   tail -f /var/log/pharmacare-backend.log
+   tail -f /var/log/PharmaPilot-backend.log
 
    # Check configuration
    npm run validate:config

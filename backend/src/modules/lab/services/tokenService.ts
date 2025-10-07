@@ -55,7 +55,7 @@ export class TokenService {
                 TokenService.TOKEN_SECRET,
                 {
                     expiresIn: `${expiryDays}d`,
-                    issuer: 'pharmacare-lab-module',
+                    issuer: 'PharmaPilot-lab-module',
                     audience: 'lab-order-access'
                 }
             );
@@ -115,7 +115,7 @@ export class TokenService {
                 token,
                 TokenService.TOKEN_SECRET,
                 {
-                    issuer: 'pharmacare-lab-module',
+                    issuer: 'PharmaPilot-lab-module',
                     audience: 'lab-order-access'
                 }
             ) as TokenPayload;
@@ -205,7 +205,7 @@ export class TokenService {
      */
     static generateQRCodeData(token: string, baseUrl?: string): string {
         try {
-            const scanUrl = baseUrl || process.env.FRONTEND_URL || 'https://app.pharmacare.com';
+            const scanUrl = baseUrl || process.env.FRONTEND_URL || 'https://app.PharmaPilot.com';
             return `${scanUrl}/lab/scan?token=${encodeURIComponent(token)}`;
         } catch (error) {
             // logger.error('Failed to generate QR code data', {

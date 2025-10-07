@@ -1,8 +1,8 @@
-# Alertmanager configuration for Pharmacare notifications
+# Alertmanager configuration for PharmaPilot notifications
 
 global:
   smtp_smarthost: 'smtp.resend.com:587'
-  smtp_from: 'alerts@pharmacare.com'
+  smtp_from: 'alerts@PharmaPilot.com'
   smtp_auth_username: 'resend'
   smtp_auth_password: 'YOUR_RESEND_API_KEY'
 
@@ -19,7 +19,7 @@ route:
       group_wait: 5s
       repeat_interval: 5m
     - match:
-        service: pharmacare-api
+        service: PharmaPilot-api
       receiver: 'api-team'
     - match:
         service: database
@@ -38,8 +38,8 @@ receivers:
 
   - name: 'critical-alerts'
     email_configs:
-      - to: 'critical-alerts@pharmacare.com'
-        subject: '[CRITICAL] Pharmacare Alert: {{ .GroupLabels.alertname }}'
+      - to: 'critical-alerts@PharmaPilot.com'
+        subject: '[CRITICAL] PharmaPilot Alert: {{ .GroupLabels.alertname }}'
         body: |
           {{ range .Alerts }}
           Alert: {{ .Annotations.summary }}
@@ -65,8 +65,8 @@ receivers:
 
   - name: 'api-team'
     email_configs:
-      - to: 'api-team@pharmacare.com'
-        subject: '[API] Pharmacare Alert: {{ .GroupLabels.alertname }}'
+      - to: 'api-team@PharmaPilot.com'
+        subject: '[API] PharmaPilot Alert: {{ .GroupLabels.alertname }}'
         body: |
           API Service Alert
 
@@ -76,7 +76,7 @@ receivers:
           Started: {{ .StartsAt }}
           {{ end }}
 
-          Dashboard: https://monitoring.pharmacare.com/d/api-dashboard
+          Dashboard: https://monitoring.PharmaPilot.com/d/api-dashboard
     slack_configs:
       - api_url: 'YOUR_SLACK_WEBHOOK_URL'
         channel: '#api-alerts'
@@ -90,8 +90,8 @@ receivers:
 
   - name: 'database-team'
     email_configs:
-      - to: 'database-team@pharmacare.com'
-        subject: '[DATABASE] Pharmacare Alert: {{ .GroupLabels.alertname }}'
+      - to: 'database-team@PharmaPilot.com'
+        subject: '[DATABASE] PharmaPilot Alert: {{ .GroupLabels.alertname }}'
         body: |
           Database Alert
 
@@ -101,15 +101,15 @@ receivers:
           Started: {{ .StartsAt }}
           {{ end }}
 
-          MongoDB Dashboard: https://monitoring.pharmacare.com/d/mongodb-dashboard
+          MongoDB Dashboard: https://monitoring.PharmaPilot.com/d/mongodb-dashboard
     pagerduty_configs:
       - routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
         description: 'Database Alert: {{ .GroupLabels.alertname }}'
 
   - name: 'security-team'
     email_configs:
-      - to: 'security-team@pharmacare.com'
-        subject: '[SECURITY] Pharmacare Alert: {{ .GroupLabels.alertname }}'
+      - to: 'security-team@PharmaPilot.com'
+        subject: '[SECURITY] PharmaPilot Alert: {{ .GroupLabels.alertname }}'
         body: |
           Security Alert - Immediate Attention Required
 
@@ -119,7 +119,7 @@ receivers:
           Started: {{ .StartsAt }}
           {{ end }}
 
-          Security Dashboard: https://monitoring.pharmacare.com/d/security-dashboard
+          Security Dashboard: https://monitoring.PharmaPilot.com/d/security-dashboard
         headers:
           Priority: 'high'
     slack_configs:

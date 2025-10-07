@@ -73,7 +73,7 @@ const SandboxSessionSchema = new Schema<ISandboxSession>({
     baseUrl: {
       type: String,
       required: true,
-      default: process.env.SANDBOX_BASE_URL || 'https://sandbox-api.pharmacare.com'
+      default: process.env.SANDBOX_BASE_URL || 'https://sandbox-api.PharmaPilot.com'
     },
     apiVersion: {
       type: String,

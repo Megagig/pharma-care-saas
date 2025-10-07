@@ -1,8 +1,8 @@
-# PharmaCare SaaS API Documentation
+# PharmaPilot SaaS API Documentation
 
 ## Overview
 
-This document provides comprehensive documentation for the PharmaCare SaaS REST API.
+This document provides comprehensive documentation for the PharmaPilot SaaS REST API.
 
 ## Base URL
 

@@ -78,7 +78,7 @@ const Navbar: React.FC = () => {
           component="div"
           sx={{ display: { xs: 'none', sm: 'block' }, flexGrow: 1 }}
         >
-          PharmaCare
+          PharmaPilot
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

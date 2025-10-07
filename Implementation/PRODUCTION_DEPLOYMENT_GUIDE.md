@@ -1,4 +1,4 @@
-# Production Deployment Guide - PharmaCare
+# Production Deployment Guide - PharmaPilot
 
 ## 🚨 Issues Identified
 
@@ -15,7 +15,7 @@ Based on the console errors, the main issues were:
 
 **File: `backend/.env`**
 - ✅ Removed duplicate `FRONTEND_URL` entry
-- ✅ Set `FRONTEND_URL=https://pharmacare-nttq.onrender.com`
+- ✅ Set `FRONTEND_URL=https://PharmaPilot-nttq.onrender.com`
 - ✅ Added multiple origins to `CORS_ORIGINS` for both production and development
 
 **File: `backend/.env.production`** (NEW)
@@ -28,8 +28,8 @@ Based on the console errors, the main issues were:
 **File: `frontend/.env`**
 - ✅ Already correctly configured:
   ```env
-  VITE_API_BASE_URL=https://pharmacare-nttq.onrender.com/api
-  VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
+  VITE_API_BASE_URL=https://PharmaPilot-nttq.onrender.com/api
+  VITE_FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
   ```
 
 ### 3. Code Fixes
@@ -46,14 +46,14 @@ Based on the console errors, the main issues were:
    ```
    NODE_ENV=production
    PORT=5000
-   MONGODB_URI=mongodb+srv://megagigdev:9svFmZ3VCP5ONzfU@cluster0.vf50xoc.mongodb.net/PharmaCare?retryWrites=true&w=majority&appName=Cluster0
+   MONGODB_URI=mongodb+srv://megagigdev:9svFmZ3VCP5ONzfU@cluster0.vf50xoc.mongodb.net/PharmaPilot?retryWrites=true&w=majority&appName=Cluster0
    JWT_SECRET=5ac844c5da41609d1f99c6fcfdc8486824e767e9c30a0b38271be167cc23afb1
    JWT_REFRESH_SECRET=4nzyO7MxnSnCCfs8qNwxQHBRVqrryYAq
-   FRONTEND_URL=https://pharmacare-nttq.onrender.com
-   CORS_ORIGINS=https://pharmacare-nttq.onrender.com
+   FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+   CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com
    RESEND_API_KEY=re_cRCkGHT8_2duhxzbv3HsPzADnmU1FvJit
    SENDER_EMAIL=admin@megagigsolution.com
-   SENDER_NAME=Pharmacare Hub
+   SENDER_NAME=PharmaPilot Hub
    OPENFDA_API_KEY=GjyRI4APszhf01Bc7sPSUWg59nrShJt6C5tRy7ws
    OPENROUTER_API_KEY=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
    PAYSTACK_SECRET_KEY=sk_test_a67af4a215bb1d536eec24d017d88eb17df50011
@@ -81,8 +81,8 @@ Based on the console errors, the main issues were:
    ```bash
    cat frontend/.env
    # Should show:
-   # VITE_API_BASE_URL=https://pharmacare-nttq.onrender.com/api
-   # VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
+   # VITE_API_BASE_URL=https://PharmaPilot-nttq.onrender.com/api
+   # VITE_FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
    ```
 
 2. **Rebuild frontend**:
@@ -102,23 +102,23 @@ Based on the console errors, the main issues were:
 
 1. **Check backend health**:
    ```bash
-   curl https://pharmacare-nttq.onrender.com/api/health
+   curl https://PharmaPilot-nttq.onrender.com/api/health
    ```
    Expected: `{"status":"OK",...}`
 
 2. **Check CORS headers**:
    ```bash
-   curl -I -X OPTIONS https://pharmacare-nttq.onrender.com/api/auth/login \
-     -H "Origin: https://pharmacare-nttq.onrender.com" \
+   curl -I -X OPTIONS https://PharmaPilot-nttq.onrender.com/api/auth/login \
+     -H "Origin: https://PharmaPilot-nttq.onrender.com" \
      -H "Access-Control-Request-Method: POST"
    ```
-   Expected: Should include `Access-Control-Allow-Origin: https://pharmacare-nttq.onrender.com`
+   Expected: Should include `Access-Control-Allow-Origin: https://PharmaPilot-nttq.onrender.com`
 
 3. **Test login from browser**:
-   - Open https://pharmacare-nttq.onrender.com
+   - Open https://PharmaPilot-nttq.onrender.com
    - Open browser DevTools (F12)
    - Try to login
-   - Check Network tab - should see requests to `https://pharmacare-nttq.onrender.com/api/...`
+   - Check Network tab - should see requests to `https://PharmaPilot-nttq.onrender.com/api/...`
    - No CORS errors should appear
 
 ## 🔍 Troubleshooting
@@ -149,7 +149,7 @@ Based on the console errors, the main issues were:
 ### Issue: Network Error on login
 
 **Solution:**
-1. Verify backend is running: `curl https://pharmacare-nttq.onrender.com/api/health`
+1. Verify backend is running: `curl https://PharmaPilot-nttq.onrender.com/api/health`
 2. Check backend logs in Render dashboard
 3. Verify MongoDB connection string is correct
 4. Check that backend service is not sleeping (Render free tier)
@@ -160,8 +160,8 @@ For local development, the configuration now supports both:
 
 **Backend .env:**
 ```env
-FRONTEND_URL=https://pharmacare-nttq.onrender.com
-CORS_ORIGINS=https://pharmacare-nttq.onrender.com,http://localhost:5173,http://localhost:3000
+FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com,http://localhost:5173,http://localhost:3000
 ```
 
 This allows:

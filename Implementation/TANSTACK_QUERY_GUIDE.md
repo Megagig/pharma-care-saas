@@ -1,6 +1,6 @@
 # TanStack Query Integration Guide
 
-This guide provides comprehensive information on using TanStack Query alongside Zustand in the PharmaCare SaaS application.
+This guide provides comprehensive information on using TanStack Query alongside Zustand in the PharmaPilot SaaS application.
 
 ## Overview
 

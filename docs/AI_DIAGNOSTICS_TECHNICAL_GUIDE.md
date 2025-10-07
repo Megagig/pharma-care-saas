@@ -181,7 +181,7 @@ docker-compose -f docker-compose.diagnostics.yml up -d
 
 ```bash
 # Database
-MONGODB_URI=mongodb://localhost:27017/pharmacare
+MONGODB_URI=mongodb://localhost:27017/PharmaPilot
 REDIS_URL=redis://localhost:6379
 
 # AI Services
@@ -381,8 +381,8 @@ class AIOrchestrationService {
       headers: {
         Authorization: `Bearer ${this.config.apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://pharmacare.com',
-        'X-Title': 'PharmaCare AI Diagnostics',
+        'HTTP-Referer': 'https://PharmaPilot.com',
+        'X-Title': 'PharmaPilot AI Diagnostics',
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -905,7 +905,7 @@ services:
       dockerfile: Dockerfile.prod
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://mongo-cluster:27017/pharmacare
+      - MONGODB_URI=mongodb://mongo-cluster:27017/PharmaPilot
       - REDIS_URL=redis://redis-cluster:6379
     depends_on:
       - mongodb
@@ -927,7 +927,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
     environment:
-      - VITE_API_BASE_URL=https://api.pharmacare.com
+      - VITE_API_BASE_URL=https://api.PharmaPilot.com
     ports:
       - '80:80'
       - '443:443'
@@ -977,7 +977,7 @@ spec:
     spec:
       containers:
         - name: diagnostics-api
-          image: pharmacare/diagnostics-api:latest
+          image: PharmaPilot/diagnostics-api:latest
           ports:
             - containerPort: 5000
           env:
@@ -1060,19 +1060,19 @@ jobs:
 
       - name: Build Docker images
         run: |
-          docker build -t pharmacare/diagnostics-api:${{ github.sha }} ./backend
-          docker build -t pharmacare/diagnostics-frontend:${{ github.sha }} ./frontend
+          docker build -t PharmaPilot/diagnostics-api:${{ github.sha }} ./backend
+          docker build -t PharmaPilot/diagnostics-frontend:${{ github.sha }} ./frontend
 
       - name: Push to registry
         run: |
           echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-          docker push pharmacare/diagnostics-api:${{ github.sha }}
-          docker push pharmacare/diagnostics-frontend:${{ github.sha }}
+          docker push PharmaPilot/diagnostics-api:${{ github.sha }}
+          docker push PharmaPilot/diagnostics-frontend:${{ github.sha }}
 
       - name: Deploy to production
         run: |
-          kubectl set image deployment/diagnostics-api diagnostics-api=pharmacare/diagnostics-api:${{ github.sha }}
-          kubectl set image deployment/diagnostics-frontend diagnostics-frontend=pharmacare/diagnostics-frontend:${{ github.sha }}
+          kubectl set image deployment/diagnostics-api diagnostics-api=PharmaPilot/diagnostics-api:${{ github.sha }}
+          kubectl set image deployment/diagnostics-frontend diagnostics-frontend=PharmaPilot/diagnostics-frontend:${{ github.sha }}
 ```
 
 ## Development Guidelines
@@ -1190,4 +1190,4 @@ async processPatientCase(
 
 This technical guide provides comprehensive information for developers working with the AI Diagnostics & Therapeutics module. It covers architecture, setup, configuration, security, performance optimization, monitoring, deployment, and development standards.
 
-For additional technical support or questions about implementation details, contact the development team at dev@pharmacare.com or refer to the API documentation for specific endpoint details.
+For additional technical support or questions about implementation details, contact the development team at dev@PharmaPilot.com or refer to the API documentation for specific endpoint details.

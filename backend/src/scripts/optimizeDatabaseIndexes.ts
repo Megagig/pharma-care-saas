@@ -10,14 +10,14 @@ dotenv.config();
 
 /**
  * Database Index Optimization Script
- * Creates optimized indexes for all PharmaCare collections
+ * Creates optimized indexes for all PharmaPilot collections
  */
 async function optimizeDatabaseIndexes() {
   try {
     logger.info('Starting database index optimization script');
 
     // Connect to MongoDB
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/pharmacare';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmaPilot';
     await mongoose.connect(mongoUri);
     logger.info('Connected to MongoDB');
 
@@ -111,7 +111,7 @@ if (analyze) {
   // Just analyze existing indexes
   (async () => {
     try {
-      await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/pharmacare');
+      await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmaPilot');
       const optimizer = PerformanceDatabaseOptimizer.getInstance();
       const analysis = await optimizer.analyzeExistingIndexes();
       console.log('Index Analysis:', JSON.stringify(analysis, null, 2));

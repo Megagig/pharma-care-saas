@@ -10,7 +10,7 @@ import type {
     DashboardMetrics,
 } from '../stores/clinicalInterventionStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api';
 
 interface ApiResponse<T = unknown> {
     success: boolean;

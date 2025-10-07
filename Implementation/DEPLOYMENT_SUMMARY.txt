@@ -10,7 +10,7 @@
 ❌ POST http://localhost:5000/api/auth/login net::ERR_CONNECTION_REFUSED
 ❌ Cross-Origin Request Blocked: The Same Origin Policy disallows reading...
 ❌ Login error: Error: Network Error
-❌ GET https://pharmacare-nttq.onrender.com/api/workspace/settings 401
+❌ GET https://PharmaPilot-nttq.onrender.com/api/workspace/settings 401
 
 ROOT CAUSE: Frontend was trying to connect to localhost:5000 instead of 
 production backend, and CORS was not configured for production frontend.
@@ -21,7 +21,7 @@ production backend, and CORS was not configured for production frontend.
 
 1. BACKEND ENVIRONMENT (backend/.env)
    ✅ Removed duplicate FRONTEND_URL entry
-   ✅ Set FRONTEND_URL=https://pharmacare-nttq.onrender.com
+   ✅ Set FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
    ✅ Updated CORS_ORIGINS to include production + local dev URLs
 
 2. PRODUCTION CONFIG (backend/.env.production) - NEW FILE
@@ -30,7 +30,7 @@ production backend, and CORS was not configured for production frontend.
 
 3. FRONTEND CONFIG (frontend/.env)
    ✅ Already correct - no changes needed
-   ✅ VITE_API_BASE_URL=https://pharmacare-nttq.onrender.com/api
+   ✅ VITE_API_BASE_URL=https://PharmaPilot-nttq.onrender.com/api
 
 4. CODE CLEANUP
    ✅ Removed duplicate declarations in services
@@ -72,8 +72,8 @@ Go to: Render Dashboard → Backend Service → Environment
 
 Add these critical variables:
   NODE_ENV=production
-  FRONTEND_URL=https://pharmacare-nttq.onrender.com
-  CORS_ORIGINS=https://pharmacare-nttq.onrender.com
+  FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+  CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com
   MONGODB_URI=mongodb+srv://megagigdev:...
   JWT_SECRET=5ac844c5da41609d1f99c6fcfdc8486824e767e9c30a0b38271be167cc23afb1
   JWT_REFRESH_SECRET=4nzyO7MxnSnCCfs8qNwxQHBRVqrryYAq
@@ -106,12 +106,12 @@ Run automated tests:
   ./test-production-deployment.sh
 
 Or test manually:
-  curl https://pharmacare-nttq.onrender.com/api/health
+  curl https://PharmaPilot-nttq.onrender.com/api/health
 
 
 STEP 5: VERIFY IN BROWSER
 ──────────────────────────
-1. Open https://pharmacare-nttq.onrender.com
+1. Open https://PharmaPilot-nttq.onrender.com
 2. Clear browser cache (Ctrl+Shift+Delete)
 3. Hard refresh (Ctrl+Shift+R)
 4. Open DevTools (F12) → Console

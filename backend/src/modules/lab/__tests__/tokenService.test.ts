@@ -18,7 +18,7 @@ describe('TokenService', () => {
         // Set up test environment variables
         process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-minimum-32-characters-long';
         process.env.LAB_TOKEN_SECRET = 'test-lab-token-secret-key-minimum-32-characters-long';
-        process.env.FRONTEND_URL = 'https://test.pharmacare.com';
+        process.env.FRONTEND_URL = 'https://test.PharmaPilot.com';
     });
 
     afterAll(() => {
@@ -131,7 +131,7 @@ describe('TokenService', () => {
                 payload,
                 process.env.LAB_TOKEN_SECRET!,
                 {
-                    issuer: 'pharmacare-lab-module',
+                    issuer: 'PharmaPilot-lab-module',
                     audience: 'lab-order-access',
                     noTimestamp: true // Don't add iat automatically
                 }
@@ -154,7 +154,7 @@ describe('TokenService', () => {
                 invalidPayload,
                 process.env.LAB_TOKEN_SECRET!,
                 {
-                    issuer: 'pharmacare-lab-module',
+                    issuer: 'PharmaPilot-lab-module',
                     audience: 'lab-order-access'
                 }
             );
@@ -176,7 +176,7 @@ describe('TokenService', () => {
                 invalidPayload,
                 process.env.LAB_TOKEN_SECRET!,
                 {
-                    issuer: 'pharmacare-lab-module',
+                    issuer: 'PharmaPilot-lab-module',
                     audience: 'lab-order-access'
                 }
             );
@@ -415,7 +415,7 @@ describe('TokenService', () => {
             expect(decoded?.payload).toHaveProperty('orderId', mockOrderId);
             expect(decoded?.payload).toHaveProperty('workplaceId', mockWorkplaceId);
             expect(decoded?.payload).toHaveProperty('type', 'lab_order_access');
-            expect(decoded?.payload).toHaveProperty('iss', 'pharmacare-lab-module');
+            expect(decoded?.payload).toHaveProperty('iss', 'PharmaPilot-lab-module');
             expect(decoded?.payload).toHaveProperty('aud', 'lab-order-access');
             expect(decoded?.payload).toHaveProperty('exp');
             expect(decoded?.payload).toHaveProperty('iat');

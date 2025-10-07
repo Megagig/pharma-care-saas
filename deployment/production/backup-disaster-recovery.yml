@@ -5,7 +5,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: mongodb-backup
-  namespace: pharmacare-prod
+  namespace: PharmaPilot-prod
   labels:
     app: mongodb-backup
     component: backup
@@ -61,7 +61,7 @@ spec:
                   {
                     "backup_date": "${BACKUP_DATE}",
                     "backup_type": "full",
-                    "database": "pharmacare-prod",
+                    "database": "PharmaPilot-prod",
                     "collections": [
                       "diagnosticrequests",
                       "diagnosticresults",
@@ -123,7 +123,7 @@ spec:
                       name: ai-diagnostics-secrets
                       key: BACKUP_ENCRYPTION_KEY
                 - name: BACKUP_S3_BUCKET
-                  value: 'pharmacare-backups-prod'
+                  value: 'PharmaPilot-backups-prod'
                 - name: BACKUP_RETENTION_DAYS
                   value: '30'
                 - name: AWS_DEFAULT_REGION
@@ -149,7 +149,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: app-data-backup
-  namespace: pharmacare-prod
+  namespace: PharmaPilot-prod
   labels:
     app: app-data-backup
     component: backup
@@ -183,8 +183,8 @@ spec:
                   echo "Starting application data backup at $(date)"
 
                   # Backup uploaded files
-                  if [ -d "/var/uploads/pharmacare" ]; then
-                    tar -czf "/tmp/uploads_${BACKUP_DATE}.tar.gz" -C /var/uploads pharmacare/
+                  if [ -d "/var/uploads/PharmaPilot" ]; then
+                    tar -czf "/tmp/uploads_${BACKUP_DATE}.tar.gz" -C /var/uploads PharmaPilot/
                     aws s3 cp "/tmp/uploads_${BACKUP_DATE}.tar.gz" \
                       "s3://${S3_BUCKET}/app-data-backups/uploads_${BACKUP_DATE}.tar.gz" \
                       --storage-class STANDARD_IA
@@ -192,8 +192,8 @@ spec:
                   fi
 
                   # Backup logs
-                  if [ -d "/var/log/pharmacare" ]; then
-                    tar -czf "/tmp/logs_${BACKUP_DATE}.tar.gz" -C /var/log pharmacare/
+                  if [ -d "/var/log/PharmaPilot" ]; then
+                    tar -czf "/tmp/logs_${BACKUP_DATE}.tar.gz" -C /var/log PharmaPilot/
                     aws s3 cp "/tmp/logs_${BACKUP_DATE}.tar.gz" \
                       "s3://${S3_BUCKET}/app-data-backups/logs_${BACKUP_DATE}.tar.gz" \
                       --storage-class GLACIER
@@ -203,15 +203,15 @@ spec:
                   echo "Application data backup completed at $(date)"
               env:
                 - name: BACKUP_S3_BUCKET
-                  value: 'pharmacare-backups-prod'
+                  value: 'PharmaPilot-backups-prod'
                 - name: AWS_DEFAULT_REGION
                   value: 'us-east-1'
               volumeMounts:
                 - name: uploads
-                  mountPath: /var/uploads/pharmacare
+                  mountPath: /var/uploads/PharmaPilot
                   readOnly: true
                 - name: logs
-                  mountPath: /var/log/pharmacare
+                  mountPath: /var/log/PharmaPilot
                   readOnly: true
               resources:
                 requests:
@@ -234,7 +234,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: disaster-recovery-restore
-  namespace: pharmacare-prod
+  namespace: PharmaPilot-prod
   labels:
     app: disaster-recovery
     component: restore
@@ -315,7 +315,7 @@ spec:
                   name: ai-diagnostics-secrets
                   key: BACKUP_ENCRYPTION_KEY
             - name: BACKUP_S3_BUCKET
-              value: 'pharmacare-backups-prod'
+              value: 'PharmaPilot-backups-prod'
             - name: RESTORE_DATE
               value: 'latest' # Can be overridden
             - name: AWS_DEFAULT_REGION
@@ -334,7 +334,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: backup-service-account
-  namespace: pharmacare-prod
+  namespace: PharmaPilot-prod
   annotations:
     eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT-ID:role/backup-service-role
 
@@ -344,7 +344,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: backup-role
-  namespace: pharmacare-prod
+  namespace: PharmaPilot-prod
 rules:
   - apiGroups: ['']
     resources: ['pods', 'persistentvolumeclaims']
@@ -359,11 +359,11 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: backup-role-binding
-  namespace: pharmacare-prod
+  namespace: PharmaPilot-prod
 subjects:
   - kind: ServiceAccount
     name: backup-service-account
-    namespace: pharmacare-prod
+    namespace: PharmaPilot-prod
 roleRef:
   kind: Role
   name: backup-role

@@ -21,7 +21,7 @@ export class ApiClient {
 
     const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
-      'User-Agent': 'PharmaCare-SaaS/1.0'
+      'User-Agent': 'PharmaPilot-SaaS/1.0'
     };
 
     if (config.apiKey) {

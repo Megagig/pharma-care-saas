@@ -106,7 +106,7 @@ const ServiceWorkerUpdateNotification: React.FC<ServiceWorkerUpdateNotificationP
           }
         >
           <Typography variant="body2">
-            A new version of PharmaCare is available!
+            A new version of PharmaPilot is available!
           </Typography>
         </Alert>
       </Snackbar>
@@ -141,7 +141,7 @@ const ServiceWorkerUpdateNotification: React.FC<ServiceWorkerUpdateNotificationP
           onClose={handleCloseOfflineReady}
         >
           <Typography variant="body2">
-            PharmaCare is now available offline!
+            PharmaPilot is now available offline!
           </Typography>
         </Alert>
       </Snackbar>

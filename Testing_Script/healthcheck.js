@@ -1,4 +1,4 @@
-// Health Check Script for PharmaCare SaaS Settings Module
+// Health Check Script for PharmaPilot SaaS Settings Module
 const http = require('http');
 const https = require('https');
 const url = require('url');

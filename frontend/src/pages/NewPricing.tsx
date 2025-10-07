@@ -157,7 +157,7 @@ const NewPricing = () => {
                             </Typography>
                         </Box>
                         <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                            PharmaCare
+                            PharmaPilot
                         </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -604,7 +604,7 @@ const NewPricing = () => {
                     }}
                 >
                     <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-                        Why Choose PharmaCare?
+                        Why Choose PharmaPilot?
                     </Typography>
                     <Box
                         sx={{

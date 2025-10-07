@@ -13,7 +13,7 @@ The following changes have been made to fix the CORS errors:
      'http://localhost:5173', 
      'http://127.0.0.1:5173',
      'http://192.168.8.167:5173',
-     'https://pharmacare-nttq.onrender.com', // ✅ Added this
+     'https://PharmaPilot-nttq.onrender.com', // ✅ Added this
      process.env.FRONTEND_URL || 'http://localhost:3000',
    ];
    ```
@@ -51,8 +51,8 @@ The following changes have been made to fix the CORS errors:
 
 Frontend is correctly configured with production URLs:
 ```env
-VITE_API_BASE_URL=https://pharmacare-nttq.onrender.com/api
-VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
+VITE_API_BASE_URL=https://PharmaPilot-nttq.onrender.com/api
+VITE_FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
 ```
 
 ## 🚀 Next Steps
@@ -75,8 +75,8 @@ VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
 
 2. **Set environment variables** in production:
    ```env
-   FRONTEND_URL=https://pharmacare-nttq.onrender.com
-   CORS_ORIGINS=https://pharmacare-nttq.onrender.com
+   FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+   CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com
    ```
 
 3. **Test production CORS**:
@@ -89,8 +89,8 @@ VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
 ## 🔍 Verification
 
 The CORS errors you were seeing:
-- ❌ `Access to fetch at 'http://localhost:5000/api/alerts/performance' from origin 'https://pharmacare-nttq.onrender.com' has been blocked`
-- ❌ `Access to XMLHttpRequest at 'http://localhost:5000/api/auth/login' from origin 'https://pharmacare-nttq.onrender.com' has been blocked`
+- ❌ `Access to fetch at 'http://localhost:5000/api/alerts/performance' from origin 'https://PharmaPilot-nttq.onrender.com' has been blocked`
+- ❌ `Access to XMLHttpRequest at 'http://localhost:5000/api/auth/login' from origin 'https://PharmaPilot-nttq.onrender.com' has been blocked`
 
 Should now be resolved because:
 - ✅ Production frontend URL is in CORS origins

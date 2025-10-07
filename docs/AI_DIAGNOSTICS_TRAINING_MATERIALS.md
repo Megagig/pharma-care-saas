@@ -43,7 +43,7 @@
 
 - Active pharmacist license
 - Basic computer literacy
-- Familiarity with PharmaCare platform
+- Familiarity with PharmaPilot platform
 - Understanding of clinical assessment principles
 
 ## Learning Objectives
@@ -78,7 +78,7 @@ By the end of this training, participants will be able to:
 
 #### 1.2 System Overview
 
-- Integration with existing PharmaCare platform
+- Integration with existing PharmaPilot platform
 - Key features and capabilities
 - User roles and permissions
 - Subscription requirements and licensing
@@ -669,19 +669,19 @@ By the end of this training, participants will be able to:
 
 **Training Support**
 
-- Email: training@pharmacare.com
+- Email: training@PharmaPilot.com
 - Phone: 1-800-PHARMA-TRAIN
 - Hours: Monday-Friday, 8 AM - 6 PM EST
 
 **Technical Support**
 
-- Email: support@pharmacare.com
+- Email: support@PharmaPilot.com
 - Phone: 1-800-PHARMA-TECH
 - Hours: 24/7 for critical issues
 
 **Clinical Support**
 
-- Email: clinical@pharmacare.com
+- Email: clinical@PharmaPilot.com
 - Phone: 1-800-PHARMA-CLIN
 - Hours: Monday-Friday, 7 AM - 7 PM EST
 

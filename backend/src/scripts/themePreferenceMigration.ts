@@ -91,7 +91,7 @@ if (require.main === module) {
 
   const connectDB = async () => {
     const mongoUri =
-      process.env.MONGODB_URI || 'mongodb://localhost:27017/pharmacare';
+      process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmaPilot';
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB');
   };

@@ -106,7 +106,7 @@ app.use(helmet({
         'http://127.0.0.1:5000',
         'http://localhost:3000',
         'http://localhost:5173',
-        'https://pharmacare-nttq.onrender.com'
+        'https://PharmaPilot-nttq.onrender.com'
       ],
       mediaSrc: ["'self'"],
       objectSrc: ["'none'"],
@@ -125,7 +125,7 @@ const corsOrigins = [
   'http://localhost:5173', // Vite dev server
   'http://127.0.0.1:5173', // Alternative Vite URL
   'http://192.168.8.167:5173', // Local network Vite URL
-  'https://pharmacare-nttq.onrender.com', // Production frontend
+  'https://PharmaPilot-nttq.onrender.com', // Production frontend
   process.env.FRONTEND_URL || 'http://localhost:3000',
 ];
 

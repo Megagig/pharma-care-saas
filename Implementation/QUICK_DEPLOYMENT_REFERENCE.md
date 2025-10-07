@@ -16,9 +16,9 @@
 
 ```
 NODE_ENV=production
-FRONTEND_URL=https://pharmacare-nttq.onrender.com
-CORS_ORIGINS=https://pharmacare-nttq.onrender.com
-MONGODB_URI=mongodb+srv://megagigdev:9svFmZ3VCP5ONzfU@cluster0.vf50xoc.mongodb.net/PharmaCare?retryWrites=true&w=majority&appName=Cluster0
+FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com
+MONGODB_URI=mongodb+srv://megagigdev:9svFmZ3VCP5ONzfU@cluster0.vf50xoc.mongodb.net/PharmaPilot?retryWrites=true&w=majority&appName=Cluster0
 JWT_SECRET=5ac844c5da41609d1f99c6fcfdc8486824e767e9c30a0b38271be167cc23afb1
 JWT_REFRESH_SECRET=4nzyO7MxnSnCCfs8qNwxQHBRVqrryYAq
 ```
@@ -44,7 +44,7 @@ git push
 
 ```bash
 # Quick test
-curl https://pharmacare-nttq.onrender.com/api/health
+curl https://PharmaPilot-nttq.onrender.com/api/health
 
 # Full test
 ./test-production-deployment.sh
@@ -52,7 +52,7 @@ curl https://pharmacare-nttq.onrender.com/api/health
 
 ### 4. Browser
 
-1. Open https://pharmacare-nttq.onrender.com
+1. Open https://PharmaPilot-nttq.onrender.com
 2. Clear cache (Ctrl+Shift+Delete)
 3. Hard refresh (Ctrl+Shift+R)
 4. Try login
@@ -102,7 +102,7 @@ npm run build
 ### Login fails?
 ```bash
 # Check backend is running
-curl https://pharmacare-nttq.onrender.com/api/health
+curl https://PharmaPilot-nttq.onrender.com/api/health
 
 # Check MongoDB connection in Render logs
 ```

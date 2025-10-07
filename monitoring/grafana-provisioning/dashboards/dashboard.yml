@@ -1,9 +1,9 @@
 apiVersion: 1
 
 providers:
-  - name: 'pharmacare-dashboards'
+  - name: 'PharmaPilot-dashboards'
     orgId: 1
-    folder: 'Pharmacare'
+    folder: 'PharmaPilot'
     type: file
     disableDeletion: false
     updateIntervalSeconds: 10

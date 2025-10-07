@@ -163,7 +163,7 @@ const Help: React.FC = () => {
   const [helpArticles] = useState<HelpArticle[]>([
     {
       id: '1',
-      title: 'Getting Started with PharmaCare',
+      title: 'Getting Started with PharmaPilot',
       description:
         'A comprehensive guide to setting up your pharmacy management system',
       category: 'getting-started',
@@ -195,7 +195,7 @@ const Help: React.FC = () => {
   const [videoTutorials] = useState<VideoTutorial[]>([
     {
       id: '1',
-      title: 'PharmaCare Dashboard Overview',
+      title: 'PharmaPilot Dashboard Overview',
       description: 'Get familiar with your dashboard and key features',
       thumbnail: '/thumbnails/dashboard-overview.jpg',
       duration: '3:45',
@@ -563,7 +563,7 @@ const Help: React.FC = () => {
                 </ListItemIcon>
                 <ListItemText
                   primary="Email Support"
-                  secondary="support@pharmacare.ng - We typically respond within 24 hours"
+                  secondary="support@PharmaPilot.ng - We typically respond within 24 hours"
                 />
               </ListItem>
 
@@ -688,7 +688,7 @@ const Help: React.FC = () => {
           <Divider />
           <CardContent>
             <Typography variant="body2" color="text.secondary" paragraph>
-              All PharmaCare services are running normally. Check our status
+              All PharmaPilot services are running normally. Check our status
               page for real-time updates.
             </Typography>
             <Button variant="outlined" fullWidth>

@@ -1,12 +1,12 @@
 /**
- * Service Worker for PharmaCare Application
+ * Service Worker for PharmaPilot Application
  * Implements caching strategies for optimal performance and offline support
  */
 
-const CACHE_NAME = 'pharmacare-v1';
-const STATIC_CACHE = 'pharmacare-static-v1';
-const DYNAMIC_CACHE = 'pharmacare-dynamic-v1';
-const API_CACHE = 'pharmacare-api-v1';
+const CACHE_NAME = 'PharmaPilot-v1';
+const STATIC_CACHE = 'PharmaPilot-static-v1';
+const DYNAMIC_CACHE = 'PharmaPilot-dynamic-v1';
+const API_CACHE = 'PharmaPilot-api-v1';
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [

@@ -18,13 +18,13 @@
 ### Emergency Contacts
 
 - **Critical System Issues**: 1-800-PHARMA-URGENT
-- **Clinical Support**: clinical@pharmacare.com
-- **Technical Support**: support@pharmacare.com
+- **Clinical Support**: clinical@PharmaPilot.com
+- **Technical Support**: support@PharmaPilot.com
 - **After Hours Support**: Available 24/7 for critical issues
 
 ### System Status
 
-- **Status Page**: https://status.pharmacare.com
+- **Status Page**: https://status.PharmaPilot.com
 - **Maintenance Windows**: Sundays 2:00-4:00 AM EST
 - **Service Level Agreement**: 99.9% uptime guarantee
 
@@ -597,14 +597,14 @@
 
 #### Technical Support
 
-- **Email**: support@pharmacare.com
+- **Email**: support@PharmaPilot.com
 - **Phone**: 1-800-PHARMA-TECH
 - **Hours**: Monday-Friday 8 AM - 8 PM EST
 - **Response Time**: 4 hours for standard issues, 1 hour for urgent
 
 #### Clinical Support
 
-- **Email**: clinical@pharmacare.com
+- **Email**: clinical@PharmaPilot.com
 - **Phone**: 1-800-PHARMA-CLIN
 - **Hours**: Monday-Friday 7 AM - 7 PM EST
 - **Response Time**: 2 hours for clinical questions

@@ -3,7 +3,7 @@ import { NotificationSettings, INotificationSettings } from '../../models/Notifi
 
 describe('NotificationSettings Model', () => {
   beforeAll(async () => {
-    const mongoUri = process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/test_pharmacare';
+    const mongoUri = process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/test_PharmaPilot';
     await mongoose.connect(mongoUri);
   });
 

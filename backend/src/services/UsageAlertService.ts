@@ -237,7 +237,7 @@ export class UsageAlertService {
 
           <p>If you have any questions, please don't hesitate to contact our support team.</p>
           
-          <p>Best regards,<br>The Pharmacare Team</p>
+          <p>Best regards,<br>The PharmaPilot Team</p>
         </div>
         
         <div style="background: #6c757d; color: white; padding: 10px; text-align: center; font-size: 12px;">

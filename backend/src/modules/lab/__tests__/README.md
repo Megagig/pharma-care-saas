@@ -99,7 +99,7 @@ The tests require these environment variables:
 ```bash
 JWT_SECRET=test-jwt-secret-key-for-testing-minimum-32-characters-long
 LAB_TOKEN_SECRET=test-lab-token-secret-key-minimum-32-characters-long
-FRONTEND_URL=https://test.pharmacare.com
+FRONTEND_URL=https://test.PharmaPilot.com
 NODE_ENV=test
 ```
 

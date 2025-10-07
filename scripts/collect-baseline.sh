@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Performance Baseline Collection Script
-# This script collects comprehensive performance metrics for the PharmaCare application
+# This script collects comprehensive performance metrics for the PharmaPilot application
 
 set -e
 

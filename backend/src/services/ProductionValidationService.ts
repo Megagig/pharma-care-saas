@@ -204,7 +204,7 @@ class ProductionValidationService {
 
     // Run Lighthouse test
     const lighthouseResult = await LighthouseCIService.runLighthouseTest(
-      process.env.PRODUCTION_URL || 'https://app.pharmacare.com'
+      process.env.PRODUCTION_URL || 'https://app.PharmaPilot.com'
     );
 
     // Get Web Vitals from last 10 minutes

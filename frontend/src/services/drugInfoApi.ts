@@ -10,8 +10,8 @@ import {
 } from '../types/drugTypes';
 
 // Use environment variable or production URL
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api'}/drugs`;
-const PUBLIC_API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api'}/public`;
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}/drugs`;
+const PUBLIC_API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}/public`;
 
 // Create axios instance with default config
 const apiClient = axios.create({

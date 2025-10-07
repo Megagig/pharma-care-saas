@@ -4,9 +4,9 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 const getBaseURL = () => {
   try {
     // Use environment variable or fallback to production URL
-    return import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api';
+    return import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api';
   } catch {
-    return 'https://pharmacare-nttq.onrender.com/api';
+    return 'https://PharmaPilot-nttq.onrender.com/api';
   }
 };
 

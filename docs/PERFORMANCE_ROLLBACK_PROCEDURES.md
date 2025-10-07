@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides comprehensive rollback procedures and emergency response protocols for the performance optimization implementations in the PharmaCare MERN-stack SaaS application. These procedures ensure rapid recovery from performance regressions or critical issues.
+This document provides comprehensive rollback procedures and emergency response protocols for the performance optimization implementations in the PharmaPilot MERN-stack SaaS application. These procedures ensure rapid recovery from performance regressions or critical issues.
 
 ## Emergency Response Team
 

@@ -1,4 +1,4 @@
-# Docker Compose configuration for PharmaCare SaaS Settings Module
+# Docker Compose configuration for PharmaPilot SaaS Settings Module
 version: '3.8'
 
 services:
@@ -8,7 +8,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
-    container_name: pharmacare-saas-app
+    container_name: PharmaPilot-saas-app
     restart: unless-stopped
     ports:
       - "${APP_PORT:-3000}:3000"
@@ -34,11 +34,11 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - app_logs:/var/log/pharmacare
-      - app_uploads:/var/lib/pharmacare/uploads
-      - app_temp:/var/lib/pharmacare/temp
+      - app_logs:/var/log/PharmaPilot
+      - app_uploads:/var/lib/PharmaPilot/uploads
+      - app_temp:/var/lib/PharmaPilot/temp
     networks:
-      - pharmacare-network
+      - PharmaPilot-network
     deploy:
       resources:
         limits:
@@ -57,11 +57,11 @@ services:
   # PostgreSQL database
   db:
     image: postgres:14-alpine
-    container_name: pharmacare-saas-db
+    container_name: PharmaPilot-saas-db
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=${DB_NAME:-pharmacare_saas}
-      - POSTGRES_USER=${DB_USER:-pharmacare_user}
+      - POSTGRES_DB=${DB_NAME:-PharmaPilot_saas}
+      - POSTGRES_USER=${DB_USER:-PharmaPilot_user}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
     volumes:
@@ -69,7 +69,7 @@ services:
       - ./database/init:/docker-entrypoint-initdb.d
       - ./database/backups:/backups
     networks:
-      - pharmacare-network
+      - PharmaPilot-network
     ports:
       - "${DB_PORT:-5432}:5432"
     deploy:
@@ -81,7 +81,7 @@ services:
           cpus: '0.5'
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pharmacare_user} -d ${DB_NAME:-pharmacare_saas}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-PharmaPilot_user} -d ${DB_NAME:-PharmaPilot_saas}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -106,7 +106,7 @@ services:
   # Redis cache
   redis:
     image: redis:7-alpine
-    container_name: pharmacare-saas-redis
+    container_name: PharmaPilot-saas-redis
     restart: unless-stopped
     command: >
       redis-server
@@ -121,7 +121,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - pharmacare-network
+      - PharmaPilot-network
     ports:
       - "${REDIS_PORT:-6379}:6379"
     deploy:
@@ -142,7 +142,7 @@ services:
   # Nginx reverse proxy
   nginx:
     image: nginx:alpine
-    container_name: pharmacare-saas-nginx
+    container_name: PharmaPilot-saas-nginx
     restart: unless-stopped
     ports:
       - "${HTTP_PORT:-80}:80"
@@ -156,7 +156,7 @@ services:
     depends_on:
       - app
     networks:
-      - pharmacare-network
+      - PharmaPilot-network
     deploy:
       resources:
         limits:
@@ -175,7 +175,7 @@ services:
   # Prometheus monitoring
   prometheus:
     image: prom/prometheus:latest
-    container_name: pharmacare-saas-prometheus
+    container_name: PharmaPilot-saas-prometheus
     restart: unless-stopped
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
@@ -192,7 +192,7 @@ services:
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
     networks:
-      - pharmacare-network
+      - PharmaPilot-network
     deploy:
       resources:
         limits:
@@ -205,7 +205,7 @@ services:
   # Grafana dashboard
   grafana:
     image: grafana/grafana:latest
-    container_name: pharmacare-saas-grafana
+    container_name: PharmaPilot-saas-grafana
     restart: unless-stopped
     ports:
       - "${GRAFANA_PORT:-3001}:3000"
@@ -220,7 +220,7 @@ services:
     depends_on:
       - prometheus
     networks:
-      - pharmacare-network
+      - PharmaPilot-network
     deploy:
       resources:
         limits:
@@ -233,7 +233,7 @@ services:
   # Node Exporter for system metrics
   node-exporter:
     image: prom/node-exporter:latest
-    container_name: pharmacare-saas-node-exporter
+    container_name: PharmaPilot-saas-node-exporter
     restart: unless-stopped
     ports:
       - "9100:9100"
@@ -247,7 +247,7 @@ services:
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     networks:
-      - pharmacare-network
+      - PharmaPilot-network
 
 # Named volumes for data persistence
 volumes:
@@ -270,7 +270,7 @@ volumes:
 
 # Network configuration
 networks:
-  pharmacare-network:
+  PharmaPilot-network:
     driver: bridge
     ipam:
       config:

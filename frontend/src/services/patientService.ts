@@ -35,7 +35,7 @@ import {
 } from '../types/patientManagement';
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api';
+  import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api';
 
 interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;

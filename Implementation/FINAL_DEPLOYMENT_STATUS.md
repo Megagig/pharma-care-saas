@@ -36,12 +36,12 @@
 
 ```env
 NODE_ENV=production
-FRONTEND_URL=https://pharmacare-nttq.onrender.com
-CORS_ORIGINS=https://pharmacare-nttq.onrender.com
-MONGODB_URI=mongodb+srv://megagigdev:9svFmZ3VCP5ONzfU@cluster0.vf50xoc.mongodb.net/PharmaCare?retryWrites=true&w=majority&appName=Cluster0
+FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com
+MONGODB_URI=mongodb+srv://megagigdev:9svFmZ3VCP5ONzfU@cluster0.vf50xoc.mongodb.net/PharmaPilot?retryWrites=true&w=majority&appName=Cluster0
 JWT_SECRET=5ac844c5da41609d1f99c6fcfdc8486824e767e9c30a0b38271be167cc23afb1
 JWT_REFRESH_SECRET=4nzyO7MxnSnCCfs8qNwxQHBRVqrryYAq
-VITE_API_BASE_URL=https://pharmacare-nttq.onrender.com/api
+VITE_API_BASE_URL=https://PharmaPilot-nttq.onrender.com/api
 ```
 
 Plus all other API keys (RESEND, OPENFDA, OPENROUTER, PAYSTACK, NOMBA, etc.)
@@ -51,8 +51,8 @@ Plus all other API keys (RESEND, OPENFDA, OPENROUTER, PAYSTACK, NOMBA, etc.)
 **✅ Already Correct:**
 
 ```env
-VITE_API_BASE_URL=https://pharmacare-nttq.onrender.com/api
-VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
+VITE_API_BASE_URL=https://PharmaPilot-nttq.onrender.com/api
+VITE_FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
 ```
 
 ### Build Command (Render)
@@ -99,7 +99,7 @@ cd frontend && npm ci && npm run build && cd ../backend && npm ci && npm run bui
 3. Go to **Environment** tab
 4. **Change these variables:**
    - `NODE_ENV` → `production`
-   - `FRONTEND_URL` → `https://pharmacare-nttq.onrender.com`
+   - `FRONTEND_URL` → `https://PharmaPilot-nttq.onrender.com`
    - Keep `VITE_API_BASE_URL` (for monorepo deployment)
 5. Click **Save Changes**
 
@@ -121,7 +121,7 @@ git push origin main
 
 ```bash
 # Test backend health
-curl https://pharmacare-nttq.onrender.com/api/health
+curl https://PharmaPilot-nttq.onrender.com/api/health
 
 # Run automated tests
 ./test-production-deployment.sh
@@ -129,7 +129,7 @@ curl https://pharmacare-nttq.onrender.com/api/health
 
 ### Step 5: Verify in Browser
 
-1. Open `https://pharmacare-nttq.onrender.com`
+1. Open `https://PharmaPilot-nttq.onrender.com`
 2. Clear browser cache (Ctrl+Shift+Delete)
 3. Hard refresh (Ctrl+Shift+R)
 4. Try to login

@@ -553,9 +553,9 @@ monitoring:
   lighthouse:
     schedule: "0 */6 * * *"  # Every 6 hours
     urls:
-      - "https://app.pharmacare.com"
-      - "https://app.pharmacare.com/dashboard"
-      - "https://app.pharmacare.com/patients"
+      - "https://app.PharmaPilot.com"
+      - "https://app.PharmaPilot.com/dashboard"
+      - "https://app.PharmaPilot.com/patients"
     
   api_performance:
     latency_buckets: [50, 100, 200, 500, 1000, 2000, 5000]

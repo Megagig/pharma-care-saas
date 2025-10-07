@@ -1,8 +1,8 @@
-// PM2 Ecosystem Configuration for PharmaCare SaaS Settings Module
+// PM2 Ecosystem Configuration for PharmaPilot SaaS Settings Module
 module.exports = {
   apps: [
     {
-      name: 'pharmacare-saas-settings',
+      name: 'PharmaPilot-saas-settings',
       script: './backend/dist/server.js',
       instances: process.env.NODE_ENV === 'production' ? 'max' : 1,
       exec_mode: 'cluster',
@@ -27,9 +27,9 @@ module.exports = {
       },
       
       // Logging configuration
-      error_file: '/var/log/pharmacare/saas-settings-error.log',
-      out_file: '/var/log/pharmacare/saas-settings-out.log',
-      log_file: '/var/log/pharmacare/saas-settings-combined.log',
+      error_file: '/var/log/PharmaPilot/saas-settings-error.log',
+      out_file: '/var/log/PharmaPilot/saas-settings-out.log',
+      log_file: '/var/log/PharmaPilot/saas-settings-combined.log',
       time: true,
       
       // Performance and reliability settings
@@ -90,22 +90,22 @@ module.exports = {
   // Deployment configuration
   deploy: {
     production: {
-      user: 'pharmacare',
+      user: 'PharmaPilot',
       host: ['production-server-1', 'production-server-2'],
       ref: 'origin/main',
-      repo: 'git@github.com:pharmacare/saas-settings.git',
-      path: '/opt/pharmacare/saas-settings',
+      repo: 'git@github.com:PharmaPilot/saas-settings.git',
+      path: '/opt/PharmaPilot/saas-settings',
       'pre-deploy-local': '',
       'post-deploy': 'npm install && npm run build && pm2 reload ecosystem.config.js --env production',
       'pre-setup': 'apt update && apt install git -y'
     },
     
     staging: {
-      user: 'pharmacare',
+      user: 'PharmaPilot',
       host: 'staging-server',
       ref: 'origin/develop',
-      repo: 'git@github.com:pharmacare/saas-settings.git',
-      path: '/opt/pharmacare/saas-settings-staging',
+      repo: 'git@github.com:PharmaPilot/saas-settings.git',
+      path: '/opt/PharmaPilot/saas-settings-staging',
       'post-deploy': 'npm install && npm run build && pm2 reload ecosystem.config.js --env staging'
     }
   }

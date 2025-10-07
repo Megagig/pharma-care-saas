@@ -59,7 +59,7 @@ echo ""
 echo "📁 Checking frontend/.env configuration..."
 if [ -f "frontend/.env" ]; then
     FRONTEND_API_URL=$(grep "VITE_API_BASE_URL" frontend/.env | cut -d'=' -f2)
-    if [[ "$FRONTEND_API_URL" == *"pharmacare-nttq.onrender.com"* ]]; then
+    if [[ "$FRONTEND_API_URL" == *"PharmaPilot-nttq.onrender.com"* ]]; then
         echo -e "${GREEN}✅ Frontend .env configured for production: $FRONTEND_API_URL${NC}"
     else
         echo -e "${RED}❌ Frontend .env not configured for production: $FRONTEND_API_URL${NC}"
@@ -78,13 +78,13 @@ if [ -f "backend/.env" ]; then
     BACKEND_FRONTEND_URL=$(grep "^FRONTEND_URL=" backend/.env | cut -d'=' -f2)
     BACKEND_CORS=$(grep "^CORS_ORIGINS=" backend/.env | cut -d'=' -f2)
     
-    if [[ "$BACKEND_FRONTEND_URL" == *"pharmacare-nttq.onrender.com"* ]]; then
+    if [[ "$BACKEND_FRONTEND_URL" == *"PharmaPilot-nttq.onrender.com"* ]]; then
         echo -e "${GREEN}✅ Backend FRONTEND_URL configured for production: $BACKEND_FRONTEND_URL${NC}"
     else
         echo -e "${YELLOW}⚠️  Backend FRONTEND_URL: $BACKEND_FRONTEND_URL${NC}"
     fi
     
-    if [[ "$BACKEND_CORS" == *"pharmacare-nttq.onrender.com"* ]]; then
+    if [[ "$BACKEND_CORS" == *"PharmaPilot-nttq.onrender.com"* ]]; then
         echo -e "${GREEN}✅ Backend CORS_ORIGINS includes production URL${NC}"
     else
         echo -e "${RED}❌ Backend CORS_ORIGINS missing production URL: $BACKEND_CORS${NC}"
@@ -103,14 +103,14 @@ if [ -f "backend/.env.production" ]; then
     PROD_FRONTEND_URL=$(grep "^FRONTEND_URL=" backend/.env.production | cut -d'=' -f2)
     PROD_CORS=$(grep "^CORS_ORIGINS=" backend/.env.production | cut -d'=' -f2)
     
-    if [[ "$PROD_FRONTEND_URL" == *"pharmacare-nttq.onrender.com"* ]]; then
+    if [[ "$PROD_FRONTEND_URL" == *"PharmaPilot-nttq.onrender.com"* ]]; then
         echo -e "${GREEN}✅ Production FRONTEND_URL configured correctly: $PROD_FRONTEND_URL${NC}"
     else
         echo -e "${RED}❌ Production FRONTEND_URL not configured: $PROD_FRONTEND_URL${NC}"
         ISSUES_FOUND=$((ISSUES_FOUND + 1))
     fi
     
-    if [[ "$PROD_CORS" == *"pharmacare-nttq.onrender.com"* ]]; then
+    if [[ "$PROD_CORS" == *"PharmaPilot-nttq.onrender.com"* ]]; then
         echo -e "${GREEN}✅ Production CORS_ORIGINS configured correctly${NC}"
     else
         echo -e "${RED}❌ Production CORS_ORIGINS not configured: $PROD_CORS${NC}"

@@ -91,18 +91,18 @@ sudo usermod -aG docker $USER
 
 ```bash
 # Create application user
-sudo useradd -m -s /bin/bash pharmacare
-sudo usermod -aG sudo pharmacare
+sudo useradd -m -s /bin/bash PharmaPilot
+sudo usermod -aG sudo PharmaPilot
 
 # Create application directories
-sudo mkdir -p /opt/pharmacare/saas-settings
-sudo mkdir -p /var/log/pharmacare
-sudo mkdir -p /var/lib/pharmacare/uploads
+sudo mkdir -p /opt/PharmaPilot/saas-settings
+sudo mkdir -p /var/log/PharmaPilot
+sudo mkdir -p /var/lib/PharmaPilot/uploads
 
 # Set ownership
-sudo chown -R pharmacare:pharmacare /opt/pharmacare
-sudo chown -R pharmacare:pharmacare /var/log/pharmacare
-sudo chown -R pharmacare:pharmacare /var/lib/pharmacare
+sudo chown -R PharmaPilot:PharmaPilot /opt/PharmaPilot
+sudo chown -R PharmaPilot:PharmaPilot /var/log/PharmaPilot
+sudo chown -R PharmaPilot:PharmaPilot /var/lib/PharmaPilot
 ```
 
 ### Staging Environment
@@ -120,19 +120,19 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=staging
-      - DATABASE_URL=postgresql://user:password@db:5432/pharmacare_staging
+      - DATABASE_URL=postgresql://user:password@db:5432/PharmaPilot_staging
       - REDIS_URL=redis://redis:6379
     depends_on:
       - db
       - redis
     volumes:
-      - ./logs:/var/log/pharmacare
-      - ./uploads:/var/lib/pharmacare/uploads
+      - ./logs:/var/log/PharmaPilot
+      - ./uploads:/var/lib/PharmaPilot/uploads
 
   db:
     image: postgres:14
     environment:
-      - POSTGRES_DB=pharmacare_staging
+      - POSTGRES_DB=PharmaPilot_staging
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
     volumes:
@@ -166,7 +166,7 @@ volumes:
 
 ```bash
 # Clone repository
-git clone https://github.com/pharmacare/saas-settings.git
+git clone https://github.com/PharmaPilot/saas-settings.git
 cd saas-settings
 
 # Install dependencies
@@ -201,12 +201,12 @@ npm run dev
 sudo -u postgres psql
 
 -- Create database and user
-CREATE DATABASE pharmacare_production;
-CREATE USER pharmacare_user WITH ENCRYPTED PASSWORD 'secure_password_here';
-GRANT ALL PRIVILEGES ON DATABASE pharmacare_production TO pharmacare_user;
+CREATE DATABASE PharmaPilot_production;
+CREATE USER PharmaPilot_user WITH ENCRYPTED PASSWORD 'secure_password_here';
+GRANT ALL PRIVILEGES ON DATABASE PharmaPilot_production TO PharmaPilot_user;
 
 -- Create extensions
-\c pharmacare_production
+\c PharmaPilot_production
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 CREATE EXTENSION IF NOT EXISTS "btree_gin";
@@ -256,11 +256,11 @@ effective_io_concurrency = 200
 
 # Local connections
 local   all             postgres                                peer
-local   all             pharmacare_user                         md5
+local   all             PharmaPilot_user                         md5
 
 # IPv4 local connections
-host    all             pharmacare_user         127.0.0.1/32    md5
-host    all             pharmacare_user         10.0.0.0/8      md5
+host    all             PharmaPilot_user         127.0.0.1/32    md5
+host    all             PharmaPilot_user         10.0.0.0/8      md5
 
 # Deny all other connections
 host    all             all                     0.0.0.0/0       reject
@@ -392,18 +392,18 @@ npm run migrate:rollback
 # Application
 NODE_ENV=production
 PORT=3000
-APP_NAME="PharmaCare SaaS Settings"
+APP_NAME="PharmaPilot SaaS Settings"
 APP_VERSION=1.0.0
 
 # Database
-DATABASE_URL=postgresql://pharmacare_user:secure_password@localhost:5432/pharmacare_production
+DATABASE_URL=postgresql://PharmaPilot_user:secure_password@localhost:5432/PharmaPilot_production
 DATABASE_POOL_MIN=2
 DATABASE_POOL_MAX=20
 DATABASE_TIMEOUT=30000
 
 # Redis
 REDIS_URL=redis://:secure_redis_password@localhost:6379
-REDIS_PREFIX=pharmacare:saas:
+REDIS_PREFIX=PharmaPilot:saas:
 
 # Security
 JWT_SECRET=very_long_random_string_here_minimum_64_characters_recommended
@@ -412,7 +412,7 @@ BCRYPT_ROUNDS=12
 SESSION_SECRET=another_very_long_random_string_for_sessions
 
 # CORS
-CORS_ORIGIN=https://app.pharmacare.com,https://admin.pharmacare.com
+CORS_ORIGIN=https://app.PharmaPilot.com,https://admin.PharmaPilot.com
 CORS_CREDENTIALS=true
 
 # Rate Limiting
@@ -423,7 +423,7 @@ RATE_LIMIT_SKIP_SUCCESSFUL_REQUESTS=false
 # File Upload
 UPLOAD_MAX_SIZE=10485760
 UPLOAD_ALLOWED_TYPES=image/jpeg,image/png,application/pdf
-UPLOAD_DESTINATION=/var/lib/pharmacare/uploads
+UPLOAD_DESTINATION=/var/lib/PharmaPilot/uploads
 
 # Email
 SMTP_HOST=smtp.sendgrid.net
@@ -431,7 +431,7 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=apikey
 SMTP_PASS=your_sendgrid_api_key
-EMAIL_FROM=noreply@pharmacare.com
+EMAIL_FROM=noreply@PharmaPilot.com
 
 # SMS (Optional)
 TWILIO_ACCOUNT_SID=your_twilio_account_sid
@@ -468,7 +468,7 @@ ANALYTICS_RETENTION_DAYS=365
 // config/index.js
 const config = {
   app: {
-    name: process.env.APP_NAME || 'PharmaCare SaaS Settings',
+    name: process.env.APP_NAME || 'PharmaPilot SaaS Settings',
     version: process.env.APP_VERSION || '1.0.0',
     port: parseInt(process.env.PORT) || 3000,
     env: process.env.NODE_ENV || 'development'
@@ -489,7 +489,7 @@ const config = {
 
   redis: {
     url: process.env.REDIS_URL,
-    prefix: process.env.REDIS_PREFIX || 'pharmacare:saas:',
+    prefix: process.env.REDIS_PREFIX || 'PharmaPilot:saas:',
     retryDelayOnFailover: 100,
     maxRetriesPerRequest: 3
   },
@@ -534,7 +534,7 @@ const config = {
         pass: process.env.SMTP_PASS
       }
     },
-    from: process.env.EMAIL_FROM || 'noreply@pharmacare.com'
+    from: process.env.EMAIL_FROM || 'noreply@PharmaPilot.com'
   },
 
   sms: {
@@ -591,20 +591,20 @@ module.exports = config;
 #### Nginx SSL Configuration
 
 ```nginx
-# /etc/nginx/sites-available/pharmacare-saas
+# /etc/nginx/sites-available/PharmaPilot-saas
 server {
     listen 80;
-    server_name admin.pharmacare.com;
+    server_name admin.PharmaPilot.com;
     return 301 https://$server_name$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name admin.pharmacare.com;
+    server_name admin.PharmaPilot.com;
 
     # SSL Configuration
-    ssl_certificate /etc/nginx/ssl/pharmacare.crt;
-    ssl_certificate_key /etc/nginx/ssl/pharmacare.key;
+    ssl_certificate /etc/nginx/ssl/PharmaPilot.crt;
+    ssl_certificate_key /etc/nginx/ssl/PharmaPilot.key;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
     ssl_prefer_server_ciphers off;
@@ -617,7 +617,7 @@ server {
     add_header X-Frame-Options DENY always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://api.pharmacare.com;" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://api.PharmaPilot.com;" always;
 
     # Proxy Configuration
     location / {
@@ -635,14 +635,14 @@ server {
 
     # Static Files
     location /static/ {
-        alias /opt/pharmacare/saas-settings/public/;
+        alias /opt/PharmaPilot/saas-settings/public/;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
 
     # File Uploads
     location /uploads/ {
-        alias /var/lib/pharmacare/uploads/;
+        alias /var/lib/PharmaPilot/uploads/;
         expires 1y;
         add_header Cache-Control "public";
     }
@@ -721,7 +721,7 @@ const securityMiddleware = [
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
         fontSrc: ["'self'"],
-        connectSrc: ["'self'", "https://api.pharmacare.com"]
+        connectSrc: ["'self'", "https://api.PharmaPilot.com"]
       }
     },
     hsts: {
@@ -932,10 +932,10 @@ module.exports = new SMSService();
 set -e
 
 # Configuration
-APP_NAME="pharmacare-saas-settings"
-APP_DIR="/opt/pharmacare/saas-settings"
-BACKUP_DIR="/opt/pharmacare/backups"
-USER="pharmacare"
+APP_NAME="PharmaPilot-saas-settings"
+APP_DIR="/opt/PharmaPilot/saas-settings"
+BACKUP_DIR="/opt/PharmaPilot/backups"
+USER="PharmaPilot"
 NODE_ENV="production"
 
 echo "Starting deployment of $APP_NAME..."
@@ -997,7 +997,7 @@ echo "Deployment completed successfully!"
 // ecosystem.config.js
 module.exports = {
   apps: [{
-    name: 'pharmacare-saas-settings',
+    name: 'PharmaPilot-saas-settings',
     script: './dist/server.js',
     instances: 'max',
     exec_mode: 'cluster',
@@ -1009,9 +1009,9 @@ module.exports = {
       NODE_ENV: 'production',
       PORT: 3000
     },
-    error_file: '/var/log/pharmacare/err.log',
-    out_file: '/var/log/pharmacare/out.log',
-    log_file: '/var/log/pharmacare/combined.log',
+    error_file: '/var/log/PharmaPilot/err.log',
+    out_file: '/var/log/PharmaPilot/out.log',
+    log_file: '/var/log/PharmaPilot/combined.log',
     time: true,
     max_memory_restart: '1G',
     node_args: '--max-old-space-size=1024',
@@ -1053,22 +1053,22 @@ RUN apk add --no-cache dumb-init
 
 # Create app user
 RUN addgroup -g 1001 -S nodejs
-RUN adduser -S pharmacare -u 1001
+RUN adduser -S PharmaPilot -u 1001
 
 # Set working directory
 WORKDIR /app
 
 # Copy built application
-COPY --from=builder --chown=pharmacare:nodejs /app/dist ./dist
-COPY --from=builder --chown=pharmacare:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=pharmacare:nodejs /app/package*.json ./
+COPY --from=builder --chown=PharmaPilot:nodejs /app/dist ./dist
+COPY --from=builder --chown=PharmaPilot:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=PharmaPilot:nodejs /app/package*.json ./
 
 # Create necessary directories
-RUN mkdir -p /var/log/pharmacare /var/lib/pharmacare/uploads
-RUN chown -R pharmacare:nodejs /var/log/pharmacare /var/lib/pharmacare
+RUN mkdir -p /var/log/PharmaPilot /var/lib/PharmaPilot/uploads
+RUN chown -R PharmaPilot:nodejs /var/log/PharmaPilot /var/lib/PharmaPilot
 
 # Switch to app user
-USER pharmacare
+USER PharmaPilot
 
 # Expose port
 EXPOSE 3000
@@ -1102,10 +1102,10 @@ services:
       - db
       - redis
     volumes:
-      - ./logs:/var/log/pharmacare
-      - ./uploads:/var/lib/pharmacare/uploads
+      - ./logs:/var/log/PharmaPilot
+      - ./uploads:/var/lib/PharmaPilot/uploads
     networks:
-      - pharmacare-network
+      - PharmaPilot-network
     deploy:
       replicas: 2
       resources:
@@ -1120,8 +1120,8 @@ services:
     image: postgres:14
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=pharmacare_production
-      - POSTGRES_USER=pharmacare_user
+      - POSTGRES_DB=PharmaPilot_production
+      - POSTGRES_USER=PharmaPilot_user
       - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
     secrets:
       - db_password
@@ -1129,7 +1129,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
     networks:
-      - pharmacare-network
+      - PharmaPilot-network
     deploy:
       resources:
         limits:
@@ -1145,7 +1145,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - pharmacare-network
+      - PharmaPilot-network
 
   nginx:
     image: nginx:alpine
@@ -1159,14 +1159,14 @@ services:
     depends_on:
       - app
     networks:
-      - pharmacare-network
+      - PharmaPilot-network
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
-  pharmacare-network:
+  PharmaPilot-network:
     driver: bridge
 
 secrets:
@@ -1224,8 +1224,8 @@ req.end();
 
 DB_HOST="localhost"
 DB_PORT="5432"
-DB_NAME="pharmacare_production"
-DB_USER="pharmacare_user"
+DB_NAME="PharmaPilot_production"
+DB_USER="PharmaPilot_user"
 
 # Test database connection
 if PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "SELECT 1;" > /dev/null 2>&1; then
@@ -1257,7 +1257,7 @@ echo "Database health check: PASSED"
 #!/bin/bash
 # test_endpoints.sh
 
-BASE_URL="https://admin.pharmacare.com"
+BASE_URL="https://admin.PharmaPilot.com"
 API_KEY="your_test_api_key"
 
 # Test health endpoint
@@ -1273,7 +1273,7 @@ fi
 echo "Testing authentication..."
 AUTH_RESPONSE=$(curl -s -X POST "$BASE_URL/api/auth/login" \
     -H "Content-Type: application/json" \
-    -d '{"email":"test@pharmacare.com","password":"testpassword"}')
+    -d '{"email":"test@PharmaPilot.com","password":"testpassword"}')
 
 if echo "$AUTH_RESPONSE" | grep -q "token"; then
     echo "Authentication: OK"
@@ -1304,7 +1304,7 @@ echo "API endpoint testing: PASSED"
 const autocannon = require('autocannon');
 
 const instance = autocannon({
-  url: 'https://admin.pharmacare.com',
+  url: 'https://admin.PharmaPilot.com',
   connections: 10,
   pipelining: 1,
   duration: 30,
@@ -1350,7 +1350,7 @@ class DataDogMonitoring {
     this.client = new StatsD({
       host: 'localhost',
       port: 8125,
-      prefix: 'pharmacare.saas.',
+      prefix: 'PharmaPilot.saas.',
       globalTags: {
         env: config.app.env,
         service: 'saas-settings'
@@ -1456,7 +1456,7 @@ module.exports = {
 ```yaml
 # alerts.yml
 groups:
-  - name: pharmacare-saas-settings
+  - name: PharmaPilot-saas-settings
     rules:
       - alert: HighErrorRate
         expr: rate(http_requests_total{status_code=~"5.."}[5m]) > 0.1

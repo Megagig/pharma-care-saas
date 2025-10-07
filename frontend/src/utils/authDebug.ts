@@ -3,7 +3,7 @@ import axios, { AxiosError } from 'axios';
 // Function to clear invalid cookies
 export const clearInvalidCookies = async (): Promise<boolean> => {
   try {
-    await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api'}/auth/clear-cookies`, {}, {
+    await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}/auth/clear-cookies`, {}, {
       withCredentials: true
     });
 
@@ -21,7 +21,7 @@ export const clearInvalidCookies = async (): Promise<boolean> => {
 export const checkAuthToken = async (): Promise<boolean> => {
   try {
     // Try to make an authenticated request to check if we're logged in
-    await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api'}/auth/me`, {
+    await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}/auth/me`, {
       withCredentials: true
     });
     console.log('Auth check successful');
@@ -38,7 +38,7 @@ export const testAPIConnection = async (): Promise<boolean> => {
     console.log('Testing API connection with httpOnly cookies...');
 
     const response = await axios.get(
-      `${import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api'}/feature-flags`,
+      `${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}/feature-flags`,
       {
         withCredentials: true, // Include httpOnly cookies
       }
@@ -59,7 +59,7 @@ export const testAPIConnection = async (): Promise<boolean> => {
 // Function to test login (replaces manual token setting)
 export const testLogin = async (email: string, password: string): Promise<boolean> => {
   try {
-    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api'}/auth/login`, {
+    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}/auth/login`, {
       email,
       password
     }, {

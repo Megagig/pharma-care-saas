@@ -500,4 +500,4 @@ Healthcare professionals using this system must maintain their clinical skills, 
 
 Regular monitoring, continuous learning, and adherence to these guidelines will ensure that AI technology serves to improve patient care while maintaining the highest standards of professional practice.
 
-For questions about AI model behavior or to report concerns, contact our clinical support team at clinical@pharmacare.com or refer to the technical documentation for detailed implementation information.
+For questions about AI model behavior or to report concerns, contact our clinical support team at clinical@PharmaPilot.com or refer to the technical documentation for detailed implementation information.

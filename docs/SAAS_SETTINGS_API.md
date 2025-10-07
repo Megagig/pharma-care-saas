@@ -684,7 +684,7 @@ Export analytics data in various formats.
   "format": "pdf",
   "timeRange": "30d",
   "includeCharts": true,
-  "email": "admin@pharmacare.com"
+  "email": "admin@PharmaPilot.com"
 }
 ```
 
@@ -754,7 +754,7 @@ Retrieve current notification configuration and rules.
         "actions": [
           {
             "type": "email",
-            "recipients": ["admin@pharmacare.com"],
+            "recipients": ["admin@PharmaPilot.com"],
             "template": "system_alert_template"
           }
         ],
@@ -1002,7 +1002,7 @@ Retrieve configured webhooks and their delivery status.
     "webhooks": [
       {
         "id": "webhook_123",
-        "url": "https://external-system.com/webhooks/pharmacare",
+        "url": "https://external-system.com/webhooks/PharmaPilot",
         "events": ["user.created", "subscription.updated"],
         "isActive": true,
         "secret": "whsec_***",
@@ -1025,7 +1025,7 @@ Configure a new webhook endpoint.
 **Request Body:**
 ```json
 {
-  "url": "https://external-system.com/webhooks/pharmacare",
+  "url": "https://external-system.com/webhooks/PharmaPilot",
   "events": ["user.created", "subscription.updated", "payment.processed"],
   "secret": "your_webhook_secret",
   "description": "Integration with external CRM system"
@@ -1038,7 +1038,7 @@ Configure a new webhook endpoint.
   "success": true,
   "data": {
     "webhookId": "webhook_456",
-    "url": "https://external-system.com/webhooks/pharmacare",
+    "url": "https://external-system.com/webhooks/PharmaPilot",
     "events": ["user.created", "subscription.updated", "payment.processed"],
     "secret": "whsec_generated_secret",
     "isActive": true,
@@ -1117,10 +1117,10 @@ A comprehensive Postman collection is available for testing all endpoints:
 ### JavaScript/Node.js SDK
 
 ```javascript
-const SaaSSettingsAPI = require('@pharmacare/saas-settings-sdk');
+const SaaSSettingsAPI = require('@PharmaPilot/saas-settings-sdk');
 
 const client = new SaaSSettingsAPI({
-  baseURL: 'https://api.pharmacare.com',
+  baseURL: 'https://api.PharmaPilot.com',
   apiKey: 'your_api_key'
 });
 
@@ -1138,10 +1138,10 @@ const users = await client.users.list({
 ### Python SDK
 
 ```python
-from pharmacare_saas import SaaSSettingsClient
+from PharmaPilot_saas import SaaSSettingsClient
 
 client = SaaSSettingsClient(
-    base_url='https://api.pharmacare.com',
+    base_url='https://api.PharmaPilot.com',
     api_key='your_api_key'
 )
 
@@ -1161,9 +1161,9 @@ client.feature_flags.update_targeting(
 ## Support
 
 For API support and questions:
-- **Documentation**: [https://docs.pharmacare.com/saas-settings](https://docs.pharmacare.com/saas-settings)
-- **Support Email**: api-support@pharmacare.com
-- **Developer Portal**: [https://developers.pharmacare.com](https://developers.pharmacare.com)
+- **Documentation**: [https://docs.PharmaPilot.com/saas-settings](https://docs.PharmaPilot.com/saas-settings)
+- **Support Email**: api-support@PharmaPilot.com
+- **Developer Portal**: [https://developers.PharmaPilot.com](https://developers.PharmaPilot.com)
 
 ## Changelog
 

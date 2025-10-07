@@ -7,7 +7,7 @@ import axios from 'axios';
  */
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api';
+  import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api';
 
 export const hasAuthenticationCookies = async (): Promise<boolean> => {
   try {

@@ -112,7 +112,7 @@ create_backup() {
     log INFO "Backing up MongoDB database..."
     if command -v mongodump &> /dev/null; then
         mongodump --host "${MONGO_HOST:-localhost:27017}" \
-                  --db "${MONGO_DB:-pharmacare}" \
+                  --db "${MONGO_DB:-PharmaPilot}" \
                   --out "$BACKUP_DIR/mongodb" \
                   --quiet
     else
@@ -283,13 +283,13 @@ restart_services() {
         # Restart backend service
         if command -v pm2 &> /dev/null; then
             log INFO "Restarting backend with PM2..."
-            pm2 restart pharmacare-backend || {
+            pm2 restart PharmaPilot-backend || {
                 log ERROR "Failed to restart backend with PM2"
                 return 1
             }
         elif command -v systemctl &> /dev/null; then
             log INFO "Restarting backend with systemctl..."
-            systemctl restart pharmacare-backend || {
+            systemctl restart PharmaPilot-backend || {
                 log ERROR "Failed to restart backend with systemctl"
                 return 1
             }
@@ -375,9 +375,9 @@ rollback_deployment() {
             log INFO "Restoring database..."
             if command -v mongorestore &> /dev/null; then
                 mongorestore --host "${MONGO_HOST:-localhost:27017}" \
-                           --db "${MONGO_DB:-pharmacare}" \
+                           --db "${MONGO_DB:-PharmaPilot}" \
                            --drop \
-                           "$BACKUP_DIR/mongodb/pharmacare" \
+                           "$BACKUP_DIR/mongodb/PharmaPilot" \
                            --quiet
             fi
         fi
@@ -504,7 +504,7 @@ Environment Variables:
     DEPLOYMENT_ENV    Deployment environment (default: production)
     DRY_RUN          Enable dry run mode (default: false)
     MONGO_HOST       MongoDB host (default: localhost:27017)
-    MONGO_DB         MongoDB database name (default: pharmacare)
+    MONGO_DB         MongoDB database name (default: PharmaPilot)
 
 Examples:
     $0                    # Normal deployment

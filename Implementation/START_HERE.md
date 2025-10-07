@@ -70,8 +70,8 @@ Go to **Render Dashboard → Backend Service → Environment** and add:
 
 ```
 NODE_ENV=production
-FRONTEND_URL=https://pharmacare-nttq.onrender.com
-CORS_ORIGINS=https://pharmacare-nttq.onrender.com
+FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com
 MONGODB_URI=mongodb+srv://megagigdev:...
 JWT_SECRET=5ac844c5da41609d1f99c6fcfdc8486824e767e9c30a0b38271be167cc23afb1
 JWT_REFRESH_SECRET=4nzyO7MxnSnCCfs8qNwxQHBRVqrryYAq
@@ -103,10 +103,10 @@ git push origin main
 ./test-production-deployment.sh
 
 # Or test manually
-curl https://pharmacare-nttq.onrender.com/api/health
+curl https://PharmaPilot-nttq.onrender.com/api/health
 
 # Then test in browser
-# 1. Open https://pharmacare-nttq.onrender.com
+# 1. Open https://PharmaPilot-nttq.onrender.com
 # 2. Clear cache (Ctrl+Shift+Delete)
 # 3. Hard refresh (Ctrl+Shift+R)
 # 4. Try login - should work!
@@ -138,7 +138,7 @@ After deployment:
 3. Check backend logs
 
 ### Login fails?
-1. Check backend health: `curl https://pharmacare-nttq.onrender.com/api/health`
+1. Check backend health: `curl https://PharmaPilot-nttq.onrender.com/api/health`
 2. Check MongoDB Atlas IP whitelist (allow `0.0.0.0/0`)
 3. Check backend logs in Render
 

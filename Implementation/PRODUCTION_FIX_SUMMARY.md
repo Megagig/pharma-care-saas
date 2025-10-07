@@ -20,7 +20,7 @@ Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remot
 
 ### 3. **401 Unauthorized Errors**
 ```
-GET https://pharmacare-nttq.onrender.com/api/workspace/settings 401 (Unauthorized)
+GET https://PharmaPilot-nttq.onrender.com/api/workspace/settings 401 (Unauthorized)
 ```
 - Expected behavior when not logged in
 - Would be resolved once login works
@@ -36,12 +36,12 @@ GET https://pharmacare-nttq.onrender.com/api/workspace/settings 401 (Unauthorize
 
 **File: `backend/.env`**
 ```diff
-- FRONTEND_URL=https://pharmacare-nttq.onrender.com
-- CORS_ORIGINS=https://pharmacare-nttq.onrender.com
+- FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+- CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com
 - # ... other config ...
 - FRONTEND_URL=http://localhost:5173  ❌ DUPLICATE!
-+ FRONTEND_URL=https://pharmacare-nttq.onrender.com
-+ CORS_ORIGINS=https://pharmacare-nttq.onrender.com,http://localhost:5173,http://localhost:3000
++ FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
++ CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com,http://localhost:5173,http://localhost:3000
 ```
 
 **Changes:**
@@ -54,8 +54,8 @@ GET https://pharmacare-nttq.onrender.com/api/workspace/settings 401 (Unauthorize
 **File: `backend/.env.production` (NEW)**
 ```env
 NODE_ENV=production
-FRONTEND_URL=https://pharmacare-nttq.onrender.com
-CORS_ORIGINS=https://pharmacare-nttq.onrender.com
+FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com
 # ... all other production settings
 ```
 
@@ -68,8 +68,8 @@ CORS_ORIGINS=https://pharmacare-nttq.onrender.com
 
 **File: `frontend/.env`**
 ```env
-VITE_API_BASE_URL=https://pharmacare-nttq.onrender.com/api
-VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
+VITE_API_BASE_URL=https://PharmaPilot-nttq.onrender.com/api
+VITE_FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
 ```
 
 **Status:**
@@ -80,9 +80,9 @@ VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
 
 **File: `frontend/src/services/clinicalInterventionService.ts`**
 ```diff
-- const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api';
-- const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api';  ❌ DUPLICATE!
-+ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://pharmacare-nttq.onrender.com/api';
+- const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api';
+- const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api';  ❌ DUPLICATE!
++ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api';
 ```
 
 **Changes:**
@@ -136,8 +136,8 @@ Run the verification script:
    - Most important:
      ```
      NODE_ENV=production
-     FRONTEND_URL=https://pharmacare-nttq.onrender.com
-     CORS_ORIGINS=https://pharmacare-nttq.onrender.com
+     FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+     CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com
      ```
 
 2. **Deploy:**
@@ -175,15 +175,15 @@ Run the test script:
 Or manually test:
 ```bash
 # Test backend health
-curl https://pharmacare-nttq.onrender.com/api/health
+curl https://PharmaPilot-nttq.onrender.com/api/health
 
 # Test CORS
-curl -I -X OPTIONS https://pharmacare-nttq.onrender.com/api/auth/login \
-  -H "Origin: https://pharmacare-nttq.onrender.com" \
+curl -I -X OPTIONS https://PharmaPilot-nttq.onrender.com/api/auth/login \
+  -H "Origin: https://PharmaPilot-nttq.onrender.com" \
   -H "Access-Control-Request-Method: POST"
 
 # Test frontend
-# Open https://pharmacare-nttq.onrender.com in browser
+# Open https://PharmaPilot-nttq.onrender.com in browser
 # Try to login and check console for errors
 ```
 
@@ -194,12 +194,12 @@ curl -I -X OPTIONS https://pharmacare-nttq.onrender.com/api/auth/login \
 ❌ POST http://localhost:5000/api/auth/login net::ERR_CONNECTION_REFUSED
 ❌ Cross-Origin Request Blocked
 ❌ Login error: Error: Network Error
-❌ GET https://pharmacare-nttq.onrender.com/api/workspace/settings 401
+❌ GET https://PharmaPilot-nttq.onrender.com/api/workspace/settings 401
 ```
 
 ### After Fix ✅
 ```
-✅ POST https://pharmacare-nttq.onrender.com/api/auth/login 200 OK
+✅ POST https://PharmaPilot-nttq.onrender.com/api/auth/login 200 OK
 ✅ No CORS errors
 ✅ Login successful
 ✅ All API calls go to production backend
@@ -248,7 +248,7 @@ curl -I -X OPTIONS https://pharmacare-nttq.onrender.com/api/auth/login \
 
 1. **Check backend is running:**
    ```bash
-   curl https://pharmacare-nttq.onrender.com/api/health
+   curl https://PharmaPilot-nttq.onrender.com/api/health
    ```
 
 2. **Check MongoDB connection:**

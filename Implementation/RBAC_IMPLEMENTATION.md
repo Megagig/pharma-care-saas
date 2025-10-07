@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the comprehensive Role-Based Access Control (RBAC) system implemented for the PharmaCareSaaS platform. The system includes advanced features like feature flagging, subscription-based access management, and license verification.
+This document describes the comprehensive Role-Based Access Control (RBAC) system implemented for the PharmaPilotSaaS platform. The system includes advanced features like feature flagging, subscription-based access management, and license verification.
 
 ## 🏗️ Architecture
 
@@ -382,7 +382,7 @@ STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
 # Database
-MONGODB_URI=mongodb://localhost:27017/pharmacare
+MONGODB_URI=mongodb://localhost:27017/PharmaPilot
 
 # File Upload
 UPLOAD_PATH=./uploads
@@ -489,10 +489,10 @@ GET    /api/license/document
 
 For technical support or questions about the RBAC implementation:
 
-- Email: dev@pharmacare.com
+- Email: dev@PharmaPilot.com
 - Documentation: /docs/rbac
 - Issue Tracker: GitHub Issues
 
 ---
 
-*This documentation is maintained by the PharmaCareSaaS development team.*
+*This documentation is maintained by the PharmaPilotSaaS development team.*

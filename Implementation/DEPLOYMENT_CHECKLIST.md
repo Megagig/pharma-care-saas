@@ -28,14 +28,14 @@ Go to your backend service settings and add these environment variables:
 ```
 NODE_ENV=production
 PORT=5000
-MONGODB_URI=mongodb+srv://megagigdev:9svFmZ3VCP5ONzfU@cluster0.vf50xoc.mongodb.net/PharmaCare?retryWrites=true&w=majority&appName=Cluster0
+MONGODB_URI=mongodb+srv://megagigdev:9svFmZ3VCP5ONzfU@cluster0.vf50xoc.mongodb.net/PharmaPilot?retryWrites=true&w=majority&appName=Cluster0
 JWT_SECRET=5ac844c5da41609d1f99c6fcfdc8486824e767e9c30a0b38271be167cc23afb1
 JWT_REFRESH_SECRET=4nzyO7MxnSnCCfs8qNwxQHBRVqrryYAq
-FRONTEND_URL=https://pharmacare-nttq.onrender.com
-CORS_ORIGINS=https://pharmacare-nttq.onrender.com
+FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com
 RESEND_API_KEY=re_cRCkGHT8_2duhxzbv3HsPzADnmU1FvJit
 SENDER_EMAIL=admin@megagigsolution.com
-SENDER_NAME=Pharmacare Hub
+SENDER_NAME=PharmaPilot Hub
 OPENFDA_API_KEY=GjyRI4APszhf01Bc7sPSUWg59nrShJt6C5tRy7ws
 OPENROUTER_API_KEY=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
 PAYSTACK_SECRET_KEY=sk_test_a67af4a215bb1d536eec24d017d88eb17df50011
@@ -92,25 +92,25 @@ Or manually test:
 
 #### Test Backend Health
 ```bash
-curl https://pharmacare-nttq.onrender.com/api/health
+curl https://PharmaPilot-nttq.onrender.com/api/health
 ```
 Expected: `{"status":"OK",...}`
 
 #### Test CORS
 ```bash
-curl -I -X OPTIONS https://pharmacare-nttq.onrender.com/api/auth/login \
-  -H "Origin: https://pharmacare-nttq.onrender.com" \
+curl -I -X OPTIONS https://PharmaPilot-nttq.onrender.com/api/auth/login \
+  -H "Origin: https://PharmaPilot-nttq.onrender.com" \
   -H "Access-Control-Request-Method: POST"
 ```
-Expected: Headers include `Access-Control-Allow-Origin: https://pharmacare-nttq.onrender.com`
+Expected: Headers include `Access-Control-Allow-Origin: https://PharmaPilot-nttq.onrender.com`
 
 #### Test Frontend
-1. Open https://pharmacare-nttq.onrender.com in browser
+1. Open https://PharmaPilot-nttq.onrender.com in browser
 2. Open DevTools (F12) → Network tab
 3. Try to login
 4. Verify:
    - ✅ No CORS errors in console
-   - ✅ Requests go to `https://pharmacare-nttq.onrender.com/api/...`
+   - ✅ Requests go to `https://PharmaPilot-nttq.onrender.com/api/...`
    - ✅ No `localhost:5000` references
    - ✅ Login works correctly
 
@@ -125,7 +125,7 @@ Expected: Headers include `Access-Control-Allow-Origin: https://pharmacare-nttq.
 
 **Solutions:**
 1. Check backend status in Render dashboard
-2. Wake up backend: `curl https://pharmacare-nttq.onrender.com/api/health`
+2. Wake up backend: `curl https://PharmaPilot-nttq.onrender.com/api/health`
 3. Verify frontend .env has correct API URL
 4. Check backend logs in Render
 

@@ -9,7 +9,7 @@ const https = require('https');
 const http = require('http');
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
-const FRONTEND_ORIGIN = 'https://pharmacare-nttq.onrender.com';
+const FRONTEND_ORIGIN = 'https://PharmaPilot-nttq.onrender.com';
 
 console.log('🔍 Testing CORS configuration...');
 console.log(`Backend URL: ${BACKEND_URL}`);

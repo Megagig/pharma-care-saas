@@ -49,7 +49,7 @@ describe('Manual Lab API Integration Tests', () => {
         // Set up environment variables
         process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-minimum-32-characters-long';
         process.env.LAB_TOKEN_SECRET = 'test-lab-token-secret-key-minimum-32-characters-long';
-        process.env.FRONTEND_URL = 'https://test.pharmacare.com';
+        process.env.FRONTEND_URL = 'https://test.PharmaPilot.com';
     });
 
     afterAll(async () => {

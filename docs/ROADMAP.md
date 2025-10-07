@@ -1,4 +1,4 @@
-# PharmaCare SaaS Development Roadmap
+# PharmaPilot SaaS Development Roadmap
 
 ## Phase 1: Foundation (Months 1-2) ✅
 - [x] Basic authentication system

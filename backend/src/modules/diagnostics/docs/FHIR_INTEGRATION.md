@@ -4,7 +4,7 @@ This document describes the FHIR (Fast Healthcare Interoperability Resources) in
 
 ## Overview
 
-The FHIR integration enables seamless exchange of laboratory data between the PharmaCare system and external laboratory information systems (LIS) or electronic health record (EHR) systems that support FHIR standards.
+The FHIR integration enables seamless exchange of laboratory data between the PharmaPilot system and external laboratory information systems (LIS) or electronic health record (EHR) systems that support FHIR standards.
 
 ## Supported FHIR Versions
 

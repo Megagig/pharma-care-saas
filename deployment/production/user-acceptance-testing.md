@@ -35,7 +35,7 @@ This document outlines comprehensive User Acceptance Testing procedures for the 
 echo "=== UAT ENVIRONMENT SETUP ==="
 
 # Create UAT namespace
-kubectl create namespace pharmacare-uat
+kubectl create namespace PharmaPilot-uat
 
 # Deploy UAT-specific configuration
 kubectl apply -f - <<EOF
@@ -43,7 +43,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: uat-config
-  namespace: pharmacare-uat
+  namespace: PharmaPilot-uat
 data:
   NODE_ENV: "uat"
   AI_DIAGNOSTICS_ENABLED: "true"
@@ -59,10 +59,10 @@ EOF
 kubectl apply -f deployment/uat/ai-diagnostics-uat.yml
 
 # Wait for deployment
-kubectl wait --for=condition=available deployment/ai-diagnostics-api -n pharmacare-uat --timeout=300s
+kubectl wait --for=condition=available deployment/ai-diagnostics-api -n PharmaPilot-uat --timeout=300s
 
 # Seed test data
-kubectl exec -n pharmacare-uat deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmaPilot-uat deployment/ai-diagnostics-api -- \
   npm run seed:uat-data
 
 echo "UAT environment ready"
@@ -77,7 +77,7 @@ echo "UAT environment ready"
 echo "=== PREPARING UAT TEST DATA ==="
 
 # Create test patients
-kubectl exec -n pharmacare-uat deployment/ai-diagnostics-api -- node -e "
+kubectl exec -n PharmaPilot-uat deployment/ai-diagnostics-api -- node -e "
 const mongoose = require('mongoose');
 const Patient = require('./src/models/Patient');
 
@@ -116,11 +116,11 @@ console.log('Test patients created');
 "
 
 # Create test lab results
-kubectl exec -n pharmacare-uat deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmaPilot-uat deployment/ai-diagnostics-api -- \
   npm run seed:lab-results
 
 # Create test diagnostic scenarios
-kubectl exec -n pharmacare-uat deployment/ai-diagnostics-api -- \
+kubectl exec -n PharmaPilot-uat deployment/ai-diagnostics-api -- \
   npm run seed:diagnostic-scenarios
 
 echo "UAT test data prepared"
@@ -380,7 +380,7 @@ acceptance_criteria:
 
 echo "=== UAT PERFORMANCE TESTING ==="
 
-UAT_BASE_URL="https://uat-api.pharmacare.com"
+UAT_BASE_URL="https://uat-api.PharmaPilot.com"
 
 # Test 1: Diagnostic request processing time
 echo "Testing diagnostic request processing time..."
@@ -521,7 +521,7 @@ echo "=== UAT ACCESSIBILITY TESTING ==="
 npm install -g @axe-core/cli
 
 # Test main diagnostic pages
-axe https://uat.pharmacare.com/diagnostics \
+axe https://uat.PharmaPilot.com/diagnostics \
   --tags wcag2a,wcag2aa \
   --reporter json \
   --output-file /tmp/accessibility-report.json

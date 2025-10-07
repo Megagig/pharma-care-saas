@@ -32,7 +32,7 @@ git push origin main
 ```
 
 ### 5. Verify in Browser
-- Open https://pharmacare-nttq.onrender.com
+- Open https://PharmaPilot-nttq.onrender.com
 - Clear cache (Ctrl+Shift+Delete)
 - Try login - should work without errors
 
@@ -65,7 +65,7 @@ git push origin main
 ❌ POST http://localhost:5000/api/auth/login net::ERR_CONNECTION_REFUSED
 ❌ Cross-Origin Request Blocked
 ❌ Login error: Error: Network Error
-❌ GET https://pharmacare-nttq.onrender.com/api/workspace/settings 401
+❌ GET https://PharmaPilot-nttq.onrender.com/api/workspace/settings 401
 ```
 
 ### Root Cause

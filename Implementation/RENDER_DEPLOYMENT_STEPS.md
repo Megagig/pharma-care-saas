@@ -17,7 +17,7 @@
 ### Step 1: Access Backend Service
 
 1. Log in to [Render Dashboard](https://dashboard.render.com)
-2. Click on your backend service (e.g., "pharmacare-backend")
+2. Click on your backend service (e.g., "PharmaPilot-backend")
 3. Go to **"Environment"** tab in the left sidebar
 
 ### Step 2: Set Environment Variables
@@ -33,7 +33,7 @@ PORT=5000
 
 #### Database
 ```
-MONGODB_URI=mongodb+srv://megagigdev:9svFmZ3VCP5ONzfU@cluster0.vf50xoc.mongodb.net/PharmaCare?retryWrites=true&w=majority&appName=Cluster0
+MONGODB_URI=mongodb+srv://megagigdev:9svFmZ3VCP5ONzfU@cluster0.vf50xoc.mongodb.net/PharmaPilot?retryWrites=true&w=majority&appName=Cluster0
 ```
 
 #### Authentication
@@ -44,15 +44,15 @@ JWT_REFRESH_SECRET=4nzyO7MxnSnCCfs8qNwxQHBRVqrryYAq
 
 #### CORS & Frontend
 ```
-FRONTEND_URL=https://pharmacare-nttq.onrender.com
-CORS_ORIGINS=https://pharmacare-nttq.onrender.com
+FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
+CORS_ORIGINS=https://PharmaPilot-nttq.onrender.com
 ```
 
 #### Email Service
 ```
 RESEND_API_KEY=re_cRCkGHT8_2duhxzbv3HsPzADnmU1FvJit
 SENDER_EMAIL=admin@megagigsolution.com
-SENDER_NAME=Pharmacare Hub
+SENDER_NAME=PharmaPilot Hub
 ```
 
 #### External APIs
@@ -111,10 +111,10 @@ NOMBA_ACCOUNT_ID=91216542-0744-4bdb-a2cc-fcc2ecca6eb2
 ### Step 5: Verify Backend Deployment
 
 1. Wait for deployment to complete (check logs)
-2. Click on your service URL (e.g., `https://pharmacare-nttq.onrender.com`)
+2. Click on your service URL (e.g., `https://PharmaPilot-nttq.onrender.com`)
 3. Test health endpoint:
    ```bash
-   curl https://pharmacare-nttq.onrender.com/api/health
+   curl https://PharmaPilot-nttq.onrender.com/api/health
    ```
 4. Should return: `{"status":"OK",...}`
 
@@ -125,15 +125,15 @@ NOMBA_ACCOUNT_ID=91216542-0744-4bdb-a2cc-fcc2ecca6eb2
 ### Step 1: Access Frontend Service
 
 1. Go to Render Dashboard
-2. Click on your frontend service (e.g., "pharmacare-frontend")
+2. Click on your frontend service (e.g., "PharmaPilot-frontend")
 
 ### Step 2: Set Environment Variables
 
 Add these environment variables:
 
 ```
-VITE_API_BASE_URL=https://pharmacare-nttq.onrender.com/api
-VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
+VITE_API_BASE_URL=https://PharmaPilot-nttq.onrender.com/api
+VITE_FRONTEND_URL=https://PharmaPilot-nttq.onrender.com
 ```
 
 **Note:** For Vite, environment variables must be prefixed with `VITE_`
@@ -164,7 +164,7 @@ VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
 ### Step 5: Verify Frontend Deployment
 
 1. Wait for deployment to complete
-2. Open your frontend URL: `https://pharmacare-nttq.onrender.com`
+2. Open your frontend URL: `https://PharmaPilot-nttq.onrender.com`
 3. Open browser DevTools (F12)
 4. Check Network tab - requests should go to production backend
 5. Try to login - should work without CORS errors
@@ -176,7 +176,7 @@ VITE_FRONTEND_URL=https://pharmacare-nttq.onrender.com
 ### 1. Test Backend Health
 
 ```bash
-curl https://pharmacare-nttq.onrender.com/api/health
+curl https://PharmaPilot-nttq.onrender.com/api/health
 ```
 
 Expected response:
@@ -191,26 +191,26 @@ Expected response:
 ### 2. Test CORS Configuration
 
 ```bash
-curl -I -X OPTIONS https://pharmacare-nttq.onrender.com/api/auth/login \
-  -H "Origin: https://pharmacare-nttq.onrender.com" \
+curl -I -X OPTIONS https://PharmaPilot-nttq.onrender.com/api/auth/login \
+  -H "Origin: https://PharmaPilot-nttq.onrender.com" \
   -H "Access-Control-Request-Method: POST"
 ```
 
 Expected headers:
 ```
-Access-Control-Allow-Origin: https://pharmacare-nttq.onrender.com
+Access-Control-Allow-Origin: https://PharmaPilot-nttq.onrender.com
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
 ```
 
 ### 3. Test Frontend
 
-1. Open `https://pharmacare-nttq.onrender.com`
+1. Open `https://PharmaPilot-nttq.onrender.com`
 2. Open DevTools (F12) → Console
 3. Should see NO errors
 4. Try to login
 5. Check Network tab:
-   - ✅ Requests go to `https://pharmacare-nttq.onrender.com/api/...`
+   - ✅ Requests go to `https://PharmaPilot-nttq.onrender.com/api/...`
    - ✅ No `localhost:5000` references
    - ✅ No CORS errors
 
