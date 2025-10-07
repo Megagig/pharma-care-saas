@@ -10,120 +10,120 @@ const register = new prom_client_1.default.Registry();
 exports.register = register;
 prom_client_1.default.collectDefaultMetrics({
     register,
-    prefix: 'pharmacare_',
+    prefix: 'PharmacyCopilot_',
 });
 exports.httpRequestDuration = new prom_client_1.default.Histogram({
-    name: 'pharmacare_http_request_duration_seconds',
+    name: 'PharmacyCopilot_http_request_duration_seconds',
     help: 'Duration of HTTP requests in seconds',
     labelNames: ['method', 'route', 'status_code'],
     buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10],
 });
 exports.httpRequestsTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_http_requests_total',
+    name: 'PharmacyCopilot_http_requests_total',
     help: 'Total number of HTTP requests',
     labelNames: ['method', 'route', 'status_code'],
 });
 exports.subscriptionsTotal = new prom_client_1.default.Gauge({
-    name: 'pharmacare_subscriptions_total',
+    name: 'PharmacyCopilot_subscriptions_total',
     help: 'Total number of subscriptions by status',
     labelNames: ['status', 'tier'],
 });
 exports.trialConversionsTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_trial_conversions_total',
+    name: 'PharmacyCopilot_trial_conversions_total',
     help: 'Total number of trial conversions',
     labelNames: ['from_tier', 'to_tier'],
 });
 exports.trialsExpiredTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_trials_expired_total',
+    name: 'PharmacyCopilot_trials_expired_total',
     help: 'Total number of expired trials',
 });
 exports.paymentFailuresTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_payment_failures_total',
+    name: 'PharmacyCopilot_payment_failures_total',
     help: 'Total number of payment failures',
     labelNames: ['reason', 'tier'],
 });
 exports.workspacesActiveTotal = new prom_client_1.default.Gauge({
-    name: 'pharmacare_workspaces_active_total',
+    name: 'PharmacyCopilot_workspaces_active_total',
     help: 'Total number of active workspaces',
 });
 exports.workspacesCreatedTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_workspaces_created_total',
+    name: 'PharmacyCopilot_workspaces_created_total',
     help: 'Total number of workspaces created',
 });
 exports.invitationsSentTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_invitations_sent_total',
+    name: 'PharmacyCopilot_invitations_sent_total',
     help: 'Total number of invitations sent',
     labelNames: ['workspace_id', 'role'],
 });
 exports.invitationsAcceptedTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_invitations_accepted_total',
+    name: 'PharmacyCopilot_invitations_accepted_total',
     help: 'Total number of invitations accepted',
     labelNames: ['workspace_id', 'role'],
 });
 exports.invitationsFailedTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_invitations_failed_total',
+    name: 'PharmacyCopilot_invitations_failed_total',
     help: 'Total number of failed invitations',
     labelNames: ['reason'],
 });
 exports.invitationsPendingTotal = new prom_client_1.default.Gauge({
-    name: 'pharmacare_invitations_pending_total',
+    name: 'PharmacyCopilot_invitations_pending_total',
     help: 'Total number of pending invitations',
 });
 exports.usageLimitViolationsTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_usage_limit_violations_total',
+    name: 'PharmacyCopilot_usage_limit_violations_total',
     help: 'Total number of usage limit violations',
     labelNames: ['resource', 'workspace_id', 'tier'],
 });
 exports.usageStatsGauge = new prom_client_1.default.Gauge({
-    name: 'pharmacare_usage_stats',
+    name: 'PharmacyCopilot_usage_stats',
     help: 'Current usage statistics',
     labelNames: ['resource', 'workspace_id', 'tier'],
 });
 exports.emailsSentTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_emails_sent_total',
+    name: 'PharmacyCopilot_emails_sent_total',
     help: 'Total number of emails sent',
     labelNames: ['type', 'status'],
 });
 exports.emailsFailedTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_emails_failed_total',
+    name: 'PharmacyCopilot_emails_failed_total',
     help: 'Total number of failed emails',
     labelNames: ['type', 'reason'],
 });
 exports.emailQueueSize = new prom_client_1.default.Gauge({
-    name: 'pharmacare_email_queue_size',
+    name: 'PharmacyCopilot_email_queue_size',
     help: 'Current size of email queue',
 });
 exports.authFailuresTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_auth_failures_total',
+    name: 'PharmacyCopilot_auth_failures_total',
     help: 'Total number of authentication failures',
     labelNames: ['reason', 'ip'],
 });
 exports.authSuccessTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_auth_success_total',
+    name: 'PharmacyCopilot_auth_success_total',
     help: 'Total number of successful authentications',
 });
 exports.rateLimitViolationsTotal = new prom_client_1.default.Counter({
-    name: 'pharmacare_rate_limit_violations_total',
+    name: 'PharmacyCopilot_rate_limit_violations_total',
     help: 'Total number of rate limit violations',
     labelNames: ['endpoint', 'ip'],
 });
 exports.databaseOperationDuration = new prom_client_1.default.Histogram({
-    name: 'pharmacare_database_operation_duration_seconds',
+    name: 'PharmacyCopilot_database_operation_duration_seconds',
     help: 'Duration of database operations in seconds',
     labelNames: ['operation', 'collection'],
     buckets: [0.01, 0.05, 0.1, 0.3, 0.5, 1, 3, 5],
 });
 exports.databaseConnectionsActive = new prom_client_1.default.Gauge({
-    name: 'pharmacare_database_connections_active',
+    name: 'PharmacyCopilot_database_connections_active',
     help: 'Number of active database connections',
 });
 exports.patientsTotal = new prom_client_1.default.Gauge({
-    name: 'pharmacare_patients_total',
+    name: 'PharmacyCopilot_patients_total',
     help: 'Total number of patients',
     labelNames: ['workspace_id'],
 });
 exports.usersTotal = new prom_client_1.default.Gauge({
-    name: 'pharmacare_users_total',
+    name: 'PharmacyCopilot_users_total',
     help: 'Total number of users',
     labelNames: ['role', 'status'],
 });

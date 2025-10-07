@@ -44,7 +44,7 @@ dotenv_1.default.config();
 async function analyzePaginationPerformance() {
     try {
         logger_1.default.info('Starting pagination performance analysis');
-        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/pharmacare';
+        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmacyCopilot';
         await mongoose_1.default.connect(mongoUri);
         logger_1.default.info('Connected to MongoDB');
         const db = mongoose_1.default.connection.db;

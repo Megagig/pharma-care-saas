@@ -38,7 +38,7 @@ class EmailService {
                 .replace(/\\s+/g, ' ')
                 .trim();
             const subjectMatch = html.match(/<!--\\s*SUBJECT:\\s*(.+?)\\s*-->/);
-            const subject = subjectMatch?.[1] || 'PharmaCare Notification';
+            const subject = subjectMatch?.[1] || 'PharmacyCopilot Notification';
             return { subject, html, text };
         }
         catch (error) {
@@ -49,7 +49,7 @@ class EmailService {
     getDefaultTemplate(templateName, variables) {
         const templates = {
             licenseApproval: {
-                subject: 'License Approved - PharmaCare',
+                subject: 'License Approved - PharmacyCopilot',
                 html: `
           <h2>License Approved!</h2>
           <p>Dear ${variables.firstName},</p>
@@ -57,12 +57,12 @@ class EmailService {
           <p>License Number: <strong>${variables.licenseNumber}</strong></p>
           <p>You now have full access to all features in your account.</p>
           <br>
-          <p>Best regards,<br>PharmaCare Team</p>
+          <p>Best regards,<br>PharmacyCopilot Team</p>
         `,
                 text: `License Approved! Dear ${variables.firstName}, Your pharmacist license has been approved and verified. License Number: ${variables.licenseNumber}. You now have full access to all features in your account.`,
             },
             licenseRejection: {
-                subject: 'License Review Update - PharmaCare',
+                subject: 'License Review Update - PharmacyCopilot',
                 html: `
           <h2>License Review Update</h2>
           <p>Dear ${variables.firstName},</p>
@@ -71,12 +71,12 @@ class EmailService {
           <p>Please log in to your account and resubmit your license documentation.</p>
           <p>If you have questions, contact us at ${variables.supportEmail}</p>
           <br>
-          <p>Best regards,<br>PharmaCare Team</p>
+          <p>Best regards,<br>PharmacyCopilot Team</p>
         `,
                 text: `License Review Update. Dear ${variables.firstName}, We've reviewed your license submission and need additional information. Reason: ${variables.reason}. Please log in to your account and resubmit your license documentation.`,
             },
             roleUpdate: {
-                subject: 'Account Role Updated - PharmaCare',
+                subject: 'Account Role Updated - PharmacyCopilot',
                 html: `
           <h2>Account Role Updated</h2>
           <p>Dear ${variables.firstName},</p>
@@ -84,30 +84,30 @@ class EmailService {
           <p>Updated by: ${variables.updatedBy}</p>
           <p>This change affects your access permissions and available features.</p>
           <br>
-          <p>Best regards,<br>PharmaCare Team</p>
+          <p>Best regards,<br>PharmacyCopilot Team</p>
         `,
                 text: `Account Role Updated. Dear ${variables.firstName}, Your account role has been updated to: ${variables.newRole}. Updated by: ${variables.updatedBy}.`,
             },
             subscriptionConfirmation: {
-                subject: 'Subscription Confirmed - PharmaCare',
+                subject: 'Subscription Confirmed - PharmacyCopilot',
                 html: `
           <h2>Subscription Confirmed!</h2>
           <p>Dear ${variables.firstName},</p>
-          <p>Thank you for subscribing to PharmaCare <strong>${variables.planName}</strong> plan.</p>
+          <p>Thank you for subscribing to PharmacyCopilot <strong>${variables.planName}</strong> plan.</p>
           <p><strong>Amount:</strong> ₦${variables.amount}</p>
           <p><strong>Billing:</strong> ${variables.billingInterval}</p>
           <p><strong>Valid from:</strong> ${variables.startDate} to ${variables.endDate}</p>
           <p>You now have access to all premium features!</p>
           <br>
-          <p>Best regards,<br>PharmaCare Team</p>
+          <p>Best regards,<br>PharmacyCopilot Team</p>
         `,
-                text: `Subscription Confirmed! Dear ${variables.firstName}, Thank you for subscribing to PharmaCare ${variables.planName} plan. Amount: ₦${variables.amount}, Billing: ${variables.billingInterval}.`,
+                text: `Subscription Confirmed! Dear ${variables.firstName}, Thank you for subscribing to PharmacyCopilot ${variables.planName} plan. Amount: ₦${variables.amount}, Billing: ${variables.billingInterval}.`,
             },
         };
         return (templates[templateName] || {
-            subject: 'PharmaCare Notification',
-            html: '<p>This is a notification from PharmaCare.</p>',
-            text: 'This is a notification from PharmaCare.',
+            subject: 'PharmacyCopilot Notification',
+            html: '<p>This is a notification from PharmacyCopilot.</p>',
+            text: 'This is a notification from PharmacyCopilot.',
         });
     }
     async sendTrackedEmail(options) {
@@ -129,14 +129,14 @@ class EmailService {
             let mailOptions;
             if (typeof toOrOptions === 'object') {
                 mailOptions = {
-                    from: `\"PharmaCare\" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+                    from: `\"PharmacyCopilot\" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
                     ...toOrOptions,
                     attachments: templateOrAttachments,
                 };
             }
             else {
                 mailOptions = {
-                    from: `\"PharmaCare\" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+                    from: `\"PharmacyCopilot\" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
                     to: toOrOptions,
                     subject: templateOrAttachments.subject,
                     text: templateOrAttachments.text,
@@ -162,16 +162,16 @@ class EmailService {
             ...data,
             supportEmail: data.supportEmail ||
                 process.env.SUPPORT_EMAIL ||
-                'support@pharmacare.com',
+                'support@PharmacyCopilot.com',
         });
         return this.sendEmail(email, template);
     }
     async sendLicenseSubmissionNotification(data) {
         const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [
-            'admin@pharmacare.com',
+            'admin@PharmacyCopilot.com',
         ];
         const template = {
-            subject: 'New License Submission - PharmaCare Admin',
+            subject: 'New License Submission - PharmacyCopilot Admin',
             html: `
         <h2>New License Submission</h2>
         <p><strong>User:</strong> ${data.userName} (${data.userEmail})</p>
@@ -193,32 +193,32 @@ class EmailService {
     }
     async sendAccountSuspensionNotification(email, data) {
         const template = {
-            subject: 'Account Suspended - PharmaCare',
+            subject: 'Account Suspended - PharmacyCopilot',
             html: `
         <h2>Account Suspended</h2>
         <p>Dear ${data.firstName},</p>
-        <p>Your PharmaCare account has been temporarily suspended.</p>
+        <p>Your PharmacyCopilot account has been temporarily suspended.</p>
         <p><strong>Reason:</strong> ${data.reason}</p>
-        <p>If you believe this is an error, please contact support at ${data.supportEmail || 'support@pharmacare.com'}</p>
+        <p>If you believe this is an error, please contact support at ${data.supportEmail || 'support@PharmacyCopilot.com'}</p>
         <br>
-        <p>PharmaCare Team</p>
+        <p>PharmacyCopilot Team</p>
       `,
-            text: `Account Suspended. Dear ${data.firstName}, Your PharmaCare account has been temporarily suspended. Reason: ${data.reason}.`,
+            text: `Account Suspended. Dear ${data.firstName}, Your PharmacyCopilot account has been temporarily suspended. Reason: ${data.reason}.`,
         };
         return this.sendEmail(email, template);
     }
     async sendAccountReactivationNotification(email, data) {
         const template = {
-            subject: 'Account Reactivated - PharmaCare',
+            subject: 'Account Reactivated - PharmacyCopilot',
             html: `
         <h2>Account Reactivated</h2>
         <p>Dear ${data.firstName},</p>
-        <p>Your PharmaCare account has been reactivated. You can now log in and access all your features.</p>
+        <p>Your PharmacyCopilot account has been reactivated. You can now log in and access all your features.</p>
         <p>Welcome back!</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
-            text: `Account Reactivated. Dear ${data.firstName}, Your PharmaCare account has been reactivated. You can now log in and access all your features.`,
+            text: `Account Reactivated. Dear ${data.firstName}, Your PharmacyCopilot account has been reactivated. You can now log in and access all your features.`,
         };
         return this.sendEmail(email, template);
     }
@@ -232,7 +232,7 @@ class EmailService {
     }
     async sendSubscriptionCancellation(email, data) {
         const template = {
-            subject: 'Subscription Cancelled - PharmaCare',
+            subject: 'Subscription Cancelled - PharmacyCopilot',
             html: `
         <h2>Subscription Cancelled</h2>
         <p>Dear ${data.firstName},</p>
@@ -241,7 +241,7 @@ class EmailService {
         ${data.reason ? `<p>Reason: ${data.reason}</p>` : ''}
         <p>You can reactivate your subscription anytime before the grace period ends.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Subscription Cancelled. Dear ${data.firstName}, Your ${data.planName} subscription has been cancelled. Access until: ${data.gracePeriodEnd.toLocaleDateString()}.`,
         };
@@ -249,15 +249,15 @@ class EmailService {
     }
     async sendPaymentConfirmation(email, data) {
         const template = {
-            subject: 'Payment Confirmed - PharmaCare',
+            subject: 'Payment Confirmed - PharmacyCopilot',
             html: `
         <h2>Payment Confirmed</h2>
         <p>Dear ${data.firstName},</p>
         <p>We've successfully processed your payment of <strong>₦${data.amount}</strong>.</p>
         <p>Your subscription is active until: <strong>${data.nextBillingDate.toLocaleDateString()}</strong></p>
-        <p>Thank you for continuing with PharmaCare!</p>
+        <p>Thank you for continuing with PharmacyCopilot!</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Payment Confirmed. Dear ${data.firstName}, We've successfully processed your payment of ₦${data.amount}. Your subscription is active until: ${data.nextBillingDate.toLocaleDateString()}.`,
         };
@@ -265,7 +265,7 @@ class EmailService {
     }
     async sendPaymentFailedNotification(email, data) {
         const template = {
-            subject: 'Payment Failed - PharmaCare',
+            subject: 'Payment Failed - PharmacyCopilot',
             html: `
         <h2>Payment Failed</h2>
         <p>Dear ${data.firstName},</p>
@@ -274,7 +274,7 @@ class EmailService {
         <p>Please ensure your payment method is valid and has sufficient funds.</p>
         <p>You can update your payment method in your account settings.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Payment Failed. Dear ${data.firstName}, We couldn't process your subscription payment (Attempt ${data.attemptNumber}). We'll try again on: ${data.nextAttempt.toLocaleDateString()}.`,
         };
@@ -282,7 +282,7 @@ class EmailService {
     }
     async sendSubscriptionUpgrade(email, data) {
         const template = {
-            subject: 'Subscription Upgraded - PharmaCare',
+            subject: 'Subscription Upgraded - PharmacyCopilot',
             html: `
         <h2>Subscription Upgraded!</h2>
         <p>Dear ${data.firstName},</p>
@@ -291,7 +291,7 @@ class EmailService {
         <p><strong>Effective Date:</strong> ${data.effectiveDate.toLocaleDateString()}</p>
         <p>You now have access to all the enhanced features of your new plan!</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Subscription Upgraded! Dear ${data.firstName}, Your subscription has been upgraded from ${data.oldPlanName} to ${data.newPlanName}. Upgrade Amount: ₦${data.upgradeAmount.toLocaleString()}. Effective Date: ${data.effectiveDate.toLocaleDateString()}.`,
         };
@@ -299,7 +299,7 @@ class EmailService {
     }
     async sendSubscriptionDowngrade(email, data) {
         const template = {
-            subject: 'Subscription Downgrade Scheduled - PharmaCare',
+            subject: 'Subscription Downgrade Scheduled - PharmacyCopilot',
             html: `
         <h2>Subscription Downgrade Scheduled</h2>
         <p>Dear ${data.firstName},</p>
@@ -308,7 +308,7 @@ class EmailService {
         <p>You'll continue to have access to your current plan features until the effective date.</p>
         <p>You can cancel this downgrade anytime before the effective date in your account settings.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Subscription Downgrade Scheduled. Dear ${data.firstName}, Your downgrade from ${data.currentPlanName} to ${data.newPlanName} is scheduled for ${data.effectiveDate.toLocaleDateString()}.`,
         };
@@ -337,7 +337,7 @@ class EmailService {
             const template = await this.loadTemplate('invitationAccepted', templateVariables);
             if (this.resend) {
                 const result = await this.resend.emails.send({
-                    from: process.env.RESEND_FROM_EMAIL || 'PharmaCare <noreply@pharmacare.com>',
+                    from: process.env.RESEND_FROM_EMAIL || 'PharmacyCopilot <noreply@PharmacyCopilot.com>',
                     to: inviterEmail,
                     subject: template.subject,
                     html: template.html,
@@ -375,7 +375,7 @@ class EmailService {
                 supportUrl,
             };
             const template = {
-                subject: 'Workspace Invitation Expired - PharmaCare',
+                subject: 'Workspace Invitation Expired - PharmacyCopilot',
                 html: `
           <h2>Invitation Expired</h2>
           <p>Dear ${data.inviterName},</p>
@@ -385,13 +385,13 @@ class EmailService {
             <a href="${workspaceUrl}" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Send New Invitation</a>
           </p>
           <br>
-          <p>Best regards,<br>PharmaCare Team</p>
+          <p>Best regards,<br>PharmacyCopilot Team</p>
         `,
                 text: `Invitation Expired. Dear ${data.inviterName}, Your invitation to ${data.invitedEmail} to join ${data.workspaceName} as a ${data.role} has expired on ${templateVariables.expiryDate}.`,
             };
             if (this.resend) {
                 const result = await this.resend.emails.send({
-                    from: process.env.RESEND_FROM_EMAIL || 'PharmaCare <noreply@pharmacare.com>',
+                    from: process.env.RESEND_FROM_EMAIL || 'PharmacyCopilot <noreply@PharmacyCopilot.com>',
                     to: inviterEmail,
                     subject: template.subject,
                     html: template.html,
@@ -438,7 +438,7 @@ class EmailService {
             const template = await this.loadTemplate('invitationExpired', templateVariables);
             if (this.resend) {
                 const result = await this.resend.emails.send({
-                    from: process.env.RESEND_FROM_EMAIL || 'PharmaCare <noreply@pharmacare.com>',
+                    from: process.env.RESEND_FROM_EMAIL || 'PharmacyCopilot <noreply@PharmacyCopilot.com>',
                     to: invitation.email,
                     subject: template.subject,
                     html: template.html,
@@ -544,7 +544,7 @@ class EmailService {
             const template = await this.loadTemplate('invitationReminder', templateVariables);
             if (this.resend) {
                 const result = await this.resend.emails.send({
-                    from: process.env.RESEND_FROM_EMAIL || 'PharmaCare <noreply@pharmacare.com>',
+                    from: process.env.RESEND_FROM_EMAIL || 'PharmacyCopilot <noreply@PharmacyCopilot.com>',
                     to: invitation.email,
                     subject: template.subject,
                     html: template.html,
@@ -564,12 +564,12 @@ class EmailService {
     }
     async sendTrialActivation(email, data) {
         const template = {
-            subject: 'Free Trial Activated - PharmaCare',
+            subject: 'Free Trial Activated - PharmacyCopilot',
             html: `
         <h2>Free Trial Activated!</h2>
         <p>Dear ${data.firstName},</p>
         <p>Your <strong>${data.trialDurationDays}-day free trial</strong> for <strong>${data.workspaceName}</strong> has been activated!</p>
-        <p>You now have access to all PharmaCare features until <strong>${data.trialEndDate.toLocaleDateString()}</strong>.</p>
+        <p>You now have access to all PharmacyCopilot features until <strong>${data.trialEndDate.toLocaleDateString()}</strong>.</p>
         <p>During your trial, you can:</p>
         <ul>
           <li>Manage unlimited patients</li>
@@ -580,7 +580,7 @@ class EmailService {
         </ul>
         <p>Make sure to explore all features and consider upgrading before your trial expires!</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Free Trial Activated! Dear ${data.firstName}, Your ${data.trialDurationDays}-day free trial for ${data.workspaceName} has been activated until ${data.trialEndDate.toLocaleDateString()}.`,
         };
@@ -588,11 +588,11 @@ class EmailService {
     }
     async sendWorkspaceSubscriptionConfirmation(email, data) {
         const template = {
-            subject: 'Workspace Subscription Confirmed - PharmaCare',
+            subject: 'Workspace Subscription Confirmed - PharmacyCopilot',
             html: `
         <h2>Workspace Subscription Confirmed!</h2>
         <p>Dear ${data.firstName},</p>
-        <p>Thank you for subscribing to PharmaCare <strong>${data.planName}</strong> plan for your workspace <strong>${data.workspaceName}</strong>.</p>
+        <p>Thank you for subscribing to PharmacyCopilot <strong>${data.planName}</strong> plan for your workspace <strong>${data.workspaceName}</strong>.</p>
         <p><strong>Subscription Details:</strong></p>
         <ul>
           <li><strong>Plan:</strong> ${data.planName}</li>
@@ -604,27 +604,27 @@ class EmailService {
         <p>Your entire workspace team now has access to all premium features!</p>
         <p>You can manage your subscription and team members in your workspace settings.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
-            text: `Workspace Subscription Confirmed! Dear ${data.firstName}, Thank you for subscribing to PharmaCare ${data.planName} plan for ${data.workspaceName}. Amount: ₦${data.amount.toLocaleString()}, Billing: ${data.billingInterval}.`,
+            text: `Workspace Subscription Confirmed! Dear ${data.firstName}, Thank you for subscribing to PharmacyCopilot ${data.planName} plan for ${data.workspaceName}. Amount: ₦${data.amount.toLocaleString()}, Billing: ${data.billingInterval}.`,
         };
         return this.sendEmail(email, template);
     }
     async sendSubscriptionPastDue(email, data) {
         const template = {
-            subject: 'Subscription Payment Past Due - PharmaCare',
+            subject: 'Subscription Payment Past Due - PharmacyCopilot',
             html: `
         <h2>Subscription Payment Past Due</h2>
         <p>Dear ${data.firstName},</p>
         <p>Your subscription payment for <strong>${data.workspaceName}</strong> is past due.</p>
         <p>You have until <strong>${data.gracePeriodEnd.toLocaleDateString()}</strong> to update your payment method and avoid service interruption.</p>
-        <p>Please log in to your account and update your payment information to continue enjoying all PharmaCare features.</p>
+        <p>Please log in to your account and update your payment information to continue enjoying all PharmacyCopilot features.</p>
         <p style="margin: 30px 0;">
           <a href="${process.env.FRONTEND_URL}/workspace/subscription" style="background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Update Payment Method</a>
         </p>
         <p>If you have any questions, please contact our support team.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Subscription Payment Past Due. Dear ${data.firstName}, Your subscription payment for ${data.workspaceName} is past due. Please update your payment method by ${data.gracePeriodEnd.toLocaleDateString()}.`,
         };
@@ -632,7 +632,7 @@ class EmailService {
     }
     async sendSubscriptionExpired(email, data) {
         const template = {
-            subject: 'Subscription Expired - PharmaCare',
+            subject: 'Subscription Expired - PharmacyCopilot',
             html: `
         <h2>Subscription Expired</h2>
         <p>Dear ${data.firstName},</p>
@@ -648,7 +648,7 @@ class EmailService {
         </p>
         <p>All your data is safe and will be restored once you reactivate your subscription.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Subscription Expired. Dear ${data.firstName}, Your subscription for ${data.workspaceName} has expired. Please reactivate to restore full access.`,
         };
@@ -656,7 +656,7 @@ class EmailService {
     }
     async sendSubscriptionCanceled(email, data) {
         const template = {
-            subject: 'Subscription Canceled - PharmaCare',
+            subject: 'Subscription Canceled - PharmacyCopilot',
             html: `
         <h2>Subscription Canceled</h2>
         <p>Dear ${data.firstName},</p>
@@ -666,9 +666,9 @@ class EmailService {
         <p style="margin: 30px 0;">
           <a href="${process.env.FRONTEND_URL}/workspace/subscription" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Reactivate Subscription</a>
         </p>
-        <p>Thank you for using PharmaCare. We hope to serve you again in the future!</p>
+        <p>Thank you for using PharmacyCopilot. We hope to serve you again in the future!</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Subscription Canceled. Dear ${data.firstName}, Your subscription for ${data.workspaceName} has been canceled. You can reactivate anytime.`,
         };
@@ -701,7 +701,7 @@ class EmailService {
             const template = await this.loadTemplate('trialExpiryWarning', templateVariables);
             if (this.resend) {
                 const result = await this.resend.emails.send({
-                    from: process.env.RESEND_FROM_EMAIL || 'PharmaCare <noreply@pharmacare.com>',
+                    from: process.env.RESEND_FROM_EMAIL || 'PharmacyCopilot <noreply@PharmacyCopilot.com>',
                     to: email,
                     subject: template.subject,
                     html: template.html,
@@ -744,7 +744,7 @@ class EmailService {
             const template = await this.loadTemplate('usageLimitWarning', templateVariables);
             if (this.resend) {
                 const result = await this.resend.emails.send({
-                    from: process.env.RESEND_FROM_EMAIL || 'PharmaCare <noreply@pharmacare.com>',
+                    from: process.env.RESEND_FROM_EMAIL || 'PharmacyCopilot <noreply@PharmacyCopilot.com>',
                     to: email,
                     subject: template.subject,
                     html: template.html,
@@ -861,7 +861,7 @@ class EmailService {
             const template = await this.loadTemplate('subscriptionStatusChange', templateVariables);
             if (this.resend) {
                 const result = await this.resend.emails.send({
-                    from: process.env.RESEND_FROM_EMAIL || 'PharmaCare <noreply@pharmacare.com>',
+                    from: process.env.RESEND_FROM_EMAIL || 'PharmacyCopilot <noreply@PharmacyCopilot.com>',
                     to: email,
                     subject: template.subject,
                     html: template.html,
@@ -881,7 +881,7 @@ class EmailService {
     }
     async sendSubscriptionSuspended(email, data) {
         const template = {
-            subject: 'Subscription Suspended - PharmaCare',
+            subject: 'Subscription Suspended - PharmacyCopilot',
             html: `
         <h2>Subscription Suspended</h2>
         <p>Dear ${data.firstName},</p>
@@ -897,7 +897,7 @@ class EmailService {
           <a href="${process.env.FRONTEND_URL}/support" style="background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Contact Support</a>
         </p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Subscription Suspended. Dear ${data.firstName}, Your subscription for ${data.workspaceName} has been suspended. Please contact support to resolve this issue.`,
         };
@@ -905,18 +905,18 @@ class EmailService {
     }
     async sendTrialExtension(email, data) {
         const template = {
-            subject: 'Trial Period Extended - PharmaCare',
+            subject: 'Trial Period Extended - PharmacyCopilot',
             html: `
         <h2>Trial Period Extended!</h2>
         <p>Dear ${data.firstName},</p>
         <p>Great news! Your trial period for <strong>${data.workspaceName}</strong> has been extended by <strong>${data.extensionDays} days</strong>.</p>
         <p>Your new trial end date is: <strong>${data.newEndDate.toLocaleDateString()}</strong></p>
-        <p>Continue exploring all PharmaCare features and consider upgrading before your extended trial expires!</p>
+        <p>Continue exploring all PharmacyCopilot features and consider upgrading before your extended trial expires!</p>
         <p style="margin: 30px 0;">
           <a href="${process.env.FRONTEND_URL}/workspace/subscription" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">View Subscription Plans</a>
         </p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Trial Period Extended! Dear ${data.firstName}, Your trial period for ${data.workspaceName} has been extended by ${data.extensionDays} days until ${data.newEndDate.toLocaleDateString()}.`,
         };
@@ -924,19 +924,19 @@ class EmailService {
     }
     async sendTrialExpired(email, data) {
         const template = {
-            subject: 'Trial Period Expired - PharmaCare',
+            subject: 'Trial Period Expired - PharmacyCopilot',
             html: `
         <h2>Trial Period Expired</h2>
         <p>Dear ${data.firstName},</p>
         <p>Your 14-day free trial for <strong>${data.workspaceName}</strong> has expired on ${data.trialEndDate.toLocaleDateString()}.</p>
-        <p>To continue using all PharmaCare features, please choose a subscription plan that fits your needs.</p>
+        <p>To continue using all PharmacyCopilot features, please choose a subscription plan that fits your needs.</p>
         <p>Your workspace is now in read-only mode, but all your data is safe and will be restored once you subscribe.</p>
         <p style="margin: 30px 0;">
           <a href="${process.env.FRONTEND_URL}/workspace/subscription" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Choose a Plan</a>
         </p>
-        <p>Thank you for trying PharmaCare. We hope you'll continue your journey with us!</p>
+        <p>Thank you for trying PharmacyCopilot. We hope you'll continue your journey with us!</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Trial Period Expired. Dear ${data.firstName}, Your trial for ${data.workspaceName} has expired on ${data.trialEndDate.toLocaleDateString()}. Please choose a subscription plan to continue.`,
         };
@@ -944,7 +944,7 @@ class EmailService {
     }
     async sendSubscriptionExpiryWarning(email, data) {
         const template = {
-            subject: `Subscription Expires in ${data.daysRemaining} Days - PharmaCare`,
+            subject: `Subscription Expires in ${data.daysRemaining} Days - PharmacyCopilot`,
             html: `
         <h2>Subscription Expiring Soon</h2>
         <p>Dear ${data.firstName},</p>
@@ -956,7 +956,7 @@ class EmailService {
         </p>
         <p>Need to update your payment method or have questions? Contact our support team.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Subscription Expiring Soon. Dear ${data.firstName}, Your subscription for ${data.workspaceName} expires in ${data.daysRemaining} days on ${data.endDate.toLocaleDateString()}.`,
         };
@@ -964,7 +964,7 @@ class EmailService {
     }
     async sendSubscriptionDowngradeApplied(email, data) {
         const template = {
-            subject: 'Subscription Downgrade Applied - PharmaCare',
+            subject: 'Subscription Downgrade Applied - PharmacyCopilot',
             html: `
         <h2>Subscription Downgrade Applied</h2>
         <p>Dear ${data.firstName},</p>
@@ -976,7 +976,7 @@ class EmailService {
           <a href="${process.env.FRONTEND_URL}/workspace/subscription" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">View Current Plan</a>
         </p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
             text: `Subscription Downgrade Applied. Dear ${data.firstName}, Your downgrade for ${data.workspaceName} to ${data.newPlanName} has been applied on ${data.effectiveDate.toLocaleDateString()}.`,
         };
@@ -984,11 +984,11 @@ class EmailService {
     }
     async sendUserApprovalNotification(email, data) {
         const template = {
-            subject: 'Account Approved - Welcome to PharmaCare!',
+            subject: 'Account Approved - Welcome to PharmacyCopilot!',
             html: `
         <h2>Account Approved!</h2>
         <p>Dear ${data.firstName} ${data.lastName},</p>
-        <p>Great news! Your PharmaCare account has been approved and activated.</p>
+        <p>Great news! Your PharmacyCopilot account has been approved and activated.</p>
         ${data.workspaceName ? `<p>You now have access to <strong>${data.workspaceName}</strong>.</p>` : ''}
         <p>You can now log in and start using all the features available to you.</p>
         <p style="margin: 30px 0;">
@@ -996,25 +996,25 @@ class EmailService {
         </p>
         <p>If you have any questions, feel free to reach out to our support team.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
-            text: `Account Approved! Dear ${data.firstName} ${data.lastName}, Your PharmaCare account has been approved and activated. You can now log in at ${process.env.FRONTEND_URL}/login`,
+            text: `Account Approved! Dear ${data.firstName} ${data.lastName}, Your PharmacyCopilot account has been approved and activated. You can now log in at ${process.env.FRONTEND_URL}/login`,
         };
         return this.sendEmail(email, template);
     }
     async sendUserRejectionNotification(email, data) {
         const template = {
-            subject: 'Account Registration Update - PharmaCare',
+            subject: 'Account Registration Update - PharmacyCopilot',
             html: `
         <h2>Account Registration Update</h2>
         <p>Dear ${data.firstName} ${data.lastName},</p>
-        <p>Thank you for your interest in PharmaCare. Unfortunately, we are unable to approve your account registration at this time.</p>
+        <p>Thank you for your interest in PharmacyCopilot. Unfortunately, we are unable to approve your account registration at this time.</p>
         ${data.reason ? `<p><strong>Reason:</strong> ${data.reason}</p>` : ''}
-        <p>If you believe this is an error or would like to discuss this decision, please contact our support team at ${process.env.SUPPORT_EMAIL || 'support@pharmacare.com'}.</p>
+        <p>If you believe this is an error or would like to discuss this decision, please contact our support team at ${process.env.SUPPORT_EMAIL || 'support@PharmacyCopilot.com'}.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
-            text: `Account Registration Update. Dear ${data.firstName} ${data.lastName}, We are unable to approve your account registration at this time. ${data.reason ? `Reason: ${data.reason}` : ''} Contact support at ${process.env.SUPPORT_EMAIL || 'support@pharmacare.com'} for more information.`,
+            text: `Account Registration Update. Dear ${data.firstName} ${data.lastName}, We are unable to approve your account registration at this time. ${data.reason ? `Reason: ${data.reason}` : ''} Contact support at ${process.env.SUPPORT_EMAIL || 'support@PharmacyCopilot.com'} for more information.`,
         };
         return this.sendEmail(email, template);
     }
@@ -1028,11 +1028,11 @@ class EmailService {
         };
         const roleDisplay = roleDisplayNames[data.newRole] || data.newRole;
         const template = {
-            subject: 'Role Updated - PharmaCare',
+            subject: 'Role Updated - PharmacyCopilot',
             html: `
         <h2>Your Role Has Been Updated</h2>
         <p>Dear ${data.firstName} ${data.lastName},</p>
-        <p>Your role in PharmaCare has been updated.</p>
+        <p>Your role in PharmacyCopilot has been updated.</p>
         <p><strong>New Role:</strong> ${roleDisplay}</p>
         ${data.workspaceName ? `<p><strong>Workspace:</strong> ${data.workspaceName}</p>` : ''}
         <p>This change may affect your access permissions and available features. Please log in to see your updated capabilities.</p>
@@ -1041,36 +1041,36 @@ class EmailService {
         </p>
         <p>If you have questions about your new role, please contact your administrator or our support team.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
-            text: `Your Role Has Been Updated. Dear ${data.firstName} ${data.lastName}, Your role in PharmaCare has been updated to ${roleDisplay}. ${data.workspaceName ? `Workspace: ${data.workspaceName}` : ''} Log in at ${process.env.FRONTEND_URL}/login to see your updated capabilities.`,
+            text: `Your Role Has Been Updated. Dear ${data.firstName} ${data.lastName}, Your role in PharmacyCopilot has been updated to ${roleDisplay}. ${data.workspaceName ? `Workspace: ${data.workspaceName}` : ''} Log in at ${process.env.FRONTEND_URL}/login to see your updated capabilities.`,
         };
         return this.sendEmail(email, template);
     }
     async sendUserSuspensionNotification(email, data) {
         const template = {
-            subject: 'Account Suspended - PharmaCare',
+            subject: 'Account Suspended - PharmacyCopilot',
             html: `
         <h2>Account Suspended</h2>
         <p>Dear ${data.firstName} ${data.lastName},</p>
-        <p>Your PharmaCare account has been suspended.</p>
+        <p>Your PharmacyCopilot account has been suspended.</p>
         <p><strong>Reason:</strong> ${data.reason}</p>
         <p>You will not be able to log in until your account is reactivated.</p>
-        <p>If you believe this is an error or would like to appeal this decision, please contact our support team at ${process.env.SUPPORT_EMAIL || 'support@pharmacare.com'}.</p>
+        <p>If you believe this is an error or would like to appeal this decision, please contact our support team at ${process.env.SUPPORT_EMAIL || 'support@PharmacyCopilot.com'}.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
-            text: `Account Suspended. Dear ${data.firstName} ${data.lastName}, Your PharmaCare account has been suspended. Reason: ${data.reason}. Contact support at ${process.env.SUPPORT_EMAIL || 'support@pharmacare.com'} for assistance.`,
+            text: `Account Suspended. Dear ${data.firstName} ${data.lastName}, Your PharmacyCopilot account has been suspended. Reason: ${data.reason}. Contact support at ${process.env.SUPPORT_EMAIL || 'support@PharmacyCopilot.com'} for assistance.`,
         };
         return this.sendEmail(email, template);
     }
     async sendUserCreatedNotification(email, data) {
         const template = {
-            subject: 'Welcome to PharmaCare - Account Created',
+            subject: 'Welcome to PharmacyCopilot - Account Created',
             html: `
-        <h2>Welcome to PharmaCare!</h2>
+        <h2>Welcome to PharmacyCopilot!</h2>
         <p>Dear ${data.firstName} ${data.lastName},</p>
-        <p>An account has been created for you on PharmaCare.</p>
+        <p>An account has been created for you on PharmacyCopilot.</p>
         ${data.workspaceName ? `<p><strong>Workspace:</strong> ${data.workspaceName}</p>` : ''}
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Temporary Password:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">${data.tempPassword}</code></p>
@@ -1080,9 +1080,9 @@ class EmailService {
         </p>
         <p>If you have any questions, feel free to reach out to our support team.</p>
         <br>
-        <p>Best regards,<br>PharmaCare Team</p>
+        <p>Best regards,<br>PharmacyCopilot Team</p>
       `,
-            text: `Welcome to PharmaCare! Dear ${data.firstName} ${data.lastName}, An account has been created for you. Email: ${email}, Temporary Password: ${data.tempPassword}. Please change your password after your first login. Log in at ${process.env.FRONTEND_URL}/login`,
+            text: `Welcome to PharmacyCopilot! Dear ${data.firstName} ${data.lastName}, An account has been created for you. Email: ${email}, Temporary Password: ${data.tempPassword}. Please change your password after your first login. Log in at ${process.env.FRONTEND_URL}/login`,
         };
         return this.sendEmail(email, template);
     }
