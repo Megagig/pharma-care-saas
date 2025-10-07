@@ -115,8 +115,8 @@ export const generatePDFDocument = (data: ReferralDocumentData): Blob => {
   doc.setProperties({
     title: `Medical Referral - ${data.caseId}`,
     subject: 'Medical Referral Document',
-    author: 'PharmaCare System',
-    creator: 'PharmaCare SaaS Platform'
+    author: 'PharmacyCopilot System',
+    creator: 'PharmacyCopilot SaaS Platform'
   });
   
   // Header

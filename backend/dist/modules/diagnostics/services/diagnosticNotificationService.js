@@ -432,7 +432,7 @@ class DiagnosticNotificationService {
 
                 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
                 <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated reminder from the PharmaCare Diagnostic System.
+                    This is an automated reminder from the PharmacyCopilot Diagnostic System.
                 </p>
             </div>
         `;
@@ -466,7 +466,7 @@ class DiagnosticNotificationService {
 
                 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
                 <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated alert from the PharmaCare Adherence Monitoring System.
+                    This is an automated alert from the PharmacyCopilot Adherence Monitoring System.
                 </p>
             </div>
         `;
@@ -506,7 +506,7 @@ class DiagnosticNotificationService {
 
                 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
                 <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated alert from the PharmaCare Adherence Monitoring System.
+                    This is an automated alert from the PharmacyCopilot Adherence Monitoring System.
                 </p>
             </div>
         `;
@@ -547,7 +547,7 @@ class DiagnosticNotificationService {
 
                 <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
                 <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated reminder from the PharmaCare Diagnostic System.
+                    This is an automated reminder from the PharmacyCopilot Diagnostic System.
                 </p>
             </div>
         `;

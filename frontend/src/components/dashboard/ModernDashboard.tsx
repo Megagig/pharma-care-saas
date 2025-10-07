@@ -431,7 +431,7 @@ export const ModernDashboard: React.FC = () => {
                 mb: 1,
               }}
             >
-              Pharmacare Dashboard
+              PharmacyCopilot Dashboard
             </Typography>
             <Typography variant="body1" color="text.secondary">
               Welcome back! Here's your healthcare system overview.

@@ -88,7 +88,7 @@ import {
 import Landing from './pages/Landing';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import NewPricing from './pages/NewPricing';
+import Pricing from './pages/Pricing';
 import Login from './pages/Login';
 import MultiStepRegister from './pages/MultiStepRegister';
 import VerifyEmail from './pages/VerifyEmail';
@@ -203,7 +203,7 @@ function App(): JSX.Element {
                           <Route path="/" element={<Landing />} />
                           <Route path="/about" element={<About />} />
                           <Route path="/contact" element={<Contact />} />
-                          <Route path="/pricing" element={<NewPricing />} />
+                          <Route path="/pricing" element={<Pricing />} />
                           <Route path="/login" element={<Login />} />
                           <Route
                             path="/register"

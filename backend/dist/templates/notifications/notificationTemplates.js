@@ -300,14 +300,14 @@ class NotificationTemplateService {
             smsTemplate: '{{senderName}} shared {{fileName}} with you',
         });
         this.templates.set('system_notification', {
-            subject: 'PharmaCare System Notification',
+            subject: 'PharmacyCopilot System Notification',
             content: '{{notificationMessage}}',
             htmlTemplate: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <div style="background-color: #f1f5f9; border-left: 4px solid #64748b; padding: 20px; margin-bottom: 20px;">
                         <h2 style="color: #475569; margin-top: 0;">🔔 System Notification</h2>
                         <p style="font-size: 16px; margin: 0;">
-                            PharmaCare System Update
+                            PharmacyCopilot System Update
                         </p>
                     </div>
                     
@@ -326,24 +326,24 @@ class NotificationTemplateService {
                     {{/if}}
                 </div>
             `,
-            smsTemplate: 'PharmaCare: {{notificationMessage}}',
+            smsTemplate: 'PharmacyCopilot: {{notificationMessage}}',
         });
     }
     getDefaultTemplate(variables) {
         return {
-            subject: variables.title || 'PharmaCare Notification',
-            content: variables.content || 'You have a new notification from PharmaCare',
+            subject: variables.title || 'PharmacyCopilot Notification',
+            content: variables.content || 'You have a new notification from PharmacyCopilot',
             htmlTemplate: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px;">
-                        <h2 style="color: #2563eb; margin-top: 0;">PharmaCare Notification</h2>
+                        <h2 style="color: #2563eb; margin-top: 0;">PharmacyCopilot Notification</h2>
                         <p style="margin: 0; color: #4b5563;">
-                            ${variables.content || 'You have a new notification from PharmaCare'}
+                            ${variables.content || 'You have a new notification from PharmacyCopilot'}
                         </p>
                     </div>
                 </div>
             `,
-            smsTemplate: variables.content || 'PharmaCare notification',
+            smsTemplate: variables.content || 'PharmacyCopilot notification',
         };
     }
     static getTemplateVariables(type, data, additionalVars = {}) {

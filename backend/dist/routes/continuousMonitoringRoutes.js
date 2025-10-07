@@ -109,7 +109,7 @@ router.get('/default-config', auth_1.auth, rbac_1.default.requireRole('admin', '
                 enabled: true,
                 schedule: '0 */6 * * *',
                 urls: [
-                    process.env.PRODUCTION_URL || 'https://app.pharmacare.com',
+                    process.env.PRODUCTION_URL || 'https://app.PharmacyCopilot.com',
                 ],
                 alertThresholds: {
                     performance: 85,

@@ -1,46 +1,46 @@
-# Prometheus alerting rules for Pharmacare Workspace Subscription system
+# Prometheus alerting rules for PharmacyCopilot Workspace Subscription system
 
 groups:
-  - name: pharmacare_api_alerts
+  - name: PharmacyCopilot_api_alerts
     rules:
       # High API response time
       - alert: HighAPIResponseTime
-        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="pharmacare-api"}[5m])) > 2
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="PharmacyCopilot-api"}[5m])) > 2
         for: 2m
         labels:
           severity: warning
-          service: pharmacare-api
+          service: PharmacyCopilot-api
         annotations:
           summary: 'High API response time detected'
           description: '95th percentile response time is {{ $value }}s for the last 5 minutes'
 
       # High error rate
       - alert: HighErrorRate
-        expr: rate(http_requests_total{job="pharmacare-api",status=~"5.."}[5m]) > 0.1
+        expr: rate(http_requests_total{job="PharmacyCopilot-api",status=~"5.."}[5m]) > 0.1
         for: 1m
         labels:
           severity: critical
-          service: pharmacare-api
+          service: PharmacyCopilot-api
         annotations:
           summary: 'High error rate detected'
           description: 'Error rate is {{ $value }} errors per second'
 
       # API service down
       - alert: APIServiceDown
-        expr: up{job="pharmacare-api"} == 0
+        expr: up{job="PharmacyCopilot-api"} == 0
         for: 30s
         labels:
           severity: critical
-          service: pharmacare-api
+          service: PharmacyCopilot-api
         annotations:
-          summary: 'Pharmacare API service is down'
-          description: 'The Pharmacare API service has been down for more than 30 seconds'
+          summary: 'PharmacyCopilot API service is down'
+          description: 'The PharmacyCopilot API service has been down for more than 30 seconds'
 
-  - name: pharmacare_subscription_alerts
+  - name: PharmacyCopilot_subscription_alerts
     rules:
       # High trial expiry rate without conversion
       - alert: HighTrialExpiryRate
-        expr: rate(pharmacare_trials_expired_total[24h]) > rate(pharmacare_trial_conversions_total[24h]) * 3
+        expr: rate(PharmacyCopilot_trials_expired_total[24h]) > rate(PharmacyCopilot_trial_conversions_total[24h]) * 3
         for: 1h
         labels:
           severity: warning
@@ -51,7 +51,7 @@ groups:
 
       # Subscription payment failures
       - alert: SubscriptionPaymentFailures
-        expr: rate(pharmacare_payment_failures_total[1h]) > 0.05
+        expr: rate(PharmacyCopilot_payment_failures_total[1h]) > 0.05
         for: 5m
         labels:
           severity: warning
@@ -62,7 +62,7 @@ groups:
 
       # Usage limit violations spike
       - alert: UsageLimitViolationsSpike
-        expr: rate(pharmacare_usage_limit_violations_total[5m]) > 1
+        expr: rate(PharmacyCopilot_usage_limit_violations_total[5m]) > 1
         for: 2m
         labels:
           severity: warning
@@ -71,11 +71,11 @@ groups:
           summary: 'Spike in usage limit violations'
           description: 'Usage limit violations rate is {{ $value }} per second'
 
-  - name: pharmacare_invitation_alerts
+  - name: PharmacyCopilot_invitation_alerts
     rules:
       # High invitation failure rate
       - alert: HighInvitationFailureRate
-        expr: rate(pharmacare_invitations_failed_total[10m]) / rate(pharmacare_invitations_sent_total[10m]) > 0.1
+        expr: rate(PharmacyCopilot_invitations_failed_total[10m]) / rate(PharmacyCopilot_invitations_sent_total[10m]) > 0.1
         for: 5m
         labels:
           severity: warning
@@ -86,7 +86,7 @@ groups:
 
       # Low invitation acceptance rate
       - alert: LowInvitationAcceptanceRate
-        expr: rate(pharmacare_invitations_accepted_total[24h]) / rate(pharmacare_invitations_sent_total[24h]) < 0.3
+        expr: rate(PharmacyCopilot_invitations_accepted_total[24h]) / rate(PharmacyCopilot_invitations_sent_total[24h]) < 0.3
         for: 2h
         labels:
           severity: warning
@@ -97,7 +97,7 @@ groups:
 
       # Too many pending invitations
       - alert: TooManyPendingInvitations
-        expr: pharmacare_invitations_pending_total > 1000
+        expr: PharmacyCopilot_invitations_pending_total > 1000
         for: 10m
         labels:
           severity: warning
@@ -106,7 +106,7 @@ groups:
           summary: 'Too many pending invitations'
           description: 'There are {{ $value }} pending invitations system-wide'
 
-  - name: pharmacare_database_alerts
+  - name: PharmacyCopilot_database_alerts
     rules:
       # MongoDB connection issues
       - alert: MongoDBConnectionIssues
@@ -141,11 +141,11 @@ groups:
           summary: 'Database disk space critically low'
           description: 'Only {{ $value | humanizePercentage }} disk space remaining for MongoDB'
 
-  - name: pharmacare_email_alerts
+  - name: PharmacyCopilot_email_alerts
     rules:
       # High email delivery failure rate
       - alert: HighEmailFailureRate
-        expr: rate(pharmacare_emails_failed_total[10m]) / rate(pharmacare_emails_sent_total[10m]) > 0.1
+        expr: rate(PharmacyCopilot_emails_failed_total[10m]) / rate(PharmacyCopilot_emails_sent_total[10m]) > 0.1
         for: 5m
         labels:
           severity: warning
@@ -156,7 +156,7 @@ groups:
 
       # Email queue backup
       - alert: EmailQueueBackup
-        expr: pharmacare_email_queue_size > 100
+        expr: PharmacyCopilot_email_queue_size > 100
         for: 10m
         labels:
           severity: warning
@@ -165,7 +165,7 @@ groups:
           summary: 'Email queue backing up'
           description: '{{ $value }} emails are queued for delivery'
 
-  - name: pharmacare_system_alerts
+  - name: PharmacyCopilot_system_alerts
     rules:
       # High memory usage
       - alert: HighMemoryUsage
@@ -211,11 +211,11 @@ groups:
           summary: 'PM2 process is down'
           description: 'PM2 process {{ $labels.name }} is down'
 
-  - name: pharmacare_security_alerts
+  - name: PharmacyCopilot_security_alerts
     rules:
       # High rate of authentication failures
       - alert: HighAuthFailureRate
-        expr: rate(pharmacare_auth_failures_total[5m]) > 5
+        expr: rate(PharmacyCopilot_auth_failures_total[5m]) > 5
         for: 2m
         labels:
           severity: warning
@@ -226,7 +226,7 @@ groups:
 
       # Suspicious invitation activity
       - alert: SuspiciousInvitationActivity
-        expr: rate(pharmacare_invitations_sent_total[5m]) by (workspace_id) > 10
+        expr: rate(PharmacyCopilot_invitations_sent_total[5m]) by (workspace_id) > 10
         for: 1m
         labels:
           severity: warning
@@ -237,7 +237,7 @@ groups:
 
       # Rate limit violations
       - alert: RateLimitViolations
-        expr: rate(pharmacare_rate_limit_violations_total[5m]) > 1
+        expr: rate(PharmacyCopilot_rate_limit_violations_total[5m]) > 1
         for: 2m
         labels:
           severity: warning

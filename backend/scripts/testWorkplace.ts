@@ -10,7 +10,7 @@ config();
 async function testWorkplaceCreation() {
   try {
     await mongoose.connect(
-      process.env.MONGODB_URI || 'mongodb://localhost:27017/pharmacare-test'
+      process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmacyCopilot-test'
     );
     console.log('Connected to MongoDB');
 

@@ -1032,31 +1032,31 @@ A: Navigate to API Management → Usage Metrics → View requests, response time
 ### Technical Support
 
 **Primary Support**
-- **Email**: saas-support@pharmacare.com
+- **Email**: saas-support@PharmacyCopilot.com
 - **Phone**: +234-XXX-XXX-XXXX
 - **Hours**: 24/7 for critical issues, 8 AM - 6 PM WAT for general support
 
 **Emergency Escalation**
 - **Critical System Issues**: Call +234-XXX-XXX-XXXX (24/7 hotline)
-- **Security Incidents**: security-incident@pharmacare.com
-- **Data Loss/Corruption**: data-recovery@pharmacare.com
+- **Security Incidents**: security-incident@PharmacyCopilot.com
+- **Data Loss/Corruption**: data-recovery@PharmacyCopilot.com
 
 ### Internal Teams
 
 **Development Team**
-- **Lead Developer**: dev-lead@pharmacare.com
-- **Backend Team**: backend-team@pharmacare.com
-- **Frontend Team**: frontend-team@pharmacare.com
+- **Lead Developer**: dev-lead@PharmacyCopilot.com
+- **Backend Team**: backend-team@PharmacyCopilot.com
+- **Frontend Team**: frontend-team@PharmacyCopilot.com
 
 **Operations Team**
-- **DevOps Lead**: devops@pharmacare.com
-- **Database Administrator**: dba@pharmacare.com
-- **System Administrator**: sysadmin@pharmacare.com
+- **DevOps Lead**: devops@PharmacyCopilot.com
+- **Database Administrator**: dba@PharmacyCopilot.com
+- **System Administrator**: sysadmin@PharmacyCopilot.com
 
 **Management**
-- **Technical Director**: tech-director@pharmacare.com
-- **Product Manager**: product@pharmacare.com
-- **Customer Success**: success@pharmacare.com
+- **Technical Director**: tech-director@PharmacyCopilot.com
+- **Product Manager**: product@PharmacyCopilot.com
+- **Customer Success**: success@PharmacyCopilot.com
 
 ### External Vendors
 
@@ -1075,31 +1075,31 @@ A: Navigate to API Management → Usage Metrics → View requests, response time
 ### Documentation and Resources
 
 **Online Resources**
-- **Documentation Portal**: https://docs.pharmacare.com
-- **API Documentation**: https://api-docs.pharmacare.com
-- **Status Page**: https://status.pharmacare.com
-- **Developer Portal**: https://developers.pharmacare.com
+- **Documentation Portal**: https://docs.PharmacyCopilot.com
+- **API Documentation**: https://api-docs.PharmacyCopilot.com
+- **Status Page**: https://status.PharmacyCopilot.com
+- **Developer Portal**: https://developers.PharmacyCopilot.com
 
 **Training Materials**
-- **Video Tutorials**: https://learn.pharmacare.com
-- **Webinar Schedule**: https://training.pharmacare.com
-- **Best Practices Guide**: https://docs.pharmacare.com/best-practices
+- **Video Tutorials**: https://learn.PharmacyCopilot.com
+- **Webinar Schedule**: https://training.PharmacyCopilot.com
+- **Best Practices Guide**: https://docs.PharmacyCopilot.com/best-practices
 
 ### Reporting Issues
 
 **Bug Reports**
-- **Email**: bugs@pharmacare.com
-- **Issue Tracker**: https://issues.pharmacare.com
+- **Email**: bugs@PharmacyCopilot.com
+- **Issue Tracker**: https://issues.PharmacyCopilot.com
 - **Include**: Steps to reproduce, expected vs actual behavior, screenshots
 
 **Feature Requests**
-- **Email**: features@pharmacare.com
-- **Portal**: https://feedback.pharmacare.com
+- **Email**: features@PharmacyCopilot.com
+- **Portal**: https://feedback.PharmacyCopilot.com
 - **Include**: Use case, business justification, priority level
 
 **Security Vulnerabilities**
-- **Email**: security@pharmacare.com (encrypted)
-- **PGP Key**: Available at https://pharmacare.com/security
+- **Email**: security@PharmacyCopilot.com (encrypted)
+- **PGP Key**: Available at https://PharmacyCopilot.com/security
 - **Response Time**: 24 hours for acknowledgment
 
 ---
@@ -1108,4 +1108,4 @@ A: Navigate to API Management → Usage Metrics → View requests, response time
 **Version**: 1.0  
 **Next Review**: April 2024
 
-For the most current version of this troubleshooting guide, visit: https://docs.pharmacare.com/saas-settings/troubleshooting
+For the most current version of this troubleshooting guide, visit: https://docs.PharmacyCopilot.com/saas-settings/troubleshooting

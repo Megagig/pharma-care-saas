@@ -28,7 +28,7 @@ async function measurePayloadOptimization() {
     logger.info('Starting payload optimization measurement');
 
     // Connect to MongoDB
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/pharmacare';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmacyCopilot';
     await mongoose.connect(mongoUri);
     logger.info('Connected to MongoDB');
 

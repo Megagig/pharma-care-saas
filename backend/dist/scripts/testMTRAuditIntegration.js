@@ -14,7 +14,7 @@ const Workplace_1 = __importDefault(require("../models/Workplace"));
 (0, dotenv_1.config)();
 async function connectToDatabase() {
     try {
-        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/pharmacare';
+        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/PharmacyCopilot';
         await mongoose_1.default.connect(mongoUri);
         console.log('✅ Connected to MongoDB');
     }

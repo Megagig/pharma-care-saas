@@ -89,7 +89,7 @@ class ProductionValidationService {
     }
     async collectProductionMetrics() {
         logger_1.default.info('Collecting production metrics');
-        const lighthouseResult = await LighthouseCIService_1.LighthouseCIService.runLighthouseTest(process.env.PRODUCTION_URL || 'https://app.pharmacare.com');
+        const lighthouseResult = await LighthouseCIService_1.LighthouseCIService.runLighthouseTest(process.env.PRODUCTION_URL || 'https://app.PharmacyCopilot.com');
         const webVitalsData = await WebVitalsService_1.WebVitalsService.getRecentMetrics(10 * 60 * 1000);
         const webVitals = this.aggregateWebVitals(webVitalsData);
         const apiLatency = await this.getAPILatencyMetrics();

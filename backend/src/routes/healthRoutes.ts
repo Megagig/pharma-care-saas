@@ -6,13 +6,13 @@ const router = express.Router();
 
 // Metrics for health checks
 const healthCheckDuration = new promClient.Histogram({
-  name: 'pharmacare_health_check_duration_seconds',
+  name: 'PharmacyCopilot_health_check_duration_seconds',
   help: 'Duration of health checks in seconds',
   labelNames: ['check_type'],
 });
 
 const healthCheckStatus = new promClient.Gauge({
-  name: 'pharmacare_health_check_status',
+  name: 'PharmacyCopilot_health_check_status',
   help: 'Status of health checks (1 = healthy, 0 = unhealthy)',
   labelNames: ['check_type'],
 });
@@ -267,7 +267,7 @@ router.get('/detailed', async (req, res) => {
     const fsCheckStart = Date.now();
     try {
       const fs = require('fs').promises;
-      const tempFile = '/tmp/pharmacare_health_check';
+      const tempFile = '/tmp/PharmacyCopilot_health_check';
       await fs.writeFile(tempFile, 'health check');
       await fs.unlink(tempFile);
 

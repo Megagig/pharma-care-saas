@@ -22,7 +22,7 @@ This comprehensive training guide helps pharmacists learn to use the Manual Lab 
 
 ### System Access
 
-1. **Login**: Use your existing Pharmacare credentials
+1. **Login**: Use your existing PharmacyCopilot credentials
 2. **Navigation**: Find "Manual Lab Orders" in the main navigation menu
 3. **Permissions**: Ensure you have pharmacist or owner role access
 
@@ -671,9 +671,9 @@ Available in the training portal:
 
 ### Support Contacts
 
-- **Training Questions**: training@pharmacare.com
-- **Technical Support**: support@pharmacare.com
-- **Clinical Questions**: clinical@pharmacare.com
+- **Training Questions**: training@PharmacyCopilot.com
+- **Technical Support**: support@PharmacyCopilot.com
+- **Clinical Questions**: clinical@PharmacyCopilot.com
 - **Emergency Support**: 1-800-XXX-XXXX
 
 ### Continuing Education

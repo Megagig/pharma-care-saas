@@ -569,8 +569,8 @@ Use analytics for:
 
 #### Contact Information
 
-- **Technical Support**: support@pharmacare.com
-- **Clinical Questions**: clinical@pharmacare.com
+- **Technical Support**: support@PharmacyCopilot.com
+- **Clinical Questions**: clinical@PharmacyCopilot.com
 - **Emergency Support**: 1-800-PHARMA-HELP
 
 #### Training Resources

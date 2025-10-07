@@ -1057,7 +1057,7 @@ const MultiStepRegister = () => {
                 Create Account
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Join PharmaCare and transform your pharmacy practice
+                Join PharmacyCopilot and transform your pharmacy practice
               </Typography>
 
               {/* Selected Plan Display */}

@@ -484,7 +484,7 @@ class ContinuousMonitoringService extends events_1.EventEmitter {
                 enabled: true,
                 schedule: '0 */6 * * *',
                 urls: [
-                    process.env.PRODUCTION_URL || 'https://app.pharmacare.com',
+                    process.env.PRODUCTION_URL || 'https://app.PharmacyCopilot.com',
                 ],
                 alertThresholds: {
                     performance: 85,
