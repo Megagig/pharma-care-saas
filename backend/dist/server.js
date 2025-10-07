@@ -59,7 +59,7 @@ const socketCorsOrigins = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://192.168.8.167:5173',
-    'https://pharmacare-nttq.onrender.com',
+    'https://PharmaPilot-nttq.onrender.com',
     process.env.FRONTEND_URL || 'http://localhost:3000',
 ];
 if (process.env.CORS_ORIGINS) {

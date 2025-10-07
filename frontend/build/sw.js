@@ -34,7 +34,7 @@ const CACHE_STRATEGIES = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
     maxEntries: 100,
   },
-
+  
   // API calls: Network first, fallback to cache
   api: {
     cacheName: API_CACHE,
@@ -42,7 +42,7 @@ const CACHE_STRATEGIES = {
     maxAge: 5 * 60, // 5 minutes
     maxEntries: 50,
   },
-
+  
   // Dynamic content: Stale while revalidate
   dynamic: {
     cacheName: DYNAMIC_CACHE,
@@ -59,7 +59,7 @@ const CACHE_STRATEGIES = {
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
-
+  
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -79,12 +79,12 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...');
-
+  
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
         const validCaches = [STATIC_CACHE, DYNAMIC_CACHE, API_CACHE];
-
+        
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (!validCaches.includes(cacheName)) {
@@ -105,39 +105,21 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-
+  
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
+    return;
+  }
+  
   // Skip chrome-extension and other non-http requests
   if (!url.protocol.startsWith('http')) {
     return;
   }
-
-  // Skip ALL navigation and document requests to prevent hydration issues
-  // This is critical to prevent React error #185
-  if (request.destination === 'document' ||
-    request.mode === 'navigate' ||
-    url.pathname === '/' ||
-    url.pathname.endsWith('.html') ||
-    request.destination === 'iframe') {
-    return;
-  }
-
-  // Handle API requests (all methods)
-  if (isAPIRequest(request)) {
-    // Skip Service Worker for critical MTR operations to prevent timeout conflicts
-    if (isCriticalMTREndpoint(request)) {
-      return; // Let the request go directly to the network
-    }
-    event.respondWith(handleAPIRequest(request));
-    return;
-  }
-
-  // Only handle GET requests for static assets and dynamic content
-  if (request.method !== 'GET') {
-    return;
-  }
-
+  
   // Determine caching strategy based on request type
-  if (isStaticAsset(request)) {
+  if (isAPIRequest(request)) {
+    event.respondWith(handleAPIRequest(request));
+  } else if (isStaticAsset(request)) {
     event.respondWith(handleStaticAsset(request));
   } else {
     event.respondWith(handleDynamicRequest(request));
@@ -146,68 +128,29 @@ self.addEventListener('fetch', (event) => {
 
 // Message event - handle messages from main thread
 self.addEventListener('message', (event) => {
-  const { type, payload } = event.data || {};
-
+  const { type, payload } = event.data;
+  
   switch (type) {
     case 'SKIP_WAITING':
       self.skipWaiting();
-      // Send response back if port available
-      if (event.ports && event.ports[0]) {
-        event.ports[0].postMessage({ success: true });
-      }
       break;
-
+      
     case 'CACHE_URLS':
-      cacheUrls(payload?.urls || [])
-        .then(() => {
-          if (event.ports && event.ports[0]) {
-            event.ports[0].postMessage({ success: true });
-          }
-        })
-        .catch((error) => {
-          if (event.ports && event.ports[0]) {
-            event.ports[0].postMessage({ success: false, error: error.message });
-          }
-        });
+      cacheUrls(payload.urls);
       break;
-
+      
     case 'CLEAR_CACHE':
-      clearCache(payload?.cacheName)
-        .then(() => {
-          if (event.ports && event.ports[0]) {
-            event.ports[0].postMessage({ success: true });
-          }
-        })
-        .catch((error) => {
-          if (event.ports && event.ports[0]) {
-            event.ports[0].postMessage({ success: false, error: error.message });
-          }
-        });
+      clearCache(payload.cacheName);
       break;
-
+      
     case 'GET_CACHE_INFO':
-      getCacheInfo()
-        .then(info => {
-          if (event.ports && event.ports[0]) {
-            event.ports[0].postMessage(info);
-          }
-        })
-        .catch((error) => {
-          if (event.ports && event.ports[0]) {
-            event.ports[0].postMessage({ error: error.message });
-          }
-        });
+      getCacheInfo().then(info => {
+        event.ports[0].postMessage(info);
+      });
       break;
-
+      
     default:
       console.log('[SW] Unknown message type:', type);
-      // Send error response if port available
-      if (event.ports && event.ports[0]) {
-        event.ports[0].postMessage({
-          success: false,
-          error: `Unknown message type: ${type}`
-        });
-      }
   }
 });
 
@@ -223,7 +166,7 @@ function isAPIRequest(request) {
 function isStaticAsset(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
-
+  
   return (
     pathname.endsWith('.js') ||
     pathname.endsWith('.css') ||
@@ -239,20 +182,6 @@ function isStaticAsset(request) {
   );
 }
 
-function isCriticalMTREndpoint(request) {
-  const url = new URL(request.url);
-  const pathname = url.pathname;
-
-  // Skip Service Worker for MTR creation and critical operations
-  return (
-    pathname.startsWith('/api/mtr') && (
-      request.method === 'POST' || // MTR creation
-      request.method === 'PUT' ||  // MTR updates
-      request.method === 'PATCH'   // MTR modifications
-    )
-  );
-}
-
 /**
  * Caching Strategy Implementations
  */
@@ -260,115 +189,79 @@ function isCriticalMTREndpoint(request) {
 async function handleAPIRequest(request) {
   const cacheName = CACHE_STRATEGIES.api.cacheName;
   const maxAge = CACHE_STRATEGIES.api.maxAge * 1000; // Convert to milliseconds
-
+  
   try {
-    console.log('[SW] Handling API request:', request.url);
-
-    // Create an AbortController for timeout handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes timeout to match backend
-
-    try {
-      // Simple network-first strategy with timeout
-      const networkResponse = await fetch(request, {
-        signal: controller.signal
+    // Network first strategy
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok) {
+      // Cache successful responses
+      const cache = await caches.open(cacheName);
+      const responseClone = networkResponse.clone();
+      
+      // Add timestamp for cache expiration
+      const responseWithTimestamp = new Response(responseClone.body, {
+        status: responseClone.status,
+        statusText: responseClone.statusText,
+        headers: {
+          ...Object.fromEntries(responseClone.headers.entries()),
+          'sw-cached-at': Date.now().toString(),
+        },
       });
-
-      clearTimeout(timeoutId);
-
-      if (networkResponse.ok) {
-        // Cache successful responses for GET requests only
-        if (request.method === 'GET') {
-          try {
-            const cache = await caches.open(cacheName);
-            const responseClone = networkResponse.clone();
-
-            // Add timestamp for cache expiration
-            const responseWithTimestamp = new Response(responseClone.body, {
-              status: responseClone.status,
-              statusText: responseClone.statusText,
-              headers: {
-                ...Object.fromEntries(responseClone.headers.entries()),
-                'sw-cached-at': Date.now().toString(),
-              },
-            });
-
-            cache.put(request, responseWithTimestamp);
-            console.log('[SW] Cached API response:', request.url);
-          } catch (cacheError) {
-            console.warn('[SW] Failed to cache response:', cacheError);
-            // Continue without caching if there's an error
-          }
-        }
-      }
-
-      return networkResponse;
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      throw fetchError;
+      
+      cache.put(request, responseWithTimestamp);
     }
+    
+    return networkResponse;
   } catch (error) {
-    // Handle different types of errors appropriately
-    if (error.name === 'AbortError') {
-      console.warn('[SW] API request timed out after 5 minutes:', request.url);
-    } else {
-      console.error('[SW] Network failed for API request:', request.url, error);
-    }
-
-    // Fallback to cache for GET requests only
-    if (request.method === 'GET') {
-      try {
-        const cache = await caches.open(cacheName);
-        const cachedResponse = await cache.match(request);
-
-        if (cachedResponse) {
-          const cachedAt = cachedResponse.headers.get('sw-cached-at');
-          const isExpired = cachedAt && (Date.now() - parseInt(cachedAt)) > maxAge;
-
-          if (!isExpired) {
-            console.log('[SW] Serving from API cache:', request.url);
-            return cachedResponse;
-          } else {
-            console.log('[SW] Cached API response expired:', request.url);
-            cache.delete(request);
-          }
-        }
-      } catch (cacheError) {
-        console.warn('[SW] Failed to access cache:', cacheError);
+    console.log('[SW] Network failed for API request, trying cache:', request.url);
+    
+    // Fallback to cache
+    const cache = await caches.open(cacheName);
+    const cachedResponse = await cache.match(request);
+    
+    if (cachedResponse) {
+      const cachedAt = cachedResponse.headers.get('sw-cached-at');
+      const isExpired = cachedAt && (Date.now() - parseInt(cachedAt)) > maxAge;
+      
+      if (!isExpired) {
+        console.log('[SW] Serving from API cache:', request.url);
+        return cachedResponse;
+      } else {
+        console.log('[SW] Cached API response expired:', request.url);
+        cache.delete(request);
       }
     }
-
+    
     // Return offline fallback for critical API endpoints
     if (isCriticalAPIEndpoint(request)) {
       return createOfflineFallback(request);
     }
-
-    // For non-critical or non-GET requests, just throw the error
-    // This will let the browser handle it normally
+    
     throw error;
   }
 }
 
 async function handleStaticAsset(request) {
   const cacheName = CACHE_STRATEGIES.static.cacheName;
-
+  
   // Cache first strategy
   const cache = await caches.open(cacheName);
   const cachedResponse = await cache.match(request);
-
+  
   if (cachedResponse) {
     console.log('[SW] Serving static asset from cache:', request.url);
     return cachedResponse;
   }
-
+  
   try {
     console.log('[SW] Fetching static asset from network:', request.url);
     const networkResponse = await fetch(request);
-
+    
     if (networkResponse.ok) {
       cache.put(request, networkResponse.clone());
     }
-
+    
     return networkResponse;
   } catch (error) {
     console.error('[SW] Failed to fetch static asset:', request.url, error);
@@ -378,11 +271,11 @@ async function handleStaticAsset(request) {
 
 async function handleDynamicRequest(request) {
   const cacheName = CACHE_STRATEGIES.dynamic.cacheName;
-
+  
   // Stale while revalidate strategy
   const cache = await caches.open(cacheName);
   const cachedResponse = await cache.match(request);
-
+  
   // Always try to fetch from network in background
   const networkPromise = fetch(request)
     .then((networkResponse) => {
@@ -395,13 +288,13 @@ async function handleDynamicRequest(request) {
       console.log('[SW] Network failed for dynamic request:', request.url);
       return null;
     });
-
+  
   // Return cached response immediately if available
   if (cachedResponse) {
     console.log('[SW] Serving dynamic content from cache:', request.url);
     return cachedResponse;
   }
-
+  
   // Wait for network response if no cache available
   return networkPromise || createOfflineFallback(request);
 }
@@ -417,7 +310,7 @@ function isCriticalAPIEndpoint(request) {
 
 function createOfflineFallback(request) {
   const url = new URL(request.url);
-
+  
   if (isAPIRequest(request)) {
     // Return offline API response
     return new Response(
@@ -435,7 +328,7 @@ function createOfflineFallback(request) {
       }
     );
   }
-
+  
   // Return offline page for navigation requests
   if (request.mode === 'navigate') {
     return caches.match('/offline.html') || new Response(
@@ -445,13 +338,13 @@ function createOfflineFallback(request) {
       }
     );
   }
-
+  
   return new Response('Offline', { status: 503 });
 }
 
 async function cacheUrls(urls) {
   const cache = await caches.open(DYNAMIC_CACHE);
-
+  
   for (const url of urls) {
     try {
       const response = await fetch(url);
@@ -479,7 +372,7 @@ async function clearCache(cacheName) {
 async function getCacheInfo() {
   const cacheNames = await caches.keys();
   const cacheInfo = {};
-
+  
   for (const cacheName of cacheNames) {
     const cache = await caches.open(cacheName);
     const keys = await cache.keys();
@@ -488,7 +381,7 @@ async function getCacheInfo() {
       urls: keys.map(request => request.url),
     };
   }
-
+  
   return cacheInfo;
 }
 
@@ -499,15 +392,15 @@ async function getCacheInfo() {
 // Clean up expired cache entries periodically
 setInterval(async () => {
   console.log('[SW] Running cache cleanup...');
-
+  
   const apiCache = await caches.open(API_CACHE);
   const apiRequests = await apiCache.keys();
   const maxAge = CACHE_STRATEGIES.api.maxAge * 1000;
-
+  
   for (const request of apiRequests) {
     const response = await apiCache.match(request);
     const cachedAt = response?.headers.get('sw-cached-at');
-
+    
     if (cachedAt && (Date.now() - parseInt(cachedAt)) > maxAge) {
       await apiCache.delete(request);
       console.log('[SW] Deleted expired cache entry:', request.url);

@@ -129,7 +129,7 @@ app.use((0, helmet_1.default)({
                 'http://127.0.0.1:5000',
                 'http://localhost:3000',
                 'http://localhost:5173',
-                'https://pharmacare-nttq.onrender.com'
+                'https://PharmaPilot-nttq.onrender.com'
             ],
             mediaSrc: ["'self'"],
             objectSrc: ["'none'"],
@@ -147,7 +147,7 @@ const corsOrigins = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://192.168.8.167:5173',
-    'https://pharmacare-nttq.onrender.com',
+    'https://PharmaPilot-nttq.onrender.com',
     process.env.FRONTEND_URL || 'http://localhost:3000',
 ];
 if (process.env.CORS_ORIGINS) {
