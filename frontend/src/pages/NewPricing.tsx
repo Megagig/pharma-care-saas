@@ -20,19 +20,83 @@ import {
     useTheme,
     ToggleButtonGroup,
     ToggleButton,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import StarIcon from '@mui/icons-material/Star';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Footer from '../components/Footer';
 import ThemeToggle from '../components/common/ThemeToggle';
 import { usePricingPlans } from '../queries/usePricing';
+
+const faqData = [
+  {
+    question: 'What is PharmaPilot?',
+    answer: 'PharmaPilot is a cloud-based platform designed for pharmacists and pharmacy owners to manage, document, and optimize their daily pharmaceutical care activities. It simplifies patient record-keeping, prescription monitoring, inventory management, reporting, and compliance — all in one secure platform.',
+  },
+  {
+    question: 'Who can use PharmaPilot?',
+    answer: 'PharmaPilot is built for: Community and hospital pharmacists, Pharmacy managers and owners, Chain pharmacies and independent outlets, Clinical pharmacists providing direct patient care. Whether you\'re running a single outlet or managing multiple branches, PharmaPilot adapts to your workflow.',
+  },
+  {
+    question: 'Is my data secure on PharmaPilot?',
+    answer: 'Absolutely. PharmaPilot uses bank-grade encryption and secure cloud hosting to protect your data. We follow strict data privacy standards and are compliant with applicable healthcare data protection regulations. Your data is always yours — we never share it with third parties.',
+  },
+  {
+    question: 'Can I try PharmaPilot before paying?',
+    answer: 'Yes. We offer a free trial period that allows you to explore all core features without any commitment. You can upgrade or cancel anytime during or after the trial.',
+  },
+  {
+    question: 'How does the pricing work?',
+    answer: 'Our pricing is subscription-based, with flexible plans for individual pharmacists, pharmacy outlets, and enterprise networks. You pay monthly or annually, depending on your preference. Each plan includes access to specific modules (like Medication Therapy Review, Billing, or Reports) — with higher tiers unlocking advanced analytics and automation.',
+  },
+  {
+    question: 'What payment methods do you accept?',
+    answer: 'We accept major payment methods including: Debit/Credit cards, Bank transfers, Nomba (for local payments), Automated invoicing for enterprise clients.',
+  },
+  {
+    question: 'Can I cancel my subscription anytime?',
+    answer: 'Yes. You can cancel your subscription at any time directly from your dashboard. Once canceled, your account remains active until the end of your billing cycle. You can also export your data before cancellation.',
+  },
+  {
+    question: 'What happens to my data if I cancel my subscription?',
+    answer: 'Your data remains securely stored for a grace period after cancellation. You can reactivate your account or request a full export of your data at any time. After the grace period, data is permanently deleted to maintain privacy compliance.',
+  },
+  {
+    question: 'Can multiple users access one pharmacy account?',
+    answer: 'Yes. PharmaPilot supports multi-user access with role-based permissions. Pharmacy managers can add team members (pharmacists, technicians, cashiers) and assign access rights for better collaboration and accountability.',
+  },
+  {
+    question: 'Does PharmaPilot support multiple pharmacy branches?',
+    answer: 'Yes. Our multi-tenant system allows you to manage multiple outlets or branches under one organization account — each with separate inventory, users, and reports, but unified under your main dashboard.',
+  },
+  {
+    question: 'Does PharmaPilot offer customer support?',
+    answer: 'Yes. We provide: Email and live chat support, In-app help center with tutorials and documentation, Priority support for premium and enterprise plans. Our support team is made up of pharmacists and technical experts who understand your workflow.',
+  },
+  {
+    question: 'Can PharmaPilot work offline?',
+    answer: 'PharmaPilot is primarily cloud-based, but certain key features (like patient lookup and dispensing records) have limited offline capabilities. Data syncs automatically once you\'re back online.',
+  },
+  {
+    question: 'Do you offer training or onboarding support?',
+    answer: 'Yes. We provide guided onboarding, video tutorials, and one-on-one setup assistance for enterprise users. Our goal is to get your pharmacy fully operational on PharmaPilot within days — not weeks.',
+  },
+  {
+    question: 'What makes PharmaPilot different from regular pharmacy software?',
+    answer: 'PharmaPilot isn\'t just a management tool — it\'s a pharmaceutical care platform built by pharmacists, for pharmacists. It combines clinical documentation, analytics, and patient engagement with modern automation, giving you full control of your professional practice and business performance.',
+  },
+];
 
 const NewPricing = () => {
     const theme = useTheme();
     const navigate = useNavigate();
     const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+    const [expandedFaq, setExpandedFaq] = useState<number | false>(false);
     const { data, isLoading, error } = usePricingPlans(billingPeriod);
 
     const handleBillingPeriodChange = (
@@ -56,6 +120,10 @@ const NewPricing = () => {
             );
             window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
         }
+    };
+
+    const handleFaqChange = (panel: number) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
+        setExpandedFaq(isExpanded ? panel : false);
     };
 
     const getGradientForPlan = (tier: string) => {
@@ -591,6 +659,104 @@ const NewPricing = () => {
                     </Box>
                 )}
 
+                {/* FAQ Section */}
+                <Box sx={{ mt: 12 }}>
+                    <Typography
+                        variant="h3"
+                        component="h2"
+                        sx={{
+                            fontWeight: 800,
+                            mb: 2,
+                            textAlign: 'center',
+                            background: getGradientForPlan('pro'),
+                            backgroundClip: 'text',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                        }}
+                    >
+                        Frequently Asked Questions
+                    </Typography>
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            mb: 6,
+                            textAlign: 'center',
+                            color: 'text.secondary',
+                            maxWidth: '700px',
+                            mx: 'auto',
+                        }}
+                    >
+                        Everything you need to know about PharmaPilot
+                    </Typography>
+                    <Box sx={{ maxWidth: '900px', mx: 'auto' }}>
+                        {faqData.map((faq, index) => (
+                            <Accordion
+                                key={index}
+                                expanded={expandedFaq === index}
+                                onChange={handleFaqChange(index)}
+                                sx={{
+                                    mb: 2,
+                                    borderRadius: 3,
+                                    '&:before': { display: 'none' },
+                                    background: alpha(theme.palette.background.paper, 0.7),
+                                    backdropFilter: 'blur(20px)',
+                                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                                    boxShadow: `0 4px 16px ${alpha(theme.palette.common.black, 0.08)}`,
+                                    '&:hover': {
+                                        boxShadow: `0 6px 20px ${alpha(theme.palette.common.black, 0.12)}`,
+                                        border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                                    },
+                                    transition: 'all 0.3s ease',
+                                }}
+                            >
+                                <AccordionSummary
+                                    expandIcon={
+                                        <ExpandMoreIcon
+                                            sx={{
+                                                color: 'primary.main',
+                                                fontSize: 28,
+                                            }}
+                                        />
+                                    }
+                                    sx={{
+                                        py: 2,
+                                        px: 3,
+                                        '& .MuiAccordionSummary-content': {
+                                            margin: '12px 0',
+                                        },
+                                        '&:hover': {
+                                            bgcolor: alpha(theme.palette.primary.main, 0.05),
+                                        },
+                                    }}
+                                >
+                                    <Typography
+                                        variant="h6"
+                                        sx={{
+                                            fontWeight: 700,
+                                            fontSize: { xs: '1rem', md: '1.15rem' },
+                                            color: 'text.primary',
+                                        }}
+                                    >
+                                        {faq.question}
+                                    </Typography>
+                                </AccordionSummary>
+                                <AccordionDetails sx={{ pt: 0, pb: 3, px: 3 }}>
+                                    <Typography
+                                        variant="body1"
+                                        color="text.secondary"
+                                        sx={{
+                                            lineHeight: 1.8,
+                                            fontSize: { xs: '0.95rem', md: '1rem' },
+                                        }}
+                                    >
+                                        {faq.answer}
+                                    </Typography>
+                                </AccordionDetails>
+                            </Accordion>
+                        ))}
+                    </Box>
+                </Box>
+
                 {/* Trust Indicators */}
                 <Box
                     sx={{
@@ -604,7 +770,7 @@ const NewPricing = () => {
                     }}
                 >
                     <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-                        Why Choose PharmaCare?
+                        Why Choose PharmaPilot?
                     </Typography>
                     <Box
                         sx={{
