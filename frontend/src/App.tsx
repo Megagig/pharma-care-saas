@@ -728,18 +728,10 @@ function App(): JSX.Element {
                               </ProtectedRoute>
                             }
                           />
-                          {/* Enhanced Subscription Management */}
+                          {/* Redirect old subscription-management to subscriptions */}
                           <Route
                             path="/subscription-management"
-                            element={
-                              <ProtectedRoute>
-                                <AppLayout>
-                                  <LazyWrapper fallback={PageSkeleton}>
-                                    <LazySubscriptionManagement />
-                                  </LazyWrapper>
-                                </AppLayout>
-                              </ProtectedRoute>
-                            }
+                            element={<Navigate to="/subscriptions" replace />}
                           />
                           {/* Subscription Success Page - No auth required for payment redirection */}
                           <Route
@@ -752,30 +744,14 @@ function App(): JSX.Element {
                               </AppLayout>
                             }
                           />
-                          {/* Subscription Plans - This should not require active subscription */}
+                          {/* Redirect old subscription plan routes to subscriptions */}
                           <Route
                             path="/dashboard/subscription/plans"
-                            element={
-                              <ProtectedRoute>
-                                <AppLayout>
-                                  <LazyWrapper fallback={PageSkeleton}>
-                                    <LazySubscriptionManagement />
-                                  </LazyWrapper>
-                                </AppLayout>
-                              </ProtectedRoute>
-                            }
+                            element={<Navigate to="/subscriptions" replace />}
                           />
                           <Route
                             path="/subscription/plans"
-                            element={
-                              <ProtectedRoute>
-                                <AppLayout>
-                                  <LazyWrapper fallback={PageSkeleton}>
-                                    <LazySubscriptionManagement />
-                                  </LazyWrapper>
-                                </AppLayout>
-                              </ProtectedRoute>
-                            }
+                            element={<Navigate to="/subscriptions" replace />}
                           />
                           {/* SaaS Settings - accessible to everyone */}
                           <Route

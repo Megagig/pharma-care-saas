@@ -102,7 +102,7 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
             variant="contained"
             color="primary"
             component={Link}
-            to="/subscription-management"
+            to="/subscriptions"
             sx={{ mt: 2 }}
           >
             Upgrade Subscription
@@ -222,11 +222,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Check subscription requirement
-  if (requiresActiveSubscription && !subscriptionStatus.isActive) {
-    // Allow access to subscription management pages even without active subscription
+  if (requiresActiveSubscription) {
+    // Allow access during 14-day free trial
+    const isTrialActive = subscriptionStatus.status === 'trial' && 
+                          subscriptionStatus.daysRemaining && 
+                          subscriptionStatus.daysRemaining > 0;
+    
+    // Allow access to subscription pages even without active subscription
     const isSubscriptionPage = location.pathname.includes('/subscription');
 
-    if (!isSubscriptionPage) {
+    // Block access only if trial has expired and no active paid subscription
+    if (!isTrialActive && !subscriptionStatus.isActive && !isSubscriptionPage) {
       return (
         <AccessDenied
           reason="subscription"

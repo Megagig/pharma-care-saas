@@ -198,12 +198,6 @@ const Sidebar = () => {
           : null,
     },
     {
-      name: 'Subscription Management',
-      path: '/subscription-management',
-      icon: SubscriptionIcon,
-      show: true,
-    },
-    {
       name: 'User Management',
       path: '/user-management',
       icon: SupervisorAccountIcon,

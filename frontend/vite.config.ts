@@ -6,47 +6,36 @@ import { visualizer } from 'rollup-plugin-visualizer';
 export default defineConfig({
   plugins: [
     react({
-      // Enable React Fast Refresh optimizations
-      fastRefresh: true,
       // Optimize JSX runtime
       jsxRuntime: 'automatic',
     }),
     // Bundle analyzer - only in analyze mode
-    process.env.ANALYZE && visualizer({
+    ...(process.env.ANALYZE ? [visualizer({
       filename: 'dist/bundle-analysis.html',
       open: true,
       gzipSize: true,
       brotliSize: true,
       template: 'treemap', // Better visualization
-    }),
-  ].filter(Boolean),
+    })] : []),
+  ],
   server: {
     port: 5173,
-    host: true,
+    host: '127.0.0.1',
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => {
-          console.log(`Rewriting path: ${path}`);
-          return path;
-        },
+        ws: true,
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
-            console.log('PROXY ERROR:', err);
+            console.log('proxy error', err);
           });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('PROXY SENDING REQUEST:');
-            console.log(`  Method: ${req.method}`);
-            console.log(`  URL: ${req.url}`);
-            console.log(`  Headers: ${JSON.stringify(proxyReq.getHeaders())}`);
+          proxy.on('proxyReq', (_proxyReq, req, _res) => {
+            console.log('Sending Request to the Target:', req.method, req.url);
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('PROXY RECEIVED RESPONSE:');
-            console.log(`  URL: ${req.url}`);
-            console.log(`  Status: ${proxyRes.statusCode}`);
-            console.log(`  Content-Type: ${proxyRes.headers['content-type']}`);
+            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
           });
         },
       },
@@ -77,82 +66,82 @@ export default defineConfig({
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
             return 'react-core';
           }
-          
+
           // Router and navigation
           if (id.includes('node_modules/react-router')) {
             return 'router';
           }
-          
+
           // Data fetching and state management
-          if (id.includes('node_modules/@tanstack/react-query') || 
-              id.includes('node_modules/zustand') ||
-              id.includes('node_modules/axios')) {
+          if (id.includes('node_modules/@tanstack/react-query') ||
+            id.includes('node_modules/zustand') ||
+            id.includes('node_modules/axios')) {
             return 'data-layer';
           }
-          
+
           // UI and animation libraries
           if (id.includes('node_modules/framer-motion') ||
-              id.includes('node_modules/lucide-react') ||
-              id.includes('node_modules/@mui')) {
+            id.includes('node_modules/lucide-react') ||
+            id.includes('node_modules/@mui')) {
             return 'ui-libs';
           }
-          
+
           // Charts and visualization
           if (id.includes('node_modules/recharts') ||
-              id.includes('node_modules/@tanstack/react-table') ||
-              id.includes('node_modules/@tanstack/react-virtual')) {
+            id.includes('node_modules/@tanstack/react-table') ||
+            id.includes('node_modules/@tanstack/react-virtual')) {
             return 'data-viz';
           }
-          
+
           // Form handling
           if (id.includes('node_modules/react-hook-form') ||
-              id.includes('node_modules/@hookform') ||
-              id.includes('node_modules/zod') ||
-              id.includes('node_modules/yup') ||
-              id.includes('node_modules/formik')) {
+            id.includes('node_modules/@hookform') ||
+            id.includes('node_modules/zod') ||
+            id.includes('node_modules/yup') ||
+            id.includes('node_modules/formik')) {
             return 'forms';
           }
-          
+
           // Date and utility libraries
           if (id.includes('node_modules/date-fns') ||
-              id.includes('node_modules/dayjs') ||
-              id.includes('node_modules/dompurify')) {
+            id.includes('node_modules/dayjs') ||
+            id.includes('node_modules/dompurify')) {
             return 'utils';
           }
-          
+
           // Payment processing
           if (id.includes('node_modules/@stripe')) {
             return 'payments';
           }
-          
+
           // Socket and real-time
           if (id.includes('node_modules/socket.io')) {
             return 'realtime';
           }
-          
+
           // Performance monitoring
           if (id.includes('node_modules/web-vitals')) {
             return 'monitoring';
           }
-          
+
           // Other vendor libraries
           if (id.includes('node_modules/')) {
             return 'vendor';
           }
         },
         // Optimize chunk file names
-        chunkFileNames: (chunkInfo) => {
-          const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
+        chunkFileNames: (_chunkInfo) => {
           return `assets/[name]-[hash].js`;
         },
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: (assetInfo) => {
-          const info = assetInfo.name.split('.');
+          const name = assetInfo.name || 'asset';
+          const info = name.split('.');
           const ext = info[info.length - 1];
-          if (/\.(png|jpe?g|svg|gif|tiff|bmp|ico)$/i.test(assetInfo.name)) {
+          if (/\.(png|jpe?g|svg|gif|tiff|bmp|ico)$/i.test(name)) {
             return `assets/images/[name]-[hash].${ext}`;
           }
-          if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
+          if (/\.(woff2?|eot|ttf|otf)$/i.test(name)) {
             return `assets/fonts/[name]-[hash].${ext}`;
           }
           return `assets/[name]-[hash].${ext}`;
