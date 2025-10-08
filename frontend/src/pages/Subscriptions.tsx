@@ -237,10 +237,12 @@ const Subscriptions: React.FC = () => {
     try {
       setLoading(true);
 
-      // Initiate payment with Nomba
+      // Initiate payment with plan details
       const response = await apiClient.post('/subscriptions/checkout', {
-        planId: selectedPlan._id,
-        billingInterval,
+        planSlug: selectedPlan.slug,
+        tier: selectedPlan.tier,
+        billingInterval: selectedPlan.billingPeriod,
+        amount: selectedPlan.price,
         callbackUrl: `${window.location.origin}/subscriptions?payment=success`,
       });
 
@@ -252,7 +254,8 @@ const Subscriptions: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error creating checkout session:', error);
-      setError('Failed to start payment process');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to start payment process';
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setPaymentDialogOpen(false);

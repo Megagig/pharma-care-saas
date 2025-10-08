@@ -61,7 +61,6 @@ import {
   LazyPatientMedicationsPage,
   LazyClinicalInterventionsLayout,
   LazySubscriptions,
-  LazySubscriptionManagement,
   LazySubscriptionSuccess,
   LazySettings,
   LazySettingsTheme,

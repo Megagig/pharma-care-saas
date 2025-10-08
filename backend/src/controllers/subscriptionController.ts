@@ -264,24 +264,82 @@ export class SubscriptionController {
           : 'No user',
       });
 
-      const { planId, billingInterval = 'monthly' } = req.body;
+      const { planId, planSlug, tier, billingInterval = 'monthly', amount } = req.body;
 
       console.log('Looking for subscription plan:', {
         planId,
+        planSlug,
+        tier,
         billingInterval,
+        amount,
       });
 
-      const plan = await SubscriptionPlan.findOne({
-        _id: planId,
-        billingInterval: billingInterval,
-      });
-
-      if (!plan) {
-        return res.status(404).json({
-          success: false,
-          message: 'Subscription plan not found',
+      // Try to find plan by ID first, then by slug, then by tier + billingInterval
+      let plan = null;
+      
+      if (planId) {
+        plan = await SubscriptionPlan.findOne({
+          _id: planId,
+          billingInterval: billingInterval,
         });
       }
+      
+      if (!plan && planSlug) {
+        // Try to find by matching tier and billingInterval (since PricingPlan uses slug)
+        const tierFromSlug = planSlug.split('-')[0]; // e.g., "basic-monthly" -> "basic"
+        plan = await SubscriptionPlan.findOne({
+          tier: tierFromSlug,
+          billingInterval: billingInterval,
+        });
+      }
+      
+      if (!plan && tier) {
+        plan = await SubscriptionPlan.findOne({
+          tier: tier,
+          billingInterval: billingInterval,
+        });
+      }
+
+      // If no SubscriptionPlan found, try to get from PricingPlan
+      if (!plan && planSlug) {
+        console.log('SubscriptionPlan not found, trying PricingPlan...');
+        const PricingPlan = (await import('../models/PricingPlan')).default;
+        const pricingPlan = await PricingPlan.findOne({ slug: planSlug });
+        
+        if (pricingPlan) {
+          console.log('Found PricingPlan, using it for checkout:', {
+            id: pricingPlan._id,
+            name: pricingPlan.name,
+            tier: pricingPlan.tier,
+            price: pricingPlan.price,
+          });
+          
+          // Create a plan-like object from PricingPlan for compatibility
+          plan = {
+            _id: pricingPlan._id,
+            name: pricingPlan.name,
+            tier: pricingPlan.tier,
+            priceNGN: pricingPlan.price,
+            billingInterval: pricingPlan.billingPeriod,
+            features: pricingPlan.features || [],
+          } as any;
+        }
+      }
+
+      if (!plan) {
+        console.error('No plan found with criteria:', { planId, planSlug, tier, billingInterval });
+        return res.status(404).json({
+          success: false,
+          message: 'Subscription plan not found. Please contact support.',
+        });
+      }
+      
+      console.log('Using plan for checkout:', {
+        id: plan._id,
+        name: plan.name,
+        tier: plan.tier,
+        price: plan.priceNGN,
+      });
 
       const user = req.user;
 
