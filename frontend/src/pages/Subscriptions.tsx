@@ -41,24 +41,30 @@ import LoadingSpinner from '../components/LoadingSpinner';
 interface Plan {
   _id: string;
   name: string;
-  code: string;
-  tier: string;
-  tierRank: number;
-  priceNGN: number;
-  billingInterval: 'monthly' | 'yearly';
-  popularPlan: boolean;
+  slug: string;
+  price: number;
+  currency: string;
+  billingPeriod: 'monthly' | 'yearly' | 'one-time';
+  tier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
+  description: string;
+  features: string[];
+  featuresDetails?: Array<{
+    _id: string;
+    featureId: string;
+    name: string;
+    category: string;
+    order: number;
+  }>;
+  isPopular: boolean;
+  isActive: boolean;
   isContactSales: boolean;
   whatsappNumber?: string;
-  description: string;
-  displayFeatures: string[];
-  limits: {
-    patients: number | null;
-    users: number | null;
-    locations: number | null;
-    storage: number | null;
-    apiCalls: number | null;
-    clinicalNotes: number | null;
-    reminderSms: number | null;
+  trialDays?: number;
+  order: number;
+  metadata?: {
+    buttonText?: string;
+    badge?: string;
+    icon?: string;
   };
 }
 
@@ -144,12 +150,12 @@ const Subscriptions: React.FC = () => {
 
       // Fetch available plans with error handling
       try {
-        const plansResponse = await apiClient.get(
-          `/subscriptions/plans?billingInterval=${billingInterval}`
-        );
+        const plansResponse = await apiClient.get('/pricing/plans', {
+          params: { billingPeriod: billingInterval }
+        });
 
         if (plansResponse.data.success) {
-          const plansData = plansResponse.data.data || plansResponse.data.plans || [];
+          const plansData = plansResponse.data.data?.plans || [];
           setPlans(plansData);
         } else {
           throw new Error(plansResponse.data.message || 'Failed to load plans');
@@ -181,12 +187,12 @@ const Subscriptions: React.FC = () => {
     setTabValue(newValue);
   };
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (plan: Plan) => {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
-      currency: 'NGN',
+      currency: plan.currency || 'NGN',
       minimumFractionDigits: 0,
-    }).format(price);
+    }).format(plan.price);
   };
 
   const getPlanButtonText = (plan: Plan) => {
@@ -361,20 +367,33 @@ const Subscriptions: React.FC = () => {
         {/* Plans Grid */}
         {plans.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Alert severity="warning">
+            <Alert severity="info">
               <Typography variant="h6" gutterBottom>
-                No subscription plans available
+                {billingInterval === 'yearly'
+                  ? 'Yearly plans coming soon!'
+                  : 'No subscription plans available'}
               </Typography>
               <Typography variant="body2" sx={{ mb: 2 }}>
-                Unable to load subscription plans from the server. Please ensure the backend is running and try again.
+                {billingInterval === 'yearly'
+                  ? 'Yearly billing plans are currently being set up. Please use monthly billing for now.'
+                  : 'Unable to load subscription plans from the server. Please ensure the backend is running and try again.'}
               </Typography>
-              <Button
-                variant="contained"
-                onClick={fetchData}
-                sx={{ mt: 2 }}
-              >
-                Retry
-              </Button>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 2 }}>
+                {billingInterval === 'yearly' && (
+                  <Button
+                    variant="contained"
+                    onClick={() => setBillingInterval('monthly')}
+                  >
+                    Switch to Monthly
+                  </Button>
+                )}
+                <Button
+                  variant={billingInterval === 'yearly' ? 'outlined' : 'contained'}
+                  onClick={fetchData}
+                >
+                  Retry
+                </Button>
+              </Box>
             </Alert>
           </Box>
         ) : (
@@ -387,8 +406,8 @@ const Subscriptions: React.FC = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     position: 'relative',
-                    border: plan.popularPlan ? 2 : 1,
-                    borderColor: plan.popularPlan ? 'primary.main' : 'divider',
+                    border: plan.isPopular ? 2 : 1,
+                    borderColor: plan.isPopular ? 'primary.main' : 'divider',
                     transition: 'all 0.3s ease',
                     '&:hover': {
                       boxShadow: 8,
@@ -396,7 +415,7 @@ const Subscriptions: React.FC = () => {
                     },
                   }}
                 >
-                  {plan.popularPlan && (
+                  {plan.isPopular && (
                     <Box
                       sx={{
                         position: 'absolute',
@@ -437,10 +456,10 @@ const Subscriptions: React.FC = () => {
                       ) : (
                         <>
                           <Typography variant="h4" component="div">
-                            {formatPrice(plan.priceNGN)}
+                            {formatPrice(plan)}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            per {plan.billingInterval === 'yearly' ? 'year' : 'month'}
+                            per {plan.billingPeriod === 'yearly' ? 'year' : 'month'}
                           </Typography>
                         </>
                       )}
@@ -449,23 +468,42 @@ const Subscriptions: React.FC = () => {
                     <Divider sx={{ mb: 2 }} />
 
                     <List dense>
-                      {plan.displayFeatures.map((feature, index) => (
-                        <ListItem key={index} sx={{ px: 0 }}>
-                          <ListItemIcon sx={{ minWidth: 32 }}>
-                            <CheckCircleIcon color="success" fontSize="small" />
-                          </ListItemIcon>
+                      {plan.featuresDetails && plan.featuresDetails.length > 0 ? (
+                        plan.featuresDetails.slice(0, 8).map((feature) => (
+                          <ListItem key={feature._id} sx={{ px: 0 }}>
+                            <ListItemIcon sx={{ minWidth: 32 }}>
+                              <CheckCircleIcon color="success" fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={<Typography variant="body2">{feature.name}</Typography>}
+                            />
+                          </ListItem>
+                        ))
+                      ) : plan.features && plan.features.length > 0 ? (
+                        plan.features.slice(0, 8).map((featureId, index) => (
+                          <ListItem key={index} sx={{ px: 0 }}>
+                            <ListItemIcon sx={{ minWidth: 32 }}>
+                              <CheckCircleIcon color="success" fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={<Typography variant="body2">{featureId}</Typography>}
+                            />
+                          </ListItem>
+                        ))
+                      ) : (
+                        <ListItem sx={{ px: 0 }}>
                           <ListItemText
-                            primary={<Typography variant="body2">{feature}</Typography>}
+                            primary={<Typography variant="body2" color="text.secondary">No features listed</Typography>}
                           />
                         </ListItem>
-                      ))}
+                      )}
                     </List>
                   </CardContent>
 
                   <Box sx={{ p: 3, pt: 0 }}>
                     <Button
                       fullWidth
-                      variant={plan.popularPlan ? 'contained' : 'outlined'}
+                      variant={plan.isPopular ? 'contained' : 'outlined'}
                       startIcon={plan.isContactSales ? <CreditCardIcon /> : <TrendingUpIcon />}
                       onClick={() => handlePlanAction(plan)}
                       disabled={isPlanDisabled(plan)}
@@ -586,10 +624,10 @@ const Subscriptions: React.FC = () => {
                   Plan: <strong>{selectedPlan.name}</strong>
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Amount: <strong>{formatPrice(selectedPlan.priceNGN)}</strong>
+                  Amount: <strong>{formatPrice(selectedPlan)}</strong>
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Billing: <strong>{billingInterval === 'yearly' ? 'Yearly' : 'Monthly'}</strong>
+                  Billing: <strong>{selectedPlan.billingPeriod === 'yearly' ? 'Yearly' : 'Monthly'}</strong>
                 </Typography>
               </Box>
             </Box>
