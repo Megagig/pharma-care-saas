@@ -79,7 +79,7 @@ export class LicenseController {
         });
       }
 
-      const { licenseNumber } = req.body;
+      const { licenseNumber, licenseExpirationDate, pharmacySchool, yearOfGraduation } = req.body;
 
       if (!licenseNumber) {
         // Remove uploaded file if license number is missing
@@ -87,6 +87,22 @@ export class LicenseController {
         return res.status(400).json({
           success: false,
           message: 'License number is required',
+        });
+      }
+
+      if (!licenseExpirationDate) {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({
+          success: false,
+          message: 'License expiration date is required',
+        });
+      }
+
+      if (!pharmacySchool) {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({
+          success: false,
+          message: 'Pharmacy school is required',
         });
       }
 
@@ -135,6 +151,11 @@ export class LicenseController {
 
       // Update user with new license information
       user.licenseNumber = licenseNumber;
+      user.licenseExpirationDate = new Date(licenseExpirationDate);
+      user.pharmacySchool = pharmacySchool;
+      if (yearOfGraduation) {
+        user.yearOfGraduation = parseInt(yearOfGraduation);
+      }
       user.licenseDocument = {
         fileName: req.file.originalname,
         filePath: req.file.path,
@@ -193,7 +214,7 @@ export class LicenseController {
 
       const user = await User.findById(req.user._id)
         .select(
-          'licenseNumber licenseStatus licenseDocument licenseVerifiedAt licenseRejectionReason'
+          'licenseNumber licenseStatus licenseDocument licenseVerifiedAt licenseRejectionReason licenseExpirationDate pharmacySchool yearOfGraduation role'
         )
         .populate('licenseVerifiedBy', 'firstName lastName');
 
@@ -210,7 +231,10 @@ export class LicenseController {
         hasDocument: !!user.licenseDocument,
         verifiedAt: user.licenseVerifiedAt,
         rejectionReason: user.licenseRejectionReason,
-        requiresLicense: ['pharmacist', 'intern_pharmacist'].includes(
+        expirationDate: user.licenseExpirationDate,
+        pharmacySchool: user.pharmacySchool,
+        yearOfGraduation: user.yearOfGraduation,
+        requiresLicense: ['pharmacist', 'intern_pharmacist', 'owner'].includes(
           user.role
         ),
       };

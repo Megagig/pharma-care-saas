@@ -31,8 +31,8 @@ interface AccessDeniedProps {
   subscriptionStatus?: {
     status: string;
     isActive: boolean;
-    tier: string;
-    daysRemaining: number;
+    tier?: string;
+    daysRemaining?: number;
   };
 }
 
@@ -110,15 +110,25 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
         );
       case 'license':
         return (
-          <Button
-            variant="contained"
-            color="primary"
-            component={Link}
-            to="/license"
-            sx={{ mt: 2 }}
-          >
-            Upload License
-          </Button>
+          <Box display="flex" gap={1}>
+            <Button
+              variant="contained"
+              color="primary"
+              component={Link}
+              to="/license"
+              sx={{ mt: 2 }}
+            >
+              {licenseStatus === 'pending' ? 'View License Status' : 'Upload License'}
+            </Button>
+            <Button
+              variant="outlined"
+              component={Link}
+              to="/dashboard"
+              sx={{ mt: 2 }}
+            >
+              Back to Dashboard
+            </Button>
+          </Box>
         );
       default:
         return (
@@ -220,7 +230,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return (
         <AccessDenied
           reason="subscription"
-          subscriptionStatus={subscriptionStatus}
+          subscriptionStatus={{
+            status: subscriptionStatus.status,
+            isActive: subscriptionStatus.isActive,
+            tier: subscriptionStatus.tier || 'free',
+            daysRemaining: subscriptionStatus.daysRemaining || 0,
+          }}
         />
       );
     }

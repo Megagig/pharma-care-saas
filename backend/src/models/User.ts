@@ -53,6 +53,8 @@ export interface IUser extends Document {
   licenseVerifiedBy?: mongoose.Types.ObjectId;
   licenseRejectionReason?: string;
   licenseExpirationDate?: Date;
+  pharmacySchool?: string;
+  yearOfGraduation?: number;
 
   // Suspension fields
   suspensionReason?: string;
@@ -264,6 +266,15 @@ const userSchema = new Schema(
     },
     licenseRejectionReason: String,
     licenseExpirationDate: Date,
+    pharmacySchool: {
+      type: String,
+      trim: true,
+    },
+    yearOfGraduation: {
+      type: Number,
+      min: 1900,
+      max: new Date().getFullYear() + 10,
+    },
 
     // Suspension fields
     suspensionReason: String,

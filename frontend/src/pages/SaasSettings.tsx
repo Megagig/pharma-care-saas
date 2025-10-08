@@ -38,6 +38,7 @@ const AnalyticsReports = lazy(() => import('../components/saas/AnalyticsReports'
 const NotificationsManagement = lazy(() => import('../components/saas/NotificationsManagement'));
 const BillingSubscriptions = lazy(() => import('../components/saas/BillingSubscriptions'));
 const TenantManagement = lazy(() => import('../components/saas/TenantManagement'));
+const TenantLicenseManagement = lazy(() => import('../components/saas/TenantLicenseManagement'));
 const SupportHelpdesk = lazy(() => import('../components/saas/SupportHelpdesk'));
 const ApiIntegrations = lazy(() => import('../components/saas/ApiIntegrations'));
 const PricingManagement = lazy(() => import('../components/admin/PricingManagement'));
@@ -136,6 +137,13 @@ const SaasSettings: React.FC = () => {
       icon: <BusinessIcon />,
       description: 'Multi-pharmacy workspace management',
       component: TenantManagement,
+    },
+    {
+      id: 'licenses',
+      label: 'License Verification',
+      icon: <SecurityIcon />,
+      description: 'Manage pharmacist license verifications',
+      component: TenantLicenseManagement,
     },
     {
       id: 'support',
