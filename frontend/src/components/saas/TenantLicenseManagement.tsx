@@ -440,10 +440,10 @@ const TenantLicenseManagement: React.FC = () => {
         <DialogContent>
           {selectedLicense && (
             <Box>
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: { xs: 'column', sm: 'row' }, 
-                gap: 2, 
+              <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: 2,
                 mb: 2,
                 flexWrap: 'wrap'
               }}>

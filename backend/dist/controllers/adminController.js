@@ -515,30 +515,46 @@ class AdminController {
     }
     async getPendingLicenses(req, res) {
         try {
-            const { page = 1, limit = 10, search = '', sortBy = 'createdAt', sortOrder = 'desc', } = req.query;
+            const { page = 1, limit = 50, search = '', status = 'pending', } = req.query;
             const pageNum = parseInt(page, 10);
             const limitNum = parseInt(limit, 10);
             const skip = (pageNum - 1) * limitNum;
             const query = {
-                status: 'pending',
+                licenseStatus: status,
+                licenseDocument: { $exists: true },
             };
             if (search) {
                 query.$or = [
-                    { 'user.firstName': { $regex: search, $options: 'i' } },
-                    { 'user.lastName': { $regex: search, $options: 'i' } },
-                    { 'user.email': { $regex: search, $options: 'i' } },
+                    { firstName: { $regex: search, $options: 'i' } },
+                    { lastName: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
                     { licenseNumber: { $regex: search, $options: 'i' } },
                 ];
             }
-            const sort = {};
-            sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
-            const License = mongoose_1.default.model('License');
-            const licenses = await License.find(query)
-                .populate('userId', 'firstName lastName email')
-                .sort(sort)
+            const users = await User_1.default.find(query)
+                .populate('workplaceId', 'name')
+                .select('firstName lastName email role licenseNumber licenseStatus licenseDocument pharmacySchool yearOfGraduation licenseExpirationDate workplaceId')
+                .sort({ 'licenseDocument.uploadedAt': -1 })
                 .skip(skip)
                 .limit(limitNum);
-            const total = await License.countDocuments(query);
+            const total = await User_1.default.countDocuments(query);
+            const licenses = users.map(user => ({
+                userId: user._id,
+                userName: `${user.firstName} ${user.lastName}`,
+                userEmail: user.email,
+                userRole: user.role,
+                workplaceName: user.workplaceId?.name,
+                licenseNumber: user.licenseNumber,
+                licenseStatus: user.licenseStatus,
+                pharmacySchool: user.pharmacySchool,
+                yearOfGraduation: user.yearOfGraduation,
+                expirationDate: user.licenseExpirationDate,
+                documentInfo: user.licenseDocument ? {
+                    fileName: user.licenseDocument.fileName,
+                    uploadedAt: user.licenseDocument.uploadedAt,
+                    fileSize: user.licenseDocument.fileSize,
+                } : undefined,
+            }));
             res.json({
                 success: true,
                 data: {

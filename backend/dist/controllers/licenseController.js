@@ -66,12 +66,26 @@ class LicenseController {
                     message: 'No license document uploaded',
                 });
             }
-            const { licenseNumber } = req.body;
+            const { licenseNumber, licenseExpirationDate, pharmacySchool, yearOfGraduation } = req.body;
             if (!licenseNumber) {
                 fs_1.default.unlinkSync(req.file.path);
                 return res.status(400).json({
                     success: false,
                     message: 'License number is required',
+                });
+            }
+            if (!licenseExpirationDate) {
+                fs_1.default.unlinkSync(req.file.path);
+                return res.status(400).json({
+                    success: false,
+                    message: 'License expiration date is required',
+                });
+            }
+            if (!pharmacySchool) {
+                fs_1.default.unlinkSync(req.file.path);
+                return res.status(400).json({
+                    success: false,
+                    message: 'Pharmacy school is required',
                 });
             }
             if (!req.user) {
@@ -112,6 +126,11 @@ class LicenseController {
                 }
             }
             user.licenseNumber = licenseNumber;
+            user.licenseExpirationDate = new Date(licenseExpirationDate);
+            user.pharmacySchool = pharmacySchool;
+            if (yearOfGraduation) {
+                user.yearOfGraduation = parseInt(yearOfGraduation);
+            }
             user.licenseDocument = {
                 fileName: req.file.originalname,
                 filePath: req.file.path,
@@ -160,7 +179,7 @@ class LicenseController {
                 });
             }
             const user = await User_1.default.findById(req.user._id)
-                .select('licenseNumber licenseStatus licenseDocument licenseVerifiedAt licenseRejectionReason')
+                .select('licenseNumber licenseStatus licenseDocument licenseVerifiedAt licenseRejectionReason licenseExpirationDate pharmacySchool yearOfGraduation role')
                 .populate('licenseVerifiedBy', 'firstName lastName');
             if (!user) {
                 return res.status(404).json({
@@ -174,7 +193,10 @@ class LicenseController {
                 hasDocument: !!user.licenseDocument,
                 verifiedAt: user.licenseVerifiedAt,
                 rejectionReason: user.licenseRejectionReason,
-                requiresLicense: ['pharmacist', 'intern_pharmacist'].includes(user.role),
+                expirationDate: user.licenseExpirationDate,
+                pharmacySchool: user.pharmacySchool,
+                yearOfGraduation: user.yearOfGraduation,
+                requiresLicense: ['pharmacist', 'intern_pharmacist', 'owner'].includes(user.role),
             };
             if (user.licenseDocument) {
                 licenseInfo['documentInfo'] = {
