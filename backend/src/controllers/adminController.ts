@@ -9,6 +9,7 @@ import RoleHierarchyService from '../services/RoleHierarchyService';
 import { AuthRequest } from '../middlewares/auth';
 import logger from '../utils/logger';
 import { WorkspaceContext, PlanLimits } from '../types/auth';
+import { emailService } from '../utils/emailService';
 
 export class AdminController {
   private dynamicPermissionService: DynamicPermissionService;
@@ -782,7 +783,6 @@ export class AdminController {
   async approveLicense(req: AuthRequest, res: Response): Promise<any> {
     try {
       const { userId } = req.params;
-      const { expirationDate, notes } = req.body;
 
       if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
         return res.status(400).json({
@@ -799,37 +799,41 @@ export class AdminController {
         });
       }
 
-      const License = mongoose.model('License');
-      const license = await License.findOne({
-        userId,
-        status: 'pending',
-      });
-
-      if (!license) {
-        return res.status(404).json({
+      if (user.licenseStatus !== 'pending') {
+        return res.status(400).json({
           success: false,
-          message: 'Pending license not found',
+          message: 'License is not pending approval',
+        });
+      }
+
+      if (!user.licenseDocument) {
+        return res.status(400).json({
+          success: false,
+          message: 'No license document found',
         });
       }
 
       // Approve license
-      license.status = 'approved';
-      license.expirationDate =
-        expirationDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year from now
-      license.approvedAt = new Date();
-      license.approvedBy = req.user!._id;
-      license.notes = notes || '';
-      await license.save();
-
-      // Update user license status
       user.licenseStatus = 'approved';
-      user.licenseExpirationDate = license.expirationDate;
+      user.licenseVerifiedAt = new Date();
+      user.licenseVerifiedBy = req.user!._id;
+      user.status = 'active'; // Activate user account
       await user.save();
+
+      // Send approval email
+      try {
+        await emailService.sendLicenseApprovalNotification(user.email, {
+          firstName: user.firstName,
+          licenseNumber: user.licenseNumber || '',
+        });
+      } catch (emailError) {
+        logger.error('Failed to send approval email:', emailError);
+        // Don't fail the approval if email fails
+      }
 
       logger.info('License approved', {
         userId,
-        licenseId: license._id,
-        expirationDate: license.expirationDate,
+        licenseNumber: user.licenseNumber,
         approvedBy: req.user!._id,
       });
 
@@ -866,6 +870,13 @@ export class AdminController {
         });
       }
 
+      if (!reason || !reason.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Rejection reason is required',
+        });
+      }
+
       const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({
@@ -874,34 +885,36 @@ export class AdminController {
         });
       }
 
-      const License = mongoose.model('License');
-      const license = await License.findOne({
-        userId,
-        status: 'pending',
-      });
-
-      if (!license) {
-        return res.status(404).json({
+      if (user.licenseStatus !== 'pending') {
+        return res.status(400).json({
           success: false,
-          message: 'Pending license not found',
+          message: 'License is not pending approval',
         });
       }
 
       // Reject license
-      license.status = 'rejected';
-      license.rejectedAt = new Date();
-      license.rejectedBy = req.user!._id;
-      license.rejectionReason = reason || 'No reason provided';
-      await license.save();
-
-      // Update user license status
       user.licenseStatus = 'rejected';
+      user.licenseVerifiedAt = new Date();
+      user.licenseVerifiedBy = req.user!._id;
+      user.licenseRejectionReason = reason;
+      user.status = 'license_rejected'; // Update user status
       await user.save();
+
+      // Send rejection email
+      try {
+        await emailService.sendLicenseRejectionNotification(user.email, {
+          firstName: user.firstName,
+          reason: reason,
+        });
+      } catch (emailError) {
+        logger.error('Failed to send rejection email:', emailError);
+        // Don't fail the rejection if email fails
+      }
 
       logger.info('License rejected', {
         userId,
-        licenseId: license._id,
-        reason: reason || 'No reason provided',
+        licenseNumber: user.licenseNumber,
+        reason: reason,
         rejectedBy: req.user!._id,
       });
 

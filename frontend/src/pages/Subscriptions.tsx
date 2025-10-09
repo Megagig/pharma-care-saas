@@ -112,23 +112,28 @@ const Subscriptions: React.FC = () => {
   const [error, setError] = useState('');
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'nomba'>('paystack');
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [billingHistory, setBillingHistory] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
+    
+    // Check for payment success in URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      setShowSuccessMessage(true);
+      setTabValue(0); // Show Plans tab
+      // Clear query params
+      window.history.replaceState({}, '', '/subscriptions');
+      // Force refresh after a short delay
+      setTimeout(() => {
+        fetchData();
+      }, 1000);
+    }
   }, [billingInterval]);
 
-  const testConnection = async () => {
-    try {
-      console.log('Testing direct backend connection...');
-      const response = await fetch('http://localhost:5000/api/subscriptions/plans?billingInterval=monthly');
-      const data = await response.json();
-      console.log('Direct backend response:', data);
-      alert(`Direct backend connection: ${response.ok ? 'SUCCESS' : 'FAILED'}`);
-    } catch (error) {
-      console.error('Direct backend connection failed:', error);
-      alert('Direct backend connection: FAILED');
-    }
-  };
+
 
   const fetchData = async () => {
     try {
@@ -237,17 +242,18 @@ const Subscriptions: React.FC = () => {
     try {
       setLoading(true);
 
-      // Initiate payment with plan details
+      // Initiate payment with plan details and selected payment method
       const response = await apiClient.post('/subscriptions/checkout', {
         planSlug: selectedPlan.slug,
         tier: selectedPlan.tier,
         billingInterval: selectedPlan.billingPeriod,
         amount: selectedPlan.price,
+        paymentMethod: paymentMethod,
         callbackUrl: `${window.location.origin}/subscriptions?payment=success`,
       });
 
       if (response.data.success && response.data.data?.authorization_url) {
-        // Redirect to Nomba payment page
+        // Redirect to payment page (Paystack or Nomba)
         window.location.href = response.data.data.authorization_url;
       } else {
         setError(response.data.message || 'Failed to initialize payment');
@@ -261,6 +267,23 @@ const Subscriptions: React.FC = () => {
       setPaymentDialogOpen(false);
     }
   };
+
+  const fetchBillingHistory = async () => {
+    try {
+      const response = await apiClient.get('/subscriptions/billing-history');
+      if (response.data.success) {
+        setBillingHistory(response.data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching billing history:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (tabValue === 1) {
+      fetchBillingHistory();
+    }
+  }, [tabValue]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -281,61 +304,7 @@ const Subscriptions: React.FC = () => {
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
           {error}
-          {(error.includes('Cannot connect') || error.includes('Unable to connect') || error.includes('Server error')) && (
-            <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={fetchData}
-                startIcon={<TrendingUpIcon />}
-              >
-                Retry Connection
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={testConnection}
-                color="info"
-              >
-                Test Backend
-              </Button>
-            </Box>
-          )}
         </Alert>
-      )}
-
-
-
-      {/* Current Status Card */}
-      {subscriptionStatus && (
-        <Card sx={{ mb: 4 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <Typography variant="h6">Current Status:</Typography>
-              <Chip
-                label={subscriptionStatus.tier?.toUpperCase() || 'FREE TRIAL'}
-                color={subscriptionStatus.isTrialActive ? 'info' : subscriptionStatus.isActive ? 'success' : 'error'}
-                variant="filled"
-              />
-              {subscriptionStatus.isTrialActive && subscriptionStatus.daysRemaining && (
-                <Chip
-                  label={`${subscriptionStatus.daysRemaining} days remaining`}
-                  color="warning"
-                  variant="outlined"
-                />
-              )}
-            </Box>
-            {subscriptionStatus.isTrialActive && (
-              <Box sx={{ mt: 2 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={((14 - (subscriptionStatus.daysRemaining || 0)) / 14) * 100}
-                  sx={{ height: 8, borderRadius: 4 }}
-                />
-              </Box>
-            )}
-          </CardContent>
-        </Card>
       )}
 
       {/* Tabs */}

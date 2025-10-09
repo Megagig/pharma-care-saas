@@ -12,6 +12,7 @@ const Permission_1 = __importDefault(require("../models/Permission"));
 const DynamicPermissionService_1 = __importDefault(require("../services/DynamicPermissionService"));
 const RoleHierarchyService_1 = __importDefault(require("../services/RoleHierarchyService"));
 const logger_1 = __importDefault(require("../utils/logger"));
+const emailService_1 = require("../utils/emailService");
 class AdminController {
     constructor() {
         this.dynamicPermissionService = DynamicPermissionService_1.default.getInstance();
@@ -582,7 +583,6 @@ class AdminController {
     async approveLicense(req, res) {
         try {
             const { userId } = req.params;
-            const { expirationDate, notes } = req.body;
             if (!userId || !mongoose_1.default.Types.ObjectId.isValid(userId)) {
                 return res.status(400).json({
                     success: false,
@@ -596,31 +596,35 @@ class AdminController {
                     message: 'User not found',
                 });
             }
-            const License = mongoose_1.default.model('License');
-            const license = await License.findOne({
-                userId,
-                status: 'pending',
-            });
-            if (!license) {
-                return res.status(404).json({
+            if (user.licenseStatus !== 'pending') {
+                return res.status(400).json({
                     success: false,
-                    message: 'Pending license not found',
+                    message: 'License is not pending approval',
                 });
             }
-            license.status = 'approved';
-            license.expirationDate =
-                expirationDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-            license.approvedAt = new Date();
-            license.approvedBy = req.user._id;
-            license.notes = notes || '';
-            await license.save();
+            if (!user.licenseDocument) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No license document found',
+                });
+            }
             user.licenseStatus = 'approved';
-            user.licenseExpirationDate = license.expirationDate;
+            user.licenseVerifiedAt = new Date();
+            user.licenseVerifiedBy = req.user._id;
+            user.status = 'active';
             await user.save();
+            try {
+                await emailService_1.emailService.sendLicenseApprovalNotification(user.email, {
+                    firstName: user.firstName,
+                    licenseNumber: user.licenseNumber || '',
+                });
+            }
+            catch (emailError) {
+                logger_1.default.error('Failed to send approval email:', emailError);
+            }
             logger_1.default.info('License approved', {
                 userId,
-                licenseId: license._id,
-                expirationDate: license.expirationDate,
+                licenseNumber: user.licenseNumber,
                 approvedBy: req.user._id,
             });
             res.json({
@@ -649,6 +653,12 @@ class AdminController {
                     message: 'Invalid user ID format',
                 });
             }
+            if (!reason || !reason.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Rejection reason is required',
+                });
+            }
             const user = await User_1.default.findById(userId);
             if (!user) {
                 return res.status(404).json({
@@ -656,28 +666,31 @@ class AdminController {
                     message: 'User not found',
                 });
             }
-            const License = mongoose_1.default.model('License');
-            const license = await License.findOne({
-                userId,
-                status: 'pending',
-            });
-            if (!license) {
-                return res.status(404).json({
+            if (user.licenseStatus !== 'pending') {
+                return res.status(400).json({
                     success: false,
-                    message: 'Pending license not found',
+                    message: 'License is not pending approval',
                 });
             }
-            license.status = 'rejected';
-            license.rejectedAt = new Date();
-            license.rejectedBy = req.user._id;
-            license.rejectionReason = reason || 'No reason provided';
-            await license.save();
             user.licenseStatus = 'rejected';
+            user.licenseVerifiedAt = new Date();
+            user.licenseVerifiedBy = req.user._id;
+            user.licenseRejectionReason = reason;
+            user.status = 'license_rejected';
             await user.save();
+            try {
+                await emailService_1.emailService.sendLicenseRejectionNotification(user.email, {
+                    firstName: user.firstName,
+                    reason: reason,
+                });
+            }
+            catch (emailError) {
+                logger_1.default.error('Failed to send rejection email:', emailError);
+            }
             logger_1.default.info('License rejected', {
                 userId,
-                licenseId: license._id,
-                reason: reason || 'No reason provided',
+                licenseNumber: user.licenseNumber,
+                reason: reason,
                 rejectedBy: req.user._id,
             });
             res.json({

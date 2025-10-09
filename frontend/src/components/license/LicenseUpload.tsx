@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../services/apiClient';
 import {
   Box,
   Card,
@@ -77,9 +77,7 @@ const LicenseUpload: React.FC = () => {
 
   const loadLicenseStatus = useCallback(async () => {
     try {
-      const response = await axios.get('/api/license/status', {
-        withCredentials: true,
-      });
+      const response = await apiClient.get('/license/status');
 
       if (response.status === 200) {
         const data = response.data;
@@ -99,12 +97,17 @@ const LicenseUpload: React.FC = () => {
         }
 
         // Set active step based on current status
-        if (data.data.status === 'pending') {
-          setActiveStep(2);
-        } else if (data.data.status === 'approved') {
+        if (data.data.status === 'approved') {
           setActiveStep(3);
-        } else if (data.data.hasDocument) {
+        } else if (data.data.status === 'pending' && data.data.hasDocument) {
+          setActiveStep(2);
+        } else if (data.data.status === 'rejected' || (data.data.status === 'pending' && !data.data.hasDocument)) {
+          // If rejected or pending without document, start from beginning
+          setActiveStep(0);
+        } else if (data.data.licenseNumber) {
           setActiveStep(1);
+        } else {
+          setActiveStep(0);
         }
       }
     } catch {
@@ -122,13 +125,10 @@ const LicenseUpload: React.FC = () => {
   const validateLicenseNumber = useCallback(async () => {
     setValidatingNumber(true);
     try {
-      const response = await axios.post(
-        '/api/license/validate-number',
+      const response = await apiClient.post(
+        '/license/validate-number',
         {
           licenseNumber,
-        },
-        {
-          withCredentials: true,
         }
       );
 
@@ -225,8 +225,7 @@ const LicenseUpload: React.FC = () => {
         formData.append('yearOfGraduation', yearOfGraduation);
       }
 
-      const response = await axios.post('/api/license/upload', formData, {
-        withCredentials: true,
+      const response = await apiClient.post('/license/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -261,9 +260,7 @@ const LicenseUpload: React.FC = () => {
 
   const handleDeleteDocument = async () => {
     try {
-      const response = await axios.delete('/api/license/document', {
-        withCredentials: true,
-      });
+      const response = await apiClient.delete('/license/document');
 
       if (response.status === 200) {
         addNotification({
@@ -317,7 +314,12 @@ const LicenseUpload: React.FC = () => {
     return <LoadingSpinner message="Loading license information..." />;
   }
 
-  if (!licenseInfo?.requiresLicense) {
+  // Check if license is required based on user role
+  const userRequiresLicense = user?.role === 'pharmacist' || 
+                               user?.role === 'intern_pharmacist' || 
+                               user?.role === 'owner';
+
+  if (!userRequiresLicense && licenseInfo && !licenseInfo.requiresLicense) {
     return (
       <Card>
         <CardContent>

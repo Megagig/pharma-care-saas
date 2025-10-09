@@ -33,7 +33,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import SchoolIcon from '@mui/icons-material/School';
 import CalendarIcon from '@mui/icons-material/CalendarToday';
 import BadgeIcon from '@mui/icons-material/Badge';
-import axios from 'axios';
+import { apiClient } from '../../services/apiClient';
 import { format } from 'date-fns';
 
 interface LicenseInfo {
@@ -74,9 +74,7 @@ const TenantLicenseManagement: React.FC = () => {
   const loadPendingLicenses = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/admin/licenses/pending', {
-        withCredentials: true,
-      });
+      const response = await apiClient.get('/admin/licenses/pending');
 
       if (response.data.success) {
         setLicenses(response.data.data.licenses || []);
@@ -93,10 +91,9 @@ const TenantLicenseManagement: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await axios.post(
-        `/api/admin/licenses/${selectedLicense.userId}/approve`,
-        {},
-        { withCredentials: true }
+      const response = await apiClient.post(
+        `/admin/licenses/${selectedLicense.userId}/approve`,
+        {}
       );
 
       if (response.data.success) {
@@ -120,10 +117,9 @@ const TenantLicenseManagement: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await axios.post(
-        `/api/admin/licenses/${selectedLicense.userId}/reject`,
-        { reason: rejectionReason },
-        { withCredentials: true }
+      const response = await apiClient.post(
+        `/admin/licenses/${selectedLicense.userId}/reject`,
+        { reason: rejectionReason }
       );
 
       if (response.data.success) {

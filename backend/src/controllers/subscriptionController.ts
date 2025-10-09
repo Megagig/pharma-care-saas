@@ -18,7 +18,7 @@ export class SubscriptionController {
     try {
       const user = req.user;
 
-      // Users without workplaces have no subscription
+      // Users without workplaces have no subscription (note: User model uses 'workplaceId' with 'e')
       if (!user.workplaceId) {
         return res.status(200).json({
           success: true,
@@ -37,8 +37,9 @@ export class SubscriptionController {
         });
       }
 
+      // Get workspace subscription (Subscription model uses 'workspaceId' without 'e')
       const subscription = await Subscription.findOne({
-        workspaceId: user.workplaceId,
+        workspaceId: user.workplaceId, // User.workplaceId -> Subscription.workspaceId
         status: { $in: ['active', 'trial', 'grace_period'] },
       })
         .populate('planId')
@@ -276,14 +277,14 @@ export class SubscriptionController {
 
       // Try to find plan by ID first, then by slug, then by tier + billingInterval
       let plan = null;
-      
+
       if (planId) {
         plan = await SubscriptionPlan.findOne({
           _id: planId,
           billingInterval: billingInterval,
         });
       }
-      
+
       if (!plan && planSlug) {
         // Try to find by matching tier and billingInterval (since PricingPlan uses slug)
         const tierFromSlug = planSlug.split('-')[0]; // e.g., "basic-monthly" -> "basic"
@@ -292,7 +293,7 @@ export class SubscriptionController {
           billingInterval: billingInterval,
         });
       }
-      
+
       if (!plan && tier) {
         plan = await SubscriptionPlan.findOne({
           tier: tier,
@@ -305,7 +306,7 @@ export class SubscriptionController {
         console.log('SubscriptionPlan not found, trying PricingPlan...');
         const PricingPlan = (await import('../models/PricingPlan')).default;
         const pricingPlan = await PricingPlan.findOne({ slug: planSlug });
-        
+
         if (pricingPlan) {
           console.log('Found PricingPlan, using it for checkout:', {
             id: pricingPlan._id,
@@ -313,7 +314,7 @@ export class SubscriptionController {
             tier: pricingPlan.tier,
             price: pricingPlan.price,
           });
-          
+
           // Create a plan-like object from PricingPlan for compatibility
           plan = {
             _id: pricingPlan._id,
@@ -333,7 +334,7 @@ export class SubscriptionController {
           message: 'Subscription plan not found. Please contact support.',
         });
       }
-      
+
       console.log('Using plan for checkout:', {
         id: plan._id,
         name: plan.name,
@@ -952,7 +953,7 @@ export class SubscriptionController {
     try {
       const user = req.user;
 
-      // Users without workplaces have no subscription
+      // Users without workplaces have no subscription (note: User model uses 'workplaceId' with 'e')
       if (!user.workplaceId) {
         return res.json({
           success: true,
@@ -966,9 +967,9 @@ export class SubscriptionController {
         });
       }
 
-      // Get workspace subscription
+      // Get workspace subscription (Subscription model uses 'workspaceId' without 'e')
       const subscription = await Subscription.findOne({
-        workspaceId: user.workplaceId,
+        workspaceId: user.workplaceId, // User.workplaceId -> Subscription.workspaceId
         status: { $in: ['active', 'trial', 'grace_period'] },
       }).populate('planId');
 
@@ -1238,14 +1239,48 @@ export class SubscriptionController {
       const planId = paymentRecord.planId;
       const billingInterval =
         paymentRecord.metadata?.billingInterval || 'monthly';
+      const tier = paymentRecord.metadata?.tier;
 
       const user = await User.findById(userId);
-      const plan = await SubscriptionPlan.findById(planId);
+
+      // Try to find SubscriptionPlan first
+      let plan = await SubscriptionPlan.findById(planId);
+
+      // If not found, try PricingPlan
+      if (!plan && planId) {
+        console.log('SubscriptionPlan not found, trying PricingPlan...');
+        const PricingPlan = (await import('../models/PricingPlan')).default;
+        const pricingPlan = await PricingPlan.findById(planId);
+
+        if (pricingPlan) {
+          console.log('Found PricingPlan for activation:', pricingPlan.name);
+          // Create plan-like object from PricingPlan
+          plan = {
+            _id: pricingPlan._id,
+            name: pricingPlan.name,
+            tier: pricingPlan.tier,
+            priceNGN: pricingPlan.price,
+            features: pricingPlan.features || [],
+          } as any;
+        }
+      }
 
       if (!user || !plan) {
-        console.error('User or plan not found for subscription activation');
+        console.error('User or plan not found for subscription activation', {
+          userId,
+          planId,
+          userFound: !!user,
+          planFound: !!plan,
+        });
         return;
       }
+
+      console.log('Activating subscription for user:', {
+        userId: user._id,
+        email: user.email,
+        planName: plan.name,
+        tier: plan.tier,
+      });
 
       // Cancel existing active subscriptions
       await Subscription.updateMany(
