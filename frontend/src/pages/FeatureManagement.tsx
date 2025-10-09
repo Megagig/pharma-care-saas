@@ -57,6 +57,203 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+// TierFeatureMatrix Component
+interface TierFeatureMatrixProps {
+  features: FeatureFlag[];
+  onUpdate: () => void;
+}
+
+const TierFeatureMatrix: React.FC<TierFeatureMatrixProps> = ({ features, onUpdate }) => {
+  const [updating, setUpdating] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const updateTierFeature = async (tier: string, featureKey: string, hasAccess: boolean) => {
+    const updateKey = `${tier}-${featureKey}`;
+    setUpdating(updateKey);
+    setError(null);
+
+    try {
+      const action = hasAccess ? 'add' : 'remove';
+      await featureFlagService.updateTierFeatures(tier, [featureKey], action);
+      
+      toast.success(
+        `Feature ${hasAccess ? 'enabled' : 'disabled'} for ${tier} tier`
+      );
+      
+      // Refresh the feature list
+      onUpdate();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update tier feature';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const capitalizeFirstLetter = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+
+  if (features.length === 0) {
+    return (
+      <Alert severity="info">
+        No features available. Create features in the Features tab first.
+      </Alert>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6" component="h2" gutterBottom>
+          Feature-Tier Matrix
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Toggle switches to enable or disable features for specific subscription tiers.
+        </Typography>
+
+        {/* Mobile scroll hint */}
+        <Alert 
+          severity="info" 
+          sx={{ 
+            mb: 2, 
+            display: { xs: 'flex', md: 'none' } 
+          }}
+        >
+          Scroll horizontally to view all tiers
+        </Alert>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Horizontal scroll wrapper for mobile */}
+        <Box 
+          sx={{ 
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+            '&::-webkit-scrollbar': {
+              height: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: 'action.hover',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'action.selected',
+              borderRadius: '4px',
+            },
+          }}
+        >
+          <Box
+            component="table"
+            sx={{
+              width: '100%',
+              minWidth: { xs: '800px', md: '100%' },
+              borderCollapse: 'collapse',
+              '& th, & td': {
+                border: '1px solid',
+                borderColor: 'divider',
+                padding: { xs: 1, sm: 1.5, md: 2 },
+                textAlign: 'left',
+              },
+              '& th': {
+                backgroundColor: 'action.hover',
+                fontWeight: 'bold',
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+              },
+              '& td': {
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+              },
+            }}
+          >
+            <thead>
+              <tr>
+                <Box component="th" sx={{ minWidth: { xs: '150px', sm: '200px' } }}>
+                  Feature
+                </Box>
+                {AVAILABLE_TIERS.map((tier) => (
+                  <Box 
+                    component="th" 
+                    key={tier} 
+                    sx={{ 
+                      textAlign: 'center', 
+                      minWidth: { xs: '100px', sm: '120px' },
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {capitalizeFirstLetter(tier.replace('_', ' '))}
+                  </Box>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {features.map((feature) => (
+                <tr key={feature._id}>
+                  <td>
+                    <Typography 
+                      variant="body2" 
+                      fontWeight="medium"
+                      sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                    >
+                      {feature.name}
+                    </Typography>
+                    <Typography 
+                      variant="caption" 
+                      color="text.secondary" 
+                      sx={{ 
+                        fontFamily: 'monospace',
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        display: 'block',
+                        wordBreak: 'break-word'
+                      }}
+                    >
+                      {feature.key}
+                    </Typography>
+                  </td>
+                  {AVAILABLE_TIERS.map((tier) => {
+                    const isChecked = feature.allowedTiers?.includes(tier) || false;
+                    const updateKey = `${tier}-${feature.key}`;
+                    const isUpdating = updating === updateKey;
+
+                    return (
+                      <Box component="td" key={tier} sx={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                        {isUpdating ? (
+                          <CircularProgress size={24} />
+                        ) : (
+                          <Switch
+                            checked={isChecked}
+                            onChange={(e) => updateTierFeature(tier, feature.key, e.target.checked)}
+                            color="primary"
+                            disabled={isUpdating}
+                            size="small"
+                            sx={{
+                              '& .MuiSwitch-switchBase': {
+                                padding: { xs: '6px', sm: '9px' }
+                              },
+                              '& .MuiSwitch-thumb': {
+                                width: { xs: '16px', sm: '20px' },
+                                height: { xs: '16px', sm: '20px' }
+                              }
+                            }}
+                          />
+                        )}
+                      </Box>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
 const FeatureManagement: React.FC = () => {
   // State management
   const [features, setFeatures] = useState<FeatureFlag[]>([]);
@@ -64,6 +261,8 @@ const FeatureManagement: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingFeature, setEditingFeature] = useState<FeatureFlag | null>(null);
   const [activeTab, setActiveTab] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -84,10 +283,13 @@ const FeatureManagement: React.FC = () => {
   const fetchFeatures = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await featureFlagService.getFeatureFlags();
       setFeatures(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch features');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch features';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -128,7 +330,14 @@ const FeatureManagement: React.FC = () => {
 
   // Handle form submit
   const handleSubmit = async () => {
+    // Validate required fields
+    if (!formData.key.trim() || !formData.name.trim()) {
+      toast.error('Feature key and name are required');
+      return;
+    }
+
     try {
+      setSubmitting(true);
       if (editingFeature) {
         await featureFlagService.updateFeatureFlag(editingFeature._id, formData);
         toast.success('Feature updated successfully');
@@ -140,6 +349,8 @@ const FeatureManagement: React.FC = () => {
       resetForm();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Operation failed');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -164,11 +375,14 @@ const FeatureManagement: React.FC = () => {
     }
 
     try {
+      setSubmitting(true);
       await featureFlagService.deleteFeatureFlag(feature._id);
       toast.success('Feature deleted successfully');
       await fetchFeatures();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to delete feature');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -189,8 +403,35 @@ const FeatureManagement: React.FC = () => {
   if (loading) {
     return (
       <Container maxWidth="xl" sx={{ mt: 4, mb: 8 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress />
+        <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress size={48} />
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+            Loading features...
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error && features.length === 0) {
+    return (
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 8 }}>
+        <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px">
+          <Alert severity="error" sx={{ mb: 2, maxWidth: '600px' }}>
+            <Typography variant="h6" gutterBottom>
+              Failed to Load Features
+            </Typography>
+            <Typography variant="body2">
+              {error}
+            </Typography>
+          </Alert>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={fetchFeatures}
+          >
+            Retry
+          </Button>
         </Box>
       </Container>
     );
@@ -199,8 +440,15 @@ const FeatureManagement: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 8 }}>
       {/* Page Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
+      <Box 
+        display="flex" 
+        justifyContent="space-between" 
+        alignItems="center" 
+        mb={3}
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        gap={{ xs: 2, sm: 0 }}
+      >
+        <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
           Feature Management
         </Typography>
         <Button
@@ -208,6 +456,11 @@ const FeatureManagement: React.FC = () => {
           color="primary"
           startIcon={<AddIcon />}
           onClick={() => setShowCreateForm(true)}
+          disabled={submitting}
+          sx={{ 
+            minWidth: { sm: '150px' },
+            width: { xs: '100%', sm: 'auto' }
+          }}
         >
           Add Feature
         </Button>
@@ -229,6 +482,13 @@ const FeatureManagement: React.FC = () => {
           onClose={resetForm}
           maxWidth="md"
           fullWidth
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: { xs: 0, sm: 2 },
+              maxHeight: { xs: '100%', sm: 'calc(100% - 64px)' },
+              width: { xs: '100%', sm: 'auto' }
+            }
+          }}
         >
           <DialogTitle>
             {editingFeature ? 'Edit Feature' : 'Create Feature'}
@@ -270,7 +530,17 @@ const FeatureManagement: React.FC = () => {
                 {/* Allowed Tiers */}
                 <Grid size={12}>
                   <FormLabel component="legend">Allowed Tiers</FormLabel>
-                  <FormGroup row>
+                  <FormGroup 
+                    sx={{ 
+                      display: 'grid',
+                      gridTemplateColumns: { 
+                        xs: '1fr', 
+                        sm: 'repeat(2, 1fr)', 
+                        md: 'repeat(3, 1fr)' 
+                      },
+                      gap: 1
+                    }}
+                  >
                     {AVAILABLE_TIERS.map((tier) => (
                       <FormControlLabel
                         key={tier}
@@ -289,7 +559,17 @@ const FeatureManagement: React.FC = () => {
                 {/* Allowed Roles */}
                 <Grid size={12}>
                   <FormLabel component="legend">Allowed Roles</FormLabel>
-                  <FormGroup row>
+                  <FormGroup 
+                    sx={{ 
+                      display: 'grid',
+                      gridTemplateColumns: { 
+                        xs: '1fr', 
+                        sm: 'repeat(2, 1fr)', 
+                        md: 'repeat(3, 1fr)' 
+                      },
+                      gap: 1
+                    }}
+                  >
                     {AVAILABLE_ROLES.map((role) => (
                       <FormControlLabel
                         key={role}
@@ -320,15 +600,30 @@ const FeatureManagement: React.FC = () => {
               </Grid>
             </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={resetForm}>Cancel</Button>
+          <DialogActions 
+            sx={{ 
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: { xs: 1, sm: 0 },
+              px: { xs: 2, sm: 3 },
+              pb: { xs: 2, sm: 2 }
+            }}
+          >
+            <Button 
+              onClick={resetForm} 
+              disabled={submitting}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleSubmit}
               variant="contained"
               color="primary"
-              startIcon={<SaveIcon />}
+              startIcon={submitting ? <CircularProgress size={20} /> : <SaveIcon />}
+              disabled={submitting}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
-              {editingFeature ? 'Update' : 'Create'}
+              {submitting ? 'Saving...' : editingFeature ? 'Update' : 'Create'}
             </Button>
           </DialogActions>
         </Dialog>
@@ -402,22 +697,37 @@ const FeatureManagement: React.FC = () => {
                     </Box>
 
                     {/* Actions */}
-                    <Box display="flex" justifyContent="flex-end" gap={1}>
+                    <Box 
+                      display="flex" 
+                      justifyContent="flex-end" 
+                      gap={1}
+                      sx={{ mt: 1 }}
+                    >
                       <IconButton
                         size="small"
                         color="primary"
                         onClick={() => startEdit(feature)}
                         aria-label="Edit"
+                        disabled={submitting}
+                        sx={{ 
+                          minWidth: { xs: '40px', sm: 'auto' },
+                          minHeight: { xs: '40px', sm: 'auto' }
+                        }}
                       >
-                        <EditIcon />
+                        <EditIcon fontSize="small" />
                       </IconButton>
                       <IconButton
                         size="small"
                         color="error"
                         onClick={() => handleDelete(feature)}
                         aria-label="Delete"
+                        disabled={submitting}
+                        sx={{ 
+                          minWidth: { xs: '40px', sm: 'auto' },
+                          minHeight: { xs: '40px', sm: 'auto' }
+                        }}
                       >
-                        <DeleteIcon />
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Box>
                   </CardContent>
@@ -430,9 +740,7 @@ const FeatureManagement: React.FC = () => {
 
       {/* Tier Management Tab */}
       <TabPanel value={activeTab} index={1}>
-        <Alert severity="info">
-          Tier Management Matrix will be implemented in the next task.
-        </Alert>
+        <TierFeatureMatrix features={features} onUpdate={fetchFeatures} />
       </TabPanel>
     </Container>
   );

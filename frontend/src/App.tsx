@@ -55,6 +55,7 @@ import {
   LazyReportsAnalyticsDashboard,
   LazyAdminDashboard,
   LazyFeatureFlagsPage,
+  LazyFeatureManagement,
   LazyPatientForm,
   LazyPatientManagement,
   LazyMedicationsManagementDashboard,
@@ -709,6 +710,19 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyFeatureFlagsPage />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* Admin Feature Management Route */}
+                          <Route
+                            path="/admin/feature-management"
+                            element={
+                              <ProtectedRoute requiredRole="super_admin">
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyFeatureManagement />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
