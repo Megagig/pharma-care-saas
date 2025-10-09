@@ -120,7 +120,7 @@ const auth = async (req, res, next) => {
         if (user.workplaceId) {
             subscription = await Subscription_1.default.findOne({
                 workspaceId: user.workplaceId,
-                status: { $in: ['active', 'trial', 'grace_period'] },
+                status: { $in: ['active', 'trial', 'past_due'] },
             }).populate('planId');
         }
         req.subscription = subscription;
@@ -277,15 +277,25 @@ exports.requireLicense = requireLicense;
 const requireFeature = (featureKey) => {
     return async (req, res, next) => {
         try {
-            if (!req.user || !req.subscription) {
+            if (!req.user) {
                 res.status(401).json({ message: 'Access denied.' });
                 return;
+            }
+            console.log(`🔧 RequireFeature Debug - Feature: ${featureKey}, User: ${req.user.email}, Role: ${req.user.role}`);
+            if (req.user.role === 'super_admin') {
+                console.log('🔧 Super admin bypass granted');
+                return next();
             }
             const featureFlag = await FeatureFlag_1.FeatureFlag.findOne({
                 key: featureKey,
                 isActive: true,
             });
+            console.log(`🔧 Feature flag found: ${!!featureFlag}, Key: ${featureKey}`);
+            if (featureFlag) {
+                console.log(`🔧 Feature flag details: allowedTiers=${featureFlag.allowedTiers}, allowedRoles=${featureFlag.allowedRoles}`);
+            }
             if (!featureFlag) {
+                console.log(`🔧 Feature flag not found or inactive: ${featureKey}`);
                 res.status(404).json({
                     message: 'Feature not found or inactive.',
                     feature: featureKey,
@@ -294,10 +304,30 @@ const requireFeature = (featureKey) => {
             }
             const user = req.user;
             const subscription = req.subscription;
-            if (user.role === 'super_admin') {
-                return next();
+            console.log(`🔧 Subscription: ${subscription ? 'found' : 'not found'}`);
+            if (subscription) {
+                console.log(`🔧 Subscription details: status=${subscription.status}, tier=${subscription.tier}`);
             }
-            if (!['active', 'trial'].includes(subscription.status)) {
+            if (!subscription) {
+                const basicFeatures = [
+                    'patient_management',
+                    'basic_prescriptions',
+                    'basic_notes'
+                ];
+                if (basicFeatures.includes(featureKey)) {
+                    return next();
+                }
+                res.status(403).json({
+                    message: 'Active subscription required for this feature.',
+                    feature: featureKey,
+                    subscriptionStatus: 'none',
+                    requiresAction: 'subscription_required',
+                    upgradeRequired: true,
+                });
+                return;
+            }
+            if (!['active', 'trial', 'past_due'].includes(subscription.status)) {
+                console.log(`🔧 Subscription status check failed: ${subscription.status}`);
                 res.status(403).json({
                     message: 'Your subscription is not active.',
                     feature: featureKey,
@@ -308,6 +338,7 @@ const requireFeature = (featureKey) => {
                 return;
             }
             if (!featureFlag.allowedTiers.includes(subscription.tier)) {
+                console.log(`🔧 Tier access check failed: user tier=${subscription.tier}, allowed=${featureFlag.allowedTiers}`);
                 res.status(403).json({
                     message: 'Feature not available in your current plan.',
                     feature: featureKey,
@@ -383,6 +414,7 @@ const requireFeature = (featureKey) => {
     };
 };
 exports.requireFeature = requireFeature;
+;
 const checkUsageLimit = (featureKey, limitKey) => {
     return async (req, res, next) => {
         try {

@@ -8,6 +8,7 @@ export declare const deleteFeatureFlag: (req: Request, res: Response) => Promise
 export declare const toggleFeatureFlagStatus: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const getFeatureFlagsByCategory: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const getFeatureFlagsByTier: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const updateTierFeatures: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 declare const _default: {
     getAllFeatureFlags: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
     getFeatureFlagById: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
@@ -17,6 +18,7 @@ declare const _default: {
     toggleFeatureFlagStatus: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
     getFeatureFlagsByCategory: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
     getFeatureFlagsByTier: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+    updateTierFeatures: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 };
 export default _default;
 //# sourceMappingURL=featureFlagController.d.ts.map

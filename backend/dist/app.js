@@ -297,6 +297,13 @@ app.get('/api/clinical-interventions/health', (req, res) => {
         }
     });
 });
+app.get('/api/test-clinical-health', (req, res) => {
+    res.json({
+        status: 'OK',
+        message: 'Test clinical health endpoint works',
+        timestamp: new Date().toISOString()
+    });
+});
 app.use('/api/clinical-interventions', clinicalInterventionRoutes_1.default);
 app.use('/api/medication-management', medicationManagementRoutes_1.default);
 app.use('/api/medication-analytics', medicationAnalyticsRoutes_1.default);

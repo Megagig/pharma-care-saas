@@ -13,29 +13,8 @@ const auditMiddleware_1 = require("../middlewares/auditMiddleware");
 const clinicalInterventionController_1 = require("../controllers/clinicalInterventionController");
 const auditController_1 = require("../controllers/auditController");
 const router = express_1.default.Router();
-router.get('/health', (req, res) => {
-    res.json({
-        status: 'OK',
-        module: 'clinical-interventions',
-        timestamp: new Date().toISOString(),
-        version: '1.0.0',
-        endpoints: {
-            total: 30,
-            crud: 5,
-            workflow: 8,
-            analytics: 4,
-            reporting: 3,
-            utility: 2,
-            mtr: 5,
-            notifications: 1,
-            audit: 3
-        }
-    });
-});
 const authenticatedRouter = express_1.default.Router();
-authenticatedRouter.use(auth_1.auth);
-authenticatedRouter.use(workspaceContext_1.loadWorkspaceContext);
-authenticatedRouter.get('/', (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionRead, clinicalInterventionController_1.getClinicalInterventions);
+authenticatedRouter.get('/', auth_1.auth, workspaceContext_1.loadWorkspaceContext, (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionRead, clinicalInterventionController_1.getClinicalInterventions);
 authenticatedRouter.post('/', (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionCreate, ...(0, auditMiddleware_1.auditIntervention)('INTERVENTION_CREATED'), clinicalInterventionController_1.createClinicalIntervention);
 authenticatedRouter.get('/:id', (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionRead, clinicalInterventionController_1.getClinicalIntervention);
 authenticatedRouter.patch('/:id', (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionUpdate, ...(0, auditMiddleware_1.auditIntervention)('INTERVENTION_UPDATED'), clinicalInterventionController_1.updateClinicalIntervention);
@@ -49,7 +28,7 @@ authenticatedRouter.post('/:id/follow-up', (0, rbac_1.requireRole)('pharmacist',
 authenticatedRouter.get('/search', (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionRead, clinicalInterventionController_1.searchClinicalInterventions);
 authenticatedRouter.get('/patient/:patientId', (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionRead, clinicalInterventionController_1.getPatientInterventions);
 authenticatedRouter.get('/assigned-to-me', (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionRead, clinicalInterventionController_1.getAssignedInterventions);
-authenticatedRouter.get('/analytics/summary', (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionRead, clinicalInterventionController_1.getInterventionAnalytics);
+authenticatedRouter.get('/analytics/summary', auth_1.auth, workspaceContext_1.loadWorkspaceContext, (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionRead, clinicalInterventionController_1.getInterventionAnalytics);
 authenticatedRouter.get('/analytics/trends', (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionRead, clinicalInterventionController_1.getInterventionTrends);
 authenticatedRouter.get('/analytics/categories', (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionRead, clinicalInterventionController_1.getCategoryCounts);
 authenticatedRouter.get('/analytics/priorities', (0, rbac_1.requireRole)('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'), clinicalInterventionRBAC_1.requireInterventionRead, clinicalInterventionController_1.getPriorityDistribution);
