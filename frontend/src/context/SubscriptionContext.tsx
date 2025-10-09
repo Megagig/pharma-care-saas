@@ -6,7 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import axios from 'axios';
+import { apiClient } from '../services/apiClient';
 
 interface SubscriptionStatus {
   hasWorkspace: boolean;
@@ -64,18 +64,14 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
       setLoading(true);
 
       console.log(
-        '🔍 SubscriptionContext: Making request to /api/subscriptions/status'
+        '🔍 SubscriptionContext: Making request to /subscriptions/status'
       );
 
-      const response = await axios.get('/api/subscriptions/status', {
-        withCredentials: true, // Use httpOnly cookies for authentication
-      });
+      const response = await apiClient.get('/subscriptions/status');
 
       console.log('🔍 SubscriptionContext: Response received:', {
         status: response.status,
-        statusText: response.statusText,
-        url: response.config.url,
-        headers: response.headers,
+        data: response.data,
       });
 
       if (response.data.success) {

@@ -140,8 +140,8 @@ export const useRBAC = (): UseRBACReturn => {
   };
 
   const requiresLicense = (): boolean => {
-    // Only pharmacists require license verification
-    return role === 'pharmacist';
+    // Pharmacists, intern pharmacists, and owners require license verification
+    return role === 'pharmacist' || role === 'intern_pharmacist' || role === 'owner';
   };
 
   const getLicenseStatus = (): string => {

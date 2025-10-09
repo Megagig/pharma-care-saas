@@ -12,6 +12,7 @@ const Permission_1 = __importDefault(require("../models/Permission"));
 const DynamicPermissionService_1 = __importDefault(require("../services/DynamicPermissionService"));
 const RoleHierarchyService_1 = __importDefault(require("../services/RoleHierarchyService"));
 const logger_1 = __importDefault(require("../utils/logger"));
+const emailService_1 = require("../utils/emailService");
 class AdminController {
     constructor() {
         this.dynamicPermissionService = DynamicPermissionService_1.default.getInstance();
@@ -515,30 +516,46 @@ class AdminController {
     }
     async getPendingLicenses(req, res) {
         try {
-            const { page = 1, limit = 10, search = '', sortBy = 'createdAt', sortOrder = 'desc', } = req.query;
+            const { page = 1, limit = 50, search = '', status = 'pending', } = req.query;
             const pageNum = parseInt(page, 10);
             const limitNum = parseInt(limit, 10);
             const skip = (pageNum - 1) * limitNum;
             const query = {
-                status: 'pending',
+                licenseStatus: status,
+                licenseDocument: { $exists: true },
             };
             if (search) {
                 query.$or = [
-                    { 'user.firstName': { $regex: search, $options: 'i' } },
-                    { 'user.lastName': { $regex: search, $options: 'i' } },
-                    { 'user.email': { $regex: search, $options: 'i' } },
+                    { firstName: { $regex: search, $options: 'i' } },
+                    { lastName: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
                     { licenseNumber: { $regex: search, $options: 'i' } },
                 ];
             }
-            const sort = {};
-            sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
-            const License = mongoose_1.default.model('License');
-            const licenses = await License.find(query)
-                .populate('userId', 'firstName lastName email')
-                .sort(sort)
+            const users = await User_1.default.find(query)
+                .populate('workplaceId', 'name')
+                .select('firstName lastName email role licenseNumber licenseStatus licenseDocument pharmacySchool yearOfGraduation licenseExpirationDate workplaceId')
+                .sort({ 'licenseDocument.uploadedAt': -1 })
                 .skip(skip)
                 .limit(limitNum);
-            const total = await License.countDocuments(query);
+            const total = await User_1.default.countDocuments(query);
+            const licenses = users.map(user => ({
+                userId: user._id,
+                userName: `${user.firstName} ${user.lastName}`,
+                userEmail: user.email,
+                userRole: user.role,
+                workplaceName: user.workplaceId?.name,
+                licenseNumber: user.licenseNumber,
+                licenseStatus: user.licenseStatus,
+                pharmacySchool: user.pharmacySchool,
+                yearOfGraduation: user.yearOfGraduation,
+                expirationDate: user.licenseExpirationDate,
+                documentInfo: user.licenseDocument ? {
+                    fileName: user.licenseDocument.fileName,
+                    uploadedAt: user.licenseDocument.uploadedAt,
+                    fileSize: user.licenseDocument.fileSize,
+                } : undefined,
+            }));
             res.json({
                 success: true,
                 data: {
@@ -566,7 +583,6 @@ class AdminController {
     async approveLicense(req, res) {
         try {
             const { userId } = req.params;
-            const { expirationDate, notes } = req.body;
             if (!userId || !mongoose_1.default.Types.ObjectId.isValid(userId)) {
                 return res.status(400).json({
                     success: false,
@@ -580,31 +596,35 @@ class AdminController {
                     message: 'User not found',
                 });
             }
-            const License = mongoose_1.default.model('License');
-            const license = await License.findOne({
-                userId,
-                status: 'pending',
-            });
-            if (!license) {
-                return res.status(404).json({
+            if (user.licenseStatus !== 'pending') {
+                return res.status(400).json({
                     success: false,
-                    message: 'Pending license not found',
+                    message: 'License is not pending approval',
                 });
             }
-            license.status = 'approved';
-            license.expirationDate =
-                expirationDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-            license.approvedAt = new Date();
-            license.approvedBy = req.user._id;
-            license.notes = notes || '';
-            await license.save();
+            if (!user.licenseDocument) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No license document found',
+                });
+            }
             user.licenseStatus = 'approved';
-            user.licenseExpirationDate = license.expirationDate;
+            user.licenseVerifiedAt = new Date();
+            user.licenseVerifiedBy = req.user._id;
+            user.status = 'active';
             await user.save();
+            try {
+                await emailService_1.emailService.sendLicenseApprovalNotification(user.email, {
+                    firstName: user.firstName,
+                    licenseNumber: user.licenseNumber || '',
+                });
+            }
+            catch (emailError) {
+                logger_1.default.error('Failed to send approval email:', emailError);
+            }
             logger_1.default.info('License approved', {
                 userId,
-                licenseId: license._id,
-                expirationDate: license.expirationDate,
+                licenseNumber: user.licenseNumber,
                 approvedBy: req.user._id,
             });
             res.json({
@@ -633,6 +653,12 @@ class AdminController {
                     message: 'Invalid user ID format',
                 });
             }
+            if (!reason || !reason.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Rejection reason is required',
+                });
+            }
             const user = await User_1.default.findById(userId);
             if (!user) {
                 return res.status(404).json({
@@ -640,28 +666,31 @@ class AdminController {
                     message: 'User not found',
                 });
             }
-            const License = mongoose_1.default.model('License');
-            const license = await License.findOne({
-                userId,
-                status: 'pending',
-            });
-            if (!license) {
-                return res.status(404).json({
+            if (user.licenseStatus !== 'pending') {
+                return res.status(400).json({
                     success: false,
-                    message: 'Pending license not found',
+                    message: 'License is not pending approval',
                 });
             }
-            license.status = 'rejected';
-            license.rejectedAt = new Date();
-            license.rejectedBy = req.user._id;
-            license.rejectionReason = reason || 'No reason provided';
-            await license.save();
             user.licenseStatus = 'rejected';
+            user.licenseVerifiedAt = new Date();
+            user.licenseVerifiedBy = req.user._id;
+            user.licenseRejectionReason = reason;
+            user.status = 'license_rejected';
             await user.save();
+            try {
+                await emailService_1.emailService.sendLicenseRejectionNotification(user.email, {
+                    firstName: user.firstName,
+                    reason: reason,
+                });
+            }
+            catch (emailError) {
+                logger_1.default.error('Failed to send rejection email:', emailError);
+            }
             logger_1.default.info('License rejected', {
                 userId,
-                licenseId: license._id,
-                reason: reason || 'No reason provided',
+                licenseNumber: user.licenseNumber,
+                reason: reason,
                 rejectedBy: req.user._id,
             });
             res.json({

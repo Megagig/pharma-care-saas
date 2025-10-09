@@ -138,7 +138,7 @@ class ClinicalInterventionService {
             }
         });
 
-        const url = `/clinical-interventions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/api/clinical-interventions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         const response = await this.makeRequest<any>(url);
 
         // Handle different response structures from backend
@@ -179,7 +179,7 @@ class ClinicalInterventionService {
      * Get a single intervention by ID
      */
     async getInterventionById(id: string): Promise<ApiResponse<ClinicalIntervention>> {
-        return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${id}`);
+        return this.makeRequest<ClinicalIntervention>(`/api/clinical-interventions/${id}`);
     }
 
     /**
@@ -188,7 +188,7 @@ class ClinicalInterventionService {
     async createIntervention(data: CreateInterventionData): Promise<ApiResponse<ClinicalIntervention>> {
         console.log('🔍 SERVICE: createIntervention called with:', data);
 
-        const result = await this.makeRequest<ClinicalIntervention>('/clinical-interventions', {
+        const result = await this.makeRequest<ClinicalIntervention>('/api/clinical-interventions', {
             method: 'POST',
             body: JSON.stringify(data),
         });
@@ -201,7 +201,7 @@ class ClinicalInterventionService {
      * Update an existing intervention
      */
     async updateIntervention(id: string, updates: UpdateInterventionData): Promise<ApiResponse<ClinicalIntervention>> {
-        return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${id}`, {
+        return this.makeRequest<ClinicalIntervention>(`/api/clinical-interventions/${id}`, {
             method: 'PATCH',
             body: JSON.stringify(updates),
         });
@@ -211,7 +211,7 @@ class ClinicalInterventionService {
      * Delete an intervention (soft delete)
      */
     async deleteIntervention(id: string): Promise<ApiResponse<boolean>> {
-        return this.makeRequest<boolean>(`/clinical-interventions/${id}`, {
+        return this.makeRequest<boolean>(`/api/clinical-interventions/${id}`, {
             method: 'DELETE',
         });
     }
@@ -224,7 +224,7 @@ class ClinicalInterventionService {
      * Add a strategy to an intervention
      */
     async addStrategy(interventionId: string, strategy: Omit<InterventionStrategy, '_id'>): Promise<ApiResponse<ClinicalIntervention>> {
-        return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/strategies`, {
+        return this.makeRequest<ClinicalIntervention>(`/api/clinical-interventions/${interventionId}/strategies`, {
             method: 'POST',
             body: JSON.stringify(strategy),
         });
@@ -234,7 +234,7 @@ class ClinicalInterventionService {
      * Update a strategy
      */
     async updateStrategy(interventionId: string, strategyId: string, updates: Partial<InterventionStrategy>): Promise<ApiResponse<ClinicalIntervention>> {
-        return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/strategies/${strategyId}`, {
+        return this.makeRequest<ClinicalIntervention>(`/api/clinical-interventions/${interventionId}/strategies/${strategyId}`, {
             method: 'PATCH',
             body: JSON.stringify(updates),
         });
@@ -244,7 +244,7 @@ class ClinicalInterventionService {
      * Assign a team member to an intervention
      */
     async assignTeamMember(interventionId: string, assignment: Omit<TeamAssignment, '_id' | 'assignedAt'>): Promise<ApiResponse<ClinicalIntervention>> {
-        return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/assignments`, {
+        return this.makeRequest<ClinicalIntervention>(`/api/clinical-interventions/${interventionId}/assignments`, {
             method: 'POST',
             body: JSON.stringify(assignment),
         });
@@ -254,7 +254,7 @@ class ClinicalInterventionService {
      * Update an assignment
      */
     async updateAssignment(interventionId: string, assignmentId: string, updates: Partial<TeamAssignment>): Promise<ApiResponse<ClinicalIntervention>> {
-        return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/assignments/${assignmentId}`, {
+        return this.makeRequest<ClinicalIntervention>(`/api/clinical-interventions/${interventionId}/assignments/${assignmentId}`, {
             method: 'PATCH',
             body: JSON.stringify(updates),
         });
@@ -264,7 +264,7 @@ class ClinicalInterventionService {
      * Record intervention outcome
      */
     async recordOutcome(interventionId: string, outcome: InterventionOutcome): Promise<ApiResponse<ClinicalIntervention>> {
-        return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/outcomes`, {
+        return this.makeRequest<ClinicalIntervention>(`/api/clinical-interventions/${interventionId}/outcomes`, {
             method: 'POST',
             body: JSON.stringify(outcome),
         });
@@ -274,7 +274,7 @@ class ClinicalInterventionService {
      * Schedule follow-up for an intervention
      */
     async scheduleFollowUp(interventionId: string, followUpData: { scheduledDate: string; notes?: string; nextReviewDate?: string }): Promise<ApiResponse<ClinicalIntervention>> {
-        return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/follow-up`, {
+        return this.makeRequest<ClinicalIntervention>(`/api/clinical-interventions/${interventionId}/follow-up`, {
             method: 'POST',
             body: JSON.stringify(followUpData),
         });
@@ -288,25 +288,25 @@ class ClinicalInterventionService {
      * Search interventions
      */
     async searchInterventions(query: string): Promise<ApiResponse<ClinicalIntervention[]>> {
-        return this.makeRequest<ClinicalIntervention[]>(`/clinical-interventions/search?q=${encodeURIComponent(query)}`);
+        return this.makeRequest<ClinicalIntervention[]>(`/api/clinical-interventions/search?q=${encodeURIComponent(query)}`);
     }
 
     /**
      * Get interventions for a specific patient
      */
     async getPatientInterventions(patientId: string): Promise<ApiResponse<ClinicalIntervention[]>> {
-        return this.makeRequest<ClinicalIntervention[]>(`/clinical-interventions/patient/${patientId}`);
+        return this.makeRequest<ClinicalIntervention[]>(`/api/clinical-interventions/patient/${patientId}`);
     }
 
     /**
      * Get interventions assigned to current user
      */
     async getMyAssignedInterventions(): Promise<ApiResponse<ClinicalIntervention[]>> {
-        return this.makeRequest<ClinicalIntervention[]>('/clinical-interventions/assigned-to-me');
+        return this.makeRequest<ClinicalIntervention[]>('/api/clinical-interventions/assigned-to-me');
     }
 
     /**
-     * Get dashboard metrics
+     * Get dashboard metrics and analytics
      */
     async getDashboardMetrics(dateRange?: { from: Date; to: Date }): Promise<ApiResponse<DashboardMetrics>> {
         const queryParams = new URLSearchParams();
@@ -315,7 +315,7 @@ class ClinicalInterventionService {
             queryParams.append('dateTo', dateRange.to.toISOString());
         }
 
-        const url = `/clinical-interventions/analytics/summary${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/api/clinical-interventions/analytics/summary${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         console.log('🔍 DASHBOARD: Fetching metrics from:', `${API_BASE_URL}${url}`);
 
         const result = await this.makeRequest<DashboardMetrics>(url);
@@ -328,7 +328,7 @@ class ClinicalInterventionService {
      * Get strategy recommendations for a category
      */
     async getStrategyRecommendations(category: string): Promise<ApiResponse<StrategyRecommendation[]>> {
-        return this.makeRequest<StrategyRecommendation[]>(`/clinical-interventions/recommendations/${category}`);
+        return this.makeRequest<StrategyRecommendation[]>(`/api/clinical-interventions/recommendations/${category}`);
     }
 
     /**
@@ -341,7 +341,7 @@ class ClinicalInterventionService {
             queryParams.append('end', dateRange.end);
         }
 
-        const url = `/clinical-interventions/analytics/trends${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/api/clinical-interventions/analytics/trends${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         return this.makeRequest<any>(url);
     }
 
@@ -368,7 +368,7 @@ class ClinicalInterventionService {
             }
         });
 
-        const url = `/clinical-interventions/reports/outcomes${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/api/clinical-interventions/reports/outcomes${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         console.log('🔍 SERVICE: generateOutcomeReport calling:', `${API_BASE_URL}${url}`);
 
         const result = await this.makeRequest<unknown>(url);
@@ -391,7 +391,7 @@ class ClinicalInterventionService {
         const queryParams = new URLSearchParams();
 
         Object.entries(filters).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== '') {
+            if (value !== undefined && value !== null && String(value) !== '') {
                 if (value instanceof Date) {
                     queryParams.append(key, value.toISOString());
                 } else {
@@ -400,7 +400,7 @@ class ClinicalInterventionService {
             }
         });
 
-        const url = `/clinical-interventions/reports/cost-savings${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/api/clinical-interventions/reports/cost-savings${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         return this.makeRequest<unknown>(url);
     }
 
@@ -418,7 +418,7 @@ class ClinicalInterventionService {
 
         queryParams.append('format', format);
 
-        const url = `/clinical-interventions/reports/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/api/clinical-interventions/reports/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
         try {
             const response = await fetch(`${API_BASE_URL}${url}`, {
@@ -457,7 +457,7 @@ class ClinicalInterventionService {
      * Link intervention to MTR
      */
     async linkToMTR(interventionId: string, mtrId: string): Promise<ApiResponse<ClinicalIntervention>> {
-        return this.makeRequest<ClinicalIntervention>(`/clinical-interventions/${interventionId}/link-mtr`, {
+        return this.makeRequest<ClinicalIntervention>(`/api/clinical-interventions/${interventionId}/link-mtr`, {
             method: 'POST',
             body: JSON.stringify({ mtrId }),
         });
@@ -467,7 +467,7 @@ class ClinicalInterventionService {
      * Send notifications for intervention
      */
     async sendNotifications(interventionId: string, event: string): Promise<ApiResponse<boolean>> {
-        return this.makeRequest<boolean>(`/clinical-interventions/${interventionId}/notifications`, {
+        return this.makeRequest<boolean>(`/api/clinical-interventions/${interventionId}/notifications`, {
             method: 'POST',
             body: JSON.stringify({ event }),
         });
@@ -481,21 +481,21 @@ class ClinicalInterventionService {
      * Check for duplicate interventions
      */
     async checkDuplicates(patientId: string, category: string): Promise<ApiResponse<{ duplicates: ClinicalIntervention[]; count: number }>> {
-        return this.makeRequest<{ duplicates: ClinicalIntervention[]; count: number }>(`/clinical-interventions/check-duplicates?patientId=${patientId}&category=${category}`);
+        return this.makeRequest<{ duplicates: ClinicalIntervention[]; count: number }>(`/api/clinical-interventions/check-duplicates?patientId=${patientId}&category=${category}`);
     }
 
     /**
      * Get intervention categories with counts
      */
     async getCategoryCounts(): Promise<ApiResponse<Record<string, number>>> {
-        return this.makeRequest<Record<string, number>>('/clinical-interventions/analytics/categories');
+        return this.makeRequest<Record<string, number>>('/api/clinical-interventions/analytics/categories');
     }
 
     /**
      * Get priority distribution
      */
     async getPriorityDistribution(): Promise<ApiResponse<Record<string, number>>> {
-        return this.makeRequest<Record<string, number>>('/clinical-interventions/analytics/priorities');
+        return this.makeRequest<Record<string, number>>('/api/clinical-interventions/analytics/priorities');
     }
     // ===============================
     // MTR INTEGRATION METHODS
@@ -514,7 +514,7 @@ class ClinicalInterventionService {
         count: number;
         mtrId: string;
     }>> {
-        return this.makeRequest('/clinical-interventions/from-mtr', {
+        return this.makeRequest('/api/clinical-interventions/from-mtr', {
             method: 'POST',
             body: JSON.stringify(data),
         });
@@ -539,7 +539,7 @@ class ClinicalInterventionService {
             interventionCount: number;
         } | null;
     }>> {
-        return this.makeRequest(`/clinical-interventions/${interventionId}/mtr-reference`);
+        return this.makeRequest(`/api/clinical-interventions/${interventionId}/mtr-reference`);
     }
 
     /**
@@ -550,14 +550,14 @@ class ClinicalInterventionService {
         count: number;
         mtrId: string;
     }>> {
-        return this.makeRequest(`/clinical-interventions/mtr/${mtrId}`);
+        return this.makeRequest(`/api/clinical-interventions/mtr/${mtrId}`);
     }
 
     /**
      * Sync intervention with MTR data
      */
     async syncWithMTR(interventionId: string): Promise<ApiResponse<null>> {
-        return this.makeRequest(`/clinical-interventions/${interventionId}/sync-mtr`, {
+        return this.makeRequest(`/api/clinical-interventions/${interventionId}/sync-mtr`, {
             method: 'POST',
         });
     }
@@ -608,7 +608,7 @@ class ClinicalInterventionService {
         });
 
         const queryString = params.toString();
-        const url = `/clinical-interventions/${interventionId}/audit-trail${queryString ? `?${queryString}` : ''}`;
+        const url = `/api/clinical-interventions/${interventionId}/audit-trail${queryString ? `?${queryString}` : ''}`;
 
         return this.makeRequest(url);
     }
@@ -636,7 +636,7 @@ class ClinicalInterventionService {
         if (options.action) params.append('action', options.action);
 
         const queryString = params.toString();
-        const url = `/clinical-interventions/audit-trail${queryString ? `?${queryString}` : ''}`;
+        const url = `/api/clinical-interventions/audit-trail${queryString ? `?${queryString}` : ''}`;
 
         return this.makeRequest(url);
     }
@@ -678,7 +678,7 @@ class ClinicalInterventionService {
             params.append('interventionIds', options.interventionIds.join(','));
         }
 
-        return this.makeRequest(`/clinical-interventions/compliance/report?${params.toString()}`);
+        return this.makeRequest(`/api/clinical-interventions/compliance/report?${params.toString()}`);
     }
 
     /**

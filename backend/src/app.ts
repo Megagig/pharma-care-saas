@@ -348,6 +348,15 @@ app.get('/api/clinical-interventions/health', (req, res) => {
   });
 });
 
+// Test endpoint to verify routing behavior
+app.get('/api/test-clinical-health', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'Test clinical health endpoint works',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.use('/api/clinical-interventions', clinicalInterventionRoutes);
 app.use('/api/medication-management', medicationManagementRoutes);
 app.use('/api/medication-analytics', medicationAnalyticsRoutes);

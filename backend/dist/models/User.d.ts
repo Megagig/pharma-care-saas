@@ -31,6 +31,8 @@ export interface IUser extends Document {
     licenseVerifiedBy?: mongoose.Types.ObjectId;
     licenseRejectionReason?: string;
     licenseExpirationDate?: Date;
+    pharmacySchool?: string;
+    yearOfGraduation?: number;
     suspensionReason?: string;
     suspendedAt?: Date;
     suspendedBy?: mongoose.Types.ObjectId;

@@ -63,7 +63,11 @@
     "deploy:production": "NODE_ENV=production bash scripts/deploy.sh",
     "migrate:clinical-notes": "ts-node scripts/migrateClinicalNotes.ts",
     "migrate:clinical-notes:status": "ts-node scripts/migrateClinicalNotes.ts -- --status",
-    "migrate:clinical-notes:rollback": "ts-node scripts/migrateClinicalNotes.ts -- --rollback"
+    "migrate:clinical-notes:rollback": "ts-node scripts/migrateClinicalNotes.ts -- --rollback",
+    "activate-subscription": "ts-node scripts/activateSubscription.ts",
+    "debug-subscription": "ts-node scripts/debugSubscription.ts",
+    "list-users": "ts-node scripts/listUsers.ts",
+    "test-subscription-api": "ts-node scripts/testSubscriptionAPI.ts"
   },
   "keywords": [
     "pharmacy",

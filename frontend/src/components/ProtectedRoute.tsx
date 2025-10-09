@@ -31,8 +31,8 @@ interface AccessDeniedProps {
   subscriptionStatus?: {
     status: string;
     isActive: boolean;
-    tier: string;
-    daysRemaining: number;
+    tier?: string;
+    daysRemaining?: number;
   };
 }
 
@@ -102,7 +102,7 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
             variant="contained"
             color="primary"
             component={Link}
-            to="/subscription-management"
+            to="/subscriptions"
             sx={{ mt: 2 }}
           >
             Upgrade Subscription
@@ -110,15 +110,25 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
         );
       case 'license':
         return (
-          <Button
-            variant="contained"
-            color="primary"
-            component={Link}
-            to="/license"
-            sx={{ mt: 2 }}
-          >
-            Upload License
-          </Button>
+          <Box display="flex" gap={1}>
+            <Button
+              variant="contained"
+              color="primary"
+              component={Link}
+              to="/license"
+              sx={{ mt: 2 }}
+            >
+              {licenseStatus === 'pending' ? 'View License Status' : 'Upload License'}
+            </Button>
+            <Button
+              variant="outlined"
+              component={Link}
+              to="/dashboard"
+              sx={{ mt: 2 }}
+            >
+              Back to Dashboard
+            </Button>
+          </Box>
         );
       default:
         return (
@@ -212,15 +222,26 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Check subscription requirement
-  if (requiresActiveSubscription && !subscriptionStatus.isActive) {
-    // Allow access to subscription management pages even without active subscription
+  if (requiresActiveSubscription) {
+    // Allow access during 14-day free trial
+    const isTrialActive = subscriptionStatus.status === 'trial' && 
+                          subscriptionStatus.daysRemaining && 
+                          subscriptionStatus.daysRemaining > 0;
+    
+    // Allow access to subscription pages even without active subscription
     const isSubscriptionPage = location.pathname.includes('/subscription');
 
-    if (!isSubscriptionPage) {
+    // Block access only if trial has expired and no active paid subscription
+    if (!isTrialActive && !subscriptionStatus.isActive && !isSubscriptionPage) {
       return (
         <AccessDenied
           reason="subscription"
-          subscriptionStatus={subscriptionStatus}
+          subscriptionStatus={{
+            status: subscriptionStatus.status,
+            isActive: subscriptionStatus.isActive,
+            tier: subscriptionStatus.tier || 'free',
+            daysRemaining: subscriptionStatus.daysRemaining || 0,
+          }}
         />
       );
     }

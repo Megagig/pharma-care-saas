@@ -61,7 +61,6 @@ import {
   LazyPatientMedicationsPage,
   LazyClinicalInterventionsLayout,
   LazySubscriptions,
-  LazySubscriptionManagement,
   LazySubscriptionSuccess,
   LazySettings,
   LazySettingsTheme,
@@ -313,7 +312,7 @@ function App(): JSX.Element {
                             element={
                               <ProtectedRoute
                                 requiredFeature="clinical_notes"
-                                requiresLicense
+                                requiresLicense={true}
                                 requiresActiveSubscription
                               >
                                 <AppLayout>
@@ -439,7 +438,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/medication-therapy"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyMedicationTherapyReview />
@@ -451,7 +450,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/medication-therapy/new"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={FormSkeleton}>
                                     <LazyMedicationTherapyReview />
@@ -463,7 +462,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/medication-therapy/patient/:patientId"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyMedicationTherapyReview />
@@ -475,7 +474,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/medication-therapy/:reviewId"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyMedicationTherapyReview />
@@ -487,7 +486,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/medication-therapy/:reviewId/step/:stepId"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyMedicationTherapyReview />
@@ -499,7 +498,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/medication-therapy/:reviewId/summary"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyMedicationTherapyReview />
@@ -511,7 +510,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/clinical-interventions/*"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyClinicalInterventionsLayout />
@@ -523,7 +522,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/diagnostics"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={DashboardSkeleton}>
                                     <LazyDiagnosticDashboard />
@@ -535,7 +534,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/diagnostics/case/new"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={FormSkeleton}>
                                     <LazyCaseIntakePage />
@@ -547,7 +546,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/diagnostics/case/:requestId"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyResultsReviewPage />
@@ -559,7 +558,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/diagnostics/case/:caseId/results"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyCaseResultsPage />
@@ -571,7 +570,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/diagnostics/demo"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyComponentDemo />
@@ -583,7 +582,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/diagnostics/cases/all"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyAllDiagnosticCasesPage />
@@ -595,7 +594,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/diagnostics/analytics"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyDiagnosticAnalyticsPage />
@@ -655,7 +654,7 @@ function App(): JSX.Element {
                           <Route
                             path="/pharmacy/decision-support"
                             element={
-                              <ProtectedRoute requiresActiveSubscription>
+                              <ProtectedRoute requiresLicense={true} requiresActiveSubscription>
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyClinicalDecisionSupport />
@@ -728,18 +727,10 @@ function App(): JSX.Element {
                               </ProtectedRoute>
                             }
                           />
-                          {/* Enhanced Subscription Management */}
+                          {/* Redirect old subscription-management to subscriptions */}
                           <Route
                             path="/subscription-management"
-                            element={
-                              <ProtectedRoute>
-                                <AppLayout>
-                                  <LazyWrapper fallback={PageSkeleton}>
-                                    <LazySubscriptionManagement />
-                                  </LazyWrapper>
-                                </AppLayout>
-                              </ProtectedRoute>
-                            }
+                            element={<Navigate to="/subscriptions" replace />}
                           />
                           {/* Subscription Success Page - No auth required for payment redirection */}
                           <Route
@@ -752,30 +743,14 @@ function App(): JSX.Element {
                               </AppLayout>
                             }
                           />
-                          {/* Subscription Plans - This should not require active subscription */}
+                          {/* Redirect old subscription plan routes to subscriptions */}
                           <Route
                             path="/dashboard/subscription/plans"
-                            element={
-                              <ProtectedRoute>
-                                <AppLayout>
-                                  <LazyWrapper fallback={PageSkeleton}>
-                                    <LazySubscriptionManagement />
-                                  </LazyWrapper>
-                                </AppLayout>
-                              </ProtectedRoute>
-                            }
+                            element={<Navigate to="/subscriptions" replace />}
                           />
                           <Route
                             path="/subscription/plans"
-                            element={
-                              <ProtectedRoute>
-                                <AppLayout>
-                                  <LazyWrapper fallback={PageSkeleton}>
-                                    <LazySubscriptionManagement />
-                                  </LazyWrapper>
-                                </AppLayout>
-                              </ProtectedRoute>
-                            }
+                            element={<Navigate to="/subscriptions" replace />}
                           />
                           {/* SaaS Settings - accessible to everyone */}
                           <Route
@@ -807,6 +782,19 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazySettingsTheme />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* License Upload Page */}
+                          <Route
+                            path="/license"
+                            element={
+                              <ProtectedRoute>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyLicenseUpload />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
