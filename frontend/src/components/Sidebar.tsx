@@ -23,6 +23,7 @@ import {
   Settings as SettingsIcon,
   Help as HelpIcon,
   ChevronLeft as ChevronLeftIcon,
+  Flag as FlagIcon,
 } from '@mui/icons-material';
 // Import icons that require default imports
 import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
@@ -171,20 +172,26 @@ const Sidebar = () => {
       show: hasRole('super_admin'),
     },
     {
+      name: 'Feature Management',
+      path: '/admin/feature-management',
+      icon: FlagIcon,
+      show: hasRole('super_admin'),
+    },
+    {
       name: 'Feature Flags',
       path: '/feature-flags',
       icon: SettingsIcon,
       show: hasRole('super_admin') && hasFeature('feature_flag_management'),
     },
-  ];
-
-  const settingsItems = [
     {
       name: 'Saas Settings',
       path: '/saas-settings',
       icon: SettingsIcon,
-      show: true,
+      show: hasRole('super_admin'),
     },
+  ];
+
+  const settingsItems = [
     {
       name: 'License Verification',
       path: '/license',
