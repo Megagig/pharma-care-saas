@@ -720,24 +720,40 @@ export const requirePlanTier = (...tiers: string[]) => {
 
 /**
  * RBAC middleware that requires user to be workspace owner
+ * This middleware validates that the authenticated user is the owner of their workspace
+ * and attaches the workplaceId to the request for easy access in route handlers.
+ * 
+ * Requirements:
+ * - User must be authenticated (req.user exists)
+ * - User must have an associated workspace (req.workspaceContext.workspace exists)
+ * - User must be the owner of the workspace (ownerId matches user._id)
+ * - Super admins bypass ownership checks
+ * 
+ * @param req - Express request with auth context
+ * @param res - Express response
+ * @param next - Express next function
  */
 export const requireWorkspaceOwner = (
     req: AuthRequest,
     res: Response,
     next: NextFunction
 ): void => {
+    // Check if user is authenticated
     if (!req.user) {
         res.status(401).json({
             success: false,
             message: 'Authentication required',
+            error: 'User not authenticated',
         });
         return;
     }
 
+    // Check if workspace context is loaded
     if (!req.workspaceContext?.workspace) {
         res.status(403).json({
             success: false,
             message: 'No workspace associated with user',
+            error: 'Access denied',
         });
         return;
     }
@@ -745,17 +761,36 @@ export const requireWorkspaceOwner = (
     // Super admin bypasses ownership checks
     const userRole = getUserRole(req.user);
     if (userRole === 'super_admin') {
+        // Attach workplaceId for convenience even for super admin
+        if (req.workspaceContext.workspace._id) {
+            (req as any).workplaceId = req.workspaceContext.workspace._id;
+        }
         return next();
     }
 
-    const isOwner = req.workspaceContext.workspace.ownerId.toString() === req.user._id.toString();
+    // Verify user is the workspace owner
+    const workspaceOwnerId = req.workspaceContext.workspace.ownerId;
+    if (!workspaceOwnerId) {
+        res.status(403).json({
+            success: false,
+            message: 'Workspace owner access required',
+            error: 'Workspace has no owner assigned',
+        });
+        return;
+    }
+
+    const isOwner = workspaceOwnerId.toString() === req.user._id.toString();
     if (!isOwner) {
         res.status(403).json({
             success: false,
             message: 'Workspace owner access required',
+            error: 'Only workspace owners can access this resource',
         });
         return;
     }
+
+    // Attach workplaceId to request for easy access in route handlers
+    (req as any).workplaceId = req.workspaceContext.workspace._id;
 
     next();
 };

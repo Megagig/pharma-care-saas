@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import mongoose from 'mongoose';
 import { WorkspaceInvite, IWorkspaceInvite } from '../../models/WorkspaceInvite';
 import { User } from '../../models/User';
