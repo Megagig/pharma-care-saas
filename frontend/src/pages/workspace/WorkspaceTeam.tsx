@@ -27,6 +27,7 @@ import MailIcon from '@mui/icons-material/Mail';
 import HistoryIcon from '@mui/icons-material/History';
 import { useRBAC } from '../../hooks/useRBAC';
 import { useWorkspaceStats } from '../../queries/useWorkspaceTeam';
+import MemberList from '../../components/workspace/MemberList';
 
 // Tab panel component
 interface TabPanelProps {
@@ -267,9 +268,7 @@ const WorkspaceTeam: React.FC = () => {
 
       {/* Tab Content */}
       <TabPanel value={activeTab} index={0}>
-        <Alert severity="info">
-          Member list component will be implemented in the next task.
-        </Alert>
+        <MemberList />
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>

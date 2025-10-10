@@ -15,11 +15,12 @@ vi.mock('../../../hooks/useRBAC', () => ({
 
 vi.mock('../../../queries/useWorkspaceTeam', () => ({
   useWorkspaceStats: vi.fn(),
+  useWorkspaceMembers: vi.fn(),
 }));
 
 // Import mocked hooks
 import { useRBAC } from '../../../hooks/useRBAC';
-import { useWorkspaceStats } from '../../../queries/useWorkspaceTeam';
+import { useWorkspaceStats, useWorkspaceMembers } from '../../../queries/useWorkspaceTeam';
 
 describe('WorkspaceTeam', () => {
   let queryClient: QueryClient;
@@ -34,6 +35,21 @@ describe('WorkspaceTeam', () => {
 
     // Reset mocks
     vi.clearAllMocks();
+
+    // Default mock for useWorkspaceMembers
+    vi.mocked(useWorkspaceMembers).mockReturnValue({
+      data: {
+        members: [],
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 0,
+          totalPages: 0,
+        },
+      },
+      isLoading: false,
+      error: null,
+    } as any);
   });
 
   const renderComponent = () => {
@@ -414,12 +430,15 @@ describe('WorkspaceTeam', () => {
       } as any);
     });
 
-    it('should display placeholder for Members tab', () => {
+    it('should display MemberList component in Members tab', () => {
       renderComponent();
 
-      expect(
-        screen.getByText(/Member list component will be implemented/)
-      ).toBeInTheDocument();
+      // Check that the MemberList component is rendered (it should show the table or empty state)
+      const table = screen.queryByRole('table');
+      const emptyState = screen.queryByText(/No team members found/i);
+      
+      // Either the table or empty state should be present
+      expect(table || emptyState).toBeTruthy();
     });
 
     it('should display placeholder for Pending Approvals tab', async () => {
