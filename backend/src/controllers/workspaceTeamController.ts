@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { AuthRequest } from '../middlewares/auth';
 import { User } from '../models/User';
 import { emailService } from '../utils/emailService';
+import { workspaceAuditService } from '../services/workspaceAuditService';
 
 /**
  * Workspace Team Management Controller
@@ -150,6 +151,20 @@ class WorkspaceTeamController {
       member.roleLastModifiedAt = new Date();
       await member.save();
 
+      // Log the role change in audit trail
+      await workspaceAuditService.logRoleAction(
+        new mongoose.Types.ObjectId(workplaceId),
+        updatedBy!,
+        new mongoose.Types.ObjectId(memberId),
+        'role_changed',
+        {
+          before: oldRole,
+          after: workplaceRole,
+          reason,
+        },
+        req
+      );
+
       res.status(200).json({
         success: true,
         message: 'Member role updated successfully',
@@ -221,6 +236,13 @@ class WorkspaceTeamController {
         return;
       }
 
+      // Store member info for audit
+      const memberInfo = {
+        email: member.email,
+        name: `${member.firstName} ${member.lastName}`,
+        role: member.workplaceRole,
+      };
+
       // Remove workspace association
       member.workplaceId = undefined;
       member.workplaceRole = undefined;
@@ -229,6 +251,19 @@ class WorkspaceTeamController {
       member.suspendedBy = removedBy;
       member.suspensionReason = reason || 'Removed from workspace';
       await member.save();
+
+      // Log the member removal in audit trail
+      await workspaceAuditService.logMemberAction(
+        new mongoose.Types.ObjectId(workplaceId),
+        removedBy!,
+        new mongoose.Types.ObjectId(memberId),
+        'member_removed',
+        {
+          reason: reason || 'Removed from workspace',
+          metadata: memberInfo,
+        },
+        req
+      );
 
       res.status(200).json({
         success: true,
@@ -309,6 +344,22 @@ class WorkspaceTeamController {
       member.suspensionReason = reason;
       await member.save();
 
+      // Log the suspension in audit trail
+      await workspaceAuditService.logMemberAction(
+        new mongoose.Types.ObjectId(workplaceId),
+        suspendedBy!,
+        new mongoose.Types.ObjectId(memberId),
+        'member_suspended',
+        {
+          reason,
+          metadata: {
+            email: member.email,
+            name: `${member.firstName} ${member.lastName}`,
+          },
+        },
+        req
+      );
+
       // Send suspension notification email (don't block response)
       emailService
         .sendAccountSuspensionNotification(member.email, {
@@ -345,6 +396,152 @@ class WorkspaceTeamController {
       res.status(500).json({
         success: false,
         message: 'Failed to suspend member',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Get audit logs for the workspace
+   * @route GET /api/workspace/team/audit
+   */
+  async getAuditLogs(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const workplaceId = (req as any).workplaceId;
+
+      if (!workplaceId) {
+        res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required',
+        });
+        return;
+      }
+
+      // Parse query parameters
+      const filters = {
+        page: parseInt(req.query.page as string) || 1,
+        limit: parseInt(req.query.limit as string) || 20,
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string,
+        actorId: req.query.actorId as string,
+        targetId: req.query.targetId as string,
+        category: req.query.category as string,
+        action: req.query.action as string,
+        severity: req.query.severity as string,
+      };
+
+      // Get audit logs
+      const result = await workspaceAuditService.getAuditLogs(
+        new mongoose.Types.ObjectId(workplaceId),
+        filters
+      );
+
+      res.status(200).json({
+        success: true,
+        logs: result.logs,
+        pagination: result.pagination,
+      });
+    } catch (error: any) {
+      console.error('Error fetching audit logs:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch audit logs',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Export audit logs to CSV
+   * @route GET /api/workspace/team/audit/export
+   */
+  async exportAuditLogs(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const workplaceId = (req as any).workplaceId;
+
+      if (!workplaceId) {
+        res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required',
+        });
+        return;
+      }
+
+      // Parse query parameters
+      const filters = {
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string,
+        actorId: req.query.actorId as string,
+        targetId: req.query.targetId as string,
+        category: req.query.category as string,
+        action: req.query.action as string,
+        severity: req.query.severity as string,
+      };
+
+      // Export audit logs
+      const csv = await workspaceAuditService.exportAuditLogs(
+        new mongoose.Types.ObjectId(workplaceId),
+        filters
+      );
+
+      // Set headers for CSV download
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="workspace-audit-logs-${Date.now()}.csv"`
+      );
+
+      res.status(200).send(csv);
+    } catch (error: any) {
+      console.error('Error exporting audit logs:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export audit logs',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Get audit statistics for the workspace
+   * @route GET /api/workspace/team/audit/statistics
+   */
+  async getAuditStatistics(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const workplaceId = (req as any).workplaceId;
+
+      if (!workplaceId) {
+        res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required',
+        });
+        return;
+      }
+
+      // Parse date range if provided
+      let dateRange;
+      if (req.query.startDate && req.query.endDate) {
+        dateRange = {
+          startDate: new Date(req.query.startDate as string),
+          endDate: new Date(req.query.endDate as string),
+        };
+      }
+
+      // Get statistics
+      const statistics = await workspaceAuditService.getAuditStatistics(
+        new mongoose.Types.ObjectId(workplaceId),
+        dateRange
+      );
+
+      res.status(200).json({
+        success: true,
+        statistics,
+      });
+    } catch (error: any) {
+      console.error('Error fetching audit statistics:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch audit statistics',
         error: error.message,
       });
     }
@@ -404,6 +601,24 @@ class WorkspaceTeamController {
       member.suspendedAt = undefined;
       member.suspendedBy = undefined;
       await member.save();
+
+      // Log the activation in audit trail
+      await workspaceAuditService.logMemberAction(
+        new mongoose.Types.ObjectId(workplaceId),
+        reactivatedBy!,
+        new mongoose.Types.ObjectId(memberId),
+        'member_activated',
+        {
+          reason: `Reactivated after suspension: ${previousSuspensionReason}`,
+          metadata: {
+            email: member.email,
+            name: `${member.firstName} ${member.lastName}`,
+            previousSuspensionReason,
+            previousSuspendedAt,
+          },
+        },
+        req
+      );
 
       // Send reactivation notification email (don't block response)
       emailService

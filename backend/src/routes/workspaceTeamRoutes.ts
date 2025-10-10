@@ -136,4 +136,115 @@ router.post(
   workspaceTeamController.activateMember.bind(workspaceTeamController)
 );
 
+/**
+ * Get audit logs for the workspace
+ * @route GET /api/workspace/team/audit
+ * @access Private (Workspace owners only)
+ */
+router.get(
+  '/audit',
+  [
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Page must be a positive integer'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Limit must be between 1 and 100'),
+    query('startDate')
+      .optional()
+      .isISO8601()
+      .withMessage('Start date must be a valid ISO 8601 date'),
+    query('endDate')
+      .optional()
+      .isISO8601()
+      .withMessage('End date must be a valid ISO 8601 date'),
+    query('actorId')
+      .optional()
+      .isMongoId()
+      .withMessage('Actor ID must be a valid MongoDB ObjectId'),
+    query('targetId')
+      .optional()
+      .isMongoId()
+      .withMessage('Target ID must be a valid MongoDB ObjectId'),
+    query('category')
+      .optional()
+      .isIn(['member', 'role', 'permission', 'invite', 'auth', 'settings'])
+      .withMessage('Invalid category'),
+    query('action')
+      .optional()
+      .isString()
+      .withMessage('Action must be a string'),
+    query('severity')
+      .optional()
+      .isIn(['low', 'medium', 'high', 'critical'])
+      .withMessage('Invalid severity'),
+  ],
+  validateRequest,
+  workspaceTeamController.getAuditLogs.bind(workspaceTeamController)
+);
+
+/**
+ * Export audit logs to CSV
+ * @route GET /api/workspace/team/audit/export
+ * @access Private (Workspace owners only)
+ */
+router.get(
+  '/audit/export',
+  [
+    query('startDate')
+      .optional()
+      .isISO8601()
+      .withMessage('Start date must be a valid ISO 8601 date'),
+    query('endDate')
+      .optional()
+      .isISO8601()
+      .withMessage('End date must be a valid ISO 8601 date'),
+    query('actorId')
+      .optional()
+      .isMongoId()
+      .withMessage('Actor ID must be a valid MongoDB ObjectId'),
+    query('targetId')
+      .optional()
+      .isMongoId()
+      .withMessage('Target ID must be a valid MongoDB ObjectId'),
+    query('category')
+      .optional()
+      .isIn(['member', 'role', 'permission', 'invite', 'auth', 'settings'])
+      .withMessage('Invalid category'),
+    query('action')
+      .optional()
+      .isString()
+      .withMessage('Action must be a string'),
+    query('severity')
+      .optional()
+      .isIn(['low', 'medium', 'high', 'critical'])
+      .withMessage('Invalid severity'),
+  ],
+  validateRequest,
+  workspaceTeamController.exportAuditLogs.bind(workspaceTeamController)
+);
+
+/**
+ * Get audit statistics
+ * @route GET /api/workspace/team/audit/statistics
+ * @access Private (Workspace owners only)
+ */
+router.get(
+  '/audit/statistics',
+  [
+    query('startDate')
+      .optional()
+      .isISO8601()
+      .withMessage('Start date must be a valid ISO 8601 date'),
+    query('endDate')
+      .optional()
+      .isISO8601()
+      .withMessage('End date must be a valid ISO 8601 date'),
+  ],
+  validateRequest,
+  workspaceTeamController.getAuditStatistics.bind(workspaceTeamController)
+);
+
 export default router;
