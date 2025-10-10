@@ -7,8 +7,6 @@ import axios, { AxiosError } from 'axios';
 import { apiClient } from './apiClient';
 import type {
   Member,
-  WorkspaceInvite,
-  WorkspaceAuditLog,
   MemberFilters,
   AuditFilters,
   InviteFilters,

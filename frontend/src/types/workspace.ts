@@ -75,10 +75,10 @@ export interface WorkspaceAuditLog {
   action: string;
   category: AuditCategory;
   details: {
-    before?: any;
-    after?: any;
+    before?: unknown;
+    after?: unknown;
     reason?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   };
   ipAddress: string;
   userAgent: string;
