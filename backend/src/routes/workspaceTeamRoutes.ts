@@ -4,6 +4,7 @@ import { auth } from '../middlewares/auth';
 import { requireWorkspaceOwner } from '../middlewares/rbac';
 import { validateRequest } from '../middlewares/validation';
 import { workspaceTeamController } from '../controllers/workspaceTeamController';
+import { workspaceTeamInviteController } from '../controllers/workspaceTeamInviteController';
 
 const router = Router();
 
@@ -245,6 +246,140 @@ router.get(
   ],
   validateRequest,
   workspaceTeamController.getAuditStatistics.bind(workspaceTeamController)
+);
+
+/**
+ * Generate a new invite link
+ * @route POST /api/workspace/team/invites
+ * @access Private (Workspace owners only)
+ */
+router.post(
+  '/invites',
+  [
+    body('email')
+      .notEmpty()
+      .withMessage('Email is required')
+      .isEmail()
+      .withMessage('Must be a valid email address')
+      .normalizeEmail(),
+    body('workplaceRole')
+      .notEmpty()
+      .withMessage('Workplace role is required')
+      .isIn(['Owner', 'Staff', 'Pharmacist', 'Cashier', 'Technician', 'Assistant'])
+      .withMessage('Invalid workplace role'),
+    body('expiresInDays')
+      .notEmpty()
+      .withMessage('Expiration days is required')
+      .isInt({ min: 1, max: 30 })
+      .withMessage('Expiration must be between 1 and 30 days'),
+    body('maxUses')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Max uses must be between 1 and 100'),
+    body('requiresApproval')
+      .optional()
+      .isBoolean()
+      .withMessage('Requires approval must be a boolean'),
+    body('personalMessage')
+      .optional()
+      .isString()
+      .isLength({ max: 1000 })
+      .withMessage('Personal message must not exceed 1000 characters'),
+  ],
+  validateRequest,
+  workspaceTeamInviteController.generateInvite.bind(workspaceTeamInviteController)
+);
+
+/**
+ * Get all invites for the workspace
+ * @route GET /api/workspace/team/invites
+ * @access Private (Workspace owners only)
+ */
+router.get(
+  '/invites',
+  [
+    query('status')
+      .optional()
+      .isIn(['pending', 'accepted', 'rejected', 'expired', 'revoked'])
+      .withMessage('Invalid status'),
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Page must be a positive integer'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Limit must be between 1 and 100'),
+  ],
+  validateRequest,
+  workspaceTeamInviteController.getInvites.bind(workspaceTeamInviteController)
+);
+
+/**
+ * Revoke an invite link
+ * @route DELETE /api/workspace/team/invites/:id
+ * @access Private (Workspace owners only)
+ */
+router.delete(
+  '/invites/:id',
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Invite ID must be a valid MongoDB ObjectId'),
+  ],
+  validateRequest,
+  workspaceTeamInviteController.revokeInvite.bind(workspaceTeamInviteController)
+);
+
+/**
+ * Get pending member approvals
+ * @route GET /api/workspace/team/invites/pending
+ * @access Private (Workspace owners only)
+ */
+router.get(
+  '/invites/pending',
+  workspaceTeamInviteController.getPendingApprovals.bind(workspaceTeamInviteController)
+);
+
+/**
+ * Approve a pending member
+ * @route POST /api/workspace/team/invites/:id/approve
+ * @access Private (Workspace owners only)
+ */
+router.post(
+  '/invites/:id/approve',
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Invite ID must be a valid MongoDB ObjectId'),
+    body('workplaceRole')
+      .optional()
+      .isIn(['Owner', 'Staff', 'Pharmacist', 'Cashier', 'Technician', 'Assistant'])
+      .withMessage('Invalid workplace role'),
+  ],
+  validateRequest,
+  workspaceTeamInviteController.approveMember.bind(workspaceTeamInviteController)
+);
+
+/**
+ * Reject a pending member
+ * @route POST /api/workspace/team/invites/:id/reject
+ * @access Private (Workspace owners only)
+ */
+router.post(
+  '/invites/:id/reject',
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Invite ID must be a valid MongoDB ObjectId'),
+    body('reason')
+      .optional()
+      .isString()
+      .isLength({ max: 500 })
+      .withMessage('Reason must not exceed 500 characters'),
+  ],
+  validateRequest,
+  workspaceTeamInviteController.rejectMember.bind(workspaceTeamInviteController)
 );
 
 export default router;
