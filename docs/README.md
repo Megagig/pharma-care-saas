@@ -35,6 +35,13 @@ PharmacyCopilot SaaS is a comprehensive pharmaceutical care management platform 
 - Automated billing and renewals
 - Plan upgrade/downgrade options
 
+### 🎛️ Feature Flags Management (Super Admin)
+- Complete CRUD operations for feature flags
+- Tier-based feature access control
+- Role-based feature permissions
+- Visual feature matrix for tier management
+- Bulk operations for efficient management
+
 ## Technology Stack
 
 ### Backend
@@ -135,7 +142,21 @@ pharma-care-saas/
 ```
 
 ## API Documentation
-Comprehensive API documentation is available in [docs/API.md](docs/API.md).
+
+Comprehensive API documentation is available:
+
+- **[Main API Documentation](API.md)** - Overview of all API endpoints
+- **[Feature Flags API](FEATURE_FLAGS_API.md)** - Complete Feature Flags management API
+- **[Clinical Notes API](CLINICAL_NOTES_API.md)** - Clinical documentation API
+- **[Dynamic RBAC API](DYNAMIC_RBAC_API.md)** - Role-based access control API
+- **[SaaS Settings API](SAAS_SETTINGS_API.md)** - System administration API
+
+### Postman Collections
+
+Import these collections to test the APIs:
+- [Feature Flags API Collection](Feature_Flags_API.postman_collection.json)
+- [AI Diagnostics API Collection](AI_Diagnostics_API.postman_collection.json)
+- [Manual Lab API Collection](Manual_Lab_API.postman_collection.json)
 
 ## Deployment
 
