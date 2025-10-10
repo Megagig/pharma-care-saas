@@ -2,10 +2,10 @@ import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
-import workspaceTeamRoutes from '../../routes/workspaceTeamRoutes';
 import { User } from '../../models/User';
 import Workplace from '../../models/Workplace';
 import SubscriptionPlan from '../../models/SubscriptionPlan';
+import workspaceTeamRoutes from '../../routes/workspaceTeamRoutes';
 
 describe('Workspace Team Routes', () => {
   let app: express.Application;
@@ -59,31 +59,6 @@ describe('Workspace Team Routes', () => {
     // Setup Express app
     app = express();
     app.use(express.json());
-    
-    // Mock workspace context middleware
-    app.use((req: any, res, next) => {
-      if (req.headers.authorization) {
-        try {
-          const token = req.headers.authorization.split(' ')[1];
-          const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'test-secret');
-          req.user = decoded.user;
-          
-          // Mock workspace context
-          if (req.user && req.user.workplaceId) {
-            req.workspaceContext = {
-              workspace: {
-                _id: req.user.workplaceId,
-                ownerId: req.user.role === 'pharmacy_outlet' ? req.user._id : null,
-              },
-            };
-          }
-        } catch (error) {
-          // Invalid token
-        }
-      }
-      next();
-    });
-    
     app.use('/api/workspace/team', workspaceTeamRoutes);
 
     // Create a temporary owner ID (will be updated after creating the owner)
@@ -173,30 +148,25 @@ describe('Workspace Team Routes', () => {
       assignedRoles: [],
     });
 
-    // Generate auth tokens
+    // Generate auth tokens (using the format expected by the real auth middleware)
+    // Make sure JWT_SECRET is set
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is not set');
+    }
+    
     ownerToken = jwt.sign(
       {
-        user: {
-          _id: workspaceOwner._id,
-          email: workspaceOwner.email,
-          role: workspaceOwner.role,
-          workplaceId: testWorkplace._id,
-        },
+        userId: workspaceOwner._id.toString(),
       },
-      process.env.JWT_SECRET || 'test-secret',
+      process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
     nonOwnerToken = jwt.sign(
       {
-        user: {
-          _id: teamMember1._id,
-          email: teamMember1.email,
-          role: teamMember1.role,
-          workplaceId: testWorkplace._id,
-        },
+        userId: teamMember1._id.toString(),
       },
-      process.env.JWT_SECRET || 'test-secret',
+      process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
   });
@@ -215,7 +185,7 @@ describe('Workspace Team Routes', () => {
         .get('/api/workspace/team/members')
         .expect(401);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBeDefined();
     });
 
     it('should reject requests from non-workspace owners', async () => {
@@ -426,6 +396,7 @@ describe('Workspace Team Routes', () => {
         workplaceRole: 'Pharmacist',
         status: 'active',
         licenseStatus: 'approved',
+        currentPlanId: testPlan._id,
         permissions: [],
         directPermissions: [],
         deniedPermissions: [],
@@ -520,6 +491,7 @@ describe('Workspace Team Routes', () => {
         workplaceRole: 'Pharmacist',
         status: 'active',
         licenseStatus: 'approved',
+        currentPlanId: testPlan._id,
         permissions: [],
         directPermissions: [],
         deniedPermissions: [],
@@ -548,6 +520,425 @@ describe('Workspace Team Routes', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('POST /api/workspace/team/members/:id/suspend', () => {
+    let activeMember: any;
+
+    beforeEach(async () => {
+      // Create a fresh active member for each test
+      activeMember = await User.create({
+        firstName: 'Active',
+        lastName: 'Member',
+        email: `active-${Date.now()}@pharmacy.com`,
+        passwordHash: 'hashedpassword',
+        role: 'pharmacy_team',
+        workplaceId: testWorkplace._id,
+        workplaceRole: 'Staff',
+        status: 'active',
+        licenseStatus: 'not_required',
+        currentPlanId: testPlan._id,
+        permissions: [],
+        directPermissions: [],
+        deniedPermissions: [],
+        assignedRoles: [],
+      });
+    });
+
+    it('should suspend member successfully', async () => {
+      const response = await request(app)
+        .post(`/api/workspace/team/members/${activeMember._id}/suspend`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          reason: 'Policy violation',
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.member).toBeDefined();
+      expect(response.body.member.status).toBe('suspended');
+      expect(response.body.member.suspensionReason).toBe('Policy violation');
+      expect(response.body.member.suspendedAt).toBeDefined();
+      expect(response.body.audit).toBeDefined();
+      expect(response.body.audit.action).toBe('member_suspended');
+
+      // Verify member was suspended in database
+      const updatedMember = await User.findById(activeMember._id);
+      expect(updatedMember?.status).toBe('suspended');
+      expect(updatedMember?.suspensionReason).toBe('Policy violation');
+      expect(updatedMember?.suspendedAt).toBeDefined();
+      expect(updatedMember?.suspendedBy?.toString()).toBe(workspaceOwner._id.toString());
+    });
+
+    it('should require suspension reason', async () => {
+      const response = await request(app)
+        .post(`/api/workspace/team/members/${activeMember._id}/suspend`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({})
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject suspension with empty reason', async () => {
+      const response = await request(app)
+        .post(`/api/workspace/team/members/${activeMember._id}/suspend`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          reason: '',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject suspension with reason exceeding max length', async () => {
+      const longReason = 'a'.repeat(501);
+      const response = await request(app)
+        .post(`/api/workspace/team/members/${activeMember._id}/suspend`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          reason: longReason,
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should prevent suspending workspace owner', async () => {
+      const response = await request(app)
+        .post(`/api/workspace/team/members/${workspaceOwner._id}/suspend`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          reason: 'Test suspension',
+        })
+        .expect(403);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Cannot suspend workspace owner');
+    });
+
+    it('should reject suspending already suspended member', async () => {
+      // First suspension
+      await request(app)
+        .post(`/api/workspace/team/members/${activeMember._id}/suspend`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          reason: 'First suspension',
+        })
+        .expect(200);
+
+      // Second suspension attempt
+      const response = await request(app)
+        .post(`/api/workspace/team/members/${activeMember._id}/suspend`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          reason: 'Second suspension',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('already suspended');
+    });
+
+    it('should reject suspension for member not in workspace', async () => {
+      const otherWorkplace = await Workplace.create({
+        name: 'Suspend Test Pharmacy',
+        type: 'Community',
+        address: 'Suspend Test Address',
+        phone: '3333333333',
+        email: 'suspend@pharmacy.com',
+        licenseNumber: 'SUSPEND123',
+        ownerId: new mongoose.Types.ObjectId(),
+        subscriptionStatus: 'active',
+        trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        verificationStatus: 'verified',
+        inviteCode: 'SUSPEND123',
+        teamMembers: [],
+        documents: [],
+        stats: { patientsCount: 0, usersCount: 0, lastUpdated: new Date() },
+        locations: [],
+        settings: { maxPendingInvites: 10, allowSharedPatients: false },
+      });
+
+      const otherMember = await User.create({
+        firstName: 'Other',
+        lastName: 'Member',
+        email: 'other-suspend@member.com',
+        passwordHash: 'hashedpassword',
+        role: 'pharmacist',
+        workplaceId: otherWorkplace._id,
+        workplaceRole: 'Pharmacist',
+        status: 'active',
+        licenseStatus: 'approved',
+        currentPlanId: testPlan._id,
+        permissions: [],
+        directPermissions: [],
+        deniedPermissions: [],
+        assignedRoles: [],
+      });
+
+      const response = await request(app)
+        .post(`/api/workspace/team/members/${otherMember._id}/suspend`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          reason: 'Test suspension',
+        })
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('not found');
+    });
+
+    it('should validate member ID format', async () => {
+      const response = await request(app)
+        .post('/api/workspace/team/members/invalid-id/suspend')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          reason: 'Test suspension',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('POST /api/workspace/team/members/:id/activate', () => {
+    let suspendedMember: any;
+
+    beforeEach(async () => {
+      // Create a suspended member for each test
+      suspendedMember = await User.create({
+        firstName: 'Suspended',
+        lastName: 'Member',
+        email: `suspended-${Date.now()}@pharmacy.com`,
+        passwordHash: 'hashedpassword',
+        role: 'pharmacy_team',
+        workplaceId: testWorkplace._id,
+        workplaceRole: 'Staff',
+        status: 'suspended',
+        suspensionReason: 'Test suspension',
+        suspendedAt: new Date(),
+        suspendedBy: workspaceOwner._id,
+        licenseStatus: 'not_required',
+        currentPlanId: testPlan._id,
+        permissions: [],
+        directPermissions: [],
+        deniedPermissions: [],
+        assignedRoles: [],
+      });
+    });
+
+    it('should activate suspended member successfully', async () => {
+      const response = await request(app)
+        .post(`/api/workspace/team/members/${suspendedMember._id}/activate`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.member).toBeDefined();
+      expect(response.body.member.status).toBe('active');
+      expect(response.body.member.reactivatedAt).toBeDefined();
+      expect(response.body.audit).toBeDefined();
+      expect(response.body.audit.action).toBe('member_activated');
+      expect(response.body.audit.previousSuspensionReason).toBe('Test suspension');
+
+      // Verify member was activated in database
+      const updatedMember = await User.findById(suspendedMember._id);
+      expect(updatedMember?.status).toBe('active');
+      expect(updatedMember?.reactivatedAt).toBeDefined();
+      expect(updatedMember?.reactivatedBy?.toString()).toBe(workspaceOwner._id.toString());
+      expect(updatedMember?.suspensionReason).toBeUndefined();
+      expect(updatedMember?.suspendedAt).toBeUndefined();
+      expect(updatedMember?.suspendedBy).toBeUndefined();
+    });
+
+    it('should reject activation of non-suspended member', async () => {
+      const activeMember = await User.create({
+        firstName: 'Already',
+        lastName: 'Active',
+        email: `already-active-${Date.now()}@pharmacy.com`,
+        passwordHash: 'hashedpassword',
+        role: 'pharmacy_team',
+        workplaceId: testWorkplace._id,
+        workplaceRole: 'Staff',
+        status: 'active',
+        licenseStatus: 'not_required',
+        currentPlanId: testPlan._id,
+        permissions: [],
+        directPermissions: [],
+        deniedPermissions: [],
+        assignedRoles: [],
+      });
+
+      const response = await request(app)
+        .post(`/api/workspace/team/members/${activeMember._id}/activate`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('not suspended');
+    });
+
+    it('should reject activation for member not in workspace', async () => {
+      const otherWorkplace = await Workplace.create({
+        name: 'Activate Test Pharmacy',
+        type: 'Community',
+        address: 'Activate Test Address',
+        phone: '6666666666',
+        email: 'activate@pharmacy.com',
+        licenseNumber: 'ACTIVATE123',
+        ownerId: new mongoose.Types.ObjectId(),
+        subscriptionStatus: 'active',
+        trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        verificationStatus: 'verified',
+        inviteCode: 'ACTIVATE123',
+        teamMembers: [],
+        documents: [],
+        stats: { patientsCount: 0, usersCount: 0, lastUpdated: new Date() },
+        locations: [],
+        settings: { maxPendingInvites: 10, allowSharedPatients: false },
+      });
+
+      const otherMember = await User.create({
+        firstName: 'Other',
+        lastName: 'Suspended',
+        email: 'other-activate@member.com',
+        passwordHash: 'hashedpassword',
+        role: 'pharmacist',
+        workplaceId: otherWorkplace._id,
+        workplaceRole: 'Pharmacist',
+        status: 'suspended',
+        suspensionReason: 'Test',
+        suspendedAt: new Date(),
+        licenseStatus: 'approved',
+        currentPlanId: testPlan._id,
+        permissions: [],
+        directPermissions: [],
+        deniedPermissions: [],
+        assignedRoles: [],
+      });
+
+      const response = await request(app)
+        .post(`/api/workspace/team/members/${otherMember._id}/activate`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('not found');
+    });
+
+    it('should validate member ID format', async () => {
+      const response = await request(app)
+        .post('/api/workspace/team/members/invalid-id/activate')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('Suspension/Activation Workflow', () => {
+    it('should complete full suspension and reactivation cycle', async () => {
+      // Create a test member
+      const testMember = await User.create({
+        firstName: 'Workflow',
+        lastName: 'Test',
+        email: `workflow-${Date.now()}@pharmacy.com`,
+        passwordHash: 'hashedpassword',
+        role: 'pharmacy_team',
+        workplaceId: testWorkplace._id,
+        workplaceRole: 'Staff',
+        status: 'active',
+        licenseStatus: 'not_required',
+        currentPlanId: testPlan._id,
+        permissions: [],
+        directPermissions: [],
+        deniedPermissions: [],
+        assignedRoles: [],
+      });
+
+      // Step 1: Verify member is active
+      let member = await User.findById(testMember._id);
+      expect(member?.status).toBe('active');
+
+      // Step 2: Suspend member
+      const suspendResponse = await request(app)
+        .post(`/api/workspace/team/members/${testMember._id}/suspend`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          reason: 'Workflow test suspension',
+        })
+        .expect(200);
+
+      expect(suspendResponse.body.success).toBe(true);
+      expect(suspendResponse.body.member.status).toBe('suspended');
+
+      // Step 3: Verify member is suspended
+      member = await User.findById(testMember._id);
+      expect(member?.status).toBe('suspended');
+      expect(member?.suspensionReason).toBe('Workflow test suspension');
+      expect(member?.suspendedAt).toBeDefined();
+
+      // Step 4: Activate member
+      const activateResponse = await request(app)
+        .post(`/api/workspace/team/members/${testMember._id}/activate`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(200);
+
+      expect(activateResponse.body.success).toBe(true);
+      expect(activateResponse.body.member.status).toBe('active');
+
+      // Step 5: Verify member is active again
+      member = await User.findById(testMember._id);
+      expect(member?.status).toBe('active');
+      expect(member?.reactivatedAt).toBeDefined();
+      expect(member?.suspensionReason).toBeUndefined();
+      expect(member?.suspendedAt).toBeUndefined();
+    });
+
+    it('should filter suspended members correctly', async () => {
+      // Create and suspend a member
+      const memberToSuspend = await User.create({
+        firstName: 'Filter',
+        lastName: 'Test',
+        email: `filter-${Date.now()}@pharmacy.com`,
+        passwordHash: 'hashedpassword',
+        role: 'pharmacy_team',
+        workplaceId: testWorkplace._id,
+        workplaceRole: 'Staff',
+        status: 'active',
+        licenseStatus: 'not_required',
+        currentPlanId: testPlan._id,
+        permissions: [],
+        directPermissions: [],
+        deniedPermissions: [],
+        assignedRoles: [],
+      });
+
+      await request(app)
+        .post(`/api/workspace/team/members/${memberToSuspend._id}/suspend`)
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          reason: 'Filter test',
+        })
+        .expect(200);
+
+      // Filter for suspended members
+      const response = await request(app)
+        .get('/api/workspace/team/members?status=suspended')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.members).toBeDefined();
+      
+      const suspendedMember = response.body.members.find(
+        (m: any) => m._id === memberToSuspend._id.toString()
+      );
+      expect(suspendedMember).toBeDefined();
+      expect(suspendedMember.status).toBe('suspended');
     });
   });
 
@@ -583,6 +974,7 @@ describe('Workspace Team Routes', () => {
         workplaceRole: 'Owner',
         status: 'active',
         licenseStatus: 'not_required',
+        currentPlanId: testPlan._id,
         permissions: [],
         directPermissions: [],
         deniedPermissions: [],
@@ -599,6 +991,7 @@ describe('Workspace Team Routes', () => {
         workplaceRole: 'Pharmacist',
         status: 'active',
         licenseStatus: 'approved',
+        currentPlanId: testPlan._id,
         permissions: [],
         directPermissions: [],
         deniedPermissions: [],
@@ -607,14 +1000,9 @@ describe('Workspace Team Routes', () => {
 
       const owner2Token = jwt.sign(
         {
-          user: {
-            _id: owner2._id,
-            email: owner2.email,
-            role: owner2.role,
-            workplaceId: workspace2._id,
-          },
+          userId: owner2._id.toString(),
         },
-        process.env.JWT_SECRET || 'test-secret',
+        process.env.JWT_SECRET!,
         { expiresIn: '1h' }
       );
 

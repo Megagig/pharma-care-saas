@@ -98,4 +98,42 @@ router.delete(
   workspaceTeamController.removeMember.bind(workspaceTeamController)
 );
 
+/**
+ * Suspend a member
+ * @route POST /api/workspace/team/members/:id/suspend
+ * @access Private (Workspace owners only)
+ */
+router.post(
+  '/members/:id/suspend',
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Member ID must be a valid MongoDB ObjectId'),
+    body('reason')
+      .notEmpty()
+      .withMessage('Suspension reason is required')
+      .isString()
+      .isLength({ min: 1, max: 500 })
+      .withMessage('Reason must be between 1 and 500 characters'),
+  ],
+  validateRequest,
+  workspaceTeamController.suspendMember.bind(workspaceTeamController)
+);
+
+/**
+ * Activate a suspended member
+ * @route POST /api/workspace/team/members/:id/activate
+ * @access Private (Workspace owners only)
+ */
+router.post(
+  '/members/:id/activate',
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Member ID must be a valid MongoDB ObjectId'),
+  ],
+  validateRequest,
+  workspaceTeamController.activateMember.bind(workspaceTeamController)
+);
+
 export default router;

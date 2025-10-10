@@ -2,6 +2,7 @@ import { Response } from 'express';
 import mongoose from 'mongoose';
 import { AuthRequest } from '../middlewares/auth';
 import { User } from '../models/User';
+import { emailService } from '../utils/emailService';
 
 /**
  * Workspace Team Management Controller
@@ -245,6 +246,200 @@ class WorkspaceTeamController {
       res.status(500).json({
         success: false,
         message: 'Failed to remove member',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Suspend a member
+   * @route POST /api/workspace/team/members/:id/suspend
+   */
+  async suspendMember(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id: memberId } = req.params;
+      const { reason } = req.body;
+      const workplaceId = (req as any).workplaceId;
+      const suspendedBy = req.user?._id;
+
+      if (!workplaceId) {
+        res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required',
+        });
+        return;
+      }
+
+      // Find member in the same workspace
+      const member = await User.findOne({
+        _id: new mongoose.Types.ObjectId(memberId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+      });
+
+      if (!member) {
+        res.status(404).json({
+          success: false,
+          message: 'Member not found in this workspace',
+        });
+        return;
+      }
+
+      // Prevent suspending workspace owner
+      if (member.role === 'pharmacy_outlet') {
+        res.status(403).json({
+          success: false,
+          message: 'Cannot suspend workspace owner',
+        });
+        return;
+      }
+
+      // Check if already suspended
+      if (member.status === 'suspended') {
+        res.status(400).json({
+          success: false,
+          message: 'Member is already suspended',
+        });
+        return;
+      }
+
+      // Update member status to suspended
+      member.status = 'suspended';
+      member.suspendedAt = new Date();
+      member.suspendedBy = suspendedBy;
+      member.suspensionReason = reason;
+      await member.save();
+
+      // Send suspension notification email (don't block response)
+      emailService
+        .sendAccountSuspensionNotification(member.email, {
+          firstName: member.firstName,
+          reason,
+        })
+        .catch((error: any) => {
+          console.error('Failed to send suspension notification email:', error);
+        });
+
+      res.status(200).json({
+        success: true,
+        message: 'Member suspended successfully',
+        member: {
+          _id: member._id,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          email: member.email,
+          status: member.status,
+          suspendedAt: member.suspendedAt,
+          suspensionReason: member.suspensionReason,
+        },
+        audit: {
+          action: 'member_suspended',
+          memberId: member._id,
+          memberEmail: member.email,
+          reason,
+          suspendedBy,
+          suspendedAt: member.suspendedAt,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error suspending member:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to suspend member',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Activate a suspended member
+   * @route POST /api/workspace/team/members/:id/activate
+   */
+  async activateMember(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id: memberId } = req.params;
+      const workplaceId = (req as any).workplaceId;
+      const reactivatedBy = req.user?._id;
+
+      if (!workplaceId) {
+        res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required',
+        });
+        return;
+      }
+
+      // Find member in the same workspace
+      const member = await User.findOne({
+        _id: new mongoose.Types.ObjectId(memberId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+      });
+
+      if (!member) {
+        res.status(404).json({
+          success: false,
+          message: 'Member not found in this workspace',
+        });
+        return;
+      }
+
+      // Check if member is suspended
+      if (member.status !== 'suspended') {
+        res.status(400).json({
+          success: false,
+          message: 'Member is not suspended',
+        });
+        return;
+      }
+
+      // Store previous suspension info for audit
+      const previousSuspensionReason = member.suspensionReason;
+      const previousSuspendedAt = member.suspendedAt;
+
+      // Reactivate member
+      member.status = 'active';
+      member.reactivatedAt = new Date();
+      member.reactivatedBy = reactivatedBy;
+      // Keep suspension history but clear current suspension fields
+      member.suspensionReason = undefined;
+      member.suspendedAt = undefined;
+      member.suspendedBy = undefined;
+      await member.save();
+
+      // Send reactivation notification email (don't block response)
+      emailService
+        .sendAccountReactivationNotification(member.email, {
+          firstName: member.firstName,
+        })
+        .catch((error: any) => {
+          console.error('Failed to send reactivation notification email:', error);
+        });
+
+      res.status(200).json({
+        success: true,
+        message: 'Member activated successfully',
+        member: {
+          _id: member._id,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          email: member.email,
+          status: member.status,
+          reactivatedAt: member.reactivatedAt,
+        },
+        audit: {
+          action: 'member_activated',
+          memberId: member._id,
+          memberEmail: member.email,
+          previousSuspensionReason,
+          previousSuspendedAt,
+          reactivatedBy,
+          reactivatedAt: member.reactivatedAt,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error activating member:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to activate member',
         error: error.message,
       });
     }
