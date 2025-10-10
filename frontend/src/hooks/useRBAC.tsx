@@ -101,10 +101,17 @@ export const useRBAC = (): UseRBACReturn => {
 
   const hasRole = (requiredRole: string | string[]): boolean => {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    // Check for super_admin specifically against the actual system role
-    if (roles.includes('super_admin')) {
-      return user?.role === 'super_admin';
+    
+    // Check for system roles that need to be checked against actual user.role
+    const systemRoles = ['super_admin', 'pharmacy_outlet', 'pharmacy_team', 'pharmacist', 'intern_pharmacist'];
+    const hasSystemRoleCheck = roles.some(r => systemRoles.includes(r));
+    
+    if (hasSystemRoleCheck) {
+      // Check actual system role
+      return roles.includes(user?.role || '');
     }
+    
+    // Check mapped RBAC role
     return roles.includes(role);
   };
 

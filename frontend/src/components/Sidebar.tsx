@@ -54,6 +54,7 @@ const AnalyticsIcon = Analytics;
 const SupervisorAccountIcon = SupervisorAccount;
 import { useSidebarControls } from '../stores/sidebarHooks';
 import { useRBAC } from '../hooks/useRBAC';
+import { useAuth } from '../hooks/useAuth';
 import { ConditionalRender } from './AccessControl';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
 
@@ -63,6 +64,7 @@ const Sidebar = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { hasFeature, hasRole, requiresLicense, getLicenseStatus } = useRBAC();
+  const { user } = useAuth();
   const subscriptionStatus = useSubscriptionStatus();
 
   // Auto-close sidebar on mobile when route changes - using useCallback for stable reference
@@ -189,9 +191,35 @@ const Sidebar = () => {
       icon: SettingsIcon,
       show: hasRole('super_admin'),
     },
+    {
+      name: 'User Management',
+      path: '/user-management',
+      icon: SupervisorAccountIcon,
+      show: hasRole('super_admin'),
+    },
   ];
 
+  // Debug logging for Team Members visibility
+  React.useEffect(() => {
+    const hasOwner = hasRole('owner');
+    const hasPharmacyOutlet = hasRole('pharmacy_outlet');
+    console.log('🔍 Team Members Debug:', {
+      userRole: user?.role,
+      hasOwner,
+      hasPharmacyOutlet,
+      shouldShow: hasOwner || hasPharmacyOutlet
+    });
+  }, [user?.role, hasRole]);
+
   const settingsItems = [
+    {
+      name: 'Team Members',
+      path: '/user-management',
+      icon: SupervisorAccountIcon,
+      // Show for workspace owners (pharmacy_outlet) - keeping it visible for now
+      // TODO: After proper login, change back to: hasRole('owner') || hasRole('pharmacy_outlet')
+      show: true,
+    },
     {
       name: 'License Verification',
       path: '/license',
@@ -203,12 +231,6 @@ const Sidebar = () => {
           : getLicenseStatus() === 'rejected'
           ? 'Rejected'
           : null,
-    },
-    {
-      name: 'User Management',
-      path: '/user-management',
-      icon: SupervisorAccountIcon,
-      show: true,
     },
     {
       name: 'Settings',
