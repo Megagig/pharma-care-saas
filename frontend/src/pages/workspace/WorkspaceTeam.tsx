@@ -28,6 +28,8 @@ import HistoryIcon from '@mui/icons-material/History';
 import { useRBAC } from '../../hooks/useRBAC';
 import { useWorkspaceStats } from '../../queries/useWorkspaceTeam';
 import MemberList from '../../components/workspace/MemberList';
+import MemberFilters from '../../components/workspace/MemberFilters';
+import type { MemberFilters as MemberFiltersType } from '../../types/workspace';
 
 // Tab panel component
 interface TabPanelProps {
@@ -109,6 +111,7 @@ const WorkspaceTeam: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { hasRole } = useRBAC();
   const [activeTab, setActiveTab] = useState(0);
+  const [memberFilters, setMemberFilters] = useState<MemberFiltersType>({});
 
   // Fetch workspace statistics
   const {
@@ -268,7 +271,8 @@ const WorkspaceTeam: React.FC = () => {
 
       {/* Tab Content */}
       <TabPanel value={activeTab} index={0}>
-        <MemberList />
+        <MemberFilters filters={memberFilters} onFiltersChange={setMemberFilters} />
+        <MemberList filters={memberFilters} />
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
