@@ -88,8 +88,15 @@ class WorkspaceTeamInviteController {
       await invite.save();
 
       // Generate invite URL
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      const inviteUrl = `${frontendUrl}/signup?invite=${inviteToken}`;
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const inviteUrl = `${frontendUrl}/register?invite=${inviteToken}`;
+      
+      // Debug logging
+      console.log('Generated invite:', {
+        inviteToken,
+        inviteUrl,
+        frontendUrl,
+      });
 
       // Log the invite generation in audit trail
       await workspaceAuditService.logInviteAction(
@@ -132,16 +139,18 @@ class WorkspaceTeamInviteController {
       res.status(201).json({
         success: true,
         message: 'Invite generated successfully',
-        invite: {
-          _id: invite._id,
-          inviteToken: invite.inviteToken,
-          inviteUrl,
-          email: invite.email,
-          workplaceRole: invite.workplaceRole,
-          expiresAt: invite.expiresAt,
-          maxUses: invite.maxUses,
-          requiresApproval: invite.requiresApproval,
-          createdAt: invite.createdAt,
+        data: {
+          invite: {
+            _id: invite._id,
+            inviteToken: invite.inviteToken,
+            inviteUrl,
+            email: invite.email,
+            workplaceRole: invite.workplaceRole,
+            expiresAt: invite.expiresAt,
+            maxUses: invite.maxUses,
+            requiresApproval: invite.requiresApproval,
+            createdAt: invite.createdAt,
+          },
         },
       });
     } catch (error: any) {
@@ -198,8 +207,11 @@ class WorkspaceTeamInviteController {
         .lean();
 
       // Format response
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const formattedInvites = invites.map((invite: any) => ({
         _id: invite._id,
+        inviteToken: invite.inviteToken,
+        inviteUrl: `${frontendUrl}/register?invite=${invite.inviteToken}`, // Include full URL
         email: invite.email,
         workplaceRole: invite.workplaceRole,
         status: invite.status,

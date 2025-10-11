@@ -69,6 +69,8 @@ interface RegisterData {
   password: string;
   phone?: string;
   role?: string;
+  inviteToken?: string;  // Workspace invite token from invite link
+  inviteCode?: string;   // Workplace invite code
 }
 
 interface RegisterWithWorkplaceData {
@@ -162,15 +164,23 @@ class AuthService {
 
       // Handle different types of authentication/authorization errors
       if (axiosError.response?.status === 401) {
-        // Only redirect to login if this is not an auth check
-        if (!url.includes('/auth/me') && !url.includes('/auth/refresh-token')) {
+        const errorData = axiosError.response.data as { message?: string; requiresApproval?: boolean; requiresVerification?: boolean };
+        const errorMessage = errorData?.message || 'Authentication failed';
+        
+        // Don't redirect if user needs approval or verification - they're already on login page
+        const shouldRedirect = !url.includes('/auth/me') && 
+                              !url.includes('/auth/refresh-token') && 
+                              !url.includes('/auth/login') &&
+                              !errorData?.requiresApproval &&
+                              !errorData?.requiresVerification;
+        
+        if (shouldRedirect) {
           window.location.href = '/login';
         }
-        const authError: AuthError = new Error(
-          (axiosError.response.data as { message?: string })?.message ||
-            'Authentication failed'
-        );
+        
+        const authError: AuthError = new Error(errorMessage);
         authError.status = axiosError.response.status;
+        authError.data = errorData;
         throw authError;
       } else if (axiosError.response?.status === 402) {
         // Payment/subscription required - don't logout, just throw error

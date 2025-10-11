@@ -159,7 +159,8 @@ const InviteList: React.FC<InviteListProps> = ({ filters = {}, onRevokeSuccess }
    */
   const handleCopyInviteLink = async (invite: WorkspaceInvite) => {
     try {
-      const inviteUrl = `${window.location.origin}/signup?invite=${invite.inviteToken}`;
+      // Use inviteUrl from backend if available, otherwise construct it
+      const inviteUrl = invite.inviteUrl || `${window.location.origin}/register?invite=${invite.inviteToken}`;
       await navigator.clipboard.writeText(inviteUrl);
       setCopiedInviteId(invite._id);
       setTimeout(() => setCopiedInviteId(null), 2000);

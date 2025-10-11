@@ -36,6 +36,7 @@ export interface WorkspaceInvite {
   _id: ObjectId;
   workplaceId: ObjectId;
   inviteToken: string;
+  inviteUrl?: string; // Full invite URL from backend
   email: string;
   workplaceRole: WorkplaceRole;
   status: InviteStatus;

@@ -28,7 +28,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       password,
       phone,
       role = 'pharmacist',
-      inviteToken, // Workspace invite token (optional)
+      inviteToken, // Workspace invite token (optional) - from invite link
+      inviteCode,  // Workplace invite code (optional) - from workplace creation
     } = req.body;
 
     // Validate required fields
@@ -47,12 +48,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Check for workspace invite if token provided
+    // Check for workspace invite (either token or code)
     let workspaceInvite = null;
+    let workplace = null;
     let workplaceId = null;
     let workplaceRole = null;
     let requiresApproval = false;
+    let inviteMethod = null; // 'token' or 'code'
 
+    // Method 1: Invite Token (from team management dashboard)
     if (inviteToken) {
       const { WorkspaceInvite } = await import('../models/WorkspaceInvite');
       
@@ -95,6 +99,25 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       workplaceId = workspaceInvite.workplaceId;
       workplaceRole = workspaceInvite.workplaceRole;
       requiresApproval = workspaceInvite.requiresApproval;
+      inviteMethod = 'token';
+    }
+    // Method 2: Invite Code (from workplace creation)
+    else if (inviteCode) {
+      const { Workplace } = await import('../models/Workplace');
+      
+      workplace = await Workplace.findOne({ inviteCode: inviteCode.toUpperCase() });
+
+      if (!workplace) {
+        res.status(400).json({
+          message: 'Invalid workplace invite code',
+        });
+        return;
+      }
+
+      workplaceId = workplace._id;
+      workplaceRole = 'Staff'; // Default role for invite code users
+      requiresApproval = true; // Always require approval for invite code
+      inviteMethod = 'code';
     }
 
     // Get the Free Trial plan as default
@@ -152,7 +175,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     await user.save();
 
     // Update workspace invite if used
-    if (workspaceInvite) {
+    if (inviteMethod === 'token' && workspaceInvite) {
       workspaceInvite.usedCount += 1;
       if (!requiresApproval) {
         // If no approval required, mark invite as accepted
@@ -175,6 +198,29 @@ export const register = async (req: Request, res: Response): Promise<void> => {
               email: user.email,
               role: workplaceRole,
               requiresApproval,
+              method: 'invite_link',
+            },
+          },
+          req
+        );
+      }
+    } else if (inviteMethod === 'code' && workplace) {
+      // Log invite code usage in audit trail
+      if (workplaceId) {
+        const { workspaceAuditService } = await import('../services/workspaceAuditService');
+        await workspaceAuditService.logMemberAction(
+          new mongoose.Types.ObjectId(workplaceId),
+          user._id,
+          user._id,
+          'member_joined_via_code',
+          {
+            reason: `Joined using workplace invite code: ${inviteCode}`,
+            metadata: {
+              email: user.email,
+              role: workplaceRole,
+              inviteCode,
+              requiresApproval,
+              method: 'invite_code',
             },
           },
           req
@@ -228,17 +274,18 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     // Customize message based on workspace invite
     let successMessage = 'Registration successful! Please check your email to verify your account.';
-    if (workspaceInvite && requiresApproval) {
+    if ((workspaceInvite || workplace) && requiresApproval) {
       successMessage = 'Registration successful! Please verify your email. Your account will be activated once the workspace owner approves your request.';
-    } else if (workspaceInvite) {
+    } else if (workspaceInvite || workplace) {
       successMessage = 'Registration successful! Please verify your email to access your workspace.';
     }
 
     res.status(201).json({
       success: true,
       message: successMessage,
-      requiresApproval: workspaceInvite ? requiresApproval : false,
-      workspaceInvite: workspaceInvite ? true : false,
+      requiresApproval: (workspaceInvite || workplace) ? requiresApproval : false,
+      workspaceInvite: (workspaceInvite || workplace) ? true : false,
+      inviteMethod: inviteMethod,
       user: {
         id: user._id,
         firstName: user.firstName,
