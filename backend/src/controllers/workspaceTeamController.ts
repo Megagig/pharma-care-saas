@@ -4,6 +4,7 @@ import * as crypto from 'crypto';
 import { AuthRequest } from '../middlewares/auth';
 import { User } from '../models/User';
 import { WorkspaceInvite } from '../models/WorkspaceInvite';
+import { Workplace } from '../models/Workplace';
 import { emailService } from '../utils/emailService';
 import { workspaceAuditService } from '../services/workspaceAuditService';
 
@@ -362,11 +363,17 @@ class WorkspaceTeamController {
         req
       );
 
+      // Get workspace name for email
+      const workplace = await Workplace.findById(workplaceId);
+      const workspaceName = workplace?.name || 'Workspace';
+
       // Send suspension notification email (don't block response)
       emailService
         .sendAccountSuspensionNotification(member.email, {
           firstName: member.firstName,
+          workspaceName,
           reason,
+          suspendedDate: new Date(),
         })
         .catch((error: any) => {
           console.error('Failed to send suspension notification email:', error);

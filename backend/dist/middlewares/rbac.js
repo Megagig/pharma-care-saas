@@ -532,6 +532,7 @@ const requireWorkspaceOwner = (req, res, next) => {
         res.status(401).json({
             success: false,
             message: 'Authentication required',
+            error: 'User not authenticated',
         });
         return;
     }
@@ -539,21 +540,36 @@ const requireWorkspaceOwner = (req, res, next) => {
         res.status(403).json({
             success: false,
             message: 'No workspace associated with user',
+            error: 'Access denied',
         });
         return;
     }
     const userRole = (0, auth_1.getUserRole)(req.user);
     if (userRole === 'super_admin') {
+        if (req.workspaceContext.workspace._id) {
+            req.workplaceId = req.workspaceContext.workspace._id;
+        }
         return next();
     }
-    const isOwner = req.workspaceContext.workspace.ownerId.toString() === req.user._id.toString();
+    const workspaceOwnerId = req.workspaceContext.workspace.ownerId;
+    if (!workspaceOwnerId) {
+        res.status(403).json({
+            success: false,
+            message: 'Workspace owner access required',
+            error: 'Workspace has no owner assigned',
+        });
+        return;
+    }
+    const isOwner = workspaceOwnerId.toString() === req.user._id.toString();
     if (!isOwner) {
         res.status(403).json({
             success: false,
             message: 'Workspace owner access required',
+            error: 'Only workspace owners can access this resource',
         });
         return;
     }
+    req.workplaceId = req.workspaceContext.workspace._id;
     next();
 };
 exports.requireWorkspaceOwner = requireWorkspaceOwner;

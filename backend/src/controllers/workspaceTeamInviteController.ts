@@ -123,6 +123,7 @@ class WorkspaceTeamInviteController {
           inviteUrl,
           expiresAt,
           personalMessage,
+          requiresApproval,
         })
         .catch((error: any) => {
           console.error('Failed to send invite email:', error);

@@ -285,23 +285,40 @@ class EmailService {
 
   async sendAccountSuspensionNotification(
     email: string,
-    data: { firstName: string; reason: string; supportEmail?: string }
+    data: { 
+      firstName: string; 
+      reason: string; 
+      workspaceName: string;
+      suspendedDate?: Date;
+      supportEmail?: string;
+      privacyUrl?: string;
+    }
   ) {
-    const template = {
-      subject: 'Account Suspended - PharmacyCopilot',
-      html: `
-        <h2>Account Suspended</h2>
-        <p>Dear ${data.firstName},</p>
-        <p>Your PharmacyCopilot account has been temporarily suspended.</p>
-        <p><strong>Reason:</strong> ${data.reason}</p>
-        <p>If you believe this is an error, please contact support at ${data.supportEmail || 'support@PharmacyCopilot.com'
-        }</p>
-        <br>
-        <p>PharmacyCopilot Team</p>
-      `,
-      text: `Account Suspended. Dear ${data.firstName}, Your PharmacyCopilot account has been temporarily suspended. Reason: ${data.reason}.`,
-    };
-    return this.sendEmail(email, template);
+    try {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const supportUrl = data.supportEmail || `${frontendUrl}/support`;
+      const privacyUrl = data.privacyUrl || `${frontendUrl}/privacy`;
+
+      const templateVariables = {
+        firstName: data.firstName,
+        workspaceName: data.workspaceName,
+        reason: data.reason,
+        suspendedDate: (data.suspendedDate || new Date()).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        supportUrl,
+        privacyUrl,
+      };
+
+      const template = await this.loadTemplate('memberSuspension', templateVariables);
+      return this.sendEmail(email, template);
+    } catch (error) {
+      console.error('Error sending suspension notification:', error);
+      return { success: false, error: (error as Error).message };
+    }
   }
 
   async sendAccountReactivationNotification(
@@ -1456,27 +1473,39 @@ class EmailService {
       inviteUrl: string;
       expiresAt: Date;
       personalMessage?: string;
+      requiresApproval?: boolean;
     }
   ) {
-    const template = {
-      subject: `You're invited to join ${data.workspaceName} on PharmacyCopilot`,
-      html: `
-        <h2>You've Been Invited!</h2>
-        <p>Dear User,</p>
-        <p><strong>${data.inviterName}</strong> has invited you to join <strong>${data.workspaceName}</strong> on PharmacyCopilot as a <strong>${data.role}</strong>.</p>
-        ${data.personalMessage ? `<div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;"><p style="margin: 0; font-style: italic;">"${data.personalMessage}"</p></div>` : ''}
-        <p>Click the button below to accept this invitation and create your account:</p>
-        <p style="margin: 30px 0;">
-          <a href="${data.inviteUrl}" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Accept Invitation</a>
-        </p>
-        <p style="color: #6b7280; font-size: 14px;">This invitation will expire on ${data.expiresAt.toLocaleDateString()} at ${data.expiresAt.toLocaleTimeString()}.</p>
-        <p style="color: #6b7280; font-size: 14px;">If you didn't expect this invitation, you can safely ignore this email.</p>
-        <br>
-        <p>Best regards,<br>PharmacyCopilot Team</p>
-      `,
-      text: `You've been invited to join ${data.workspaceName} on PharmacyCopilot by ${data.inviterName} as a ${data.role}. Accept invitation: ${data.inviteUrl}. Expires: ${data.expiresAt.toLocaleDateString()}.`,
-    };
-    return this.sendEmail(email, template);
+    try {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const supportUrl = `${frontendUrl}/support`;
+      const privacyUrl = `${frontendUrl}/privacy`;
+
+      const templateVariables = {
+        inviterName: data.inviterName,
+        workspaceName: data.workspaceName,
+        role: data.role,
+        inviteUrl: data.inviteUrl,
+        expiresAt: data.expiresAt.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        personalMessage: data.personalMessage || '',
+        requiresApproval: data.requiresApproval || false,
+        supportUrl,
+        privacyUrl,
+      };
+
+      const template = await this.loadTemplate('workspaceTeamInvite', templateVariables);
+      return this.sendEmail(email, template);
+    } catch (error) {
+      console.error('Error sending workspace invite email:', error);
+      return { success: false, error: (error as Error).message };
+    }
   }
 
   async sendMemberApprovalNotification(
@@ -1487,23 +1516,29 @@ class EmailService {
       role: string;
     }
   ) {
-    const template = {
-      subject: 'Membership Approved - PharmacyCopilot',
-      html: `
-        <h2>Membership Approved!</h2>
-        <p>Dear ${data.firstName},</p>
-        <p>Great news! Your request to join <strong>${data.workspaceName}</strong> has been approved.</p>
-        <p><strong>Your Role:</strong> ${data.role}</p>
-        <p>You now have full access to the workspace and can start collaborating with your team.</p>
-        <p style="margin: 30px 0;">
-          <a href="${process.env.FRONTEND_URL}/login" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">Access Workspace</a>
-        </p>
-        <br>
-        <p>Best regards,<br>PharmacyCopilot Team</p>
-      `,
-      text: `Membership Approved! Dear ${data.firstName}, Your request to join ${data.workspaceName} has been approved. Your role: ${data.role}. Log in at ${process.env.FRONTEND_URL}/login`,
-    };
-    return this.sendEmail(email, template);
+    try {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const loginUrl = `${frontendUrl}/login`;
+      const supportUrl = `${frontendUrl}/support`;
+      const helpUrl = `${frontendUrl}/help`;
+      const privacyUrl = `${frontendUrl}/privacy`;
+
+      const templateVariables = {
+        firstName: data.firstName,
+        workspaceName: data.workspaceName,
+        role: data.role,
+        loginUrl,
+        supportUrl,
+        helpUrl,
+        privacyUrl,
+      };
+
+      const template = await this.loadTemplate('memberApproval', templateVariables);
+      return this.sendEmail(email, template);
+    } catch (error) {
+      console.error('Error sending member approval notification:', error);
+      return { success: false, error: (error as Error).message };
+    }
   }
 
   async sendMemberRejectionNotification(
@@ -1512,23 +1547,37 @@ class EmailService {
       firstName: string;
       workspaceName: string;
       reason: string;
+      requestDate?: Date;
     }
   ) {
-    const template = {
-      subject: 'Membership Request Update - PharmacyCopilot',
-      html: `
-        <h2>Membership Request Update</h2>
-        <p>Dear ${data.firstName},</p>
-        <p>Thank you for your interest in joining <strong>${data.workspaceName}</strong> on PharmacyCopilot.</p>
-        <p>Unfortunately, your membership request was not approved at this time.</p>
-        ${data.reason ? `<p><strong>Reason:</strong> ${data.reason}</p>` : ''}
-        <p>If you have any questions or believe this was an error, please contact the workspace administrator or our support team.</p>
-        <br>
-        <p>Best regards,<br>PharmacyCopilot Team</p>
-      `,
-      text: `Membership Request Update. Dear ${data.firstName}, Your request to join ${data.workspaceName} was not approved. ${data.reason ? `Reason: ${data.reason}` : ''}`,
-    };
-    return this.sendEmail(email, template);
+    try {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const contactAdminUrl = `${frontendUrl}/contact`;
+      const supportUrl = `${frontendUrl}/support`;
+      const helpUrl = `${frontendUrl}/help`;
+      const privacyUrl = `${frontendUrl}/privacy`;
+
+      const templateVariables = {
+        firstName: data.firstName,
+        workspaceName: data.workspaceName,
+        reason: data.reason || '',
+        requestDate: (data.requestDate || new Date()).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        contactAdminUrl,
+        supportUrl,
+        helpUrl,
+        privacyUrl,
+      };
+
+      const template = await this.loadTemplate('memberRejection', templateVariables);
+      return this.sendEmail(email, template);
+    } catch (error) {
+      console.error('Error sending member rejection notification:', error);
+      return { success: false, error: (error as Error).message };
+    }
   }
 }
 

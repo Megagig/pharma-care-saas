@@ -199,26 +199,13 @@ const Sidebar = () => {
     },
   ];
 
-  // Debug logging for Team Members visibility
-  React.useEffect(() => {
-    const hasOwner = hasRole('owner');
-    const hasPharmacyOutlet = hasRole('pharmacy_outlet');
-    console.log('🔍 Team Members Debug:', {
-      userRole: user?.role,
-      hasOwner,
-      hasPharmacyOutlet,
-      shouldShow: hasOwner || hasPharmacyOutlet
-    });
-  }, [user?.role, hasRole]);
-
   const settingsItems = [
     {
       name: 'Team Members',
-      path: '/user-management',
+      path: '/workspace/team',
       icon: SupervisorAccountIcon,
-      // Show for workspace owners (pharmacy_outlet) - keeping it visible for now
-      // TODO: After proper login, change back to: hasRole('owner') || hasRole('pharmacy_outlet')
-      show: true,
+      // Show for workspace owners (pharmacy_outlet role)
+      show: hasRole('pharmacy_outlet'),
     },
     {
       name: 'License Verification',
