@@ -27,10 +27,14 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { format } from 'date-fns';
 import type { Member, MemberFilters, Pagination } from '../../types/workspace';
 import { useWorkspaceMembers } from '../../queries/useWorkspaceTeam';
+import MemberActionsMenu from './MemberActionsMenu';
 
 interface MemberListProps {
   filters?: MemberFilters;
-  onMemberAction?: (memberId: string, action: string) => void;
+  onAssignRole?: (member: Member) => void;
+  onSuspend?: (member: Member) => void;
+  onActivate?: (member: Member) => void;
+  onRemove?: (member: Member) => void;
 }
 
 type SortField = 'firstName' | 'lastName' | 'email' | 'workplaceRole' | 'status' | 'joinedAt';
@@ -119,10 +123,18 @@ const TableRowSkeleton: React.FC = () => (
   </TableRow>
 );
 
-const MemberList: React.FC<MemberListProps> = ({ filters = {}, onMemberAction }) => {
+const MemberList: React.FC<MemberListProps> = ({
+  filters = {},
+  onAssignRole,
+  onSuspend,
+  onActivate,
+  onRemove,
+}) => {
   const [sortField, setSortField] = useState<SortField>('joinedAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 20 });
+  const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   // Fetch members data
   const {
@@ -163,10 +175,17 @@ const MemberList: React.FC<MemberListProps> = ({ filters = {}, onMemberAction })
   /**
    * Handle member action menu click
    */
-  const handleActionClick = (memberId: string) => {
-    if (onMemberAction) {
-      onMemberAction(memberId, 'open-menu');
-    }
+  const handleActionClick = (event: React.MouseEvent<HTMLElement>, member: Member) => {
+    setMenuAnchorEl(event.currentTarget);
+    setSelectedMember(member);
+  };
+
+  /**
+   * Handle menu close
+   */
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setSelectedMember(null);
   };
 
   // Sort members locally (client-side sorting)
@@ -355,7 +374,7 @@ const MemberList: React.FC<MemberListProps> = ({ filters = {}, onMemberAction })
                     <Tooltip title="More actions">
                       <IconButton
                         size="small"
-                        onClick={() => handleActionClick(member._id)}
+                        onClick={(e) => handleActionClick(e, member)}
                         aria-label={`Actions for ${member.firstName} ${member.lastName}`}
                       >
                         <MoreVertIcon />
@@ -380,6 +399,20 @@ const MemberList: React.FC<MemberListProps> = ({ filters = {}, onMemberAction })
           onRowsPerPageChange={handleRowsPerPageChange}
           rowsPerPageOptions={[10, 20, 50, 100]}
           sx={{ borderTop: 1, borderColor: 'divider' }}
+        />
+      )}
+
+      {/* Member Actions Menu */}
+      {selectedMember && (
+        <MemberActionsMenu
+          member={selectedMember}
+          anchorEl={menuAnchorEl}
+          open={Boolean(menuAnchorEl)}
+          onClose={handleMenuClose}
+          onAssignRole={onAssignRole}
+          onSuspend={onSuspend}
+          onActivate={onActivate}
+          onRemove={onRemove}
         />
       )}
     </Box>
