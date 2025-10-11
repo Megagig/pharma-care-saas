@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { body, param, query } from 'express-validator';
-import { auth } from '../middlewares/auth';
+import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import { requireWorkspaceOwner } from '../middlewares/rbac';
 import { validateRequest } from '../middlewares/validation';
 import { workspaceTeamController } from '../controllers/workspaceTeamController';
@@ -8,8 +8,8 @@ import { workspaceTeamInviteController } from '../controllers/workspaceTeamInvit
 
 const router = Router();
 
-// Apply authentication to all routes
-router.use(auth);
+// Apply authentication with workspace context to all routes
+router.use(authWithWorkspace);
 
 // Apply workspace owner authorization to all routes
 router.use(requireWorkspaceOwner);
@@ -18,6 +18,16 @@ router.use(requireWorkspaceOwner);
  * Workspace Team Management Routes
  * All routes require workspace owner privileges (pharmacy_outlet role)
  */
+
+/**
+ * Get workspace statistics
+ * @route GET /api/workspace/team/stats
+ * @access Private (Workspace owners only)
+ */
+router.get(
+  '/stats',
+  workspaceTeamController.getWorkspaceStats.bind(workspaceTeamController)
+);
 
 /**
  * Get all members in the workspace

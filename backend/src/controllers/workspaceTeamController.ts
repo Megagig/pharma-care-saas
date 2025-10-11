@@ -19,12 +19,13 @@ class WorkspaceTeamController {
    */
   async getMembers(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const workplaceId = (req as any).workplaceId;
+      // Get workplaceId from authenticated user
+      const workplaceId = req.user?.workplaceId || (req as any).workplaceId;
       
       if (!workplaceId) {
         res.status(400).json({
           success: false,
-          message: 'Workplace ID is required',
+          message: 'No workspace associated with user',
         });
         return;
       }
@@ -84,12 +85,14 @@ class WorkspaceTeamController {
 
       res.status(200).json({
         success: true,
-        members: formattedMembers,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
+        data: {
+          members: formattedMembers,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
         },
       });
     } catch (error: any) {
@@ -103,6 +106,67 @@ class WorkspaceTeamController {
   }
 
   /**
+   * Get workspace statistics
+   * @route GET /api/workspace/team/stats
+   */
+  async getWorkspaceStats(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      // Get workplaceId from authenticated user
+      const workplaceId = req.user?.workplaceId || (req as any).workplaceId;
+      
+      if (!workplaceId) {
+        res.status(400).json({
+          success: false,
+          message: 'No workspace associated with user',
+        });
+        return;
+      }
+
+      // Get total members count
+      const totalMembers = await User.countDocuments({
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+      });
+
+      // Get active members count
+      const activeMembers = await User.countDocuments({
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        status: 'active',
+      });
+
+      // Get pending approvals count
+      const pendingApprovals = await WorkspaceInvite.countDocuments({
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        status: 'pending',
+        requiresApproval: true,
+      });
+
+      // Get active invites count
+      const activeInvites = await WorkspaceInvite.countDocuments({
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        status: 'pending',
+        expiresAt: { $gt: new Date() },
+      });
+
+      res.status(200).json({
+        success: true,
+        data: {
+          totalMembers,
+          activeMembers,
+          pendingApprovals,
+          activeInvites,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error fetching workspace stats:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch workspace statistics',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
    * Update member role
    * @route PUT /api/workspace/team/members/:id
    */
@@ -110,13 +174,13 @@ class WorkspaceTeamController {
     try {
       const { id: memberId } = req.params;
       const { workplaceRole, reason } = req.body;
-      const workplaceId = (req as any).workplaceId;
+      const workplaceId = req.user?.workplaceId || (req as any).workplaceId;
       const updatedBy = req.user?._id;
 
       if (!workplaceId) {
         res.status(400).json({
           success: false,
-          message: 'Workplace ID is required',
+          message: 'No workspace associated with user',
         });
         return;
       }
@@ -447,8 +511,10 @@ class WorkspaceTeamController {
 
       res.status(200).json({
         success: true,
-        logs: result.logs,
-        pagination: result.pagination,
+        data: {
+          logs: result.logs,
+          pagination: result.pagination,
+        },
       });
     } catch (error: any) {
       console.error('Error fetching audit logs:', error);

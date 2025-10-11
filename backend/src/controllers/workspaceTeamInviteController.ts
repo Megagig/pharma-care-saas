@@ -222,12 +222,14 @@ class WorkspaceTeamInviteController {
 
       res.status(200).json({
         success: true,
-        invites: formattedInvites,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
+        data: {
+          invites: formattedInvites,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
         },
       });
     } catch (error: any) {
@@ -349,15 +351,18 @@ class WorkspaceTeamInviteController {
 
       res.status(200).json({
         success: true,
-        pendingMembers: pendingMembers.map((member: any) => ({
-          _id: member._id,
-          firstName: member.firstName,
-          lastName: member.lastName,
-          email: member.email,
-          workplaceRole: member.workplaceRole,
-          createdAt: member.createdAt,
-        })),
-        count: pendingMembers.length,
+        data: {
+          pendingMembers: pendingMembers.map((member: any) => ({
+            _id: member._id,
+            firstName: member.firstName,
+            lastName: member.lastName,
+            email: member.email,
+            workplaceRole: member.workplaceRole,
+            joinedAt: member.createdAt,
+            status: 'pending',
+          })),
+          count: pendingMembers.length,
+        },
       });
     } catch (error: any) {
       console.error('Error fetching pending approvals:', error);

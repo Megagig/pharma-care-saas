@@ -61,6 +61,9 @@ export const LazyHelp = lazy(() => import('../pages/Help'));
 export const LazyMTRHelp = lazy(() => import('../pages/MTRHelp'));
 export const LazyLicenseUpload = lazy(() => import('../components/license/LicenseUpload'));
 
+// Workspace management components
+export const LazyWorkspaceTeam = lazy(() => import('../pages/workspace/WorkspaceTeam'));
+
 // Preloading functions for critical routes
 export const preloadCriticalRoutes = () => {
   // Preload dashboard and patients as they are most commonly accessed

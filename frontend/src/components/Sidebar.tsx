@@ -199,6 +199,18 @@ const Sidebar = () => {
     },
   ];
 
+  // Debug: Check Team Members visibility
+  React.useEffect(() => {
+    const shouldShow = hasRole('pharmacy_outlet');
+    console.log('🔍 Team Members Visibility Check:', {
+      userRole: user?.role,
+      userObject: user,
+      hasPharmacyOutletRole: shouldShow,
+      willShowLink: shouldShow,
+      hasRoleFunction: typeof hasRole,
+    });
+  }, [user?.role, hasRole, user]);
+
   const settingsItems = [
     {
       name: 'Team Members',

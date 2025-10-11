@@ -25,10 +25,16 @@ import PeopleIcon from '@mui/icons-material/People';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import MailIcon from '@mui/icons-material/Mail';
 import HistoryIcon from '@mui/icons-material/History';
+import AddIcon from '@mui/icons-material/Add';
+import Button from '@mui/material/Button';
 import { useRBAC } from '../../hooks/useRBAC';
 import { useWorkspaceStats } from '../../queries/useWorkspaceTeam';
 import MemberList from '../../components/workspace/MemberList';
 import MemberFilters from '../../components/workspace/MemberFilters';
+import PendingApprovals from '../../components/workspace/PendingApprovals';
+import InviteList from '../../components/workspace/InviteList';
+import InviteGenerator from '../../components/workspace/InviteGenerator';
+import AuditTrail from '../../components/workspace/AuditTrail';
 import type { MemberFilters as MemberFiltersType } from '../../types/workspace';
 
 // Tab panel component
@@ -112,6 +118,7 @@ const WorkspaceTeam: React.FC = () => {
   const { hasRole } = useRBAC();
   const [activeTab, setActiveTab] = useState(0);
   const [memberFilters, setMemberFilters] = useState<MemberFiltersType>({});
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   // Fetch workspace statistics
   const {
@@ -276,21 +283,33 @@ const WorkspaceTeam: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        <Alert severity="info">
-          Pending approvals component will be implemented in a future task.
-        </Alert>
+        <PendingApprovals />
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>
-        <Alert severity="info">
-          Invite links component will be implemented in a future task.
-        </Alert>
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6">Workspace Invites</Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setInviteDialogOpen(true)}
+          >
+            Generate Invite Link
+          </Button>
+        </Box>
+        <InviteList />
+        <InviteGenerator
+          open={inviteDialogOpen}
+          onClose={() => setInviteDialogOpen(false)}
+          onSuccess={() => {
+            // Invite list will auto-refresh via query invalidation
+            setInviteDialogOpen(false);
+          }}
+        />
       </TabPanel>
 
       <TabPanel value={activeTab} index={3}>
-        <Alert severity="info">
-          Audit trail component will be implemented in a future task.
-        </Alert>
+        <AuditTrail />
       </TabPanel>
     </Container>
   );

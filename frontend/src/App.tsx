@@ -68,6 +68,7 @@ import {
   LazyHelp,
   LazyMTRHelp,
   LazyLicenseUpload,
+  LazyWorkspaceTeam,
 } from './components/LazyComponents';
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
@@ -683,6 +684,23 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyPharmacyUserManagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+
+                          {/* Workspace Team Management - Only for pharmacy_outlet users */}
+                          <Route
+                            path="/workspace/team"
+                            element={
+                              <ProtectedRoute 
+                                requiredRole="pharmacy_outlet"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyWorkspaceTeam />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
