@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -28,11 +28,11 @@ import {
   Description as DescriptionIcon,
   Medication as MedicationIcon,
   Assessment as AssessmentIcon,
-  Biotech as ScienceIcon,
+  LocalHospital as ScienceIcon,
   Sync as RefreshIcon,
   Add as AddIcon,
   TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
+  TrendingUp as TrendingDownIcon,
   Schedule as ScheduleIcon,
   Notifications as NotificationsIcon,
   Settings as SettingsIcon,
@@ -40,9 +40,9 @@ import {
   NoteAdd as NoteAddIcon,
   Event as EventIcon,
   Warning as WarningIcon,
-  Login as LoginIcon,
+  AccountBox as LoginIcon,
   Assignment as AssignmentIcon,
-  Security as SecurityIcon,
+  Shield as SecurityIcon,
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,8 +51,6 @@ import { useDashboardCharts } from '../../hooks/useDashboardCharts';
 import { useClinicalInterventionDashboard } from '../../hooks/useClinicalInterventionDashboard';
 import { useRecentActivities } from '../../hooks/useRecentActivities';
 import { activityService } from '../../services/activityService';
-import { testApiEndpoints } from '../../debug/testApiData';
-import { testDashboardService } from '../../debug/testDashboardService';
 import DashboardChart from './DashboardChart';
 import QuickActionCard from './QuickActionCard';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -64,8 +62,8 @@ import CommunicationMetrics from '../communication/CommunicationMetrics';
 
 // All components enabled
 import AdminDashboardIntegration from './AdminDashboardIntegration';
-import UsageDashboard from './UsageDashboard';
-import PharmacistPerformanceTable from './PharmacistPerformanceTable';
+import WorkspaceAnalytics from './WorkspaceAnalytics';
+import TeamPerformanceDashboard from './TeamPerformanceDashboard';
 
 // Enhanced KPI Card Component
 interface KPICardProps {
@@ -273,15 +271,6 @@ export const ModernDashboard: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { isMobile } = useResponsive();
-
-  // Debug API endpoints and dashboard service (disabled to prevent re-render issues)
-  useEffect(() => {
-    // console.log('🔍 Running API debug test...');
-    // testApiEndpoints();
-
-    // console.log('🔍 Running Dashboard Service test...');
-    // testDashboardService().catch(console.error);
-  }, []);
 
   // Dashboard data hooks
   const {
@@ -1422,11 +1411,11 @@ export const ModernDashboard: React.FC = () => {
       {/* Admin Dashboard Integration */}
       <AdminDashboardIntegration />
 
-      {/* Usage Dashboard */}
-      <UsageDashboard />
+      {/* Workspace Analytics - Real Data */}
+      <WorkspaceAnalytics />
 
-      {/* Pharmacist Performance */}
-      <PharmacistPerformanceTable />
+      {/* Team Performance - Real Data */}
+      <TeamPerformanceDashboard />
 
       {/* Clinical Interventions Dashboard */}
       {clinicalMetrics && (
