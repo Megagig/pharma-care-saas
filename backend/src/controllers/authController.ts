@@ -59,7 +59,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     // Method 1: Invite Token (from team management dashboard)
     if (inviteToken) {
       const { WorkspaceInvite } = await import('../models/WorkspaceInvite');
-      
+
       workspaceInvite = await WorkspaceInvite.findOne({
         inviteToken,
         status: 'pending',
@@ -104,7 +104,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     // Method 2: Invite Code (from workplace creation)
     else if (inviteCode) {
       const { Workplace } = await import('../models/Workplace');
-      
+
       workplace = await Workplace.findOne({ inviteCode: inviteCode.toUpperCase() });
 
       if (!workplace) {
@@ -192,7 +192,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         await workspaceAuditService.logInviteAction(
           new mongoose.Types.ObjectId(workplaceId),
           user._id,
-          requiresApproval ? 'invite_used_pending_approval' : 'invite_accepted',
+          'invite_accepted',
           {
             metadata: {
               inviteId: workspaceInvite._id,
@@ -200,6 +200,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
               role: workplaceRole,
               requiresApproval,
               method: 'invite_link',
+              status: requiresApproval ? 'pending_approval' : 'active',
             },
           },
           req
@@ -213,7 +214,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           new mongoose.Types.ObjectId(workplaceId),
           user._id,
           user._id,
-          'member_joined_via_code',
+          'member_added',
           {
             reason: `Joined using workplace invite code: ${inviteCode}`,
             metadata: {
@@ -222,6 +223,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
               inviteCode,
               requiresApproval,
               method: 'invite_code',
+              via: 'invite_code',
             },
           },
           req
@@ -314,7 +316,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       .populate('currentPlanId');
     if (!user || !(await user.comparePassword(password))) {
       res.status(401).json({ message: 'Invalid credentials' });
-      
+
       // Log failed login attempt after response is sent (non-blocking)
       setImmediate(async () => {
         try {

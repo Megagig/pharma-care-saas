@@ -174,13 +174,14 @@ const register = async (req, res) => {
             await workspaceInvite.save();
             if (workplaceId) {
                 const { workspaceAuditService } = await Promise.resolve().then(() => __importStar(require('../services/workspaceAuditService')));
-                await workspaceAuditService.logInviteAction(new mongoose_1.default.Types.ObjectId(workplaceId), user._id, requiresApproval ? 'invite_used_pending_approval' : 'invite_accepted', {
+                await workspaceAuditService.logInviteAction(new mongoose_1.default.Types.ObjectId(workplaceId), user._id, 'invite_accepted', {
                     metadata: {
                         inviteId: workspaceInvite._id,
                         email: user.email,
                         role: workplaceRole,
                         requiresApproval,
                         method: 'invite_link',
+                        status: requiresApproval ? 'pending_approval' : 'active',
                     },
                 }, req);
             }
@@ -188,7 +189,7 @@ const register = async (req, res) => {
         else if (inviteMethod === 'code' && workplace) {
             if (workplaceId) {
                 const { workspaceAuditService } = await Promise.resolve().then(() => __importStar(require('../services/workspaceAuditService')));
-                await workspaceAuditService.logMemberAction(new mongoose_1.default.Types.ObjectId(workplaceId), user._id, user._id, 'member_joined_via_code', {
+                await workspaceAuditService.logMemberAction(new mongoose_1.default.Types.ObjectId(workplaceId), user._id, user._id, 'member_added', {
                     reason: `Joined using workplace invite code: ${inviteCode}`,
                     metadata: {
                         email: user.email,
@@ -196,6 +197,7 @@ const register = async (req, res) => {
                         inviteCode,
                         requiresApproval,
                         method: 'invite_code',
+                        via: 'invite_code',
                     },
                 }, req);
             }
