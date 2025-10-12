@@ -53,6 +53,12 @@ import { roleBasedDashboardService, SuperAdminDashboardData, WorkspaceDetails } 
 import SimpleChart from './SimpleChart';
 import RoleSwitcher from './RoleSwitcher';
 
+// Phase 3: New Components
+import SuperAdminQuickActions from './SuperAdminQuickActions';
+import SuperAdminClinicalInterventions from './SuperAdminClinicalInterventions';
+import SuperAdminRecentActivities from './SuperAdminRecentActivities';
+import SuperAdminCommunicationHub from './SuperAdminCommunicationHub';
+
 interface TabPanelProps {
     children?: React.ReactNode;
     index: number;
@@ -357,7 +363,21 @@ const SuperAdminDashboard: React.FC = () => {
 
             {/* System Overview Tab */}
             <TabPanel value={activeTab} index={0}>
+                {/* Quick Actions - Phase 3 */}
+                <SuperAdminQuickActions />
+
+                {/* System Metrics - Existing */}
                 <Box mb={4}>
+                    <Typography
+                        variant="h5"
+                        sx={{
+                            fontWeight: 'bold',
+                            mb: 3,
+                            color: 'text.primary',
+                        }}
+                    >
+                        System Metrics
+                    </Typography>
                     <Box display="flex" flexWrap="wrap" gap={3}>
                         <Box sx={{ minWidth: { xs: '100%', sm: '45%', md: '22%' }, flex: 1 }}>
                             <SystemMetricCard
@@ -484,6 +504,15 @@ const SuperAdminDashboard: React.FC = () => {
                         </Card>
                     </Box>
                 </Box>
+
+                {/* Clinical Interventions - Phase 3 */}
+                <SuperAdminClinicalInterventions />
+
+                {/* Communication Hub - Phase 3 */}
+                <SuperAdminCommunicationHub />
+
+                {/* Recent Activities - Phase 3 */}
+                <SuperAdminRecentActivities />
             </TabPanel>
 
             {/* Workspaces Tab */}

@@ -30,4 +30,25 @@ router.get('/workspaces', dashboardCacheMiddleware, superAdminDashboardControlle
  */
 router.get('/workspace/:workspaceId', dashboardCacheMiddleware, superAdminDashboardController.getWorkspaceDetails.bind(superAdminDashboardController));
 
+/**
+ * @route GET /api/super-admin/dashboard/clinical-interventions
+ * @desc Get system-wide clinical interventions metrics
+ * @access Private (Super Admin Only)
+ */
+router.get('/clinical-interventions', dashboardCacheMiddleware, superAdminDashboardController.getClinicalInterventionsSystemWide.bind(superAdminDashboardController));
+
+/**
+ * @route GET /api/super-admin/dashboard/activities
+ * @desc Get system-wide recent activities from all workspaces
+ * @access Private (Super Admin Only)
+ */
+router.get('/activities', dashboardCacheMiddleware, superAdminDashboardController.getActivitiesSystemWide.bind(superAdminDashboardController));
+
+/**
+ * @route GET /api/super-admin/dashboard/communications
+ * @desc Get system-wide communication metrics
+ * @access Private (Super Admin Only)
+ */
+router.get('/communications', dashboardCacheMiddleware, superAdminDashboardController.getCommunicationsSystemWide.bind(superAdminDashboardController));
+
 export default router;

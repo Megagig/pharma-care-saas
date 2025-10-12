@@ -7,6 +7,9 @@ import ClinicalNote from '../models/ClinicalNote';
 import MedicationRecord from '../models/MedicationRecord';
 import { IMedicationTherapyReview } from '../models/MedicationTherapyReview';
 import Subscription from '../models/Subscription';
+import ClinicalIntervention from '../models/ClinicalIntervention';
+import Conversation from '../models/Conversation';
+import Message from '../models/Message';
 import mongoose from 'mongoose';
 
 // Get MTR model
@@ -597,6 +600,394 @@ export class SuperAdminDashboardController {
             clinicalNotesByType: [],
             mtrsByStatus: []
         };
+    }
+
+    /**
+     * Get system-wide clinical interventions metrics
+     * Aggregated across all workspaces
+     */
+    async getClinicalInterventionsSystemWide(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            // Verify super admin role
+            if (req.user?.role !== 'super_admin') {
+                res.status(403).json({
+                    success: false,
+                    message: 'Access denied. Super admin role required.',
+                });
+                return;
+            }
+
+            console.log('💊 Fetching system-wide clinical interventions data');
+
+            const [
+                totalInterventions,
+                activeInterventions,
+                completedInterventions,
+                interventionsByWorkspace
+            ] = await Promise.allSettled([
+                ClinicalIntervention.countDocuments({}),
+                ClinicalIntervention.countDocuments({ status: 'active' }),
+                ClinicalIntervention.countDocuments({ status: 'completed' }),
+                ClinicalIntervention.aggregate([
+                    {
+                        $group: {
+                            _id: '$workplaceId',
+                            total: { $sum: 1 },
+                            active: {
+                                $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] }
+                            },
+                            completed: {
+                                $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'workplaces',
+                            localField: '_id',
+                            foreignField: '_id',
+                            as: 'workspace'
+                        }
+                    },
+                    {
+                        $unwind: { path: '$workspace', preserveNullAndEmptyArrays: true }
+                    },
+                    {
+                        $project: {
+                            workspaceId: '$_id',
+                            workspaceName: '$workspace.name',
+                            total: 1,
+                            active: 1,
+                            completed: 1
+                        }
+                    },
+                    { $sort: { total: -1 } },
+                    { $limit: 20 }
+                ])
+            ]);
+
+            // Calculate success rate
+            const total = totalInterventions.status === 'fulfilled' ? totalInterventions.value : 0;
+            const completed = completedInterventions.status === 'fulfilled' ? completedInterventions.value : 0;
+            const successRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            // Calculate estimated cost savings (placeholder - adjust based on your business logic)
+            const costSavingsPerIntervention = 5000; // ₦5,000 per intervention
+            const costSavings = completed * costSavingsPerIntervention;
+
+            const clinicalInterventionsData = {
+                totalInterventions: total,
+                activeInterventions: activeInterventions.status === 'fulfilled' ? activeInterventions.value : 0,
+                completedInterventions: completed,
+                successRate: successRate,
+                costSavings: costSavings,
+                byWorkspace: interventionsByWorkspace.status === 'fulfilled' ? interventionsByWorkspace.value : []
+            };
+
+            console.log('✅ Clinical interventions data loaded successfully');
+
+            res.json({
+                success: true,
+                message: 'Clinical interventions data retrieved successfully',
+                data: clinicalInterventionsData,
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error: any) {
+            console.error('❌ Error fetching clinical interventions data:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to load clinical interventions data',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Get system-wide recent activities
+     * Activities from all workspaces
+     */
+    async getActivitiesSystemWide(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            // Verify super admin role
+            if (req.user?.role !== 'super_admin') {
+                res.status(403).json({
+                    success: false,
+                    message: 'Access denied. Super admin role required.',
+                });
+                return;
+            }
+
+            console.log('📋 Fetching system-wide activities');
+
+            const limit = parseInt(req.query.limit as string) || 20;
+            const oneDayAgo = new Date();
+            oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+            const [
+                recentPatients,
+                recentNotes,
+                recentMTRs,
+                recentUsers,
+                recentInterventions
+            ] = await Promise.allSettled([
+                // Recent patients added
+                Patient.find({
+                    createdAt: { $gte: oneDayAgo },
+                    isDeleted: { $ne: true }
+                })
+                    .populate('workplaceId', 'name')
+                    .select('firstName lastName createdAt workplaceId')
+                    .sort({ createdAt: -1 })
+                    .limit(limit)
+                    .lean(),
+                // Recent clinical notes
+                ClinicalNote.find({
+                    createdAt: { $gte: oneDayAgo }
+                })
+                    .populate('workplaceId', 'name')
+                    .populate('patient', 'firstName lastName')
+                    .select('type createdAt workplaceId patient')
+                    .sort({ createdAt: -1 })
+                    .limit(limit)
+                    .lean(),
+                // Recent MTR sessions
+                MedicationTherapyReview.find({
+                    createdAt: { $gte: oneDayAgo }
+                })
+                    .populate('workplaceId', 'name')
+                    .select('status createdAt workplaceId')
+                    .sort({ createdAt: -1 })
+                    .limit(limit)
+                    .lean(),
+                // Recent user registrations
+                User.find({
+                    createdAt: { $gte: oneDayAgo }
+                })
+                    .populate('workplaceId', 'name')
+                    .select('firstName lastName email role createdAt workplaceId')
+                    .sort({ createdAt: -1 })
+                    .limit(limit)
+                    .lean(),
+                // Recent clinical interventions
+                ClinicalIntervention.find({
+                    createdAt: { $gte: oneDayAgo }
+                })
+                    .populate('workplaceId', 'name')
+                    .select('category status createdAt workplaceId')
+                    .sort({ createdAt: -1 })
+                    .limit(limit)
+                    .lean()
+            ]);
+
+            // Combine and format activities
+            const systemActivities: any[] = [];
+            const userActivities: any[] = [];
+
+            // Process patients
+            if (recentPatients.status === 'fulfilled') {
+                recentPatients.value.forEach((patient: any) => {
+                    systemActivities.push({
+                        type: 'patient_added',
+                        description: `New patient: ${patient.firstName} ${patient.lastName}`,
+                        timestamp: patient.createdAt,
+                        workspaceId: patient.workplaceId?._id,
+                        workspaceName: patient.workplaceId?.name
+                    });
+                });
+            }
+
+            // Process clinical notes
+            if (recentNotes.status === 'fulfilled') {
+                recentNotes.value.forEach((note: any) => {
+                    systemActivities.push({
+                        type: 'note_created',
+                        description: `${note.type} note created${note.patient ? ` for ${note.patient.firstName} ${note.patient.lastName}` : ''}`,
+                        timestamp: note.createdAt,
+                        workspaceId: note.workplaceId?._id,
+                        workspaceName: note.workplaceId?.name
+                    });
+                });
+            }
+
+            // Process MTRs
+            if (recentMTRs.status === 'fulfilled') {
+                recentMTRs.value.forEach((mtr: any) => {
+                    systemActivities.push({
+                        type: 'mtr_created',
+                        description: `MTR session ${mtr.status}`,
+                        timestamp: mtr.createdAt,
+                        workspaceId: mtr.workplaceId?._id,
+                        workspaceName: mtr.workplaceId?.name
+                    });
+                });
+            }
+
+            // Process interventions
+            if (recentInterventions.status === 'fulfilled') {
+                recentInterventions.value.forEach((intervention: any) => {
+                    systemActivities.push({
+                        type: 'intervention_created',
+                        description: `Clinical intervention: ${intervention.category}`,
+                        timestamp: intervention.createdAt,
+                        workspaceId: intervention.workplaceId?._id,
+                        workspaceName: intervention.workplaceId?.name
+                    });
+                });
+            }
+
+            // Process users
+            if (recentUsers.status === 'fulfilled') {
+                recentUsers.value.forEach((user: any) => {
+                    userActivities.push({
+                        userId: user._id,
+                        userName: `${user.firstName} ${user.lastName}`,
+                        email: user.email,
+                        action: 'User registered',
+                        role: user.role,
+                        timestamp: user.createdAt,
+                        workspaceId: user.workplaceId?._id,
+                        workspaceName: user.workplaceId?.name
+                    });
+                });
+            }
+
+            // Sort by timestamp
+            systemActivities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            userActivities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+            const activitiesData = {
+                systemActivities: systemActivities.slice(0, limit),
+                userActivities: userActivities.slice(0, limit)
+            };
+
+            console.log('✅ Activities data loaded successfully');
+
+            res.json({
+                success: true,
+                message: 'Activities data retrieved successfully',
+                data: activitiesData,
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error: any) {
+            console.error('❌ Error fetching activities data:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to load activities data',
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Get system-wide communication metrics
+     * Aggregated across all workspaces
+     */
+    async getCommunicationsSystemWide(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            // Verify super admin role
+            if (req.user?.role !== 'super_admin') {
+                res.status(403).json({
+                    success: false,
+                    message: 'Access denied. Super admin role required.',
+                });
+                return;
+            }
+
+            console.log('💬 Fetching system-wide communications data');
+
+            const oneDayAgo = new Date();
+            oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+            const [
+                totalConversations,
+                activeConversations,
+                totalMessages,
+                recentMessages,
+                messagesByWorkspace
+            ] = await Promise.allSettled([
+                Conversation.countDocuments({}),
+                Conversation.countDocuments({
+                    lastMessageAt: { $gte: oneDayAgo }
+                }),
+                Message.countDocuments({}),
+                Message.countDocuments({
+                    createdAt: { $gte: oneDayAgo }
+                }),
+                Conversation.aggregate([
+                    {
+                        $group: {
+                            _id: '$workplaceId',
+                            conversations: { $sum: 1 },
+                            activeConversations: {
+                                $sum: {
+                                    $cond: [
+                                        { $gte: ['$lastMessageAt', oneDayAgo] },
+                                        1,
+                                        0
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'workplaces',
+                            localField: '_id',
+                            foreignField: '_id',
+                            as: 'workspace'
+                        }
+                    },
+                    {
+                        $unwind: { path: '$workspace', preserveNullAndEmptyArrays: true }
+                    },
+                    {
+                        $project: {
+                            workspaceId: '$_id',
+                            workspaceName: '$workspace.name',
+                            conversations: 1,
+                            activeConversations: 1
+                        }
+                    },
+                    { $sort: { conversations: -1 } },
+                    { $limit: 20 }
+                ])
+            ]);
+
+            // Calculate average response time (placeholder - implement based on your message timestamps)
+            const avgResponseTime = 15; // 15 minutes placeholder
+
+            // Calculate unread messages (placeholder - implement based on your read receipts)
+            const unreadMessages = Math.floor((totalMessages.status === 'fulfilled' ? totalMessages.value : 0) * 0.1); // 10% unread estimate
+
+            const communicationsData = {
+                totalConversations: totalConversations.status === 'fulfilled' ? totalConversations.value : 0,
+                activeConversations: activeConversations.status === 'fulfilled' ? activeConversations.value : 0,
+                totalMessages: totalMessages.status === 'fulfilled' ? totalMessages.value : 0,
+                recentMessages: recentMessages.status === 'fulfilled' ? recentMessages.value : 0,
+                unreadMessages: unreadMessages,
+                avgResponseTime: avgResponseTime,
+                byWorkspace: messagesByWorkspace.status === 'fulfilled' ? messagesByWorkspace.value : []
+            };
+
+            console.log('✅ Communications data loaded successfully');
+
+            res.json({
+                success: true,
+                message: 'Communications data retrieved successfully',
+                data: communicationsData,
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error: any) {
+            console.error('❌ Error fetching communications data:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to load communications data',
+                error: error.message
+            });
+        }
     }
 }
 

@@ -56,6 +56,61 @@ export interface WorkspaceDetails {
     activities: any[];
 }
 
+// New interfaces for Phase 2 enhancements
+export interface SuperAdminClinicalInterventions {
+    totalInterventions: number;
+    activeInterventions: number;
+    completedInterventions: number;
+    successRate: number;
+    costSavings: number;
+    byWorkspace: Array<{
+        workspaceId: string;
+        workspaceName: string;
+        total: number;
+        active: number;
+        completed: number;
+    }>;
+}
+
+export interface SystemActivity {
+    type: string;
+    description: string;
+    timestamp: Date | string;
+    workspaceId?: string;
+    workspaceName?: string;
+}
+
+export interface UserActivity {
+    userId: string;
+    userName: string;
+    email: string;
+    action: string;
+    role: string;
+    timestamp: Date | string;
+    workspaceId?: string;
+    workspaceName?: string;
+}
+
+export interface SuperAdminActivities {
+    systemActivities: SystemActivity[];
+    userActivities: UserActivity[];
+}
+
+export interface SuperAdminCommunications {
+    totalConversations: number;
+    activeConversations: number;
+    totalMessages: number;
+    recentMessages: number;
+    unreadMessages: number;
+    avgResponseTime: number;
+    byWorkspace: Array<{
+        workspaceId: string;
+        workspaceName: string;
+        conversations: number;
+        activeConversations: number;
+    }>;
+}
+
 export type UserRole =
     | 'pharmacist'
     | 'pharmacy_team'
@@ -398,6 +453,143 @@ class RoleBasedDashboardService {
             console.error('Error fetching available workspaces:', error);
             return [];
         }
+    }
+
+    /**
+     * Get system-wide clinical interventions metrics (Phase 2)
+     * Aggregated across all workspaces
+     */
+    async getClinicalInterventionsSystemWide(): Promise<SuperAdminClinicalInterventions> {
+        try {
+            console.log('💊 Fetching system-wide clinical interventions data...');
+
+            const response = await apiClient.get('/super-admin/dashboard/clinical-interventions');
+
+            if (!response.data?.success) {
+                console.error('❌ API returned unsuccessful response:', response.data);
+                throw new Error(response.data?.message || 'Failed to fetch clinical interventions data');
+            }
+
+            console.log('✅ Clinical interventions data fetched successfully');
+            return response.data.data;
+
+        } catch (error: any) {
+            console.error('❌ Error fetching clinical interventions data:', error);
+            console.error('Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
+
+            // Return default data structure if API fails
+            console.warn('⚠️ Returning default clinical interventions data due to error');
+            return this.getDefaultClinicalInterventionsData();
+        }
+    }
+
+    /**
+     * Get system-wide recent activities (Phase 2)
+     * Activities from all workspaces
+     */
+    async getActivitiesSystemWide(limit: number = 20): Promise<SuperAdminActivities> {
+        try {
+            console.log('📋 Fetching system-wide activities data...');
+
+            const response = await apiClient.get('/super-admin/dashboard/activities', {
+                params: { limit }
+            });
+
+            if (!response.data?.success) {
+                console.error('❌ API returned unsuccessful response:', response.data);
+                throw new Error(response.data?.message || 'Failed to fetch activities data');
+            }
+
+            console.log('✅ Activities data fetched successfully');
+            return response.data.data;
+
+        } catch (error: any) {
+            console.error('❌ Error fetching activities data:', error);
+            console.error('Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
+
+            // Return default data structure if API fails
+            console.warn('⚠️ Returning default activities data due to error');
+            return this.getDefaultActivitiesData();
+        }
+    }
+
+    /**
+     * Get system-wide communication metrics (Phase 2)
+     * Aggregated across all workspaces
+     */
+    async getCommunicationsSystemWide(): Promise<SuperAdminCommunications> {
+        try {
+            console.log('💬 Fetching system-wide communications data...');
+
+            const response = await apiClient.get('/super-admin/dashboard/communications');
+
+            if (!response.data?.success) {
+                console.error('❌ API returned unsuccessful response:', response.data);
+                throw new Error(response.data?.message || 'Failed to fetch communications data');
+            }
+
+            console.log('✅ Communications data fetched successfully');
+            return response.data.data;
+
+        } catch (error: any) {
+            console.error('❌ Error fetching communications data:', error);
+            console.error('Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
+
+            // Return default data structure if API fails
+            console.warn('⚠️ Returning default communications data due to error');
+            return this.getDefaultCommunicationsData();
+        }
+    }
+
+    /**
+     * Default clinical interventions data when API fails
+     */
+    private getDefaultClinicalInterventionsData(): SuperAdminClinicalInterventions {
+        return {
+            totalInterventions: 0,
+            activeInterventions: 0,
+            completedInterventions: 0,
+            successRate: 0,
+            costSavings: 0,
+            byWorkspace: []
+        };
+    }
+
+    /**
+     * Default activities data when API fails
+     */
+    private getDefaultActivitiesData(): SuperAdminActivities {
+        return {
+            systemActivities: [],
+            userActivities: []
+        };
+    }
+
+    /**
+     * Default communications data when API fails
+     */
+    private getDefaultCommunicationsData(): SuperAdminCommunications {
+        return {
+            totalConversations: 0,
+            activeConversations: 0,
+            totalMessages: 0,
+            recentMessages: 0,
+            unreadMessages: 0,
+            avgResponseTime: 0,
+            byWorkspace: []
+        };
     }
 }
 
