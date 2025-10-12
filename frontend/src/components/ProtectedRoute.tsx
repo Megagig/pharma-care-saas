@@ -211,6 +211,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const subscriptionStatus = useSubscriptionStatus();
   const location = useLocation();
 
+  console.log('🛡️ ProtectedRoute check:', {
+    path: location.pathname,
+    user: user?.email,
+    role: user?.role,
+    loading,
+    requiredFeature,
+    requiresActiveSubscription,
+    requiresLicense,
+    subscriptionStatus: subscriptionStatus.status,
+    hasFeatureResult: requiredFeature ? hasFeature(requiredFeature) : 'N/A'
+  });
+
   // Show loading spinner while checking authentication
   if (loading) {
     return <LoadingSpinner />;
@@ -223,35 +235,45 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check subscription requirement
   if (requiresActiveSubscription) {
-    // Allow access during 14-day free trial
-    const isTrialActive = subscriptionStatus.status === 'trial' && 
-                          subscriptionStatus.daysRemaining && 
-                          subscriptionStatus.daysRemaining > 0;
+    // Super admins bypass subscription checks
+    const isSuperAdmin = user.role === 'super_admin';
     
-    // Allow access to subscription pages even without active subscription
-    const isSubscriptionPage = location.pathname.includes('/subscription');
+    if (!isSuperAdmin) {
+      // Allow access during 14-day free trial
+      const isTrialActive = subscriptionStatus.status === 'trial' && 
+                            subscriptionStatus.daysRemaining && 
+                            subscriptionStatus.daysRemaining > 0;
+      
+      // Allow access to subscription pages even without active subscription
+      const isSubscriptionPage = location.pathname.includes('/subscription');
 
-    // Block access only if trial has expired and no active paid subscription
-    if (!isTrialActive && !subscriptionStatus.isActive && !isSubscriptionPage) {
-      return (
-        <AccessDenied
-          reason="subscription"
-          subscriptionStatus={{
-            status: subscriptionStatus.status,
-            isActive: subscriptionStatus.isActive,
-            tier: subscriptionStatus.tier || 'free',
-            daysRemaining: subscriptionStatus.daysRemaining || 0,
-          }}
-        />
-      );
+      // Block access only if trial has expired and no active paid subscription
+      if (!isTrialActive && !subscriptionStatus.isActive && !isSubscriptionPage) {
+        return (
+          <AccessDenied
+            reason="subscription"
+            subscriptionStatus={{
+              status: subscriptionStatus.status,
+              isActive: subscriptionStatus.isActive,
+              tier: subscriptionStatus.tier || 'free',
+              daysRemaining: subscriptionStatus.daysRemaining || 0,
+            }}
+          />
+        );
+      }
     }
   }
 
   // Check license requirement
   if (requiresLicense && userRequiresLicense()) {
-    const licenseStatus = getLicenseStatus();
-    if (licenseStatus !== 'approved') {
-      return <AccessDenied reason="license" licenseStatus={licenseStatus} />;
+    // Super admins bypass license checks
+    const isSuperAdmin = user.role === 'super_admin';
+    
+    if (!isSuperAdmin) {
+      const licenseStatus = getLicenseStatus();
+      if (licenseStatus !== 'approved') {
+        return <AccessDenied reason="license" licenseStatus={licenseStatus} />;
+      }
     }
   }
 
@@ -278,7 +300,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check feature requirement
   if (requiredFeature && !hasFeature(requiredFeature)) {
-    return <AccessDenied reason="feature" requiredFeature={requiredFeature} />;
+    // Super admins bypass feature checks
+    const isSuperAdmin = user.role === 'super_admin';
+    
+    if (!isSuperAdmin) {
+      return <AccessDenied reason="feature" requiredFeature={requiredFeature} />;
+    }
   }
 
   // All checks passed, render children
