@@ -21,12 +21,12 @@ export interface Member {
   suspendedBy?: ObjectId;
 }
 
-export type WorkplaceRole = 
-  | 'Owner' 
-  | 'Staff' 
-  | 'Pharmacist' 
-  | 'Cashier' 
-  | 'Technician' 
+export type WorkplaceRole =
+  | 'Owner'
+  | 'Staff'
+  | 'Pharmacist'
+  | 'Cashier'
+  | 'Technician'
   | 'Assistant';
 
 export type MemberStatus = 'pending' | 'active' | 'suspended' | 'inactive';
@@ -187,4 +187,18 @@ export interface WorkspaceStats {
   activeMembers: number;
   pendingApprovals: number;
   activeInvites: number;
+}
+
+// License Approval Types
+export interface PendingLicense {
+  _id: ObjectId;
+  firstName: string;
+  lastName: string;
+  email: string;
+  licenseNumber: string;
+  licenseStatus: string;
+  licenseDocument?: string;
+  workplaceRole: WorkplaceRole;
+  createdAt: string;
+  updatedAt: string;
 }

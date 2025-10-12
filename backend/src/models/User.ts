@@ -51,6 +51,8 @@ export interface IUser extends Document {
   licenseStatus: 'not_required' | 'pending' | 'approved' | 'rejected';
   licenseVerifiedAt?: Date;
   licenseVerifiedBy?: mongoose.Types.ObjectId;
+  licenseRejectedAt?: Date;
+  licenseRejectedBy?: mongoose.Types.ObjectId;
   licenseRejectionReason?: string;
   licenseExpirationDate?: Date;
   pharmacySchool?: string;
@@ -261,6 +263,11 @@ const userSchema = new Schema(
     },
     licenseVerifiedAt: Date,
     licenseVerifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    licenseRejectedAt: Date,
+    licenseRejectedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },

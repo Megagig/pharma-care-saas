@@ -61,6 +61,20 @@ export const getPatients = asyncHandler(
     } = req.query as any;
     const context = getRequestContext(req);
 
+    // Debug logging for super admin access
+    console.log('🔍 GET /api/patients - Request Context:', {
+      userId: context.userId,
+      userRole: context.userRole,
+      workplaceId: context.workplaceId,
+      isAdmin: context.isAdmin,
+      isSuperAdmin: context.isSuperAdmin,
+      requestUser: {
+        id: req.user?._id,
+        email: req.user?.email,
+        role: req.user?.role,
+      }
+    });
+
     // Parse limit
     const parsedLimit = Math.min(50, Math.max(1, parseInt(limit as string) || 20));
 
@@ -73,6 +87,9 @@ export const getPatients = asyncHandler(
     // Tenant filtering
     if (!context.isAdmin) {
       filters.workplaceId = context.workplaceId;
+      console.log('🔒 Applying workspace filter:', context.workplaceId);
+    } else {
+      console.log('🔓 Super admin access - NO workspace filter applied');
     }
 
     // Search functionality
@@ -107,12 +124,20 @@ export const getPatients = asyncHandler(
     // Use cursor-based pagination by default, fall back to skip/limit for legacy support
     if (useCursor === 'true' && !page) {
       // Cursor-based pagination (recommended)
+      console.log('📄 Using cursor-based pagination with filters:', JSON.stringify(filters));
+
       const result = await CursorPagination.paginate(Patient, {
         limit: parsedLimit,
         cursor,
         sortField,
         sortOrder: sortOrder as 'asc' | 'desc',
         filters,
+      });
+
+      console.log('📊 Cursor Query Results:', {
+        patientsFound: result.items.length,
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo.hasNextPage
       });
 
       // Create paginated response
@@ -147,6 +172,14 @@ export const getPatients = asyncHandler(
           .lean(),
         Patient.countDocuments(filters),
       ]);
+
+      console.log('📊 Query Results:', {
+        filters: JSON.stringify(filters),
+        patientsFound: patients.length,
+        totalCount: total,
+        page: parsedPage,
+        limit: parsedLimit
+      });
 
       respondWithPaginatedResults(
         res,
@@ -742,7 +775,7 @@ export const getPatientDiagnosticHistory = asyncHandler(
     const DiagnosticHistory = mongoose.model('DiagnosticHistory');
 
     const skip = (Number(page) - 1) * Number(limit);
-    const statusFilter = includeArchived === 'true' 
+    const statusFilter = includeArchived === 'true'
       ? { status: { $in: ['active', 'archived'] } }
       : { status: 'active' };
 

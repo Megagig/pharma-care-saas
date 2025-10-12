@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 // Create axios instance with base configuration
+// IMPORTANT: Using direct backend URL to bypass Vite proxy issues
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  baseURL: 'http://localhost:5000/api', // Direct backend URL (CORS must be configured)
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -16,6 +17,17 @@ apiClient.interceptors.request.use(
     // Authentication is handled via httpOnly cookies
     // No need to manually add Authorization header
 
+    // Debug logging for API requests
+    const fullURL = config.baseURL ? `${config.baseURL}${config.url}` : config.url;
+    console.log('🔵 API Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: fullURL,
+      isDev: import.meta.env.DEV
+    });
+    console.log('📍 Request will be sent to:', fullURL);
+
     // Add super admin test header for development RBAC testing
     if (import.meta.env.DEV && config.url?.includes('/admin/')) {
       config.headers['X-Super-Admin-Test'] = 'true';
@@ -24,6 +36,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -46,9 +59,20 @@ const onTokenRefreshed = (token: string) => {
 // Response interceptor with enhanced token refresh logic
 apiClient.interceptors.response.use(
   (response) => {
+    console.log('✅ API Response:', {
+      status: response.status,
+      url: response.config.url,
+      contentType: response.headers['content-type']
+    });
     return response;
   },
   async (error) => {
+    console.error('❌ API Response Error:', {
+      status: error.response?.status,
+      url: error.config?.url,
+      contentType: error.response?.headers?.['content-type'],
+      data: typeof error.response?.data === 'string' ? error.response?.data.substring(0, 100) : error.response?.data
+    });
     const originalRequest = error.config;
 
     // Only try to refresh for 401 errors that aren't from the auth endpoints

@@ -203,12 +203,29 @@ const LicenseUpload: React.FC = () => {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !licenseNumber || numberValid === false || !expirationDate || !pharmacySchool) {
+    console.log('Upload clicked - Debug info:', {
+      selectedFile: selectedFile?.name,
+      licenseNumber,
+      numberValid,
+      expirationDate,
+      pharmacySchool,
+      uploading
+    });
+
+    // Detailed validation with specific error messages
+    const missingFields = [];
+    if (!selectedFile) missingFields.push('License document file');
+    if (!licenseNumber) missingFields.push('License number');
+    if (numberValid === false) missingFields.push('Valid license number');
+    if (!expirationDate) missingFields.push('License expiration date');
+    if (!pharmacySchool) missingFields.push('Pharmacy school of graduation');
+
+    if (missingFields.length > 0) {
       addNotification({
         type: 'error',
-        title: 'Validation Error',
-        message: 'Please fill all required fields and select a file',
-        duration: 5000,
+        title: 'Missing Required Fields',
+        message: `Please fill the following required fields: ${missingFields.join(', ')}`,
+        duration: 8000,
       });
       return;
     }
@@ -217,7 +234,9 @@ const LicenseUpload: React.FC = () => {
 
     try {
       const formData = new FormData();
-      formData.append('licenseDocument', selectedFile);
+      if (selectedFile) {
+        formData.append('licenseDocument', selectedFile);
+      }
       formData.append('licenseNumber', licenseNumber);
       formData.append('licenseExpirationDate', expirationDate);
       formData.append('pharmacySchool', pharmacySchool);
@@ -314,10 +333,11 @@ const LicenseUpload: React.FC = () => {
     return <LoadingSpinner message="Loading license information..." />;
   }
 
-  // Check if license is required based on user role
-  const userRequiresLicense = user?.role === 'pharmacist' || 
-                               user?.role === 'intern_pharmacist' || 
-                               user?.role === 'owner';
+  // Check if license is required based on user role or workplace role
+  const userRequiresLicense = user?.role === 'pharmacist' ||
+    user?.role === 'intern_pharmacist' ||
+    user?.role === 'owner' ||
+    user?.workplaceRole === 'Pharmacist';
 
   if (!userRequiresLicense && licenseInfo && !licenseInfo.requiresLicense) {
     return (
@@ -365,10 +385,10 @@ const LicenseUpload: React.FC = () => {
                       validatingNumber
                         ? 'Validating...'
                         : numberValid === false
-                        ? 'This license number is already registered'
-                        : numberValid === true
-                        ? 'License number is available'
-                        : 'Enter your pharmacist license number'
+                          ? 'This license number is already registered'
+                          : numberValid === true
+                            ? 'License number is available'
+                            : 'Enter your pharmacist license number'
                     }
                   />
                   <TextField
@@ -481,7 +501,7 @@ const LicenseUpload: React.FC = () => {
                     onClick={handleUpload}
                     disabled={!selectedFile || uploading}
                   >
-                    Upload Document
+                    Upload Document {!selectedFile || uploading ? '(Disabled)' : ''}
                   </Button>
                 </Box>
               </StepContent>
@@ -584,13 +604,13 @@ const LicenseUpload: React.FC = () => {
                 label={licenseInfo.status.toUpperCase()}
                 color={
                   getStatusColor(licenseInfo.status) as
-                    | 'default'
-                    | 'primary'
-                    | 'secondary'
-                    | 'error'
-                    | 'info'
-                    | 'success'
-                    | 'warning'
+                  | 'default'
+                  | 'primary'
+                  | 'secondary'
+                  | 'error'
+                  | 'info'
+                  | 'success'
+                  | 'warning'
                 }
               />
             </Box>

@@ -73,6 +73,8 @@ import roleRoutes from './routes/roleRoutes';
 import pricingManagementRoutes from './routes/pricingManagementRoutes';
 import saasRoutes from './routes/saasRoutes';
 import workspaceTeamRoutes from './routes/workspaceTeamRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
+import superAdminDashboardRoutes from './routes/superAdminDashboardRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -264,6 +266,10 @@ app.use('/api/continuous-monitoring', continuousMonitoringRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/pricing', pricingManagementRoutes);
+
+// Dashboard routes (optimized for performance)
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/super-admin/dashboard', superAdminDashboardRoutes);
 
 // Patient Management routes
 app.use('/api/patients', patientRoutes);

@@ -169,6 +169,11 @@ const userSchema = new mongoose_1.Schema({
         type: mongoose_1.default.Schema.Types.ObjectId,
         ref: 'User',
     },
+    licenseRejectedAt: Date,
+    licenseRejectedBy: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'User',
+    },
     licenseRejectionReason: String,
     licenseExpirationDate: Date,
     pharmacySchool: {

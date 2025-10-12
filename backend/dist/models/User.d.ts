@@ -29,6 +29,8 @@ export interface IUser extends Document {
     licenseStatus: 'not_required' | 'pending' | 'approved' | 'rejected';
     licenseVerifiedAt?: Date;
     licenseVerifiedBy?: mongoose.Types.ObjectId;
+    licenseRejectedAt?: Date;
+    licenseRejectedBy?: mongoose.Types.ObjectId;
     licenseRejectionReason?: string;
     licenseExpirationDate?: Date;
     pharmacySchool?: string;

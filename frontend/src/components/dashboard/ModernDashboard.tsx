@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
-  Grid,
   Typography,
   Card,
   CardContent,
@@ -29,32 +28,35 @@ import {
   Description as DescriptionIcon,
   Medication as MedicationIcon,
   Assessment as AssessmentIcon,
-  Science as ScienceIcon,
-  Refresh as RefreshIcon,
   Add as AddIcon,
   TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
   Schedule as ScheduleIcon,
   Notifications as NotificationsIcon,
   Settings as SettingsIcon,
-  PersonAdd as PersonAddIcon,
-  NoteAdd as NoteAddIcon,
   Event as EventIcon,
   Warning as WarningIcon,
-  Login as LoginIcon,
-  Assignment as AssignmentIcon,
-  Security as SecurityIcon,
-  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
+
+// Individual icon imports for correct module imports
+import SyncIcon from '@mui/icons-material/Sync';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import LoginIcon from '@mui/icons-material/Login';
+import SecurityIcon from '@mui/icons-material/Security';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { useDashboardCharts } from '../../hooks/useDashboardCharts';
 import { useClinicalInterventionDashboard } from '../../hooks/useClinicalInterventionDashboard';
 import { useRecentActivities } from '../../hooks/useRecentActivities';
 import { activityService } from '../../services/activityService';
-import { testApiEndpoints } from '../../debug/testApiData';
-import { testDashboardService } from '../../debug/testDashboardService';
+import { roleBasedDashboardService } from '../../services/roleBasedDashboardService';
 import DashboardChart from './DashboardChart';
+import SuperAdminDashboard from './SuperAdminDashboard';
 import QuickActionCard from './QuickActionCard';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useNavigate } from 'react-router-dom';
@@ -65,8 +67,8 @@ import CommunicationMetrics from '../communication/CommunicationMetrics';
 
 // All components enabled
 import AdminDashboardIntegration from './AdminDashboardIntegration';
-import UsageDashboard from './UsageDashboard';
-import PharmacistPerformanceTable from './PharmacistPerformanceTable';
+import WorkspaceAnalytics from './WorkspaceAnalytics';
+import TeamPerformanceDashboard from './TeamPerformanceDashboard';
 
 // Enhanced KPI Card Component
 interface KPICardProps {
@@ -94,8 +96,6 @@ const KPICard: React.FC<KPICardProps> = ({
   loading = false,
   onClick,
 }) => {
-  const theme = useTheme();
-
   return (
     <motion.div
       whileHover={{ y: -4, scale: 1.02 }}
@@ -115,9 +115,9 @@ const KPICard: React.FC<KPICardProps> = ({
           overflow: 'visible',
           '&:hover': onClick
             ? {
-                boxShadow: `0 8px 32px ${alpha(color, 0.3)}`,
-                transform: 'translateY(-2px)',
-              }
+              boxShadow: `0 8px 32px ${alpha(color, 0.3)}`,
+              transform: 'translateY(-2px)',
+            }
             : {},
         }}
         onClick={onClick}
@@ -216,8 +216,7 @@ const KPICard: React.FC<KPICardProps> = ({
 
 // System Health Component
 const SystemHealthCard: React.FC = () => {
-  const theme = useTheme();
-  const [healthStatus, setHealthStatus] = useState({
+  const [healthStatus] = useState({
     database: 'healthy',
     api: 'healthy',
     uptime: '99.9%',
@@ -276,22 +275,33 @@ const SystemHealthCard: React.FC = () => {
 export const ModernDashboard: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { isMobile, isTablet } = useResponsive();
+  const { isMobile } = useResponsive();
+  const { user } = useAuth(); // Get user from AuthContext
 
-  // Debug API endpoints and dashboard service
-  useEffect(() => {
-    console.log('🔍 Running API debug test...');
-    testApiEndpoints();
+  // Check if user is super admin - pass user role from AuthContext
+  const isSuperAdmin = roleBasedDashboardService.isSuperAdmin(user?.role as any);
 
-    console.log('🔍 Running Dashboard Service test...');
-    testDashboardService().catch(console.error);
-  }, []);
+  // Debug logging for role detection
+  console.log('🔍 Dashboard Role Detection Debug:');
+  console.log('- isSuperAdmin:', isSuperAdmin);
+  console.log('- Current user from AuthContext:', user);
+  console.log('- User role:', user?.role);
+
+  // If super admin, render super admin dashboard instead
+  if (isSuperAdmin) {
+    console.log('✅ Rendering SuperAdminDashboard for super admin user');
+    return <SuperAdminDashboard />;
+  }
+
+  console.log('📊 Rendering regular dashboard for non-super admin user');
 
   // Dashboard data hooks
   const {
     stats,
+    workspaceInfo,
     loading: dashboardLoading,
     error: dashboardError,
+    refresh: refreshDashboard,
   } = useDashboardData();
 
   // Chart data hooks - separate for better performance and real data
@@ -310,13 +320,10 @@ export const ModernDashboard: React.FC = () => {
   const {
     dashboardMetrics: clinicalMetrics,
     loading: clinicalLoading,
-    error: clinicalError,
-    refresh: refreshClinical,
   } = useClinicalInterventionDashboard('month');
 
   const {
     systemActivities,
-    userActivities,
     loading: activitiesLoading,
     error: activitiesError,
     refresh: refreshActivities,
@@ -328,7 +335,7 @@ export const ModernDashboard: React.FC = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await refreshClinical();
+      await refreshDashboard();
       refreshCharts(); // Refresh chart data as well
       refreshActivities(); // Refresh activities
       // Add a small delay for better UX
@@ -450,7 +457,7 @@ export const ModernDashboard: React.FC = () => {
                   },
                 }}
               >
-                <RefreshIcon
+                <SyncIcon
                   sx={{
                     animation: refreshing ? 'spin 1s linear infinite' : 'none',
                     '@keyframes spin': {
@@ -477,6 +484,59 @@ export const ModernDashboard: React.FC = () => {
           </Box>
         </Box>
       </motion.div>
+
+      {/* Workspace Information Banner */}
+      {workspaceInfo && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <Card
+            sx={{
+              mb: 3,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+            }}
+          >
+            <CardContent sx={{ py: 2 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar
+                    sx={{
+                      bgcolor: theme.palette.primary.main,
+                      width: 48,
+                      height: 48,
+                    }}
+                  >
+                    <DashboardIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      {workspaceInfo.workplace?.name || 'Your Workplace'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {workspaceInfo.workplace?.type || 'Healthcare Facility'} •
+                      {workspaceInfo.memberCount || 0} team members
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {workspaceInfo.workplace?.ownerId && (
+                  <Box textAlign="right">
+                    <Typography variant="caption" color="text.secondary">
+                      Owner
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                      {workspaceInfo.workplace.ownerId.firstName} {workspaceInfo.workplace.ownerId.lastName}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* KPI Cards */}
       <motion.div
@@ -556,7 +616,7 @@ export const ModernDashboard: React.FC = () => {
               title="Diagnostics"
               value={stats.totalDiagnostics || 0}
               subtitle="Diagnostic tests"
-              icon={<ScienceIcon />}
+              icon={<LocalHospitalIcon />}
               color={theme.palette.error.main}
               trend={{ value: -3, isPositive: false, period: 'last month' }}
               loading={dashboardLoading}
@@ -683,12 +743,12 @@ export const ModernDashboard: React.FC = () => {
                   medicationsByStatus.length > 0
                     ? medicationsByStatus
                     : [
-                        {
-                          name: 'No Data',
-                          value: 1,
-                          color: theme.palette.grey[400],
-                        },
-                      ]
+                      {
+                        name: 'No Data',
+                        value: 1,
+                        color: theme.palette.grey[400],
+                      },
+                    ]
                 }
                 type="pie"
                 height={450}
@@ -1024,35 +1084,38 @@ export const ModernDashboard: React.FC = () => {
                           </ListItemAvatar>
                           <ListItemText
                             primary={
-                              <Box
-                                sx={{
-                                  bgcolor: 'grey.200',
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  backgroundColor: '#e0e0e0',
                                   height: 16,
                                   width: '60%',
-                                  borderRadius: 1,
+                                  borderRadius: 4,
                                 }}
                               />
                             }
                             secondary={
-                              <Box>
-                                <Box
-                                  sx={{
-                                    bgcolor: 'grey.200',
+                              <span>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    backgroundColor: '#e0e0e0',
                                     height: 12,
                                     width: '80%',
-                                    borderRadius: 1,
-                                    mb: 0.5,
+                                    borderRadius: 4,
+                                    marginBottom: 4,
                                   }}
                                 />
-                                <Box
-                                  sx={{
-                                    bgcolor: 'grey.200',
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    backgroundColor: '#e0e0e0',
                                     height: 10,
                                     width: '40%',
-                                    borderRadius: 1,
+                                    borderRadius: 4,
                                   }}
                                 />
-                              </Box>
+                              </span>
                             }
                           />
                         </ListItem>
@@ -1374,11 +1437,11 @@ export const ModernDashboard: React.FC = () => {
       {/* Admin Dashboard Integration */}
       <AdminDashboardIntegration />
 
-      {/* Usage Dashboard */}
-      <UsageDashboard />
+      {/* Workspace Analytics - Real Data */}
+      <WorkspaceAnalytics />
 
-      {/* Pharmacist Performance */}
-      <PharmacistPerformanceTable />
+      {/* Team Performance - Real Data */}
+      <TeamPerformanceDashboard />
 
       {/* Clinical Interventions Dashboard */}
       {clinicalMetrics && (
