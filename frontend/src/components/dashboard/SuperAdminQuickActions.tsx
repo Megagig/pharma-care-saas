@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import {
     Business as BusinessIcon,
-    People as PeopleIcon,
+    Settings as SettingsIcon,
     Assessment as AssessmentIcon,
     MonetizationOn as MonetizationOnIcon,
     Login as LoginIcon,
@@ -15,18 +15,18 @@ const SuperAdminQuickActions: React.FC = () => {
 
     const quickActions = [
         {
-            title: 'Manage Workspaces',
-            description: 'Create, edit, or suspend workspaces',
+            title: 'Admin Panel',
+            description: 'Access super admin control panel',
             icon: <BusinessIcon />,
-            navigateTo: '/workspaces',
+            navigateTo: '/admin',
             color: theme.palette.primary.main,
-            buttonText: 'Manage',
+            buttonText: 'Open',
         },
         {
-            title: 'Manage Users',
-            description: 'View and manage all system users',
-            icon: <PeopleIcon />,
-            navigateTo: '/users',
+            title: 'Feature Management',
+            description: 'Manage system features and flags',
+            icon: <SettingsIcon />,
+            navigateTo: '/admin/feature-management',
             color: theme.palette.secondary.main,
             buttonText: 'Manage',
         },
@@ -34,7 +34,7 @@ const SuperAdminQuickActions: React.FC = () => {
             title: 'System Reports',
             description: 'Access detailed analytics and reports',
             icon: <AssessmentIcon />,
-            navigateTo: '/reports',
+            navigateTo: '/reports-analytics',
             color: theme.palette.info.main,
             buttonText: 'View Reports',
         },
@@ -47,12 +47,12 @@ const SuperAdminQuickActions: React.FC = () => {
             buttonText: 'Manage',
         },
         {
-            title: 'Access Workspace',
-            description: 'View workspace as regular user',
+            title: 'System Settings',
+            description: 'Configure system settings',
             icon: <LoginIcon />,
-            navigateTo: '/workspaces',
+            navigateTo: '/settings',
             color: theme.palette.warning.main,
-            buttonText: 'Access',
+            buttonText: 'Configure',
         },
     ];
 
