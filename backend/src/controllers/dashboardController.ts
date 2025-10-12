@@ -190,6 +190,7 @@ export class DashboardController {
         console.log(`📊 Getting aggregated stats for workplace: ${workplaceId}`);
 
         // Use Promise.allSettled to prevent one failing query from breaking others
+        // Add specific timeout for MTR queries to prevent blocking
         const [patientsCount, notesCount, medicationsCount, mtrCount] = await Promise.allSettled([
             Patient.countDocuments({
                 workplaceId,
@@ -201,9 +202,15 @@ export class DashboardController {
             MedicationRecord.countDocuments({
                 workplaceId
             }),
-            MedicationTherapyReview.countDocuments({
-                workplaceId
-            })
+            // Add timeout for MTR count query
+            Promise.race([
+                MedicationTherapyReview.countDocuments({
+                    workplaceId
+                }),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('MTR count query timeout')), 5000)
+                )
+            ])
         ]);
 
         return {
@@ -316,10 +323,16 @@ export class DashboardController {
                 { $group: { _id: '$status', count: { $sum: 1 } } },
                 { $sort: { count: -1 } }
             ]),
-            MedicationTherapyReview.aggregate([
-                { $match: { workplaceId } },
-                { $group: { _id: '$status', count: { $sum: 1 } } },
-                { $sort: { count: -1 } }
+            // Add timeout for MTR aggregation query
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: { workplaceId } },
+                    { $group: { _id: '$status', count: { $sum: 1 } } },
+                    { $sort: { count: -1 } }
+                ]),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('MTR aggregation query timeout')), 5000)
+                )
             ]),
             Patient.aggregate([
                 {
@@ -388,15 +401,21 @@ export class DashboardController {
                 .sort({ createdAt: -1 })
                 .limit(5)
                 .lean(),
-            MedicationTherapyReview.find({
-                workplaceId,
-                createdAt: { $gte: oneWeekAgo }
-            })
-                .populate('patientId', 'firstName lastName')
-                .select('status createdAt patientId')
-                .sort({ createdAt: -1 })
-                .limit(3)
-                .lean()
+            // Add timeout for MTR recent activities query
+            Promise.race([
+                MedicationTherapyReview.find({
+                    workplaceId,
+                    createdAt: { $gte: oneWeekAgo }
+                })
+                    .populate('patientId', 'firstName lastName')
+                    .select('status createdAt patientId')
+                    .sort({ createdAt: -1 })
+                    .limit(3)
+                    .lean(),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('MTR recent activities query timeout')), 5000)
+                )
+            ])
         ]);
 
         const activities = [];
@@ -421,7 +440,7 @@ export class DashboardController {
             });
         }
 
-        if (recentMTRs.status === 'fulfilled') {
+        if (recentMTRs.status === 'fulfilled' && Array.isArray(recentMTRs.value)) {
             recentMTRs.value.forEach((mtr: any) => {
                 activities.push({
                     type: 'mtr_created',

@@ -40,12 +40,13 @@ class DashboardService {
                 console.log('📊 Optimized endpoint not available, falling back to legacy fetch');
             }
 
-            // Fallback to individual API calls
+            // Fallback to individual API calls if optimized endpoint fails
             return await this.getLegacyDashboardAnalytics();
 
         } catch (error) {
             console.error('❌ Error fetching dashboard analytics:', error);
-            return this.getFallbackAnalytics();
+            // Return empty data structure instead of mock data
+            return this.getEmptyAnalytics();
         }
     }
 
@@ -73,8 +74,8 @@ class DashboardService {
         };
 
         if (stats.totalPatients === 0 && stats.totalClinicalNotes === 0 && stats.totalMedications === 0 && stats.totalMTRs === 0) {
-            console.log('⚠️ No real data found, using fallback analytics');
-            return this.getFallbackAnalytics();
+            console.log('⚠️ No real data found, returning empty analytics structure');
+            return this.getEmptyAnalytics();
         }
 
         return {
@@ -90,13 +91,13 @@ class DashboardService {
 
     private processDashboardResponse(data: any): DashboardAnalytics {
         return {
-            stats: data.stats || this.getFallbackAnalytics().stats,
-            patientsByMonth: data.charts?.patientsByMonth || this.getFallbackPatientsByMonth(),
-            medicationsByStatus: data.charts?.medicationsByStatus || this.getFallbackMedicationsByStatus(),
-            clinicalNotesByType: data.charts?.clinicalNotesByType || this.getFallbackClinicalNotesByType(),
-            mtrsByStatus: data.charts?.mtrsByStatus || this.getFallbackMTRsByStatus(),
-            patientAgeDistribution: data.charts?.patientAgeDistribution || this.getFallbackPatientAgeDistribution(),
-            monthlyActivity: data.charts?.monthlyActivity || this.getFallbackMonthlyActivity()
+            stats: data.stats || { totalPatients: 0, totalClinicalNotes: 0, totalMedications: 0, totalMTRs: 0, totalDiagnostics: 0 },
+            patientsByMonth: data.charts?.patientsByMonth || [],
+            medicationsByStatus: data.charts?.medicationsByStatus || [],
+            clinicalNotesByType: data.charts?.clinicalNotesByType || [],
+            mtrsByStatus: data.charts?.mtrsByStatus || [],
+            patientAgeDistribution: data.charts?.patientAgeDistribution || [],
+            monthlyActivity: data.charts?.monthlyActivity || []
         };
     }
 
@@ -130,28 +131,18 @@ class DashboardService {
 
     private async fetchMedications(): Promise<any[]> {
         try {
-            const response = await api.get('/medication-management/dashboard/stats');
-            const stats = response.data;
+            console.log('🔄 Fetching medications data...');
 
-            const mockMedications: any[] = [];
-            if (stats?.activeMedicationsCount > 0) {
-                const statuses = ['active', 'completed', 'discontinued', 'paused'];
-                const distribution = [0.6, 0.2, 0.15, 0.05];
+            // Try to get actual medication records instead of just stats
+            const response = await api.get('/medication-management/medications', {
+                params: { limit: 1000 }
+            });
 
-                statuses.forEach((status, index) => {
-                    const count = Math.round(stats.activeMedicationsCount * distribution[index]);
-                    for (let i = 0; i < count; i++) {
-                        mockMedications.push({
-                            id: `${status}-${i}`,
-                            status: status,
-                            createdAt: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString()
-                        });
-                    }
-                });
-            }
-            return mockMedications;
+            console.log('📥 Medication API response:', response.data);
+            return this.extractArrayFromResponse(response.data);
         } catch (error) {
-            console.error('Error fetching medication data:', error);
+            console.error('❌ Error fetching medication data:', error);
+            // Return empty array instead of mock data
             return [];
         }
     }
@@ -323,83 +314,26 @@ class DashboardService {
         return Object.entries(monthCounts).map(([name, value]) => ({ name, value }));
     }
 
-    private getFallbackAnalytics(): DashboardAnalytics {
+    /**
+     * Return empty analytics structure when no data is available
+     * This replaces mock data to ensure only real data is displayed
+     */
+    private getEmptyAnalytics(): DashboardAnalytics {
         return {
             stats: {
-                totalPatients: 1247,
-                totalClinicalNotes: 3456,
-                totalMedications: 2891,
-                totalMTRs: 567,
-                totalDiagnostics: 234
+                totalPatients: 0,
+                totalClinicalNotes: 0,
+                totalMedications: 0,
+                totalMTRs: 0,
+                totalDiagnostics: 0
             },
-            patientsByMonth: this.getFallbackPatientsByMonth(),
-            medicationsByStatus: this.getFallbackMedicationsByStatus(),
-            clinicalNotesByType: this.getFallbackClinicalNotesByType(),
-            mtrsByStatus: this.getFallbackMTRsByStatus(),
-            patientAgeDistribution: this.getFallbackPatientAgeDistribution(),
-            monthlyActivity: this.getFallbackMonthlyActivity()
+            patientsByMonth: [],
+            medicationsByStatus: [],
+            clinicalNotesByType: [],
+            mtrsByStatus: [],
+            patientAgeDistribution: [],
+            monthlyActivity: []
         };
-    }
-
-    private getFallbackPatientsByMonth(): ChartDataPoint[] {
-        const currentDate = new Date();
-        const months = [];
-        for (let i = 5; i >= 0; i--) {
-            const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-            const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-            months.push({ name: monthKey, value: Math.floor(Math.random() * 50) + 20 });
-        }
-        return months;
-    }
-
-    private getFallbackMedicationsByStatus(): ChartDataPoint[] {
-        return [
-            { name: 'Active', value: 1734, color: '#4caf50' },
-            { name: 'Completed', value: 578, color: '#2196f3' },
-            { name: 'Discontinued', value: 434, color: '#ff9800' },
-            { name: 'Paused', value: 145, color: '#9e9e9e' }
-        ];
-    }
-
-    private getFallbackClinicalNotesByType(): ChartDataPoint[] {
-        return [
-            { name: 'Progress Notes', value: 1245, color: '#9c27b0' },
-            { name: 'Assessment', value: 892, color: '#3f51b5' },
-            { name: 'Treatment Plan', value: 567, color: '#009688' },
-            { name: 'Consultation', value: 434, color: '#f44336' },
-            { name: 'Follow-up', value: 318, color: '#607d8b' }
-        ];
-    }
-
-    private getFallbackMTRsByStatus(): ChartDataPoint[] {
-        return [
-            { name: 'In Progress', value: 234, color: '#ff9800' },
-            { name: 'Completed', value: 189, color: '#4caf50' },
-            { name: 'Scheduled', value: 98, color: '#2196f3' },
-            { name: 'On Hold', value: 46, color: '#9e9e9e' }
-        ];
-    }
-
-    private getFallbackPatientAgeDistribution(): ChartDataPoint[] {
-        return [
-            { name: '0-17', value: 89 },
-            { name: '18-30', value: 234 },
-            { name: '31-45', value: 456 },
-            { name: '46-60', value: 298 },
-            { name: '61-75', value: 134 },
-            { name: '75+', value: 36 }
-        ];
-    }
-
-    private getFallbackMonthlyActivity(): ChartDataPoint[] {
-        const currentDate = new Date();
-        const months = [];
-        for (let i = 5; i >= 0; i--) {
-            const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-            const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-            months.push({ name: monthKey, value: Math.floor(Math.random() * 200) + 100 });
-        }
-        return months;
     }
 }
 
