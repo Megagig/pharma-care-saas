@@ -12,7 +12,7 @@ import {
   Paper,
   Tabs,
   Tab,
-  Grid,
+  GridLegacy as Grid,
   Card,
   CardContent,
   Alert,
