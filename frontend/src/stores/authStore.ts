@@ -8,6 +8,7 @@ export interface User {
   lastName: string;
   role: string;
   workplaceId: string;
+  workplaceRole?: string;
   permissions: string[];
 }
 
@@ -59,27 +60,27 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             workplaceId: 'workplace-1',
             permissions: ['read', 'write']
           };
-          
-          set({ 
-            user: mockUser, 
-            token: 'mock-token', 
-            isAuthenticated: true, 
-            loading: false 
+
+          set({
+            user: mockUser,
+            token: 'mock-token',
+            isAuthenticated: true,
+            loading: false
           });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Login failed', 
-            loading: false 
+          set({
+            error: error instanceof Error ? error.message : 'Login failed',
+            loading: false
           });
         }
       },
 
       logout: () => {
-        set({ 
-          user: null, 
-          token: null, 
-          isAuthenticated: false, 
-          error: null 
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          error: null
         });
       },
     }),

@@ -21,7 +21,7 @@ class WorkspaceTeamController {
     try {
       // Get workplaceId from authenticated user
       const workplaceId = req.user?.workplaceId || (req as any).workplaceId;
-      
+
       if (!workplaceId) {
         res.status(400).json({
           success: false,
@@ -113,7 +113,7 @@ class WorkspaceTeamController {
     try {
       // Get workplaceId from authenticated user
       const workplaceId = req.user?.workplaceId || (req as any).workplaceId;
-      
+
       if (!workplaceId) {
         res.status(400).json({
           success: false,
@@ -174,8 +174,23 @@ class WorkspaceTeamController {
     try {
       const { id: memberId } = req.params;
       const { workplaceRole, reason } = req.body;
-      const workplaceId = req.user?.workplaceId || (req as any).workplaceId;
       const updatedBy = req.user?._id;
+
+      // For super admins, get workplaceId from the member being updated
+      let workplaceId = req.user?.workplaceId || (req as any).workplaceId;
+
+      // If no workplaceId (e.g., super admin), find it from the member being updated
+      if (!workplaceId) {
+        const memberToUpdate = await User.findById(memberId).lean();
+        if (!memberToUpdate) {
+          res.status(404).json({
+            success: false,
+            message: 'Member not found',
+          });
+          return;
+        }
+        workplaceId = memberToUpdate.workplaceId;
+      }
 
       if (!workplaceId) {
         res.status(400).json({

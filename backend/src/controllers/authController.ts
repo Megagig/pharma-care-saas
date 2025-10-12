@@ -408,6 +408,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         licenseVerifiedAt: user.licenseVerifiedAt,
         currentPlan: user.currentPlanId,
         workplaceId: user.workplaceId,
+        workplaceRole: user.workplaceRole,
       },
     });
 

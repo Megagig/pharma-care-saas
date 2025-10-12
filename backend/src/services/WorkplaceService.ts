@@ -5,12 +5,12 @@ import mongoose from 'mongoose';
 export interface CreateWorkplaceData {
   name: string;
   type:
-    | 'Community'
-    | 'Hospital'
-    | 'Academia'
-    | 'Industry'
-    | 'Regulatory Body'
-    | 'Other';
+  | 'Community'
+  | 'Hospital'
+  | 'Academia'
+  | 'Industry'
+  | 'Regulatory Body'
+  | 'Other';
   licenseNumber: string;
   email: string;
   address?: string;
@@ -24,11 +24,11 @@ export interface JoinWorkplaceData {
   inviteCode?: string;
   workplaceId?: mongoose.Types.ObjectId;
   workplaceRole?:
-    | 'Staff'
-    | 'Pharmacist'
-    | 'Cashier'
-    | 'Technician'
-    | 'Assistant';
+  | 'Staff'
+  | 'Pharmacist'
+  | 'Cashier'
+  | 'Technician'
+  | 'Assistant';
 }
 
 export class WorkplaceService {

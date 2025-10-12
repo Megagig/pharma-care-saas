@@ -90,7 +90,7 @@ class WorkspaceTeamInviteController {
       // Generate invite URL
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const inviteUrl = `${frontendUrl}/register?invite=${inviteToken}`;
-      
+
       // Debug logging
       console.log('Generated invite:', {
         inviteToken,
@@ -420,7 +420,7 @@ class WorkspaceTeamInviteController {
       // For super admins, check if a specific workplaceId is provided in query params
       if (!workplaceId && req.user?.role === 'super_admin') {
         const { workspaceId: queryWorkspaceId } = req.query;
-        
+
         if (queryWorkspaceId) {
           workplaceId = queryWorkspaceId;
         } else {
