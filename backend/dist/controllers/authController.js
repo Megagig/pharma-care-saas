@@ -133,7 +133,7 @@ const register = async (req, res) => {
             return;
         }
         let userStatus = 'pending';
-        if (workspaceInvite && requiresApproval) {
+        if (requiresApproval) {
             userStatus = 'pending';
         }
         const user = await User_1.default.create({
@@ -406,13 +406,29 @@ const verifyEmail = async (req, res) => {
             return;
         }
         user.emailVerified = true;
-        user.status = 'active';
+        const { Workplace } = await Promise.resolve().then(() => __importStar(require('../models/Workplace')));
+        const isWorkspaceOwner = await Workplace.findOne({
+            _id: user.workplaceId,
+            ownerId: user._id
+        });
+        if (isWorkspaceOwner) {
+            user.status = 'active';
+        }
+        else if (user.workplaceId && user.workplaceRole) {
+            user.status = 'pending';
+        }
+        else {
+            user.status = 'active';
+        }
         user.verificationToken = undefined;
         user.verificationCode = undefined;
         await user.save();
         res.json({
             success: true,
-            message: 'Email verified successfully! You can now log in.',
+            message: (!isWorkspaceOwner && user.workplaceId && user.workplaceRole)
+                ? 'Email verified successfully! Your account is pending approval by the workspace owner. You will receive an email once approved.'
+                : 'Email verified successfully! You can now log in.',
+            requiresApproval: !!((!isWorkspaceOwner && user.workplaceId && user.workplaceRole)),
         });
     }
     catch (error) {
