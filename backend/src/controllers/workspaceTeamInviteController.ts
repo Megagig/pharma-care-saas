@@ -337,6 +337,79 @@ class WorkspaceTeamInviteController {
   }
 
   /**
+   * Validate invite token and return workspace info
+   * @route GET /api/workspace/team/invites/validate/:token
+   */
+  async validateInviteToken(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { token } = req.params;
+
+      if (!token) {
+        res.status(400).json({
+          success: false,
+          message: 'Invite token is required',
+        });
+        return;
+      }
+
+      // Find invite by token
+      const invite = await WorkspaceInvite.findOne({
+        inviteToken: token,
+        status: 'pending',
+      }).populate('workplaceId', 'name email type');
+
+      if (!invite) {
+        res.status(404).json({
+          success: false,
+          message: 'Invalid or expired invite token',
+        });
+        return;
+      }
+
+      // Check if invite is expired
+      if (invite.isExpired()) {
+        res.status(400).json({
+          success: false,
+          message: 'This invite has expired',
+        });
+        return;
+      }
+
+      // Check if max uses reached
+      if (invite.usedCount >= invite.maxUses) {
+        res.status(400).json({
+          success: false,
+          message: 'This invite has reached its maximum number of uses',
+        });
+        return;
+      }
+
+      // Return workspace info
+      const workplace = invite.workplaceId as any;
+      res.status(200).json({
+        success: true,
+        workspace: {
+          name: workplace.name,
+          email: workplace.email,
+          type: workplace.type,
+        },
+        invite: {
+          email: invite.email,
+          role: invite.workplaceRole,
+          requiresApproval: invite.requiresApproval,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error validating invite token:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to validate invite token',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
    * Get pending member approvals
    * @route GET /api/workspace/team/invites/pending
    */

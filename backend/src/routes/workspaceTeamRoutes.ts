@@ -8,10 +8,25 @@ import { workspaceTeamInviteController } from '../controllers/workspaceTeamInvit
 
 const router = Router();
 
-// Apply authentication with workspace context to all routes
+/**
+ * Public route - Validate invite token (no auth required)
+ * This must be BEFORE auth middleware
+ */
+router.get(
+  '/invites/validate/:token',
+  [
+    param('token')
+      .notEmpty()
+      .withMessage('Invite token is required'),
+  ],
+  validateRequest,
+  workspaceTeamInviteController.validateInviteToken.bind(workspaceTeamInviteController)
+);
+
+// Apply authentication with workspace context to all routes below
 router.use(authWithWorkspace);
 
-// Apply workspace owner authorization to all routes
+// Apply workspace owner authorization to all routes below
 router.use(requireWorkspaceOwner);
 
 /**

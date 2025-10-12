@@ -145,7 +145,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       email,
       phone,
       passwordHash: password, // Will be hashed by pre-save hook
-      role: workplaceId ? 'staff' : role, // If joining workspace, role is 'staff'
+      role: workplaceId ? 'pharmacy_team' : role, // If joining workspace, role is 'pharmacy_team'
       workplaceId: workplaceId || undefined,
       workplaceRole: workplaceRole || undefined,
       currentPlanId: freeTrialPlan._id,
@@ -168,6 +168,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       endDate: trialEndDate,
       priceAtPurchase: 0,
       autoRenew: false, // Free trial doesn't auto-renew
+      workspaceId: workplaceId || undefined, // Set workspaceId if user is joining a workspace
     });
 
     // Update user with subscription reference
