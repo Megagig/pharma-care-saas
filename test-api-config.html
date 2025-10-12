@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Configuration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Configuration Test</h1>
+    
+    <div class="test info">
+        <h3>Test 1: Backend Health Check</h3>
+        <button onclick="testBackendHealth()">Test Backend</button>
+        <div id="backend-result"></div>
+    </div>
+
+    <div class="test info">
+        <h3>Test 2: Super Admin Endpoint (will fail with 401 - that's OK)</h3>
+        <button onclick="testSuperAdminEndpoint()">Test Super Admin Endpoint</button>
+        <div id="superadmin-result"></div>
+    </div>
+
+    <div class="test info">
+        <h3>Test 3: Check CORS</h3>
+        <button onclick="testCORS()">Test CORS</button>
+        <div id="cors-result"></div>
+    </div>
+
+    <script>
+        async function testBackendHealth() {
+            const resultDiv = document.getElementById('backend-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/health', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <p><strong>✅ Success!</strong></p>
+                        <p>Status: ${response.status}</p>
+                        <p>Content-Type: ${response.headers.get('content-type')}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p><strong>❌ Error!</strong></p>
+                        <p>${error.message}</p>
+                        <p>This usually means:</p>
+                        <ul>
+                            <li>Backend is not running on port 5000</li>
+                            <li>CORS is blocking the request</li>
+                            <li>Network issue</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
+        async function testSuperAdminEndpoint() {
+            const resultDiv = document.getElementById('superadmin-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/super-admin/dashboard/overview', {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const contentType = response.headers.get('content-type');
+                let data;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    data = await response.text();
+                }
+                
+                if (response.status === 401) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <p><strong>✅ Endpoint exists! (401 is expected without auth)</strong></p>
+                            <p>Status: ${response.status}</p>
+                            <p>Content-Type: ${contentType}</p>
+                            <pre>${typeof data === 'string' ? data.substring(0, 200) : JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else if (response.status === 200) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <p><strong>✅ Success! (You're authenticated)</strong></p>
+                            <p>Status: ${response.status}</p>
+                            <p>Content-Type: ${contentType}</p>
+                            <pre>${JSON.stringify(data, null, 2).substring(0, 500)}...</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <p><strong>⚠️ Unexpected status</strong></p>
+                            <p>Status: ${response.status}</p>
+                            <p>Content-Type: ${contentType}</p>
+                            <pre>${typeof data === 'string' ? data.substring(0, 200) : JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p><strong>❌ Error!</strong></p>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('cors-result');
+            resultDiv.innerHTML = '<p>Testing CORS...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/health', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:5173',
+                        'Access-Control-Request-Method': 'GET'
+                    }
+                });
+                
+                const allowOrigin = response.headers.get('access-control-allow-origin');
+                const allowMethods = response.headers.get('access-control-allow-methods');
+                const allowCredentials = response.headers.get('access-control-allow-credentials');
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <p><strong>✅ CORS Headers Present</strong></p>
+                        <p>Allow-Origin: ${allowOrigin || 'Not set'}</p>
+                        <p>Allow-Methods: ${allowMethods || 'Not set'}</p>
+                        <p>Allow-Credentials: ${allowCredentials || 'Not set'}</p>
+                        ${allowOrigin ? '<p>✅ CORS is configured correctly</p>' : '<p>❌ CORS may not be configured</p>'}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p><strong>❌ CORS Test Failed</strong></p>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run tests on load
+        window.onload = () => {
+            console.log('API Configuration Test Page Loaded');
+            console.log('Click buttons to run tests');
+        };
+    </script>
+</body>
+</html>

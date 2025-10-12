@@ -28,30 +28,35 @@ import {
   Description as DescriptionIcon,
   Medication as MedicationIcon,
   Assessment as AssessmentIcon,
-  LocalHospital as ScienceIcon,
-  Sync as RefreshIcon,
   Add as AddIcon,
   TrendingUp as TrendingUpIcon,
-  TrendingUp as TrendingDownIcon,
   Schedule as ScheduleIcon,
   Notifications as NotificationsIcon,
   Settings as SettingsIcon,
-  PersonAdd as PersonAddIcon,
-  NoteAdd as NoteAddIcon,
   Event as EventIcon,
   Warning as WarningIcon,
-  AccountBox as LoginIcon,
-  Assignment as AssignmentIcon,
-  Shield as SecurityIcon,
-  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
+
+// Individual icon imports for correct module imports
+import SyncIcon from '@mui/icons-material/Sync';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import LoginIcon from '@mui/icons-material/Login';
+import SecurityIcon from '@mui/icons-material/Security';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { useDashboardCharts } from '../../hooks/useDashboardCharts';
 import { useClinicalInterventionDashboard } from '../../hooks/useClinicalInterventionDashboard';
 import { useRecentActivities } from '../../hooks/useRecentActivities';
 import { activityService } from '../../services/activityService';
+import { roleBasedDashboardService } from '../../services/roleBasedDashboardService';
 import DashboardChart from './DashboardChart';
+import SuperAdminDashboard from './SuperAdminDashboard';
 import QuickActionCard from './QuickActionCard';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useNavigate } from 'react-router-dom';
@@ -271,6 +276,24 @@ export const ModernDashboard: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { isMobile } = useResponsive();
+  const { user } = useAuth(); // Get user from AuthContext
+
+  // Check if user is super admin - pass user role from AuthContext
+  const isSuperAdmin = roleBasedDashboardService.isSuperAdmin(user?.role as any);
+
+  // Debug logging for role detection
+  console.log('🔍 Dashboard Role Detection Debug:');
+  console.log('- isSuperAdmin:', isSuperAdmin);
+  console.log('- Current user from AuthContext:', user);
+  console.log('- User role:', user?.role);
+
+  // If super admin, render super admin dashboard instead
+  if (isSuperAdmin) {
+    console.log('✅ Rendering SuperAdminDashboard for super admin user');
+    return <SuperAdminDashboard />;
+  }
+
+  console.log('📊 Rendering regular dashboard for non-super admin user');
 
   // Dashboard data hooks
   const {
@@ -434,7 +457,7 @@ export const ModernDashboard: React.FC = () => {
                   },
                 }}
               >
-                <RefreshIcon
+                <SyncIcon
                   sx={{
                     animation: refreshing ? 'spin 1s linear infinite' : 'none',
                     '@keyframes spin': {
@@ -593,7 +616,7 @@ export const ModernDashboard: React.FC = () => {
               title="Diagnostics"
               value={stats.totalDiagnostics || 0}
               subtitle="Diagnostic tests"
-              icon={<ScienceIcon />}
+              icon={<LocalHospitalIcon />}
               color={theme.palette.error.main}
               trend={{ value: -3, isPositive: false, period: 'last month' }}
               loading={dashboardLoading}
@@ -1061,35 +1084,38 @@ export const ModernDashboard: React.FC = () => {
                           </ListItemAvatar>
                           <ListItemText
                             primary={
-                              <Box
-                                sx={{
-                                  bgcolor: 'grey.200',
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  backgroundColor: '#e0e0e0',
                                   height: 16,
                                   width: '60%',
-                                  borderRadius: 1,
+                                  borderRadius: 4,
                                 }}
                               />
                             }
                             secondary={
-                              <Box>
-                                <Box
-                                  sx={{
-                                    bgcolor: 'grey.200',
+                              <span>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    backgroundColor: '#e0e0e0',
                                     height: 12,
                                     width: '80%',
-                                    borderRadius: 1,
-                                    mb: 0.5,
+                                    borderRadius: 4,
+                                    marginBottom: 4,
                                   }}
                                 />
-                                <Box
-                                  sx={{
-                                    bgcolor: 'grey.200',
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    backgroundColor: '#e0e0e0',
                                     height: 10,
                                     width: '40%',
-                                    borderRadius: 1,
+                                    borderRadius: 4,
                                   }}
                                 />
-                              </Box>
+                              </span>
                             }
                           />
                         </ListItem>

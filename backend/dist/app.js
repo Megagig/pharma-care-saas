@@ -108,6 +108,7 @@ const pricingManagementRoutes_1 = __importDefault(require("./routes/pricingManag
 const saasRoutes_1 = __importDefault(require("./routes/saasRoutes"));
 const workspaceTeamRoutes_1 = __importDefault(require("./routes/workspaceTeamRoutes"));
 const dashboardRoutes_1 = __importDefault(require("./routes/dashboardRoutes"));
+const superAdminDashboardRoutes_1 = __importDefault(require("./routes/superAdminDashboardRoutes"));
 const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
 const systemIntegration = systemIntegrationService_1.default.getInstance();
@@ -245,6 +246,7 @@ app.use('/api/auth', authRoutes_1.default);
 app.use('/api/subscriptions', subscriptionRoutes_1.default);
 app.use('/api/pricing', pricingManagementRoutes_1.default);
 app.use('/api/dashboard', dashboardRoutes_1.default);
+app.use('/api/super-admin/dashboard', superAdminDashboardRoutes_1.default);
 app.use('/api/patients', patientRoutes_1.default);
 app.use('/api/patients', allergyRoutes_1.default);
 app.use('/api/patients', conditionRoutes_1.default);

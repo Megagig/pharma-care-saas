@@ -2,11 +2,14 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 
 // Create axios instance with base configuration
 const getBaseURL = () => {
-  try {
-    // Always use direct backend URL to bypass proxy issues
-    return 'http://localhost:5000/api';
-  } catch {
-    return 'http://localhost:5000/api';
+  // In development, use Vite proxy to avoid CORS issues
+  // In production, use relative path (deployed to same domain/port)
+  if (import.meta.env.DEV) {
+    // Development: Use Vite proxy
+    return '/api';
+  } else {
+    // Production: Use relative path for single-port deployment
+    return '/api';
   }
 };
 

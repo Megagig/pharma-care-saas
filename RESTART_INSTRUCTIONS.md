@@ -1,162 +1,153 @@
-# ✅ Migration Complete! Now Restart Your Server
+# CRITICAL: Restart Frontend Dev Server
 
-## Step 1: Stop Your Backend Server
-In your backend terminal, press `Ctrl+C` to stop the server.
+## The Problem
 
-## Step 2: Restart the Backend
+All API requests are returning HTML instead of JSON because the Vite proxy is not working. This happens when:
+1. The dev server needs to be restarted to pick up changes
+2. Module resolution is cached
+3. The proxy configuration isn't being applied
+
+## Solution: Restart Vite Dev Server
+
+### Option 1: Manual Restart (Recommended)
+
+1. **Go to the terminal running `npm run dev`**
+2. **Press `Ctrl+C`** to stop the server
+3. **Wait for it to fully stop**
+4. **Run again**: `npm run dev`
+5. **Wait for "ready" message**
+6. **Refresh browser** with `Ctrl+Shift+R`
+
+### Option 2: Kill and Restart
+
 ```bash
+# In project root
+cd frontend
+
+# Kill any existing Vite processes
+pkill -f "vite --force --port 5173"
+
+# Wait a moment
+sleep 2
+
+# Start fresh
 npm run dev
 ```
 
-## Step 3: Test the Implementation
+### Option 3: Use the restart script
 
-### Test as a Regular User (Pharmacist/Owner):
+```bash
+# Make executable
+chmod +x restart-frontend.sh
 
-1. **Login to your application**
-2. **Navigate to any of these modules:**
-   - Clinical Notes (`/notes`)
-   - Medication Therapy Review (`/pharmacy/medication-therapy`)
-   - Clinical Interventions (`/pharmacy/clinical-interventions`)
-   - AI Diagnostics (`/pharmacy/diagnostics`)
-   - Clinical Decision Support (`/pharmacy/decision-support`)
-
-3. **You should see a license verification modal** with:
-   - Warning icon
-   - "License Verification Required" message
-   - "Upload License" button
-
-4. **Click "Upload License"** and you'll be taken to `/license` route
-
-5. **Fill out the form:**
-   - License Number (e.g., PCN-123456)
-   - Expiration Date (select a future date)
-   - Pharmacy School (e.g., University of Lagos)
-   - Year of Graduation (optional, e.g., 2020)
-   - Upload a PDF or image file (max 5MB)
-
-6. **Submit the form** and you should see:
-   - Success message
-   - Status changes to "pending"
-   - "Under Review" message
-
-### Test as Super Admin:
-
-1. **Login as super admin**
-2. **Navigate to SaaS Settings** (`/saas-settings`)
-3. **Look for the "License Verification" tab** (should be after "Tenant Management")
-4. **Click on it** to see:
-   - List of all pending licenses
-   - User details
-   - License information
-   - Document preview option
-   - Approve/Reject buttons
-
-5. **Click "View" on a license** to:
-   - Preview the uploaded document
-   - See all license details
-   - Approve or reject with reason
-
-## 🔍 If You Still Don't See the Changes:
-
-### Clear Browser Cache:
-1. Open browser DevTools (F12)
-2. Go to Application/Storage tab
-3. Clear all storage
-4. Or use Incognito/Private mode
-
-### Verify Your User Role:
-Your user must be one of these roles to see the license requirement:
-- `pharmacist`
-- `intern_pharmacist`
-- `owner`
-
-If you're logged in as `super_admin` or `pharmacy_team`, you won't see the license modal.
-
-### Check Browser Console:
-1. Open DevTools (F12)
-2. Go to Console tab
-3. Look for any errors
-4. Check Network tab for failed API calls
-
-## 📊 What Changed:
-
-### Database:
-✅ 7 users updated with new fields:
-- `pharmacySchool` (undefined initially)
-- `yearOfGraduation` (undefined initially)
-
-### Backend:
-✅ User model enhanced
-✅ License controller updated
-✅ Admin controller updated
-✅ All routes registered
-
-### Frontend:
-✅ License upload form enhanced
-✅ Protected routes updated
-✅ Admin interface created
-✅ RBAC hook updated
-
-## 🎯 Expected Behavior:
-
-### For Pharmacist/Intern Pharmacist/Owner:
-- ❌ Cannot access protected modules without approved license
-- ✅ See license verification modal
-- ✅ Can upload license
-- ✅ Can check status at `/license`
-
-### For Super Admin:
-- ✅ New "License Verification" tab in SaaS Settings
-- ✅ Can view all pending licenses
-- ✅ Can approve/reject licenses
-- ✅ Can preview documents
-
-### For Other Roles (pharmacy_team):
-- ✅ Can access all modules without license
-- ✅ No license verification required
-
-## 🐛 Troubleshooting:
-
-### Issue: No license modal appears
-**Check:**
-1. User role is correct (pharmacist/intern_pharmacist/owner)
-2. Backend is running with latest build
-3. Browser cache is cleared
-4. No console errors
-
-### Issue: Can't see License Verification tab
-**Check:**
-1. Logged in as super_admin
-2. In SaaS Settings page (`/saas-settings`)
-3. Scroll through tabs to find it
-
-### Issue: Upload fails
-**Check:**
-1. File is PDF or image (JPEG, PNG, WebP)
-2. File size is under 5MB
-3. All required fields are filled
-4. Backend logs for errors
-
-## 📝 Quick Test:
-
-### Create a Test Pharmacist User:
-If you don't have a pharmacist user, you can update an existing user in MongoDB:
-
-```javascript
-// In MongoDB Compass or Shell
-db.users.updateOne(
-  { email: "your-test-email@example.com" },
-  { 
-    $set: { 
-      role: "pharmacist",
-      licenseStatus: "pending"
-    }
-  }
-)
+# Run it
+./restart-frontend.sh
 ```
 
-Then login with that user and try accessing Clinical Notes.
+## After Restart
+
+### 1. Check Console Logs
+
+You should now see:
+```
+🔵 API Request: {
+  method: 'GET',
+  url: '/super-admin/dashboard/overview',
+  baseURL: '/api',
+  fullURL: '/api/super-admin/dashboard/overview'
+}
+```
+
+### 2. Check Vite Terminal
+
+You should see proxy logs:
+```
+Sending Request to the Target: GET /api/super-admin/dashboard/overview
+Received Response from the Target: 200 /api/super-admin/dashboard/overview
+```
+
+### 3. Check Network Tab
+
+- Request URL: `http://localhost:5173/api/super-admin/dashboard/overview`
+- Status: `200 OK`
+- Response: **JSON data** (not HTML!)
+
+## Why This Happens
+
+The Vite dev server:
+- Reads `vite.config.ts` at startup
+- Sets up proxy middleware
+- Caches module resolutions
+- **Doesn't hot-reload proxy config**
+
+When you make changes to:
+- API client configuration
+- Service layer paths
+- Proxy-related code
+
+You **MUST restart** the dev server for changes to take effect.
+
+## Verification
+
+After restart, run:
+```bash
+# Check if proxy is working
+curl -s http://localhost:5173/api/health
+
+# Should return JSON:
+# {"status":"OK","timestamp":"...","environment":"development"}
+```
+
+If you still get HTML, the proxy is not working.
+
+## Common Issues
+
+### Issue: Still getting HTML after restart
+**Solution**: 
+- Make sure backend is running on port 5000
+- Check `vite.config.ts` has proxy configured
+- Try clearing browser cache completely
+- Check no other process is using port 5173
+
+### Issue: Can't kill Vite process
+**Solution**:
+```bash
+# Force kill all node processes (careful!)
+pkill -9 node
+
+# Or find specific PID
+ps aux | grep vite
+kill -9 <PID>
+```
+
+### Issue: Port 5173 already in use
+**Solution**:
+```bash
+# Find what's using the port
+lsof -i :5173
+
+# Kill it
+kill -9 <PID>
+
+# Or use a different port
+npm run dev -- --port 5174
+```
+
+## Expected Behavior After Restart
+
+✅ API requests show in console with full URL  
+✅ Vite terminal shows proxy logs  
+✅ Network tab shows `/api/...` requests  
+✅ Responses are JSON (not HTML)  
+✅ Dashboard loads data  
+✅ No "Unexpected token '<'" errors  
 
 ---
 
-**Your backend is now ready! Just restart it and test! 🚀**
+**IMPORTANT**: You MUST restart the Vite dev server now!
+
+**Steps**:
+1. Stop current dev server (Ctrl+C)
+2. Start it again (npm run dev)
+3. Refresh browser (Ctrl+Shift+R)
+4. Check console logs
