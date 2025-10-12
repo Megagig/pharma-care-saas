@@ -1,4 +1,4 @@
-import { api } from '../lib/api';
+import api from './api';
 
 export interface DashboardStats {
     totalPatients: number;
@@ -25,258 +25,118 @@ export interface DashboardAnalytics {
 }
 
 class DashboardService {
-    /**
-     * Helper method to extract array from different response structures
-     */
-    private extractArrayFromResponse(responseData: any, arrayKey?: string): any[] {
-        console.log('🔍 Extracting array from response:', {
-            hasData: !!responseData,
-            isSuccess: responseData?.success,
-            dataKeys: responseData ? Object.keys(responseData) : [],
-            arrayKey
-        });
-
-        if (!responseData) {
-            console.log('❌ No response data provided');
-            return [];
-        }
-
-        // Handle the specific API response structure: { success: true, data: { results: [...] } }
-        if (responseData.success && responseData.data) {
-            console.log('✅ Found success response with data:', Object.keys(responseData.data));
-
-            // For patients endpoint - uses results array
-            if (responseData.data.results && Array.isArray(responseData.data.results)) {
-                console.log('✅ Found results array:', responseData.data.results.length);
-                return responseData.data.results;
-            }
-            // If data itself is an array
-            if (Array.isArray(responseData.data)) {
-                console.log('✅ Data itself is array:', responseData.data.length);
-                return responseData.data;
-            }
-        }
-
-        // Handle notes endpoint structure: { success: true, notes: [...] }
-        if (responseData.success && responseData.notes && Array.isArray(responseData.notes)) {
-            console.log('✅ Found notes array:', responseData.notes.length);
-            return responseData.notes;
-        }
-
-        // Handle MTR endpoint structure: { success: true, sessions: [...] }
-        if (responseData.success && responseData.sessions && Array.isArray(responseData.sessions)) {
-            console.log('✅ Found sessions array:', responseData.sessions.length);
-            return responseData.sessions;
-        }
-
-        // If arrayKey is specified, try to get that specific array
-        if (arrayKey && responseData[arrayKey] && Array.isArray(responseData[arrayKey])) {
-            console.log('✅ Found array by key:', arrayKey, responseData[arrayKey].length);
-            return responseData[arrayKey];
-        }
-
-        // Try common array keys in order of preference
-        const commonKeys = ['results', 'notes', 'sessions', 'data', 'items', 'patients', 'medications', 'mtrs'];
-        for (const key of commonKeys) {
-            if (responseData[key] && Array.isArray(responseData[key])) {
-                console.log('✅ Found array by common key:', key, responseData[key].length);
-                return responseData[key];
-            }
-        }
-
-        // If responseData itself is an array
-        if (Array.isArray(responseData)) {
-            console.log('✅ Response itself is array:', responseData.length);
-            return responseData;
-        }
-
-        // Return empty array if no valid array found
-        console.log('❌ No valid array found in response');
-        return [];
-    }
-
-    /**
-     * Fetch comprehensive dashboard analytics from real API data
-     */
     async getDashboardAnalytics(): Promise<DashboardAnalytics> {
         try {
-            console.log('🚀 Fetching dashboard analytics from real API data...');
+            console.log('🚀 Starting dashboard analytics fetch...');
 
-            // Fetch all data in parallel with proper error handling
-            const [
-                patientsResponse,
-                notesResponse,
-                medicationsResponse,
-                mtrResponse
-            ] = await Promise.allSettled([
-                this.fetchPatients(),
-                this.fetchClinicalNotes(),
-                this.fetchMedications(),
-                this.fetchMTRSessions()
-            ]);
-
-            // Extract data safely with detailed logging
-            const patientsData = patientsResponse.status === 'fulfilled' ? patientsResponse.value : [];
-            const notesData = notesResponse.status === 'fulfilled' ? notesResponse.value : [];
-            const medicationsData = medicationsResponse.status === 'fulfilled' ? medicationsResponse.value : [];
-            const mtrData = mtrResponse.status === 'fulfilled' ? mtrResponse.value : [];
-
-            console.log('📊 Raw API data extracted:', {
-                patients: patientsData.length,
-                notes: notesData.length,
-                medications: medicationsData.length,
-                mtrs: mtrData.length
-            });
-
-            // Log any failed requests
-            if (patientsResponse.status === 'rejected') {
-                console.error('❌ Patients fetch failed:', patientsResponse.reason);
-            }
-            if (notesResponse.status === 'rejected') {
-                console.error('❌ Notes fetch failed:', notesResponse.reason);
-            }
-            if (medicationsResponse.status === 'rejected') {
-                console.error('❌ Medications fetch failed:', medicationsResponse.reason);
-            }
-            if (mtrResponse.status === 'rejected') {
-                console.error('❌ MTR fetch failed:', mtrResponse.reason);
+            // Try to use the new optimized dashboard endpoint first
+            try {
+                const response = await api.get('/dashboard/overview');
+                if (response.data) {
+                    console.log('✅ Using optimized dashboard data');
+                    return this.processDashboardResponse(response.data);
+                }
+            } catch (error) {
+                console.log('📊 Optimized endpoint not available, falling back to legacy fetch');
             }
 
-            // Calculate stats with fallback values
-            const stats: DashboardStats = {
-                totalPatients: Math.max(patientsData.length, 0),
-                totalClinicalNotes: Math.max(notesData.length, 0),
-                totalMedications: Math.max(medicationsData.length, 0),
-                totalMTRs: Math.max(mtrData.length, 0),
-                totalDiagnostics: 0 // Will be implemented when diagnostics API is available
-            };
-
-            // If all stats are 0, provide some demo data to show the dashboard is working
-            if (stats.totalPatients === 0 && stats.totalClinicalNotes === 0 && stats.totalMedications === 0 && stats.totalMTRs === 0) {
-                console.log('⚠️ No real data found, using demo data for dashboard');
-                return this.getFallbackAnalytics();
-            }
-
-            console.log('📈 Calculated stats:', stats);
-
-            // Process chart data with fallback
-            const patientsByMonth = this.processPatientsByMonth(patientsData);
-            const medicationsByStatus = this.processMedicationsByStatus(medicationsData);
-            const clinicalNotesByType = this.processClinicalNotesByType(notesData);
-            const mtrsByStatus = this.processMTRsByStatus(mtrData);
-            const patientAgeDistribution = this.processPatientAgeDistribution(patientsData);
-            const monthlyActivity = this.processMonthlyActivity(notesData, medicationsData, mtrData);
-
-            console.log('📊 Processed chart data:', {
-                patientsByMonth: patientsByMonth.length,
-                medicationsByStatus: medicationsByStatus.length,
-                clinicalNotesByType: clinicalNotesByType.length,
-                mtrsByStatus: mtrsByStatus.length,
-                patientAgeDistribution: patientAgeDistribution.length,
-                monthlyActivity: monthlyActivity.length
-            });
-
-            const analytics: DashboardAnalytics = {
-                stats,
-                patientsByMonth: patientsByMonth.length > 0 ? patientsByMonth : this.getFallbackPatientsByMonth(),
-                medicationsByStatus: medicationsByStatus.length > 0 ? medicationsByStatus : this.getFallbackMedicationsByStatus(),
-                clinicalNotesByType: clinicalNotesByType.length > 0 ? clinicalNotesByType : this.getFallbackClinicalNotesByType(),
-                mtrsByStatus: mtrsByStatus.length > 0 ? mtrsByStatus : this.getFallbackMTRsByStatus(),
-                patientAgeDistribution: patientAgeDistribution.length > 0 ? patientAgeDistribution : this.getFallbackPatientAgeDistribution(),
-                monthlyActivity: monthlyActivity.length > 0 ? monthlyActivity : this.getFallbackMonthlyActivity()
-            };
-
-            // If we have real stats but no chart data, use the stats to create better fallback data
-            if (stats.totalPatients > 0 && patientsByMonth.length === 0) {
-                analytics.patientsByMonth = this.createPatientsByMonthFromStats(stats.totalPatients);
-            }
-            if (stats.totalPatients > 0 && patientAgeDistribution.length === 0) {
-                analytics.patientAgeDistribution = this.createAgeDistributionFromStats(stats.totalPatients);
-            }
-
-            console.log('✅ Final dashboard analytics:', analytics);
-            return analytics;
+            // Fallback to individual API calls
+            return await this.getLegacyDashboardAnalytics();
 
         } catch (error) {
             console.error('❌ Error fetching dashboard analytics:', error);
-
-            // Return fallback data instead of throwing
             return this.getFallbackAnalytics();
         }
     }
 
-    /**
-     * Fetch patients data from API
-     */
+    private async getLegacyDashboardAnalytics(): Promise<DashboardAnalytics> {
+        console.log('📊 Falling back to legacy dashboard data fetch...');
+
+        const [patientsResult, notesResult, medicationsResult, mtrResult] = await Promise.allSettled([
+            this.fetchPatients(),
+            this.fetchClinicalNotes(),
+            this.fetchMedications(),
+            this.fetchMTRSessions()
+        ]);
+
+        const patients = patientsResult.status === 'fulfilled' ? patientsResult.value : [];
+        const notes = notesResult.status === 'fulfilled' ? notesResult.value : [];
+        const medications = medicationsResult.status === 'fulfilled' ? medicationsResult.value : [];
+        const mtrs = mtrResult.status === 'fulfilled' ? mtrResult.value : [];
+
+        const stats: DashboardStats = {
+            totalPatients: patients.length,
+            totalClinicalNotes: notes.length,
+            totalMedications: medications.length,
+            totalMTRs: mtrs.length,
+            totalDiagnostics: 0
+        };
+
+        if (stats.totalPatients === 0 && stats.totalClinicalNotes === 0 && stats.totalMedications === 0 && stats.totalMTRs === 0) {
+            console.log('⚠️ No real data found, using fallback analytics');
+            return this.getFallbackAnalytics();
+        }
+
+        return {
+            stats,
+            patientsByMonth: this.processPatientsByMonth(patients),
+            medicationsByStatus: this.processMedicationsByStatus(medications),
+            clinicalNotesByType: this.processClinicalNotesByType(notes),
+            mtrsByStatus: this.processMTRsByStatus(mtrs),
+            patientAgeDistribution: this.processPatientAgeDistribution(patients),
+            monthlyActivity: this.processMonthlyActivity(notes, medications, mtrs)
+        };
+    }
+
+    private processDashboardResponse(data: any): DashboardAnalytics {
+        return {
+            stats: data.stats || this.getFallbackAnalytics().stats,
+            patientsByMonth: data.charts?.patientsByMonth || this.getFallbackPatientsByMonth(),
+            medicationsByStatus: data.charts?.medicationsByStatus || this.getFallbackMedicationsByStatus(),
+            clinicalNotesByType: data.charts?.clinicalNotesByType || this.getFallbackClinicalNotesByType(),
+            mtrsByStatus: data.charts?.mtrsByStatus || this.getFallbackMTRsByStatus(),
+            patientAgeDistribution: data.charts?.patientAgeDistribution || this.getFallbackPatientAgeDistribution(),
+            monthlyActivity: data.charts?.monthlyActivity || this.getFallbackMonthlyActivity()
+        };
+    }
+
+    private extractArrayFromResponse(data: any): any[] {
+        if (Array.isArray(data)) return data;
+        if (data?.data && Array.isArray(data.data)) return data.data;
+        if (data?.items && Array.isArray(data.items)) return data.items;
+        if (data?.results && Array.isArray(data.results)) return data.results;
+        return [];
+    }
+
     private async fetchPatients(): Promise<any[]> {
         try {
-            console.log('🔄 Fetching patients data...');
-            const response = await api.get('/patients', {
-                params: { limit: 1000 } // Reasonable limit for analytics
-            });
-
-            console.log('📥 Patients API response:', {
-                status: response.status,
-                hasData: !!response.data,
-                dataStructure: response.data ? Object.keys(response.data) : []
-            });
-
-            const patients = this.extractArrayFromResponse(response.data);
-            console.log('✅ Extracted patients:', patients.length);
-            return patients;
+            const response = await api.get('/patients', { params: { limit: 1000 } });
+            return this.extractArrayFromResponse(response.data);
         } catch (error) {
-            console.error('❌ Error fetching patients:', error);
+            console.error('Error fetching patients:', error);
             return [];
         }
     }
 
-    /**
-     * Fetch clinical notes data from API
-     */
     private async fetchClinicalNotes(): Promise<any[]> {
         try {
-            console.log('🔄 Fetching clinical notes data...');
-            const response = await api.get('/notes', {
-                params: { limit: 1000 } // Reasonable limit for analytics
-            });
-
-            console.log('📥 Notes API response:', {
-                status: response.status,
-                hasData: !!response.data,
-                dataStructure: response.data ? Object.keys(response.data) : []
-            });
-
-            const notes = this.extractArrayFromResponse(response.data);
-            console.log('✅ Extracted notes:', notes.length);
-            return notes;
+            const response = await api.get('/notes', { params: { limit: 1000 } });
+            return this.extractArrayFromResponse(response.data);
         } catch (error) {
-            console.error('❌ Error fetching clinical notes:', error);
+            console.error('Error fetching clinical notes:', error);
             return [];
         }
     }
 
-    /**
-     * Fetch medications data from API
-     */
     private async fetchMedications(): Promise<any[]> {
         try {
-            console.log('🔄 Fetching medications data...');
-
-            // Use the correct medication management dashboard stats endpoint
             const response = await api.get('/medication-management/dashboard/stats');
-
-            console.log('📥 Medication stats API response:', response.data);
-
-            // The stats endpoint returns statistics, not individual medications
-            // For dashboard purposes, we'll create mock data based on the stats
             const stats = response.data;
 
-            // Create mock medication data for chart processing
-            const mockMedications = [];
-            if (stats && stats.activeMedicationsCount > 0) {
-                // Create some sample medications with different statuses for the chart
+            const mockMedications: any[] = [];
+            if (stats?.activeMedicationsCount > 0) {
                 const statuses = ['active', 'completed', 'discontinued', 'paused'];
-                const distribution = [0.6, 0.2, 0.15, 0.05]; // 60% active, 20% completed, etc.
+                const distribution = [0.6, 0.2, 0.15, 0.05];
 
                 statuses.forEach((status, index) => {
                     const count = Math.round(stats.activeMedicationsCount * distribution[index]);
@@ -289,118 +149,52 @@ class DashboardService {
                     }
                 });
             }
-
-            console.log('✅ Created mock medications from stats:', mockMedications.length);
             return mockMedications;
         } catch (error) {
-            console.error('❌ Error fetching medication data:', error);
+            console.error('Error fetching medication data:', error);
             return [];
         }
     }
 
-    /**
-     * Fetch MTR sessions data from API
-     */
     private async fetchMTRSessions(): Promise<any[]> {
         try {
-            console.log('🔄 Fetching MTR sessions data...');
             const response = await api.get('/mtr', {
-                params: {
-                    page: 1,
-                    limit: 1000, // Get more for analytics
-                    sort: '-createdAt' // Sort by newest first
-                },
-                timeout: 30000 // Reduce timeout for dashboard calls
+                params: { page: 1, limit: 1000, sort: '-createdAt' },
+                timeout: 30000
             });
-
-            console.log('📥 MTR sessions API response:', {
-                status: response.status,
-                hasData: !!response.data,
-                dataStructure: response.data ? Object.keys(response.data) : []
-            });
-
-            const mtrs = this.extractArrayFromResponse(response.data);
-            console.log('✅ Extracted MTR sessions:', mtrs.length);
-            return mtrs;
-        } catch (error: any) {
-            console.error('❌ Error fetching MTR sessions:', error);
-
-            // Handle specific error types
-            if (error.response?.status === 401) {
-                console.warn('🔐 MTR sessions require authentication - user may need to log in');
-            } else if (error.response?.status === 403) {
-                console.warn('🚫 MTR access denied - user may not have required license');
-            } else if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
-                console.warn('🌐 Network error fetching MTR sessions - backend may be unavailable');
-            } else if (error.message?.includes('timeout')) {
-                console.warn('⏱️ MTR sessions request timed out - reducing timeout for future requests');
-            }
-
-            // Return empty array to allow dashboard to continue functioning
+            return this.extractArrayFromResponse(response.data);
+        } catch (error) {
+            console.error('Error fetching MTR sessions:', error);
             return [];
         }
     }
 
-    /**
-     * Process patients by month for chart
-     */
     private processPatientsByMonth(patients: any[]): ChartDataPoint[] {
-        console.log('🔍 Processing patients by month:', patients.length, 'patients');
-        console.log('Sample patient data:', patients[0]);
-
         const monthCounts: { [key: string]: number } = {};
         const currentDate = new Date();
 
-        // Initialize last 6 months
         for (let i = 5; i >= 0; i--) {
             const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
             const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
             monthCounts[monthKey] = 0;
         }
 
-        console.log('Initialized month buckets:', monthCounts);
-
-        // Count patients by registration month
-        patients.forEach((patient, index) => {
-            console.log(`Patient ${index}:`, {
-                createdAt: patient?.createdAt,
-                created_at: patient?.created_at,
-                registrationDate: patient?.registrationDate,
-                dateCreated: patient?.dateCreated
-            });
-
-            let dateField = patient?.createdAt || patient?.created_at || patient?.registrationDate || patient?.dateCreated;
-
+        patients.forEach(patient => {
+            const dateField = patient?.createdAt || patient?.created_at || patient?.registrationDate;
             if (dateField) {
                 const date = new Date(dateField);
                 const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-                console.log(`Patient ${index} date: ${dateField} -> ${monthKey}`);
-
-                if (Object.prototype.hasOwnProperty.call(monthCounts, monthKey)) {
+                if (monthCounts.hasOwnProperty(monthKey)) {
                     monthCounts[monthKey]++;
-                    console.log(`Incremented ${monthKey} to ${monthCounts[monthKey]}`);
                 }
-            } else {
-                console.log(`Patient ${index} has no date field`);
             }
         });
 
-        console.log('Final month counts:', monthCounts);
-        const result = Object.entries(monthCounts).map(([name, value]) => ({ name, value }));
-        console.log('Patients by month result:', result);
-        return result;
+        return Object.entries(monthCounts).map(([name, value]) => ({ name, value }));
     }
 
-    /**
-     * Process medications by status for pie chart
-     */
     private processMedicationsByStatus(medications: any[]): ChartDataPoint[] {
-        const statusCounts: { [key: string]: number } = {
-            'Active': 0,
-            'Completed': 0,
-            'Discontinued': 0,
-            'Paused': 0
-        };
+        const statusCounts: { [key: string]: number } = { 'Active': 0, 'Completed': 0, 'Discontinued': 0, 'Paused': 0 };
 
         medications.forEach(medication => {
             if (medication?.status) {
@@ -408,10 +202,10 @@ class DashboardService {
                 if (statusCounts.hasOwnProperty(status)) {
                     statusCounts[status]++;
                 } else {
-                    statusCounts['Active']++; // Default to active if unknown status
+                    statusCounts['Active']++;
                 }
             } else {
-                statusCounts['Active']++; // Default to active if no status
+                statusCounts['Active']++;
             }
         });
 
@@ -423,9 +217,6 @@ class DashboardService {
         ].filter(item => item.value > 0);
     }
 
-    /**
-     * Process clinical notes by type for bar chart
-     */
     private processClinicalNotesByType(notes: any[]): ChartDataPoint[] {
         const typeCounts: { [key: string]: number } = {};
 
@@ -439,61 +230,27 @@ class DashboardService {
 
         const colors = ['#9c27b0', '#3f51b5', '#009688', '#f44336', '#607d8b', '#795548', '#ff5722'];
         return Object.entries(typeCounts)
-            .map(([name, value], index) => ({
-                name,
-                value,
-                color: colors[index % colors.length]
-            }))
+            .map(([name, value], index) => ({ name, value, color: colors[index % colors.length] }))
             .sort((a, b) => b.value - a.value)
-            .slice(0, 7); // Top 7 types
+            .slice(0, 7);
     }
 
-    /**
-     * Process MTR sessions by status for pie chart
-     */
     private processMTRsByStatus(mtrs: any[]): ChartDataPoint[] {
-        const statusCounts: { [key: string]: number } = {
-            'In Progress': 0,
-            'Completed': 0,
-            'Scheduled': 0,
-            'On Hold': 0
-        };
+        const statusCounts: { [key: string]: number } = { 'In Progress': 0, 'Completed': 0, 'Scheduled': 0, 'On Hold': 0 };
 
         mtrs.forEach(mtr => {
             if (mtr?.status) {
                 let status = mtr.status;
-
-                // Normalize status names
                 switch (status.toLowerCase()) {
-                    case 'in_progress':
-                    case 'inprogress':
-                    case 'active':
-                        status = 'In Progress';
-                        break;
-                    case 'completed':
-                    case 'finished':
-                        status = 'Completed';
-                        break;
-                    case 'scheduled':
-                    case 'pending':
-                        status = 'Scheduled';
-                        break;
-                    case 'on_hold':
-                    case 'onhold':
-                    case 'paused':
-                        status = 'On Hold';
-                        break;
-                    default:
-                        status = 'Scheduled'; // Default fallback
+                    case 'in_progress': case 'inprogress': case 'active': status = 'In Progress'; break;
+                    case 'completed': case 'finished': status = 'Completed'; break;
+                    case 'scheduled': case 'pending': status = 'Scheduled'; break;
+                    case 'on_hold': case 'onhold': case 'paused': status = 'On Hold'; break;
+                    default: status = 'Scheduled';
                 }
-
-                if (statusCounts.hasOwnProperty(status)) {
-                    statusCounts[status]++;
-                } else {
-                    statusCounts['Scheduled']++;
-                }
+                statusCounts[status]++;
             } else {
-                statusCounts['Scheduled']++; // Default if no status
+                statusCounts['Scheduled']++;
             }
         });
 
@@ -505,34 +262,12 @@ class DashboardService {
         ].filter(item => item.value > 0);
     }
 
-    /**
-     * Process patient age distribution for bar chart
-     */
     private processPatientAgeDistribution(patients: any[]): ChartDataPoint[] {
-        console.log('🔍 Processing patient age distribution:', patients.length, 'patients');
-        console.log('Sample patient data for age:', patients[0]);
+        const ageCounts = { '0-17': 0, '18-30': 0, '31-45': 0, '46-60': 0, '61-75': 0, '75+': 0 };
 
-        const ageCounts: { [key: string]: number } = {
-            '0-17': 0,
-            '18-30': 0,
-            '31-45': 0,
-            '46-60': 0,
-            '61-75': 0,
-            '75+': 0
-        };
-
-        patients.forEach((patient, index) => {
+        patients.forEach(patient => {
             if (patient) {
                 let age = 0;
-
-                console.log(`Patient ${index} age fields:`, {
-                    dateOfBirth: patient?.dateOfBirth,
-                    dob: patient?.dob,
-                    age: patient?.age,
-                    birthDate: patient?.birthDate
-                });
-
-                // Calculate age from different possible fields
                 if (patient.dateOfBirth || patient.dob) {
                     const birthDate = new Date(patient.dateOfBirth || patient.dob);
                     const today = new Date();
@@ -543,22 +278,10 @@ class DashboardService {
                     }
                 } else if (patient.age) {
                     age = parseInt(patient.age);
-                } else if (patient.birthDate) {
-                    const birthDate = new Date(patient.birthDate);
-                    const today = new Date();
-                    age = today.getFullYear() - birthDate.getFullYear();
-                    const monthDiff = today.getMonth() - birthDate.getMonth();
-                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                        age--;
-                    }
                 } else {
-                    // If no age data, assign a random age for demo purposes
-                    age = Math.floor(Math.random() * 80) + 18; // Random age between 18-98
+                    age = Math.floor(Math.random() * 80) + 18;
                 }
 
-                console.log(`Patient ${index} calculated age: ${age}`);
-
-                // Categorize by age group
                 if (age < 18) ageCounts['0-17']++;
                 else if (age >= 18 && age <= 30) ageCounts['18-30']++;
                 else if (age >= 31 && age <= 45) ageCounts['31-45']++;
@@ -568,27 +291,19 @@ class DashboardService {
             }
         });
 
-        console.log('Final age distribution:', ageCounts);
-        const result = Object.entries(ageCounts).map(([name, value]) => ({ name, value }));
-        console.log('Age distribution result:', result);
-        return result;
+        return Object.entries(ageCounts).map(([name, value]) => ({ name, value }));
     }
 
-    /**
-     * Process monthly activity trend for line chart
-     */
-    private processMonthlyActivity(notes: unknown[], medications: unknown[], mtrs: unknown[]): ChartDataPoint[] {
+    private processMonthlyActivity(notes: any[], medications: any[], mtrs: any[]): ChartDataPoint[] {
         const monthCounts: { [key: string]: number } = {};
         const currentDate = new Date();
 
-        // Initialize last 6 months
         for (let i = 5; i >= 0; i--) {
             const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
             const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
             monthCounts[monthKey] = 0;
         }
 
-        // Count all activities by month
         const allActivities = [
             ...notes.map(item => ({ ...item, type: 'note' })),
             ...medications.map(item => ({ ...item, type: 'medication' })),
@@ -608,9 +323,6 @@ class DashboardService {
         return Object.entries(monthCounts).map(([name, value]) => ({ name, value }));
     }
 
-    /**
-     * Fallback methods to provide sample data when API calls fail
-     */
     private getFallbackAnalytics(): DashboardAnalytics {
         return {
             stats: {
@@ -632,16 +344,11 @@ class DashboardService {
     private getFallbackPatientsByMonth(): ChartDataPoint[] {
         const currentDate = new Date();
         const months = [];
-
         for (let i = 5; i >= 0; i--) {
             const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
             const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-            months.push({
-                name: monthKey,
-                value: Math.floor(Math.random() * 50) + 20 // Random between 20-70
-            });
+            months.push({ name: monthKey, value: Math.floor(Math.random() * 50) + 20 });
         }
-
         return months;
     }
 
@@ -687,60 +394,12 @@ class DashboardService {
     private getFallbackMonthlyActivity(): ChartDataPoint[] {
         const currentDate = new Date();
         const months = [];
-
         for (let i = 5; i >= 0; i--) {
             const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
             const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-            months.push({
-                name: monthKey,
-                value: Math.floor(Math.random() * 200) + 100 // Random between 100-300
-            });
+            months.push({ name: monthKey, value: Math.floor(Math.random() * 200) + 100 });
         }
-
         return months;
-    }
-
-    /**
-     * Create patients by month data based on total patient count
-     */
-    private createPatientsByMonthFromStats(totalPatients: number): ChartDataPoint[] {
-        const currentDate = new Date();
-        const months = [];
-        const avgPerMonth = Math.max(1, Math.floor(totalPatients / 6));
-
-        for (let i = 5; i >= 0; i--) {
-            const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-            const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-            // Distribute patients across months with some variation
-            const variation = Math.floor(Math.random() * (avgPerMonth * 0.5));
-            const value = Math.max(0, avgPerMonth + (Math.random() > 0.5 ? variation : -variation));
-            months.push({
-                name: monthKey,
-                value: value
-            });
-        }
-
-        return months;
-    }
-
-    /**
-     * Create age distribution data based on total patient count
-     */
-    private createAgeDistributionFromStats(totalPatients: number): ChartDataPoint[] {
-        // Realistic age distribution for healthcare
-        const distribution = {
-            '0-17': 0.10,    // 10%
-            '18-30': 0.15,   // 15%
-            '31-45': 0.25,   // 25%
-            '46-60': 0.25,   // 25%
-            '61-75': 0.20,   // 20%
-            '75+': 0.05      // 5%
-        };
-
-        return Object.entries(distribution).map(([name, percentage]) => ({
-            name,
-            value: Math.floor(totalPatients * percentage)
-        }));
     }
 }
 

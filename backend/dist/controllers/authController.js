@@ -354,6 +354,7 @@ const login = async (req, res) => {
                 licenseVerifiedAt: user.licenseVerifiedAt,
                 currentPlan: user.currentPlanId,
                 workplaceId: user.workplaceId,
+                workplaceRole: user.workplaceRole,
             },
         });
         setImmediate(async () => {

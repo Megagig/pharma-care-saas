@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Grid,
   Typography,
   Card,
   CardContent,
@@ -29,8 +28,8 @@ import {
   Description as DescriptionIcon,
   Medication as MedicationIcon,
   Assessment as AssessmentIcon,
-  Science as ScienceIcon,
-  Refresh as RefreshIcon,
+  Biotech as ScienceIcon,
+  Sync as RefreshIcon,
   Add as AddIcon,
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
@@ -94,8 +93,6 @@ const KPICard: React.FC<KPICardProps> = ({
   loading = false,
   onClick,
 }) => {
-  const theme = useTheme();
-
   return (
     <motion.div
       whileHover={{ y: -4, scale: 1.02 }}
@@ -115,9 +112,9 @@ const KPICard: React.FC<KPICardProps> = ({
           overflow: 'visible',
           '&:hover': onClick
             ? {
-                boxShadow: `0 8px 32px ${alpha(color, 0.3)}`,
-                transform: 'translateY(-2px)',
-              }
+              boxShadow: `0 8px 32px ${alpha(color, 0.3)}`,
+              transform: 'translateY(-2px)',
+            }
             : {},
         }}
         onClick={onClick}
@@ -216,8 +213,7 @@ const KPICard: React.FC<KPICardProps> = ({
 
 // System Health Component
 const SystemHealthCard: React.FC = () => {
-  const theme = useTheme();
-  const [healthStatus, setHealthStatus] = useState({
+  const [healthStatus] = useState({
     database: 'healthy',
     api: 'healthy',
     uptime: '99.9%',
@@ -276,22 +272,24 @@ const SystemHealthCard: React.FC = () => {
 export const ModernDashboard: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { isMobile, isTablet } = useResponsive();
+  const { isMobile } = useResponsive();
 
-  // Debug API endpoints and dashboard service
+  // Debug API endpoints and dashboard service (disabled to prevent re-render issues)
   useEffect(() => {
-    console.log('🔍 Running API debug test...');
-    testApiEndpoints();
+    // console.log('🔍 Running API debug test...');
+    // testApiEndpoints();
 
-    console.log('🔍 Running Dashboard Service test...');
-    testDashboardService().catch(console.error);
+    // console.log('🔍 Running Dashboard Service test...');
+    // testDashboardService().catch(console.error);
   }, []);
 
   // Dashboard data hooks
   const {
     stats,
+    workspaceInfo,
     loading: dashboardLoading,
     error: dashboardError,
+    refresh: refreshDashboard,
   } = useDashboardData();
 
   // Chart data hooks - separate for better performance and real data
@@ -310,13 +308,10 @@ export const ModernDashboard: React.FC = () => {
   const {
     dashboardMetrics: clinicalMetrics,
     loading: clinicalLoading,
-    error: clinicalError,
-    refresh: refreshClinical,
   } = useClinicalInterventionDashboard('month');
 
   const {
     systemActivities,
-    userActivities,
     loading: activitiesLoading,
     error: activitiesError,
     refresh: refreshActivities,
@@ -328,7 +323,7 @@ export const ModernDashboard: React.FC = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await refreshClinical();
+      await refreshDashboard();
       refreshCharts(); // Refresh chart data as well
       refreshActivities(); // Refresh activities
       // Add a small delay for better UX
@@ -477,6 +472,59 @@ export const ModernDashboard: React.FC = () => {
           </Box>
         </Box>
       </motion.div>
+
+      {/* Workspace Information Banner */}
+      {workspaceInfo && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <Card
+            sx={{
+              mb: 3,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+            }}
+          >
+            <CardContent sx={{ py: 2 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar
+                    sx={{
+                      bgcolor: theme.palette.primary.main,
+                      width: 48,
+                      height: 48,
+                    }}
+                  >
+                    <DashboardIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      {workspaceInfo.workplace?.name || 'Your Workplace'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {workspaceInfo.workplace?.type || 'Healthcare Facility'} •
+                      {workspaceInfo.memberCount || 0} team members
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {workspaceInfo.workplace?.ownerId && (
+                  <Box textAlign="right">
+                    <Typography variant="caption" color="text.secondary">
+                      Owner
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                      {workspaceInfo.workplace.ownerId.firstName} {workspaceInfo.workplace.ownerId.lastName}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* KPI Cards */}
       <motion.div
@@ -683,12 +731,12 @@ export const ModernDashboard: React.FC = () => {
                   medicationsByStatus.length > 0
                     ? medicationsByStatus
                     : [
-                        {
-                          name: 'No Data',
-                          value: 1,
-                          color: theme.palette.grey[400],
-                        },
-                      ]
+                      {
+                        name: 'No Data',
+                        value: 1,
+                        color: theme.palette.grey[400],
+                      },
+                    ]
                 }
                 type="pie"
                 height={450}
