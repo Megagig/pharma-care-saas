@@ -1130,7 +1130,7 @@ export const registerWithWorkplace = async (
             ? new mongoose.Types.ObjectId(workplaceId)
             : undefined,
           workplaceRole: workplaceRole || 'Staff',
-        });
+        }, session);
 
         // Find the workplace's subscription to inherit
         const workplaceSubscription = await Subscription.findOne({

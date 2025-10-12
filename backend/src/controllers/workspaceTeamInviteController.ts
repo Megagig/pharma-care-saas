@@ -415,7 +415,46 @@ class WorkspaceTeamInviteController {
    */
   async getPendingApprovals(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const workplaceId = (req as any).workplaceId;
+      let workplaceId = (req as any).workplaceId;
+
+      // For super admins, check if a specific workplaceId is provided in query params
+      if (!workplaceId && req.user?.role === 'super_admin') {
+        const { workspaceId: queryWorkspaceId } = req.query;
+        
+        if (queryWorkspaceId) {
+          workplaceId = queryWorkspaceId;
+        } else {
+          // For super admins without a specific workspace, return all pending approvals
+          const allPendingMembers = await User.find({
+            status: 'pending',
+            workplaceId: { $exists: true, $ne: null },
+          })
+            .populate('workplaceId', 'name')
+            .select('firstName lastName email workplaceRole createdAt workplaceId')
+            .sort({ createdAt: -1 })
+            .lean();
+
+          res.status(200).json({
+            success: true,
+            data: {
+              pendingMembers: allPendingMembers.map((member: any) => ({
+                _id: member._id,
+                firstName: member.firstName,
+                lastName: member.lastName,
+                email: member.email,
+                workplaceRole: member.workplaceRole,
+                joinedAt: member.createdAt,
+                status: 'pending',
+                workplaceName: member.workplaceId?.name || 'Unknown Workspace',
+                workplaceId: member.workplaceId?._id || member.workplaceId,
+              })),
+              count: allPendingMembers.length,
+              isSuperAdminView: true,
+            },
+          });
+          return;
+        }
+      }
 
       if (!workplaceId) {
         res.status(400).json({
@@ -467,8 +506,26 @@ class WorkspaceTeamInviteController {
     try {
       const { id: memberId } = req.params;
       const { workplaceRole } = req.body;
-      const workplaceId = (req as any).workplaceId;
+      let workplaceId = (req as any).workplaceId;
       const approvedBy = req.user?._id;
+
+      // For super admins, we need to determine the workspace from the member being approved
+      if (!workplaceId && req.user?.role === 'super_admin') {
+        const member = await User.findOne({
+          _id: new mongoose.Types.ObjectId(memberId),
+          status: 'pending',
+        });
+
+        if (!member || !member.workplaceId) {
+          res.status(404).json({
+            success: false,
+            message: 'Pending member not found or not assigned to any workspace',
+          });
+          return;
+        }
+
+        workplaceId = member.workplaceId;
+      }
 
       if (!workplaceId) {
         res.status(400).json({
@@ -561,8 +618,26 @@ class WorkspaceTeamInviteController {
     try {
       const { id: memberId } = req.params;
       const { reason } = req.body;
-      const workplaceId = (req as any).workplaceId;
+      let workplaceId = (req as any).workplaceId;
       const rejectedBy = req.user?._id;
+
+      // For super admins, we need to determine the workspace from the member being rejected
+      if (!workplaceId && req.user?.role === 'super_admin') {
+        const member = await User.findOne({
+          _id: new mongoose.Types.ObjectId(memberId),
+          status: 'pending',
+        });
+
+        if (!member || !member.workplaceId) {
+          res.status(404).json({
+            success: false,
+            message: 'Pending member not found or not assigned to any workspace',
+          });
+          return;
+        }
+
+        workplaceId = member.workplaceId;
+      }
 
       if (!workplaceId) {
         res.status(400).json({

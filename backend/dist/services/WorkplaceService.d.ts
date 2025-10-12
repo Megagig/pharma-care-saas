@@ -18,7 +18,7 @@ export interface JoinWorkplaceData {
 }
 export declare class WorkplaceService {
     createWorkplace(data: CreateWorkplaceData): Promise<IWorkplace>;
-    joinWorkplace(data: JoinWorkplaceData): Promise<IWorkplace>;
+    joinWorkplace(data: JoinWorkplaceData, session?: mongoose.ClientSession): Promise<IWorkplace>;
     findByInviteCode(inviteCode: string): Promise<IWorkplace | null>;
     regenerateInviteCode(workplaceId: mongoose.Types.ObjectId): Promise<string>;
     getWorkplaceWithTeam(workplaceId: mongoose.Types.ObjectId): Promise<IWorkplace | null>;

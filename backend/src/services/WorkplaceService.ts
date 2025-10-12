@@ -56,7 +56,7 @@ export class WorkplaceService {
   /**
    * Join an existing workplace using invite code or workplace ID
    */
-  async joinWorkplace(data: JoinWorkplaceData): Promise<IWorkplace> {
+  async joinWorkplace(data: JoinWorkplaceData, session?: mongoose.ClientSession): Promise<IWorkplace> {
     let workplace: IWorkplace | null = null;
 
     if (data.inviteCode) {
@@ -81,14 +81,14 @@ export class WorkplaceService {
     if (!isAlreadyMember) {
       // Add user to workplace team
       workplace.teamMembers.push(data.userId);
-      await workplace.save();
+      await workplace.save({ session });
     }
 
     // Update user's workplace info
     await User.findByIdAndUpdate(data.userId, {
       workplaceId: workplace._id,
       workplaceRole: data.workplaceRole || 'Staff',
-    });
+    }, { session });
 
     return workplace;
   }

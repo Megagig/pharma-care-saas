@@ -20,7 +20,7 @@ class WorkplaceService {
         });
         return savedWorkplace;
     }
-    async joinWorkplace(data) {
+    async joinWorkplace(data, session) {
         let workplace = null;
         if (data.inviteCode) {
             workplace = await Workplace_1.default.findOne({ inviteCode: data.inviteCode });
@@ -40,12 +40,12 @@ class WorkplaceService {
         const isAlreadyMember = workplace.teamMembers.some((memberId) => memberId.toString() === data.userId.toString());
         if (!isAlreadyMember) {
             workplace.teamMembers.push(data.userId);
-            await workplace.save();
+            await workplace.save({ session });
         }
         await User_1.default.findByIdAndUpdate(data.userId, {
             workplaceId: workplace._id,
             workplaceRole: data.workplaceRole || 'Staff',
-        });
+        }, { session });
         return workplace;
     }
     async findByInviteCode(inviteCode) {

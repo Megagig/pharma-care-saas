@@ -748,7 +748,15 @@ export const requireWorkspaceOwner = (
         return;
     }
 
-    // Check if workspace context is loaded
+    // Super admin bypasses ownership checks
+    const userRole = getUserRole(req.user);
+    if (userRole === 'super_admin') {
+        // For super admins, we allow access without specific workspace context
+        // The workplaceId will be determined from the member being approved in the route handler
+        return next();
+    }
+
+    // Check if workspace context is loaded (required for non-super-admins)
     if (!req.workspaceContext?.workspace) {
         res.status(403).json({
             success: false,
@@ -756,16 +764,6 @@ export const requireWorkspaceOwner = (
             error: 'Access denied',
         });
         return;
-    }
-
-    // Super admin bypasses ownership checks
-    const userRole = getUserRole(req.user);
-    if (userRole === 'super_admin') {
-        // Attach workplaceId for convenience even for super admin
-        if (req.workspaceContext.workspace._id) {
-            (req as any).workplaceId = req.workspaceContext.workspace._id;
-        }
-        return next();
     }
 
     // Verify user is the workspace owner

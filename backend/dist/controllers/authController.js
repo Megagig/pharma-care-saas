@@ -879,7 +879,7 @@ const registerWithWorkplace = async (req, res) => {
                         ? new mongoose_1.default.Types.ObjectId(workplaceId)
                         : undefined,
                     workplaceRole: workplaceRole || 'Staff',
-                });
+                }, session);
                 const workplaceSubscription = await Subscription_1.default.findOne({
                     workspaceId: workplaceData._id,
                     status: { $in: ['active', 'trial', 'grace_period'] },
