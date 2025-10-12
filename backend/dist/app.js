@@ -107,6 +107,7 @@ const rbacAudit_1 = __importDefault(require("./routes/rbacAudit"));
 const roleRoutes_1 = __importDefault(require("./routes/roleRoutes"));
 const pricingManagementRoutes_1 = __importDefault(require("./routes/pricingManagementRoutes"));
 const saasRoutes_1 = __importDefault(require("./routes/saasRoutes"));
+const workspaceTeamRoutes_1 = __importDefault(require("./routes/workspaceTeamRoutes"));
 const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
 const systemIntegration = systemIntegrationService_1.default.getInstance();
@@ -343,6 +344,13 @@ app.get('/api/clinical-interventions/health', (req, res) => {
         }
     });
 });
+app.get('/api/test-clinical-health', (req, res) => {
+    res.json({
+        status: 'OK',
+        message: 'Test clinical health endpoint works',
+        timestamp: new Date().toISOString()
+    });
+});
 app.use('/api/clinical-interventions', clinicalInterventionRoutes_1.default);
 app.use('/api/medication-management', medicationManagementRoutes_1.default);
 app.use('/api/medication-analytics', medicationAnalyticsRoutes_1.default);
@@ -351,6 +359,7 @@ app.use('/api/security', securityRoutes_1.default);
 app.use('/api/usage', usageMonitoringRoutes_1.default);
 app.use('/api/locations', locationRoutes_1.default);
 app.use('/api/location-data', locationDataRoutes_1.default);
+app.use('/api/workspace/team', workspaceTeamRoutes_1.default);
 app.use('/api/legacy', legacyApiRoutes_1.default);
 app.use('/api/migration', migrationDashboardRoutes_1.default);
 app.use('/api/email', emailWebhookRoutes_1.default);

@@ -28,6 +28,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       password,
       phone,
       role = 'pharmacist',
+      inviteToken, // Workspace invite token (optional) - from invite link
+      inviteCode,  // Workplace invite code (optional) - from workplace creation
     } = req.body;
 
     // Validate required fields
@@ -46,6 +48,78 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Check for workspace invite (either token or code)
+    let workspaceInvite = null;
+    let workplace = null;
+    let workplaceId = null;
+    let workplaceRole = null;
+    let requiresApproval = false;
+    let inviteMethod = null; // 'token' or 'code'
+
+    // Method 1: Invite Token (from team management dashboard)
+    if (inviteToken) {
+      const { WorkspaceInvite } = await import('../models/WorkspaceInvite');
+      
+      workspaceInvite = await WorkspaceInvite.findOne({
+        inviteToken,
+        status: 'pending',
+      });
+
+      if (!workspaceInvite) {
+        res.status(400).json({
+          message: 'Invalid or expired invite link',
+        });
+        return;
+      }
+
+      // Check if invite is expired
+      if (workspaceInvite.isExpired()) {
+        res.status(400).json({
+          message: 'This invite link has expired',
+        });
+        return;
+      }
+
+      // Check if invite email matches
+      if (workspaceInvite.email.toLowerCase() !== email.toLowerCase()) {
+        res.status(400).json({
+          message: 'This invite was sent to a different email address',
+        });
+        return;
+      }
+
+      // Check if max uses reached
+      if (workspaceInvite.usedCount >= workspaceInvite.maxUses) {
+        res.status(400).json({
+          message: 'This invite link has reached its maximum number of uses',
+        });
+        return;
+      }
+
+      workplaceId = workspaceInvite.workplaceId;
+      workplaceRole = workspaceInvite.workplaceRole;
+      requiresApproval = workspaceInvite.requiresApproval;
+      inviteMethod = 'token';
+    }
+    // Method 2: Invite Code (from workplace creation)
+    else if (inviteCode) {
+      const { Workplace } = await import('../models/Workplace');
+      
+      workplace = await Workplace.findOne({ inviteCode: inviteCode.toUpperCase() });
+
+      if (!workplace) {
+        res.status(400).json({
+          message: 'Invalid workplace invite code',
+        });
+        return;
+      }
+
+      workplaceId = workplace._id;
+      workplaceRole = 'Staff'; // Default role for invite code users
+      requiresApproval = true; // Always require approval for invite code
+      inviteMethod = 'code';
+    }
+
     // Get the Free Trial plan as default
     const freeTrialPlan = await SubscriptionPlan.findOne({
       name: 'Free Trial',
@@ -58,6 +132,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Determine user status based on invite
+    let userStatus = 'pending'; // Default: needs email verification
+    if (workspaceInvite && requiresApproval) {
+      userStatus = 'pending'; // Needs both email verification AND workspace approval
+    }
+
     // Create user
     const user = await User.create({
       firstName,
@@ -65,10 +145,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       email,
       phone,
       passwordHash: password, // Will be hashed by pre-save hook
-      role,
+      role: workplaceId ? 'pharmacy_team' : role, // If joining workspace, role is 'pharmacy_team'
+      workplaceId: workplaceId || undefined,
+      workplaceRole: workplaceRole || undefined,
       currentPlanId: freeTrialPlan._id,
       subscriptionTier: 'free_trial',
-      status: 'pending', // User needs to verify email
+      status: userStatus,
     });
 
     // Create Free Trial subscription
@@ -86,11 +168,66 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       endDate: trialEndDate,
       priceAtPurchase: 0,
       autoRenew: false, // Free trial doesn't auto-renew
+      workspaceId: workplaceId || undefined, // Set workspaceId if user is joining a workspace
     });
 
     // Update user with subscription reference
     user.currentSubscriptionId = subscription._id;
     await user.save();
+
+    // Update workspace invite if used
+    if (inviteMethod === 'token' && workspaceInvite) {
+      workspaceInvite.usedCount += 1;
+      if (!requiresApproval) {
+        // If no approval required, mark invite as accepted
+        workspaceInvite.status = 'accepted';
+        workspaceInvite.acceptedAt = new Date();
+        workspaceInvite.acceptedBy = user._id;
+      }
+      await workspaceInvite.save();
+
+      // Log invite acceptance in audit trail
+      if (workplaceId) {
+        const { workspaceAuditService } = await import('../services/workspaceAuditService');
+        await workspaceAuditService.logInviteAction(
+          new mongoose.Types.ObjectId(workplaceId),
+          user._id,
+          requiresApproval ? 'invite_used_pending_approval' : 'invite_accepted',
+          {
+            metadata: {
+              inviteId: workspaceInvite._id,
+              email: user.email,
+              role: workplaceRole,
+              requiresApproval,
+              method: 'invite_link',
+            },
+          },
+          req
+        );
+      }
+    } else if (inviteMethod === 'code' && workplace) {
+      // Log invite code usage in audit trail
+      if (workplaceId) {
+        const { workspaceAuditService } = await import('../services/workspaceAuditService');
+        await workspaceAuditService.logMemberAction(
+          new mongoose.Types.ObjectId(workplaceId),
+          user._id,
+          user._id,
+          'member_joined_via_code',
+          {
+            reason: `Joined using workplace invite code: ${inviteCode}`,
+            metadata: {
+              email: user.email,
+              role: workplaceRole,
+              inviteCode,
+              requiresApproval,
+              method: 'invite_code',
+            },
+          },
+          req
+        );
+      }
+    }
 
     // Generate verification token and code
     const verificationToken = user.generateVerificationToken();
@@ -136,10 +273,20 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       `,
     });
 
+    // Customize message based on workspace invite
+    let successMessage = 'Registration successful! Please check your email to verify your account.';
+    if ((workspaceInvite || workplace) && requiresApproval) {
+      successMessage = 'Registration successful! Please verify your email. Your account will be activated once the workspace owner approves your request.';
+    } else if (workspaceInvite || workplace) {
+      successMessage = 'Registration successful! Please verify your email to access your workspace.';
+    }
+
     res.status(201).json({
       success: true,
-      message:
-        'Registration successful! Please check your email to verify your account.',
+      message: successMessage,
+      requiresApproval: (workspaceInvite || workplace) ? requiresApproval : false,
+      workspaceInvite: (workspaceInvite || workplace) ? true : false,
+      inviteMethod: inviteMethod,
       user: {
         id: user._id,
         firstName: user.firstName,
@@ -148,6 +295,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         role: user.role,
         status: user.status,
         emailVerified: user.emailVerified,
+        workplaceId: user.workplaceId,
+        workplaceRole: user.workplaceRole,
       },
     });
   } catch (error: any) {
@@ -177,11 +326,20 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Check if user is active
+    // Check if user is suspended
     if (user.status === 'suspended') {
       res
         .status(401)
         .json({ message: 'Account is suspended. Please contact support.' });
+      return;
+    }
+
+    // Check if user is pending approval
+    if (user.status === 'pending') {
+      res.status(401).json({
+        message: 'Your account is pending approval by the workspace owner. You will receive an email once approved.',
+        requiresApproval: true,
+      });
       return;
     }
 
@@ -245,6 +403,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         role: user.role,
         status: user.status,
         emailVerified: user.emailVerified,
+        licenseStatus: user.licenseStatus,
+        licenseNumber: user.licenseNumber,
+        licenseVerifiedAt: user.licenseVerifiedAt,
         currentPlan: user.currentPlanId,
         workplaceId: user.workplaceId,
       },
@@ -651,6 +812,9 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
         role: user.role,
         status: user.status,
         emailVerified: user.emailVerified,
+        licenseStatus: user.licenseStatus,
+        licenseNumber: user.licenseNumber,
+        licenseVerifiedAt: user.licenseVerifiedAt,
         currentPlan: user.currentPlanId,
         workplace: user.workplaceId,
         workplaceRole: user.workplaceRole,

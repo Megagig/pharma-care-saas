@@ -171,6 +171,15 @@ const userSchema = new mongoose_1.Schema({
     },
     licenseRejectionReason: String,
     licenseExpirationDate: Date,
+    pharmacySchool: {
+        type: String,
+        trim: true,
+    },
+    yearOfGraduation: {
+        type: Number,
+        min: 1900,
+        max: new Date().getFullYear() + 10,
+    },
     suspensionReason: String,
     suspendedAt: Date,
     suspendedBy: {

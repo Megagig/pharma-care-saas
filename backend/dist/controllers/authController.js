@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -22,7 +55,7 @@ const generateRefreshToken = () => {
 };
 const register = async (req, res) => {
     try {
-        const { firstName, lastName, email, password, phone, role = 'pharmacist', } = req.body;
+        const { firstName, lastName, email, password, phone, role = 'pharmacist', inviteToken, inviteCode, } = req.body;
         if (!firstName || !lastName || !email || !password) {
             res.status(400).json({
                 message: 'Missing required fields: firstName, lastName, email, and password are required',
@@ -34,6 +67,61 @@ const register = async (req, res) => {
             res.status(400).json({ message: 'User already exists with this email' });
             return;
         }
+        let workspaceInvite = null;
+        let workplace = null;
+        let workplaceId = null;
+        let workplaceRole = null;
+        let requiresApproval = false;
+        let inviteMethod = null;
+        if (inviteToken) {
+            const { WorkspaceInvite } = await Promise.resolve().then(() => __importStar(require('../models/WorkspaceInvite')));
+            workspaceInvite = await WorkspaceInvite.findOne({
+                inviteToken,
+                status: 'pending',
+            });
+            if (!workspaceInvite) {
+                res.status(400).json({
+                    message: 'Invalid or expired invite link',
+                });
+                return;
+            }
+            if (workspaceInvite.isExpired()) {
+                res.status(400).json({
+                    message: 'This invite link has expired',
+                });
+                return;
+            }
+            if (workspaceInvite.email.toLowerCase() !== email.toLowerCase()) {
+                res.status(400).json({
+                    message: 'This invite was sent to a different email address',
+                });
+                return;
+            }
+            if (workspaceInvite.usedCount >= workspaceInvite.maxUses) {
+                res.status(400).json({
+                    message: 'This invite link has reached its maximum number of uses',
+                });
+                return;
+            }
+            workplaceId = workspaceInvite.workplaceId;
+            workplaceRole = workspaceInvite.workplaceRole;
+            requiresApproval = workspaceInvite.requiresApproval;
+            inviteMethod = 'token';
+        }
+        else if (inviteCode) {
+            const { Workplace } = await Promise.resolve().then(() => __importStar(require('../models/Workplace')));
+            workplace = await Workplace.findOne({ inviteCode: inviteCode.toUpperCase() });
+            if (!workplace) {
+                res.status(400).json({
+                    message: 'Invalid workplace invite code',
+                });
+                return;
+            }
+            workplaceId = workplace._id;
+            workplaceRole = 'Staff';
+            requiresApproval = true;
+            inviteMethod = 'code';
+        }
         const freeTrialPlan = await SubscriptionPlan_1.default.findOne({
             name: 'Free Trial',
             billingInterval: 'monthly',
@@ -44,16 +132,22 @@ const register = async (req, res) => {
             });
             return;
         }
+        let userStatus = 'pending';
+        if (workspaceInvite && requiresApproval) {
+            userStatus = 'pending';
+        }
         const user = await User_1.default.create({
             firstName,
             lastName,
             email,
             phone,
             passwordHash: password,
-            role,
+            role: workplaceId ? 'pharmacy_team' : role,
+            workplaceId: workplaceId || undefined,
+            workplaceRole: workplaceRole || undefined,
             currentPlanId: freeTrialPlan._id,
             subscriptionTier: 'free_trial',
-            status: 'pending',
+            status: userStatus,
         });
         const trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + (freeTrialPlan.trialDuration || 14));
@@ -66,9 +160,46 @@ const register = async (req, res) => {
             endDate: trialEndDate,
             priceAtPurchase: 0,
             autoRenew: false,
+            workspaceId: workplaceId || undefined,
         });
         user.currentSubscriptionId = subscription._id;
         await user.save();
+        if (inviteMethod === 'token' && workspaceInvite) {
+            workspaceInvite.usedCount += 1;
+            if (!requiresApproval) {
+                workspaceInvite.status = 'accepted';
+                workspaceInvite.acceptedAt = new Date();
+                workspaceInvite.acceptedBy = user._id;
+            }
+            await workspaceInvite.save();
+            if (workplaceId) {
+                const { workspaceAuditService } = await Promise.resolve().then(() => __importStar(require('../services/workspaceAuditService')));
+                await workspaceAuditService.logInviteAction(new mongoose_1.default.Types.ObjectId(workplaceId), user._id, requiresApproval ? 'invite_used_pending_approval' : 'invite_accepted', {
+                    metadata: {
+                        inviteId: workspaceInvite._id,
+                        email: user.email,
+                        role: workplaceRole,
+                        requiresApproval,
+                        method: 'invite_link',
+                    },
+                }, req);
+            }
+        }
+        else if (inviteMethod === 'code' && workplace) {
+            if (workplaceId) {
+                const { workspaceAuditService } = await Promise.resolve().then(() => __importStar(require('../services/workspaceAuditService')));
+                await workspaceAuditService.logMemberAction(new mongoose_1.default.Types.ObjectId(workplaceId), user._id, user._id, 'member_joined_via_code', {
+                    reason: `Joined using workplace invite code: ${inviteCode}`,
+                    metadata: {
+                        email: user.email,
+                        role: workplaceRole,
+                        inviteCode,
+                        requiresApproval,
+                        method: 'invite_code',
+                    },
+                }, req);
+            }
+        }
         const verificationToken = user.generateVerificationToken();
         const verificationCode = user.generateVerificationCode();
         await user.save();
@@ -109,9 +240,19 @@ const register = async (req, res) => {
         </div>
       `,
         });
+        let successMessage = 'Registration successful! Please check your email to verify your account.';
+        if ((workspaceInvite || workplace) && requiresApproval) {
+            successMessage = 'Registration successful! Please verify your email. Your account will be activated once the workspace owner approves your request.';
+        }
+        else if (workspaceInvite || workplace) {
+            successMessage = 'Registration successful! Please verify your email to access your workspace.';
+        }
         res.status(201).json({
             success: true,
-            message: 'Registration successful! Please check your email to verify your account.',
+            message: successMessage,
+            requiresApproval: (workspaceInvite || workplace) ? requiresApproval : false,
+            workspaceInvite: (workspaceInvite || workplace) ? true : false,
+            inviteMethod: inviteMethod,
             user: {
                 id: user._id,
                 firstName: user.firstName,
@@ -120,6 +261,8 @@ const register = async (req, res) => {
                 role: user.role,
                 status: user.status,
                 emailVerified: user.emailVerified,
+                workplaceId: user.workplaceId,
+                workplaceRole: user.workplaceRole,
             },
         });
     }
@@ -150,6 +293,13 @@ const login = async (req, res) => {
             res
                 .status(401)
                 .json({ message: 'Account is suspended. Please contact support.' });
+            return;
+        }
+        if (user.status === 'pending') {
+            res.status(401).json({
+                message: 'Your account is pending approval by the workspace owner. You will receive an email once approved.',
+                requiresApproval: true,
+            });
             return;
         }
         if (!user.emailVerified) {
@@ -199,6 +349,9 @@ const login = async (req, res) => {
                 role: user.role,
                 status: user.status,
                 emailVerified: user.emailVerified,
+                licenseStatus: user.licenseStatus,
+                licenseNumber: user.licenseNumber,
+                licenseVerifiedAt: user.licenseVerifiedAt,
                 currentPlan: user.currentPlanId,
                 workplaceId: user.workplaceId,
             },
@@ -509,6 +662,9 @@ const getMe = async (req, res) => {
                 role: user.role,
                 status: user.status,
                 emailVerified: user.emailVerified,
+                licenseStatus: user.licenseStatus,
+                licenseNumber: user.licenseNumber,
+                licenseVerifiedAt: user.licenseVerifiedAt,
                 currentPlan: user.currentPlanId,
                 workplace: user.workplaceId,
                 workplaceRole: user.workplaceRole,

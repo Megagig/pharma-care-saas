@@ -152,7 +152,7 @@ export const auth = async (
     // Allow active and license_pending users in all environments
     // In development, also allow pending users for testing
     const allowedStatuses = ['active', 'license_pending'];
-    
+
     // In development, also allow pending users
     if (process.env.NODE_ENV === 'development') {
       allowedStatuses.push('pending');
@@ -160,7 +160,7 @@ export const auth = async (
 
     if (!allowedStatuses.includes(user.status)) {
       res.status(401).json({
-        message: user.status === 'pending' 
+        message: user.status === 'pending'
           ? 'Please verify your email before logging in.'
           : 'Account is not active.',
         status: user.status,
@@ -179,7 +179,7 @@ export const auth = async (
     if (user.workplaceId) {
       subscription = await Subscription.findOne({
         workspaceId: user.workplaceId,
-        status: { $in: ['active', 'trial', 'grace_period'] },
+        status: { $in: ['active', 'trial', 'past_due'] },
       }).populate('planId');
     }
     // Users without workplaces don't have subscriptions (they access basic features only)
@@ -390,9 +390,17 @@ export const requireFeature = (featureKey: string) => {
     next: NextFunction
   ): Promise<void> => {
     try {
-      if (!req.user || !req.subscription) {
+      if (!req.user) {
         res.status(401).json({ message: 'Access denied.' });
         return;
+      }
+
+      console.log(`🔧 RequireFeature Debug - Feature: ${featureKey}, User: ${req.user.email}, Role: ${req.user.role}`);
+
+      // Check if user is super admin - they bypass all restrictions
+      if ((req.user.role as string) === 'super_admin') {
+        console.log('🔧 Super admin bypass granted');
+        return next();
       }
 
       // Get feature flag configuration
@@ -401,7 +409,13 @@ export const requireFeature = (featureKey: string) => {
         isActive: true,
       });
 
+      console.log(`🔧 Feature flag found: ${!!featureFlag}, Key: ${featureKey}`);
+      if (featureFlag) {
+        console.log(`🔧 Feature flag details: allowedTiers=${featureFlag.allowedTiers}, allowedRoles=${featureFlag.allowedRoles}`);
+      }
+
       if (!featureFlag) {
+        console.log(`🔧 Feature flag not found or inactive: ${featureKey}`);
         res.status(404).json({
           message: 'Feature not found or inactive.',
           feature: featureKey,
@@ -412,13 +426,38 @@ export const requireFeature = (featureKey: string) => {
       const user = req.user;
       const subscription = req.subscription;
 
-      // Check if user is super admin - they bypass all restrictions
-      if ((user.role as string) === 'super_admin') {
-        return next();
+      console.log(`🔧 Subscription: ${subscription ? 'found' : 'not found'}`);
+      if (subscription) {
+        console.log(`🔧 Subscription details: status=${subscription.status}, tier=${subscription.tier}`);
+      }
+
+      // If no subscription is found, check if this is a basic feature that doesn't require subscription
+      if (!subscription) {
+        // Allow access to basic features without subscription
+        // This handles cases where users have expired subscriptions but still need access to core features
+        const basicFeatures = [
+          'patient_management',
+          'basic_prescriptions',
+          'basic_notes'
+        ];
+
+        if (basicFeatures.includes(featureKey)) {
+          return next();
+        }
+
+        res.status(403).json({
+          message: 'Active subscription required for this feature.',
+          feature: featureKey,
+          subscriptionStatus: 'none',
+          requiresAction: 'subscription_required',
+          upgradeRequired: true,
+        });
+        return;
       }
 
       // Check subscription status
-      if (!['active', 'trial'].includes(subscription.status)) {
+      if (!['active', 'trial', 'past_due'].includes(subscription.status)) {
+        console.log(`🔧 Subscription status check failed: ${subscription.status}`);
         res.status(403).json({
           message: 'Your subscription is not active.',
           feature: featureKey,
@@ -431,6 +470,7 @@ export const requireFeature = (featureKey: string) => {
 
       // Check tier access
       if (!featureFlag.allowedTiers.includes(subscription.tier)) {
+        console.log(`🔧 Tier access check failed: user tier=${subscription.tier}, allowed=${featureFlag.allowedTiers}`);
         res.status(403).json({
           message: 'Feature not available in your current plan.',
           feature: featureKey,
@@ -519,7 +559,7 @@ export const requireFeature = (featureKey: string) => {
       });
     }
   };
-};
+};;
 
 // Usage limit middleware with analytics
 export const checkUsageLimit = (featureKey: string, limitKey: string) => {

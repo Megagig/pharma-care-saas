@@ -56,41 +56,12 @@ import {
 
 const router = express.Router();
 
-// ===============================
-// HEALTH CHECK (No Auth Required)
-// ===============================
-
-/**
- * GET /api/clinical-interventions/health
- * Health check endpoint for clinical interventions module
- * No authentication required for super_admin testing
- */
-router.get('/health', (req, res) => {
-    res.json({
-        status: 'OK',
-        module: 'clinical-interventions',
-        timestamp: new Date().toISOString(),
-        version: '1.0.0',
-        endpoints: {
-            total: 30,
-            crud: 5,
-            workflow: 8,
-            analytics: 4,
-            reporting: 3,
-            utility: 2,
-            mtr: 5,
-            notifications: 1,
-            audit: 3
-        }
-    });
-});
+// Note: Health check endpoint is defined in app.ts to avoid auth middleware conflicts
 
 // Create a separate router for authenticated routes
 const authenticatedRouter = express.Router();
 
-// Apply authentication and workspace context to authenticated routes
-authenticatedRouter.use(auth);
-authenticatedRouter.use(loadWorkspaceContext);
+// Note: Auth middleware applied per route to avoid conflicts with health endpoint
 
 // ===============================
 // CORE CRUD OPERATIONS
@@ -101,6 +72,8 @@ authenticatedRouter.use(loadWorkspaceContext);
  * List interventions with filtering, sorting, and pagination
  */
 authenticatedRouter.get('/',
+    auth,
+    loadWorkspaceContext,
     requireRole('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'),
     requireInterventionRead,
     getClinicalInterventions
@@ -253,6 +226,8 @@ authenticatedRouter.get('/assigned-to-me',
  * Get dashboard metrics and analytics
  */
 authenticatedRouter.get('/analytics/summary',
+    auth,
+    loadWorkspaceContext,
     requireRole('pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'),
     requireInterventionRead,
     getInterventionAnalytics

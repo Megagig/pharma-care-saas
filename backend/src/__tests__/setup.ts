@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../app';
-import { Express } from 'express';
+import { Application } from 'express';
 
-export function createTestApp(): Express {
+export function createTestApp(): Application {
     return app;
 }
 

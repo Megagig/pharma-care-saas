@@ -112,4 +112,18 @@ router.get(
 // Get feature flags by subscription tier
 router.get('/tier/:tier', featureFlagController.getFeatureFlagsByTier);
 
+// Bulk add or remove features for a tier
+router.post(
+  '/tier/:tier/features',
+  [
+    body('featureKeys')
+      .isArray({ min: 1 })
+      .withMessage('featureKeys must be a non-empty array'),
+    body('action')
+      .isIn(['add', 'remove'])
+      .withMessage('action must be either "add" or "remove"'),
+  ],
+  featureFlagController.updateTierFeatures
+);
+
 export default router;

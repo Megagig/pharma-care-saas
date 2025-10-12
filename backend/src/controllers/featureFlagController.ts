@@ -4,6 +4,9 @@ import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import { AuthRequest, isExtendedUser } from '../types/auth';
 
+// Available subscription tiers
+const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'] as const;
+
 /**
  * @desc    Get all feature flags
  * @route   GET /api/feature-flags
@@ -418,6 +421,76 @@ export const getFeatureFlagsByTier = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * @desc    Bulk add or remove features for a tier
+ * @route   POST /api/feature-flags/tier/:tier/features
+ * @access  Private (Super Admin only)
+ */
+export const updateTierFeatures = async (req: Request, res: Response) => {
+  try {
+    const { tier } = req.params;
+    const { featureKeys, action } = req.body;
+
+    // Validate tier parameter
+    if (!tier || !AVAILABLE_TIERS.includes(tier as any)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid tier. Must be one of: ${AVAILABLE_TIERS.join(', ')}`,
+      });
+    }
+
+    // Validate action parameter
+    if (!action || !['add', 'remove'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action. Must be either "add" or "remove"',
+      });
+    }
+
+    // Validate featureKeys array
+    if (!featureKeys || !Array.isArray(featureKeys) || featureKeys.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'featureKeys must be a non-empty array',
+      });
+    }
+
+    // Perform bulk operation based on action
+    let result;
+    if (action === 'add') {
+      // Use $addToSet to add tier to allowedTiers array (prevents duplicates)
+      result = await FeatureFlag.updateMany(
+        { key: { $in: featureKeys } },
+        { $addToSet: { allowedTiers: tier } }
+      );
+    } else {
+      // Use $pull to remove tier from allowedTiers array
+      result = await FeatureFlag.updateMany(
+        { key: { $in: featureKeys } },
+        { $pull: { allowedTiers: tier } }
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully ${action === 'add' ? 'added' : 'removed'} tier "${tier}" ${action === 'add' ? 'to' : 'from'} ${result.modifiedCount} feature(s)`,
+      data: {
+        tier,
+        action,
+        matchedCount: result.matchedCount,
+        modifiedCount: result.modifiedCount,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating tier features:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
 export default {
   getAllFeatureFlags,
   getFeatureFlagById,
@@ -427,4 +500,5 @@ export default {
   toggleFeatureFlagStatus,
   getFeatureFlagsByCategory,
   getFeatureFlagsByTier,
+  updateTierFeatures,
 };

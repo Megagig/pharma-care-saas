@@ -101,6 +101,17 @@ export const useRBAC = (): UseRBACReturn => {
 
   const hasRole = (requiredRole: string | string[]): boolean => {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    
+    // Check for system roles that need to be checked against actual user.role
+    const systemRoles = ['super_admin', 'pharmacy_outlet', 'pharmacy_team', 'pharmacist', 'intern_pharmacist'];
+    const hasSystemRoleCheck = roles.some(r => systemRoles.includes(r));
+    
+    if (hasSystemRoleCheck) {
+      // Check actual system role
+      return roles.includes(user?.role || '');
+    }
+    
+    // Check mapped RBAC role
     return roles.includes(role);
   };
 
@@ -140,8 +151,13 @@ export const useRBAC = (): UseRBACReturn => {
   };
 
   const requiresLicense = (): boolean => {
-    // Only pharmacists require license verification
-    return role === 'pharmacist';
+    // Pharmacists, intern pharmacists, and owners require license verification
+    // Check against actual system role for intern_pharmacist
+    return (
+      role === 'pharmacist' ||
+      (user?.role as string) === 'intern_pharmacist' ||
+      role === 'owner'
+    );
   };
 
   const getLicenseStatus = (): string => {

@@ -695,8 +695,8 @@ const AdminDashboard: React.FC = () => {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Chip
-                        label={user.systemRole.replace('_', ' ')}
-                        color={getRoleColor(user.systemRole)}
+                        label={(user.systemRole || 'unknown').replace('_', ' ')}
+                        color={getRoleColor(user.systemRole || 'unknown')}
                         size="small"
                       />
                     </TableCell>

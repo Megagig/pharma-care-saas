@@ -3,11 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getFeatureFlagsByTier = exports.getFeatureFlagsByCategory = exports.toggleFeatureFlagStatus = exports.deleteFeatureFlag = exports.updateFeatureFlag = exports.createFeatureFlag = exports.getFeatureFlagById = exports.getAllFeatureFlags = void 0;
+exports.updateTierFeatures = exports.getFeatureFlagsByTier = exports.getFeatureFlagsByCategory = exports.toggleFeatureFlagStatus = exports.deleteFeatureFlag = exports.updateFeatureFlag = exports.createFeatureFlag = exports.getFeatureFlagById = exports.getAllFeatureFlags = void 0;
 const FeatureFlag_1 = require("../models/FeatureFlag");
 const express_validator_1 = require("express-validator");
 const mongoose_1 = __importDefault(require("mongoose"));
 const auth_1 = require("../types/auth");
+const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'];
 const getAllFeatureFlags = async (req, res) => {
     try {
         const user = req.user;
@@ -313,6 +314,56 @@ const getFeatureFlagsByTier = async (req, res) => {
     }
 };
 exports.getFeatureFlagsByTier = getFeatureFlagsByTier;
+const updateTierFeatures = async (req, res) => {
+    try {
+        const { tier } = req.params;
+        const { featureKeys, action } = req.body;
+        if (!tier || !AVAILABLE_TIERS.includes(tier)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid tier. Must be one of: ${AVAILABLE_TIERS.join(', ')}`,
+            });
+        }
+        if (!action || !['add', 'remove'].includes(action)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid action. Must be either "add" or "remove"',
+            });
+        }
+        if (!featureKeys || !Array.isArray(featureKeys) || featureKeys.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'featureKeys must be a non-empty array',
+            });
+        }
+        let result;
+        if (action === 'add') {
+            result = await FeatureFlag_1.FeatureFlag.updateMany({ key: { $in: featureKeys } }, { $addToSet: { allowedTiers: tier } });
+        }
+        else {
+            result = await FeatureFlag_1.FeatureFlag.updateMany({ key: { $in: featureKeys } }, { $pull: { allowedTiers: tier } });
+        }
+        return res.status(200).json({
+            success: true,
+            message: `Successfully ${action === 'add' ? 'added' : 'removed'} tier "${tier}" ${action === 'add' ? 'to' : 'from'} ${result.modifiedCount} feature(s)`,
+            data: {
+                tier,
+                action,
+                matchedCount: result.matchedCount,
+                modifiedCount: result.modifiedCount,
+            },
+        });
+    }
+    catch (error) {
+        console.error('Error updating tier features:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+exports.updateTierFeatures = updateTierFeatures;
 exports.default = {
     getAllFeatureFlags: exports.getAllFeatureFlags,
     getFeatureFlagById: exports.getFeatureFlagById,
@@ -322,5 +373,6 @@ exports.default = {
     toggleFeatureFlagStatus: exports.toggleFeatureFlagStatus,
     getFeatureFlagsByCategory: exports.getFeatureFlagsByCategory,
     getFeatureFlagsByTier: exports.getFeatureFlagsByTier,
+    updateTierFeatures: exports.updateTierFeatures,
 };
 //# sourceMappingURL=featureFlagController.js.map

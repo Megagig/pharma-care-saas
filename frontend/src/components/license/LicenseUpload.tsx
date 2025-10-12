@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../services/apiClient';
 import {
   Box,
   Card,
@@ -63,6 +63,9 @@ const LicenseUpload: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [licenseNumber, setLicenseNumber] = useState('');
+  const [expirationDate, setExpirationDate] = useState('');
+  const [pharmacySchool, setPharmacySchool] = useState('');
+  const [yearOfGraduation, setYearOfGraduation] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -74,9 +77,7 @@ const LicenseUpload: React.FC = () => {
 
   const loadLicenseStatus = useCallback(async () => {
     try {
-      const response = await axios.get('/api/license/status', {
-        withCredentials: true,
-      });
+      const response = await apiClient.get('/license/status');
 
       if (response.status === 200) {
         const data = response.data;
@@ -85,14 +86,28 @@ const LicenseUpload: React.FC = () => {
         if (data.data.licenseNumber) {
           setLicenseNumber(data.data.licenseNumber);
         }
+        if (data.data.expirationDate) {
+          setExpirationDate(new Date(data.data.expirationDate).toISOString().split('T')[0]);
+        }
+        if (data.data.pharmacySchool) {
+          setPharmacySchool(data.data.pharmacySchool);
+        }
+        if (data.data.yearOfGraduation) {
+          setYearOfGraduation(data.data.yearOfGraduation.toString());
+        }
 
         // Set active step based on current status
-        if (data.data.status === 'pending') {
-          setActiveStep(2);
-        } else if (data.data.status === 'approved') {
+        if (data.data.status === 'approved') {
           setActiveStep(3);
-        } else if (data.data.hasDocument) {
+        } else if (data.data.status === 'pending' && data.data.hasDocument) {
+          setActiveStep(2);
+        } else if (data.data.status === 'rejected' || (data.data.status === 'pending' && !data.data.hasDocument)) {
+          // If rejected or pending without document, start from beginning
+          setActiveStep(0);
+        } else if (data.data.licenseNumber) {
           setActiveStep(1);
+        } else {
+          setActiveStep(0);
         }
       }
     } catch {
@@ -110,13 +125,10 @@ const LicenseUpload: React.FC = () => {
   const validateLicenseNumber = useCallback(async () => {
     setValidatingNumber(true);
     try {
-      const response = await axios.post(
-        '/api/license/validate-number',
+      const response = await apiClient.post(
+        '/license/validate-number',
         {
           licenseNumber,
-        },
-        {
-          withCredentials: true,
         }
       );
 
@@ -191,11 +203,11 @@ const LicenseUpload: React.FC = () => {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !licenseNumber || numberValid === false) {
+    if (!selectedFile || !licenseNumber || numberValid === false || !expirationDate || !pharmacySchool) {
       addNotification({
         type: 'error',
         title: 'Validation Error',
-        message: 'Please provide a valid license number and select a file',
+        message: 'Please fill all required fields and select a file',
         duration: 5000,
       });
       return;
@@ -207,9 +219,13 @@ const LicenseUpload: React.FC = () => {
       const formData = new FormData();
       formData.append('licenseDocument', selectedFile);
       formData.append('licenseNumber', licenseNumber);
+      formData.append('licenseExpirationDate', expirationDate);
+      formData.append('pharmacySchool', pharmacySchool);
+      if (yearOfGraduation) {
+        formData.append('yearOfGraduation', yearOfGraduation);
+      }
 
-      const response = await axios.post('/api/license/upload', formData, {
-        withCredentials: true,
+      const response = await apiClient.post('/license/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -244,9 +260,7 @@ const LicenseUpload: React.FC = () => {
 
   const handleDeleteDocument = async () => {
     try {
-      const response = await axios.delete('/api/license/document', {
-        withCredentials: true,
-      });
+      const response = await apiClient.delete('/license/document');
 
       if (response.status === 200) {
         addNotification({
@@ -300,7 +314,12 @@ const LicenseUpload: React.FC = () => {
     return <LoadingSpinner message="Loading license information..." />;
   }
 
-  if (!licenseInfo?.requiresLicense) {
+  // Check if license is required based on user role
+  const userRequiresLicense = user?.role === 'pharmacist' || 
+                               user?.role === 'intern_pharmacist' || 
+                               user?.role === 'owner';
+
+  if (!userRequiresLicense && licenseInfo && !licenseInfo.requiresLicense) {
     return (
       <Card>
         <CardContent>
@@ -326,13 +345,14 @@ const LicenseUpload: React.FC = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Stepper activeStep={activeStep} orientation="vertical">
-            {/* Step 1: License Number */}
+            {/* Step 1: License Information */}
             <Step>
-              <StepLabel>Enter License Number</StepLabel>
+              <StepLabel>Enter License Information</StepLabel>
               <StepContent>
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <TextField
                     fullWidth
+                    required
                     label="Pharmacist License Number"
                     value={licenseNumber}
                     onChange={(e) =>
@@ -351,12 +371,45 @@ const LicenseUpload: React.FC = () => {
                         : 'Enter your pharmacist license number'
                     }
                   />
+                  <TextField
+                    fullWidth
+                    required
+                    type="date"
+                    label="License Expiration Date"
+                    value={expirationDate}
+                    onChange={(e) => setExpirationDate(e.target.value)}
+                    disabled={licenseInfo?.status === 'approved'}
+                    InputLabelProps={{ shrink: true }}
+                    inputProps={{ min: new Date().toISOString().split('T')[0] }}
+                    helperText="Select the expiration date of your license"
+                  />
+                  <TextField
+                    fullWidth
+                    required
+                    label="Pharmacy School of Graduation"
+                    value={pharmacySchool}
+                    onChange={(e) => setPharmacySchool(e.target.value)}
+                    placeholder="e.g., University of Lagos"
+                    disabled={licenseInfo?.status === 'approved'}
+                    helperText="Enter the name of your pharmacy school"
+                  />
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Year of Graduation (Optional)"
+                    value={yearOfGraduation}
+                    onChange={(e) => setYearOfGraduation(e.target.value)}
+                    placeholder="e.g., 2020"
+                    disabled={licenseInfo?.status === 'approved'}
+                    inputProps={{ min: 1900, max: new Date().getFullYear() + 10 }}
+                    helperText="Enter your year of graduation"
+                  />
                 </Box>
                 <Button
                   variant="contained"
                   onClick={() => setActiveStep(1)}
                   disabled={
-                    !licenseNumber || numberValid === false || validatingNumber
+                    !licenseNumber || !expirationDate || !pharmacySchool || numberValid === false || validatingNumber
                   }
                 >
                   Continue

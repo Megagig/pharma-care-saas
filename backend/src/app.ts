@@ -74,6 +74,7 @@ import rbacAuditRoutes from './routes/rbacAudit';
 import roleRoutes from './routes/roleRoutes';
 import pricingManagementRoutes from './routes/pricingManagementRoutes';
 import saasRoutes from './routes/saasRoutes';
+import workspaceTeamRoutes from './routes/workspaceTeamRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -404,6 +405,15 @@ app.get('/api/clinical-interventions/health', (req, res) => {
   });
 });
 
+// Test endpoint to verify routing behavior
+app.get('/api/test-clinical-health', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'Test clinical health endpoint works',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.use('/api/clinical-interventions', clinicalInterventionRoutes);
 app.use('/api/medication-management', medicationManagementRoutes);
 app.use('/api/medication-analytics', medicationAnalyticsRoutes);
@@ -412,6 +422,9 @@ app.use('/api/security', securityRoutes);
 app.use('/api/usage', usageMonitoringRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/location-data', locationDataRoutes);
+
+// Workspace Team Management routes (Workspace owners only)
+app.use('/api/workspace/team', workspaceTeamRoutes);
 
 // Legacy API compatibility routes
 app.use('/api/legacy', legacyApiRoutes);

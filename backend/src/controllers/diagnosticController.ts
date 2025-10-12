@@ -650,9 +650,9 @@ export const debugDatabaseCounts = async (
 
     const diagnosticCasesCount = await DiagnosticCase.countDocuments({ workplaceId });
     const diagnosticHistoryCount = await DiagnosticHistory.countDocuments({ workplaceId });
-    const activeHistoryCount = await DiagnosticHistory.countDocuments({ 
-      workplaceId, 
-      status: 'active' 
+    const activeHistoryCount = await DiagnosticHistory.countDocuments({
+      workplaceId,
+      status: 'active'
     });
 
     // Get sample records
@@ -816,7 +816,7 @@ export const getPatientDiagnosticHistory = async (
     }
 
     const skip = (Number(page) - 1) * Number(limit);
-    const statusFilter = includeArchived === 'true' 
+    const statusFilter = includeArchived === 'true'
       ? { status: { $in: ['active', 'archived'] } }
       : { status: 'active' };
 
@@ -948,7 +948,7 @@ export const addDiagnosticHistoryNote = async (
     await history.save();
 
     const lastNote = history.notes[history.notes.length - 1] as any;
-    
+
     res.status(200).json({
       success: true,
       message: 'Note added successfully',
@@ -1023,7 +1023,7 @@ export const getDiagnosticAnalytics = async (
     if (historyCount > 0) {
       // Use DiagnosticHistory data
       const historyMatchFilter = { ...matchFilter, status: 'active' };
-      
+
       analytics = await DiagnosticHistory.aggregate([
         { $match: historyMatchFilter },
         {
@@ -1112,7 +1112,7 @@ export const getDiagnosticAnalytics = async (
     } else {
       // Fallback to DiagnosticCase data
       logger.info('No DiagnosticHistory records found, using DiagnosticCase data for analytics');
-      
+
       analytics = await DiagnosticCase.aggregate([
         { $match: matchFilter },
         {
@@ -1671,7 +1671,7 @@ export const compareDiagnosticHistories = async (
     // Compare diagnoses
     const oldDiagnoses = history1.analysisSnapshot.differentialDiagnoses.map(d => d.condition);
     const newDiagnoses = history2.analysisSnapshot.differentialDiagnoses.map(d => d.condition);
-    
+
     comparison.diagnosisChanges = [
       ...newDiagnoses.filter(d => !oldDiagnoses.includes(d)).map(d => `Added: ${d}`),
       ...oldDiagnoses.filter(d => !newDiagnoses.includes(d)).map(d => `Removed: ${d}`),
@@ -1680,14 +1680,14 @@ export const compareDiagnosticHistories = async (
     // Compare symptoms
     const oldSymptoms = [...history1.clinicalContext.symptoms.subjective, ...history1.clinicalContext.symptoms.objective];
     const newSymptoms = [...history2.clinicalContext.symptoms.subjective, ...history2.clinicalContext.symptoms.objective];
-    
+
     comparison.newSymptoms = newSymptoms.filter(s => !oldSymptoms.includes(s));
     comparison.resolvedSymptoms = oldSymptoms.filter(s => !newSymptoms.includes(s));
 
     // Compare medications
     const oldMeds = history1.clinicalContext.currentMedications?.map(m => m.name) || [];
     const newMeds = history2.clinicalContext.currentMedications?.map(m => m.name) || [];
-    
+
     comparison.medicationChanges = [
       ...newMeds.filter(m => !oldMeds.includes(m)).map(m => `Added: ${m}`),
       ...oldMeds.filter(m => !newMeds.includes(m)).map(m => `Discontinued: ${m}`),
@@ -1941,7 +1941,7 @@ export const generateCaseReferralDocument = async (
     // Generate referral document content
     const patient = diagnosticCase.patientId as any;
     const pharmacist = diagnosticCase.pharmacistId as any;
-    
+
     const referralContent = `
 MEDICAL REFERRAL DOCUMENT
 
@@ -1964,25 +1964,25 @@ Onset: ${diagnosticCase.symptoms.onset}
 
 AI Analysis Summary:
 Primary Differential Diagnoses:
-${diagnosticCase.aiAnalysis.differentialDiagnoses.slice(0, 3).map((dx, index) => 
-  `${index + 1}. ${dx.condition} (${Math.round(dx.probability)}% probability)
+${diagnosticCase.aiAnalysis.differentialDiagnoses.slice(0, 3).map((dx, index) =>
+      `${index + 1}. ${dx.condition} (${Math.round(dx.probability)}% probability)
      Reasoning: ${dx.reasoning}`
-).join('\n')}
+    ).join('\n')}
 
 Recommended Tests:
-${diagnosticCase.aiAnalysis.recommendedTests.map((test, index) => 
-  `${index + 1}. ${test.testName} (${test.priority})
+${diagnosticCase.aiAnalysis.recommendedTests.map((test, index) =>
+      `${index + 1}. ${test.testName} (${test.priority})
      Reasoning: ${test.reasoning}`
-).join('\n')}
+    ).join('\n')}
 
 Red Flags Identified:
-${diagnosticCase.aiAnalysis.redFlags.length > 0 
-  ? diagnosticCase.aiAnalysis.redFlags.map((flag, index) => 
-      `${index + 1}. ${flag.flag} (${flag.severity})
+${diagnosticCase.aiAnalysis.redFlags.length > 0
+        ? diagnosticCase.aiAnalysis.redFlags.map((flag, index) =>
+          `${index + 1}. ${flag.flag} (${flag.severity})
          Action: ${flag.action}`
-    ).join('\n')
-  : 'None identified'
-}
+        ).join('\n')
+        : 'None identified'
+      }
 
 Pharmacist Notes:
 ${notes || 'No additional notes provided'}
@@ -2272,8 +2272,8 @@ export const downloadReferralDocument = async (
     // For now, we'll return the content as JSON for the frontend to handle
     // In production, you would generate actual PDF/Word files here
     const filename = format === 'pdf' ? `referral-${caseId}.pdf` :
-                     format === 'docx' ? `referral-${caseId}.docx` :
-                     `referral-${caseId}.txt`;
+      format === 'docx' ? `referral-${caseId}.docx` :
+        `referral-${caseId}.txt`;
 
     res.status(200).json({
       success: true,

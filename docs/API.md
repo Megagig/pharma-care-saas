@@ -297,6 +297,56 @@ Get payment history.
 
 Create new payment.
 
+### Feature Flags (Super Admin Only)
+
+#### GET /api/feature-flags
+
+Get all feature flags (requires super_admin role).
+
+#### POST /api/feature-flags
+
+Create a new feature flag (requires super_admin role).
+
+**Request Body:**
+
+```json
+{
+  "key": "clinical_decision_support",
+  "name": "Clinical Decision Support",
+  "description": "AI-powered clinical decision support system",
+  "allowedTiers": ["pro", "enterprise"],
+  "allowedRoles": ["pharmacist", "owner"],
+  "isActive": true
+}
+```
+
+#### PUT /api/feature-flags/:id
+
+Update an existing feature flag (requires super_admin role).
+
+#### DELETE /api/feature-flags/:id
+
+Delete a feature flag (requires super_admin role).
+
+#### GET /api/feature-flags/tier/:tier
+
+Get all active features for a specific subscription tier (requires super_admin role).
+
+#### POST /api/feature-flags/tier/:tier/features
+
+Bulk add or remove features from a tier (requires super_admin role).
+
+**Request Body:**
+
+```json
+{
+  "featureKeys": ["clinical_decision_support", "advanced_reports"],
+  "action": "add"
+}
+```
+
+**Note:** For detailed Feature Flags API documentation, see [FEATURE_FLAGS_API.md](FEATURE_FLAGS_API.md)
+
 ## Error Handling
 
 The API uses standard HTTP status codes and returns error responses in the following format:
@@ -324,3 +374,51 @@ API requests are limited to 100 requests per 15-minute window per IP address.
 ## Data Validation
 
 All input data is validated and sanitized. Required fields are marked in each endpoint specification.
+
+## API Changelog
+
+### Version 1.3.0 (2024-01-16)
+
+**Feature Flags API**
+- Added complete CRUD operations for feature flags management
+- Added tier-based feature management endpoints
+- Added bulk operations for tier feature updates
+- Implemented super_admin authorization for all feature flag endpoints
+- Added comprehensive error handling and validation
+
+**New Endpoints:**
+- `GET /api/feature-flags` - Get all feature flags
+- `POST /api/feature-flags` - Create new feature flag
+- `PUT /api/feature-flags/:id` - Update feature flag
+- `DELETE /api/feature-flags/:id` - Delete feature flag
+- `GET /api/feature-flags/tier/:tier` - Get features by tier
+- `POST /api/feature-flags/tier/:tier/features` - Bulk update tier features
+
+**Security:**
+- All feature flag endpoints require super_admin role
+- JWT authentication enforced via httpOnly cookies
+- Input validation for tiers and roles
+
+### Version 1.2.0 (Previous)
+
+**Clinical Notes API**
+- Enhanced clinical notes with SOAP format support
+- Added file attachment capabilities
+- Implemented bulk operations
+- Added advanced search and filtering
+
+### Version 1.1.0 (Previous)
+
+**Dynamic RBAC**
+- Implemented role-based access control system
+- Added permission management
+- Added role hierarchy support
+
+### Version 1.0.0 (Initial Release)
+
+**Core Features**
+- User authentication and authorization
+- Patient management
+- Medication tracking
+- Subscription management
+- Payment processing
