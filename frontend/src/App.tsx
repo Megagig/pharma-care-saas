@@ -55,6 +55,7 @@ import {
   LazyReportsAnalyticsDashboard,
   LazyAdminDashboard,
   LazyFeatureFlagsPage,
+  LazyFeatureManagement,
   LazyPatientForm,
   LazyPatientManagement,
   LazyMedicationsManagementDashboard,
@@ -67,6 +68,7 @@ import {
   LazyHelp,
   LazyMTRHelp,
   LazyLicenseUpload,
+  LazyWorkspaceTeam,
 } from './components/LazyComponents';
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
@@ -688,6 +690,23 @@ function App(): JSX.Element {
                             }
                           />
 
+                          {/* Workspace Team Management - Only for pharmacy_outlet users */}
+                          <Route
+                            path="/workspace/team"
+                            element={
+                              <ProtectedRoute 
+                                requiredRole="pharmacy_outlet"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyWorkspaceTeam />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+
                           {/* Admin Routes */}
                           <Route
                             path="/admin"
@@ -709,6 +728,19 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyFeatureFlagsPage />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* Admin Feature Management Route */}
+                          <Route
+                            path="/admin/feature-management"
+                            element={
+                              <ProtectedRoute requiredRole="super_admin">
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyFeatureManagement />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>

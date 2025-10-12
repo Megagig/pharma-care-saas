@@ -4,6 +4,7 @@ export * from './useMedications';
 export * from './useClinicalNotes';
 export * from './useMTRQueries';
 export * from './useClinicalInterventions';
+export * from './useWorkspaceTeam';
 
 // Diagnostics module hooks
 export * from '../modules/diagnostics/hooks/useDiagnostics';

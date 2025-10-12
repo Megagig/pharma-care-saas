@@ -86,5 +86,13 @@ router.delete('/:id', featureFlagController_1.default.deleteFeatureFlag);
 router.patch('/:id/toggle', featureFlagController_1.default.toggleFeatureFlagStatus);
 router.get('/category/:category', featureFlagController_1.default.getFeatureFlagsByCategory);
 router.get('/tier/:tier', featureFlagController_1.default.getFeatureFlagsByTier);
+router.post('/tier/:tier/features', [
+    (0, express_validator_1.body)('featureKeys')
+        .isArray({ min: 1 })
+        .withMessage('featureKeys must be a non-empty array'),
+    (0, express_validator_1.body)('action')
+        .isIn(['add', 'remove'])
+        .withMessage('action must be either "add" or "remove"'),
+], featureFlagController_1.default.updateTierFeatures);
 exports.default = router;
 //# sourceMappingURL=featureFlagRoutes.js.map

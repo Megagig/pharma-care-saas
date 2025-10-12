@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
@@ -182,12 +182,20 @@ const MultiStepRegister = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _selectedPlan = searchParams.get('plan') || 'free-trial';
   const selectedPlanName = searchParams.get('planName') || 'Free Trial';
+  
+  // Check for invite token or invite code in URL
+  const inviteToken = searchParams.get('invite');
+  const inviteCodeParam = searchParams.get('code');
 
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [workplaceFlow, setWorkplaceFlow] = useState<WorkplaceFlow>('create');
+  const [workplaceFlow, setWorkplaceFlow] = useState<WorkplaceFlow>(
+    inviteToken || inviteCodeParam ? 'skip' : 'create'
+  );
   const [foundWorkplace, setFoundWorkplace] = useState<Workplace | null>(null);
+  const [inviteWorkspace, setInviteWorkspace] = useState<{name: string; email: string} | null>(null);
+  const [loadingInvite, setLoadingInvite] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
@@ -220,6 +228,33 @@ const MultiStepRegister = () => {
   });
 
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+
+  // Fetch workspace info when invite token is present
+  useEffect(() => {
+    const fetchInviteWorkspace = async () => {
+      if (!inviteToken) return;
+      
+      setLoadingInvite(true);
+      try {
+        // Fetch invite details from backend
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/workspace/team/invites/validate/${inviteToken}`);
+        const data = await response.json();
+        
+        if (data.success && data.workspace) {
+          setInviteWorkspace({
+            name: data.workspace.name,
+            email: data.workspace.email,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch invite workspace:', error);
+      } finally {
+        setLoadingInvite(false);
+      }
+    };
+
+    fetchInviteWorkspace();
+  }, [inviteToken]);
 
   // Handle form field changes
   const handleUserFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -351,12 +386,23 @@ const MultiStepRegister = () => {
     setError('');
 
     if (activeStep === 0 && !validateStep1()) return;
-    if (activeStep === 1 && !validateStep2()) return;
+    
+    // Skip step 2 validation and navigation if invite token is present
+    if (inviteToken) {
+      // For invite link users, go directly from step 0 to step 2 (confirmation)
+      if (activeStep === 0) {
+        setActiveStep(2);
+        return;
+      }
+    } else {
+      // Normal flow for non-invite users
+      if (activeStep === 1 && !validateStep2()) return;
 
-    // Skip step 2 if user chooses to skip workplace setup
-    if (activeStep === 1 && workplaceFlow === 'skip') {
-      setActiveStep(2);
-      return;
+      // Skip step 2 if user chooses to skip workplace setup
+      if (activeStep === 1 && workplaceFlow === 'skip') {
+        setActiveStep(2);
+        return;
+      }
     }
 
     setActiveStep((prev) => prev + 1);
@@ -375,21 +421,46 @@ const MultiStepRegister = () => {
     setLoading(true);
 
     try {
-      const payload: RegistrationPayload = {
-        ...userForm,
-        workplaceFlow,
-      };
-
-      if (workplaceFlow === 'create') {
-        payload.workplace = workplaceForm;
-      } else if (workplaceFlow === 'join') {
-        payload.inviteCode = joinForm.inviteCode;
-        payload.workplaceRole = joinForm.workplaceRole;
+      // If invite token is present, use simple registration
+      if (inviteToken) {
+        await authService.register({
+          firstName: userForm.firstName,
+          lastName: userForm.lastName,
+          email: userForm.email,
+          password: userForm.password,
+          phone: userForm.phone,
+          inviteToken: inviteToken,
+        });
       }
+      // If invite code from URL is present
+      else if (inviteCodeParam) {
+        await authService.register({
+          firstName: userForm.firstName,
+          lastName: userForm.lastName,
+          email: userForm.email,
+          password: userForm.password,
+          phone: userForm.phone,
+          inviteCode: inviteCodeParam,
+        });
+      }
+      // Otherwise use the full workplace registration
+      else {
+        const payload: RegistrationPayload = {
+          ...userForm,
+          workplaceFlow,
+        };
 
-      console.log('Registration payload:', payload);
+        if (workplaceFlow === 'create') {
+          payload.workplace = workplaceForm;
+        } else if (workplaceFlow === 'join') {
+          payload.inviteCode = joinForm.inviteCode;
+          payload.workplaceRole = joinForm.workplaceRole;
+        }
 
-      await authService.registerWithWorkplace(payload);
+        console.log('Registration payload:', payload);
+
+        await authService.registerWithWorkplace(payload);
+      }
 
       toast.success(
         'Registration successful! Please check your email to verify your account.'
@@ -1057,11 +1128,42 @@ const MultiStepRegister = () => {
                 Create Account
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Join PharmacyCopilot and transform your pharmacy practice
+                {inviteToken || inviteCodeParam
+                  ? 'Complete your registration to join the workspace'
+                  : 'Join PharmacyCopilot and transform your pharmacy practice'}
               </Typography>
 
+              {/* Invite Alert */}
+              {inviteToken && (
+                <Alert severity="info" sx={{ mt: 2, textAlign: 'left' }}>
+                  {loadingInvite ? (
+                    <Typography variant="body2">Loading workspace information...</Typography>
+                  ) : inviteWorkspace ? (
+                    <>
+                      <Typography variant="body2" fontWeight="bold" gutterBottom>
+                        You're joining: {inviteWorkspace.name}
+                      </Typography>
+                      <Typography variant="body2">
+                        After completing registration and verifying your email, your account will need to be approved by the workspace owner before you can login.
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography variant="body2">
+                      You're registering with a workspace invite. After completing registration and verifying your email, your account will need to be approved by the workspace owner before you can login.
+                    </Typography>
+                  )}
+                </Alert>
+              )}
+              {inviteCodeParam && (
+                <Alert severity="info" sx={{ mt: 2, textAlign: 'left' }}>
+                  <Typography variant="body2">
+                    You're registering with a workspace invite code. After completing registration and verifying your email, your account will need to be approved by the workspace owner before you can login.
+                  </Typography>
+                </Alert>
+              )}
+
               {/* Selected Plan Display */}
-              {selectedPlanName && (
+              {selectedPlanName && !inviteToken && !inviteCodeParam && (
                 <Box sx={{ mt: 2 }}>
                   <Chip
                     label={`Selected Plan: ${selectedPlanName}`}
@@ -1080,7 +1182,13 @@ const MultiStepRegister = () => {
 
             {/* Stepper */}
             <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
-              {steps.map((label) => (
+              {steps
+                .filter((_, index) => {
+                  // Skip "Workplace Setup" step for invite link users
+                  if (inviteToken && index === 1) return false;
+                  return true;
+                })
+                .map((label) => (
                 <Step key={label}>
                   <StepLabel>{label}</StepLabel>
                 </Step>

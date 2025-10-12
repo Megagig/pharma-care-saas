@@ -170,9 +170,9 @@ export declare const fhirBundleSchema: z.ZodObject<{
     id: z.ZodOptional<z.ZodString>;
     type: z.ZodEnum<{
         collection: "collection";
+        transaction: "transaction";
         message: "message";
         history: "history";
-        transaction: "transaction";
         document: "document";
         "transaction-response": "transaction-response";
         batch: "batch";
@@ -192,9 +192,9 @@ export declare const importFHIRSchema: z.ZodObject<{
         id: z.ZodOptional<z.ZodString>;
         type: z.ZodEnum<{
             collection: "collection";
+            transaction: "transaction";
             message: "message";
             history: "history";
-            transaction: "transaction";
             document: "document";
             "transaction-response": "transaction-response";
             batch: "batch";

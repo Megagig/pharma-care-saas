@@ -192,20 +192,30 @@ class EmailService {
         return this.sendEmail(email, template);
     }
     async sendAccountSuspensionNotification(email, data) {
-        const template = {
-            subject: 'Account Suspended - PharmacyCopilot',
-            html: `
-        <h2>Account Suspended</h2>
-        <p>Dear ${data.firstName},</p>
-        <p>Your PharmacyCopilot account has been temporarily suspended.</p>
-        <p><strong>Reason:</strong> ${data.reason}</p>
-        <p>If you believe this is an error, please contact support at ${data.supportEmail || 'support@PharmacyCopilot.com'}</p>
-        <br>
-        <p>PharmacyCopilot Team</p>
-      `,
-            text: `Account Suspended. Dear ${data.firstName}, Your PharmacyCopilot account has been temporarily suspended. Reason: ${data.reason}.`,
-        };
-        return this.sendEmail(email, template);
+        try {
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+            const supportUrl = data.supportEmail || `${frontendUrl}/support`;
+            const privacyUrl = data.privacyUrl || `${frontendUrl}/privacy`;
+            const templateVariables = {
+                firstName: data.firstName,
+                workspaceName: data.workspaceName,
+                reason: data.reason,
+                suspendedDate: (data.suspendedDate || new Date()).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                }),
+                supportUrl,
+                privacyUrl,
+            };
+            const template = await this.loadTemplate('memberSuspension', templateVariables);
+            return this.sendEmail(email, template);
+        }
+        catch (error) {
+            console.error('Error sending suspension notification:', error);
+            return { success: false, error: error.message };
+        }
     }
     async sendAccountReactivationNotification(email, data) {
         const template = {
@@ -1085,6 +1095,90 @@ class EmailService {
             text: `Welcome to PharmacyCopilot! Dear ${data.firstName} ${data.lastName}, An account has been created for you. Email: ${email}, Temporary Password: ${data.tempPassword}. Please change your password after your first login. Log in at ${process.env.FRONTEND_URL}/login`,
         };
         return this.sendEmail(email, template);
+    }
+    async sendWorkspaceInviteEmail(email, data) {
+        try {
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+            const supportUrl = `${frontendUrl}/support`;
+            const privacyUrl = `${frontendUrl}/privacy`;
+            const templateVariables = {
+                inviterName: data.inviterName,
+                workspaceName: data.workspaceName,
+                role: data.role,
+                inviteUrl: data.inviteUrl,
+                expiresAt: data.expiresAt.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }),
+                personalMessage: data.personalMessage || '',
+                requiresApproval: data.requiresApproval || false,
+                supportUrl,
+                privacyUrl,
+            };
+            const template = await this.loadTemplate('workspaceTeamInvite', templateVariables);
+            return this.sendEmail(email, template);
+        }
+        catch (error) {
+            console.error('Error sending workspace invite email:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    async sendMemberApprovalNotification(email, data) {
+        try {
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+            const loginUrl = `${frontendUrl}/login`;
+            const supportUrl = `${frontendUrl}/support`;
+            const helpUrl = `${frontendUrl}/help`;
+            const privacyUrl = `${frontendUrl}/privacy`;
+            const templateVariables = {
+                firstName: data.firstName,
+                workspaceName: data.workspaceName,
+                role: data.role,
+                loginUrl,
+                supportUrl,
+                helpUrl,
+                privacyUrl,
+            };
+            const template = await this.loadTemplate('memberApproval', templateVariables);
+            return this.sendEmail(email, template);
+        }
+        catch (error) {
+            console.error('Error sending member approval notification:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    async sendMemberRejectionNotification(email, data) {
+        try {
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+            const contactAdminUrl = `${frontendUrl}/contact`;
+            const supportUrl = `${frontendUrl}/support`;
+            const helpUrl = `${frontendUrl}/help`;
+            const privacyUrl = `${frontendUrl}/privacy`;
+            const templateVariables = {
+                firstName: data.firstName,
+                workspaceName: data.workspaceName,
+                reason: data.reason || '',
+                requestDate: (data.requestDate || new Date()).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                }),
+                contactAdminUrl,
+                supportUrl,
+                helpUrl,
+                privacyUrl,
+            };
+            const template = await this.loadTemplate('memberRejection', templateVariables);
+            return this.sendEmail(email, template);
+        }
+        catch (error) {
+            console.error('Error sending member rejection notification:', error);
+            return { success: false, error: error.message };
+        }
     }
 }
 exports.emailService = new EmailService();

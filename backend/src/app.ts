@@ -72,6 +72,7 @@ import rbacAuditRoutes from './routes/rbacAudit';
 import roleRoutes from './routes/roleRoutes';
 import pricingManagementRoutes from './routes/pricingManagementRoutes';
 import saasRoutes from './routes/saasRoutes';
+import workspaceTeamRoutes from './routes/workspaceTeamRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -365,6 +366,9 @@ app.use('/api/security', securityRoutes);
 app.use('/api/usage', usageMonitoringRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/location-data', locationDataRoutes);
+
+// Workspace Team Management routes (Workspace owners only)
+app.use('/api/workspace/team', workspaceTeamRoutes);
 
 // Legacy API compatibility routes
 app.use('/api/legacy', legacyApiRoutes);

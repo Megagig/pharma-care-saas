@@ -23,6 +23,7 @@ import {
   Settings as SettingsIcon,
   Help as HelpIcon,
   ChevronLeft as ChevronLeftIcon,
+  Flag as FlagIcon,
 } from '@mui/icons-material';
 // Import icons that require default imports
 import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
@@ -53,6 +54,7 @@ const AnalyticsIcon = Analytics;
 const SupervisorAccountIcon = SupervisorAccount;
 import { useSidebarControls } from '../stores/sidebarHooks';
 import { useRBAC } from '../hooks/useRBAC';
+import { useAuth } from '../hooks/useAuth';
 import { ConditionalRender } from './AccessControl';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
 
@@ -62,6 +64,7 @@ const Sidebar = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { hasFeature, hasRole, requiresLicense, getLicenseStatus } = useRBAC();
+  const { user } = useAuth();
   const subscriptionStatus = useSubscriptionStatus();
 
   // Auto-close sidebar on mobile when route changes - using useCallback for stable reference
@@ -171,19 +174,50 @@ const Sidebar = () => {
       show: hasRole('super_admin'),
     },
     {
+      name: 'Feature Management',
+      path: '/admin/feature-management',
+      icon: FlagIcon,
+      show: hasRole('super_admin'),
+    },
+    {
       name: 'Feature Flags',
       path: '/feature-flags',
       icon: SettingsIcon,
       show: hasRole('super_admin') && hasFeature('feature_flag_management'),
     },
-  ];
-
-  const settingsItems = [
     {
       name: 'Saas Settings',
       path: '/saas-settings',
       icon: SettingsIcon,
-      show: true,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'User Management',
+      path: '/user-management',
+      icon: SupervisorAccountIcon,
+      show: hasRole('super_admin'),
+    },
+  ];
+
+  // Debug: Check Team Members visibility
+  React.useEffect(() => {
+    const shouldShow = hasRole('pharmacy_outlet');
+    console.log('🔍 Team Members Visibility Check:', {
+      userRole: user?.role,
+      userObject: user,
+      hasPharmacyOutletRole: shouldShow,
+      willShowLink: shouldShow,
+      hasRoleFunction: typeof hasRole,
+    });
+  }, [user?.role, hasRole, user]);
+
+  const settingsItems = [
+    {
+      name: 'Team Members',
+      path: '/workspace/team',
+      icon: SupervisorAccountIcon,
+      // Show for workspace owners (pharmacy_outlet role)
+      show: hasRole('pharmacy_outlet'),
     },
     {
       name: 'License Verification',
@@ -196,12 +230,6 @@ const Sidebar = () => {
           : getLicenseStatus() === 'rejected'
           ? 'Rejected'
           : null,
-    },
-    {
-      name: 'User Management',
-      path: '/user-management',
-      icon: SupervisorAccountIcon,
-      show: true,
     },
     {
       name: 'Settings',

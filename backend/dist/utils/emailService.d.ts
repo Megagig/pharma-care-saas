@@ -88,7 +88,10 @@ declare class EmailService {
     sendAccountSuspensionNotification(email: string, data: {
         firstName: string;
         reason: string;
+        workspaceName: string;
+        suspendedDate?: Date;
         supportEmail?: string;
+        privacyUrl?: string;
     }): Promise<{
         success: boolean;
         messageId: any;
@@ -528,6 +531,50 @@ declare class EmailService {
         lastName: string;
         tempPassword: string;
         workspaceName?: string;
+    }): Promise<{
+        success: boolean;
+        messageId: any;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: string;
+        messageId?: undefined;
+    }>;
+    sendWorkspaceInviteEmail(email: string, data: {
+        inviterName: string;
+        workspaceName: string;
+        role: string;
+        inviteUrl: string;
+        expiresAt: Date;
+        personalMessage?: string;
+        requiresApproval?: boolean;
+    }): Promise<{
+        success: boolean;
+        messageId: any;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: string;
+        messageId?: undefined;
+    }>;
+    sendMemberApprovalNotification(email: string, data: {
+        firstName: string;
+        workspaceName: string;
+        role: string;
+    }): Promise<{
+        success: boolean;
+        messageId: any;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: string;
+        messageId?: undefined;
+    }>;
+    sendMemberRejectionNotification(email: string, data: {
+        firstName: string;
+        workspaceName: string;
+        reason: string;
+        requestDate?: Date;
     }): Promise<{
         success: boolean;
         messageId: any;

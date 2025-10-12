@@ -27,7 +27,7 @@ interface User {
   lastName: string;
   email: string;
   phone?: string;
-  role: 'pharmacist' | 'technician' | 'owner' | 'admin' | 'super_admin';
+  role: 'pharmacist' | 'technician' | 'owner' | 'admin' | 'super_admin' | 'pharmacy_outlet' | 'pharmacy_team' | 'intern_pharmacist';
   status: 'pending' | 'active' | 'suspended';
   emailVerified: boolean;
   currentPlan: SubscriptionPlan;
@@ -75,7 +75,7 @@ interface RegisterData {
   email: string;
   password: string;
   phone?: string;
-  role?: 'pharmacist' | 'technician' | 'owner';
+  role?: 'pharmacist' | 'technician' | 'owner' | 'pharmacy_outlet' | 'pharmacy_team' | 'intern_pharmacist';
 }
 
 interface AuthProviderProps {
@@ -102,21 +102,30 @@ const convertUserData = (
     | 'technician'
     | 'owner'
     | 'admin'
-    | 'super_admin' = 'pharmacist';
+    | 'super_admin'
+    | 'pharmacy_outlet'
+    | 'pharmacy_team'
+    | 'intern_pharmacist' = 'pharmacist';
 
   if (
     userData.role === 'pharmacist' ||
     userData.role === 'technician' ||
     userData.role === 'owner' ||
     userData.role === 'admin' ||
-    userData.role === 'super_admin'
+    userData.role === 'super_admin' ||
+    userData.role === 'pharmacy_outlet' ||
+    userData.role === 'pharmacy_team' ||
+    userData.role === 'intern_pharmacist'
   ) {
     typedRole = userData.role as
       | 'pharmacist'
       | 'technician'
       | 'owner'
       | 'admin'
-      | 'super_admin';
+      | 'super_admin'
+      | 'pharmacy_outlet'
+      | 'pharmacy_team'
+      | 'intern_pharmacist';
   }
 
   // Convert the status to the expected type

@@ -19,17 +19,15 @@ export const ConditionalRender: React.FC<ConditionalRenderProps> = ({
   requiredFeature,
   fallback = null,
 }) => {
-  const { role, canAccess } = useRBAC();
+  const { role, canAccess, hasRole } = useRBAC();
   const { isFeatureEnabled } = useFeatureAccess();
 
   let hasAccess = true;
 
   // Check role requirement
   if (requiredRole) {
-    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    if (!roles.includes(role)) {
-      hasAccess = false;
-    }
+    // Use hasRole function which properly checks system roles including super_admin
+    hasAccess = hasRole(requiredRole);
   }
 
   // Check permission requirement

@@ -1,0 +1,483 @@
+{
+  "info": {
+    "name": "Feature Flags API",
+    "description": "Complete API collection for PharmaCare Feature Flags management. All endpoints require super_admin role.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "feature_flag_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Feature Flags",
+      "item": [
+        {
+          "name": "Get All Feature Flags",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feature-flags",
+              "host": ["{{base_url}}"],
+              "path": ["feature-flags"]
+            },
+            "description": "Retrieve all feature flags sorted by creation date (newest first). Requires super_admin role."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/feature-flags",
+                  "host": ["{{base_url}}"],
+                  "path": ["feature-flags"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"_id\": \"60f7b3b3b3b3b3b3b3b3b3b5\",\n      \"key\": \"clinical_decision_support\",\n      \"name\": \"Clinical Decision Support\",\n      \"description\": \"AI-powered clinical decision support system\",\n      \"allowedTiers\": [\"pro\", \"enterprise\"],\n      \"allowedRoles\": [\"pharmacist\", \"owner\"],\n      \"isActive\": true,\n      \"createdAt\": \"2024-01-15T10:00:00.000Z\",\n      \"updatedAt\": \"2024-01-15T10:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Feature Flag",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"inventory_management\",\n  \"name\": \"Inventory Management\",\n  \"description\": \"Advanced inventory tracking and management system\",\n  \"allowedTiers\": [\"basic\", \"pro\", \"enterprise\"],\n  \"allowedRoles\": [\"pharmacy_team\", \"pharmacy_outlet\", \"owner\"],\n  \"isActive\": true,\n  \"metadata\": {\n    \"category\": \"operations\",\n    \"priority\": \"high\",\n    \"tags\": [\"inventory\", \"operations\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feature-flags",
+              "host": ["{{base_url}}"],
+              "path": ["feature-flags"]
+            },
+            "description": "Create a new feature flag with tier and role mappings. Requires super_admin role."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"key\": \"inventory_management\",\n  \"name\": \"Inventory Management\",\n  \"description\": \"Advanced inventory tracking and management system\",\n  \"allowedTiers\": [\"basic\", \"pro\", \"enterprise\"],\n  \"allowedRoles\": [\"pharmacy_team\", \"pharmacy_outlet\", \"owner\"],\n  \"isActive\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/feature-flags",
+                  "host": ["{{base_url}}"],
+                  "path": ["feature-flags"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"_id\": \"60f7b3b3b3b3b3b3b3b3b3b8\",\n    \"key\": \"inventory_management\",\n    \"name\": \"Inventory Management\",\n    \"description\": \"Advanced inventory tracking and management system\",\n    \"allowedTiers\": [\"basic\", \"pro\", \"enterprise\"],\n    \"allowedRoles\": [\"pharmacy_team\", \"pharmacy_outlet\", \"owner\"],\n    \"isActive\": true,\n    \"createdAt\": \"2024-01-16T11:00:00.000Z\",\n    \"updatedAt\": \"2024-01-16T11:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "Duplicate Key Error",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"key\": \"inventory_management\",\n  \"name\": \"Inventory Management\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/feature-flags",
+                  "host": ["{{base_url}}"],
+                  "path": ["feature-flags"]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Feature flag with key 'inventory_management' already exists\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Feature Flag",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Advanced Inventory Management\",\n  \"description\": \"Enhanced inventory tracking with predictive analytics\",\n  \"allowedTiers\": [\"pro\", \"enterprise\"],\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feature-flags/{{feature_flag_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["feature-flags", "{{feature_flag_id}}"]
+            },
+            "description": "Update an existing feature flag by ID. All fields are optional. Requires super_admin role."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Advanced Inventory Management\",\n  \"allowedTiers\": [\"pro\", \"enterprise\"]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/feature-flags/60f7b3b3b3b3b3b3b3b3b3b8",
+                  "host": ["{{base_url}}"],
+                  "path": ["feature-flags", "60f7b3b3b3b3b3b3b3b3b3b8"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"_id\": \"60f7b3b3b3b3b3b3b3b3b3b8\",\n    \"key\": \"inventory_management\",\n    \"name\": \"Advanced Inventory Management\",\n    \"allowedTiers\": [\"pro\", \"enterprise\"],\n    \"updatedAt\": \"2024-01-16T14:30:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "Not Found Error",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Name\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/feature-flags/invalid_id",
+                  "host": ["{{base_url}}"],
+                  "path": ["feature-flags", "invalid_id"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Feature flag not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Feature Flag",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feature-flags/{{feature_flag_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["feature-flags", "{{feature_flag_id}}"]
+            },
+            "description": "Delete a feature flag by ID. Requires super_admin role."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/feature-flags/60f7b3b3b3b3b3b3b3b3b3b8",
+                  "host": ["{{base_url}}"],
+                  "path": ["feature-flags", "60f7b3b3b3b3b3b3b3b3b3b8"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Feature flag deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tier Management",
+      "item": [
+        {
+          "name": "Get Features by Tier",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feature-flags/tier/pro",
+              "host": ["{{base_url}}"],
+              "path": ["feature-flags", "tier", "pro"]
+            },
+            "description": "Retrieve all active feature flags for a specific subscription tier. Requires super_admin role.\n\nAvailable tiers: free_trial, basic, pro, Pharmily, Network, enterprise"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/feature-flags/tier/pro",
+                  "host": ["{{base_url}}"],
+                  "path": ["feature-flags", "tier", "pro"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"_id\": \"60f7b3b3b3b3b3b3b3b3b3b5\",\n      \"key\": \"clinical_decision_support\",\n      \"name\": \"Clinical Decision Support\",\n      \"allowedTiers\": [\"pro\", \"enterprise\"],\n      \"isActive\": true\n    },\n    {\n      \"_id\": \"60f7b3b3b3b3b3b3b3b3b3b8\",\n      \"key\": \"inventory_management\",\n      \"name\": \"Advanced Inventory Management\",\n      \"allowedTiers\": [\"pro\", \"enterprise\"],\n      \"isActive\": true\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Bulk Add Features to Tier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"featureKeys\": [\n    \"clinical_decision_support\",\n    \"advanced_reports\",\n    \"inventory_management\"\n  ],\n  \"action\": \"add\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feature-flags/tier/enterprise/features",
+              "host": ["{{base_url}}"],
+              "path": ["feature-flags", "tier", "enterprise", "features"]
+            },
+            "description": "Add multiple features to a subscription tier in a single operation. Requires super_admin role."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"featureKeys\": [\"clinical_decision_support\", \"advanced_reports\"],\n  \"action\": \"add\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/feature-flags/tier/enterprise/features",
+                  "host": ["{{base_url}}"],
+                  "path": ["feature-flags", "tier", "enterprise", "features"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Successfully updated 2 features for tier 'enterprise'\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Bulk Remove Features from Tier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"featureKeys\": [\n    \"clinical_decision_support\",\n    \"inventory_management\"\n  ],\n  \"action\": \"remove\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feature-flags/tier/basic/features",
+              "host": ["{{base_url}}"],
+              "path": ["feature-flags", "tier", "basic", "features"]
+            },
+            "description": "Remove multiple features from a subscription tier in a single operation. Requires super_admin role."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"featureKeys\": [\"clinical_decision_support\"],\n  \"action\": \"remove\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/feature-flags/tier/basic/features",
+                  "host": ["{{base_url}}"],
+                  "path": ["feature-flags", "tier", "basic", "features"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Successfully updated 1 features for tier 'basic'\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login as Super Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.collectionVariables.set('jwt_token', jsonData.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@pharmacare.com\",\n  \"password\": \"your_password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with super_admin credentials to obtain JWT token for Feature Flags API access."
+          }
+        }
+      ]
+    }
+  ]
+}
