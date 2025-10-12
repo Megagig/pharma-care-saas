@@ -407,4 +407,62 @@ router.post(
   workspaceTeamInviteController.rejectMember.bind(workspaceTeamInviteController)
 );
 
+/**
+ * License Management Routes for Workspace Members
+ * Allows workspace owners to approve/reject licenses of their pharmacist members
+ */
+
+/**
+ * Get pending license approvals for workspace members
+ * @route GET /api/workspace/team/licenses/pending
+ * @access Private (Workspace owners only)
+ */
+router.get(
+  '/licenses/pending',
+  workspaceTeamController.getPendingLicenses.bind(workspaceTeamController)
+);
+
+/**
+ * Approve a member's license within the workspace
+ * @route POST /api/workspace/team/licenses/:memberId/approve
+ * @access Private (Workspace owners only)
+ */
+router.post(
+  '/licenses/:memberId/approve',
+  [
+    param('memberId')
+      .isMongoId()
+      .withMessage('Member ID must be a valid MongoDB ObjectId'),
+    body('reason')
+      .optional()
+      .isString()
+      .isLength({ max: 500 })
+      .withMessage('Reason must not exceed 500 characters'),
+  ],
+  validateRequest,
+  workspaceTeamController.approveMemberLicense.bind(workspaceTeamController)
+);
+
+/**
+ * Reject a member's license within the workspace
+ * @route POST /api/workspace/team/licenses/:memberId/reject
+ * @access Private (Workspace owners only)
+ */
+router.post(
+  '/licenses/:memberId/reject',
+  [
+    param('memberId')
+      .isMongoId()
+      .withMessage('Member ID must be a valid MongoDB ObjectId'),
+    body('reason')
+      .notEmpty()
+      .withMessage('Rejection reason is required')
+      .isString()
+      .isLength({ min: 3, max: 500 })
+      .withMessage('Reason must be between 3 and 500 characters'),
+  ],
+  validateRequest,
+  workspaceTeamController.rejectMemberLicense.bind(workspaceTeamController)
+);
+
 export default router;

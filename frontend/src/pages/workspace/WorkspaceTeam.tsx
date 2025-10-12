@@ -33,6 +33,7 @@ import {
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import MailIcon from '@mui/icons-material/Mail';
 import HistoryIcon from '@mui/icons-material/History';
 import AddIcon from '@mui/icons-material/Add';
@@ -48,6 +49,7 @@ import {
 import MemberList from '../../components/workspace/MemberList';
 import MemberFilters from '../../components/workspace/MemberFilters';
 import PendingApprovals from '../../components/workspace/PendingApprovals';
+import PendingLicenseApprovals from '../../components/workspace/PendingLicenseApprovals';
 import InviteList from '../../components/workspace/InviteList';
 import InviteGenerator from '../../components/workspace/InviteGenerator';
 import AuditTrail from '../../components/workspace/AuditTrail';
@@ -459,19 +461,27 @@ const WorkspaceTeam: React.FC = () => {
             sx={{ minHeight: 64 }}
           />
           <Tab
-            icon={<MailIcon />}
-            label="Invite Links"
+            icon={<VerifiedUserIcon />}
+            label="License Approvals"
             iconPosition="start"
             id="workspace-team-tab-2"
             aria-controls="workspace-team-tabpanel-2"
             sx={{ minHeight: 64 }}
           />
           <Tab
-            icon={<HistoryIcon />}
-            label="Audit Trail"
+            icon={<MailIcon />}
+            label="Invite Links"
             iconPosition="start"
             id="workspace-team-tab-3"
             aria-controls="workspace-team-tabpanel-3"
+            sx={{ minHeight: 64 }}
+          />
+          <Tab
+            icon={<HistoryIcon />}
+            label="Audit Trail"
+            iconPosition="start"
+            id="workspace-team-tab-4"
+            aria-controls="workspace-team-tabpanel-4"
             sx={{ minHeight: 64 }}
           />
         </Tabs>
@@ -494,6 +504,10 @@ const WorkspaceTeam: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>
+        <PendingLicenseApprovals />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={3}>
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">Workspace Invites</Typography>
           <Button
@@ -515,7 +529,7 @@ const WorkspaceTeam: React.FC = () => {
         />
       </TabPanel>
 
-      <TabPanel value={activeTab} index={3}>
+      <TabPanel value={activeTab} index={4}>
         <AuditTrail />
       </TabPanel>
 

@@ -234,7 +234,9 @@ const LicenseUpload: React.FC = () => {
 
     try {
       const formData = new FormData();
-      formData.append('licenseDocument', selectedFile);
+      if (selectedFile) {
+        formData.append('licenseDocument', selectedFile);
+      }
       formData.append('licenseNumber', licenseNumber);
       formData.append('licenseExpirationDate', expirationDate);
       formData.append('pharmacySchool', pharmacySchool);

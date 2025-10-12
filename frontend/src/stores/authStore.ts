@@ -32,7 +32,7 @@ interface AuthActions {
 
 export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       // State
       user: null,
       token: null,
@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       setError: (error) => set({ error }),
       clearError: () => set({ error: null }),
 
-      login: async (email: string, password: string) => {
+      login: async (email: string, _password: string) => {
         set({ loading: true, error: null });
         try {
           // Mock login implementation - replace with actual API call

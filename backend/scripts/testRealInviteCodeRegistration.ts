@@ -157,7 +157,7 @@ async function testRealInviteCodeRegistration(): Promise<TestResult[]> {
         const teamIncreased = updatedWorkplace && updatedWorkplace.teamMembers.length === initialTeamCount + 1;
         results.push({
             step: 'Verify workplace team members increased',
-            success: teamIncreased,
+            success: !!teamIncreased,
             data: {
                 initialCount: initialTeamCount,
                 currentCount: updatedWorkplace?.teamMembers.length,

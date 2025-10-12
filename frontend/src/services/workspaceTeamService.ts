@@ -23,6 +23,7 @@ import type {
   ApproveMemberRequest,
   RejectMemberRequest,
   WorkspaceStats,
+  PendingLicense,
 } from '../types/workspace';
 
 /**
@@ -454,6 +455,82 @@ class WorkspaceTeamService {
         const axiosError = error as AxiosError<{ message?: string }>;
         throw new Error(
           axiosError.response?.data?.message || 'Failed to fetch workspace stats'
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get pending license approvals for the workspace
+   */
+  async getPendingLicenseApprovals(): Promise<PendingLicense[]> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/licenses/pending`);
+
+      if (!response.data.success) {
+        throw new Error(
+          response.data.message || 'Failed to fetch pending license approvals'
+        );
+      }
+
+      return response.data.data.pendingLicenses;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<{ message?: string }>;
+        throw new Error(
+          axiosError.response?.data?.message || 'Failed to fetch pending license approvals'
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Approve a member's license
+   */
+  async approveMemberLicense(memberId: string): Promise<void> {
+    try {
+      const response = await apiClient.post(
+        `${this.baseUrl}/licenses/${memberId}/approve`
+      );
+
+      if (!response.data.success) {
+        throw new Error(
+          response.data.message || 'Failed to approve license'
+        );
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<{ message?: string }>;
+        throw new Error(
+          axiosError.response?.data?.message || 'Failed to approve license'
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Reject a member's license
+   */
+  async rejectMemberLicense(memberId: string, reason: string): Promise<void> {
+    try {
+      const response = await apiClient.post(
+        `${this.baseUrl}/licenses/${memberId}/reject`,
+        { reason }
+      );
+
+      if (!response.data.success) {
+        throw new Error(
+          response.data.message || 'Failed to reject license'
+        );
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<{ message?: string }>;
+        throw new Error(
+          axiosError.response?.data?.message || 'Failed to reject license'
         );
       }
       throw error;

@@ -750,6 +750,307 @@ class WorkspaceTeamController {
     }
   }
 
+  /**
+   * Get pending license approvals for workspace members
+   * @route GET /api/workspace/team/licenses/pending
+   */
+  async getPendingLicenses(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      // Get workplaceId from authenticated user or super admin context
+      let workplaceId = req.user?.workplaceId || (req as any).workplaceId;
+
+      // For super admins, get workplaceId from query parameter if provided
+      if (req.user?.role === 'super_admin' && req.query.workplaceId) {
+        workplaceId = req.query.workplaceId;
+      }
+
+      if (!workplaceId) {
+        res.status(400).json({
+          success: false,
+          message: 'No workspace associated with user',
+        });
+        return;
+      }
+
+      // Find all members with pending licenses in this workspace
+      const pendingLicenses = await User.find({
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        licenseStatus: 'pending',
+        workplaceRole: 'Pharmacist', // Only pharmacists need license approval
+      }).select([
+        'firstName',
+        'lastName',
+        'email',
+        'licenseNumber',
+        'licenseStatus',
+        'licenseDocument',
+        'workplaceRole',
+        'createdAt',
+        'updatedAt'
+      ]);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          pendingLicenses,
+          count: pendingLicenses.length,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error fetching pending licenses:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch pending licenses',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Approve a member's license within the workspace
+   * @route POST /api/workspace/team/licenses/:memberId/approve
+   */
+  async approveMemberLicense(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { memberId } = req.params;
+      const { reason } = req.body;
+
+      // Get workplaceId from authenticated user or super admin context
+      let workplaceId = req.user?.workplaceId || (req as any).workplaceId;
+
+      // For super admins, get the workplaceId from the member being approved
+      if (!workplaceId) {
+        const memberToApprove = await User.findById(memberId).lean();
+        if (!memberToApprove) {
+          res.status(404).json({
+            success: false,
+            message: 'Member not found',
+          });
+          return;
+        }
+        workplaceId = memberToApprove.workplaceId;
+      }
+
+      if (!workplaceId) {
+        res.status(400).json({
+          success: false,
+          message: 'No workspace associated with user',
+        });
+        return;
+      }
+
+      // Find the member in the same workspace
+      const member = await User.findOne({
+        _id: new mongoose.Types.ObjectId(memberId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        workplaceRole: 'Pharmacist', // Only pharmacists need license approval
+      });
+
+      if (!member) {
+        res.status(404).json({
+          success: false,
+          message: 'Pharmacist member not found in this workspace',
+        });
+        return;
+      }
+
+      if (member.licenseStatus !== 'pending') {
+        res.status(400).json({
+          success: false,
+          message: 'License is not pending approval',
+        });
+        return;
+      }
+
+      if (!member.licenseDocument) {
+        res.status(400).json({
+          success: false,
+          message: 'No license document found',
+        });
+        return;
+      }
+
+      // Approve license
+      member.licenseStatus = 'approved';
+      member.licenseVerifiedAt = new Date();
+      member.licenseVerifiedBy = req.user!._id;
+      member.status = 'active'; // Ensure member is active
+      await member.save();
+
+      // Log the approval in audit trail
+      await workspaceAuditService.logLicenseAction(
+        new mongoose.Types.ObjectId(workplaceId),
+        req.user!._id,
+        new mongoose.Types.ObjectId(memberId),
+        'license_approved',
+        {
+          reason,
+          metadata: {
+            licenseNumber: member.licenseNumber,
+            approvedAt: new Date(),
+          }
+        },
+        req
+      );
+
+      // Send approval email to the member
+      try {
+        await emailService.sendLicenseApprovalNotification(member.email, {
+          firstName: member.firstName,
+          licenseNumber: member.licenseNumber || '',
+        });
+      } catch (emailError) {
+        console.error('Failed to send approval email:', emailError);
+        // Don't fail the approval if email fails
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'License approved successfully',
+        data: {
+          member: {
+            _id: member._id,
+            firstName: member.firstName,
+            lastName: member.lastName,
+            email: member.email,
+            licenseStatus: member.licenseStatus,
+            licenseVerifiedAt: member.licenseVerifiedAt,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error('Error approving member license:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to approve license',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Reject a member's license within the workspace  
+   * @route POST /api/workspace/team/licenses/:memberId/reject
+   */
+  async rejectMemberLicense(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { memberId } = req.params;
+      const { reason } = req.body;
+
+      if (!reason) {
+        res.status(400).json({
+          success: false,
+          message: 'Rejection reason is required',
+        });
+        return;
+      }
+
+      // Get workplaceId from authenticated user or super admin context
+      let workplaceId = req.user?.workplaceId || (req as any).workplaceId;
+
+      // For super admins, get the workplaceId from the member being rejected
+      if (!workplaceId) {
+        const memberToReject = await User.findById(memberId).lean();
+        if (!memberToReject) {
+          res.status(404).json({
+            success: false,
+            message: 'Member not found',
+          });
+          return;
+        }
+        workplaceId = memberToReject.workplaceId;
+      }
+
+      if (!workplaceId) {
+        res.status(400).json({
+          success: false,
+          message: 'No workspace associated with user',
+        });
+        return;
+      }
+
+      // Find the member in the same workspace
+      const member = await User.findOne({
+        _id: new mongoose.Types.ObjectId(memberId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        workplaceRole: 'Pharmacist', // Only pharmacists need license approval
+      });
+
+      if (!member) {
+        res.status(404).json({
+          success: false,
+          message: 'Pharmacist member not found in this workspace',
+        });
+        return;
+      }
+
+      if (member.licenseStatus !== 'pending') {
+        res.status(400).json({
+          success: false,
+          message: 'License is not pending approval',
+        });
+        return;
+      }
+
+      // Reject license
+      member.licenseStatus = 'rejected';
+      member.licenseRejectedAt = new Date();
+      member.licenseRejectedBy = req.user!._id;
+      member.licenseRejectionReason = reason;
+      await member.save();
+
+      // Log the rejection in audit trail
+      await workspaceAuditService.logLicenseAction(
+        new mongoose.Types.ObjectId(workplaceId),
+        req.user!._id,
+        new mongoose.Types.ObjectId(memberId),
+        'license_rejected',
+        {
+          reason,
+          metadata: {
+            licenseNumber: member.licenseNumber,
+            rejectedAt: new Date(),
+          }
+        },
+        req
+      );
+
+      // Send rejection email to the member
+      try {
+        await emailService.sendLicenseRejectionNotification(member.email, {
+          firstName: member.firstName,
+          reason,
+        });
+      } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError);
+        // Don't fail the rejection if email fails
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'License rejected successfully',
+        data: {
+          member: {
+            _id: member._id,
+            firstName: member.firstName,
+            lastName: member.lastName,
+            email: member.email,
+            licenseStatus: member.licenseStatus,
+            licenseRejectedAt: member.licenseRejectedAt,
+            licenseRejectionReason: member.licenseRejectionReason,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error('Error rejecting member license:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to reject license',
+        error: error.message,
+      });
+    }
+  }
+
 }
 
 export const workspaceTeamController = new WorkspaceTeamController();

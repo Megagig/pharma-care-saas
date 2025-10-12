@@ -23,7 +23,7 @@ interface TestResult {
 
 async function simulateInviteCodeRegistration(): Promise<TestResult[]> {
     const results: TestResult[] = [];
-    let session: mongoose.ClientSession;
+    let session: mongoose.ClientSession | undefined;
 
     try {
         // Connect to MongoDB
