@@ -18,11 +18,27 @@ const cursorPagination_1 = require("../utils/cursorPagination");
 exports.getPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { cursor, limit = 20, sortField = 'createdAt', sortOrder = 'desc', q, name, mrn, phone, state, bloodGroup, genotype, page, useCursor = 'true', } = req.query;
     const context = (0, responseHelpers_1.getRequestContext)(req);
+    console.log('🔍 GET /api/patients - Request Context:', {
+        userId: context.userId,
+        userRole: context.userRole,
+        workplaceId: context.workplaceId,
+        isAdmin: context.isAdmin,
+        isSuperAdmin: context.isSuperAdmin,
+        requestUser: {
+            id: req.user?._id,
+            email: req.user?.email,
+            role: req.user?.role,
+        }
+    });
     const parsedLimit = Math.min(50, Math.max(1, parseInt(limit) || 20));
     const filters = {};
     filters.isDeleted = { $ne: true };
     if (!context.isAdmin) {
         filters.workplaceId = context.workplaceId;
+        console.log('🔒 Applying workspace filter:', context.workplaceId);
+    }
+    else {
+        console.log('🔓 Super admin access - NO workspace filter applied');
     }
     if (q) {
         const searchRegex = new RegExp(q, 'i');
@@ -54,12 +70,18 @@ exports.getPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     if (genotype)
         filters.genotype = genotype;
     if (useCursor === 'true' && !page) {
+        console.log('📄 Using cursor-based pagination with filters:', JSON.stringify(filters));
         const result = await cursorPagination_1.CursorPagination.paginate(Patient_1.default, {
             limit: parsedLimit,
             cursor,
             sortField,
             sortOrder: sortOrder,
             filters,
+        });
+        console.log('📊 Cursor Query Results:', {
+            patientsFound: result.items.length,
+            totalCount: result.totalCount,
+            hasNextPage: result.pageInfo.hasNextPage
         });
         const response = cursorPagination_1.CursorPagination.createPaginatedResponse(result, `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`, { limit: parsedLimit, sortField, sortOrder, ...req.query });
         return (0, responseHelpers_1.sendSuccess)(res, { results: response.data }, `Found ${response.data.length} patients`, 200, {
@@ -80,6 +102,13 @@ exports.getPatients = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
                 .lean(),
             Patient_1.default.countDocuments(filters),
         ]);
+        console.log('📊 Query Results:', {
+            filters: JSON.stringify(filters),
+            patientsFound: patients.length,
+            totalCount: total,
+            page: parsedPage,
+            limit: parsedLimit
+        });
         (0, responseHelpers_1.respondWithPaginatedResults)(res, patients, total, parsedPage, parsedLimit, `Found ${total} patients`);
     }
 });

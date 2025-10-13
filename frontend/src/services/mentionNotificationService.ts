@@ -1,5 +1,11 @@
-import { socketService } from './socketService';
-import { notificationService } from './notificationService';
+import { apiClient } from './apiClient';
+
+// API base URL helper
+const getAPIBaseURL = () => {
+    return import.meta.env.MODE === 'development'
+        ? 'http://localhost:5000/api'
+        : '/api';
+};
 
 export interface MentionNotificationData {
     messageId: string;
@@ -25,7 +31,6 @@ class MentionNotificationService {
                 senderName,
                 mentionedUserIds,
                 messageContent,
-                conversationTitle,
                 priority,
             } = data;
 
@@ -56,20 +61,8 @@ class MentionNotificationService {
                 )
             );
 
-            // Send real-time notifications via Socket.IO
-            mentionedUserIds.forEach((userId) => {
-                socketService.sendNotification(userId, {
-                    type: 'mention',
-                    title: `${senderName} mentioned you`,
-                    content: this.truncateMessage(messageContent, 100),
-                    data: {
-                        conversationId,
-                        messageId,
-                        senderId,
-                    },
-                    priority,
-                });
-            });
+            // The backend will handle real-time notifications via Socket.IO
+            // when the notifications are created above
 
             console.log(`Mention notifications sent to ${mentionedUserIds.length} users`);
         } catch (error) {
@@ -83,25 +76,12 @@ class MentionNotificationService {
      */
     private async createNotification(notificationData: any): Promise<void> {
         try {
-            const response = await fetch('/api/notifications', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify(notificationData),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to create notification: ${response.statusText}`);
-            }
+            await apiClient.post('/notifications', notificationData);
         } catch (error) {
             console.error('Error creating notification:', error);
             throw error;
         }
-    }
-
-    /**
+    }    /**
      * Handle mention in message
      */
     async handleMessageMention(
@@ -150,11 +130,9 @@ class MentionNotificationService {
     }> {
         try {
             const response = await fetch(
-                `/api/conversations/${conversationId}/mentions/stats`,
+                `${getAPIBaseURL()}/conversations/${conversationId}/mentions/stats`,
                 {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
+                    credentials: 'include',
                 }
             );
 
@@ -188,11 +166,9 @@ class MentionNotificationService {
             });
 
             const response = await fetch(
-                `/api/conversations/${conversationId}/messages/mentions?${params}`,
+                `${getAPIBaseURL()}/conversations/${conversationId}/messages/mentions?${params}`,
                 {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
+                    credentials: 'include',
                 }
             );
 
@@ -214,11 +190,9 @@ class MentionNotificationService {
     async getMentionedUsers(conversationId: string): Promise<any[]> {
         try {
             const response = await fetch(
-                `/api/conversations/${conversationId}/mentions/users`,
+                `${getAPIBaseURL()}/conversations/${conversationId}/mentions/users`,
                 {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
+                    credentials: 'include',
                 }
             );
 
@@ -239,11 +213,9 @@ class MentionNotificationService {
      */
     async markMentionAsRead(notificationId: string): Promise<void> {
         try {
-            const response = await fetch(`/api/notifications/${notificationId}/read`, {
+            const response = await fetch(`${getAPIBaseURL()}/notifications/${notificationId}/read`, {
                 method: 'PATCH',
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
+                credentials: 'include',
             });
 
             if (!response.ok) {

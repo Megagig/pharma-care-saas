@@ -1,20 +1,12 @@
 import axios, { AxiosResponse, AxiosError } from 'axios';
 
 // Create axios instance with base configuration
-const getBaseURL = () => {
-  // In development, use Vite proxy to avoid CORS issues
-  // In production, use relative path (deployed to same domain/port)
-  if (import.meta.env.DEV) {
-    // Development: Use Vite proxy
-    return '/api';
-  } else {
-    // Production: Use relative path for single-port deployment
-    return '/api';
-  }
-};
-
+// Development: Direct backend URL (Vite proxy is broken)
+// Production: /api (same port, served by backend)
 const api = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: import.meta.env.MODE === 'development' 
+    ? 'http://localhost:5000/api' 
+    : '/api',
   timeout: 300000, // 5 minutes for AI analysis operations
   withCredentials: true, // Include httpOnly cookies
   headers: {

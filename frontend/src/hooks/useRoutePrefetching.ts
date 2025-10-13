@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys, queryPrefetcher } from '../lib/queryClient';
+import { apiFetch } from '../utils/fetchWrapper';
 
 /**
  * Hook to prefetch data based on current route and likely navigation paths
@@ -26,7 +27,7 @@ export function useRoutePrefetching() {
             queryClient.prefetchQuery({
               queryKey: queryKeys.patients.lists(),
               queryFn: async () => {
-                const response = await fetch('/api/patients?limit=20');
+                const response = await apiFetch('/api/patients?limit=20');
                 if (!response.ok) throw new Error('Failed to prefetch patients');
                 return response.json();
               },
@@ -37,7 +38,7 @@ export function useRoutePrefetching() {
             queryClient.prefetchQuery({
               queryKey: ['clinical-notes', 'recent'],
               queryFn: async () => {
-                const response = await fetch('/api/clinical-notes?limit=10&sort=recent');
+                const response = await apiFetch('/api/clinical-notes?limit=10&sort=recent');
                 if (!response.ok) throw new Error('Failed to prefetch clinical notes');
                 return response.json();
               },
@@ -48,7 +49,12 @@ export function useRoutePrefetching() {
             queryClient.prefetchQuery({
               queryKey: queryKeys.user.notifications(true),
               queryFn: async () => {
-                const response = await fetch('/api/notifications?unread=true');
+                const baseURL = import.meta.env.MODE === 'development' 
+                  ? 'http://localhost:5000/api' 
+                  : (import.meta.env.VITE_API_BASE_URL || '/api');
+                const response = await fetch(`${baseURL}/notifications?unread=true`, {
+                  credentials: 'include'
+                });
                 if (!response.ok) throw new Error('Failed to prefetch notifications');
                 return response.json();
               },
@@ -64,11 +70,16 @@ export function useRoutePrefetching() {
           
           if (cachedPatients && Array.isArray(cachedPatients)) {
             // Prefetch details for first 3 patients
+            const baseURL = import.meta.env.MODE === 'development' 
+              ? 'http://localhost:5000/api' 
+              : '/api';
             const prefetchPromises = cachedPatients.slice(0, 3).map((patient: any) =>
               queryClient.prefetchQuery({
                 queryKey: queryKeys.patients.detail(patient._id),
                 queryFn: async () => {
-                  const response = await fetch(`/api/patients/${patient._id}`);
+                  const response = await fetch(`${baseURL}/patients/${patient._id}`, {
+                    credentials: 'include'
+                  });
                   if (!response.ok) throw new Error('Failed to prefetch patient details');
                   return response.json();
                 },
@@ -96,7 +107,7 @@ export function useRoutePrefetching() {
             queryClient.prefetchQuery({
               queryKey: queryKeys.patients.lists(),
               queryFn: async () => {
-                const response = await fetch('/api/patients?limit=50');
+                const response = await apiFetch('/api/patients?limit=50');
                 if (!response.ok) throw new Error('Failed to prefetch patients');
                 return response.json();
               },
@@ -107,7 +118,7 @@ export function useRoutePrefetching() {
             queryClient.prefetchQuery({
               queryKey: ['clinical-notes', 'templates'],
               queryFn: async () => {
-                const response = await fetch('/api/clinical-notes/templates');
+                const response = await apiFetch('/api/clinical-notes/templates');
                 if (!response.ok) throw new Error('Failed to prefetch templates');
                 return response.json();
               },
@@ -123,7 +134,7 @@ export function useRoutePrefetching() {
             queryClient.prefetchQuery({
               queryKey: ['medications', 'common'],
               queryFn: async () => {
-                const response = await fetch('/api/medications/common');
+                const response = await apiFetch('/api/medications/common');
                 if (!response.ok) throw new Error('Failed to prefetch common medications');
                 return response.json();
               },
@@ -134,7 +145,7 @@ export function useRoutePrefetching() {
             queryClient.prefetchQuery({
               queryKey: ['drug-interactions', 'checker-data'],
               queryFn: async () => {
-                const response = await fetch('/api/drug-interactions/checker-data');
+                const response = await apiFetch('/api/drug-interactions/checker-data');
                 if (!response.ok) throw new Error('Failed to prefetch interaction data');
                 return response.json();
               },

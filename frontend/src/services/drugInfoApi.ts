@@ -9,9 +9,13 @@ import {
   DrugIndication,
 } from '../types/drugTypes';
 
-// Use environment variable or production URL
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}/drugs`;
-const PUBLIC_API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}/public`;
+// Development: Direct backend URL (Vite proxy is broken)
+// Production: /api (same port, served by backend)
+const BASE = import.meta.env.MODE === 'development' 
+  ? 'http://localhost:5000/api' 
+  : '/api';
+const API_BASE_URL = `${BASE}/drugs`;
+const PUBLIC_API_BASE_URL = `${BASE}/public`;
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -104,10 +108,10 @@ export const drugInfoApi = {
         message: error.message,
         response: error.response
           ? {
-              status: error.response.status,
-              data: error.response.data,
-              headers: error.response.headers,
-            }
+            status: error.response.status,
+            data: error.response.data,
+            headers: error.response.headers,
+          }
           : 'No response',
         request: error.request
           ? 'Request was made but no response received'
@@ -153,9 +157,9 @@ export const drugInfoApi = {
         message: error.message,
         response: error.response
           ? {
-              status: error.response.status,
-              data: error.response.data,
-            }
+            status: error.response.status,
+            data: error.response.data,
+          }
           : 'No response',
       });
       throw error;
@@ -206,9 +210,9 @@ export const drugInfoApi = {
         message: error.message,
         response: error.response
           ? {
-              status: error.response.status,
-              data: error.response.data,
-            }
+            status: error.response.status,
+            data: error.response.data,
+          }
           : 'No response',
       });
       throw error;
@@ -251,9 +255,9 @@ export const drugInfoApi = {
         message: error.message,
         response: error.response
           ? {
-              status: error.response.status,
-              data: error.response.data,
-            }
+            status: error.response.status,
+            data: error.response.data,
+          }
           : 'No response',
       });
       throw error;
@@ -293,9 +297,9 @@ export const drugInfoApi = {
         message: error.message,
         response: error.response
           ? {
-              status: error.response.status,
-              data: error.response.data,
-            }
+            status: error.response.status,
+            data: error.response.data,
+          }
           : 'No response',
       });
       throw error;

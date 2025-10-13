@@ -1,8 +1,12 @@
 import axios from 'axios';
 
 // Create API instance
+// Development: Direct backend URL (Vite proxy is broken)
+// Production: /api (same port, served by backend)
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api',
+  baseURL: import.meta.env.MODE === 'development' 
+    ? 'http://localhost:5000/api' 
+    : '/api',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

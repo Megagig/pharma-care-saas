@@ -10,7 +10,11 @@ import type {
     DashboardMetrics,
 } from '../stores/clinicalInterventionStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api';
+// Development: Direct backend URL (Vite proxy is broken)
+// Production: /api (same port, served by backend)
+const API_BASE_URL = import.meta.env.MODE === 'development' 
+  ? 'http://localhost:5000/api' 
+  : '/api';
 
 interface ApiResponse<T = unknown> {
     success: boolean;
@@ -61,12 +65,7 @@ class ClinicalInterventionService {
                 ...options.headers,
             };
 
-            // Check if we're in super_admin test mode (development only)
-            if (import.meta.env.DEV) {
-                headers['X-Super-Admin-Test'] = 'true';
-                // console.log('🔍 Added super_admin test header for development');
-            }
-
+            // Don't add custom headers - authentication via cookies only
             const config = {
                 ...options,
                 credentials: 'include' as RequestCredentials, // Include httpOnly cookies
@@ -139,7 +138,7 @@ class ClinicalInterventionService {
             }
         });
 
-        const url = `/api/clinical-interventions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/clinical-interventions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         const response = await this.makeRequest<any>(url);
 
         // Handle different response structures from backend
@@ -316,7 +315,7 @@ class ClinicalInterventionService {
             queryParams.append('dateTo', dateRange.to.toISOString());
         }
 
-        const url = `/api/clinical-interventions/analytics/summary${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/clinical-interventions/analytics/summary${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         // Debug logging disabled for performance
         // console.log('🔍 DASHBOARD: Fetching metrics from:', `${API_BASE_URL}${url}`);
 
@@ -343,7 +342,7 @@ class ClinicalInterventionService {
             queryParams.append('end', dateRange.end);
         }
 
-        const url = `/api/clinical-interventions/analytics/trends${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/clinical-interventions/analytics/trends${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         return this.makeRequest<any>(url);
     }
 
@@ -370,7 +369,7 @@ class ClinicalInterventionService {
             }
         });
 
-        const url = `/api/clinical-interventions/reports/outcomes${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/clinical-interventions/reports/outcomes${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         // console.log('🔍 SERVICE: generateOutcomeReport calling:', `${API_BASE_URL}${url}`);
 
         const result = await this.makeRequest<unknown>(url);
@@ -402,7 +401,7 @@ class ClinicalInterventionService {
             }
         });
 
-        const url = `/api/clinical-interventions/reports/cost-savings${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/clinical-interventions/reports/cost-savings${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         return this.makeRequest<unknown>(url);
     }
 
@@ -420,7 +419,7 @@ class ClinicalInterventionService {
 
         queryParams.append('format', format);
 
-        const url = `/api/clinical-interventions/reports/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const url = `/clinical-interventions/reports/export${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
         try {
             const response = await fetch(`${API_BASE_URL}${url}`, {
@@ -610,7 +609,7 @@ class ClinicalInterventionService {
         });
 
         const queryString = params.toString();
-        const url = `/api/clinical-interventions/${interventionId}/audit-trail${queryString ? `?${queryString}` : ''}`;
+        const url = `/clinical-interventions/${interventionId}/audit-trail${queryString ? `?${queryString}` : ''}`;
 
         return this.makeRequest(url);
     }
@@ -638,7 +637,7 @@ class ClinicalInterventionService {
         if (options.action) params.append('action', options.action);
 
         const queryString = params.toString();
-        const url = `/api/clinical-interventions/audit-trail${queryString ? `?${queryString}` : ''}`;
+        const url = `/clinical-interventions/audit-trail${queryString ? `?${queryString}` : ''}`;
 
         return this.makeRequest(url);
     }
