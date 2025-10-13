@@ -533,6 +533,31 @@ class WorkspaceAuditService {
       req
     );
   }
+
+  /**
+   * Log license-related actions (approval, rejection)
+   */
+  async logLicenseAction(
+    workplaceId: mongoose.Types.ObjectId,
+    actorId: mongoose.Types.ObjectId,
+    targetId: mongoose.Types.ObjectId,
+    action: string,
+    details?: AuditLogDetails,
+    req?: Request
+  ): Promise<IWorkspaceAuditLog> {
+    return this.logAudit(
+      {
+        workplaceId,
+        actorId,
+        targetId,
+        action,
+        category: 'member',
+        details,
+        severity: action.includes('approved') ? 'medium' : 'high',
+      },
+      req
+    );
+  }
 }
 
 // Export singleton instance

@@ -8,6 +8,7 @@ export interface User {
   lastName: string;
   role: string;
   workplaceId: string;
+  workplaceRole?: string;
   permissions: string[];
 }
 
@@ -31,7 +32,7 @@ interface AuthActions {
 
 export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       // State
       user: null,
       token: null,
@@ -46,7 +47,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       setError: (error) => set({ error }),
       clearError: () => set({ error: null }),
 
-      login: async (email: string, password: string) => {
+      login: async (email: string, _password: string) => {
         set({ loading: true, error: null });
         try {
           // Mock login implementation - replace with actual API call
@@ -59,27 +60,27 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             workplaceId: 'workplace-1',
             permissions: ['read', 'write']
           };
-          
-          set({ 
-            user: mockUser, 
-            token: 'mock-token', 
-            isAuthenticated: true, 
-            loading: false 
+
+          set({
+            user: mockUser,
+            token: 'mock-token',
+            isAuthenticated: true,
+            loading: false
           });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Login failed', 
-            loading: false 
+          set({
+            error: error instanceof Error ? error.message : 'Login failed',
+            loading: false
           });
         }
       },
 
       logout: () => {
-        set({ 
-          user: null, 
-          token: null, 
-          isAuthenticated: false, 
-          error: null 
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          error: null
         });
       },
     }),

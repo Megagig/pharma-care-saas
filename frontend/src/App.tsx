@@ -187,14 +187,13 @@ function App(): JSX.Element {
                             },
                           }}
                         />
-                        {/* React Query DevTools - only in development */}
-                        {import.meta.env.DEV && (
+                        {/* React Query DevTools - Disabled to prevent UI clutter */}
+                        {/* {import.meta.env.DEV && (
                           <ReactQueryDevtools
                             initialIsOpen={false}
-                            // @ts-ignore - DevtoolsPosition type mismatch
                             position="bottom-right"
                           />
-                        )}
+                        )} */}
 
                         {/* Service Worker Update Notifications */}
                         <ServiceWorkerUpdateNotification />
@@ -883,8 +882,8 @@ function App(): JSX.Element {
             </AuthProvider>
           </ThemeProvider>
         </CustomThemeProvider>
-        {/* React Query DevTools - only shows in development */}
-        <ReactQueryDevtools initialIsOpen={false} />
+        {/* React Query DevTools - Disabled to prevent UI clutter */}
+        {/* <ReactQueryDevtools initialIsOpen={false} /> */}
       </QueryClientProvider>
     </ErrorBoundary>
   );

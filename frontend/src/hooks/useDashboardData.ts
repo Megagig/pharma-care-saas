@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { dashboardService, DashboardStats, ChartDataPoint } from '../services/dashboardService';
-
-// Types are now imported from dashboardService
 
 interface DashboardData {
     stats: DashboardStats;
@@ -11,8 +9,10 @@ interface DashboardData {
     mtrsByStatus: ChartDataPoint[];
     patientAgeDistribution: ChartDataPoint[];
     monthlyActivity: ChartDataPoint[];
+    workspaceInfo?: any;
     loading: boolean;
     error: string | null;
+    refresh: () => Promise<void>;
 }
 
 export const useDashboardData = (): DashboardData => {
@@ -32,53 +32,61 @@ export const useDashboardData = (): DashboardData => {
         monthlyActivity: [],
         loading: true,
         error: null,
+        refresh: async () => { },
     });
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
+    const fetchDashboardData = useCallback(async () => {
+        try {
+            setData(prev => ({ ...prev, loading: true, error: null }));
+
+            console.log('🚀 Fetching optimized dashboard data...');
+
+            // Use the optimized dashboard service
+            const analytics = await dashboardService.getDashboardAnalytics();
+
+            console.log('✅ Dashboard data received:', analytics);
+
+            setData(prev => ({
+                ...prev,
+                ...analytics,
+                loading: false,
+                error: null,
+            }));
+
+        } catch (error) {
+            console.error('❌ Error fetching dashboard data:', error);
+
+            // Try to get just stats as fallback
             try {
-                setData(prev => ({ ...prev, loading: true, error: null }));
+                console.log('🔄 Attempting to get stats only...');
+                const statsData = await dashboardService.getDashboardAnalytics();
 
-                console.log('Fetching real dashboard data using new dashboard service...');
-
-                // Use the new dashboard service to get all analytics
-                const analytics = await dashboardService.getDashboardAnalytics();
-
-                console.log('Dashboard analytics received:', analytics);
-
-                setData({
-                    ...analytics,
+                setData(prev => ({
+                    ...prev,
+                    stats: statsData.stats,
                     loading: false,
-                    error: null,
-                });
-
-            } catch (error) {
-                console.error('❌ Error fetching dashboard data:', error);
-
-                // Try to get fallback data from the service
-                try {
-                    console.log('🔄 Attempting to get fallback data...');
-                    const fallbackAnalytics = await dashboardService.getDashboardAnalytics();
-                    setData({
-                        ...fallbackAnalytics,
-                        loading: false,
-                        error: null, // Don't show error if fallback works
-                    });
-                } catch (fallbackError) {
-                    console.error('❌ Fallback data also failed:', fallbackError);
-                    setData(prev => ({
-                        ...prev,
-                        loading: false,
-                        error: error instanceof Error ? error.message : 'Failed to load dashboard data',
-                    }));
-                }
+                    error: 'Some dashboard data may be incomplete',
+                }));
+            } catch (fallbackError) {
+                console.error('❌ Fallback also failed:', fallbackError);
+                setData(prev => ({
+                    ...prev,
+                    loading: false,
+                    error: error instanceof Error ? error.message : 'Failed to load dashboard data',
+                }));
             }
-        };
-
-        fetchDashboardData();
+        }
     }, []);
 
-    // Processing functions are now handled by the dashboard service
+    const refresh = useCallback(async () => {
+        console.log('🔄 Refreshing dashboard data...');
+        await fetchDashboardData();
+    }, [fetchDashboardData]);
 
-    return data;
+    useEffect(() => {
+        fetchDashboardData();
+    }, [fetchDashboardData]);
+
+    // Return data with refresh function - do NOT call setData here
+    return { ...data, refresh };
 };

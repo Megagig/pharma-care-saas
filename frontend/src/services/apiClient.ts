@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api',
-  timeout: 300000, // 5 minutes to match main api service
+  baseURL: import.meta.env.DEV ? '/api' : '/api', // Use Vite proxy in dev, relative path in production
+  timeout: 300000, // 5 minutes to match main api service for AI operations
   headers: {
     'Content-Type': 'application/json',
   },
@@ -15,6 +15,14 @@ apiClient.interceptors.request.use(
   (config) => {
     // Authentication is handled via httpOnly cookies
     // No need to manually add Authorization header
+
+    // Debug logging for API requests
+    console.log('🔵 API Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: config.baseURL ? `${config.baseURL}${config.url}` : config.url
+    });
 
     // Add super admin test header for development RBAC testing
     if (import.meta.env.DEV && config.url?.includes('/admin/')) {

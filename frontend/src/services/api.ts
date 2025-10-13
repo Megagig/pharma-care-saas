@@ -2,11 +2,14 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 
 // Create axios instance with base configuration
 const getBaseURL = () => {
-  try {
-    // Use environment variable or fallback to production URL
-    return import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api';
-  } catch {
-    return 'https://PharmaPilot-nttq.onrender.com/api';
+  // In development, use Vite proxy to avoid CORS issues
+  // In production, use relative path (deployed to same domain/port)
+  if (import.meta.env.DEV) {
+    // Development: Use Vite proxy
+    return '/api';
+  } else {
+    // Production: Use relative path for single-port deployment
+    return '/api';
   }
 };
 

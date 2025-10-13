@@ -134,7 +134,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     // Determine user status based on invite
     let userStatus = 'pending'; // Default: needs email verification
-    if (workspaceInvite && requiresApproval) {
+    if (requiresApproval) {
       userStatus = 'pending'; // Needs both email verification AND workspace approval
     }
 
@@ -410,6 +410,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         licenseVerifiedAt: user.licenseVerifiedAt,
         currentPlan: user.currentPlanId,
         workplaceId: user.workplaceId,
+        workplaceRole: user.workplaceRole,
       },
     });
 
@@ -476,14 +477,36 @@ export const verifyEmail = async (
 
     // Update user status
     user.emailVerified = true;
-    user.status = 'active';
+
+    // Only set to active if user doesn't need workspace approval
+    // Check if user is a workspace owner - owners should be active
+    const { Workplace } = await import('../models/Workplace');
+    const isWorkspaceOwner = await Workplace.findOne({
+      _id: user.workplaceId,
+      ownerId: user._id
+    });
+
+    if (isWorkspaceOwner) {
+      // Workspace owners should be active after email verification
+      user.status = 'active';
+    } else if (user.workplaceId && user.workplaceRole) {
+      // Users who joined via invite codes need workspace owner approval
+      user.status = 'pending';
+    } else {
+      // Regular users can be activated after email verification
+      user.status = 'active';
+    }
+
     user.verificationToken = undefined;
     user.verificationCode = undefined;
     await user.save();
 
     res.json({
       success: true,
-      message: 'Email verified successfully! You can now log in.',
+      message: (!isWorkspaceOwner && user.workplaceId && user.workplaceRole)
+        ? 'Email verified successfully! Your account is pending approval by the workspace owner. You will receive an email once approved.'
+        : 'Email verified successfully! You can now log in.',
+      requiresApproval: !!((!isWorkspaceOwner && user.workplaceId && user.workplaceRole)),
     });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
@@ -1110,7 +1133,7 @@ export const registerWithWorkplace = async (
             ? new mongoose.Types.ObjectId(workplaceId)
             : undefined,
           workplaceRole: workplaceRole || 'Staff',
-        });
+        }, session);
 
         // Find the workplace's subscription to inherit
         const workplaceSubscription = await Subscription.findOne({

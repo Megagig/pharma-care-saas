@@ -28,6 +28,7 @@ interface User {
   email: string;
   phone?: string;
   role: 'pharmacist' | 'technician' | 'owner' | 'admin' | 'super_admin' | 'pharmacy_outlet' | 'pharmacy_team' | 'intern_pharmacist';
+  workplaceRole?: 'Owner' | 'Staff' | 'Pharmacist' | 'Cashier' | 'Technician' | 'Assistant';
   status: 'pending' | 'active' | 'suspended';
   emailVerified: boolean;
   currentPlan: SubscriptionPlan;
@@ -195,7 +196,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth();
 
     // Clean up function
-    return () => {};
+    return () => { };
   }, []); // Empty dependency array to run only on mount
 
   // Separate effect for token refresh that doesn't depend on user state
@@ -297,7 +298,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user || !user.currentPlan) return false;
     return (
       user.currentPlan.features[
-        featureName as keyof typeof user.currentPlan.features
+      featureName as keyof typeof user.currentPlan.features
       ] === true
     );
   };
@@ -306,7 +307,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user || !user.currentPlan) return false;
     const limit =
       user.currentPlan.features[
-        limitName as keyof typeof user.currentPlan.features
+      limitName as keyof typeof user.currentPlan.features
       ];
     return limit === null || currentCount < (limit as number);
   };
@@ -327,4 +328,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+// Custom hook to use the AuthContext
+export const useAuth = () => {
+  const context = React.useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

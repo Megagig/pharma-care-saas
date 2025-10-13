@@ -50,10 +50,10 @@ class PatientService {
     options: RequestOptions = {}
   ): Promise<T> {
     try {
-      // Import the configured API client
-      const { default: api } = await import('./api');
+      // Import the configured API client with direct backend URL
+      const { default: apiClient } = await import('./apiClient');
 
-      const response = await api({
+      const response = await apiClient({
         url: url,
         method: options.method || 'GET',
         data: options.body ? JSON.parse(options.body as string) : undefined,

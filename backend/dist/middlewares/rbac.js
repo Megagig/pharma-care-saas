@@ -536,6 +536,10 @@ const requireWorkspaceOwner = (req, res, next) => {
         });
         return;
     }
+    const userRole = (0, auth_1.getUserRole)(req.user);
+    if (userRole === 'super_admin') {
+        return next();
+    }
     if (!req.workspaceContext?.workspace) {
         res.status(403).json({
             success: false,
@@ -543,13 +547,6 @@ const requireWorkspaceOwner = (req, res, next) => {
             error: 'Access denied',
         });
         return;
-    }
-    const userRole = (0, auth_1.getUserRole)(req.user);
-    if (userRole === 'super_admin') {
-        if (req.workspaceContext.workspace._id) {
-            req.workplaceId = req.workspaceContext.workspace._id;
-        }
-        return next();
     }
     const workspaceOwnerId = req.workspaceContext.workspace.ownerId;
     if (!workspaceOwnerId) {

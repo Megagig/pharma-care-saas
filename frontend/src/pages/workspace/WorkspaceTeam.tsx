@@ -20,22 +20,40 @@ import {
   Chip,
   useTheme,
   useMediaQuery,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Snackbar,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import MailIcon from '@mui/icons-material/Mail';
 import HistoryIcon from '@mui/icons-material/History';
 import AddIcon from '@mui/icons-material/Add';
 import Button from '@mui/material/Button';
 import { useRBAC } from '../../hooks/useRBAC';
-import { useWorkspaceStats } from '../../queries/useWorkspaceTeam';
+import {
+  useWorkspaceStats,
+  useUpdateMemberRole,
+  useSuspendMember,
+  useActivateMember,
+  useRemoveMember
+} from '../../queries/useWorkspaceTeam';
 import MemberList from '../../components/workspace/MemberList';
 import MemberFilters from '../../components/workspace/MemberFilters';
 import PendingApprovals from '../../components/workspace/PendingApprovals';
+import PendingLicenseApprovals from '../../components/workspace/PendingLicenseApprovals';
 import InviteList from '../../components/workspace/InviteList';
 import InviteGenerator from '../../components/workspace/InviteGenerator';
 import AuditTrail from '../../components/workspace/AuditTrail';
-import type { MemberFilters as MemberFiltersType } from '../../types/workspace';
+import type { MemberFilters as MemberFiltersType, Member, WorkplaceRole } from '../../types/workspace';
 
 // Tab panel component
 interface TabPanelProps {
@@ -126,6 +144,191 @@ const WorkspaceTeam: React.FC = () => {
     isLoading: statsLoading,
     error: statsError,
   } = useWorkspaceStats();
+
+  // Mutation hooks for member actions
+  const updateMemberRoleMutation = useUpdateMemberRole();
+  const suspendMemberMutation = useSuspendMember();
+  const activateMemberMutation = useActivateMember();
+  const removeMemberMutation = useRemoveMember();
+
+  // Dialog states
+  const [actionDialog, setActionDialog] = useState<{
+    open: boolean;
+    type: 'assignRole' | 'suspend' | 'remove' | null;
+    member: Member | null;
+  }>({ open: false, type: null, member: null });
+  const [suspendReason, setSuspendReason] = useState('');
+  const [selectedRole, setSelectedRole] = useState<WorkplaceRole>('Staff');
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'warning' | 'info';
+  }>({ open: false, message: '', severity: 'success' });
+
+  // Action handlers
+  const handleAssignRole = (member: Member) => {
+    if (member.status === 'pending') {
+      // For pending members, we should approve them first
+      setSnackbar({
+        open: true,
+        message: 'Please approve the member first before assigning roles',
+        severity: 'warning',
+      });
+      return;
+    }
+    setSelectedRole(member.workplaceRole || 'Staff');
+    setActionDialog({ open: true, type: 'assignRole', member });
+  };
+
+  const handleSuspendMember = (member: Member) => {
+    if (member.status === 'pending') {
+      // For pending members, we should show reject option
+      setSnackbar({
+        open: true,
+        message: 'Use the Pending Approvals tab to approve or reject pending members',
+        severity: 'info',
+      });
+      return;
+    }
+    setActionDialog({ open: true, type: 'suspend', member });
+  };
+
+  const handleActivateMember = (member: Member) => {
+    if (member.status === 'pending') {
+      // For pending members, this would be approval
+      setSnackbar({
+        open: true,
+        message: 'Use the Pending Approvals tab to approve pending members',
+        severity: 'info',
+      });
+      return;
+    }
+
+    activateMemberMutation.mutate(member._id, {
+      onSuccess: () => {
+        setSnackbar({
+          open: true,
+          message: `${member.firstName} ${member.lastName} has been activated successfully`,
+          severity: 'success',
+        });
+      },
+      onError: (error: any) => {
+        setSnackbar({
+          open: true,
+          message: error.response?.data?.message || 'Failed to activate member',
+          severity: 'error',
+        });
+      },
+    });
+  };
+
+  const handleRemoveMember = (member: Member) => {
+    setActionDialog({ open: true, type: 'remove', member });
+  };
+
+  const handleConfirmAction = () => {
+    if (!actionDialog.member) return;
+
+    const member = actionDialog.member;
+
+    switch (actionDialog.type) {
+      case 'assignRole':
+        if (!selectedRole) {
+          setSnackbar({
+            open: true,
+            message: 'Please select a role',
+            severity: 'warning',
+          });
+          return;
+        }
+
+        updateMemberRoleMutation.mutate(
+          {
+            memberId: member._id,
+            data: { workplaceRole: selectedRole },
+          },
+          {
+            onSuccess: () => {
+              setSnackbar({
+                open: true,
+                message: `${member.firstName} ${member.lastName}'s role has been updated to ${selectedRole}`,
+                severity: 'success',
+              });
+              setActionDialog({ open: false, type: null, member: null });
+              setSelectedRole('Staff');
+            },
+            onError: (error: any) => {
+              setSnackbar({
+                open: true,
+                message: error.response?.data?.message || 'Failed to update member role',
+                severity: 'error',
+              });
+            },
+          }
+        );
+        return;
+
+      case 'suspend':
+        suspendMemberMutation.mutate(
+          {
+            memberId: member._id,
+            data: { reason: suspendReason || 'No reason provided' },
+          },
+          {
+            onSuccess: () => {
+              setSnackbar({
+                open: true,
+                message: `${member.firstName} ${member.lastName} has been suspended`,
+                severity: 'success',
+              });
+            },
+            onError: (error: any) => {
+              setSnackbar({
+                open: true,
+                message: error.response?.data?.message || 'Failed to suspend member',
+                severity: 'error',
+              });
+            },
+          }
+        );
+        break;
+
+      case 'remove':
+        removeMemberMutation.mutate(
+          { memberId: member._id },
+          {
+            onSuccess: () => {
+              setSnackbar({
+                open: true,
+                message: `${member.firstName} ${member.lastName} has been removed from the workspace`,
+                severity: 'success',
+              });
+            },
+            onError: (error: any) => {
+              setSnackbar({
+                open: true,
+                message: error.response?.data?.message || 'Failed to remove member',
+                severity: 'error',
+              });
+            },
+          }
+        );
+        break;
+    }
+
+    setActionDialog({ open: false, type: null, member: null });
+    setSuspendReason('');
+  };
+
+  const handleCloseActionDialog = () => {
+    setActionDialog({ open: false, type: null, member: null });
+    setSuspendReason('');
+    setSelectedRole('Staff');
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   // Access control - only pharmacy_outlet users can access
   if (!hasRole('pharmacy_outlet')) {
@@ -258,19 +461,27 @@ const WorkspaceTeam: React.FC = () => {
             sx={{ minHeight: 64 }}
           />
           <Tab
-            icon={<MailIcon />}
-            label="Invite Links"
+            icon={<VerifiedUserIcon />}
+            label="License Approvals"
             iconPosition="start"
             id="workspace-team-tab-2"
             aria-controls="workspace-team-tabpanel-2"
             sx={{ minHeight: 64 }}
           />
           <Tab
-            icon={<HistoryIcon />}
-            label="Audit Trail"
+            icon={<MailIcon />}
+            label="Invite Links"
             iconPosition="start"
             id="workspace-team-tab-3"
             aria-controls="workspace-team-tabpanel-3"
+            sx={{ minHeight: 64 }}
+          />
+          <Tab
+            icon={<HistoryIcon />}
+            label="Audit Trail"
+            iconPosition="start"
+            id="workspace-team-tab-4"
+            aria-controls="workspace-team-tabpanel-4"
             sx={{ minHeight: 64 }}
           />
         </Tabs>
@@ -279,7 +490,13 @@ const WorkspaceTeam: React.FC = () => {
       {/* Tab Content */}
       <TabPanel value={activeTab} index={0}>
         <MemberFilters filters={memberFilters} onFiltersChange={setMemberFilters} />
-        <MemberList filters={memberFilters} />
+        <MemberList
+          filters={memberFilters}
+          onAssignRole={handleAssignRole}
+          onSuspend={handleSuspendMember}
+          onActivate={handleActivateMember}
+          onRemove={handleRemoveMember}
+        />
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
@@ -287,6 +504,10 @@ const WorkspaceTeam: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>
+        <PendingLicenseApprovals />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={3}>
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">Workspace Invites</Typography>
           <Button
@@ -308,9 +529,105 @@ const WorkspaceTeam: React.FC = () => {
         />
       </TabPanel>
 
-      <TabPanel value={activeTab} index={3}>
+      <TabPanel value={activeTab} index={4}>
         <AuditTrail />
       </TabPanel>
+
+      {/* Action Confirmation Dialogs */}
+      <Dialog
+        open={actionDialog.open}
+        onClose={handleCloseActionDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {actionDialog.type === 'assignRole' && 'Assign Role'}
+          {actionDialog.type === 'suspend' && 'Suspend Member'}
+          {actionDialog.type === 'remove' && 'Remove Member'}
+        </DialogTitle>
+        <DialogContent>
+          {actionDialog.type === 'assignRole' && (
+            <Box>
+              <Typography gutterBottom>
+                Assign a new role to {actionDialog.member?.firstName} {actionDialog.member?.lastName}:
+              </Typography>
+              <FormControl fullWidth margin="normal">
+                <InputLabel id="role-select-label">Select Role</InputLabel>
+                <Select
+                  labelId="role-select-label"
+                  id="role-select"
+                  value={selectedRole}
+                  label="Select Role"
+                  onChange={(e) => setSelectedRole(e.target.value as WorkplaceRole)}
+                >
+                  <MenuItem value="Staff">Staff</MenuItem>
+                  <MenuItem value="Pharmacist">Pharmacist</MenuItem>
+                  <MenuItem value="Cashier">Cashier</MenuItem>
+                  <MenuItem value="Technician">Technician</MenuItem>
+                  <MenuItem value="Assistant">Assistant</MenuItem>
+                  <MenuItem value="Owner">Owner</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+          {actionDialog.type === 'suspend' && (
+            <Box>
+              <Typography gutterBottom>
+                Are you sure you want to suspend {actionDialog.member?.firstName} {actionDialog.member?.lastName}?
+                They will no longer be able to access the workspace.
+              </Typography>
+              <TextField
+                fullWidth
+                label="Reason for suspension"
+                multiline
+                rows={3}
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                sx={{ mt: 2 }}
+              />
+            </Box>
+          )}
+          {actionDialog.type === 'remove' && (
+            <Typography>
+              Are you sure you want to permanently remove {actionDialog.member?.firstName} {actionDialog.member?.lastName}
+              from the workspace? This action cannot be undone.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseActionDialog}>Cancel</Button>
+          <Button
+            onClick={handleConfirmAction}
+            variant="contained"
+            color={actionDialog.type === 'remove' ? 'error' : 'primary'}
+            disabled={
+              updateMemberRoleMutation.isPending ||
+              suspendMemberMutation.isPending ||
+              removeMemberMutation.isPending
+            }
+          >
+            {actionDialog.type === 'assignRole' && 'Assign'}
+            {actionDialog.type === 'suspend' && 'Suspend'}
+            {actionDialog.type === 'remove' && 'Remove'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success/Error Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
