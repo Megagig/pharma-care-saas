@@ -309,8 +309,6 @@ const validateMTRAccess = (req, res, next) => {
                 throw new mtrErrors_1.MTRAuthorizationError('Active or approved pharmacist license required for MTR operations');
             }
         }
-        else {
-        }
         logger_1.default.info('MTR access granted', {
             userId: user.id,
             userRole: user.role,

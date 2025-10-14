@@ -209,11 +209,6 @@ app.use('/api/', latencyMeasurement_1.latencyMeasurementMiddleware);
 const unifiedAuditMiddleware_1 = require("./middlewares/unifiedAuditMiddleware");
 app.use('/api/', unifiedAuditMiddleware_1.unifiedAuditMiddleware);
 const compressionMiddleware_1 = require("./middlewares/compressionMiddleware");
-app.use('/api/', (0, compressionMiddleware_1.adaptiveCompressionMiddleware)());
-app.use('/api/', (0, compressionMiddleware_1.intelligentCompressionMiddleware)({
-    threshold: 1024,
-    level: 6,
-}));
 app.use('/api/', (0, compressionMiddleware_1.responseSizeMonitoringMiddleware)());
 app.get('/api/health', (req, res) => {
     res.json({
@@ -398,9 +393,26 @@ app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../
         }
     },
 }));
-app.use(express_1.default.static(path_1.default.join(__dirname, "../../frontend/build")));
+app.use(express_1.default.static(path_1.default.join(__dirname, "../../frontend/build"), {
+    setHeaders: (res, filePath) => {
+        if (filePath.match(/\.(js|css)$/) && filePath.match(/-[a-f0-9]{8}\./)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+        else if (filePath.endsWith('index.html')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+        else {
+            res.setHeader('Cache-Control', 'public, max-age=604800');
+        }
+    },
+}));
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.sendFile(path_1.default.join(__dirname, "../../frontend/build/index.html"));
     }
     else {

@@ -13,7 +13,6 @@ const mtrValidation_1 = require("../middlewares/mtrValidation");
 const router = express_1.default.Router();
 router.use(auth_1.auth);
 router.use(auth_1.requireLicense);
-router.use(auditMiddleware_1.auditTimer);
 router.use(mtrValidation_1.mtrValidationMiddleware.validateMTRAccess);
 router.use(mtrValidation_1.mtrValidationMiddleware.validateMTRBusinessLogic);
 router.get('/', mtrValidators_1.mtrQuerySchema, mtrValidation_1.mtrValidationMiddleware.handleValidationErrors, (0, auditMiddleware_1.auditMTRActivity)('VIEW_MTR_SESSIONS'), mtrController_1.getMTRSessions);

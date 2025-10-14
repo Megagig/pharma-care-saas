@@ -32,9 +32,11 @@ exports.createMTRSessionSchema = [
         .isLength({ max: 500 })
         .withMessage('Review reason cannot exceed 500 characters'),
     (0, express_validator_1.body)('patientConsent')
+        .optional()
         .isBoolean()
         .withMessage('Patient consent must be a boolean'),
     (0, express_validator_1.body)('confidentialityAgreed')
+        .optional()
         .isBoolean()
         .withMessage('Confidentiality agreement must be a boolean'),
 ];

@@ -73,7 +73,6 @@ exports.createMTRSession = (0, responseHelpers_1.asyncHandler)(async (req, res) 
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
     if (req.user?.role === 'super_admin') {
-        console.log('Super admin bypassing tenant check for MTR patient access');
     }
     else {
         (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
@@ -109,20 +108,56 @@ exports.createMTRSession = (0, responseHelpers_1.asyncHandler)(async (req, res) 
     if (req.user?.role === 'super_admin') {
         session.createdByRole = 'super_admin';
     }
-    await session.save();
-    session.markStepComplete('patientSelection', {
+    let saveAttempts = 0;
+    const maxSaveAttempts = 5;
+    let savedSession = null;
+    while (saveAttempts < maxSaveAttempts && !savedSession) {
+        try {
+            await session.save();
+            savedSession = session;
+        }
+        catch (error) {
+            if (error.code === 11000 && error.message.includes('reviewNumber')) {
+                saveAttempts++;
+                if (saveAttempts >= maxSaveAttempts) {
+                    const timestamp = Date.now().toString().slice(-6);
+                    const year = new Date().getFullYear();
+                    const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+                    session.reviewNumber = `MTR-${year}${month}-${timestamp}`;
+                    try {
+                        await session.save();
+                        savedSession = session;
+                    }
+                    catch (finalError) {
+                        throw new Error('Unable to generate unique review number. Please try again.');
+                    }
+                    break;
+                }
+                session.reviewNumber = await MedicationTherapyReview_1.default.generateNextReviewNumber(context.workplaceId, saveAttempts * 10);
+                await new Promise((resolve) => setTimeout(resolve, 100 * saveAttempts));
+            }
+            else {
+                throw error;
+            }
+        }
+    }
+    if (!savedSession) {
+        throw new Error('Failed to save MTR session');
+    }
+    savedSession.markStepComplete('patientSelection', {
         patientId,
         selectedAt: new Date(),
     });
-    await session.save();
-    await auditService_1.default.logMTRActivity(auditService_1.default.createAuditContext(req), 'CREATE_MTR_SESSION', session);
-    (0, responseHelpers_1.sendSuccess)(res, {
-        session: {
-            ...session.toObject(),
-            completionPercentage: session.getCompletionPercentage(),
-            nextStep: session.getNextStep(),
+    await savedSession.save();
+    await auditService_1.default.logMTRActivity(auditService_1.default.createAuditContext(req), 'CREATE_MTR_SESSION', savedSession);
+    const responseData = {
+        review: {
+            ...savedSession.toObject(),
+            completionPercentage: savedSession.getCompletionPercentage(),
+            nextStep: savedSession.getNextStep(),
         },
-    }, 'MTR session created successfully', 201);
+    };
+    (0, responseHelpers_1.sendSuccess)(res, responseData, 'MTR session created successfully', 201);
 });
 exports.updateMTRSession = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
@@ -323,7 +358,7 @@ exports.createMTRProblem = (0, responseHelpers_1.asyncHandler)(async (req, res) 
     session.problems.push(problem._id);
     session.updatedBy = context.userId;
     await session.save();
-    console.log('MTR problem created:', (0, responseHelpers_1.createAuditLog)('CREATE_MTR_PROBLEM', 'DrugTherapyProblem', problem._id.toString(), context, { reviewId: id, type: problem.type }));
+    (0, responseHelpers_1.createAuditLog)('CREATE_MTR_PROBLEM', 'DrugTherapyProblem', problem._id.toString(), context, { reviewId: id, type: problem.type });
     (0, responseHelpers_1.sendSuccess)(res, { problem }, 'Problem added to MTR session successfully', 201);
 });
 exports.updateMTRProblem = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -391,7 +426,7 @@ exports.createMTRIntervention = (0, responseHelpers_1.asyncHandler)(async (req, 
     session.interventions.push(intervention._id);
     session.updatedBy = context.userId;
     await session.save();
-    console.log('MTR intervention created:', (0, responseHelpers_1.createAuditLog)('CREATE_MTR_INTERVENTION', 'MTRIntervention', intervention._id.toString(), context, { reviewId: id, type: intervention.type }));
+    (0, responseHelpers_1.createAuditLog)('CREATE_MTR_INTERVENTION', 'MTRIntervention', intervention._id.toString(), context, { reviewId: id, type: intervention.type });
     (0, responseHelpers_1.sendSuccess)(res, { intervention }, 'Intervention recorded successfully', 201);
 });
 exports.updateMTRIntervention = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -441,7 +476,7 @@ exports.createMTRFollowUp = (0, responseHelpers_1.asyncHandler)(async (req, res)
     session.followUps.push(followUp._id);
     session.updatedBy = context.userId;
     await session.save();
-    console.log('MTR follow-up created:', (0, responseHelpers_1.createAuditLog)('CREATE_MTR_FOLLOWUP', 'MTRFollowUp', followUp._id.toString(), context, { reviewId: id, type: followUp.type }));
+    (0, responseHelpers_1.createAuditLog)('CREATE_MTR_FOLLOWUP', 'MTRFollowUp', followUp._id.toString(), context, { reviewId: id, type: followUp.type });
     (0, responseHelpers_1.sendSuccess)(res, { followUp }, 'Follow-up scheduled successfully', 201);
 });
 exports.updateMTRFollowUp = (0, responseHelpers_1.asyncHandler)(async (req, res) => {

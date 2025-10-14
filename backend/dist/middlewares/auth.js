@@ -122,6 +122,15 @@ const auth = async (req, res, next) => {
                 workspaceId: user.workplaceId,
                 status: { $in: ['active', 'trial', 'past_due'] },
             }).populate('planId');
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Auth middleware - Subscription lookup:', {
+                    workplaceId: user.workplaceId,
+                    subscriptionFound: !!subscription,
+                    subscriptionStatus: subscription?.status,
+                    subscriptionTier: subscription?.tier,
+                    hasPlanId: !!subscription?.planId,
+                });
+            }
         }
         req.subscription = subscription;
         req.user = user;

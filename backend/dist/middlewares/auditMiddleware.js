@@ -186,7 +186,6 @@ const auditMTRActivity = (activityType) => {
             }
         }
         catch (error) {
-            console.error('Failed to create MTR activity audit log:', error);
         }
         next();
     };

@@ -505,21 +505,51 @@ medicationTherapyReviewSchema.pre('save', function () {
     }
 });
 medicationTherapyReviewSchema.statics.generateNextReviewNumber =
-    async function (workplaceId) {
+    async function (workplaceId, retryOffset = 0) {
         const year = new Date().getFullYear();
         const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
-        const lastReview = await this.findOne({
-            workplaceId,
-            reviewNumber: { $regex: `^MTR-${year}${month}` },
-        }, {}, { sort: { createdAt: -1 }, bypassTenancyGuard: true });
-        let sequence = 1;
-        if (lastReview?.reviewNumber) {
-            const match = lastReview.reviewNumber.match(/-(\d+)$/);
-            if (match) {
-                sequence = parseInt(match[1]) + 1;
+        const prefix = `MTR-${year}${month}`;
+        let attempts = 0;
+        const maxAttempts = 10;
+        while (attempts < maxAttempts) {
+            try {
+                const existingReviews = await this.find({
+                    workplaceId,
+                    reviewNumber: { $regex: `^${prefix}` },
+                }, { reviewNumber: 1 }, { bypassTenancyGuard: true })
+                    .sort({ reviewNumber: -1 })
+                    .limit(100)
+                    .lean();
+                const sequences = existingReviews
+                    .map(review => {
+                    const match = review.reviewNumber?.match(/-(\d+)$/);
+                    return match ? parseInt(match[1]) : 0;
+                })
+                    .filter(seq => seq > 0);
+                const maxSequence = sequences.length > 0 ? Math.max(...sequences) : 0;
+                const nextSequence = maxSequence + 1 + attempts + retryOffset;
+                const reviewNumber = `${prefix}-${nextSequence.toString().padStart(4, '0')}`;
+                const exists = await this.findOne({
+                    workplaceId,
+                    reviewNumber
+                }, null, { bypassTenancyGuard: true }).lean();
+                if (!exists) {
+                    return reviewNumber;
+                }
+                attempts++;
+                await new Promise(resolve => setTimeout(resolve, 10 + Math.random() * 40));
+            }
+            catch (error) {
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    const timestamp = Date.now().toString().slice(-6);
+                    return `${prefix}-${timestamp}`;
+                }
+                await new Promise(resolve => setTimeout(resolve, 20 + Math.random() * 80));
             }
         }
-        return `MTR-${year}${month}-${sequence.toString().padStart(4, '0')}`;
+        const timestamp = Date.now().toString().slice(-6);
+        return `${prefix}-${timestamp}`;
     };
 medicationTherapyReviewSchema.statics.findActive = function (workplaceId) {
     const query = { status: { $in: ['in_progress', 'on_hold'] } };
