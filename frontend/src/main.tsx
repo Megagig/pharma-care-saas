@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
+import ChunkErrorBoundary from './components/ChunkErrorBoundary';
 import './index.css';
 // import { webVitalsMonitor } from './utils/WebVitalsMonitor';
 
@@ -12,8 +13,10 @@ import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <HelmetProvider>
-      <App />
-    </HelmetProvider>
+    <ChunkErrorBoundary>
+      <HelmetProvider>
+        <App />
+      </HelmetProvider>
+    </ChunkErrorBoundary>
   </React.StrictMode>
 );

@@ -493,13 +493,36 @@ app.use(
   })
 );
 
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, "../../frontend/build")));
+// Serve static files from React build with proper caching
+app.use(
+  express.static(path.join(__dirname, "../../frontend/build"), {
+    setHeaders: (res, filePath) => {
+      // Cache hashed assets (js, css with hash in filename) for 1 year
+      if (filePath.match(/\.(js|css)$/) && filePath.match(/-[a-f0-9]{8}\./)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      // Don't cache index.html to ensure users get latest version
+      else if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+      // Cache other assets (images, fonts) for 1 week
+      else {
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+      }
+    },
+  })
+);
 
 // Catch all handler: send back React's index.html file for client-side routing
 app.get('*', (req: Request, res: Response) => {
   // Only serve index.html for non-API and non-uploads routes
   if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+    // Set no-cache headers for index.html
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(__dirname, "../../frontend/build/index.html"));
   } else {
     res.status(404).json({ message: `Route ${req.originalUrl} not found` });

@@ -18,6 +18,7 @@ import { initializeStores } from './stores';
 import { queryClient, queryPrefetcher } from './lib/queryClient';
 import { initializeQueryDevtools } from './lib/queryDevtools';
 import { useTheme as useThemeStore } from './stores/themeStore';
+import { versionCheckService } from './services/versionCheckService';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
@@ -126,6 +127,11 @@ function App(): JSX.Element {
     modulePreloader.initialize();
     compressionUtils.preloadCriticalAssets().catch(console.error);
 
+    // Start version checking in production
+    if (import.meta.env.PROD) {
+      versionCheckService.start();
+    }
+
     // Register service worker for caching
     registerSW({
       onSuccess: () => console.log('Service worker registered successfully'),
@@ -136,6 +142,13 @@ function App(): JSX.Element {
 
     // Prefetch likely routes on app load
     queryPrefetcher.prefetchLikelyRoutes().catch(console.error);
+
+    // Cleanup on unmount
+    return () => {
+      if (import.meta.env.PROD) {
+        versionCheckService.stop();
+      }
+    };
   }, []);
 
   // Get current theme from store
