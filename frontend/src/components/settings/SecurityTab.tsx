@@ -3,7 +3,6 @@ import {
     Box,
     Card,
     CardContent,
-    Grid,
     TextField,
     Button,
     Typography,
@@ -22,13 +21,11 @@ import {
     IconButton,
     Slider,
 } from '@mui/material';
-import {
-    Visibility as VisibilityIcon,
-    VisibilityOff as VisibilityOffIcon,
-    Security as SecurityIcon,
-    Lock as LockIcon,
-    VpnKey as VpnKeyIcon,
-} from '@mui/icons-material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import SecurityIcon from '@mui/icons-material/Security';
+import LockIcon from '@mui/icons-material/Lock';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import {
     useSecuritySettings,
     useUpdateSecuritySettings,
@@ -255,7 +252,7 @@ const SecurityTab: React.FC = () => {
                                 </Typography>
                                 <Slider
                                     value={securityForm.sessionTimeout}
-                                    onChange={(e, value) =>
+                                    onChange={(_e, value) =>
                                         setSecurityForm((prev) => ({ ...prev, sessionTimeout: value as number }))
                                     }
                                     min={5}

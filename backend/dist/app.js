@@ -50,6 +50,7 @@ const errorHandler_1 = __importDefault(require("./middlewares/errorHandler"));
 const MemoryManagementService_1 = __importDefault(require("./services/MemoryManagementService"));
 const logger_1 = __importDefault(require("./utils/logger"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const userSettingsRoutes_1 = __importDefault(require("./routes/userSettingsRoutes"));
 const subscriptionRoutes_1 = __importDefault(require("./routes/subscriptionRoutes"));
 const patientRoutes_1 = __importDefault(require("./routes/patientRoutes"));
 const allergyRoutes_1 = __importDefault(require("./routes/allergyRoutes"));
@@ -289,6 +290,7 @@ app.use('/api/deployment', deploymentRoutes_1.default);
 app.use('/api/production-validation', productionValidationRoutes_1.default);
 app.use('/api/continuous-monitoring', continuousMonitoringRoutes_1.default);
 app.use('/api/auth', authRoutes_1.default);
+app.use('/api/user/settings', userSettingsRoutes_1.default);
 app.use('/api/subscriptions', subscriptionRoutes_1.default);
 app.use('/api/pricing', pricingManagementRoutes_1.default);
 app.use('/api/dashboard', dashboardRoutes_1.default);
@@ -380,19 +382,21 @@ app.use('/api/subscription', subscription_1.default);
 app.use('/api/workspace-subscription', subscriptionManagementRoutes_1.default);
 app.use('/api/feature-flags', featureFlagRoutes_1.default);
 app.use('/api/webhooks', express_1.default.raw({ type: 'application/json' }), webhookRoutes_1.default);
-app.use('/uploads', express_1.default.static('uploads', {
+app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads'), {
     maxAge: '1d',
-    setHeaders: (res, path) => {
+    setHeaders: (res, filePath) => {
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('X-Frame-Options', 'DENY');
-        if (path.endsWith('.pdf')) {
+        if (filePath.endsWith('.pdf')) {
             res.setHeader('Content-Disposition', 'inline');
+            res.setHeader('X-Frame-Options', 'DENY');
         }
     },
 }));
 app.use(express_1.default.static(path_1.default.join(__dirname, "../../frontend/build")));
 app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
         res.sendFile(path_1.default.join(__dirname, "../../frontend/build/index.html"));
     }
     else {

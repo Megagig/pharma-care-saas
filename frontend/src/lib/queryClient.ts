@@ -37,8 +37,6 @@ export const queryClient = new QueryClient({
       refetchOnReconnect: 'always',
       // Enable background refetch for better UX
       refetchInterval: false, // Will be set per query as needed
-      // Keep previous data during refetch for better UX
-      keepPreviousData: true,
       // Network mode for offline support
       networkMode: 'offlineFirst',
     },
@@ -436,7 +434,7 @@ export class QueryInvalidationManager {
 
       // Invalidate dashboard if patient is featured
       this.queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboard.overview,
+        queryKey: ['dashboard'],
         exact: false,
       }),
     ];
