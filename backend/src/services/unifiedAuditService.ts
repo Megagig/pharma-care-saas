@@ -72,10 +72,9 @@ export class UnifiedAuditService {
     static async logActivity(
         data: UnifiedAuditLogData,
         req?: Request
-    ): Promise<IUnifiedAuditLog> {
+    ): Promise<IUnifiedAuditLog | null> {
         try {
             const auditData: any = {
-                userId: new mongoose.Types.ObjectId(data.userId as string),
                 activityType: data.activityType,
                 action: data.action,
                 description: data.description,
@@ -85,8 +84,23 @@ export class UnifiedAuditService {
                 metadata: data.metadata || {},
             };
 
+            // Handle userId - may be undefined for login/register actions
+            if (data.userId) {
+                auditData.userId = new mongoose.Types.ObjectId(data.userId as string);
+            } else if (data.metadata?.userEmail && (data.action === 'USER_LOGIN' || data.action === 'USER_REGISTERED')) {
+                // For login/register, try to find user by email from metadata
+                const User = mongoose.model('User');
+                const user = await User.findOne({ email: data.metadata.userEmail }).select('_id workplaceId');
+                if (user) {
+                    auditData.userId = user._id;
+                    if (user.workplaceId) {
+                        auditData.workplaceId = user.workplaceId;
+                    }
+                }
+            }
+
             // Add workplace information
-            if (data.workplaceId) {
+            if (data.workplaceId && !auditData.workplaceId) {
                 auditData.workplaceId = new mongoose.Types.ObjectId(data.workplaceId as string);
             }
 
@@ -149,9 +163,9 @@ export class UnifiedAuditService {
 
             return auditLog;
         } catch (error) {
-            console.error('Error logging unified audit activity:', error);
+            console.warn('Error logging unified audit activity:', error);
             // Don't throw - audit logging should not break application flow
-            throw error;
+            return null;
         }
     }
 

@@ -128,7 +128,7 @@ const unifiedAuditLogSchema = new Schema<IUnifiedAuditLog>(
         userId: {
             type: Schema.Types.ObjectId,
             ref: 'User',
-            required: [true, 'User ID is required'],
+            // Not required here - will be populated by pre-save hook for auth routes
             index: true,
         },
         userDetails: {
@@ -138,19 +138,15 @@ const unifiedAuditLogSchema = new Schema<IUnifiedAuditLog>(
             },
             firstName: {
                 type: String,
-                required: true,
             },
             lastName: {
                 type: String,
-                required: true,
             },
             email: {
                 type: String,
-                required: true,
             },
             role: {
                 type: String,
-                required: true,
             },
             workplaceRole: String,
             avatarUrl: String,

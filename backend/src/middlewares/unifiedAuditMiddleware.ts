@@ -9,62 +9,63 @@ import logger from '../utils/logger';
  */
 
 // Define which routes should be audited
+// NOTE: Middleware is mounted at '/api/' so patterns should NOT include '/api/' prefix
 const auditableRoutes = [
     // Authentication routes
-    { pattern: /^\/api\/auth\/login$/, method: 'POST', activityType: 'authentication', action: 'USER_LOGIN' },
-    { pattern: /^\/api\/auth\/logout$/, method: 'POST', activityType: 'authentication', action: 'USER_LOGOUT' },
-    { pattern: /^\/api\/auth\/register$/, method: 'POST', activityType: 'user_management', action: 'USER_REGISTERED' },
+    { pattern: /^\/auth\/login$/, method: 'POST', activityType: 'authentication', action: 'USER_LOGIN' },
+    { pattern: /^\/auth\/logout$/, method: 'POST', activityType: 'authentication', action: 'USER_LOGOUT' },
+    { pattern: /^\/auth\/register$/, method: 'POST', activityType: 'user_management', action: 'USER_REGISTERED' },
 
     // User management routes
-    { pattern: /^\/api\/admin\/users\/.*\/approve$/, method: 'PUT', activityType: 'user_management', action: 'USER_APPROVED' },
-    { pattern: /^\/api\/admin\/users\/.*\/reject$/, method: 'PUT', activityType: 'user_management', action: 'USER_REJECTED' },
-    { pattern: /^\/api\/admin\/users\/.*\/suspend$/, method: 'PUT', activityType: 'user_management', action: 'USER_SUSPENDED' },
-    { pattern: /^\/api\/admin\/users\/.*\/reactivate$/, method: 'PUT', activityType: 'user_management', action: 'USER_REACTIVATED' },
-    { pattern: /^\/api\/admin\/users\/[^\/]+$/, method: 'DELETE', activityType: 'user_management', action: 'USER_DELETED' },
+    { pattern: /^\/admin\/users\/.*\/approve$/, method: 'PUT', activityType: 'user_management', action: 'USER_APPROVED' },
+    { pattern: /^\/admin\/users\/.*\/reject$/, method: 'PUT', activityType: 'user_management', action: 'USER_REJECTED' },
+    { pattern: /^\/admin\/users\/.*\/suspend$/, method: 'PUT', activityType: 'user_management', action: 'USER_SUSPENDED' },
+    { pattern: /^\/admin\/users\/.*\/reactivate$/, method: 'PUT', activityType: 'user_management', action: 'USER_REACTIVATED' },
+    { pattern: /^\/admin\/users\/[^\/]+$/, method: 'DELETE', activityType: 'user_management', action: 'USER_DELETED' },
 
     // Patient management routes
-    { pattern: /^\/api\/patients$/, method: 'POST', activityType: 'patient_management', action: 'PATIENT_CREATED' },
-    { pattern: /^\/api\/patients\/[^\/]+$/, method: 'PUT', activityType: 'patient_management', action: 'PATIENT_UPDATED' },
-    { pattern: /^\/api\/patients\/[^\/]+$/, method: 'DELETE', activityType: 'patient_management', action: 'PATIENT_DELETED' },
-    { pattern: /^\/api\/patients\/[^\/]+$/, method: 'GET', activityType: 'patient_management', action: 'PATIENT_VIEWED' },
+    { pattern: /^\/patients$/, method: 'POST', activityType: 'patient_management', action: 'PATIENT_CREATED' },
+    { pattern: /^\/patients\/[^\/]+$/, method: 'PUT', activityType: 'patient_management', action: 'PATIENT_UPDATED' },
+    { pattern: /^\/patients\/[^\/]+$/, method: 'DELETE', activityType: 'patient_management', action: 'PATIENT_DELETED' },
+    { pattern: /^\/patients\/[^\/]+$/, method: 'GET', activityType: 'patient_management', action: 'PATIENT_VIEWED' },
 
     // Medication management routes
-    { pattern: /^\/api\/medications$/, method: 'POST', activityType: 'medication_management', action: 'MEDICATION_PRESCRIBED' },
-    { pattern: /^\/api\/medications\/[^\/]+$/, method: 'PUT', activityType: 'medication_management', action: 'MEDICATION_UPDATED' },
-    { pattern: /^\/api\/medications\/[^\/]+$/, method: 'DELETE', activityType: 'medication_management', action: 'MEDICATION_DELETED' },
+    { pattern: /^\/medications$/, method: 'POST', activityType: 'medication_management', action: 'MEDICATION_PRESCRIBED' },
+    { pattern: /^\/medications\/[^\/]+$/, method: 'PUT', activityType: 'medication_management', action: 'MEDICATION_UPDATED' },
+    { pattern: /^\/medications\/[^\/]+$/, method: 'DELETE', activityType: 'medication_management', action: 'MEDICATION_DELETED' },
 
     // MTR session routes
-    { pattern: /^\/api\/mtr\/sessions$/, method: 'POST', activityType: 'mtr_session', action: 'MTR_SESSION_CREATED' },
-    { pattern: /^\/api\/mtr\/sessions\/.*\/complete$/, method: 'PUT', activityType: 'mtr_session', action: 'MTR_SESSION_COMPLETED' },
+    { pattern: /^\/mtr\/sessions$/, method: 'POST', activityType: 'mtr_session', action: 'MTR_SESSION_CREATED' },
+    { pattern: /^\/mtr\/sessions\/.*\/complete$/, method: 'PUT', activityType: 'mtr_session', action: 'MTR_SESSION_COMPLETED' },
 
     // Clinical intervention routes
-    { pattern: /^\/api\/clinical-interventions$/, method: 'POST', activityType: 'clinical_intervention', action: 'INTERVENTION_CREATED' },
-    { pattern: /^\/api\/clinical-interventions\/.*\/resolve$/, method: 'PUT', activityType: 'clinical_intervention', action: 'INTERVENTION_RESOLVED' },
+    { pattern: /^\/clinical-interventions$/, method: 'POST', activityType: 'clinical_intervention', action: 'INTERVENTION_CREATED' },
+    { pattern: /^\/clinical-interventions\/.*\/resolve$/, method: 'PUT', activityType: 'clinical_intervention', action: 'INTERVENTION_RESOLVED' },
 
     // Workspace management routes
-    { pattern: /^\/api\/workspace\/team\/invites$/, method: 'POST', activityType: 'workspace_management', action: 'TEAM_MEMBER_INVITED' },
-    { pattern: /^\/api\/workspace\/team\/members\/.*\/role$/, method: 'PUT', activityType: 'workspace_management', action: 'TEAM_MEMBER_ROLE_CHANGED' },
-    { pattern: /^\/api\/workspace\/team\/members\/[^\/]+$/, method: 'DELETE', activityType: 'workspace_management', action: 'TEAM_MEMBER_REMOVED' },
+    { pattern: /^\/workspace\/team\/invites$/, method: 'POST', activityType: 'workspace_management', action: 'TEAM_MEMBER_INVITED' },
+    { pattern: /^\/workspace\/team\/members\/.*\/role$/, method: 'PUT', activityType: 'workspace_management', action: 'TEAM_MEMBER_ROLE_CHANGED' },
+    { pattern: /^\/workspace\/team\/members\/[^\/]+$/, method: 'DELETE', activityType: 'workspace_management', action: 'TEAM_MEMBER_REMOVED' },
 
     // System configuration routes
-    { pattern: /^\/api\/admin\/settings/, method: 'PUT', activityType: 'system_configuration', action: 'SYSTEM_SETTINGS_CHANGED' },
+    { pattern: /^\/admin\/settings/, method: 'PUT', activityType: 'system_configuration', action: 'SYSTEM_SETTINGS_CHANGED' },
 
     // Data export routes
-    { pattern: /^\/api\/.*\/export$/, method: 'GET', activityType: 'data_export', action: 'DATA_EXPORTED' },
+    { pattern: /^\/.*\/export$/, method: 'GET', activityType: 'data_export', action: 'DATA_EXPORTED' },
 
     // Report generation routes
-    { pattern: /^\/api\/reports/, method: 'GET', activityType: 'report_generation', action: 'REPORT_GENERATED' },
+    { pattern: /^\/reports/, method: 'GET', activityType: 'report_generation', action: 'REPORT_GENERATED' },
 
     // Communication routes
-    { pattern: /^\/api\/communication\/conversations$/, method: 'POST', activityType: 'communication', action: 'CONVERSATION_CREATED' },
-    { pattern: /^\/api\/communication\/messages$/, method: 'POST', activityType: 'communication', action: 'MESSAGE_SENT' },
+    { pattern: /^\/communication\/conversations$/, method: 'POST', activityType: 'communication', action: 'CONVERSATION_CREATED' },
+    { pattern: /^\/communication\/messages$/, method: 'POST', activityType: 'communication', action: 'MESSAGE_SENT' },
 
     // AI Diagnostics routes
-    { pattern: /^\/api\/diagnostics\/analyze$/, method: 'POST', activityType: 'diagnostic_ai', action: 'AI_DIAGNOSTIC_RUN' },
+    { pattern: /^\/diagnostics\/analyze$/, method: 'POST', activityType: 'diagnostic_ai', action: 'AI_DIAGNOSTIC_RUN' },
 
     // Subscription management routes
-    { pattern: /^\/api\/subscriptions$/, method: 'POST', activityType: 'subscription_management', action: 'SUBSCRIPTION_CREATED' },
-    { pattern: /^\/api\/subscriptions\/.*\/cancel$/, method: 'PUT', activityType: 'subscription_management', action: 'SUBSCRIPTION_CANCELLED' },
+    { pattern: /^\/subscriptions$/, method: 'POST', activityType: 'subscription_management', action: 'SUBSCRIPTION_CREATED' },
+    { pattern: /^\/subscriptions\/.*\/cancel$/, method: 'PUT', activityType: 'subscription_management', action: 'SUBSCRIPTION_CANCELLED' },
 ];
 
 /**
@@ -186,7 +187,8 @@ export const unifiedAuditMiddleware = async (
     next: NextFunction
 ): Promise<void> => {
     // Skip audit trail routes to prevent circular logging
-    if (req.path.startsWith('/api/super-admin/audit-trail')) {
+    // Note: req.path doesn't include '/api/' prefix since middleware is mounted at '/api/'
+    if (req.path.startsWith('/super-admin/audit-trail')) {
         return next();
     }
 
@@ -196,6 +198,15 @@ export const unifiedAuditMiddleware = async (
     if (!auditConfig) {
         return next();
     }
+
+    // DEBUG: Log when we're about to audit
+    console.log('🔍 AUDIT MIDDLEWARE: Route matched for auditing:', {
+        path: req.path,
+        method: req.method,
+        action: auditConfig.action,
+        hasUser: !!req.user,
+        userId: req.user?._id
+    });
 
     // Store original send function
     const originalSend = res.send;
@@ -210,9 +221,27 @@ export const unifiedAuditMiddleware = async (
             try {
                 const user = req.user;
 
-                // Skip if no user (for public routes)
-                if (!user) {
+                // Special handling for auth routes (login/logout/register)
+                // These routes don't have req.user BEFORE the action, so we extract user from response
+                const isAuthRoute = auditConfig.activityType === 'authentication' || auditConfig.activityType === 'user_management';
+
+                // Skip if no user (for public routes) EXCEPT for auth routes
+                if (!user && !isAuthRoute) {
+                    console.log('⚠️ AUDIT MIDDLEWARE: Skipping - no user found for route:', req.path);
                     return;
+                }
+
+                if (user) {
+                    console.log('✅ AUDIT MIDDLEWARE: Processing audit log for user:', {
+                        userId: user._id,
+                        email: user.email,
+                        action: auditConfig.action
+                    });
+                } else {
+                    console.log('✅ AUDIT MIDDLEWARE: Processing auth route (user will be extracted from response):', {
+                        action: auditConfig.action,
+                        path: req.path
+                    });
                 }
 
                 const entityInfo = extractEntityInfo(req, auditConfig);
@@ -220,8 +249,6 @@ export const unifiedAuditMiddleware = async (
                 const complianceCategory = getComplianceCategory(auditConfig.activityType, auditConfig.action);
 
                 const auditData: any = {
-                    userId: user._id,
-                    workplaceId: user.workplaceId,
                     activityType: auditConfig.activityType,
                     action: auditConfig.action,
                     description,
@@ -232,6 +259,18 @@ export const unifiedAuditMiddleware = async (
                         query: req.query,
                     },
                 };
+
+                // Add user info if available (will be populated by pre-save hook for auth routes)
+                if (user) {
+                    auditData.userId = user._id;
+                    auditData.workplaceId = user.workplaceId;
+                } else if (isAuthRoute && auditData.success) {
+                    // For successful login, extract user info from request body
+                    // The UnifiedAuditService will handle finding the user
+                    if (req.body.email) {
+                        auditData.metadata.userEmail = req.body.email;
+                    }
+                }
 
                 // Add target entity if available
                 if (entityInfo) {
@@ -244,8 +283,20 @@ export const unifiedAuditMiddleware = async (
                     auditData.riskLevel = 'medium';
                 }
 
-                await UnifiedAuditService.logActivity(auditData, req);
+                console.log('📝 AUDIT MIDDLEWARE: Calling UnifiedAuditService.logActivity with:', {
+                    action: auditData.action,
+                    userId: auditData.userId,
+                    success: auditData.success
+                });
+
+                const result = await UnifiedAuditService.logActivity(auditData, req);
+
+                console.log('✅ AUDIT MIDDLEWARE: Log activity completed:', {
+                    success: !!result,
+                    resultId: result?._id
+                });
             } catch (error) {
+                console.error('❌ AUDIT MIDDLEWARE: Error logging audit activity:', error);
                 logger.error('Error logging audit activity:', error);
                 // Don't throw - audit logging should not break application flow
             }

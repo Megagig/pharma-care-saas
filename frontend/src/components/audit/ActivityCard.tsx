@@ -9,6 +9,10 @@ import {
     IconButton,
     Tooltip,
     Collapse,
+    useTheme,
+    alpha,
+    Divider,
+    Stack,
 } from '@mui/material';
 import {
     Person as PersonIcon,
@@ -20,6 +24,10 @@ import {
     CheckCircle as CheckCircleIcon,
     Warning as WarningIcon,
     Info as InfoIcon,
+    AccessTime as AccessTimeIcon,
+    LocationOn as LocationOnIcon,
+    Computer as ComputerIcon,
+    Verified as VerifiedIcon,
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
 import { AuditLog } from '../../services/superAdminAuditService';
@@ -32,18 +40,19 @@ interface ActivityCardProps {
 
 const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onFlag, onViewDetails }) => {
     const [expanded, setExpanded] = React.useState(false);
+    const theme = useTheme();
 
     const getRiskLevelColor = (riskLevel: string) => {
         switch (riskLevel) {
             case 'critical':
-                return 'error';
+                return theme.palette.error.main;
             case 'high':
-                return 'warning';
+                return theme.palette.warning.main;
             case 'medium':
-                return 'info';
+                return theme.palette.info.main;
             case 'low':
             default:
-                return 'success';
+                return theme.palette.success.main;
         }
     };
 
@@ -99,76 +108,142 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onFlag, onViewDet
         setExpanded(!expanded);
     };
 
+    const riskColor = getRiskLevelColor(activity.riskLevel);
+
     return (
         <Card
+            elevation={0}
             sx={{
-                mb: 2,
-                border: activity.flagged ? '2px solid' : '1px solid',
-                borderColor: activity.flagged ? 'error.main' : 'divider',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
+                position: 'relative',
+                border: `1px solid ${activity.flagged ? theme.palette.error.main : theme.palette.divider}`,
+                borderRadius: 2,
+                overflow: 'hidden',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                background: activity.flagged
+                    ? `linear-gradient(to right, ${alpha(theme.palette.error.main, 0.05)}, transparent)`
+                    : 'background.paper',
                 '&:hover': {
-                    boxShadow: 3,
+                    boxShadow: `0 4px 20px ${alpha(riskColor, 0.15)}`,
                     transform: 'translateY(-2px)',
+                    borderColor: riskColor,
+                },
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '4px',
+                    background: riskColor,
                 },
             }}
-            onClick={() => onViewDetails && onViewDetails(activity)}
         >
-            <CardContent>
-                <Box display="flex" alignItems="flex-start" justifyContent="space-between">
-                    {/* User Avatar and Details */}
-                    <Box display="flex" alignItems="flex-start" flex={1}>
+            <CardContent sx={{ p: 2.5 }}>
+                <Box display="flex" alignItems="flex-start" justifyContent="space-between" gap={2}>
+                    {/* Main Content */}
+                    <Box display="flex" alignItems="flex-start" flex={1} gap={2}>
+                        {/* User Avatar */}
                         <Avatar
                             src={activity.userDetails.avatarUrl}
-                            sx={{ width: 48, height: 48, mr: 2, bgcolor: 'primary.main' }}
+                            sx={{
+                                width: 48,
+                                height: 48,
+                                bgcolor: riskColor,
+                                border: `2px solid ${alpha(riskColor, 0.2)}`,
+                                boxShadow: `0 0 0 4px ${alpha(riskColor, 0.1)}`,
+                            }}
                         >
                             {activity.userDetails.firstName.charAt(0)}
                             {activity.userDetails.lastName.charAt(0)}
                         </Avatar>
 
                         <Box flex={1}>
-                            {/* User Name and Email */}
-                            <Typography variant="subtitle1" fontWeight="bold">
-                                {activity.userDetails.firstName} {activity.userDetails.lastName}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" display="block">
+                            {/* User Info */}
+                            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                                <Typography variant="subtitle1" fontWeight="600">
+                                    {activity.userDetails.firstName} {activity.userDetails.lastName}
+                                </Typography>
+                                {activity.success ? (
+                                    <Tooltip title="Success">
+                                        <VerifiedIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                                    </Tooltip>
+                                ) : (
+                                    <Tooltip title="Failed">
+                                        <ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} />
+                                    </Tooltip>
+                                )}
+                            </Box>
+
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                display="flex"
+                                alignItems="center"
+                                gap={1}
+                                mb={1.5}
+                            >
                                 {activity.userDetails.email} · {activity.userDetails.role}
-                                {activity.userDetails.workplaceRole && ` (${activity.userDetails.workplaceRole})`}
+                                {activity.userDetails.workplaceRole && ` · ${activity.userDetails.workplaceRole}`}
                             </Typography>
 
                             {/* Description */}
-                            <Typography variant="body2" sx={{ mt: 1, mb: 1 }}>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    mb: 1.5,
+                                    fontWeight: 500,
+                                    color: 'text.primary',
+                                }}
+                            >
                                 {activity.description}
                             </Typography>
 
                             {/* Target Entity */}
                             {activity.targetEntity && (
-                                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                                    <Typography variant="caption" color="text.secondary">
+                                <Box
+                                    sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                        px: 1.5,
+                                        py: 0.5,
+                                        mb: 1.5,
+                                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                        borderRadius: 1,
+                                        border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                                    }}
+                                >
+                                    <Typography variant="caption" fontWeight="600" color="primary.main">
                                         Target:
                                     </Typography>
-                                    <Chip
-                                        label={`${activity.targetEntity.entityType}: ${activity.targetEntity.entityName}`}
-                                        size="small"
-                                        variant="outlined"
-                                    />
+                                    <Typography variant="caption" fontWeight="500">
+                                        {activity.targetEntity.entityType}: {activity.targetEntity.entityName}
+                                    </Typography>
                                 </Box>
                             )}
 
-                            {/* Chips */}
-                            <Box display="flex" gap={1} flexWrap="wrap" mt={1}>
+                            {/* Activity Tags */}
+                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                                 <Chip
-                                    label={activity.activityType.replace(/_/g, ' ')}
+                                    label={activity.activityType.replace(/_/g, ' ').toUpperCase()}
                                     size="small"
                                     color={getActivityTypeColor(activity.activityType)}
-                                    variant="filled"
+                                    sx={{ fontWeight: 600, fontSize: '0.7rem' }}
                                 />
                                 <Chip
                                     icon={getRiskLevelIcon(activity.riskLevel)}
                                     label={activity.riskLevel.toUpperCase()}
                                     size="small"
-                                    color={getRiskLevelColor(activity.riskLevel)}
-                                    variant="outlined"
+                                    sx={{
+                                        bgcolor: alpha(riskColor, 0.1),
+                                        color: riskColor,
+                                        borderColor: riskColor,
+                                        fontWeight: 600,
+                                        fontSize: '0.7rem',
+                                        '& .MuiChip-icon': {
+                                            color: riskColor,
+                                        },
+                                    }}
                                 />
                                 {activity.complianceCategory && (
                                     <Chip
@@ -176,115 +251,189 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onFlag, onViewDet
                                         size="small"
                                         color="secondary"
                                         variant="outlined"
+                                        sx={{ fontWeight: 600, fontSize: '0.7rem' }}
                                     />
                                 )}
-                                {!activity.success && (
-                                    <Chip
-                                        label="FAILED"
-                                        size="small"
-                                        color="error"
-                                        variant="filled"
-                                    />
-                                )}
-                            </Box>
+                            </Stack>
 
-                            {/* Timestamp and Location */}
-                            <Box display="flex" gap={2} mt={1}>
-                                <Typography variant="caption" color="text.secondary">
-                                    {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })} ·{' '}
-                                    {new Date(activity.timestamp).toLocaleString()}
-                                </Typography>
-                                {activity.ipAddress && (
-                                    <Typography variant="caption" color="text.secondary">
-                                        IP: {activity.ipAddress}
+                            {/* Metadata Footer */}
+                            <Stack
+                                direction="row"
+                                spacing={2}
+                                mt={2}
+                                flexWrap="wrap"
+                                sx={{ opacity: 0.8 }}
+                            >
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                    <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                                    <Typography variant="caption" color="text.secondary" fontWeight="500">
+                                        {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
                                     </Typography>
+                                </Box>
+                                {activity.ipAddress && (
+                                    <Box display="flex" alignItems="center" gap={0.5}>
+                                        <ComputerIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                                        <Typography variant="caption" color="text.secondary" fontWeight="500">
+                                            {activity.ipAddress}
+                                        </Typography>
+                                    </Box>
                                 )}
                                 {activity.location && (
-                                    <Typography variant="caption" color="text.secondary">
-                                        {[activity.location.city, activity.location.region, activity.location.country]
-                                            .filter(Boolean)
-                                            .join(', ')}
-                                    </Typography>
+                                    <Box display="flex" alignItems="center" gap={0.5}>
+                                        <LocationOnIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                                        <Typography variant="caption" color="text.secondary" fontWeight="500">
+                                            {[activity.location.city, activity.location.region, activity.location.country]
+                                                .filter(Boolean)
+                                                .join(', ')}
+                                        </Typography>
+                                    </Box>
                                 )}
-                            </Box>
+                            </Stack>
                         </Box>
                     </Box>
 
                     {/* Actions */}
-                    <Box display="flex" flexDirection="column" alignItems="flex-end" gap={1}>
-                        <Box>
-                            <Tooltip title={activity.flagged ? 'Unflag' : 'Flag for review'}>
-                                <IconButton
-                                    size="small"
-                                    onClick={handleToggleFlag}
-                                    color={activity.flagged ? 'error' : 'default'}
-                                >
-                                    {activity.flagged ? <FlagIcon /> : <FlagOutlinedIcon />}
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title={expanded ? 'Show less' : 'Show more'}>
-                                <IconButton size="small" onClick={handleExpandClick}>
-                                    {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                                </IconButton>
-                            </Tooltip>
-                        </Box>
+                    <Box display="flex" flexDirection="column" gap={0.5}>
+                        <Tooltip title={activity.flagged ? 'Unflag' : 'Flag for review'}>
+                            <IconButton
+                                size="small"
+                                onClick={handleToggleFlag}
+                                sx={{
+                                    color: activity.flagged ? theme.palette.error.main : theme.palette.text.secondary,
+                                    bgcolor: activity.flagged ? alpha(theme.palette.error.main, 0.1) : 'transparent',
+                                    '&:hover': {
+                                        bgcolor: activity.flagged ? alpha(theme.palette.error.main, 0.2) : alpha(theme.palette.action.hover, 0.5),
+                                    },
+                                }}
+                            >
+                                {activity.flagged ? <FlagIcon /> : <FlagOutlinedIcon />}
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title={expanded ? 'Show less' : 'Show more'}>
+                            <IconButton
+                                size="small"
+                                onClick={handleExpandClick}
+                                sx={{
+                                    transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                    transition: 'transform 0.3s',
+                                }}
+                            >
+                                <ExpandMoreIcon />
+                            </IconButton>
+                        </Tooltip>
                     </Box>
                 </Box>
 
                 {/* Expanded Details */}
                 <Collapse in={expanded} timeout="auto" unmountOnExit>
-                    <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Divider sx={{ my: 2 }} />
+                    <Box
+                        sx={{
+                            p: 2,
+                            bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.background.default, 0.4) : alpha(theme.palette.grey[100], 0.5),
+                            borderRadius: 2,
+                            border: `1px solid ${theme.palette.divider}`,
+                        }}
+                    >
+                        <Typography variant="subtitle2" fontWeight="600" mb={2} color="primary">
+                            Detailed Information
+                        </Typography>
+
                         {/* Request Details */}
                         {activity.requestMethod && activity.requestPath && (
                             <Box mb={2}>
-                                <Typography variant="caption" fontWeight="bold" color="text.secondary">
-                                    Request Details:
+                                <Typography variant="caption" fontWeight="600" color="text.secondary" display="block" mb={0.5}>
+                                    Request Details
                                 </Typography>
-                                <Typography variant="body2">
-                                    {activity.requestMethod} {activity.requestPath}
-                                    {activity.responseStatus && ` (${activity.responseStatus})`}
-                                </Typography>
+                                <Box
+                                    sx={{
+                                        p: 1.5,
+                                        bgcolor: 'background.paper',
+                                        borderRadius: 1,
+                                        border: `1px solid ${theme.palette.divider}`,
+                                        fontFamily: 'monospace',
+                                    }}
+                                >
+                                    <Typography variant="body2">
+                                        <strong>{activity.requestMethod}</strong> {activity.requestPath}
+                                        {activity.responseStatus && (
+                                            <Chip
+                                                label={activity.responseStatus}
+                                                size="small"
+                                                color={activity.responseStatus < 400 ? 'success' : 'error'}
+                                                sx={{ ml: 1, fontWeight: 600 }}
+                                            />
+                                        )}
+                                    </Typography>
+                                </Box>
                             </Box>
                         )}
 
                         {/* Changes */}
                         {activity.changes && activity.changes.length > 0 && (
                             <Box mb={2}>
-                                <Typography variant="caption" fontWeight="bold" color="text.secondary">
-                                    Changes:
+                                <Typography variant="caption" fontWeight="600" color="text.secondary" display="block" mb={0.5}>
+                                    Changes Made
                                 </Typography>
-                                {activity.changes.map((change, index) => (
-                                    <Box key={index} sx={{ ml: 1, mt: 0.5 }}>
-                                        <Typography variant="body2">
-                                            <strong>{change.field}:</strong>{' '}
-                                            <span style={{ textDecoration: 'line-through', color: 'red' }}>
-                                                {JSON.stringify(change.oldValue)}
-                                            </span>{' '}
-                                            →{' '}
-                                            <span style={{ color: 'green' }}>
-                                                {JSON.stringify(change.newValue)}
-                                            </span>
-                                        </Typography>
-                                    </Box>
-                                ))}
+                                <Stack spacing={1}>
+                                    {activity.changes.map((change, index) => (
+                                        <Box
+                                            key={index}
+                                            sx={{
+                                                p: 1.5,
+                                                bgcolor: 'background.paper',
+                                                borderRadius: 1,
+                                                border: `1px solid ${theme.palette.divider}`,
+                                            }}
+                                        >
+                                            <Typography variant="caption" fontWeight="600" color="primary" display="block" mb={0.5}>
+                                                {change.field}
+                                            </Typography>
+                                            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                                                <Chip
+                                                    label={JSON.stringify(change.oldValue)}
+                                                    size="small"
+                                                    sx={{
+                                                        bgcolor: alpha(theme.palette.error.main, 0.1),
+                                                        color: theme.palette.error.main,
+                                                        textDecoration: 'line-through',
+                                                        fontFamily: 'monospace',
+                                                    }}
+                                                />
+                                                <Typography variant="body2">→</Typography>
+                                                <Chip
+                                                    label={JSON.stringify(change.newValue)}
+                                                    size="small"
+                                                    sx={{
+                                                        bgcolor: alpha(theme.palette.success.main, 0.1),
+                                                        color: theme.palette.success.main,
+                                                        fontFamily: 'monospace',
+                                                    }}
+                                                />
+                                            </Box>
+                                        </Box>
+                                    ))}
+                                </Stack>
                             </Box>
                         )}
 
                         {/* Metadata */}
                         {activity.metadata && Object.keys(activity.metadata).length > 0 && (
                             <Box mb={2}>
-                                <Typography variant="caption" fontWeight="bold" color="text.secondary">
-                                    Metadata:
+                                <Typography variant="caption" fontWeight="600" color="text.secondary" display="block" mb={0.5}>
+                                    Additional Metadata
                                 </Typography>
                                 <Box
                                     component="pre"
                                     sx={{
                                         fontSize: '0.75rem',
-                                        bgcolor: 'grey.100',
-                                        p: 1,
+                                        bgcolor: 'background.paper',
+                                        p: 1.5,
                                         borderRadius: 1,
+                                        border: `1px solid ${theme.palette.divider}`,
                                         overflow: 'auto',
                                         maxHeight: '200px',
+                                        fontFamily: 'monospace',
                                     }}
                                 >
                                     {JSON.stringify(activity.metadata, null, 2)}
@@ -294,11 +443,22 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onFlag, onViewDet
 
                         {/* Error Details */}
                         {activity.errorMessage && (
-                            <Box>
-                                <Typography variant="caption" fontWeight="bold" color="error">
-                                    Error:
-                                </Typography>
-                                <Typography variant="body2" color="error">
+                            <Box
+                                mb={2}
+                                sx={{
+                                    p: 1.5,
+                                    bgcolor: alpha(theme.palette.error.main, 0.1),
+                                    borderRadius: 1,
+                                    border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
+                                }}
+                            >
+                                <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                                    <ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} />
+                                    <Typography variant="caption" fontWeight="600" color="error.main">
+                                        Error Details
+                                    </Typography>
+                                </Box>
+                                <Typography variant="body2" color="error.main">
                                     {activity.errorMessage}
                                 </Typography>
                             </Box>
@@ -306,14 +466,26 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onFlag, onViewDet
 
                         {/* Review Notes */}
                         {activity.reviewNotes && (
-                            <Box mt={2} p={1} bgcolor="info.light" borderRadius={1}>
-                                <Typography variant="caption" fontWeight="bold">
-                                    Review Notes:
-                                </Typography>
+                            <Box
+                                sx={{
+                                    p: 1.5,
+                                    bgcolor: alpha(theme.palette.info.main, 0.1),
+                                    borderRadius: 1,
+                                    border: `1px solid ${alpha(theme.palette.info.main, 0.3)}`,
+                                }}
+                            >
+                                <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                                    <InfoIcon sx={{ fontSize: 16, color: 'info.main' }} />
+                                    <Typography variant="caption" fontWeight="600" color="info.main">
+                                        Review Notes
+                                    </Typography>
+                                </Box>
                                 <Typography variant="body2">{activity.reviewNotes}</Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    Reviewed {formatDistanceToNow(new Date(activity.reviewedAt!), { addSuffix: true })}
-                                </Typography>
+                                {activity.reviewedAt && (
+                                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                                        Reviewed {formatDistanceToNow(new Date(activity.reviewedAt), { addSuffix: true })}
+                                    </Typography>
+                                )}
                             </Box>
                         )}
                     </Box>
