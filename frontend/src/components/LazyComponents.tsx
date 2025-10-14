@@ -37,6 +37,7 @@ export const LazyReportsAnalyticsDashboard = lazy(() =>
 export const LazyAdminDashboard = lazy(() => import('../components/admin/AdminDashboard'));
 export const LazyFeatureFlagsPage = lazy(() => import('../pages/FeatureFlags'));
 export const LazyFeatureManagement = lazy(() => import('../pages/FeatureManagement'));
+export const LazySuperAdminAuditTrail = lazy(() => import('../pages/SuperAdminAuditTrail'));
 
 // Heavy form components
 export const LazyPatientForm = lazy(() => import('../components/PatientForm'));

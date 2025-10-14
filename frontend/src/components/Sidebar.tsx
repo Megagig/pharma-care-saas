@@ -14,21 +14,19 @@ import {
   useTheme,
   Tooltip,
 } from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  People as PeopleIcon,
-  Description as DescriptionIcon,
-  Medication as MedicationIcon,
-  CreditCard as CreditCardIcon,
-  Settings as SettingsIcon,
-  Help as HelpIcon,
-  ChevronLeft as ChevronLeftIcon,
-  Flag as FlagIcon,
-} from '@mui/icons-material';
-// Import icons that require default imports
+// Import icons using default imports for MUI v5 compatibility
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import PeopleIcon from '@mui/icons-material/People';
+import DescriptionIcon from '@mui/icons-material/Description';
+import MedicationIcon from '@mui/icons-material/Medication';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import SettingsIcon from '@mui/icons-material/Settings';
+import HelpIcon from '@mui/icons-material/Help';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import FlagIcon from '@mui/icons-material/Flag';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
 import Assignment from '@mui/icons-material/Assignment';
-import SubscriptionsTwoTone from '@mui/icons-material/SubscriptionsTwoTone';
 // Pharmacy module icons - using default imports
 import Reviews from '@mui/icons-material/Reviews';
 import MedicalServices from '@mui/icons-material/MedicalServices';
@@ -42,7 +40,6 @@ import SupervisorAccount from '@mui/icons-material/SupervisorAccount';
 // Use imported icons with aliases
 const AdminIcon = AdminPanelSettings;
 const LicenseIcon = Assignment;
-const SubscriptionIcon = SubscriptionsTwoTone;
 // Pharmacy module icon aliases
 const ReviewsIcon = Reviews;
 const MedicalServicesIcon = MedicalServices;
@@ -101,7 +98,7 @@ const Sidebar = () => {
       show: hasFeature('clinical_notes'),
       badge:
         !subscriptionStatus?.isActive ||
-        (requiresLicense() && getLicenseStatus() !== 'approved')
+          (requiresLicense() && getLicenseStatus() !== 'approved')
           ? 'License Required'
           : null,
     },
@@ -174,6 +171,12 @@ const Sidebar = () => {
       show: hasRole('super_admin'),
     },
     {
+      name: 'Audit Trail',
+      path: '/super-admin/audit-trail',
+      icon: AssessmentIcon,
+      show: hasRole('super_admin'),
+    },
+    {
       name: 'Feature Management',
       path: '/admin/feature-management',
       icon: FlagIcon,
@@ -228,8 +231,8 @@ const Sidebar = () => {
         getLicenseStatus() === 'pending'
           ? 'Pending'
           : getLicenseStatus() === 'rejected'
-          ? 'Rejected'
-          : null,
+            ? 'Rejected'
+            : null,
     },
     {
       name: 'Settings',
@@ -372,11 +375,10 @@ const Sidebar = () => {
             theme.palette.mode === 'dark'
               ? 'linear-gradient(180deg, #1e293b 0%, #1a2332 100%)'
               : 'linear-gradient(180deg, rgba(245,247,250,1) 0%, rgba(255,255,255,1) 100%)',
-          borderRight: `1px solid ${
-            theme.palette.mode === 'dark'
-              ? '#334155'
-              : 'rgba(200, 210, 225, 0.5)'
-          }`,
+          borderRight: `1px solid ${theme.palette.mode === 'dark'
+            ? '#334155'
+            : 'rgba(200, 210, 225, 0.5)'
+            }`,
           transition: theme.transitions.create(
             ['width', 'margin', 'background', 'border-color'],
             {

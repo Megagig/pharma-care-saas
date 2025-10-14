@@ -7,7 +7,8 @@ import {
 } from 'react-router-dom';
 import { ThemeProvider, CssBaseline, Box, Toolbar } from '@mui/material';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+// Uncomment if needed for debugging
+// import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
 import { createAppTheme } from './theme';
 import { AuthProvider } from './context/AuthContext';
@@ -56,6 +57,7 @@ import {
   LazyAdminDashboard,
   LazyFeatureFlagsPage,
   LazyFeatureManagement,
+  LazySuperAdminAuditTrail,
   LazyPatientForm,
   LazyPatientManagement,
   LazyMedicationsManagementDashboard,
@@ -693,7 +695,7 @@ function App(): JSX.Element {
                           <Route
                             path="/workspace/team"
                             element={
-                              <ProtectedRoute 
+                              <ProtectedRoute
                                 requiredRole="pharmacy_outlet"
                                 requiresActiveSubscription
                               >
@@ -714,6 +716,19 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={DashboardSkeleton}>
                                     <LazyAdminDashboard />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* Super Admin Audit Trail Route */}
+                          <Route
+                            path="/super-admin/audit-trail"
+                            element={
+                              <ProtectedRoute requiredRole="super_admin">
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazySuperAdminAuditTrail />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
