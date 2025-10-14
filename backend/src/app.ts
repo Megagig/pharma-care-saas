@@ -17,6 +17,7 @@ import logger from './utils/logger';
 
 // Route imports
 import authRoutes from './routes/authRoutes';
+import userSettingsRoutes from './routes/userSettingsRoutes';
 import subscriptionRoutes from './routes/subscriptionRoutes';
 import patientRoutes from './routes/patientRoutes';
 import allergyRoutes from './routes/allergyRoutes';
@@ -319,6 +320,7 @@ app.use('/api/continuous-monitoring', continuousMonitoringRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/user/settings', userSettingsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/pricing', pricingManagementRoutes);
 
