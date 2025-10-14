@@ -111,6 +111,7 @@ const saasRoutes_1 = __importDefault(require("./routes/saasRoutes"));
 const workspaceTeamRoutes_1 = __importDefault(require("./routes/workspaceTeamRoutes"));
 const dashboardRoutes_1 = __importDefault(require("./routes/dashboardRoutes"));
 const superAdminDashboardRoutes_1 = __importDefault(require("./routes/superAdminDashboardRoutes"));
+const superAdminAuditRoutes_1 = __importDefault(require("./routes/superAdminAuditRoutes"));
 const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
 const systemIntegration = systemIntegrationService_1.default.getInstance();
@@ -205,6 +206,8 @@ if (process.env.NODE_ENV === 'development') {
 }
 const latencyMeasurement_1 = require("./middlewares/latencyMeasurement");
 app.use('/api/', latencyMeasurement_1.latencyMeasurementMiddleware);
+const unifiedAuditMiddleware_1 = require("./middlewares/unifiedAuditMiddleware");
+app.use('/api/', unifiedAuditMiddleware_1.unifiedAuditMiddleware);
 const compressionMiddleware_1 = require("./middlewares/compressionMiddleware");
 app.use('/api/', (0, compressionMiddleware_1.adaptiveCompressionMiddleware)());
 app.use('/api/', (0, compressionMiddleware_1.intelligentCompressionMiddleware)({
@@ -295,6 +298,7 @@ app.use('/api/subscriptions', subscriptionRoutes_1.default);
 app.use('/api/pricing', pricingManagementRoutes_1.default);
 app.use('/api/dashboard', dashboardRoutes_1.default);
 app.use('/api/super-admin/dashboard', superAdminDashboardRoutes_1.default);
+app.use('/api/super-admin/audit-trail', superAdminAuditRoutes_1.default);
 app.use('/api/patients', patientRoutes_1.default);
 app.use('/api/patients', allergyRoutes_1.default);
 app.use('/api/patients', conditionRoutes_1.default);

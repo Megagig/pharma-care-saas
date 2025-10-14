@@ -24,6 +24,7 @@ import {
   Help as HelpIcon,
   ChevronLeft as ChevronLeftIcon,
   Flag as FlagIcon,
+  Assessment as AssessmentIcon,
 } from '@mui/icons-material';
 // Import icons that require default imports
 import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
@@ -101,7 +102,7 @@ const Sidebar = () => {
       show: hasFeature('clinical_notes'),
       badge:
         !subscriptionStatus?.isActive ||
-        (requiresLicense() && getLicenseStatus() !== 'approved')
+          (requiresLicense() && getLicenseStatus() !== 'approved')
           ? 'License Required'
           : null,
     },
@@ -174,6 +175,12 @@ const Sidebar = () => {
       show: hasRole('super_admin'),
     },
     {
+      name: 'Audit Trail',
+      path: '/super-admin/audit-trail',
+      icon: AssessmentIcon,
+      show: hasRole('super_admin'),
+    },
+    {
       name: 'Feature Management',
       path: '/admin/feature-management',
       icon: FlagIcon,
@@ -228,8 +235,8 @@ const Sidebar = () => {
         getLicenseStatus() === 'pending'
           ? 'Pending'
           : getLicenseStatus() === 'rejected'
-          ? 'Rejected'
-          : null,
+            ? 'Rejected'
+            : null,
     },
     {
       name: 'Settings',
@@ -372,11 +379,10 @@ const Sidebar = () => {
             theme.palette.mode === 'dark'
               ? 'linear-gradient(180deg, #1e293b 0%, #1a2332 100%)'
               : 'linear-gradient(180deg, rgba(245,247,250,1) 0%, rgba(255,255,255,1) 100%)',
-          borderRight: `1px solid ${
-            theme.palette.mode === 'dark'
-              ? '#334155'
-              : 'rgba(200, 210, 225, 0.5)'
-          }`,
+          borderRight: `1px solid ${theme.palette.mode === 'dark'
+            ? '#334155'
+            : 'rgba(200, 210, 225, 0.5)'
+            }`,
           transition: theme.transitions.create(
             ['width', 'margin', 'background', 'border-color'],
             {

@@ -78,6 +78,7 @@ import saasRoutes from './routes/saasRoutes';
 import workspaceTeamRoutes from './routes/workspaceTeamRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import superAdminDashboardRoutes from './routes/superAdminDashboardRoutes';
+import superAdminAuditRoutes from './routes/superAdminAuditRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -210,6 +211,10 @@ if (process.env.NODE_ENV === 'development') {
 import { latencyMeasurementMiddleware } from './middlewares/latencyMeasurement';
 app.use('/api/', latencyMeasurementMiddleware);
 
+// Unified Audit Logging Middleware (logs all important activities)
+import { unifiedAuditMiddleware } from './middlewares/unifiedAuditMiddleware';
+app.use('/api/', unifiedAuditMiddleware);
+
 // Compression middleware for API responses
 import {
   intelligentCompressionMiddleware,
@@ -327,6 +332,9 @@ app.use('/api/pricing', pricingManagementRoutes);
 // Dashboard routes (optimized for performance)
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/super-admin/dashboard', superAdminDashboardRoutes);
+
+// Super Admin Audit Trail routes (Super Admin only)
+app.use('/api/super-admin/audit-trail', superAdminAuditRoutes);
 
 // Patient Management routes
 app.use('/api/patients', patientRoutes);

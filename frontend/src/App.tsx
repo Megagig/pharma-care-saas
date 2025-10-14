@@ -56,6 +56,7 @@ import {
   LazyAdminDashboard,
   LazyFeatureFlagsPage,
   LazyFeatureManagement,
+  LazySuperAdminAuditTrail,
   LazyPatientForm,
   LazyPatientManagement,
   LazyMedicationsManagementDashboard,
@@ -693,7 +694,7 @@ function App(): JSX.Element {
                           <Route
                             path="/workspace/team"
                             element={
-                              <ProtectedRoute 
+                              <ProtectedRoute
                                 requiredRole="pharmacy_outlet"
                                 requiresActiveSubscription
                               >
@@ -714,6 +715,19 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={DashboardSkeleton}>
                                     <LazyAdminDashboard />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* Super Admin Audit Trail Route */}
+                          <Route
+                            path="/super-admin/audit-trail"
+                            element={
+                              <ProtectedRoute requiredRole="super_admin">
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazySuperAdminAuditTrail />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
