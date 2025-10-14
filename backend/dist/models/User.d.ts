@@ -76,7 +76,65 @@ export interface IUser extends Document {
             weeklyReports: boolean;
         };
     };
+    avatar?: string;
+    bio?: string;
+    location?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+    organization?: string;
+    professionalTitle?: string;
+    specialization?: string;
+    operatingHours?: {
+        monday?: {
+            open: string;
+            close: string;
+            closed?: boolean;
+        };
+        tuesday?: {
+            open: string;
+            close: string;
+            closed?: boolean;
+        };
+        wednesday?: {
+            open: string;
+            close: string;
+            closed?: boolean;
+        };
+        thursday?: {
+            open: string;
+            close: string;
+            closed?: boolean;
+        };
+        friday?: {
+            open: string;
+            close: string;
+            closed?: boolean;
+        };
+        saturday?: {
+            open: string;
+            close: string;
+            closed?: boolean;
+        };
+        sunday?: {
+            open: string;
+            close: string;
+            closed?: boolean;
+        };
+    };
     themePreference?: 'light' | 'dark' | 'system';
+    language?: string;
+    timezone?: string;
+    dateFormat?: string;
+    timeFormat?: '12h' | '24h';
+    twoFactorEnabled?: boolean;
+    twoFactorSecret?: string;
+    sessionTimeout?: number;
+    loginNotifications?: boolean;
+    profileVisibility?: 'public' | 'organization' | 'private';
+    dataSharing?: boolean;
     createdAt: Date;
     updatedAt: Date;
     comparePassword(password: string): Promise<boolean>;

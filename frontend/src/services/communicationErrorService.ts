@@ -69,7 +69,7 @@ class CommunicationErrorService {
         let communicationError: CommunicationError;
 
         if (error instanceof Error) {
-            communicationError = this.classifyError(error, context, timestamp);
+            communicationError = this.classifyError(error, timestamp, context);
         } else if (typeof error === 'string') {
             communicationError = this.createGenericError(error, context, timestamp);
         } else {
@@ -130,7 +130,7 @@ class CommunicationErrorService {
     /**
      * Classify error based on type and context
      */
-    private classifyError(error: Error, context?: string, timestamp: number): CommunicationError {
+    private classifyError(error: Error, timestamp: number, context?: string): CommunicationError {
         const message = error.message.toLowerCase();
         const name = error.name.toLowerCase();
 
@@ -170,7 +170,7 @@ class CommunicationErrorService {
                 severity: 'high',
                 userMessage: 'Your session has expired. Please log in again.',
                 suggestedActions: [
-                    { label: 'Log In', type: 'navigate', handler: () => window.location.href = '/login', primary: true },
+                    { label: 'Log In', type: 'navigate', handler: () => { window.location.href = '/login'; }, primary: true },
                 ],
             });
         }
@@ -476,7 +476,13 @@ class CommunicationErrorService {
      */
     private checkConnection = async (): Promise<void> => {
         try {
-            const response = await fetch('/api/health', { method: 'HEAD' });
+            const baseURL = import.meta.env.MODE === 'development'
+                ? 'http://localhost:5000/api'
+                : '/api';
+            const response = await fetch(`${baseURL}/health`, {
+                method: 'HEAD',
+                credentials: 'include'
+            });
             if (response.ok) {
                 console.log('Connection check: OK');
             } else {

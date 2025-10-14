@@ -213,7 +213,7 @@ class CommunicationFileController {
                 return;
             }
             if (message.senderId.toString() !== userId &&
-                req.user?.role !== "admin") {
+                req.user?.role !== "super_admin") {
                 res.status(403).json({
                     error: "Access denied. Only file owner or admin can delete files",
                 });

@@ -16,10 +16,12 @@ const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const getNotes = async (req, res) => {
     try {
-        console.log('=== GET NOTES DEBUG ===');
-        console.log('User role:', req.user?.role);
-        console.log('User workplaceId:', req.user?.workplaceId);
-        console.log('Tenancy filter from middleware:', req.tenancyFilter);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('=== GET NOTES DEBUG ===');
+            console.log('User role:', req.user?.role);
+            console.log('User workplaceId:', req.user?.workplaceId);
+            console.log('Tenancy filter from middleware:', req.tenancyFilter);
+        }
         const { cursor, page, limit = 20, sortField = 'createdAt', sortOrder = 'desc', type, priority, patientId, clinicianId, dateFrom, dateTo, isConfidential, useCursor = 'true', } = req.query;
         const parsedLimit = Math.min(50, Math.max(1, parseInt(limit) || 20));
         const filters = { ...req.tenancyFilter };
@@ -175,7 +177,9 @@ const getNotes = async (req, res) => {
                 },
             });
         }
-        console.log('=== END GET NOTES DEBUG ===');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('=== END GET NOTES DEBUG ===');
+        }
     }
     catch (error) {
         res.status(400).json({

@@ -16,7 +16,16 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Drawer,
+  IconButton,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Divider,
 } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 import PeopleIcon from '@mui/icons-material/People';
 import SecurityIcon from '@mui/icons-material/Security';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -32,6 +41,23 @@ const Landing = () => {
   const theme = useTheme();
   const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
   const observerRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+  };
+
+  const menuItems = [
+    { label: 'About', path: '/about' },
+    { label: 'Contact', path: '/contact' },
+    { label: 'Pricing', path: '/pricing' },
+    { label: 'Sign In', path: '/login' },
+    { label: 'Get Started', path: '/register' },
+  ];
 
   // Intersection Observer for scroll animations
   useEffect(() => {
@@ -170,6 +196,7 @@ const Landing = () => {
       {/* Navigation */}
       <AppBar position="static" color="transparent" elevation={0}>
         <Toolbar sx={{ py: 1 }}>
+          {/* Logo */}
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
             <Box
               sx={{
@@ -192,7 +219,15 @@ const Landing = () => {
               PharmacyCopilot
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+
+          {/* Desktop Navigation */}
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'flex' },
+              alignItems: 'center',
+              gap: 3,
+            }}
+          >
             <Button component={Link} to="/about" color="inherit">
               About
             </Button>
@@ -215,8 +250,106 @@ const Landing = () => {
               Get Started
             </Button>
           </Box>
+
+          {/* Mobile Navigation */}
+          <Box
+            sx={{
+              display: { xs: 'flex', md: 'none' },
+              alignItems: 'center',
+              gap: 1,
+            }}
+          >
+            <ThemeToggle size="sm" variant="button" />
+            <IconButton
+              edge="end"
+              color="inherit"
+              aria-label="menu"
+              onClick={toggleMobileMenu}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Box>
         </Toolbar>
       </AppBar>
+
+      {/* Mobile Drawer */}
+      <Drawer
+        anchor="right"
+        open={mobileMenuOpen}
+        onClose={closeMobileMenu}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': {
+            width: 280,
+            boxSizing: 'border-box',
+          },
+        }}
+      >
+        <Box sx={{ p: 2 }}>
+          {/* Drawer Header */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 2,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: 'primary.main',
+                  borderRadius: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mr: 1,
+                }}
+              >
+                <LocalPharmacyIcon sx={{ color: 'white', fontSize: 20 }} />
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                PharmaPilot
+              </Typography>
+            </Box>
+            <IconButton onClick={closeMobileMenu}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          <Divider sx={{ mb: 2 }} />
+
+          {/* Menu Items */}
+          <List>
+            {menuItems.map((item, index) => (
+              <ListItem key={index} disablePadding>
+                <ListItemButton
+                  component={Link}
+                  to={item.path}
+                  onClick={closeMobileMenu}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: 1,
+                    mb: 0.5,
+                    '&:hover': {
+                      bgcolor: 'primary.light',
+                    },
+                  }}
+                >
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontWeight: 500,
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      </Drawer>
 
       {/* Hero Section */}
       <Box

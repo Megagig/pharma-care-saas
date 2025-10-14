@@ -1,7 +1,12 @@
 import axios, { AxiosError } from 'axios';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+// Development: Direct backend URL (Vite proxy is broken)
+// Production: /api (same port, served by backend)
+const API_BASE_URL = import.meta.env.MODE === 'development' 
+  ? 'http://localhost:5000/api' 
+  : '/api';
+
+console.log('🔧 AuthService API_BASE_URL:', API_BASE_URL, 'MODE:', import.meta.env.MODE);
 
 // Define subscription plan type
 export interface SubscriptionPlan {

@@ -1,11 +1,5 @@
-import { Request, Response } from "express";
-interface AuthenticatedRequest extends Request {
-    user?: {
-        _id: string;
-        role: string;
-        workplaceId: string;
-    };
-}
+import { Response } from "express";
+import { AuthenticatedRequest } from "../types/auth";
 export declare class CommunicationFileController {
     static uploadFile(req: AuthenticatedRequest, res: Response): Promise<void>;
     static downloadFile(req: AuthenticatedRequest, res: Response): Promise<void>;

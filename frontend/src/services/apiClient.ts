@@ -1,9 +1,13 @@
 import axios from 'axios';
 
 // Create axios instance with base configuration
+// Development: Direct backend URL (Vite proxy is broken)
+// Production: /api (same port, served by backend)
 export const apiClient = axios.create({
-  baseURL: import.meta.env.DEV ? '/api' : '/api', // Use Vite proxy in dev, relative path in production
-  timeout: 10000,
+  baseURL: import.meta.env.MODE === 'development'
+    ? 'http://localhost:5000/api'
+    : '/api',
+  timeout: 300000, // 5 minutes to match main api service for AI operations
   headers: {
     'Content-Type': 'application/json',
   },
@@ -24,10 +28,8 @@ apiClient.interceptors.request.use(
       fullURL: config.baseURL ? `${config.baseURL}${config.url}` : config.url
     });
 
-    // Add super admin test header for development RBAC testing
-    if (import.meta.env.DEV && config.url?.includes('/admin/')) {
-      config.headers['X-Super-Admin-Test'] = 'true';
-    }
+    // Don't add custom headers that aren't in CORS allowedHeaders
+    // The backend RBAC will handle authentication via cookies
 
     return config;
   },
@@ -72,10 +74,13 @@ apiClient.interceptors.response.use(
         originalRequest._retry = true;
 
         try {
-          // Try to refresh the token
+          // Try to refresh the token - use same baseURL logic
+          const refreshURL = import.meta.env.MODE === 'development'
+            ? 'http://localhost:5000/api/auth/refresh-token'
+            : '/api/auth/refresh-token';
+
           const res = await axios.post(
-            `${import.meta.env.VITE_API_URL || 'http://localhost:5000'
-            }/api/auth/refresh-token`,
+            refreshURL,
             {},
             { withCredentials: true }
           );

@@ -34,8 +34,8 @@ import {
   VisitAttachment,
 } from '../types/patientManagement';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Use Vite proxy in development (same origin for cookies)
+const API_BASE_URL = '/api';
 
 interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;
@@ -229,7 +229,7 @@ class PatientService {
       // Backend returns: { success: true, data: { patients: [...], total: X, query: "..." } }
       // Return the data portion directly for the search hook to process
       const searchData = result.data || { patients: [], total: 0, query: query };
-      
+
       // Fix missing _id fields by using mrn as fallback
       if (searchData.patients && Array.isArray(searchData.patients)) {
         searchData.patients = searchData.patients.map((patient: any) => {
@@ -241,7 +241,7 @@ class PatientService {
           return patient;
         });
       }
-      
+
       // Debug the actual patient data being returned
       console.log('🔍 Frontend Service - Search data being returned:', {
         patientsCount: searchData.patients ? searchData.patients.length : 0,

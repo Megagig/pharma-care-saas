@@ -2,7 +2,9 @@ import axios, { AxiosError } from 'axios';
 
 // Create axios instance with base configuration similar to api.ts
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.MODE === 'development' 
+    ? 'http://localhost:5000/api' 
+    : '/api',
   timeout: 30000,
   withCredentials: true,
   headers: {

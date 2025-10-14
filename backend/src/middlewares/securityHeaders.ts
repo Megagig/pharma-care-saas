@@ -41,7 +41,7 @@ class SecurityHeaders {
           'style-src': ["'self'", "'unsafe-inline'"],
           'img-src': ["'self'", 'data:', 'https:'],
           'font-src': ["'self'", 'https:'],
-          'connect-src': ["'self'"],
+          'connect-src': ["'self'", 'http://localhost:5000', 'http://127.0.0.1:5000'],
           'media-src': ["'self'"],
           'object-src': ["'none'"],
           'child-src': ["'self'"],
@@ -149,8 +149,8 @@ class SecurityHeaders {
       .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
       .join('; ');
 
-    const headerName = this.config.contentSecurityPolicy.reportOnly 
-      ? 'Content-Security-Policy-Report-Only' 
+    const headerName = this.config.contentSecurityPolicy.reportOnly
+      ? 'Content-Security-Policy-Report-Only'
       : 'Content-Security-Policy';
 
     res.setHeader(headerName, cspString);
@@ -163,11 +163,11 @@ class SecurityHeaders {
     if (!this.config.hsts) return;
 
     let hstsValue = `max-age=${this.config.hsts.maxAge || 31536000}`;
-    
+
     if (this.config.hsts.includeSubDomains) {
       hstsValue += '; includeSubDomains';
     }
-    
+
     if (this.config.hsts.preload) {
       hstsValue += '; preload';
     }
@@ -287,8 +287,8 @@ class SecurityHeaders {
           .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
           .join('; ');
 
-        const headerName = this.config.contentSecurityPolicy.reportOnly 
-          ? 'Content-Security-Policy-Report-Only' 
+        const headerName = this.config.contentSecurityPolicy.reportOnly
+          ? 'Content-Security-Policy-Report-Only'
           : 'Content-Security-Policy';
 
         res.setHeader(headerName, cspString);

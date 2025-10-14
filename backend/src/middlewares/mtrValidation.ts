@@ -444,8 +444,7 @@ export const validateMTRAccess = (
         );
       }
     } else {
-      // Log super_admin access
-      console.log('Super admin access granted');
+      // Super admin access granted (logging disabled for performance)
     }
 
     // Log successful access for audit trail (Requirement 7.1)

@@ -40,6 +40,19 @@ class ServiceWorkerManager {
       return;
     }
 
+    // Delay service worker registration to prevent hydration issues
+    // Wait for the page to finish loading to avoid React error #185
+    await new Promise(resolve => {
+      if (document.readyState === 'complete') {
+        resolve(void 0);
+      } else {
+        window.addEventListener('load', () => resolve(void 0), { once: true });
+      }
+    });
+
+    // Extended delay to ensure React has fully hydrated and DOM is stable
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     try {
       const registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
@@ -174,7 +187,7 @@ class ServiceWorkerManager {
 
     return new Promise((resolve) => {
       const messageChannel = new MessageChannel();
-      
+
       messageChannel.port1.onmessage = (event) => {
         resolve(event.data);
       };
@@ -218,7 +231,7 @@ class ServiceWorkerManager {
   private trackInstalling(worker: ServiceWorker): void {
     worker.addEventListener('statechange', () => {
       console.log('Service Worker state changed:', worker.state);
-      
+
       if (worker.state === 'installed') {
         if (navigator.serviceWorker.controller) {
           // New update available
@@ -247,16 +260,16 @@ class ServiceWorkerManager {
    */
   private handleServiceWorkerMessage(event: MessageEvent): void {
     const { type, payload } = event.data;
-    
+
     switch (type) {
       case 'CACHE_UPDATED':
         console.log('Cache updated:', payload);
         break;
-        
+
       case 'OFFLINE_FALLBACK':
         console.log('Offline fallback served:', payload);
         break;
-        
+
       default:
         console.log('Unknown service worker message:', type, payload);
     }

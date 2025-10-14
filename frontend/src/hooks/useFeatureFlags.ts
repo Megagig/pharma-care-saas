@@ -25,6 +25,11 @@ interface FeatureFlagContext {
   userAgent?: string;
 }
 
+interface FeatureFlagsResponse {
+  flags: Record<string, FeatureFlag>;
+  enabledFeatures: string[];
+}
+
 interface UseFeatureFlagsReturn {
   isFeatureEnabled: (flagKey: string) => boolean;
   getEnabledFeatures: () => string[];
@@ -38,16 +43,16 @@ interface UseFeatureFlagsReturn {
  * Feature flags API service
  */
 const featureFlagsApi = {
-  async getFeatureFlags(context?: FeatureFlagContext): Promise<{
-    flags: Record<string, FeatureFlag>;
-    enabledFeatures: string[];
-  }> {
+  async getFeatureFlags(context?: FeatureFlagContext): Promise<FeatureFlagsResponse> {
     const params = new URLSearchParams();
     if (context?.userId) params.append('userId', context.userId);
     if (context?.workplaceId) params.append('workplaceId', context.workplaceId);
     if (context?.environment) params.append('environment', context.environment);
 
-    const response = await fetch(`/api/feature-flags?${params}`, {
+    const baseURL = import.meta.env.MODE === 'development'
+      ? 'http://localhost:5000'
+      : '';
+    const response = await fetch(`${baseURL}/api/feature-flags?${params}`, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
@@ -62,7 +67,10 @@ const featureFlagsApi = {
   },
 
   async updateFeatureFlag(flagKey: string, updates: Partial<FeatureFlag>): Promise<FeatureFlag> {
-    const response = await fetch(`/api/feature-flags/${flagKey}`, {
+    const baseURL = import.meta.env.MODE === 'development'
+      ? 'http://localhost:5000'
+      : '';
+    const response = await fetch(`${baseURL}/api/feature-flags/${flagKey}`, {
       method: 'PATCH',
       credentials: 'include',
       headers: {
@@ -105,8 +113,8 @@ export const useFeatureFlags = (): UseFeatureFlagsReturn => {
 
   // Build context for feature flag evaluation
   const context: FeatureFlagContext = {
-    userId: user?._id,
-    workplaceId: user?.workplaceId,
+    userId: (user as any)?._id,
+    workplaceId: (user as any)?.workplaceId,
     environment: process.env.NODE_ENV || 'development',
     userAgent: navigator.userAgent,
   };
@@ -117,18 +125,25 @@ export const useFeatureFlags = (): UseFeatureFlagsReturn => {
     isLoading,
     error,
     refetch
-  } = useQuery({
+  } = useQuery<FeatureFlagsResponse, Error>({
     queryKey: ['feature-flags', context.userId, context.workplaceId],
     queryFn: () => featureFlagsApi.getFeatureFlags(context),
     enabled: !!user,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
     refetchOnWindowFocus: false,
     retry: 2,
-    onSuccess: (data) => {
-      setLocalFlags(data.flags);
-    },
-    onError: (error) => {
+  });
+
+  // Handle success/error responses with useEffect
+  useEffect(() => {
+    if (featureFlagsData?.flags) {
+      setLocalFlags(featureFlagsData.flags);
+    }
+  }, [featureFlagsData]);
+
+  useEffect(() => {
+    if (error) {
       console.warn('Failed to fetch feature flags, using defaults:', error);
       // Use default flags as fallback
       const defaultFlags: Record<string, FeatureFlag> = {};
@@ -144,7 +159,7 @@ export const useFeatureFlags = (): UseFeatureFlagsReturn => {
       });
       setLocalFlags(defaultFlags);
     }
-  });
+  }, [error]);
 
   // Check if a feature is enabled
   const isFeatureEnabled = useCallback((flagKey: string): boolean => {
@@ -190,7 +205,7 @@ export const useFeatureFlags = (): UseFeatureFlagsReturn => {
 
     // Poll for feature flag updates every 5 minutes
     const interval = setInterval(() => {
-      queryClient.invalidateQueries(['feature-flags']);
+      queryClient.invalidateQueries({ queryKey: ['feature-flags'] });
     }, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
@@ -200,7 +215,7 @@ export const useFeatureFlags = (): UseFeatureFlagsReturn => {
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'feature-flags-update') {
-        queryClient.invalidateQueries(['feature-flags']);
+        queryClient.invalidateQueries({ queryKey: ['feature-flags'] });
       }
     };
 

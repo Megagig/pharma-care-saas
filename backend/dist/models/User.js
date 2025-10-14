@@ -308,10 +308,137 @@ const userSchema = new mongoose_1.Schema({
             default: false,
         },
     },
+    avatar: {
+        type: String,
+        default: '',
+    },
+    bio: {
+        type: String,
+        maxlength: 500,
+        default: '',
+    },
+    location: {
+        type: String,
+        default: '',
+    },
+    address: {
+        type: String,
+        default: '',
+    },
+    city: {
+        type: String,
+        default: '',
+    },
+    state: {
+        type: String,
+        default: '',
+    },
+    country: {
+        type: String,
+        default: '',
+    },
+    zipCode: {
+        type: String,
+        default: '',
+    },
+    organization: {
+        type: String,
+        default: '',
+    },
+    professionalTitle: {
+        type: String,
+        default: '',
+    },
+    specialization: {
+        type: String,
+        default: '',
+    },
+    operatingHours: {
+        monday: {
+            open: { type: String, default: '09:00' },
+            close: { type: String, default: '17:00' },
+            closed: { type: Boolean, default: false },
+        },
+        tuesday: {
+            open: { type: String, default: '09:00' },
+            close: { type: String, default: '17:00' },
+            closed: { type: Boolean, default: false },
+        },
+        wednesday: {
+            open: { type: String, default: '09:00' },
+            close: { type: String, default: '17:00' },
+            closed: { type: Boolean, default: false },
+        },
+        thursday: {
+            open: { type: String, default: '09:00' },
+            close: { type: String, default: '17:00' },
+            closed: { type: Boolean, default: false },
+        },
+        friday: {
+            open: { type: String, default: '09:00' },
+            close: { type: String, default: '17:00' },
+            closed: { type: Boolean, default: false },
+        },
+        saturday: {
+            open: { type: String, default: '09:00' },
+            close: { type: String, default: '17:00' },
+            closed: { type: Boolean, default: true },
+        },
+        sunday: {
+            open: { type: String, default: '09:00' },
+            close: { type: String, default: '17:00' },
+            closed: { type: Boolean, default: true },
+        },
+    },
     themePreference: {
         type: String,
         enum: ['light', 'dark', 'system'],
         default: 'system',
+    },
+    language: {
+        type: String,
+        default: 'en',
+    },
+    timezone: {
+        type: String,
+        default: 'UTC',
+    },
+    dateFormat: {
+        type: String,
+        enum: ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'],
+        default: 'DD/MM/YYYY',
+    },
+    timeFormat: {
+        type: String,
+        enum: ['12h', '24h'],
+        default: '12h',
+    },
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false,
+    },
+    twoFactorSecret: {
+        type: String,
+        default: '',
+    },
+    sessionTimeout: {
+        type: Number,
+        default: 30,
+        min: 5,
+        max: 1440,
+    },
+    loginNotifications: {
+        type: Boolean,
+        default: true,
+    },
+    profileVisibility: {
+        type: String,
+        enum: ['public', 'organization', 'private'],
+        default: 'organization',
+    },
+    dataSharing: {
+        type: Boolean,
+        default: false,
     },
 }, { timestamps: true });
 userSchema.pre('save', async function (next) {

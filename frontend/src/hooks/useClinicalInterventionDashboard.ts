@@ -52,7 +52,7 @@ export const useClinicalInterventionDashboard = (dateRange: DateRange) => {
 
         lastFetchRef.current = fetchKey;
         store.fetchDashboardMetrics({ from, to });
-    }, [dateRange, getDateRange, store]);
+    }, [dateRange, getDateRange]); // Removed 'store' from dependencies
 
     // Cleanup on unmount
     useEffect(() => {
@@ -78,7 +78,7 @@ export const useClinicalInterventionDashboard = (dateRange: DateRange) => {
                 setRefreshing(false);
             }
         }
-    }, [getDateRange, dateRange, store]);
+    }, [getDateRange, dateRange]); // Removed 'store' from dependencies
 
     return {
         dashboardMetrics: store.dashboardMetrics,

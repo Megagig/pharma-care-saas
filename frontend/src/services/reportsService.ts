@@ -123,7 +123,7 @@ class ReportsService {
       const url = `/reports/${reportType}${queryString ? `?${queryString}` : ''}`;
       
       console.log(`📡 Making API call to: ${url}`);
-      console.log(`🔗 Full URL: http://localhost:5000/api${url}`);
+      console.log(`🔗 Full URL: ${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}${url}`);
       
       // Add timeout and better error handling
       console.log('🔐 Making authenticated API request...');
@@ -173,7 +173,7 @@ class ReportsService {
         }
       } else if (error.request) {
         console.error('No response received:', error.request);
-        throw new Error('Network error: Unable to connect to the server. Please check if the backend is running on http://localhost:5000');
+        throw new Error('Network error: Unable to connect to the server. Please check your internet connection.');
       } else if (error.message === 'Request timeout after 2 minutes') {
         throw new Error('Request timeout: The server is taking too long to respond. Please try again.');
       } else {

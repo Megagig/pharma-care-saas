@@ -37,8 +37,6 @@ export const queryClient = new QueryClient({
       refetchOnReconnect: 'always',
       // Enable background refetch for better UX
       refetchInterval: false, // Will be set per query as needed
-      // Keep previous data during refetch for better UX
-      keepPreviousData: true,
       // Network mode for offline support
       networkMode: 'offlineFirst',
     },
@@ -264,7 +262,7 @@ export const queryKeys = {
 // ===============================
 
 export class QueryPrefetcher {
-  constructor(private queryClient: QueryClient) {}
+  constructor(private queryClient: QueryClient) { }
 
   /**
    * Prefetch critical dashboard data
@@ -358,8 +356,17 @@ export class QueryPrefetcher {
   }
 
   private async fetchUserProfile(): Promise<any> {
-    const response = await fetch('/api/user/profile');
-    return response.json();
+    const response = await fetch('/api/user/settings/profile', {
+      credentials: 'include', // Include httpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data; // Extract the user data from the response
   }
 
   private async fetchRecentActivity(workspaceId: string, limit: number): Promise<any> {
@@ -393,7 +400,7 @@ export class QueryPrefetcher {
 // ===============================
 
 export class QueryInvalidationManager {
-  constructor(private queryClient: QueryClient) {}
+  constructor(private queryClient: QueryClient) { }
 
   /**
    * Invalidate patient-related queries when patient data changes
@@ -427,7 +434,7 @@ export class QueryInvalidationManager {
 
       // Invalidate dashboard if patient is featured
       this.queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboard.overview,
+        queryKey: ['dashboard'],
         exact: false,
       }),
     ];

@@ -579,13 +579,13 @@ export const validateMessageAccess = async (
 
 // File upload validation middleware
 export const validateFileUpload = (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ): void => {
   try {
-    const files = req.files as Express.Multer.File[] | undefined;
-    const file = req.file as Express.Multer.File | undefined;
+    const files = req.files as any[] | undefined;
+    const file = req.file as any | undefined;
 
     // Check if any files were uploaded
     if (!files && !file) {

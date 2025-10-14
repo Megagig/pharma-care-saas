@@ -12,7 +12,7 @@ export declare class FileUploadService {
     static createStorage(): multer.StorageEngine;
     static createFileFilter(): multer.Options['fileFilter'];
     static createUploadMiddleware(): multer.Multer;
-    static processUploadedFile(file: Express.Multer.File): Promise<{
+    static processUploadedFile(file: any): Promise<{
         success: boolean;
         fileData?: any;
         error?: string;

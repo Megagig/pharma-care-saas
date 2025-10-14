@@ -45,10 +45,12 @@ const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const express_mongo_sanitize_1 = __importDefault(require("express-mongo-sanitize"));
 const xss_clean_1 = __importDefault(require("xss-clean"));
 const hpp_1 = __importDefault(require("hpp"));
+const path_1 = __importDefault(require("path"));
 const errorHandler_1 = __importDefault(require("./middlewares/errorHandler"));
 const MemoryManagementService_1 = __importDefault(require("./services/MemoryManagementService"));
 const logger_1 = __importDefault(require("./utils/logger"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const userSettingsRoutes_1 = __importDefault(require("./routes/userSettingsRoutes"));
 const subscriptionRoutes_1 = __importDefault(require("./routes/subscriptionRoutes"));
 const patientRoutes_1 = __importDefault(require("./routes/patientRoutes"));
 const allergyRoutes_1 = __importDefault(require("./routes/allergyRoutes"));
@@ -116,18 +118,53 @@ if (process.env.MEMORY_MONITORING_ENABLED === 'true') {
     MemoryManagementService_1.default.startMonitoring();
     logger_1.default.info('Memory management service started');
 }
-app.use((0, helmet_1.default)());
+app.set('trust proxy', 1);
+app.use((0, helmet_1.default)({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", 'data:', 'https:'],
+            fontSrc: ["'self'", 'https:'],
+            connectSrc: [
+                "'self'",
+                'http://localhost:5000',
+                'http://127.0.0.1:5000',
+                'http://localhost:3000',
+                'http://localhost:5173',
+                'https://PharmaPilot-nttq.onrender.com'
+            ],
+            mediaSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            childSrc: ["'self'"],
+            workerSrc: ["'self'"],
+            frameAncestors: ["'none'"],
+            formAction: ["'self'"],
+            baseUri: ["'self'"],
+            manifestSrc: ["'self'"]
+        }
+    }
+}));
+const corsOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://192.168.8.167:5173',
+    'https://PharmaPilot-nttq.onrender.com',
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+];
+if (process.env.CORS_ORIGINS) {
+    corsOrigins.push(...process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()));
+}
 app.use((0, cors_1.default)({
-    origin: [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'http://192.168.8.167:5173',
-        process.env.FRONTEND_URL || 'http://localhost:3000',
-    ],
+    origin: corsOrigins,
     credentials: true,
     exposedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    preflightContinue: false,
+    optionsSuccessStatus: 200,
 }));
 const securityMonitoring_1 = require("./middlewares/securityMonitoring");
 app.use(securityMonitoring_1.blockSuspiciousIPs);
@@ -135,12 +172,14 @@ app.use(securityMonitoring_1.detectAnomalies);
 app.use(systemIntegration.backwardCompatibilityMiddleware());
 app.use(systemIntegration.gradualRolloutMiddleware());
 const limiter = (0, express_rate_limit_1.default)({
-    windowMs: 15 * 60 * 1000,
-    max: process.env.NODE_ENV === 'development' ? 1000 : 100,
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '5000'),
     message: 'Too many requests from this IP, please try again later.',
     skip: (req) => {
-        if (process.env.NODE_ENV === 'development' &&
-            (req.path.includes('/health') || req.path.includes('/mtr/summary'))) {
+        if (process.env.DISABLE_RATE_LIMITING === 'true') {
+            return true;
+        }
+        if (req.path.includes('/health')) {
             return true;
         }
         return false;
@@ -153,6 +192,14 @@ app.use((0, cookie_parser_1.default)());
 app.use((0, express_mongo_sanitize_1.default)());
 app.use((0, xss_clean_1.default)());
 app.use((0, hpp_1.default)());
+app.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400');
+    res.sendStatus(200);
+});
 if (process.env.NODE_ENV === 'development') {
     app.use((0, morgan_1.default)('dev'));
 }
@@ -243,6 +290,7 @@ app.use('/api/deployment', deploymentRoutes_1.default);
 app.use('/api/production-validation', productionValidationRoutes_1.default);
 app.use('/api/continuous-monitoring', continuousMonitoringRoutes_1.default);
 app.use('/api/auth', authRoutes_1.default);
+app.use('/api/user/settings', userSettingsRoutes_1.default);
 app.use('/api/subscriptions', subscriptionRoutes_1.default);
 app.use('/api/pricing', pricingManagementRoutes_1.default);
 app.use('/api/dashboard', dashboardRoutes_1.default);
@@ -274,7 +322,7 @@ app.use('/api/notifications', notificationRoutes_1.default);
 app.use('/api/communication/notifications', notificationRoutes_1.default);
 app.use('/api/mentions', mentionRoutes_1.default);
 app.use((req, res, next) => {
-    if (req.path.startsWith('/api/notes')) {
+    if (process.env.NODE_ENV === 'development' && req.path.startsWith('/api/notes')) {
         console.log(`[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`);
     }
     next();
@@ -334,18 +382,29 @@ app.use('/api/subscription', subscription_1.default);
 app.use('/api/workspace-subscription', subscriptionManagementRoutes_1.default);
 app.use('/api/feature-flags', featureFlagRoutes_1.default);
 app.use('/api/webhooks', express_1.default.raw({ type: 'application/json' }), webhookRoutes_1.default);
-app.use('/uploads', express_1.default.static('uploads', {
+app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads'), {
     maxAge: '1d',
-    setHeaders: (res, path) => {
+    setHeaders: (res, filePath) => {
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('X-Frame-Options', 'DENY');
-        if (path.endsWith('.pdf')) {
+        if (filePath.endsWith('.pdf')) {
             res.setHeader('Content-Disposition', 'inline');
+            res.setHeader('X-Frame-Options', 'DENY');
         }
     },
 }));
-app.all('*', (req, res) => {
-    res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+app.use(express_1.default.static(path_1.default.join(__dirname, "../../frontend/build")));
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+        res.sendFile(path_1.default.join(__dirname, "../../frontend/build/index.html"));
+    }
+    else {
+        res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+    }
+});
+app.all('/api/*', (req, res) => {
+    res.status(404).json({ message: `API Route ${req.originalUrl} not found` });
 });
 app.use(errorHandler_1.default);
 exports.default = app;

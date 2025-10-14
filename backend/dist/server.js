@@ -54,15 +54,20 @@ require("./models/Message");
 (0, db_1.default)();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 const httpServer = (0, http_1.createServer)(app_1.default);
+const socketCorsOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://192.168.8.167:5173',
+    'https://PharmaPilot-nttq.onrender.com',
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+];
+if (process.env.CORS_ORIGINS) {
+    socketCorsOrigins.push(...process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()));
+}
 const io = new socket_io_1.Server(httpServer, {
     cors: {
-        origin: [
-            'http://localhost:3000',
-            'http://localhost:5173',
-            'http://127.0.0.1:5173',
-            'http://192.168.8.167:5173',
-            process.env.FRONTEND_URL || 'http://localhost:3000',
-        ],
+        origin: socketCorsOrigins,
         credentials: true,
         methods: ['GET', 'POST'],
     },

@@ -310,7 +310,6 @@ const validateMTRAccess = (req, res, next) => {
             }
         }
         else {
-            console.log('Super admin access granted');
         }
         logger_1.default.info('MTR access granted', {
             userId: user.id,

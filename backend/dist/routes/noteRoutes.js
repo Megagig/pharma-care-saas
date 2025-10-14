@@ -13,7 +13,8 @@ const clinicalNoteRBAC_1 = __importDefault(require("../middlewares/clinicalNoteR
 const cacheMiddleware_1 = require("../middlewares/cacheMiddleware");
 const router = express_1.default.Router();
 router.use((req, res, next) => {
-    console.log(`
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`
 ========== NOTE ROUTE DEBUG ==========
 Request URL: ${req.originalUrl}
 Request method: ${req.method}
@@ -21,7 +22,8 @@ Request params: ${JSON.stringify(req.params)}
 Note ID from params: ${req.params.id}
 Path: ${req.path}
 ========== END DEBUG ==========
-  `);
+    `);
+    }
     next();
 });
 router.use(auth_1.auth);

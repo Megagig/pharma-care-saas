@@ -7,6 +7,8 @@ import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
+import path from 'path';
+
 
 // Import custom types (automatically loaded from src/types/)
 import errorHandler from './middlewares/errorHandler';
@@ -15,6 +17,7 @@ import logger from './utils/logger';
 
 // Route imports
 import authRoutes from './routes/authRoutes';
+import userSettingsRoutes from './routes/userSettingsRoutes';
 import subscriptionRoutes from './routes/subscriptionRoutes';
 import patientRoutes from './routes/patientRoutes';
 import allergyRoutes from './routes/allergyRoutes';
@@ -89,20 +92,61 @@ if (process.env.MEMORY_MONITORING_ENABLED === 'true') {
   logger.info('Memory management service started');
 }
 
+// Trust proxy - CRITICAL for Render deployment
+app.set('trust proxy', 1);
+
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      fontSrc: ["'self'", 'https:'],
+      connectSrc: [
+        "'self'",
+        'http://localhost:5000',
+        'http://127.0.0.1:5000',
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://PharmaPilot-nttq.onrender.com'
+      ],
+      mediaSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      childSrc: ["'self'"],
+      workerSrc: ["'self'"],
+      frameAncestors: ["'none'"],
+      formAction: ["'self'"],
+      baseUri: ["'self'"],
+      manifestSrc: ["'self'"]
+    }
+  }
+}));
+// Configure CORS origins
+const corsOrigins = [
+  'http://localhost:3000', // Create React App dev server
+  'http://localhost:5173', // Vite dev server
+  'http://127.0.0.1:5173', // Alternative Vite URL
+  'http://192.168.8.167:5173', // Local network Vite URL
+  'https://PharmaPilot-nttq.onrender.com', // Production frontend
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+];
+
+// Add additional origins from environment variable
+if (process.env.CORS_ORIGINS) {
+  corsOrigins.push(...process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()));
+}
+
 app.use(
   cors({
-    origin: [
-      'http://localhost:3000', // Create React App dev server
-      'http://localhost:5173', // Vite dev server
-      'http://127.0.0.1:5173', // Alternative Vite URL
-      'http://192.168.8.167:5173', // Local network Vite URL
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-    ],
+    origin: corsOrigins,
     credentials: true,
     exposedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    preflightContinue: false,
+    optionsSuccessStatus: 200,
   })
 );
 
@@ -118,17 +162,18 @@ app.use(detectAnomalies as any);
 app.use(systemIntegration.backwardCompatibilityMiddleware());
 app.use(systemIntegration.gradualRolloutMiddleware() as any);
 
-// Rate limiting - more lenient for development
+// Rate limiting - more lenient for development and production
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit for development
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes default
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '5000'), // 5000 requests default
   message: 'Too many requests from this IP, please try again later.',
   skip: (req) => {
-    // Skip rate limiting for health checks and certain endpoints in development
-    if (
-      process.env.NODE_ENV === 'development' &&
-      (req.path.includes('/health') || req.path.includes('/mtr/summary'))
-    ) {
+    // Skip rate limiting if disabled via env var
+    if (process.env.DISABLE_RATE_LIMITING === 'true') {
+      return true;
+    }
+    // Skip rate limiting for health checks
+    if (req.path.includes('/health')) {
       return true;
     }
     return false;
@@ -145,6 +190,16 @@ app.use(cookieParser());
 app.use(mongoSanitize()); // Against NoSQL query injection
 app.use(xss()); // Against XSS attacks
 app.use(hpp()); // Against HTTP Parameter Pollution
+
+// Handle preflight requests explicitly
+app.options('*', (req: Request, res: Response) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  res.sendStatus(200);
+});
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {
@@ -166,6 +221,7 @@ app.use('/api/', intelligentCompressionMiddleware({
   threshold: 1024, // 1KB minimum
   level: 6, // Balanced compression
 }));
+
 app.use('/api/', responseSizeMonitoringMiddleware());
 
 // Health check routes
@@ -264,6 +320,7 @@ app.use('/api/continuous-monitoring', continuousMonitoringRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/user/settings', userSettingsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/pricing', pricingManagementRoutes);
 
@@ -308,6 +365,7 @@ app.use('/api/communication', communicationRoutes);
 
 // Communication Audit routes
 import communicationAuditRoutes from './routes/communicationAuditRoutes';
+
 app.use('/api/communication/audit', communicationAuditRoutes);
 
 // Notification routes
@@ -319,9 +377,9 @@ app.use('/api/communication/notifications', notificationRoutes);
 // Mention routes (already imported above)
 app.use('/api/mentions', mentionRoutes);
 
-// Clinical Notes routes - added special debug log
+// Clinical Notes routes (debug logging disabled in production for performance)
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api/notes')) {
+  if (process.env.NODE_ENV === 'development' && req.path.startsWith('/api/notes')) {
     console.log(
       `[App Route Debug] Clinical Notes request: ${req.method} ${req.originalUrl}`
     );
@@ -409,22 +467,40 @@ app.use(
 // Serve uploaded files (with proper security)
 app.use(
   '/uploads',
-  express.static('uploads', {
+  express.static(path.join(__dirname, '../uploads'), {
     maxAge: '1d',
-    setHeaders: (res, path) => {
+    setHeaders: (res, filePath) => {
+      // CRITICAL: Allow cross-origin access for images
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+
       // Security headers for file downloads
       res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'DENY');
-      if (path.endsWith('.pdf')) {
+
+      if (filePath.endsWith('.pdf')) {
         res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('X-Frame-Options', 'DENY');
       }
     },
   })
 );
 
-// 404 handler
-app.all('*', (req: Request, res: Response) => {
-  res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+// Serve static files from React build
+app.use(express.static(path.join(__dirname, "../../frontend/build")));
+
+// Catch all handler: send back React's index.html file for client-side routing
+app.get('*', (req: Request, res: Response) => {
+  // Only serve index.html for non-API and non-uploads routes
+  if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+    res.sendFile(path.join(__dirname, "../../frontend/build/index.html"));
+  } else {
+    res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+  }
+});
+
+// 404 handler for API routes only
+app.all('/api/*', (req: Request, res: Response) => {
+  res.status(404).json({ message: `API Route ${req.originalUrl} not found` });
 });
 
 // Global error handler
