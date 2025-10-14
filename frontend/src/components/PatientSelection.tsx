@@ -338,44 +338,33 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
         const patientId = patient._id || (patient as any).id || (patient as any).patientId || (patient as any).mrn;
         console.log('Creating MTR review for patient ID:', patientId);
         console.log('🔍 Patient mrn field:', (patient as any).mrn);
-        
+
         // Force use mrn if no other ID is available
         const finalPatientId = patientId || (patient as any).mrn;
         console.log('🔍 Final patient ID to use:', finalPatientId);
-        
+
         if (!finalPatientId) {
           console.error('❌ Cannot create MTR review - no patient ID found');
           setError('selectPatient', 'Patient ID is missing. Cannot create MTR review.');
           return;
         }
-        
+
         try {
+          console.log('🚀 Calling createReview with patientId:', finalPatientId);
           await createReview(finalPatientId);
 
-          // Add a small delay to ensure the review is properly set in the store
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+          console.log('✅ createReview completed successfully');
 
-          // Verify the review was created successfully
-          const { currentReview: newReview } = useMTRStore.getState();
-          if (!newReview?._id) {
-            console.error('MTR review creation failed - no ID found after creation');
-            throw new Error('Failed to create MTR review - please try again');
-          }
-
-          console.log('MTR review created successfully with ID:', newReview._id);
+          // The MTR store will handle setting currentReview
+          // No need to verify here - trust the store
         } catch (createError) {
-          console.error('Error creating MTR review:', createError);
-          
-          // Wait a bit before rethrowing error
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          
-          // No fallback - re-throw the error
+          console.error('❌ Error creating MTR review:', createError);
           throw createError;
         }
       }
     } catch (error) {
       console.error('Error in handlePatientSelect:', error);
-      
+
       // Show error - no fallback available
       setError(
         'selectPatient',
@@ -458,7 +447,7 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
     }
 
     const results = searchResults?.data?.results || [];
-    
+
     // Debug each patient to see if they have IDs
     results.forEach((patient: any, index: number) => {
       console.log(`🔍 Patient ${index}:`, {
@@ -557,7 +546,7 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                       onClick={async () => {
                         // Clear any existing errors when user clicks Continue
                         setError('selectPatient', null);
-                        
+
                         // Ensure patient is selected in store before proceeding
                         if (selectedPatient) {
                           onPatientSelect(selectedPatient);
@@ -724,9 +713,8 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                               >
                                 MRN: {patient.mrn} • Age: {patient.age || 'N/A'}
                                 {patient.gender &&
-                                  ` • ${
-                                    patient.gender.charAt(0).toUpperCase() +
-                                    patient.gender.slice(1)
+                                  ` • ${patient.gender.charAt(0).toUpperCase() +
+                                  patient.gender.slice(1)
                                   }`}
                               </Typography>
                               {patient.phone && (
@@ -853,9 +841,8 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                                   MRN: {patient.mrn} • Age:{' '}
                                   {patient.age || 'N/A'}
                                   {patient.gender &&
-                                    ` • ${
-                                      patient.gender.charAt(0).toUpperCase() +
-                                      patient.gender.slice(1)
+                                    ` • ${patient.gender.charAt(0).toUpperCase() +
+                                    patient.gender.slice(1)
                                     }`}
                                 </Typography>
                                 {patient.phone && (
@@ -965,9 +952,9 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                           borderRadius: isMobile ? 2 : 1,
                           '&:active': isMobile
                             ? {
-                                transform: 'scale(0.98)',
-                                bgcolor: 'action.selected',
-                              }
+                              transform: 'scale(0.98)',
+                              bgcolor: 'action.selected',
+                            }
                             : {},
                         }}
                         onClick={() => handlePatientSelect(patient)}

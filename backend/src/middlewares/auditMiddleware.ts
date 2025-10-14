@@ -254,8 +254,11 @@ export const auditTimer = (action: string) => {
  */
 export const auditMTRActivity = (activityType: string) => {
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
+        console.log(`🔍 auditMTRActivity middleware - Activity: ${activityType}, User ID: ${req.user?.id}`);
+
         try {
             if (req.user?.id) {
+                console.log('📝 Creating audit log for MTR activity...');
                 await AuditService.createAuditLog({
                     action: `MTR_${activityType.toUpperCase()}`,
                     userId: req.user.id,
@@ -271,11 +274,15 @@ export const auditMTRActivity = (activityType: string) => {
                     complianceCategory: 'clinical_documentation',
                     riskLevel: 'medium'
                 }, req);
+                console.log('✅ Audit log created successfully');
+            } else {
+                console.log('⚠️  No user ID, skipping audit log');
             }
         } catch (error) {
-            console.error('Failed to create MTR activity audit log:', error);
+            console.error('❌ Failed to create MTR activity audit log:', error);
         }
 
+        console.log('➡️  Calling next() in auditMTRActivity');
         next();
     };
 };

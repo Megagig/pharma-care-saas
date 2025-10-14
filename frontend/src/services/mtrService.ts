@@ -362,8 +362,8 @@ export const handleMTRError = (error: unknown, context: string): never => {
   // Generic error
   const serviceError = new Error(
     apiError.response?.data?.message ||
-      apiError.message ||
-      'An unexpected error occurred'
+    apiError.message ||
+    'An unexpected error occurred'
   ) as MTRServiceError;
 
   serviceError.code = apiError.response?.data?.code || 'MTR_SERVICE_ERROR';
@@ -465,6 +465,8 @@ export const mtrService = {
     sessionData: CreateMTRData
   ): Promise<MTRResponse['data']> {
     try {
+      console.log('🚀 createMTRSession called with:', sessionData);
+
       // Validate required fields
       if (!sessionData.patientId?.trim()) {
         throw new MTRValidationError('Patient ID is required');
@@ -475,29 +477,59 @@ export const mtrService = {
         sessionData as Record<string, unknown>
       );
 
+      console.log('📤 Sending POST request to /api/mtr with:', transformedData);
+
       const response = await apiHelpers.post<ApiResponse<MTRResponse['data']>>(
         '/mtr',
         transformedData
       );
 
-      if (!response.data.data) {
-        throw new Error('Invalid response structure');
+      console.log('� Received response from server:', response);
+      console.log('�🔍 Raw API response:', response);
+      console.log('🔍 response.data:', response.data);
+
+      // Handle double-wrapped response structure from backend
+      // Backend sends: {success: true, data: {review: {...}}}
+      // Axios wraps it: response.data = {success: true, data: {review: {...}}}
+      // So we need: response.data.data.review
+      const actualData: any = response.data?.data || response.data;
+      
+      if (!actualData || !actualData.review) {
+        console.error('❌ Invalid response structure - missing review');
+        console.log('🔍 response.data:', response.data);
+        console.log('🔍 actualData:', actualData);
+        console.log('Response structure:', JSON.stringify(response, null, 2));
+        throw new Error('Invalid response structure from server');
       }
+
+      console.log('✅ Found review at:', actualData.review ? 'response.data.data.review' : 'response.data.review');
+      console.log('🔍 review._id:', actualData.review._id);
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data.review as DateTransformable
+        actualData.review as any
       ) as MedicationTherapyReview;
+
+      console.log('🔍 After transformDatesForFrontend:', transformed);
+      console.log('🔍 transformed._id:', transformed._id);
+
       const enhancedReview = {
         ...transformed,
+        _id: transformed._id || actualData.review._id, // Ensure _id is preserved
         completionPercentage: calculateCompletionPercentage(transformed),
         isOverdue: isOverdue(transformed),
       } as MedicationTherapyReview;
+
+      console.log('🔍 Enhanced review:', enhancedReview);
+      console.log('🔍 enhancedReview._id:', enhancedReview._id);
 
       return {
         review: enhancedReview,
       };
     } catch (error) {
+      console.error('❌ createMTRSession error:', error);
+      console.error('❌ Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('❌ Error message:', error instanceof Error ? error.message : String(error));
       return handleMTRError(error, 'createMTRSession');
     }
   },
@@ -1355,9 +1387,8 @@ export const mtrService = {
       }
 
       const queryString = params.toString();
-      const url = `/mtr/problems/statistics${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/problems/statistics${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       return response.data;
@@ -1381,9 +1412,8 @@ export const mtrService = {
       }
 
       const queryString = params.toString();
-      const url = `/mtr/interventions/statistics${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/interventions/statistics${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       return response.data;
@@ -1407,9 +1437,8 @@ export const mtrService = {
       }
 
       const queryString = params.toString();
-      const url = `/mtr/followups/statistics${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/followups/statistics${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       return response.data;
@@ -1595,9 +1624,8 @@ export const mtrService = {
     try {
       const searchParams = formatSearchParams(params as SearchParamsType);
       const queryString = searchParams.toString();
-      const url = `/mtr/reports/interventions${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/reports/interventions${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       return response.data;
@@ -1619,9 +1647,8 @@ export const mtrService = {
     try {
       const searchParams = formatSearchParams(params as SearchParamsType);
       const queryString = searchParams.toString();
-      const url = `/mtr/reports/pharmacists${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/reports/pharmacists${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       return response.data;
@@ -1664,9 +1691,8 @@ export const mtrService = {
     try {
       const searchParams = formatSearchParams(params);
       const queryString = searchParams.toString();
-      const url = `/mtr/reports/outcomes${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const url = `/mtr/reports/outcomes${queryString ? `?${queryString}` : ''
+        }`;
 
       const response = await apiHelpers.get(url);
       return response.data;

@@ -143,7 +143,13 @@ export const getMTRSession = asyncHandler(
  */
 export const createMTRSession = asyncHandler(
   async (req: AuthRequest, res: Response) => {
+    console.log('🎯 ========== CREATE MTR SESSION CONTROLLER REACHED ==========');
+    console.log('📥 Request body:', JSON.stringify(req.body, null, 2));
+    console.log('👤 User:', { id: req.user?.id, role: req.user?.role, licenseStatus: req.user?.licenseStatus });
+
     const context = getRequestContext(req);
+    console.log('🔐 Request context:', context);
+
     const {
       patientId,
       priority = 'routine',
@@ -153,6 +159,8 @@ export const createMTRSession = asyncHandler(
       patientConsent = false,
       confidentialityAgreed = false,
     } = req.body;
+
+    console.log('📋 Extracted data:', { patientId, priority, reviewType, patientConsent, confidentialityAgreed });
 
     // Validate patient exists and belongs to workplace
     const patient = await Patient.findById(patientId);
@@ -226,15 +234,19 @@ export const createMTRSession = asyncHandler(
       session
     );
 
+    const responseData = {
+      review: {
+        ...session.toObject(),
+        completionPercentage: session.getCompletionPercentage(),
+        nextStep: session.getNextStep(),
+      },
+    };
+
+    console.log('📤 Sending success response:', JSON.stringify(responseData, null, 2));
+
     sendSuccess(
       res,
-      {
-        session: {
-          ...session.toObject(),
-          completionPercentage: session.getCompletionPercentage(),
-          nextStep: session.getNextStep(),
-        },
-      },
+      responseData,
       'MTR session created successfully',
       201
     );
@@ -1061,9 +1073,9 @@ export const getMTRReports = asyncHandler(
     const dateRange =
       startDate && endDate
         ? {
-            start: new Date(startDate),
-            end: new Date(endDate),
-          }
+          start: new Date(startDate),
+          end: new Date(endDate),
+        }
         : undefined;
 
     // Build match criteria
@@ -1146,9 +1158,9 @@ export const getMTROutcomes = asyncHandler(
     const dateRange =
       startDate && endDate
         ? {
-            start: new Date(startDate),
-            end: new Date(endDate),
-          }
+          start: new Date(startDate),
+          end: new Date(endDate),
+        }
         : undefined;
 
     // Build match criteria

@@ -76,6 +76,8 @@ export const apiHelpers = {
    * Make a POST request
    */
   post: async (url: string, data?: unknown, options?: RequestInit) => {
+    console.log(`🌐 POST request to: /api${url}`, { data });
+
     const response = await fetch(`/api${url}`, {
       method: 'POST',
       headers: {
@@ -88,11 +90,41 @@ export const apiHelpers = {
       ...options,
     });
 
+    console.log(`📥 POST response status: ${response.status} ${response.statusText}`);
+    console.log(`📏 POST response headers:`, {
+      contentType: response.headers.get('content-type'),
+      contentLength: response.headers.get('content-length'),
+      transferEncoding: response.headers.get('transfer-encoding'),
+    });
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Try to get error details from response
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        console.error('❌ Server error response:', errorData);
+        errorMessage = errorData.message || errorData.error?.message || errorMessage;
+      } catch (e) {
+        console.error('❌ Could not parse error response');
+      }
+      throw new Error(errorMessage);
     }
 
-    return response.json();
+    // Clone the response to read it twice (for debugging and actual use)
+    const clonedResponse = response.clone();
+    const responseText = await clonedResponse.text();
+    console.log('📄 POST response body (raw text):', responseText.substring(0, 500));
+    console.log('📏 Response body length:', responseText.length);
+
+    const responseData = await response.json();
+    console.log('✅ POST response data (parsed):', responseData);
+    console.log('✅ responseData.success:', responseData.success);
+    console.log('✅ responseData.data:', responseData.data);
+    if (responseData.data) {
+      console.log('✅ responseData.data.review exists:', !!responseData.data.review);
+      console.log('✅ responseData.data keys:', Object.keys(responseData.data));
+    }
+    return responseData;
   },
 
   /**

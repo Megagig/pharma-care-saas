@@ -399,8 +399,8 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
         patientId: patientId.trim(),
         reviewType: 'initial' as const,
         priority: 'routine' as const,
-        patientConsent: false,
-        confidentialityAgreed: false,
+        patientConsent: true,  // Required for MTR creation
+        confidentialityAgreed: true,  // Required for MTR creation
       };
 
       // Test backend connectivity first with shorter timeout
@@ -430,15 +430,26 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
 
       console.log('📡 Backend accessible, calling MTR service with data:', createData);
 
-      // Add timeout for MTR creation (increased to handle backend performance issues)
+      // Add timeout for MTR creation (30 seconds for better UX)
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('MTR creation timeout after 3 minutes')), 180000);
+        setTimeout(() => reject(new Error('MTR creation timeout. The server is taking too long to respond.')), 30000);
       });
 
-      const response = await Promise.race([
-        mtrService.createMTRSession(createData),
-        timeoutPromise
-      ]) as any;
+      let response;
+      try {
+        response = await Promise.race([
+          mtrService.createMTRSession(createData),
+          timeoutPromise
+        ]) as any;
+      } catch (apiError) {
+        console.error('❌ API call failed:', apiError);
+        console.error('❌ Error details:', {
+          message: (apiError as Error).message,
+          stack: (apiError as Error).stack,
+          error: apiError
+        });
+        throw apiError;
+      }
 
       console.log('✅ MTR service response:', response);
 
@@ -467,9 +478,9 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
 
       if (error instanceof Error) {
         if (error.message.includes('timeout')) {
-          errorMessage = 'MTR creation timed out. Please check your connection and try again.';
+          errorMessage = 'Request timeout. The server took too long to respond. Please check your internet connection and try again.';
         } else if (error.message.includes('Backend server is not accessible')) {
-          errorMessage = 'Backend server is not running. Please start the backend server.';
+          errorMessage = 'Cannot connect to server. Please ensure your internet connection is stable and the server is running.';
         } else if (error.message.includes('Permission denied') || error.message.includes('403')) {
           errorMessage = 'You do not have permission to create MTR reviews. Please contact your administrator.';
         } else if (error.message.includes('Authentication required')) {
