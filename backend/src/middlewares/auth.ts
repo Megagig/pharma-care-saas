@@ -181,6 +181,17 @@ export const auth = async (
         workspaceId: user.workplaceId,
         status: { $in: ['active', 'trial', 'past_due'] },
       }).populate('planId');
+
+      // Debug logging for development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Auth middleware - Subscription lookup:', {
+          workplaceId: user.workplaceId,
+          subscriptionFound: !!subscription,
+          subscriptionStatus: subscription?.status,
+          subscriptionTier: subscription?.tier,
+          hasPlanId: !!subscription?.planId,
+        });
+      }
     }
     // Users without workplaces don't have subscriptions (they access basic features only)
 
