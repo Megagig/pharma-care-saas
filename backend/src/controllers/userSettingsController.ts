@@ -6,12 +6,13 @@ import * as speakeasy from 'speakeasy';
 import * as QRCode from 'qrcode';
 import * as bcrypt from 'bcryptjs';
 
-// Extend Request type to include user
+// Extend Request type to include user and file
 interface AuthRequest extends Request {
     user?: {
         userId: string;
         _id?: string;
     };
+    file?: Express.Multer.File;
 }
 
 // Get user profile
