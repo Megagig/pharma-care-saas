@@ -293,7 +293,7 @@ const AuditStats: React.FC<AuditStatsProps> = ({ stats, loading }) => {
                                                             }}
                                                         />
                                                         <Typography variant="body2" fontWeight="500">
-                                                            {user.userDetails.firstName} {user.userDetails.lastName}
+                                                            {user.userDetails?.firstName || 'Unknown'} {user.userDetails?.lastName || 'User'}
                                                         </Typography>
                                                     </Box>
                                                     <Chip

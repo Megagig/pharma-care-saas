@@ -140,7 +140,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onFlag }) => {
                     <Box display="flex" alignItems="flex-start" flex={1} gap={2}>
                         {/* User Avatar */}
                         <Avatar
-                            src={activity.userDetails.avatarUrl}
+                            src={activity.userDetails?.avatarUrl}
                             sx={{
                                 width: 48,
                                 height: 48,
@@ -149,15 +149,15 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onFlag }) => {
                                 boxShadow: `0 0 0 4px ${alpha(riskColor, 0.1)}`,
                             }}
                         >
-                            {activity.userDetails.firstName.charAt(0)}
-                            {activity.userDetails.lastName.charAt(0)}
+                            {activity.userDetails?.firstName?.charAt(0) || 'U'}
+                            {activity.userDetails?.lastName?.charAt(0) || 'N'}
                         </Avatar>
 
                         <Box flex={1}>
                             {/* User Info */}
                             <Box display="flex" alignItems="center" gap={1} mb={0.5}>
                                 <Typography variant="subtitle1" fontWeight="600">
-                                    {activity.userDetails.firstName} {activity.userDetails.lastName}
+                                    {activity.userDetails?.firstName || 'Unknown'} {activity.userDetails?.lastName || 'User'}
                                 </Typography>
                                 {activity.success ? (
                                     <Tooltip title="Success">
@@ -178,8 +178,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onFlag }) => {
                                 gap={1}
                                 mb={1.5}
                             >
-                                {activity.userDetails.email} · {activity.userDetails.role}
-                                {activity.userDetails.workplaceRole && ` · ${activity.userDetails.workplaceRole}`}
+                                {activity.userDetails?.email || 'N/A'} · {activity.userDetails?.role || 'Unknown'}
+                                {activity.userDetails?.workplaceRole && ` · ${activity.userDetails.workplaceRole}`}
                             </Typography>
 
                             {/* Description */}
