@@ -144,6 +144,7 @@ export const getMTRSession = asyncHandler(
 export const createMTRSession = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const context = getRequestContext(req);
+
     const {
       patientId,
       priority = 'routine',
@@ -160,7 +161,7 @@ export const createMTRSession = asyncHandler(
 
     // Skip tenant check for super_admin users
     if (req.user?.role === 'super_admin') {
-      console.log('Super admin bypassing tenant check for MTR patient access');
+      // Super admin bypassing tenant check
     } else {
       checkTenantAccess(
         patient!.workplaceId.toString(),
@@ -210,31 +211,82 @@ export const createMTRSession = asyncHandler(
       (session as any).createdByRole = 'super_admin';
     }
 
-    await session.save();
+    // Save with retry logic for duplicate key errors (race condition handling)
+    let saveAttempts = 0;
+    const maxSaveAttempts = 5;
+    let savedSession = null;
+
+    while (saveAttempts < maxSaveAttempts && !savedSession) {
+      try {
+        await session.save();
+        savedSession = session;
+      } catch (error: any) {
+        // Handle duplicate key error on reviewNumber
+        if (error.code === 11000 && error.message.includes('reviewNumber')) {
+          saveAttempts++;
+
+          if (saveAttempts >= maxSaveAttempts) {
+            // Final fallback: use timestamp-based review number
+            const timestamp = Date.now().toString().slice(-6);
+            const year = new Date().getFullYear();
+            const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+            session.reviewNumber = `MTR-${year}${month}-${timestamp}`;
+
+            // Try one last time with timestamp
+            try {
+              await session.save();
+              savedSession = session;
+            } catch (finalError: any) {
+              throw new Error(
+                'Unable to generate unique review number. Please try again.'
+              );
+            }
+            break; // Exit loop after final attempt
+          }
+
+          // Generate new review number with offset to avoid regenerating same number
+          session.reviewNumber = await (
+            MedicationTherapyReview as any
+          ).generateNextReviewNumber(context.workplaceId, saveAttempts * 10);
+
+          // Small delay before retry
+          await new Promise((resolve) => setTimeout(resolve, 100 * saveAttempts));
+        } else {
+          // Other errors - throw immediately
+          throw error;
+        }
+      }
+    }
+
+    if (!savedSession) {
+      throw new Error('Failed to save MTR session');
+    }
 
     // Mark patient selection step as complete
-    session.markStepComplete('patientSelection', {
+    savedSession.markStepComplete('patientSelection', {
       patientId,
       selectedAt: new Date(),
     });
-    await session.save();
+    await savedSession.save();
 
     // Audit log
     await AuditService.logMTRActivity(
       AuditService.createAuditContext(req),
       'CREATE_MTR_SESSION',
-      session
+      savedSession
     );
+
+    const responseData = {
+      review: {
+        ...savedSession.toObject(),
+        completionPercentage: savedSession.getCompletionPercentage(),
+        nextStep: savedSession.getNextStep(),
+      },
+    };
 
     sendSuccess(
       res,
-      {
-        session: {
-          ...session.toObject(),
-          completionPercentage: session.getCompletionPercentage(),
-          nextStep: session.getNextStep(),
-        },
-      },
+      responseData,
       'MTR session created successfully',
       201
     );
@@ -672,15 +724,12 @@ export const createMTRProblem = asyncHandler(
     await session!.save();
 
     // Audit log
-    console.log(
-      'MTR problem created:',
-      createAuditLog(
-        'CREATE_MTR_PROBLEM',
-        'DrugTherapyProblem',
-        problem._id.toString(),
-        context,
-        { reviewId: id, type: problem.type }
-      )
+    createAuditLog(
+      'CREATE_MTR_PROBLEM',
+      'DrugTherapyProblem',
+      problem._id.toString(),
+      context,
+      { reviewId: id, type: problem.type }
     );
 
     sendSuccess(
@@ -853,15 +902,12 @@ export const createMTRIntervention = asyncHandler(
     await session!.save();
 
     // Audit log
-    console.log(
-      'MTR intervention created:',
-      createAuditLog(
-        'CREATE_MTR_INTERVENTION',
-        'MTRIntervention',
-        intervention._id.toString(),
-        context,
-        { reviewId: id, type: intervention.type }
-      )
+    createAuditLog(
+      'CREATE_MTR_INTERVENTION',
+      'MTRIntervention',
+      intervention._id.toString(),
+      context,
+      { reviewId: id, type: intervention.type }
     );
 
     sendSuccess(
@@ -987,15 +1033,12 @@ export const createMTRFollowUp = asyncHandler(
     await session!.save();
 
     // Audit log
-    console.log(
-      'MTR follow-up created:',
-      createAuditLog(
-        'CREATE_MTR_FOLLOWUP',
-        'MTRFollowUp',
-        followUp._id.toString(),
-        context,
-        { reviewId: id, type: followUp.type }
-      )
+    createAuditLog(
+      'CREATE_MTR_FOLLOWUP',
+      'MTRFollowUp',
+      followUp._id.toString(),
+      context,
+      { reviewId: id, type: followUp.type }
     );
 
     sendSuccess(res, { followUp }, 'Follow-up scheduled successfully', 201);
@@ -1061,9 +1104,9 @@ export const getMTRReports = asyncHandler(
     const dateRange =
       startDate && endDate
         ? {
-            start: new Date(startDate),
-            end: new Date(endDate),
-          }
+          start: new Date(startDate),
+          end: new Date(endDate),
+        }
         : undefined;
 
     // Build match criteria
@@ -1146,9 +1189,9 @@ export const getMTROutcomes = asyncHandler(
     const dateRange =
       startDate && endDate
         ? {
-            start: new Date(startDate),
-            end: new Date(endDate),
-          }
+          start: new Date(startDate),
+          end: new Date(endDate),
+        }
         : undefined;
 
     // Build match criteria

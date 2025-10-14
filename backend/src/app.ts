@@ -221,11 +221,13 @@ import {
   responseSizeMonitoringMiddleware,
   adaptiveCompressionMiddleware
 } from './middlewares/compressionMiddleware';
-app.use('/api/', adaptiveCompressionMiddleware());
-app.use('/api/', intelligentCompressionMiddleware({
-  threshold: 1024, // 1KB minimum
-  level: 6, // Balanced compression
-}));
+
+// TEMPORARILY DISABLED - Testing MTR response issue
+// app.use('/api/', adaptiveCompressionMiddleware());
+// app.use('/api/', intelligentCompressionMiddleware({
+//   threshold: 1024, // 1KB minimum
+//   level: 6, // Balanced compression,
+// }));
 
 app.use('/api/', responseSizeMonitoringMiddleware());
 

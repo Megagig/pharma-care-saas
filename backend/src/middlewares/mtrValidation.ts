@@ -443,8 +443,6 @@ export const validateMTRAccess = (
           'Active or approved pharmacist license required for MTR operations'
         );
       }
-    } else {
-      // Super admin access granted (logging disabled for performance)
     }
 
     // Log successful access for audit trail (Requirement 7.1)
@@ -470,7 +468,11 @@ export const validateMTRBusinessLogic = (
 ) => {
   try {
     const { method, originalUrl } = req;
-    const validationErrors: any[] = [];
+    const validationErrors: Array<{
+      field: string;
+      message: string;
+      value?: unknown;
+    }> = [];
 
     // Validate step completion order
     if (originalUrl.includes('/step/') && method === 'PUT') {

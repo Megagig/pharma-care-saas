@@ -38,10 +38,12 @@ export const createMTRSessionSchema = [
         .withMessage('Review reason cannot exceed 500 characters'),
 
     body('patientConsent')
+        .optional()
         .isBoolean()
         .withMessage('Patient consent must be a boolean'),
 
     body('confidentialityAgreed')
+        .optional()
         .isBoolean()
         .withMessage('Confidentiality agreement must be a boolean'),
 ];

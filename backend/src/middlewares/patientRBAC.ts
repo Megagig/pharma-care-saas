@@ -240,12 +240,50 @@ export const checkPatientPlanLimits = async (
 
     const subscription = req.subscription;
 
-    if (!subscription || !subscription.planId) {
+    // Debug logging for development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('checkPatientPlanLimits debug:', {
+        hasSubscription: !!subscription,
+        subscriptionStatus: subscription?.status,
+        hasPlanId: !!subscription?.planId,
+        tier: subscription?.tier,
+        workplaceId: req.user?.workplaceId,
+      });
+    }
+
+    // Check if subscription exists and is active
+    // Allow users in 'trial', 'active', or 'past_due' status
+    if (!subscription) {
       res.status(402).json({
         message: 'Active subscription required for Patient Management',
         code: 'SUBSCRIPTION_REQUIRED',
         feature: 'patient_management',
       });
+      return;
+    }
+
+    // Allow users in trial, active, or grace period (past_due) to proceed
+    const allowedStatuses = ['trial', 'active', 'past_due'];
+    if (!allowedStatuses.includes(subscription.status)) {
+      res.status(402).json({
+        message: 'Active subscription required for Patient Management',
+        code: 'SUBSCRIPTION_EXPIRED',
+        feature: 'patient_management',
+        subscriptionStatus: subscription.status,
+      });
+      return;
+    }
+
+    // If planId is not populated but subscription is active, allow access
+    // This handles cases where subscription exists but planId isn't populated
+    if (!subscription.planId) {
+      console.warn('Subscription found but planId not populated:', {
+        subscriptionId: subscription._id,
+        workplaceId: req.user?.workplaceId,
+        status: subscription.status,
+      });
+      // Allow access if subscription is active/trial but skip plan limit checks
+      next();
       return;
     }
 

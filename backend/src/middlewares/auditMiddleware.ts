@@ -273,7 +273,7 @@ export const auditMTRActivity = (activityType: string) => {
                 }, req);
             }
         } catch (error) {
-            console.error('Failed to create MTR activity audit log:', error);
+            // Silently fail - don't block request on audit log failure
         }
 
         next();

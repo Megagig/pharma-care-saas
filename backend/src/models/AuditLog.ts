@@ -121,7 +121,18 @@ const auditLogSchema = new Schema<IAuditLog>({
             'DIAGNOSTIC_ANALYSIS_REQUESTED',
             'DIAGNOSTIC_CASE_CREATED',
             'DIAGNOSTIC_CASE_UPDATED',
-            'DIAGNOSTIC_CASE_DELETED'
+            'DIAGNOSTIC_CASE_DELETED',
+            // MTR (Medication Therapy Review) Actions
+            'CREATE_MTR_SESSION',
+            'VIEW_MTR_SESSION',
+            'VIEW_MTR_SESSIONS',
+            'UPDATE_MTR_SESSION',
+            'DELETE_MTR_SESSION',
+            'MTR_CREATE_MTR_SESSION',
+            'MTR_VIEW_MTR_SESSION',
+            'MTR_VIEW_MTR_SESSIONS',
+            'MTR_UPDATE_MTR_SESSION',
+            'MTR_DELETE_MTR_SESSION'
         ]
     },
     timestamp: {

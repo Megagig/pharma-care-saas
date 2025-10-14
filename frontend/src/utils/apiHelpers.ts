@@ -41,7 +41,7 @@ export function extractData<T>(
 /**
  * Get authentication headers
  */
-const getAuthHeaders = () => {
+const getAuthHeaders = (): HeadersInit => {
   const token = localStorage.getItem('authToken');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
@@ -89,7 +89,16 @@ export const apiHelpers = {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Try to get error details from response
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        console.error('❌ Server error response:', errorData);
+        errorMessage = errorData.message || errorData.error?.message || errorMessage;
+      } catch (e) {
+        console.error('❌ Could not parse error response');
+      }
+      throw new Error(errorMessage);
     }
 
     return response.json();

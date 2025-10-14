@@ -67,7 +67,6 @@ const router = express.Router();
 // Apply authentication, license requirement, and MTR access validation to all routes
 router.use(auth);
 router.use(requireLicense);
-router.use(auditTimer); // Add audit timing
 router.use(mtrValidationMiddleware.validateMTRAccess);
 router.use(mtrValidationMiddleware.validateMTRBusinessLogic);
 

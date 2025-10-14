@@ -18,7 +18,7 @@ class VersionCheckService {
         if (this.checkTimer) return;
 
         console.log(`[VersionCheck] Starting version monitoring (current: ${this.currentVersion})`);
-        
+
         this.checkTimer = window.setInterval(() => {
             this.checkForUpdates();
         }, CHECK_INTERVAL);
@@ -55,7 +55,7 @@ class VersionCheckService {
             // Check ETag or Last-Modified to detect changes
             const etag = response.headers.get('etag');
             const lastModified = response.headers.get('last-modified');
-            
+
             // Store initial values on first check
             const storedEtag = sessionStorage.getItem('app_etag');
             const storedLastModified = sessionStorage.getItem('app_last_modified');
@@ -68,7 +68,7 @@ class VersionCheckService {
             }
 
             // Check if version changed
-            const hasChanged = 
+            const hasChanged =
                 (etag && storedEtag && etag !== storedEtag) ||
                 (lastModified && storedLastModified && lastModified !== storedLastModified);
 
@@ -100,7 +100,7 @@ class VersionCheckService {
         } else {
             // Store flag to show banner
             sessionStorage.setItem('update_available', 'true');
-            
+
             // Dispatch custom event for UI to show update banner
             window.dispatchEvent(new CustomEvent('app-update-available'));
         }
