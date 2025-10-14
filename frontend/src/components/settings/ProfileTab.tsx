@@ -32,6 +32,16 @@ const ProfileTab: React.FC = () => {
     const uploadAvatarMutation = useUploadAvatar();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Helper function to get full avatar URL
+    const getAvatarUrl = (avatarPath?: string) => {
+        if (!avatarPath) return undefined;
+        // If it's already a full URL, return as is
+        if (avatarPath.startsWith('http')) return avatarPath;
+        // In development, prepend backend URL
+        const backendUrl = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
+        return `${backendUrl}${avatarPath}`;
+    };
+
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({
         firstName: '',
@@ -180,7 +190,7 @@ const ProfileTab: React.FC = () => {
                         <CardContent sx={{ textAlign: 'center', py: 4 }}>
                             <Box sx={{ position: 'relative', display: 'inline-block', mb: 2 }}>
                                 <Avatar
-                                    src={profile?.avatar}
+                                    src={getAvatarUrl(profile?.avatar)}
                                     sx={{ width: 150, height: 150, fontSize: '3rem', mx: 'auto' }}
                                 >
                                     {profile?.firstName?.[0]}

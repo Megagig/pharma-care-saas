@@ -264,7 +264,7 @@ export const queryKeys = {
 // ===============================
 
 export class QueryPrefetcher {
-  constructor(private queryClient: QueryClient) {}
+  constructor(private queryClient: QueryClient) { }
 
   /**
    * Prefetch critical dashboard data
@@ -358,8 +358,17 @@ export class QueryPrefetcher {
   }
 
   private async fetchUserProfile(): Promise<any> {
-    const response = await fetch('/api/user/profile');
-    return response.json();
+    const response = await fetch('/api/user/settings/profile', {
+      credentials: 'include', // Include httpOnly cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data; // Extract the user data from the response
   }
 
   private async fetchRecentActivity(workspaceId: string, limit: number): Promise<any> {
@@ -393,7 +402,7 @@ export class QueryPrefetcher {
 // ===============================
 
 export class QueryInvalidationManager {
-  constructor(private queryClient: QueryClient) {}
+  constructor(private queryClient: QueryClient) { }
 
   /**
    * Invalidate patient-related queries when patient data changes

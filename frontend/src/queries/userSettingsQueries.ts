@@ -31,7 +31,8 @@ export const useUpdateUserProfile = () => {
             userSettingsService.updateUserProfile(data),
         onSuccess: (data) => {
             queryClient.setQueryData(userSettingsKeys.profile, data);
-            queryClient.invalidateQueries({ queryKey: ['user'] }); // Invalidate user data
+            // Also update the generic user profile query cache if it exists
+            queryClient.setQueryData(['user', 'profile'], data);
             toast.success('Profile updated successfully');
         },
         onError: (error: any) => {
@@ -46,14 +47,20 @@ export const useUploadAvatar = () => {
     return useMutation({
         mutationFn: (file: File) => userSettingsService.uploadAvatar(file),
         onSuccess: (avatarUrl) => {
-            // Update profile cache with new avatar
+            // Update both query caches with new avatar
             queryClient.setQueryData(userSettingsKeys.profile, (old: UserProfile | undefined) => {
                 if (old) {
                     return { ...old, avatar: avatarUrl };
                 }
                 return old;
             });
-            queryClient.invalidateQueries({ queryKey: ['user'] }); // Invalidate user data
+            // Also update the generic user profile query cache if it exists
+            queryClient.setQueryData(['user', 'profile'], (old: any) => {
+                if (old) {
+                    return { ...old, avatar: avatarUrl };
+                }
+                return old;
+            });
             toast.success('Profile picture uploaded successfully');
         },
         onError: (error: any) => {

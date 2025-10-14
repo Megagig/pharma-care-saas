@@ -49,8 +49,8 @@ export function useRoutePrefetching() {
             queryClient.prefetchQuery({
               queryKey: queryKeys.user.notifications(true),
               queryFn: async () => {
-                const baseURL = import.meta.env.MODE === 'development' 
-                  ? 'http://localhost:5000/api' 
+                const baseURL = import.meta.env.MODE === 'development'
+                  ? 'http://localhost:5000/api'
                   : (import.meta.env.VITE_API_BASE_URL || '/api');
                 const response = await fetch(`${baseURL}/notifications?unread=true`, {
                   credentials: 'include'
@@ -67,11 +67,11 @@ export function useRoutePrefetching() {
         else if (currentPath === '/patients') {
           // Get cached patient list
           const cachedPatients = queryClient.getQueryData(queryKeys.patients.lists());
-          
+
           if (cachedPatients && Array.isArray(cachedPatients)) {
             // Prefetch details for first 3 patients
-            const baseURL = import.meta.env.MODE === 'development' 
-              ? 'http://localhost:5000/api' 
+            const baseURL = import.meta.env.MODE === 'development'
+              ? 'http://localhost:5000/api'
               : '/api';
             const prefetchPromises = cachedPatients.slice(0, 3).map((patient: any) =>
               queryClient.prefetchQuery({
@@ -94,7 +94,7 @@ export function useRoutePrefetching() {
         // Patient detail route - prefetch related data
         else if (currentPath.match(/^\/patients\/[^/]+$/)) {
           const patientId = currentPath.split('/')[2];
-          
+
           if (patientId) {
             await queryPrefetcher.prefetchPatientData(patientId);
           }
@@ -310,9 +310,12 @@ export function useCacheWarming() {
           await queryClient.prefetchQuery({
             queryKey: queryKeys.user.profile(),
             queryFn: async () => {
-              const response = await fetch('/api/user/profile');
+              const response = await fetch('/api/user/settings/profile', {
+                credentials: 'include',
+              });
               if (!response.ok) throw new Error('Failed to warm user profile cache');
-              return response.json();
+              const data = await response.json();
+              return data.data; // Extract user data from response
             },
             staleTime: 10 * 60 * 1000,
           });
@@ -321,7 +324,9 @@ export function useCacheWarming() {
           await queryClient.prefetchQuery({
             queryKey: queryKeys.workspace.settings(),
             queryFn: async () => {
-              const response = await fetch('/api/workspace/settings');
+              const response = await fetch('/api/workspace/settings', {
+                credentials: 'include',
+              });
               if (!response.ok) throw new Error('Failed to warm workspace settings cache');
               return response.json();
             },
