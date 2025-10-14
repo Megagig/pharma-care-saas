@@ -64,40 +64,11 @@ import {
 
 const router = express.Router();
 
-// Debug logging for all MTR routes
-router.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.log(`🎯 MTR ROUTER - Request received: ${req.method} ${req.originalUrl}`);
-    console.log('📦 Request body:', req.body);
-    const user = (req as any).user;
-    console.log('👤 User attached:', user ? { id: user.id, role: user.role } : 'No user');
-    next();
-});
-
 // Apply authentication, license requirement, and MTR access validation to all routes
-router.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.log('🔐 About to run auth middleware');
-    auth(req as any, res, next as any);
-});
-
-router.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.log('📜 About to run requireLicense middleware');
-    requireLicense(req as any, res, next);
-});
-
-router.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.log('⏱️  About to run auditTimer middleware');
-    next();
-});
-
-router.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.log('🔒 About to run validateMTRAccess middleware');
-    next();
-}, mtrValidationMiddleware.validateMTRAccess);
-
-router.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.log('📋 About to run validateMTRBusinessLogic middleware');
-    next();
-}, mtrValidationMiddleware.validateMTRBusinessLogic);
+router.use(auth);
+router.use(requireLicense);
+router.use(mtrValidationMiddleware.validateMTRAccess);
+router.use(mtrValidationMiddleware.validateMTRBusinessLogic);
 
 // ===============================
 // CORE MTR SESSION ROUTES

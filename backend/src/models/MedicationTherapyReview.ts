@@ -707,29 +707,81 @@ medicationTherapyReviewSchema.pre(
 
 // Static method to generate next review number
 medicationTherapyReviewSchema.statics.generateNextReviewNumber =
-  async function (workplaceId: mongoose.Types.ObjectId): Promise<string> {
+  async function (workplaceId: mongoose.Types.ObjectId, retryOffset: number = 0): Promise<string> {
     const year = new Date().getFullYear();
     const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+    const prefix = `MTR-${year}${month}`;
 
-    // Find the last review for this workplace in current month
-    const lastReview = await this.findOne(
-      {
-        workplaceId,
-        reviewNumber: { $regex: `^MTR-${year}${month}` },
-      },
-      {},
-      { sort: { createdAt: -1 }, bypassTenancyGuard: true }
-    );
+    // Use atomic operation with retry logic to prevent race conditions
+    let attempts = 0;
+    const maxAttempts = 10; // Increased attempts
 
-    let sequence = 1;
-    if (lastReview?.reviewNumber) {
-      const match = lastReview.reviewNumber.match(/-(\d+)$/);
-      if (match) {
-        sequence = parseInt(match[1]) + 1;
+    while (attempts < maxAttempts) {
+      try {
+        // Find ALL review numbers for this month/workplace to calculate next sequence
+        const existingReviews = await this.find(
+          {
+            workplaceId,
+            reviewNumber: { $regex: `^${prefix}` },
+          },
+          { reviewNumber: 1 },
+          { bypassTenancyGuard: true }
+        )
+          .sort({ reviewNumber: -1 })
+          .limit(100) // Get last 100 to ensure we have the highest
+          .lean();
+
+        // Extract all sequence numbers
+        const sequences = existingReviews
+          .map(review => {
+            const match = review.reviewNumber?.match(/-(\d+)$/);
+            return match ? parseInt(match[1]) : 0;
+          })
+          .filter(seq => seq > 0);
+
+        // Find the highest sequence number and increment
+        const maxSequence = sequences.length > 0 ? Math.max(...sequences) : 0;
+        // Add both attempts and retryOffset to avoid collision across controller retries
+        const nextSequence = maxSequence + 1 + attempts + retryOffset;
+
+        const reviewNumber = `${prefix}-${nextSequence.toString().padStart(4, '0')}`;
+
+        // Verify uniqueness before returning
+        const exists = await this.findOne(
+          {
+            workplaceId,
+            reviewNumber
+          },
+          null,
+          { bypassTenancyGuard: true }
+        ).lean();
+
+        if (!exists) {
+          return reviewNumber;
+        }
+
+        // If exists, increment attempts and try again
+        attempts++;
+
+        // Small random delay to reduce collision probability
+        await new Promise(resolve => setTimeout(resolve, 10 + Math.random() * 40));
+
+      } catch (error) {
+        attempts++;
+        if (attempts >= maxAttempts) {
+          // Fallback: use timestamp to ensure uniqueness
+          const timestamp = Date.now().toString().slice(-6);
+          return `${prefix}-${timestamp}`;
+        }
+
+        // Small delay before retry
+        await new Promise(resolve => setTimeout(resolve, 20 + Math.random() * 80));
       }
     }
 
-    return `MTR-${year}${month}-${sequence.toString().padStart(4, '0')}`;
+    // Final fallback: use timestamp to ensure uniqueness
+    const timestamp = Date.now().toString().slice(-6);
+    return `${prefix}-${timestamp}`;
   };
 
 // Static method to find active reviews

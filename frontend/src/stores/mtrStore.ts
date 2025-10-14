@@ -244,14 +244,6 @@ interface MTRStore {
 
 // Helper function to check MTR permissions
 const checkMTRPermissions = async (): Promise<boolean> => {
-  console.log('🔍 Starting MTR permission check...');
-  console.log('🌍 Environment:', {
-    NODE_ENV: import.meta.env.NODE_ENV,
-    MODE: import.meta.env.MODE,
-    DEV: import.meta.env.DEV,
-    PROD: import.meta.env.PROD,
-  });
-
   // Multiple checks for development mode
   const isDevelopment =
     import.meta.env.DEV ||
@@ -272,20 +264,16 @@ const checkMTRPermissions = async (): Promise<boolean> => {
 
     // Get current user to check authentication and permissions
     const userResponse = await authService.getCurrentUser();
-    console.log('👤 Current user response for MTR permission check:', userResponse);
 
     if (!userResponse.success || !userResponse.user) {
-      console.log('❌ User not authenticated or no user data');
       return false;
     }
 
     const user = userResponse.user;
-    console.log('✅ Authenticated user found:', user.email);
 
     // For now, allow all authenticated users - you can make this more restrictive later
     const hasPermission = !!user;
 
-    console.log('🔐 MTR Permission check result:', hasPermission);
     return hasPermission;
   } catch (error) {
     console.error('❌ Error checking MTR permissions:', error);
@@ -357,7 +345,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
       followUps: [],
     });
 
-    console.log('✅ MTR store initialized - ready for backend session creation');
   },
 
   createReview: async (patientId: string) => {
@@ -365,7 +352,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
 
     // Prevent multiple simultaneous calls
     if (get().loading.createReview) {
-      console.log('🔄 MTR creation already in progress, skipping...');
       return;
     }
 
@@ -373,7 +359,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
     setError('createReview', null);
 
     try {
-      console.log('🚀 Starting MTR review creation for patient:', patientId);
 
       // Validate patient ID
       if (!patientId?.trim()) {
@@ -381,15 +366,12 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
       }
 
       // Check authentication and permissions first
-      console.log('🔐 Checking MTR permissions...');
       const hasPermissions = await checkMTRPermissions();
-      console.log('✅ Permission check result:', hasPermissions);
 
       if (!hasPermissions) {
         throw new Error('You do not have permission to create MTR reviews. Please contact your administrator.');
       }
 
-      console.log('✅ Permissions validated, proceeding with MTR creation');
 
       // Import the mtrService with timeout
       const { mtrService } = await import('../services/mtrService');
@@ -418,7 +400,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
 
         clearTimeout(timeoutId);
         backendAccessible = testResponse.ok;
-        console.log('🏥 Backend health check:', testResponse.status);
       } catch (healthError) {
         console.error('❌ Backend not accessible:', healthError);
         backendAccessible = false;
@@ -428,7 +409,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
         throw new Error('Backend server is not accessible. Please ensure the server is running.');
       }
 
-      console.log('📡 Backend accessible, calling MTR service with data:', createData);
 
       // Add timeout for MTR creation (30 seconds for better UX)
       const timeoutPromise = new Promise((_, reject) => {
@@ -451,7 +431,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
         throw apiError;
       }
 
-      console.log('✅ MTR service response:', response);
 
       if (!response?.review) {
         throw new Error('Invalid response from MTR service');
@@ -470,7 +449,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
         followUps: [],
       });
 
-      console.log('✅ MTR review created successfully for patient:', patientId);
     } catch (error) {
       console.error('❌ Failed to create MTR review:', error);
 
@@ -525,7 +503,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
           currentStep: get().getNextStep() || 0,
         });
 
-        console.log('✅ MTR review loaded from backend:', reviewId);
       } else {
         throw new Error('Review not found');
       }
@@ -597,10 +574,8 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
           currentStep: get().getNextStep() || 0,
         });
 
-        console.log('Loaded in-progress MTR review for patient:', patientId);
         return inProgressReview;
       } else {
-        console.log('No in-progress MTR review found for patient:', patientId);
         set({ currentReview: null });
         return null;
       }
@@ -609,7 +584,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
 
       // Don't set error for timeout - just return null to allow creating new review
       if (error instanceof Error && error.message.includes('timeout')) {
-        console.log('Load in-progress review timed out, will create new review');
       } else {
         setError(
           'loadReview',
@@ -680,7 +654,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
         },
       });
 
-      console.log('MTR review saved successfully:', currentReview._id);
     } catch (error) {
       console.error('Failed to save MTR review:', error);
 
@@ -745,7 +718,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
         detail: { sessionId: currentReview._id, patientId: currentReview.patientId }
       }));
 
-      console.log('✅ MTR review completed successfully via backend API:', currentReview._id);
       return completedReview;
     } catch (error) {
       console.error('❌ Failed to complete MTR review:', error);
@@ -774,7 +746,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
 
       set({ currentReview: updatedReview });
 
-      console.log('Cancelled MTR review:', currentReview._id);
     } catch (error) {
       setError(
         'cancelReview',
@@ -813,7 +784,7 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
   },
 
   completeStep: async (step: number, data: Record<string, unknown>) => {
-    const { setLoading, setError, currentReview, saveReview } = get();
+    const { setLoading, setError, currentReview } = get();
     if (!currentReview) return;
 
     setLoading('completeStep', true);
@@ -1128,11 +1099,10 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
     });
   },
 
-  checkDrugInteractions: async (medications: MTRMedication[]) => {
+  checkDrugInteractions: async (_medications: MTRMedication[]) => {
     try {
       // In a real implementation, this would call a drug interaction service
       // For now, return empty array until drug interaction service is implemented
-      console.log('Checking drug interactions for medications:', medications.map(m => m.drugName));
 
       // TODO: Implement actual drug interaction checking
       // This could call an external drug database API like:
@@ -1155,7 +1125,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
 
     try {
       set({ therapyPlan: plan });
-      console.log('Created therapy plan');
     } catch (error) {
       setError(
         'createPlan',
@@ -1228,7 +1197,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
         });
       }
 
-      console.log('Recorded intervention and marked step as completed');
     } catch (error) {
       setError(
         'recordIntervention',
@@ -1289,7 +1257,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
         });
       }
 
-      console.log('Scheduled follow-up and marked step as completed');
     } catch (error) {
       setError(
         'scheduleFollowUp',
@@ -1322,7 +1289,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
         outcome: outcome as MTRFollowUp['outcome'],
       });
 
-      console.log('Completed follow-up');
     } catch (error) {
       setError(
         'completeFollowUp',
@@ -1481,34 +1447,14 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
 
       const optionalStepsValid = optionalStepStatus.every(({ isValid }) => isValid);
 
-      // Only log if there are issues (reduce console spam)
-      if (!requiredStepsCompleted || !optionalStepsValid) {
-        console.log('Review completion check:', {
-          requiredStepsCompleted,
-          optionalStepsValid,
-          requiredStepStatus: stepStatus,
-          optionalStepStatus: optionalStepStatus,
-          allSteps: currentReview.steps
-        });
-      }
-
       const canComplete = requiredStepsCompleted && optionalStepsValid;
 
       if (!canComplete) {
-        const missingRequired = stepStatus.filter(({ isCompleted }) => !isCompleted).map(({ stepName }) => stepName);
         const invalidOptional = optionalStepStatus.filter(({ isValid }) => !isValid);
-
-        console.log('Cannot complete review. Missing required steps:', missingRequired);
-        console.log('Invalid optional steps:', invalidOptional.map(({ stepName, step, exists, completed }) => ({
-          stepName,
-          exists,
-          completed
-        })));
 
         // Auto-fix incomplete optional steps
         invalidOptional.forEach(({ stepName, step, exists }) => {
           if (exists && !step?.completed) {
-            console.log(`🔧 Auto-fixing incomplete optional step: ${stepName}`);
             const stepIndex = stepName === 'interventions' ? 4 : 5;
             get().completeStep(stepIndex, {
               completedAt: new Date().toISOString(),

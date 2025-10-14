@@ -29,13 +29,9 @@ export const handleValidationErrors = (
   res: Response,
   next: NextFunction
 ) => {
-  console.log('🔍 handleValidationErrors middleware - Checking validation results');
-
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    console.log('❌ Validation errors found:', errors.array());
-
     const validationErrors = errors.array().map((error: ValidationError) => ({
       field: error.type === 'field' ? error.path : 'unknown',
       message: error.msg,
@@ -62,7 +58,6 @@ export const handleValidationErrors = (
     return next(error);
   }
 
-  console.log('✅ handleValidationErrors - No validation errors, calling next()');
   next();
 };
 
@@ -386,14 +381,10 @@ export const validateMTRAccess = (
   res: Response,
   next: NextFunction
 ) => {
-  console.log('🔐 validateMTRAccess middleware - Start');
-  console.log('👤 User:', { id: req.user?.id, role: req.user?.role, licenseStatus: req.user?.licenseStatus });
-
   try {
     const user = req.user;
 
     if (!user) {
-      console.log('❌ validateMTRAccess - No user found');
       // Log unauthorized access attempt (Requirement 7.1, 8.4)
       logger.warn('Unauthorized MTR access attempt', {
         endpoint: req.originalUrl,
@@ -417,7 +408,6 @@ export const validateMTRAccess = (
         'super_admin',
       ].includes(user.role)
     ) {
-      console.log('❌ validateMTRAccess - Insufficient permissions:', user.role);
       // Log insufficient permissions (Requirement 7.1, 8.4)
       logger.warn('Insufficient permissions for MTR access', {
         userId: user.id,
@@ -453,8 +443,6 @@ export const validateMTRAccess = (
           'Active or approved pharmacist license required for MTR operations'
         );
       }
-    } else {
-      // Super admin access granted (logging disabled for performance)
     }
 
     // Log successful access for audit trail (Requirement 7.1)
@@ -466,10 +454,8 @@ export const validateMTRAccess = (
       timestamp: new Date().toISOString(),
     });
 
-    console.log('✅ validateMTRAccess - Access granted, calling next()');
     next();
   } catch (error) {
-    console.log('❌ validateMTRAccess - Error:', error);
     next(error);
   }
 };
@@ -480,12 +466,13 @@ export const validateMTRBusinessLogic = (
   res: Response,
   next: NextFunction
 ) => {
-  console.log('📋 validateMTRBusinessLogic middleware - Start');
-  console.log('🔍 Request:', { method: req.method, url: req.originalUrl, body: req.body });
-
   try {
     const { method, originalUrl } = req;
-    const validationErrors: any[] = [];
+    const validationErrors: Array<{
+      field: string;
+      message: string;
+      value?: unknown;
+    }> = [];
 
     // Validate step completion order
     if (originalUrl.includes('/step/') && method === 'PUT') {
@@ -539,17 +526,14 @@ export const validateMTRBusinessLogic = (
     }
 
     if (validationErrors.length > 0) {
-      console.log('❌ validateMTRBusinessLogic - Validation errors:', validationErrors);
       throw new MTRBusinessLogicError(
         'MTR business logic validation failed',
         validationErrors
       );
     }
 
-    console.log('✅ validateMTRBusinessLogic - Validation passed, calling next()');
     next();
   } catch (error) {
-    console.log('❌ validateMTRBusinessLogic - Error:', error);
     next(error);
   }
 };

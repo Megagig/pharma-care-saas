@@ -103,7 +103,7 @@ export const transformDatesForFrontend = <T extends DateTransformable>(
   dateFields.forEach((field) => {
     if (transformed[field] && typeof transformed[field] === 'string') {
       try {
-        transformed[field] = new Date(
+        (transformed as any)[field] = new Date(
           transformed[field] as string
         ).toISOString();
       } catch (error) {
@@ -392,20 +392,21 @@ export const mtrService = {
       const queryString = searchParams.toString();
       const url = `/mtr${queryString ? `?${queryString}` : ''}`;
 
-      const response = await apiHelpers.get<
-        ApiResponse<MTRListResponse['data']>
-      >(url);
+      const response = await apiHelpers.get<MTRListResponse['data']>(url);
 
-      if (!response.data.data) {
+      // Handle double-wrapped response: response.data.data or response.data
+      const actualData: MTRListResponse['data'] = (response.data as any).data || response.data;
+
+      if (!actualData) {
         throw new Error('Invalid response structure');
       }
 
       // Transform dates and add computed fields
-      const transformedResults = response.data.data.results.map(
+      const transformedResults = actualData.results.map(
         (mtr: MedicationTherapyReview) => {
           const transformed = transformDatesForFrontend(
-            mtr as DateTransformable
-          ) as MedicationTherapyReview;
+            mtr as unknown as unknown as DateTransformable
+          ) as unknown as MedicationTherapyReview;
           return {
             ...transformed,
             completionPercentage: calculateCompletionPercentage(transformed),
@@ -415,7 +416,7 @@ export const mtrService = {
       );
 
       return {
-        ...response.data.data,
+        ...actualData,
         results: transformedResults,
       };
     } catch (error) {
@@ -432,7 +433,7 @@ export const mtrService = {
         throw new MTRValidationError('Session ID is required');
       }
 
-      const response = await apiHelpers.get<ApiResponse<MTRResponse['data']>>(
+      const response = await apiHelpers.get<MTRResponse['data']>(
         `/mtr/${sessionId}`
       );
 
@@ -442,8 +443,8 @@ export const mtrService = {
 
       // Transform dates and add computed fields
       const transformed = transformDatesForFrontend(
-        response.data.data.review as DateTransformable
-      ) as MedicationTherapyReview;
+        response.data.data.review as unknown as DateTransformable
+      ) as unknown as MedicationTherapyReview;
       const enhancedReview = {
         ...transformed,
         completionPercentage: calculateCompletionPercentage(transformed),
@@ -465,7 +466,6 @@ export const mtrService = {
     sessionData: CreateMTRData
   ): Promise<MTRResponse['data']> {
     try {
-      console.log('🚀 createMTRSession called with:', sessionData);
 
       // Validate required fields
       if (!sessionData.patientId?.trim()) {
@@ -474,44 +474,33 @@ export const mtrService = {
 
       // Transform data for API
       const transformedData = transformDatesForAPI(
-        sessionData as Record<string, unknown>
+        sessionData as unknown as Record<string, unknown>
       );
 
-      console.log('📤 Sending POST request to /api/mtr with:', transformedData);
 
-      const response = await apiHelpers.post<ApiResponse<MTRResponse['data']>>(
+      const response = await apiHelpers.post<MTRResponse['data']>(
         '/mtr',
         transformedData
       );
 
-      console.log('� Received response from server:', response);
-      console.log('�🔍 Raw API response:', response);
-      console.log('🔍 response.data:', response.data);
 
       // Handle double-wrapped response structure from backend
       // Backend sends: {success: true, data: {review: {...}}}
       // Axios wraps it: response.data = {success: true, data: {review: {...}}}
       // So we need: response.data.data.review
       const actualData: any = response.data?.data || response.data;
-      
+
       if (!actualData || !actualData.review) {
         console.error('❌ Invalid response structure - missing review');
-        console.log('🔍 response.data:', response.data);
-        console.log('🔍 actualData:', actualData);
-        console.log('Response structure:', JSON.stringify(response, null, 2));
         throw new Error('Invalid response structure from server');
       }
 
-      console.log('✅ Found review at:', actualData.review ? 'response.data.data.review' : 'response.data.review');
-      console.log('🔍 review._id:', actualData.review._id);
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
         actualData.review as any
-      ) as MedicationTherapyReview;
+      ) as unknown as MedicationTherapyReview;
 
-      console.log('🔍 After transformDatesForFrontend:', transformed);
-      console.log('🔍 transformed._id:', transformed._id);
 
       const enhancedReview = {
         ...transformed,
@@ -520,8 +509,6 @@ export const mtrService = {
         isOverdue: isOverdue(transformed),
       } as MedicationTherapyReview;
 
-      console.log('🔍 Enhanced review:', enhancedReview);
-      console.log('🔍 enhancedReview._id:', enhancedReview._id);
 
       return {
         review: enhancedReview,
@@ -577,10 +564,10 @@ export const mtrService = {
 
       // Transform data for API
       const transformedData = transformDatesForAPI(
-        sessionData as Record<string, unknown>
+        sessionData as unknown as Record<string, unknown>
       );
 
-      const response = await apiHelpers.put<ApiResponse<MTRResponse['data']>>(
+      const response = await apiHelpers.put<MTRResponse['data']>(
         `/mtr/${sessionId}`,
         transformedData
       );
@@ -591,8 +578,8 @@ export const mtrService = {
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data.review as DateTransformable
-      ) as MedicationTherapyReview;
+        response.data.data.review as unknown as DateTransformable
+      ) as unknown as MedicationTherapyReview;
       const enhancedReview = {
         ...transformed,
         completionPercentage: calculateCompletionPercentage(transformed),
@@ -617,7 +604,7 @@ export const mtrService = {
       }
 
       const response = await apiHelpers.delete(`/mtr/${sessionId}`);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'deleteMTRSession');
     }
@@ -661,7 +648,7 @@ export const mtrService = {
         ? transformDatesForAPI(stepData)
         : undefined;
 
-      const response = await apiHelpers.post<ApiResponse<MTRResponse['data']>>(
+      const response = await apiHelpers.post<MTRResponse['data']>(
         `/mtr/${sessionId}/steps/${stepName}/complete`,
         { data: transformedStepData }
       );
@@ -672,8 +659,8 @@ export const mtrService = {
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data.review as DateTransformable
-      ) as MedicationTherapyReview;
+        response.data.data.review as unknown as DateTransformable
+      ) as unknown as MedicationTherapyReview;
       const enhancedReview = {
         ...transformed,
         completionPercentage: calculateCompletionPercentage(transformed),
@@ -694,9 +681,9 @@ export const mtrService = {
   async getWorkflowSteps(): Promise<Record<string, unknown>> {
     try {
       const response = await apiHelpers.get<
-        ApiResponse<Record<string, unknown>>
+        Record<string, unknown>
       >('/mtr/workflow/steps');
-      return response.data.data || response.data;
+      return ((response.data as any).data || response.data) as Record<string, unknown>;
     } catch (error) {
       return handleMTRError(error, 'getWorkflowSteps');
     }
@@ -712,9 +699,9 @@ export const mtrService = {
   ): Promise<Record<string, unknown>> {
     try {
       const response = await apiHelpers.post<
-        ApiResponse<Record<string, unknown>>
+        Record<string, unknown>
       >(`/mtr/${sessionId}/steps/${stepName}/validate`, { data });
-      return response.data.data || response.data;
+      return ((response.data as any).data || response.data) as Record<string, unknown>;
     } catch (error) {
       return handleMTRError(error, 'validateWorkflowStep');
     }
@@ -728,9 +715,9 @@ export const mtrService = {
   ): Promise<Record<string, unknown>> {
     try {
       const response = await apiHelpers.post<
-        ApiResponse<Record<string, unknown>>
+        Record<string, unknown>
       >(`/mtr/${sessionId}/interactions/check`);
-      return response.data.data || response.data;
+      return ((response.data as any).data || response.data) as Record<string, unknown>;
     } catch (error) {
       return handleMTRError(error, 'checkDrugInteractions');
     }
@@ -751,24 +738,25 @@ export const mtrService = {
       const queryString = searchParams.toString();
       const url = `/mtr/problems${queryString ? `?${queryString}` : ''}`;
 
-      const response = await apiHelpers.get<
-        ApiResponse<DTPListResponse['data']>
-      >(url);
+      const response = await apiHelpers.get<DTPListResponse['data']>(url);
 
-      if (!response.data.data) {
+      // Handle double-wrapped response: response.data.data or response.data
+      const actualData: DTPListResponse['data'] = (response.data as any).data || response.data;
+
+      if (!actualData) {
         throw new Error('Invalid response structure');
       }
 
       // Transform dates in results
-      const transformedResults = response.data.data.results.map(
+      const transformedResults = actualData.results.map(
         (problem: DrugTherapyProblem) =>
           transformDatesForFrontend(
-            problem as DateTransformable
-          ) as DrugTherapyProblem
+            problem as unknown as DateTransformable
+          ) as unknown as DrugTherapyProblem
       );
 
       return {
-        ...response.data.data,
+        ...actualData,
         results: transformedResults,
       };
     } catch (error) {
@@ -781,13 +769,13 @@ export const mtrService = {
    */
   async getDrugTherapyProblem(problemId: string): Promise<DTPResponse['data']> {
     try {
-      const response = await apiHelpers.get<ApiResponse<DTPResponse['data']>>(
+      const response = await apiHelpers.get<DTPResponse['data']>(
         `/mtr/problems/${problemId}`
       );
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getDrugTherapyProblem');
     }
@@ -828,10 +816,10 @@ export const mtrService = {
 
       // Transform data for API
       const transformedData = transformDatesForAPI(
-        problemData as Record<string, unknown>
+        problemData as unknown as Record<string, unknown>
       );
 
-      const response = await apiHelpers.post<ApiResponse<DTPResponse['data']>>(
+      const response = await apiHelpers.post<DTPResponse['data']>(
         '/mtr/problems',
         transformedData
       );
@@ -842,8 +830,8 @@ export const mtrService = {
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data.problem as DateTransformable
-      ) as DrugTherapyProblem;
+        response.data.data.problem as unknown as DateTransformable
+      ) as unknown as DrugTherapyProblem;
 
       return {
         problem: transformed,
@@ -861,14 +849,14 @@ export const mtrService = {
     problemData: UpdateDTPData
   ): Promise<DTPResponse['data']> {
     try {
-      const response = await apiHelpers.put<ApiResponse<DTPResponse['data']>>(
+      const response = await apiHelpers.put<DTPResponse['data']>(
         `/mtr/problems/${problemId}`,
         problemData
       );
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'updateDrugTherapyProblem');
     }
@@ -880,7 +868,7 @@ export const mtrService = {
   async deleteDrugTherapyProblem(problemId: string): Promise<ApiResponse> {
     try {
       const response = await apiHelpers.delete(`/mtr/problems/${problemId}`);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'deleteDrugTherapyProblem');
     }
@@ -894,14 +882,14 @@ export const mtrService = {
     resolution: { action: string; outcome: string }
   ): Promise<DTPResponse['data']> {
     try {
-      const response = await apiHelpers.post<ApiResponse<DTPResponse['data']>>(
+      const response = await apiHelpers.post<DTPResponse['data']>(
         `/mtr/problems/${problemId}/resolve`,
         resolution
       );
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'resolveDrugTherapyProblem');
     }
@@ -914,13 +902,13 @@ export const mtrService = {
     problemId: string
   ): Promise<DTPResponse['data']> {
     try {
-      const response = await apiHelpers.post<ApiResponse<DTPResponse['data']>>(
+      const response = await apiHelpers.post<DTPResponse['data']>(
         `/mtr/problems/${problemId}/reopen`
       );
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'reopenDrugTherapyProblem');
     }
@@ -948,13 +936,11 @@ export const mtrService = {
       const queryString = searchParams.toString();
       const url = `/mtr/interventions${queryString ? `?${queryString}` : ''}`;
 
-      const response = await apiHelpers.get<
-        ApiResponse<InterventionListResponse['data']>
-      >(url);
+      const response = await apiHelpers.get<InterventionListResponse['data']>(url);
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getInterventions');
     }
@@ -967,13 +953,11 @@ export const mtrService = {
     interventionId: string
   ): Promise<InterventionResponse['data']> {
     try {
-      const response = await apiHelpers.get<
-        ApiResponse<InterventionResponse['data']>
-      >(`/mtr/interventions/${interventionId}`);
+      const response = await apiHelpers.get<InterventionResponse['data']>(`/mtr/interventions/${interventionId}`);
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getIntervention');
     }
@@ -1009,12 +993,10 @@ export const mtrService = {
 
       // Transform data for API
       const transformedData = transformDatesForAPI(
-        interventionData as Record<string, unknown>
+        interventionData as unknown as Record<string, unknown>
       );
 
-      const response = await apiHelpers.post<
-        ApiResponse<InterventionResponse['data']>
-      >('/mtr/interventions', transformedData);
+      const response = await apiHelpers.post<InterventionResponse['data']>('/mtr/interventions', transformedData);
 
       if (!response.data.data) {
         throw new Error('Invalid response structure');
@@ -1022,8 +1004,8 @@ export const mtrService = {
 
       // Transform response dates
       const transformed = transformDatesForFrontend(
-        response.data.data.intervention as DateTransformable
-      ) as MTRIntervention;
+        response.data.data.intervention as unknown as DateTransformable
+      ) as unknown as MTRIntervention;
 
       return {
         intervention: transformed,
@@ -1047,7 +1029,7 @@ export const mtrService = {
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'updateIntervention');
     }
@@ -1061,7 +1043,7 @@ export const mtrService = {
       const response = await apiHelpers.delete(
         `/mtr/interventions/${interventionId}`
       );
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'deleteIntervention');
     }
@@ -1076,13 +1058,11 @@ export const mtrService = {
     details?: string
   ): Promise<InterventionResponse['data']> {
     try {
-      const response = await apiHelpers.post<
-        ApiResponse<InterventionResponse['data']>
-      >(`/mtr/interventions/${interventionId}/complete`, { outcome, details });
+      const response = await apiHelpers.post<InterventionResponse['data']>(`/mtr/interventions/${interventionId}/complete`, { outcome, details });
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'completeIntervention');
     }
@@ -1110,13 +1090,11 @@ export const mtrService = {
       const queryString = searchParams.toString();
       const url = `/mtr/followups${queryString ? `?${queryString}` : ''}`;
 
-      const response = await apiHelpers.get<
-        ApiResponse<FollowUpListResponse['data']>
-      >(url);
+      const response = await apiHelpers.get<FollowUpListResponse['data']>(url);
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getFollowUps');
     }
@@ -1127,13 +1105,11 @@ export const mtrService = {
    */
   async getFollowUp(followUpId: string): Promise<FollowUpResponse['data']> {
     try {
-      const response = await apiHelpers.get<
-        ApiResponse<FollowUpResponse['data']>
-      >(`/mtr/followups/${followUpId}`);
+      const response = await apiHelpers.get<FollowUpResponse['data']>(`/mtr/followups/${followUpId}`);
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getFollowUp');
     }
@@ -1146,13 +1122,11 @@ export const mtrService = {
     followUpData: CreateFollowUpData
   ): Promise<FollowUpResponse['data']> {
     try {
-      const response = await apiHelpers.post<
-        ApiResponse<FollowUpResponse['data']>
-      >('/mtr/followups', followUpData);
+      const response = await apiHelpers.post<FollowUpResponse['data']>('/mtr/followups', followUpData);
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'createFollowUp');
     }
@@ -1172,7 +1146,7 @@ export const mtrService = {
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'updateFollowUp');
     }
@@ -1184,7 +1158,7 @@ export const mtrService = {
   async deleteFollowUp(followUpId: string): Promise<ApiResponse> {
     try {
       const response = await apiHelpers.delete(`/mtr/followups/${followUpId}`);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'deleteFollowUp');
     }
@@ -1206,13 +1180,11 @@ export const mtrService = {
     }
   ): Promise<FollowUpResponse['data']> {
     try {
-      const response = await apiHelpers.post<
-        ApiResponse<FollowUpResponse['data']>
-      >(`/mtr/followups/${followUpId}/complete`, { outcome });
+      const response = await apiHelpers.post<FollowUpResponse['data']>(`/mtr/followups/${followUpId}/complete`, { outcome });
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'completeFollowUp');
     }
@@ -1227,13 +1199,11 @@ export const mtrService = {
     reason?: string
   ): Promise<FollowUpResponse['data']> {
     try {
-      const response = await apiHelpers.post<
-        ApiResponse<FollowUpResponse['data']>
-      >(`/mtr/followups/${followUpId}/reschedule`, { newDate, reason });
+      const response = await apiHelpers.post<FollowUpResponse['data']>(`/mtr/followups/${followUpId}/reschedule`, { newDate, reason });
       if (!response.data.data) {
         throw new Error('Invalid response structure');
       }
-      return response.data.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'rescheduleFollowUp');
     }
@@ -1266,7 +1236,7 @@ export const mtrService = {
   async getOverdueMTRSessions(): Promise<Record<string, unknown>> {
     try {
       const response = await apiHelpers.get('/mtr/overdue');
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getOverdueMTRSessions');
     }
@@ -1319,7 +1289,7 @@ export const mtrService = {
   async getOverdueFollowUps(): Promise<Record<string, unknown>> {
     try {
       const response = await apiHelpers.get('/mtr/followups/overdue');
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getOverdueFollowUps');
     }
@@ -1366,7 +1336,7 @@ export const mtrService = {
       const url = `/mtr/statistics${queryString ? `?${queryString}` : ''}`;
 
       const response = await apiHelpers.get(url);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getMTRStatistics');
     }
@@ -1391,7 +1361,7 @@ export const mtrService = {
         }`;
 
       const response = await apiHelpers.get(url);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getDTPStatistics');
     }
@@ -1416,7 +1386,7 @@ export const mtrService = {
         }`;
 
       const response = await apiHelpers.get(url);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getInterventionStatistics');
     }
@@ -1441,7 +1411,7 @@ export const mtrService = {
         }`;
 
       const response = await apiHelpers.get(url);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getFollowUpStatistics');
     }
@@ -1470,7 +1440,7 @@ export const mtrService = {
       const url = `/mtr/audit${queryString ? `?${queryString}` : ''}`;
 
       const response = await apiHelpers.get(url);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getAuditLogs');
     }
@@ -1604,7 +1574,7 @@ export const mtrService = {
       const url = `/mtr/reports/summary${queryString ? `?${queryString}` : ''}`;
 
       const response = await apiHelpers.get(url);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getMTRSummaryReport');
     }
@@ -1628,7 +1598,7 @@ export const mtrService = {
         }`;
 
       const response = await apiHelpers.get(url);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getInterventionEffectivenessReport');
     }
@@ -1651,7 +1621,7 @@ export const mtrService = {
         }`;
 
       const response = await apiHelpers.get(url);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getPharmacistPerformanceReport');
     }
@@ -1672,7 +1642,7 @@ export const mtrService = {
       const url = `/mtr/reports/quality${queryString ? `?${queryString}` : ''}`;
 
       const response = await apiHelpers.get(url);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getQualityAssuranceReport');
     }
@@ -1695,7 +1665,7 @@ export const mtrService = {
         }`;
 
       const response = await apiHelpers.get(url);
-      return response.data;
+      return (response.data as any).data || response.data;
     } catch (error) {
       return handleMTRError(error, 'getOutcomeMetricsReport');
     }
@@ -1711,7 +1681,17 @@ export const mtrService = {
     includeAuditLog?: boolean;
   }): Promise<Blob> {
     try {
-      const searchParams = formatSearchParams(params);
+      // Flatten dateRange for query params
+      const { dateRange, ...restParams } = params;
+      const flatParams: SearchParamsType = {
+        ...restParams,
+        ...(dateRange && {
+          dateStart: dateRange.start,
+          dateEnd: dateRange.end,
+        }),
+      };
+
+      const searchParams = formatSearchParams(flatParams);
       const queryString = searchParams.toString();
       const url = `/mtr/export${queryString ? `?${queryString}` : ''}`;
 
@@ -1719,7 +1699,7 @@ export const mtrService = {
 
       // Handle blob response for file downloads
       if (response.data instanceof Blob) {
-        return response.data;
+        return (response.data as any).data || response.data;
       }
 
       // Convert JSON response to blob if needed
