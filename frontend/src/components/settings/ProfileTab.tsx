@@ -23,6 +23,7 @@ import {
     Edit as EditIcon,
 } from '@mui/icons-material';
 import { useUserProfile, useUpdateUserProfile, useUploadAvatar } from '../../queries/userSettingsQueries';
+import { getAvatarUrl } from '../../utils/avatarUtils';
 
 const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -31,16 +32,6 @@ const ProfileTab: React.FC = () => {
     const updateProfileMutation = useUpdateUserProfile();
     const uploadAvatarMutation = useUploadAvatar();
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    // Helper function to get full avatar URL
-    const getAvatarUrl = (avatarPath?: string) => {
-        if (!avatarPath) return undefined;
-        // If it's already a full URL, return as is
-        if (avatarPath.startsWith('http')) return avatarPath;
-        // In development, prepend backend URL
-        const backendUrl = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
-        return `${backendUrl}${avatarPath}`;
-    };
 
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({
@@ -109,6 +100,7 @@ const ProfileTab: React.FC = () => {
 
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+        
         if (file) {
             // Validate file type
             if (!file.type.startsWith('image/')) {
@@ -190,6 +182,7 @@ const ProfileTab: React.FC = () => {
                         <CardContent sx={{ textAlign: 'center', py: 4 }}>
                             <Box sx={{ position: 'relative', display: 'inline-block', mb: 2 }}>
                                 <Avatar
+                                    key={profile?.avatar || 'no-avatar'}
                                     src={getAvatarUrl(profile?.avatar)}
                                     sx={{ width: 150, height: 150, fontSize: '3rem', mx: 'auto' }}
                                 >

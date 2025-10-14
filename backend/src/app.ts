@@ -467,14 +467,19 @@ app.use(
 // Serve uploaded files (with proper security)
 app.use(
   '/uploads',
-  express.static('uploads', {
+  express.static(path.join(__dirname, '../uploads'), {
     maxAge: '1d',
-    setHeaders: (res, path) => {
+    setHeaders: (res, filePath) => {
+      // CRITICAL: Allow cross-origin access for images
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+
       // Security headers for file downloads
       res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'DENY');
-      if (path.endsWith('.pdf')) {
+
+      if (filePath.endsWith('.pdf')) {
         res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('X-Frame-Options', 'DENY');
       }
     },
   })
@@ -485,8 +490,8 @@ app.use(express.static(path.join(__dirname, "../../frontend/build")));
 
 // Catch all handler: send back React's index.html file for client-side routing
 app.get('*', (req: Request, res: Response) => {
-  // Only serve index.html for non-API routes
-  if (!req.path.startsWith('/api')) {
+  // Only serve index.html for non-API and non-uploads routes
+  if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
     res.sendFile(path.join(__dirname, "../../frontend/build/index.html"));
   } else {
     res.status(404).json({ message: `Route ${req.originalUrl} not found` });

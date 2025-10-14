@@ -54,6 +54,7 @@ export const useUploadAvatar = () => {
                 }
                 return old;
             });
+            
             // Also update the generic user profile query cache if it exists
             queryClient.setQueryData(['user', 'profile'], (old: any) => {
                 if (old) {
@@ -61,6 +62,11 @@ export const useUploadAvatar = () => {
                 }
                 return old;
             });
+            
+            // Invalidate queries to force a refetch and ensure UI updates
+            queryClient.invalidateQueries({ queryKey: userSettingsKeys.profile });
+            queryClient.invalidateQueries({ queryKey: ['user', 'profile'] });
+            
             toast.success('Profile picture uploaded successfully');
         },
         onError: (error: any) => {
