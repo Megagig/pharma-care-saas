@@ -7,7 +7,8 @@ import {
 } from 'react-router-dom';
 import { ThemeProvider, CssBaseline, Box, Toolbar } from '@mui/material';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+// Uncomment if needed for debugging
+// import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
 import { createAppTheme } from './theme';
 import { AuthProvider } from './context/AuthContext';

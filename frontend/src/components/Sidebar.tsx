@@ -14,22 +14,19 @@ import {
   useTheme,
   Tooltip,
 } from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  People as PeopleIcon,
-  Description as DescriptionIcon,
-  Medication as MedicationIcon,
-  CreditCard as CreditCardIcon,
-  Settings as SettingsIcon,
-  Help as HelpIcon,
-  ChevronLeft as ChevronLeftIcon,
-  Flag as FlagIcon,
-  Assessment as AssessmentIcon,
-} from '@mui/icons-material';
-// Import icons that require default imports
+// Import icons using default imports for MUI v5 compatibility
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import PeopleIcon from '@mui/icons-material/People';
+import DescriptionIcon from '@mui/icons-material/Description';
+import MedicationIcon from '@mui/icons-material/Medication';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import SettingsIcon from '@mui/icons-material/Settings';
+import HelpIcon from '@mui/icons-material/Help';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import FlagIcon from '@mui/icons-material/Flag';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
 import Assignment from '@mui/icons-material/Assignment';
-import SubscriptionsTwoTone from '@mui/icons-material/SubscriptionsTwoTone';
 // Pharmacy module icons - using default imports
 import Reviews from '@mui/icons-material/Reviews';
 import MedicalServices from '@mui/icons-material/MedicalServices';
@@ -43,7 +40,6 @@ import SupervisorAccount from '@mui/icons-material/SupervisorAccount';
 // Use imported icons with aliases
 const AdminIcon = AdminPanelSettings;
 const LicenseIcon = Assignment;
-const SubscriptionIcon = SubscriptionsTwoTone;
 // Pharmacy module icon aliases
 const ReviewsIcon = Reviews;
 const MedicalServicesIcon = MedicalServices;

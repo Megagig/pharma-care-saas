@@ -14,21 +14,17 @@ import {
     Divider,
     Stack,
 } from '@mui/material';
-import {
-    Person as PersonIcon,
-    Flag as FlagIcon,
-    FlagOutlined as FlagOutlinedIcon,
-    ExpandMore as ExpandMoreIcon,
-    ExpandLess as ExpandLessIcon,
-    Error as ErrorIcon,
-    CheckCircle as CheckCircleIcon,
-    Warning as WarningIcon,
-    Info as InfoIcon,
-    AccessTime as AccessTimeIcon,
-    LocationOn as LocationOnIcon,
-    Computer as ComputerIcon,
-    Verified as VerifiedIcon,
-} from '@mui/icons-material';
+import FlagIcon from '@mui/icons-material/Flag';
+import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ErrorIcon from '@mui/icons-material/Error';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WarningIcon from '@mui/icons-material/Warning';
+import InfoIcon from '@mui/icons-material/Info';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import ComputerIcon from '@mui/icons-material/Computer';
+import VerifiedIcon from '@mui/icons-material/Verified';
 import { formatDistanceToNow } from 'date-fns';
 import { AuditLog } from '../../services/superAdminAuditService';
 
@@ -38,7 +34,7 @@ interface ActivityCardProps {
     onViewDetails?: (activity: AuditLog) => void;
 }
 
-const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onFlag, onViewDetails }) => {
+const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onFlag }) => {
     const [expanded, setExpanded] = React.useState(false);
     const theme = useTheme();
 

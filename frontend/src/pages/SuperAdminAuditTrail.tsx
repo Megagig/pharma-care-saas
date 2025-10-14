@@ -5,7 +5,6 @@ import {
     Typography,
     Paper,
     Button,
-    CircularProgress,
     Alert,
     Pagination,
     Dialog,
@@ -23,18 +22,15 @@ import {
     useTheme,
     useMediaQuery,
     IconButton,
-    Tooltip,
     Divider,
 } from '@mui/material';
-import {
-    Download as DownloadIcon,
-    Refresh as RefreshIcon,
-    FilterList as FilterListIcon,
-    ExpandMore as ExpandMoreIcon,
-    ExpandLess as ExpandLessIcon,
-    Assessment as AssessmentIcon,
-    CloudDownload as CloudDownloadIcon,
-} from '@mui/icons-material';
+import DownloadIcon from '@mui/icons-material/Download';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import superAdminAuditService, {
     AuditFilters as AuditFiltersType,
     AuditLog,
@@ -47,7 +43,6 @@ import AuditStats from '../components/audit/AuditStats';
 const SuperAdminAuditTrail: React.FC = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
 
     const [loading, setLoading] = useState(false);
     const [statsLoading, setStatsLoading] = useState(false);
