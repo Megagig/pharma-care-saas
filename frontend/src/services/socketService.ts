@@ -86,7 +86,9 @@ class SocketService {
     connect(): Promise<void> {
         return new Promise((resolve, reject) => {
             try {
-                const socketUrl = this.config.url || process.env.VITE_SOCKET_URL || 'http://localhost:3001';
+                // Prefer Vite env var when available; fallback to same-origin path or localhost
+                const envUrl = (import.meta as any).env?.VITE_SOCKET_URL || (process.env as any).VITE_SOCKET_URL;
+                const socketUrl = this.config.url || envUrl || `${window.location.origin.replace(/:\\d+$/, ':5000')}`;
 
                 this.socket = io(socketUrl, {
                     withCredentials: true, // Include httpOnly cookies for authentication
@@ -129,7 +131,7 @@ class SocketService {
         });
     }
 
-    The    /**
+    /**
      * Disconnect socket connection
      */
     disconnect(): void {
@@ -166,7 +168,7 @@ class SocketService {
             }
         });
 
-        this.socket.on('reconnect', (attemptNumber) => {
+        this.socket.on('reconnect', () => {
             this.setConnectionStatus('connected');
             this.reconnectAttempts = 0;
             this.rejoinConversations();
@@ -443,5 +445,4 @@ class SocketService {
 // Create singleton instance
 export const socketService = new SocketService();
 
-// Export types for use in other files
-export type { SocketEventHandlers, SendMessageSocketData };
+// Export types via declarations above (avoid duplicate export conflicts)

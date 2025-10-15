@@ -147,11 +147,7 @@ export interface SendMessageData {
 export interface CreateConversationData {
   title?: string;
   type: 'direct' | 'group' | 'patient_query';
-  participants: {
-    userId: string;
-    role: 'pharmacist' | 'doctor' | 'patient';
-    permissions?: string[];
-  }[];
+  participants: Array<{ userId: string; role: string }> | string[]; // Array of participant objects with role or user IDs
   patientId?: string;
   caseId?: string;
   priority?: 'low' | 'normal' | 'high' | 'urgent';

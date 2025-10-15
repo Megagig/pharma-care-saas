@@ -356,7 +356,8 @@ export class QueryPrefetcher {
   }
 
   private async fetchUserProfile(): Promise<any> {
-    const response = await fetch('/api/user/settings/profile', {
+    const base = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
+    const response = await fetch(`${base}/api/user/settings/profile`, {
       credentials: 'include', // Include httpOnly cookies
       headers: {
         'Content-Type': 'application/json',
@@ -370,27 +371,32 @@ export class QueryPrefetcher {
   }
 
   private async fetchRecentActivity(workspaceId: string, limit: number): Promise<any> {
-    const response = await fetch(`/api/dashboard/recent-activity?workspaceId=${workspaceId}&limit=${limit}`);
+    const base = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
+    const response = await fetch(`${base}/api/dashboard/recent-activity?workspaceId=${workspaceId}&limit=${limit}`);
     return response.json();
   }
 
   private async fetchPatientMedications(patientId: string): Promise<any> {
-    const response = await fetch(`/api/patients/${patientId}/medications`);
+    const base = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
+    const response = await fetch(`${base}/api/patients/${patientId}/medications`);
     return response.json();
   }
 
   private async fetchPatientAllergies(patientId: string): Promise<any> {
-    const response = await fetch(`/api/patients/${patientId}/allergies`);
+    const base = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
+    const response = await fetch(`${base}/api/patients/${patientId}/allergies`);
     return response.json();
   }
 
   private async fetchPatientConditions(patientId: string): Promise<any> {
-    const response = await fetch(`/api/patients/${patientId}/conditions`);
+    const base = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
+    const response = await fetch(`${base}/api/patients/${patientId}/conditions`);
     return response.json();
   }
 
   private async fetchPatientsList(params: { limit: number }): Promise<any> {
-    const response = await fetch(`/api/patients?limit=${params.limit}`);
+    const base = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
+    const response = await fetch(`${base}/api/patients?limit=${params.limit}`);
     return response.json();
   }
 }

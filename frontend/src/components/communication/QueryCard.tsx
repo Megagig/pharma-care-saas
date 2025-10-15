@@ -17,27 +17,24 @@ import {
   LinearProgress,
   Divider,
 } from '@mui/material';
-import {
-  MoreVert,
-  Schedule,
-  Person,
-  Assignment,
-  CheckCircle,
-  Archive,
-  PriorityHigh,
-  Warning,
-  Info,
-  Flag,
-  Reply,
-  Forward,
-  Edit,
-  Delete,
-  Visibility,
-  AccessTime,
-  Message,
-  AttachFile,
-} from '@mui/icons-material';
-import { formatDistanceToNow, format } from 'date-fns';
+import MoreVert from '@mui/icons-material/MoreVert';
+import Schedule from '@mui/icons-material/Schedule';
+import Person from '@mui/icons-material/Person';
+import Assignment from '@mui/icons-material/Assignment';
+import CheckCircle from '@mui/icons-material/CheckCircle';
+import Archive from '@mui/icons-material/Archive';
+import PriorityHigh from '@mui/icons-material/PriorityHigh';
+import Warning from '@mui/icons-material/Warning';
+import Info from '@mui/icons-material/Info';
+import Flag from '@mui/icons-material/Flag';
+import Reply from '@mui/icons-material/Reply';
+import Forward from '@mui/icons-material/Forward';
+import Edit from '@mui/icons-material/Edit';
+import Delete from '@mui/icons-material/Delete';
+import Visibility from '@mui/icons-material/Visibility';
+import AccessTime from '@mui/icons-material/AccessTime';
+import Message from '@mui/icons-material/Message';
+import { formatDistanceToNow } from 'date-fns';
 import { Conversation } from '../../stores/types';
 
 interface QueryCardProps {
@@ -202,8 +199,10 @@ const QueryCard: React.FC<QueryCardProps> = ({
   };
 
   // Get available actions
+  type ActionItem = { key: string; label: string; icon: React.ReactElement; danger?: boolean };
+
   const getAvailableActions = () => {
-    const actions = [
+    const actions: ActionItem[] = [
       { key: 'view', label: 'View Details', icon: <Visibility /> },
       { key: 'reply', label: 'Reply', icon: <Reply /> },
       { key: 'edit', label: 'Edit Query', icon: <Edit /> },
@@ -235,6 +234,21 @@ const QueryCard: React.FC<QueryCardProps> = ({
   const assignedProviders = getAssignedProviders();
   const queryProgress = getQueryProgress();
   const availableActions = getAvailableActions();
+
+  // Normalize IDs to stable strings for keys and display
+  const idToString = (id: any): string => {
+    if (typeof id === 'string') return id;
+    if (id && typeof id === 'object') {
+      if (typeof (id as any)._id === 'string') return (id as any)._id;
+      if (typeof (id as any)._id === 'object') return idToString((id as any)._id);
+      if (typeof (id as any).$oid === 'string') return (id as any).$oid;
+      if (typeof (id as any).toHexString === 'function') return (id as any).toHexString();
+      const str = typeof (id as any).toString === 'function' ? (id as any).toString() : '';
+      if (str && str !== '[object Object]') return str;
+      try { return JSON.stringify(id); } catch { return String(id ?? ''); }
+    }
+    return String(id ?? '');
+  };
 
   return (
     <>
@@ -345,12 +359,28 @@ const QueryCard: React.FC<QueryCardProps> = ({
               <Box
                 sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}
               >
+                {/* Helper: safely get ID suffix from potential string/object */}
+                {/**
+                 * Safely returns the last `len` characters of an ID which might be a string,
+                 * a populated object with `_id`, or another object with toString.
+                 */}
+                {(() => {
+                  const formatIdSuffix = (id: any, len: number = 6): string => {
+                    const asString = typeof id === 'string'
+                      ? id
+                      : (id?.['_id'] ?? (typeof id?.toString === 'function' ? id.toString() : undefined));
+                    return typeof asString === 'string' ? asString.slice(-len) : '—';
+                  };
+                  // Expose once in component scope by attaching to window-like closure if needed
+                  (QueryCard as any)._formatIdSuffix = formatIdSuffix;
+                  return null;
+                })()}
                 {/* Patient info */}
                 {showPatientInfo && query.patientId && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Person sx={{ fontSize: 16, color: 'text.secondary' }} />
                     <Typography variant="caption" color="text.secondary">
-                      Patient ID: {query.patientId.slice(-6)}
+                      Patient ID: {(QueryCard as any)._formatIdSuffix(query.patientId, 6)}
                     </Typography>
                   </Box>
                 )}
@@ -480,8 +510,8 @@ const QueryCard: React.FC<QueryCardProps> = ({
                       },
                     }}
                   >
-                    {assignedProviders.map((provider, index) => (
-                      <Tooltip key={provider.userId} title={provider.role}>
+                    {assignedProviders.map((provider) => (
+                      <Tooltip key={idToString(provider.userId)} title={provider.role}>
                         <Avatar sx={{ bgcolor: 'primary.main' }}>
                           {provider.role.charAt(0).toUpperCase()}
                         </Avatar>
@@ -549,7 +579,7 @@ const QueryCard: React.FC<QueryCardProps> = ({
               <Box sx={{ flex: 1 }} />
 
               <Typography variant="caption" color="text.secondary">
-                ID: {query._id.slice(-6)}
+                ID: {idToString(query._id).slice(-6)}
               </Typography>
             </CardActions>
           </>

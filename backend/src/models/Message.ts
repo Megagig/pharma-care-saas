@@ -253,7 +253,10 @@ const messageSchema = new Schema({
             required: true,
             index: true,
         },
-        attachments: [messageAttachmentSchema],
+        attachments: {
+            type: [messageAttachmentSchema],
+            default: [],
+        },
         metadata: {
             originalText: String, // For system messages
             clinicalData: {
@@ -302,7 +305,10 @@ const messageSchema = new Schema({
         ref: 'User',
         index: true,
     }],
-    reactions: [messageReactionSchema],
+    reactions: {
+        type: [messageReactionSchema],
+        default: [],
+    },
     status: {
         type: String,
         enum: ['sending', 'sent', 'delivered', 'read', 'failed'],
@@ -317,8 +323,14 @@ const messageSchema = new Schema({
         required: true,
         index: true,
     },
-    readBy: [messageReadReceiptSchema],
-    editHistory: [messageEditHistorySchema],
+    readBy: {
+        type: [messageReadReceiptSchema],
+        default: [],
+    },
+    editHistory: {
+        type: [messageEditHistorySchema],
+        default: [],
+    },
 
     // Encryption metadata
     isEncrypted: {
@@ -396,7 +408,8 @@ messageSchema.virtual('attachmentCount').get(function (this: IMessage) {
 
 // Virtual for read count
 messageSchema.virtual('readCount').get(function (this: IMessage) {
-    return this.readBy.length;
+    // Guard against undefined arrays in edge cases
+    return Array.isArray(this.readBy) ? this.readBy.length : 0;
 });
 
 // Instance methods
@@ -433,11 +446,12 @@ messageSchema.methods.markAsRead = function (
     userId: mongoose.Types.ObjectId
 ): void {
     // Check if already read by this user
-    const existingRead = this.readBy.find(
+    const existingRead = (this.readBy || []).find(
         r => r.userId.toString() === userId.toString()
     );
 
     if (!existingRead) {
+        if (!Array.isArray(this.readBy)) this.readBy = [] as any;
         this.readBy.push({
             userId,
             readAt: new Date(),
@@ -460,6 +474,7 @@ messageSchema.methods.addEdit = function (
 ): void {
     // Store current content in edit history
     if (this.content.text) {
+        if (!Array.isArray(this.editHistory)) this.editHistory = [] as any;
         this.editHistory.push({
             content: this.content.text,
             editedAt: new Date(),

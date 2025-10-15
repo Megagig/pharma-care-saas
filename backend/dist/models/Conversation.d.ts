@@ -1,7 +1,7 @@
 import mongoose, { Document } from 'mongoose';
 export interface IConversationParticipant {
     userId: mongoose.Types.ObjectId;
-    role: 'pharmacist' | 'doctor' | 'patient' | 'pharmacy_team' | 'intern_pharmacist';
+    role: 'pharmacist' | 'doctor' | 'patient' | 'pharmacy_team' | 'intern_pharmacist' | 'pharmacy_outlet' | 'nurse' | 'admin';
     joinedAt: Date;
     leftAt?: Date;
     permissions: string[];

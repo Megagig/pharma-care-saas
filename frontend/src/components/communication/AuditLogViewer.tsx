@@ -29,24 +29,14 @@ import {
   CircularProgress,
   Collapse,
 } from '@mui/material';
-import FilterList from '@mui/icons-material/FilterList';
-import Download from '@mui/icons-material/Download';
-import Search from '@mui/icons-material/Search';
-import Visibility from '@mui/icons-material/Visibility';
-import Security from '@mui/icons-material/Security';
-import Warning from '@mui/icons-material/Warning';
-import Error from '@mui/icons-material/Error';
-import Info from '@mui/icons-material/Info';
-
-// Icon aliases for consistency
-const FilterIcon = FilterList;
-const DownloadIcon = Download;
-const SearchIcon = Search;
-const ViewIcon = Visibility;
-const SecurityIcon = Security;
-const WarningIcon = Warning;
-const ErrorIcon = Error;
-const InfoIcon = Info;
+import FilterIcon from '@mui/icons-material/FilterList';
+import DownloadIcon from '@mui/icons-material/Download';
+import SearchIcon from '@mui/icons-material/Search';
+import ViewIcon from '@mui/icons-material/Visibility';
+import SecurityIcon from '@mui/icons-material/Security';
+import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
+import InfoIcon from '@mui/icons-material/Info';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -220,7 +210,7 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           const errorData = await safeJsonParse(response);
           throw new Error(
             (errorData as { message?: string }).message ||
-              'Failed to fetch audit logs'
+            'Failed to fetch audit logs'
           );
         } catch {
           throw new Error(
@@ -234,8 +224,8 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       setTotalCount(
         (data as { pagination?: { total: number }; count?: number }).pagination
           ?.total ||
-          (data as { count?: number }).count ||
-          0
+        (data as { count?: number }).count ||
+        0
       );
     } catch (err) {
       setError((err as Error).message || 'Failed to fetch audit logs');
@@ -302,7 +292,7 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
           const errorData = await safeJsonParse(response);
           throw new Error(
             (errorData as { message?: string }).message ||
-              'Failed to export audit logs'
+            'Failed to export audit logs'
           );
         } catch {
           throw new Error(
@@ -316,9 +306,8 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `audit_logs_${format}_${
-        format === 'csv' ? new Date().toISOString().split('T')[0] : Date.now()
-      }.${format}`;
+      a.download = `audit_logs_${format}_${format === 'csv' ? new Date().toISOString().split('T')[0] : Date.now()
+        }.${format}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -347,13 +336,13 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
         size="small"
         color={
           color as
-            | 'success'
-            | 'warning'
-            | 'error'
-            | 'info'
-            | 'default'
-            | 'primary'
-            | 'secondary'
+          | 'success'
+          | 'warning'
+          | 'error'
+          | 'info'
+          | 'default'
+          | 'primary'
+          | 'secondary'
         }
         icon={icon}
         label={riskLevel.toUpperCase()}
@@ -373,12 +362,16 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({
   // Format details for display
   const formatDetails = (log: AuditLog) => {
     const details = [];
+    const safeSuffix = (val: any, len = 8) => {
+      const s = typeof val === 'string' ? val : (val?._id ?? (typeof val?.toString === 'function' ? val.toString() : undefined));
+      return typeof s === 'string' ? s.slice(-len) : '—';
+    };
     if (log.details.conversationId)
-      details.push(`Conv: ${log.details.conversationId.slice(-8)}`);
+      details.push(`Conv: ${safeSuffix(log.details.conversationId, 8)}`);
     if (log.details.messageId)
-      details.push(`Msg: ${log.details.messageId.slice(-8)}`);
+      details.push(`Msg: ${safeSuffix(log.details.messageId, 8)}`);
     if (log.details.patientId)
-      details.push(`Patient: ${log.details.patientId.slice(-8)}`);
+      details.push(`Patient: ${safeSuffix(log.details.patientId, 8)}`);
     if (log.details.fileName) details.push(`File: ${log.details.fileName}`);
     if (log.duration) details.push(`${log.duration}ms`);
     return details.join(', ');

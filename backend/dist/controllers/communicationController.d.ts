@@ -36,6 +36,7 @@ export declare class CommunicationController {
     getThreadSummary(req: AuthenticatedRequest, res: Response): Promise<void>;
     replyToThread(req: AuthenticatedRequest, res: Response): Promise<void>;
     getConversationThreads(req: AuthenticatedRequest, res: Response): Promise<void>;
+    searchParticipants(req: AuthenticatedRequest, res: Response): Promise<void>;
 }
 export declare const communicationController: CommunicationController;
 export default communicationController;

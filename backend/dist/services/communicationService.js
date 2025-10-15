@@ -14,11 +14,21 @@ const notificationService_1 = require("./notificationService");
 class CommunicationService {
     async createConversation(data) {
         try {
+            const participantIds = data.participants.map((p) => typeof p === 'string' ? p : p.userId);
+            if (!participantIds.includes(data.createdBy)) {
+                logger_1.default.warn('Creator not in participants, adding them', {
+                    createdBy: data.createdBy,
+                    type: data.type,
+                    participants: participantIds,
+                    service: 'communication-service'
+                });
+                participantIds.push(data.createdBy);
+            }
             const participants = await User_1.default.find({
-                _id: { $in: data.participants },
+                _id: { $in: participantIds },
                 workplaceId: data.workplaceId,
             }).select("_id role firstName lastName");
-            if (participants.length !== data.participants.length) {
+            if (participants.length !== participantIds.length) {
                 throw new Error("Some participants not found or not in the same workplace");
             }
             if (data.patientId) {
@@ -257,6 +267,12 @@ class CommunicationService {
     }
     async getMessages(conversationId, userId, workplaceId, filters = {}) {
         try {
+            logger_1.default.info('Getting messages', {
+                conversationId,
+                userId,
+                workplaceId,
+                service: 'communication-service'
+            });
             const conversation = await Conversation_1.default.findOne({
                 _id: conversationId,
                 workplaceId,
@@ -264,6 +280,12 @@ class CommunicationService {
                 "participants.leftAt": { $exists: false },
             });
             if (!conversation) {
+                logger_1.default.error('Conversation not found', {
+                    conversationId,
+                    userId,
+                    workplaceId,
+                    service: 'communication-service'
+                });
                 throw new Error("Conversation not found or access denied");
             }
             const query = { conversationId };

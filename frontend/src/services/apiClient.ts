@@ -1,5 +1,15 @@
 import axios from 'axios';
 
+// Utility to get cookie value by name
+const getCookie = (name: string): string | null => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop()?.split(';').shift() || null;
+  }
+  return null;
+};
+
 // Create axios instance with base configuration
 // Development: Direct backend URL (Vite proxy is broken)
 // Production: /api (same port, served by backend)
@@ -20,12 +30,21 @@ apiClient.interceptors.request.use(
     // Authentication is handled via httpOnly cookies
     // No need to manually add Authorization header
 
+    // Add CSRF token for state-changing operations
+    if (config.method && !['get', 'head', 'options'].includes(config.method.toLowerCase())) {
+      const csrfToken = getCookie('csrf-token');
+      if (csrfToken) {
+        config.headers['x-csrf-token'] = csrfToken;
+      }
+    }
+
     // Debug logging for API requests
     console.log('🔵 API Request:', {
       method: config.method?.toUpperCase(),
       url: config.url,
       baseURL: config.baseURL,
-      fullURL: config.baseURL ? `${config.baseURL}${config.url}` : config.url
+      fullURL: config.baseURL ? `${config.baseURL}${config.url}` : config.url,
+      hasCSRF: !!config.headers['x-csrf-token']
     });
 
     // Don't add custom headers that aren't in CORS allowedHeaders

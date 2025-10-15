@@ -1668,6 +1668,81 @@ class CommunicationController {
             });
         }
     }
+    async searchParticipants(req, res) {
+        try {
+            const userId = req.user.id;
+            const workplaceId = req.user.workplaceId;
+            const { q = '', role, limit = 50 } = req.query;
+            logger_1.default.info('Searching participants:', { userId, workplaceId, q, role, limit });
+            const searchQuery = {
+                status: 'active',
+                _id: { $ne: new mongoose_1.default.Types.ObjectId(userId) },
+            };
+            if (workplaceId) {
+                searchQuery.workplaceId = new mongoose_1.default.Types.ObjectId(workplaceId);
+            }
+            if (role) {
+                searchQuery.role = role;
+            }
+            if (q && typeof q === 'string' && q.trim()) {
+                searchQuery.$or = [
+                    { firstName: { $regex: q, $options: 'i' } },
+                    { lastName: { $regex: q, $options: 'i' } },
+                    { email: { $regex: q, $options: 'i' } },
+                ];
+            }
+            logger_1.default.info('Search query:', JSON.stringify(searchQuery));
+            let users = await User_1.default.find(searchQuery)
+                .select('_id firstName lastName email role avatar')
+                .limit(Number(limit))
+                .lean();
+            logger_1.default.info(`Found ${users.length} participants with workplace filter`);
+            if (users.length === 0 && workplaceId) {
+                logger_1.default.info('No participants found with workplace filter, searching without workplace restriction');
+                const broadSearchQuery = {
+                    status: 'active',
+                    _id: { $ne: new mongoose_1.default.Types.ObjectId(userId) },
+                };
+                if (role) {
+                    broadSearchQuery.role = role;
+                }
+                if (q && typeof q === 'string' && q.trim()) {
+                    broadSearchQuery.$or = [
+                        { firstName: { $regex: q, $options: 'i' } },
+                        { lastName: { $regex: q, $options: 'i' } },
+                        { email: { $regex: q, $options: 'i' } },
+                    ];
+                }
+                users = await User_1.default.find(broadSearchQuery)
+                    .select('_id firstName lastName email role avatar')
+                    .limit(Number(limit))
+                    .lean();
+                logger_1.default.info(`Found ${users.length} participants without workplace filter`);
+            }
+            const participants = users.map((user) => ({
+                userId: user._id.toString(),
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.role,
+                avatar: user.avatar,
+            }));
+            res.json({
+                success: true,
+                message: "Participants retrieved successfully",
+                data: participants,
+                count: participants.length,
+            });
+        }
+        catch (error) {
+            logger_1.default.error("Error searching participants:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to search participants",
+                error: error instanceof Error ? error.message : "Unknown error",
+            });
+        }
+    }
 }
 exports.CommunicationController = CommunicationController;
 exports.communicationController = new CommunicationController();

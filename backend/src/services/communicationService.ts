@@ -78,13 +78,29 @@ export class CommunicationService {
     data: CreateConversationData,
   ): Promise<IConversation> {
     try {
+      // Extract participant IDs (handle both string array and object array formats)
+      const participantIds = data.participants.map((p: any) =>
+        typeof p === 'string' ? p : p.userId
+      );
+
+      // Ensure the creator is included as a participant for ALL conversation types
+      if (!participantIds.includes(data.createdBy)) {
+        logger.warn('Creator not in participants, adding them', {
+          createdBy: data.createdBy,
+          type: data.type,
+          participants: participantIds,
+          service: 'communication-service'
+        });
+        participantIds.push(data.createdBy);
+      }
+
       // Validate participants exist and belong to the same workplace
       const participants = await User.find({
-        _id: { $in: data.participants },
+        _id: { $in: participantIds },
         workplaceId: data.workplaceId,
       }).select("_id role firstName lastName");
 
-      if (participants.length !== data.participants.length) {
+      if (participants.length !== participantIds.length) {
         throw new Error(
           "Some participants not found or not in the same workplace",
         );
@@ -452,6 +468,13 @@ export class CommunicationService {
   ): Promise<IMessage[]> {
     try {
       // Validate user is participant
+      logger.info('Getting messages', {
+        conversationId,
+        userId,
+        workplaceId,
+        service: 'communication-service'
+      });
+
       const conversation = await Conversation.findOne({
         _id: conversationId,
         workplaceId,
@@ -460,6 +483,12 @@ export class CommunicationService {
       });
 
       if (!conversation) {
+        logger.error('Conversation not found', {
+          conversationId,
+          userId,
+          workplaceId,
+          service: 'communication-service'
+        });
         throw new Error("Conversation not found or access denied");
       }
 

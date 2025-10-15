@@ -167,6 +167,7 @@ const communicationAuditLogSchema = new Schema({
         enum: ['low', 'medium', 'high', 'critical'],
         required: true,
         index: true,
+        default: 'low',
     },
     complianceCategory: {
         type: String,
@@ -177,6 +178,7 @@ const communicationAuditLogSchema = new Schema({
         ],
         required: true,
         index: true,
+        default: 'audit_trail',
     },
 
     workplaceId: {
@@ -321,8 +323,8 @@ communicationAuditLogSchema.methods.getFormattedDetails = function (this: ICommu
     return details.join(', ');
 };
 
-// Pre-save middleware for validation and defaults
-communicationAuditLogSchema.pre('save', function (this: ICommunicationAuditLog) {
+// Ensure defaults before validation runs
+communicationAuditLogSchema.pre('validate', function (this: ICommunicationAuditLog) {
     // Auto-set risk level if not provided
     if (!this.riskLevel) {
         this.setRiskLevel();

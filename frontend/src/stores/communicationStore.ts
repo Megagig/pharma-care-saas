@@ -14,7 +14,8 @@ import {
 import { communicationCache } from '../services/cacheService';
 import { offlineStorage } from '../services/offlineStorageService';
 import { performanceMonitor } from '../utils/performanceMonitor';
-import { useConnectionPool } from '../hooks/useConnectionPool';
+// import { useConnectionPool } from '../hooks/useConnectionPool';
+import { apiClient } from '../services/apiClient';
 
 // Helper function to safely parse JSON responses
 const safeJsonParse = async (response: Response, allowEmpty: boolean = false): Promise<any> => {
@@ -124,6 +125,13 @@ interface CommunicationState {
     // Actions - Conversation Management
     setActiveConversation: (conversation: Conversation | null) => void;
     createConversation: (data: CreateConversationData) => Promise<Conversation | null>;
+    createPatientQuery: (params: {
+        patientId: string;
+        title?: string;
+        message: string;
+        priority?: 'low' | 'normal' | 'high' | 'urgent';
+        tags?: string[];
+    }) => Promise<Conversation | null>;
     fetchConversations: (filters?: ConversationFilters) => Promise<void>;
     updateConversation: (id: string, updates: Partial<Conversation>) => void;
     deleteConversation: (id: string) => Promise<boolean>;
@@ -158,7 +166,7 @@ interface CommunicationState {
     downloadFile: (fileId: string) => Promise<void>;
     deleteFile: (fileId: string) => Promise<boolean>;
     getFileMetadata: (fileId: string) => Promise<unknown>;
-    listConversationFiles: (conversationId: string, filters?: unknown) => Promise<unknown[]>;
+    listConversationFiles: (conversationId: string, filters?: Record<string, any>) => Promise<any[]>;
 
     // Actions - Real-time Updates
     setTypingUsers: (conversationId: string, userIds: string[]) => void;
@@ -246,30 +254,13 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('createConversation', null);
 
                     try {
-                        const response = await fetch('/api/communication/conversations', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                            body: JSON.stringify(data),
-                        });
+                        const response = await apiClient.post('/communication/conversations', data);
 
-                        if (!response.ok) {
-                            try {
-                                const errorData = await safeJsonParse(response, true);
-                                throw new Error(errorData.message || 'Failed to create conversation');
-                            } catch (parseError) {
-                                throw new Error(`Failed to create conversation: ${response.status} ${response.statusText}`);
-                            }
+                        if (!response.data.success) {
+                            throw new Error(response.data.message || 'Failed to create conversation');
                         }
 
-                        const result = await safeJsonParse(response, true);
-                        if (!result.success) {
-                            throw new Error(result.message || 'Failed to create conversation');
-                        }
-
-                        const newConversation = result.data;
+                        const newConversation = response.data.data;
 
                         // Add to conversations list
                         set((state) => ({
@@ -281,12 +272,65 @@ export const useCommunicationStore = create<CommunicationState>()(
                         }));
 
                         return newConversation;
-                    } catch (error) {
-                        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+                    } catch (error: any) {
+                        const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred';
                         setError('createConversation', errorMessage);
                         return null;
                     } finally {
                         setLoading('createConversation', false);
+                    }
+                },
+
+                createPatientQuery: async ({ patientId, title, message, priority = 'normal', tags = [] }) => {
+                    const { setLoading, setError } = get();
+                    setLoading('createPatientQuery', true);
+                    setError('createPatientQuery', null);
+
+                    try {
+                        const { data: response } = await apiClient.post(`/communication/patients/${patientId}/queries`, {
+                            title,
+                            message,
+                            priority,
+                            tags,
+                        });
+
+                        if (!response?.success) {
+                            throw new Error(response?.message || 'Failed to create patient query');
+                        }
+
+                        const conversation: Conversation = response.data?.conversation;
+                        const initialMessage: Message | undefined = response.data?.initialMessage;
+
+                        if (!conversation) {
+                            throw new Error('Server did not return a conversation');
+                        }
+
+                        // Update state with the new conversation
+                        set((state) => ({
+                            conversations: [conversation, ...state.conversations],
+                            conversationPagination: {
+                                ...state.conversationPagination,
+                                total: (state.conversationPagination.total || 0) + 1,
+                            },
+                        }));
+
+                        // Seed messages list with initial message if provided
+                        if (initialMessage) {
+                            set((state) => ({
+                                messages: {
+                                    ...state.messages,
+                                    [conversation._id]: [initialMessage],
+                                },
+                            }));
+                        }
+
+                        return conversation;
+                    } catch (error: any) {
+                        const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred';
+                        setError('createPatientQuery', errorMessage);
+                        return null;
+                    } finally {
+                        setLoading('createPatientQuery', false);
                     }
                 },
 
@@ -327,67 +371,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                                     }
                                 });
 
-                                const token = localStorage.getItem('token');
-                                console.log('Making communication API request with token:', token ? 'Token present' : 'No token');
-
-                                const response = await fetch(`/api/communication/conversations?${queryParams}`, {
-                                    headers: {
-                                        'Authorization': `Bearer ${token}`,
-                                    },
-                                });
-
-                                console.log('Communication API Response:', {
-                                    status: response.status,
-                                    statusText: response.statusText,
-                                    url: response.url,
-                                    headers: Object.fromEntries(response.headers.entries())
-                                });
-
-                                if (!response.ok) {
-                                    // If it's a 404, the endpoint might not exist yet - return empty data
-                                    if (response.status === 404) {
-                                        console.warn('Communication API endpoints not found - using empty data');
-                                        set({
-                                            conversations: [],
-                                            conversationPagination: pagination,
-                                        });
-                                        return;
-                                    }
-
-                                    // If it's a 401/403, it's an authentication issue - return empty data
-                                    if (response.status === 401 || response.status === 403) {
-                                        console.warn('Authentication required for communication endpoints');
-
-                                        // Try to get the specific error message for better user feedback
-                                        try {
-                                            const errorData = await safeJsonParse(response, true);
-                                            console.warn('Auth error details:', errorData);
-                                        } catch (e) {
-                                            console.warn('Could not parse auth error response');
-                                        }
-
-                                        set({
-                                            conversations: [],
-                                            conversationPagination: pagination,
-                                        });
-                                        return;
-                                    }
-
-                                    // Try to get error details, but handle HTML responses
-                                    let errorMessage = 'Failed to fetch conversations';
-                                    try {
-                                        const errorData = await safeJsonParse(response, true);
-                                        errorMessage = errorData.message || errorMessage;
-                                    } catch (parseError) {
-                                        console.warn('Failed to parse error response:', parseError);
-                                        errorMessage = `Server returned ${response.status}: ${response.statusText}`;
-                                    }
-
-                                    throw new Error(errorMessage);
-                                }
-
-                                const result = await safeJsonParse(response, true);
-                                console.log('Communication API Success Response:', result);
+                                // Use centralized axios client to ensure cookies + CSRF
+                                const response = await apiClient.get(`/communication/conversations?${queryParams.toString()}`);
+                                const result = response.data;
 
                                 if (!result.success) {
                                     throw new Error(result.message || 'Failed to fetch conversations');
@@ -459,34 +445,26 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('deleteConversation', null);
 
                     try {
-                        const response = await fetch(`/api/communication/conversations/${id}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to delete conversation');
-                        }
+                        await apiClient.delete(`/communication/conversations/${id}`);
 
                         // Remove from state
-                        set((state) => ({
-                            conversations: state.conversations.filter((conv) => conv._id !== id),
-                            activeConversation:
-                                state.activeConversation && state.activeConversation._id === id
-                                    ? null
-                                    : state.activeConversation,
-                            messages: {
-                                ...state.messages,
-                                [id]: undefined,
-                            },
-                            messagePagination: {
-                                ...state.messagePagination,
-                                [id]: undefined,
-                            },
-                        }));
+                        set((state) => {
+                            // Clone maps to safely delete keys without assigning undefined (which violates Record<string, T>)
+                            const newMessages = { ...state.messages } as Record<string, Message[]>;
+                            const newMessagePagination = { ...state.messagePagination } as Record<string, { page: number; limit: number; total: number; pages: number; hasMore: boolean; }>;
+                            delete newMessages[id];
+                            delete newMessagePagination[id];
+
+                            return {
+                                conversations: state.conversations.filter((conv) => conv._id !== id),
+                                activeConversation:
+                                    state.activeConversation && state.activeConversation._id === id
+                                        ? null
+                                        : state.activeConversation,
+                                messages: newMessages,
+                                messagePagination: newMessagePagination,
+                            };
+                        });
 
                         return true;
                     } catch (error) {
@@ -504,26 +482,11 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('addParticipant', null);
 
                     try {
-                        const response = await fetch(`/api/communication/conversations/${conversationId}/participants`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                            body: JSON.stringify({ userId, role }),
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to add participant');
-                        }
-
-                        const result = await response.json();
-                        if (result.success && result.data) {
+                        const { data: result } = await apiClient.post(`/communication/conversations/${conversationId}/participants`, { userId, role });
+                        if (result?.success && result.data) {
                             get().updateConversation(conversationId, result.data);
                         }
-
-                        return true;
+                        return !!result?.success;
                     } catch (error) {
                         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
                         setError('addParticipant', errorMessage);
@@ -539,24 +502,11 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('removeParticipant', null);
 
                     try {
-                        const response = await fetch(`/api/communication/conversations/${conversationId}/participants/${userId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to remove participant');
-                        }
-
-                        const result = await response.json();
-                        if (result.success && result.data) {
+                        const { data: result } = await apiClient.delete(`/communication/conversations/${conversationId}/participants/${userId}`);
+                        if (result?.success && result.data) {
                             get().updateConversation(conversationId, result.data);
                         }
-
-                        return true;
+                        return !!result?.success;
                     } catch (error) {
                         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
                         setError('removeParticipant', errorMessage);
@@ -572,19 +522,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('archiveConversation', null);
 
                     try {
-                        const response = await fetch(`/api/communication/conversations/${conversationId}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                            body: JSON.stringify({ status: 'archived' }),
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to archive conversation');
-                        }
+                        await apiClient.put(`/communication/conversations/${conversationId}`, { status: 'archived' });
 
                         get().updateConversation(conversationId, { status: 'archived' });
                         return true;
@@ -603,19 +541,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('resolveConversation', null);
 
                     try {
-                        const response = await fetch(`/api/communication/conversations/${conversationId}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                            body: JSON.stringify({ status: 'resolved' }),
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to resolve conversation');
-                        }
+                        await apiClient.put(`/communication/conversations/${conversationId}`, { status: 'resolved' });
 
                         get().updateConversation(conversationId, { status: 'resolved' });
                         return true;
@@ -649,25 +575,12 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                         // Add file attachments
                         if (data.content.attachments) {
-                            data.content.attachments.forEach((file, index) => {
+                            data.content.attachments.forEach((file) => {
                                 formData.append(`attachments`, file);
                             });
                         }
 
-                        const response = await fetch(`/api/communication/conversations/${data.conversationId}/messages`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                            body: formData,
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to send message');
-                        }
-
-                        const result = await response.json();
+                        const result = (await apiClient.post(`/communication/conversations/${data.conversationId}/messages`, formData)).data;
                         if (!result.success) {
                             throw new Error(result.message || 'Failed to send message');
                         }
@@ -738,18 +651,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                                     }
                                 });
 
-                                const response = await fetch(`/api/communication/conversations/${conversationId}/messages?${queryParams}`, {
-                                    headers: {
-                                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                    },
-                                });
+                                const response = await apiClient.get(`/communication/conversations/${conversationId}/messages?${queryParams}`);
+                                const result = response.data;
 
-                                if (!response.ok) {
-                                    const errorData = await response.json();
-                                    throw new Error(errorData.message || 'Failed to fetch messages');
-                                }
-
-                                const result = await response.json();
                                 if (!result.success) {
                                     throw new Error(result.message || 'Failed to fetch messages');
                                 }
@@ -852,19 +756,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('deleteMessage', null);
 
                     try {
-                        const response = await fetch(`/api/communication/messages/${messageId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                            body: JSON.stringify({ reason }),
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to delete message');
-                        }
+                        await apiClient.delete(`/communication/messages/${messageId}`, { data: { reason } });
 
                         // Mark message as deleted in state
                         get().updateMessage(messageId, {
@@ -885,16 +777,7 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 markMessageAsRead: async (messageId) => {
                     try {
-                        const response = await fetch(`/api/communication/messages/${messageId}/read`, {
-                            method: 'PUT',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Failed to mark message as read');
-                        }
+                        await apiClient.put(`/communication/messages/${messageId}/read`);
 
                         // Update message status and add to readBy array
                         const currentMessages = get().messages;
@@ -926,13 +809,9 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 markConversationAsRead: async (conversationId) => {
                     try {
-                        // TODO: Replace with actual API call
-                        await fetch(`/api/conversations/${conversationId}/read`, {
-                            method: 'PATCH',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
+                        // TODO: Implement mark conversation as read endpoint
+                        // For now, just mark all messages as read locally
+                        // await apiClient.patch(`/communication/conversations/${conversationId}/read`);
 
                         // Mark all messages in conversation as read
                         const messages = get().messages[conversationId] || [];
@@ -952,24 +831,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('editMessage', null);
 
                     try {
-                        const response = await fetch(`/api/communication/messages/${messageId}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                            body: JSON.stringify({
-                                content: newContent,
-                                reason
-                            }),
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to edit message');
-                        }
-
-                        const result = await response.json();
+                        const result = (await apiClient.put(`/communication/messages/${messageId}`, { content: newContent, reason })).data;
                         get().updateMessage(messageId, result.data);
 
                         return true;
@@ -984,19 +846,7 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 addReaction: async (messageId, emoji) => {
                     try {
-                        const response = await fetch(`/api/communication/messages/${messageId}/reactions`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                            body: JSON.stringify({ emoji }),
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to add reaction');
-                        }
+                        await apiClient.post(`/communication/messages/${messageId}/reactions`, { emoji });
 
                         // Optimistically update the UI
                         const currentMessages = get().messages;
@@ -1028,17 +878,7 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 removeReaction: async (messageId, emoji) => {
                     try {
-                        const response = await fetch(`/api/communication/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Failed to remove reaction');
-                        }
+                        await apiClient.delete(`/communication/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`);
 
                         // Optimistically update the UI
                         const currentMessages = get().messages;
@@ -1082,18 +922,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('createThread', null);
 
                     try {
-                        const response = await fetch(`/api/communication/messages/${messageId}/thread`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Failed to create thread');
-                        }
-
-                        const result = await response.json();
+                        const result = (await apiClient.post(`/communication/messages/${messageId}/thread`)).data;
                         const threadId = result.data.threadId;
 
                         // Update the message to include threadId
@@ -1115,17 +944,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('fetchThreadMessages', null);
 
                     try {
-                        const response = await fetch(`/api/communication/threads/${threadId}/messages`, {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch thread messages');
-                        }
-
-                        const result = await response.json();
+                        const result = (await apiClient.get(`/communication/threads/${threadId}/messages`)).data;
                         return result.data;
                     } catch (error) {
                         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
@@ -1142,17 +961,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('fetchThreadSummary', null);
 
                     try {
-                        const response = await fetch(`/api/communication/threads/${threadId}/summary`, {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch thread summary');
-                        }
-
-                        const result = await response.json();
+                        const result = (await apiClient.get(`/communication/threads/${threadId}/summary`)).data;
                         return result.data;
                     } catch (error) {
                         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
@@ -1186,19 +995,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                             });
                         }
 
-                        const response = await fetch(`/api/communication/threads/${threadId}/reply`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                            body: formData,
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Failed to reply to thread');
-                        }
-
-                        const result = await response.json();
+                        const result = (await apiClient.post(`/communication/threads/${threadId}/reply`, formData)).data;
                         const newMessage = result.data;
 
                         // Add message to conversation
@@ -1220,17 +1017,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('getConversationThreads', null);
 
                     try {
-                        const response = await fetch(`/api/communication/conversations/${conversationId}/threads`, {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch conversation threads');
-                        }
-
-                        const result = await response.json();
+                        const result = (await apiClient.get(`/communication/conversations/${conversationId}/threads`)).data;
                         return result.data;
                     } catch (error) {
                         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
@@ -1597,18 +1384,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('downloadFile', null);
 
                     try {
-                        const response = await fetch(`/api/communication/files/${fileId}`, {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || errorData.error || 'Download failed');
-                        }
-
-                        const result = await response.json();
+                        const { data: result } = await apiClient.get(`/communication/files/${fileId}`);
                         if (!result.success) {
                             throw new Error(result.message || 'Download failed');
                         }
@@ -1635,18 +1411,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('deleteFile', null);
 
                     try {
-                        const response = await fetch(`/api/communication/files/${fileId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error || 'Delete failed');
-                        }
-
+                        await apiClient.delete(`/communication/files/${fileId}`);
                         return true;
                     } catch (error) {
                         const errorMessage = error instanceof Error ? error.message : 'File deletion failed';
@@ -1663,18 +1428,7 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('getFileMetadata', null);
 
                     try {
-                        const response = await fetch(`/api/communication/files/${fileId}/metadata`, {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error || 'Failed to get file metadata');
-                        }
-
-                        const result = await response.json();
+                        const { data: result } = await apiClient.get(`/communication/files/${fileId}/metadata`);
                         return result.file;
                     } catch (error) {
                         const errorMessage = error instanceof Error ? error.message : 'Failed to get file metadata';
@@ -1685,31 +1439,20 @@ export const useCommunicationStore = create<CommunicationState>()(
                     }
                 },
 
-                listConversationFiles: async (conversationId, filters = {}) => {
+                listConversationFiles: async (conversationId, filters: Record<string, any> = {}) => {
                     const { setLoading, setError } = get();
                     setLoading('listConversationFiles', true);
                     setError('listConversationFiles', null);
 
                     try {
                         const queryParams = new URLSearchParams();
-                        Object.entries(filters).forEach(([key, value]) => {
+                        Object.entries(filters as Record<string, any>).forEach(([key, value]) => {
                             if (value !== undefined && value !== null && value !== '') {
                                 queryParams.append(key, value.toString());
                             }
                         });
 
-                        const response = await fetch(`/api/communication/conversations/${conversationId}/files?${queryParams}`, {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                            },
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || errorData.error || 'Failed to list files');
-                        }
-
-                        const result = await response.json();
+                        const { data: result } = await apiClient.get(`/communication/conversations/${conversationId}/files?${queryParams}`);
                         if (!result.success) {
                             throw new Error(result.message || 'Failed to list files');
                         }
