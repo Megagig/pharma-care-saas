@@ -2,6 +2,7 @@ import express, { Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { auth, AuthRequest } from '../middlewares/auth';
 import { chatService } from '../services/chat';
+import { getChatSocketService } from '../services/chat/ChatSocketService';
 import logger from '../utils/logger';
 
 const router = express.Router();
@@ -484,6 +485,20 @@ router.post(
 
       const message = await chatService.sendMessage(data);
 
+      // Emit real-time notification
+      try {
+        const socketService = getChatSocketService();
+        socketService.sendMessageNotification(conversationId, {
+          conversationId,
+          messageId: message._id.toString(),
+          senderId: message.senderId.toString(),
+          content: message.content,
+          createdAt: message.createdAt,
+        });
+      } catch (socketError) {
+        logger.error('Failed to emit message notification', { socketError });
+      }
+
       res.status(201).json({
         success: true,
         data: message,
@@ -522,6 +537,19 @@ router.put(
 
       const message = await chatService.editMessage(messageId, userId, workplaceId, content);
 
+      // Emit real-time notification
+      try {
+        const socketService = getChatSocketService();
+        socketService.sendMessageEditedNotification(
+          message.conversationId.toString(),
+          messageId,
+          content,
+          userId
+        );
+      } catch (socketError) {
+        logger.error('Failed to emit message edited notification', { socketError });
+      }
+
       res.json({
         success: true,
         data: message,
@@ -554,7 +582,21 @@ router.delete(
       const userId = req.user!.id;
       const workplaceId = req.user!.workplaceId.toString();
 
-      await chatService.deleteMessage(messageId, userId, workplaceId);
+      const message = await chatService.deleteMessage(messageId, userId, workplaceId);
+
+      // Emit real-time notification
+      try {
+        const socketService = getChatSocketService();
+        if (message) {
+          socketService.sendMessageDeletedNotification(
+            message.conversationId.toString(),
+            messageId,
+            userId
+          );
+        }
+      } catch (socketError) {
+        logger.error('Failed to emit message deleted notification', { socketError });
+      }
 
       res.json({
         success: true,
@@ -628,6 +670,20 @@ router.post(
 
       const message = await chatService.addReaction(messageId, userId, workplaceId, emoji);
 
+      // Emit real-time notification
+      try {
+        const socketService = getChatSocketService();
+        socketService.sendReactionNotification(
+          message.conversationId.toString(),
+          messageId,
+          userId,
+          emoji,
+          'added'
+        );
+      } catch (socketError) {
+        logger.error('Failed to emit reaction notification', { socketError });
+      }
+
       res.json({
         success: true,
         data: message,
@@ -662,6 +718,20 @@ router.delete(
       const emoji = decodeURIComponent(req.params.emoji);
 
       const message = await chatService.removeReaction(messageId, userId, workplaceId, emoji);
+
+      // Emit real-time notification
+      try {
+        const socketService = getChatSocketService();
+        socketService.sendReactionNotification(
+          message.conversationId.toString(),
+          messageId,
+          userId,
+          emoji,
+          'removed'
+        );
+      } catch (socketError) {
+        logger.error('Failed to emit reaction notification', { socketError });
+      }
 
       res.json({
         success: true,

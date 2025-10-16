@@ -12,3 +12,5 @@ export type {
   SendMessageDTO,
   MessageFilters,
 } from './ChatService';
+
+export { ChatSocketService, initializeChatSocketService, getChatSocketService } from './ChatSocketService';

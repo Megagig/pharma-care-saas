@@ -58,9 +58,40 @@ const io = new SocketIOServer(httpServer, {
 const communicationSocketService = new CommunicationSocketService(io);
 const socketNotificationService = new SocketNotificationService(io);
 
+// Initialize new Chat Socket Service
+import { initializeChatSocketService } from './services/chat/ChatSocketService';
+import { initializePresenceModel } from './models/chat/Presence';
+import Redis from 'ioredis';
+
+// Initialize Redis for presence tracking
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+  password: process.env.REDIS_PASSWORD,
+  retryStrategy: (times) => {
+    const delay = Math.min(times * 50, 2000);
+    return delay;
+  },
+});
+
+redisClient.on('connect', () => {
+  console.log('✅ Redis connected for presence tracking');
+});
+
+redisClient.on('error', (err) => {
+  console.error('❌ Redis connection error:', err);
+});
+
+// Initialize presence model
+initializePresenceModel(redisClient);
+
+// Initialize chat socket service
+const chatSocketService = initializeChatSocketService(io);
+
 // Make socket services available globally for other services
 app.set('communicationSocket', communicationSocketService);
 app.set('socketNotification', socketNotificationService);
+app.set('chatSocket', chatSocketService);
 
 const server = httpServer.listen(PORT, () => {
   console.log(

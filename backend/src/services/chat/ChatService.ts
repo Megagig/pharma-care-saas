@@ -786,7 +786,7 @@ export class ChatService {
     messageId: string,
     userId: string,
     workplaceId: string
-  ): Promise<void> {
+  ): Promise<IMessage> {
     try {
       logger.info('Deleting message', {
         messageId,
@@ -822,6 +822,8 @@ export class ChatService {
       logger.info('Message deleted successfully', {
         messageId,
       });
+
+      return message;
     } catch (error) {
       logger.error('Error deleting message', { error, messageId });
       throw error;
