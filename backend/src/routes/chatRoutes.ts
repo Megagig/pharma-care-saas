@@ -3,9 +3,13 @@ import { body, param, query, validationResult } from 'express-validator';
 import { auth, AuthRequest } from '../middlewares/auth';
 import { chatService } from '../services/chat';
 import { getChatSocketService } from '../services/chat/ChatSocketService';
+import { chatFileService } from '../services/chat/ChatFileService';
 import logger from '../utils/logger';
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const upload = chatFileService.getMulterConfig();
 
 /**
  * Validation middleware
@@ -779,6 +783,206 @@ router.get(
   }
 );
 
+// ==================== FILE UPLOAD ENDPOINTS ====================
+
+/**
+ * @route   POST /api/chat/files/upload
+ * @desc    Upload files
+ * @access  Private
+ */
+router.post(
+  '/files/upload',
+  auth,
+  upload.array('files', 10),
+  [
+    body('conversationId').isMongoId(),
+    body('messageId').isMongoId(),
+  ],
+  handleValidationErrors,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const workplaceId = req.user!.workplaceId.toString();
+      const { conversationId, messageId } = req.body;
+      const files = req.files as Express.Multer.File[];
+
+      if (!files || files.length === 0) {
+        res.status(400).json({
+          success: false,
+          message: 'No files uploaded',
+        });
+        return;
+      }
+
+      // Upload all files
+      const uploadResults = await Promise.all(
+        files.map(file =>
+          chatFileService.uploadFile({
+            file,
+            conversationId,
+            messageId,
+            uploadedBy: userId,
+            workplaceId,
+          })
+        )
+      );
+
+      // Scan files asynchronously
+      uploadResults.forEach(result => {
+        chatFileService.scanFile(result.fileId).catch(error => {
+          logger.error('Error scanning file', { error, fileId: result.fileId });
+        });
+      });
+
+      res.status(201).json({
+        success: true,
+        data: uploadResults,
+        message: 'Files uploaded successfully',
+      });
+    } catch (error) {
+      logger.error('Error uploading files', { error });
+      res.status(400).json({
+        success: false,
+        message: 'Failed to upload files',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * @route   GET /api/chat/files/:id
+ * @desc    Get file metadata and download URL
+ * @access  Private
+ */
+router.get(
+  '/files/:id',
+  auth,
+  [param('id').isMongoId()],
+  handleValidationErrors,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const fileId = req.params.id;
+
+      const fileMetadata = await chatFileService.getFileMetadata(fileId);
+
+      // Generate fresh download URL
+      const downloadUrl = await chatFileService.getDownloadUrl(fileMetadata.s3Key);
+
+      res.json({
+        success: true,
+        data: {
+          ...fileMetadata.toObject(),
+          downloadUrl,
+        },
+      });
+    } catch (error) {
+      logger.error('Error getting file', { error });
+      res.status(404).json({
+        success: false,
+        message: 'File not found',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * @route   DELETE /api/chat/files/:id
+ * @desc    Delete file
+ * @access  Private
+ */
+router.delete(
+  '/files/:id',
+  auth,
+  [param('id').isMongoId()],
+  handleValidationErrors,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const fileId = req.params.id;
+      const userId = req.user!.id;
+
+      await chatFileService.deleteFileAndMetadata(fileId, userId);
+
+      res.json({
+        success: true,
+        message: 'File deleted successfully',
+      });
+    } catch (error) {
+      logger.error('Error deleting file', { error });
+      res.status(400).json({
+        success: false,
+        message: 'Failed to delete file',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * @route   GET /api/chat/conversations/:id/files
+ * @desc    Get all files in a conversation
+ * @access  Private
+ */
+router.get(
+  '/conversations/:id/files',
+  auth,
+  [
+    param('id').isMongoId(),
+    query('type').optional().isString(),
+  ],
+  handleValidationErrors,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const conversationId = req.params.id;
+      const mimeType = req.query.type as string;
+
+      const files = await chatFileService.getConversationFiles(conversationId, mimeType);
+
+      res.json({
+        success: true,
+        data: files,
+      });
+    } catch (error) {
+      logger.error('Error getting conversation files', { error });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get conversation files',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * @route   GET /api/chat/storage-stats
+ * @desc    Get storage statistics for workplace
+ * @access  Private
+ */
+router.get(
+  '/storage-stats',
+  auth,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const workplaceId = req.user!.workplaceId.toString();
+
+      const stats = await chatFileService.getStorageStats(workplaceId);
+
+      res.json({
+        success: true,
+        data: stats,
+      });
+    } catch (error) {
+      logger.error('Error getting storage stats', { error });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get storage stats',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
 /**
  * @route   GET /api/chat/health
  * @desc    Health check for chat module
@@ -797,6 +1001,7 @@ router.get('/health', (req, res) => {
       threading: true,
       mentions: true,
       readReceipts: true,
+      fileUploads: true,
     },
   });
 });

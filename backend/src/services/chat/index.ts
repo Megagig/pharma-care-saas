@@ -14,3 +14,6 @@ export type {
 } from './ChatService';
 
 export { ChatSocketService, initializeChatSocketService, getChatSocketService } from './ChatSocketService';
+
+export { ChatFileService, chatFileService } from './ChatFileService';
+export type { UploadFileData, FileUploadResult } from './ChatFileService';
