@@ -397,6 +397,10 @@ app.use('/api/chat/reminders', reminderRoutes);
 import chatbotRoutes from './routes/chatbotRoutes';
 app.use('/api/chatbot', chatbotRoutes);
 
+// Broadcast routes
+import broadcastRoutes from './routes/broadcastRoutes';
+app.use('/api/chat/broadcasts', broadcastRoutes);
+
 // Communication Audit routes
 import communicationAuditRoutes from './routes/communicationAuditRoutes';
 

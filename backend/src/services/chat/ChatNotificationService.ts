@@ -195,6 +195,45 @@ export class ChatNotificationService {
   }
 
   /**
+   * Send flagged message notification to admins
+   */
+  async sendFlaggedMessageNotification(
+    adminId: string,
+    messageId: string,
+    conversationId: string,
+    reporterName: string,
+    reason: string,
+    workplaceId: string
+  ): Promise<void> {
+    try {
+      // Send notification via unified system
+      await notificationService.createNotification({
+        userId: new mongoose.Types.ObjectId(adminId),
+        type: 'flagged_message',
+        title: '🚩 Message Flagged for Review',
+        content: `${reporterName} reported a message for: ${reason}`,
+        data: {
+          conversationId: new mongoose.Types.ObjectId(conversationId),
+          messageId: new mongoose.Types.ObjectId(messageId),
+          reason,
+        },
+        priority: 'normal',
+        deliveryChannels: {
+          inApp: true,
+          email: true,
+          sms: false,
+        },
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        createdBy: new mongoose.Types.ObjectId(adminId),
+      });
+
+      logger.debug('Flagged message notification sent to admin', { adminId, messageId });
+    } catch (error) {
+      logger.error('Error sending flagged message notification', { error, adminId });
+    }
+  }
+
+  /**
    * Send urgent message notification
    */
   async sendUrgentMessageNotification(

@@ -784,6 +784,266 @@ router.get(
   }
 );
 
+// ==================== MODERATION ENDPOINTS ====================
+
+/**
+ * @route   POST /api/chat/messages/:id/report
+ * @desc    Report a message for moderation
+ * @access  Private
+ */
+router.post(
+  '/messages/:id/report',
+  auth,
+  [
+    param('id').isMongoId(),
+    body('reason').isString().isIn(['inappropriate', 'spam', 'harassment', 'privacy_violation', 'other']),
+    body('description').optional().isString().trim().isLength({ max: 500 }),
+  ],
+  handleValidationErrors,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const messageId = req.params.id;
+      const userId = req.user!.id;
+      const workplaceId = req.user!.workplaceId.toString();
+      const { reason, description } = req.body;
+
+      const message = await chatService.reportMessage(
+        messageId,
+        userId,
+        workplaceId,
+        reason,
+        description
+      );
+
+      res.status(201).json({
+        success: true,
+        data: message,
+        message: 'Message reported successfully. Admins have been notified.',
+      });
+    } catch (error) {
+      logger.error('Error reporting message', { error });
+      res.status(400).json({
+        success: false,
+        message: 'Failed to report message',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * @route   GET /api/chat/moderation/queue
+ * @desc    Get moderation queue (flagged messages) - Admin only
+ * @access  Private (Admin)
+ */
+router.get(
+  '/moderation/queue',
+  auth,
+  [
+    query('status').optional().isIn(['pending', 'reviewed', 'dismissed']),
+    query('reason').optional().isString(),
+    query('before').optional().isISO8601(),
+    query('after').optional().isISO8601(),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('offset').optional().isInt({ min: 0 }),
+  ],
+  handleValidationErrors,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const workplaceId = req.user!.workplaceId.toString();
+      const userRole = req.user!.role;
+
+      // Check if user is admin
+      if (!['admin', 'super_admin'].includes(userRole)) {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied. Admin privileges required.',
+        });
+        return;
+      }
+
+      const filters = {
+        status: req.query.status as any,
+        reason: req.query.reason as string,
+        before: req.query.before ? new Date(req.query.before as string) : undefined,
+        after: req.query.after ? new Date(req.query.after as string) : undefined,
+        limit: parseInt(req.query.limit as string) || 50,
+        offset: parseInt(req.query.offset as string) || 0,
+      };
+
+      const messages = await chatService.getModerationQueue(workplaceId, filters);
+
+      res.json({
+        success: true,
+        data: messages,
+        pagination: {
+          limit: filters.limit,
+          offset: filters.offset,
+          total: messages.length,
+        },
+      });
+    } catch (error) {
+      logger.error('Error getting moderation queue', { error });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get moderation queue',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * @route   POST /api/chat/messages/:id/flags/:flagId/dismiss
+ * @desc    Dismiss a message flag - Admin only
+ * @access  Private (Admin)
+ */
+router.post(
+  '/messages/:id/flags/:flagId/dismiss',
+  auth,
+  [
+    param('id').isMongoId(),
+    param('flagId').isMongoId(),
+    body('reviewNotes').optional().isString().trim().isLength({ max: 1000 }),
+  ],
+  handleValidationErrors,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const messageId = req.params.id;
+      const flagId = req.params.flagId;
+      const adminId = req.user!.id;
+      const workplaceId = req.user!.workplaceId.toString();
+      const userRole = req.user!.role;
+      const { reviewNotes } = req.body;
+
+      // Check if user is admin
+      if (!['admin', 'super_admin'].includes(userRole)) {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied. Admin privileges required.',
+        });
+        return;
+      }
+
+      const message = await chatService.dismissMessageFlag(
+        messageId,
+        flagId,
+        adminId,
+        workplaceId,
+        reviewNotes
+      );
+
+      res.json({
+        success: true,
+        data: message,
+        message: 'Flag dismissed successfully',
+      });
+    } catch (error) {
+      logger.error('Error dismissing flag', { error });
+      res.status(400).json({
+        success: false,
+        message: 'Failed to dismiss flag',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * @route   DELETE /api/chat/messages/:id/admin
+ * @desc    Admin delete message with audit logging - Admin only
+ * @access  Private (Admin)
+ */
+router.delete(
+  '/messages/:id/admin',
+  auth,
+  [
+    param('id').isMongoId(),
+    body('reason').isString().trim().isLength({ min: 1, max: 500 }),
+  ],
+  handleValidationErrors,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const messageId = req.params.id;
+      const adminId = req.user!.id;
+      const workplaceId = req.user!.workplaceId.toString();
+      const userRole = req.user!.role;
+      const { reason } = req.body;
+
+      // Check if user is admin
+      if (!['admin', 'super_admin'].includes(userRole)) {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied. Admin privileges required.',
+        });
+        return;
+      }
+
+      await chatService.adminDeleteMessage(messageId, adminId, workplaceId, reason);
+
+      res.json({
+        success: true,
+        message: 'Message deleted successfully',
+      });
+    } catch (error) {
+      logger.error('Error deleting message', { error });
+      res.status(400).json({
+        success: false,
+        message: 'Failed to delete message',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * @route   GET /api/chat/analytics
+ * @desc    Get communication analytics - Admin only
+ * @access  Private (Admin)
+ */
+router.get(
+  '/analytics',
+  auth,
+  [
+    query('startDate').optional().isISO8601(),
+    query('endDate').optional().isISO8601(),
+  ],
+  handleValidationErrors,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const workplaceId = req.user!.workplaceId.toString();
+      const userRole = req.user!.role;
+
+      // Check if user is admin
+      if (!['admin', 'super_admin'].includes(userRole)) {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied. Admin privileges required.',
+        });
+        return;
+      }
+
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+
+      const analytics = await chatService.getCommunicationAnalytics(workplaceId, startDate, endDate);
+
+      res.json({
+        success: true,
+        data: analytics,
+      });
+    } catch (error) {
+      logger.error('Error getting analytics', { error });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get analytics',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
 // ==================== FILE UPLOAD ENDPOINTS ====================
 
 /**

@@ -40,6 +40,26 @@ export interface ConversationFilters {
   offset?: number;
 }
 
+export interface CreateBroadcastDTO {
+  title: string;
+  message: string;
+  priority: 'normal' | 'high' | 'urgent';
+  audienceType: 'all' | 'roles' | 'specific';
+  roles?: string[]; // For audienceType: 'roles'
+  userIds?: string[]; // For audienceType: 'specific'
+  workplaceId: string;
+  createdBy: string;
+}
+
+export interface BroadcastStats {
+  broadcastId: string;
+  totalRecipients: number;
+  delivered: number;
+  read: number;
+  deliveryRate: number;
+  readRate: number;
+}
+
 export interface SendMessageDTO {
   conversationId: string;
   senderId: string;
@@ -1289,7 +1309,636 @@ export class ChatService {
     }
   }
 
+  /**
+   * Create a broadcast message
+   * Sends a message to multiple users based on audience selection
+   */
+  async createBroadcast(data: CreateBroadcastDTO): Promise<{
+    conversation: IConversation;
+    stats: BroadcastStats;
+  }> {
+    try {
+      logger.info('Creating broadcast', {
+        audienceType: data.audienceType,
+        workplaceId: data.workplaceId,
+      });
+
+      // Determine recipients based on audience type
+      let recipients: string[] = [];
+
+      if (data.audienceType === 'all') {
+        // Get all active users in workplace
+        const users = await User.find({
+          workplaceId: new mongoose.Types.ObjectId(data.workplaceId),
+          isActive: true,
+        }).select('_id');
+        recipients = users.map(u => u._id.toString());
+      } else if (data.audienceType === 'roles' && data.roles) {
+        // Get users with specific roles
+        const users = await User.find({
+          workplaceId: new mongoose.Types.ObjectId(data.workplaceId),
+          role: { $in: data.roles },
+          isActive: true,
+        }).select('_id');
+        recipients = users.map(u => u._id.toString());
+      } else if (data.audienceType === 'specific' && data.userIds) {
+        // Use specific user IDs
+        recipients = data.userIds;
+      }
+
+      if (recipients.length === 0) {
+        throw new Error('No recipients found for broadcast');
+      }
+
+      // Create broadcast conversation
+      const participants = recipients.map(userId => ({
+        userId,
+        role: 'patient' as const, // Default role for broadcast recipients
+      }));
+
+      const conversation = await this.createConversation({
+        type: 'broadcast',
+        title: data.title,
+        participants,
+        createdBy: data.createdBy,
+        workplaceId: data.workplaceId,
+      });
+
+      // Send broadcast message
+      await this.sendMessage({
+        conversationId: conversation._id.toString(),
+        senderId: data.createdBy,
+        content: {
+          text: data.message,
+          type: 'text',
+        },
+        workplaceId: data.workplaceId,
+      });
+
+      // Send notifications based on priority
+      const notificationPriority = data.priority === 'urgent' ? 'urgent' : data.priority === 'high' ? 'high' : 'normal';
+      
+      for (const recipientId of recipients) {
+        try {
+          await chatNotificationService.sendNewMessageNotification(
+            recipientId,
+            data.createdBy,
+            conversation._id.toString(),
+            '', // messageId will be set by sendMessage
+            data.message.substring(0, 100),
+            data.workplaceId
+          );
+        } catch (notifError) {
+          logger.error('Failed to send broadcast notification', {
+            error: notifError,
+            recipientId,
+          });
+        }
+      }
+
+      logger.info('Broadcast created successfully', {
+        conversationId: conversation._id,
+        recipientCount: recipients.length,
+      });
+
+      return {
+        conversation,
+        stats: {
+          broadcastId: conversation._id.toString(),
+          totalRecipients: recipients.length,
+          delivered: recipients.length,
+          read: 0,
+          deliveryRate: 100,
+          readRate: 0,
+        },
+      };
+    } catch (error) {
+      logger.error('Error creating broadcast', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Get broadcast statistics
+   */
+  async getBroadcastStats(broadcastId: string, workplaceId: string): Promise<BroadcastStats> {
+    try {
+      const conversation = await ChatConversation.findOne({
+        _id: new mongoose.Types.ObjectId(broadcastId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        type: 'broadcast',
+      });
+
+      if (!conversation) {
+        throw new Error('Broadcast not found');
+      }
+
+      const totalRecipients = conversation.participants.length;
+      
+      // Count read receipts
+      const readCount = conversation.participants.filter(
+        p => p.lastReadAt !== undefined
+      ).length;
+
+      return {
+        broadcastId,
+        totalRecipients,
+        delivered: totalRecipients, // All delivered immediately
+        read: readCount,
+        deliveryRate: 100,
+        readRate: totalRecipients > 0 ? Math.round((readCount / totalRecipients) * 100) : 0,
+      };
+    } catch (error) {
+      logger.error('Error getting broadcast stats', { error, broadcastId });
+      throw error;
+    }
+  }
+
+  // ==================== MODERATION METHODS ====================
+
+  /**
+   * Report a message for moderation
+   */
+  async reportMessage(
+    messageId: string,
+    reportedBy: string,
+    workplaceId: string,
+    reason: 'inappropriate' | 'spam' | 'harassment' | 'privacy_violation' | 'other',
+    description?: string
+  ): Promise<IMessage> {
+    try {
+      logger.info('Reporting message', {
+        messageId,
+        reportedBy,
+        reason,
+      });
+
+      // Get message
+      const message = await ChatMessage.findOne({
+        _id: new mongoose.Types.ObjectId(messageId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+      });
+
+      if (!message) {
+        throw new Error('Message not found');
+      }
+
+      // Verify reporter is a participant in the conversation
+      const conversation = await ChatConversation.findById(message.conversationId);
+      
+      if (!conversation?.hasParticipant(new mongoose.Types.ObjectId(reportedBy))) {
+        throw new Error('Not authorized to report this message');
+      }
+
+      // Add flag to message
+      message.addFlag(new mongoose.Types.ObjectId(reportedBy), reason, description);
+      await message.save();
+
+      // Notify admins of flagged message
+      await this.notifyAdminsOfFlaggedMessage(message, reportedBy, reason, workplaceId);
+
+      logger.info('Message reported successfully', {
+        messageId,
+        reason,
+      });
+
+      return message;
+    } catch (error) {
+      logger.error('Error reporting message', { error, messageId });
+      throw error;
+    }
+  }
+
+  /**
+   * Get moderation queue (flagged messages)
+   */
+  async getModerationQueue(
+    workplaceId: string,
+    filters: {
+      status?: 'pending' | 'reviewed' | 'dismissed';
+      reason?: string;
+      before?: Date;
+      after?: Date;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<IMessage[]> {
+    try {
+      logger.debug('Getting moderation queue', {
+        workplaceId,
+        filters,
+      });
+
+      const query: any = {
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        isFlagged: true,
+      };
+
+      // Apply filters
+      if (filters.status) {
+        query['flags.status'] = filters.status;
+      }
+
+      if (filters.reason) {
+        query['flags.reason'] = filters.reason;
+      }
+
+      if (filters.before) {
+        query.createdAt = { $lt: filters.before };
+      }
+
+      if (filters.after) {
+        query.createdAt = { ...query.createdAt, $gt: filters.after };
+      }
+
+      const messages = await ChatMessage.find(query)
+        .populate('senderId', 'firstName lastName role email')
+        .populate('conversationId', 'title type')
+        .populate('flags.reportedBy', 'firstName lastName role')
+        .populate('flags.reviewedBy', 'firstName lastName role')
+        .sort({ 'flags.reportedAt': -1 })
+        .limit(filters.limit || 50)
+        .skip(filters.offset || 0);
+
+      logger.debug('Moderation queue retrieved', {
+        count: messages.length,
+        workplaceId,
+      });
+
+      return messages;
+    } catch (error) {
+      logger.error('Error getting moderation queue', { error, workplaceId });
+      throw error;
+    }
+  }
+
+  /**
+   * Admin delete message with audit logging
+   */
+  async adminDeleteMessage(
+    messageId: string,
+    adminId: string,
+    workplaceId: string,
+    reason: string
+  ): Promise<void> {
+    try {
+      logger.info('Admin deleting message', {
+        messageId,
+        adminId,
+        reason,
+      });
+
+      // Get message
+      const message = await ChatMessage.findOne({
+        _id: new mongoose.Types.ObjectId(messageId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+      });
+
+      if (!message) {
+        throw new Error('Message not found');
+      }
+
+      // Verify admin permission
+      const admin = await User.findById(adminId);
+      if (!admin || !['admin', 'super_admin'].includes(admin.role)) {
+        throw new Error('Insufficient permissions');
+      }
+
+      // Log to audit trail
+      await this.logAdminAction(
+        adminId,
+        'message_deleted',
+        {
+          messageId,
+          conversationId: message.conversationId.toString(),
+          senderId: message.senderId.toString(),
+          reason,
+          originalContent: message.content.text,
+        },
+        workplaceId
+      );
+
+      // Soft delete the message
+      message.softDelete();
+      await message.save();
+
+      // Notify message sender
+      try {
+        await chatNotificationService.sendNewMessageNotification(
+          message.senderId.toString(),
+          adminId,
+          message.conversationId.toString(),
+          messageId,
+          'Your message was removed by an administrator',
+          workplaceId
+        );
+      } catch (notifError) {
+        logger.error('Failed to notify sender of deletion', { error: notifError });
+      }
+
+      logger.info('Message deleted by admin successfully', {
+        messageId,
+        adminId,
+      });
+    } catch (error) {
+      logger.error('Error in admin message deletion', { error, messageId });
+      throw error;
+    }
+  }
+
+  /**
+   * Dismiss a flag
+   */
+  async dismissMessageFlag(
+    messageId: string,
+    flagId: string,
+    adminId: string,
+    workplaceId: string,
+    reviewNotes?: string
+  ): Promise<IMessage> {
+    try {
+      logger.info('Dismissing message flag', {
+        messageId,
+        flagId,
+        adminId,
+      });
+
+      // Get message
+      const message = await ChatMessage.findOne({
+        _id: new mongoose.Types.ObjectId(messageId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+      });
+
+      if (!message) {
+        throw new Error('Message not found');
+      }
+
+      // Verify admin permission
+      const admin = await User.findById(adminId);
+      if (!admin || !['admin', 'super_admin'].includes(admin.role)) {
+        throw new Error('Insufficient permissions');
+      }
+
+      // Dismiss flag
+      message.dismissFlag(flagId, new mongoose.Types.ObjectId(adminId), reviewNotes);
+      await message.save();
+
+      // Log to audit trail
+      await this.logAdminAction(
+        adminId,
+        'flag_dismissed',
+        {
+          messageId,
+          flagId,
+          reviewNotes,
+        },
+        workplaceId
+      );
+
+      logger.info('Flag dismissed successfully', {
+        messageId,
+        flagId,
+      });
+
+      return message;
+    } catch (error) {
+      logger.error('Error dismissing flag', { error, messageId, flagId });
+      throw error;
+    }
+  }
+
+  /**
+   * Get communication analytics
+   */
+  async getCommunicationAnalytics(
+    workplaceId: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<{
+    messagesSent: number;
+    activeUsers: number;
+    averageResponseTime: number;
+    conversationsByType: Record<string, number>;
+    messagesByDay: Array<{ date: string; count: number }>;
+    topUsers: Array<{ userId: string; name: string; messageCount: number }>;
+  }> {
+    try {
+      logger.info('Getting communication analytics', {
+        workplaceId,
+        startDate,
+        endDate,
+      });
+
+      const dateFilter: any = {
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+      };
+
+      if (startDate || endDate) {
+        dateFilter.createdAt = {};
+        if (startDate) dateFilter.createdAt.$gte = startDate;
+        if (endDate) dateFilter.createdAt.$lte = endDate;
+      }
+
+      // Get total messages sent
+      const messagesSent = await ChatMessage.countDocuments({
+        ...dateFilter,
+        isDeleted: false,
+      });
+
+      // Get active users (users who sent at least one message)
+      const activeUsersResult = await ChatMessage.aggregate([
+        { $match: { ...dateFilter, isDeleted: false } },
+        { $group: { _id: '$senderId' } },
+        { $count: 'count' },
+      ]);
+      const activeUsers = activeUsersResult[0]?.count || 0;
+
+      // Get conversations by type
+      const conversationsByTypeResult = await ChatConversation.aggregate([
+        {
+          $match: {
+            workplaceId: new mongoose.Types.ObjectId(workplaceId),
+            ...(startDate || endDate
+              ? {
+                  createdAt: {
+                    ...(startDate ? { $gte: startDate } : {}),
+                    ...(endDate ? { $lte: endDate } : {}),
+                  },
+                }
+              : {}),
+          },
+        },
+        { $group: { _id: '$type', count: { $sum: 1 } } },
+      ]);
+
+      const conversationsByType: Record<string, number> = {};
+      conversationsByTypeResult.forEach((item) => {
+        conversationsByType[item._id] = item.count;
+      });
+
+      // Get messages by day
+      const messagesByDayResult = await ChatMessage.aggregate([
+        { $match: { ...dateFilter, isDeleted: false } },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+        { $limit: 30 },
+      ]);
+
+      const messagesByDay = messagesByDayResult.map((item) => ({
+        date: item._id,
+        count: item.count,
+      }));
+
+      // Get top users by message count
+      const topUsersResult = await ChatMessage.aggregate([
+        { $match: { ...dateFilter, isDeleted: false } },
+        { $group: { _id: '$senderId', messageCount: { $sum: 1 } } },
+        { $sort: { messageCount: -1 } },
+        { $limit: 10 },
+      ]);
+
+      // Populate user names
+      const topUsers = await Promise.all(
+        topUsersResult.map(async (item) => {
+          const user = await User.findById(item._id).select('firstName lastName');
+          return {
+            userId: item._id.toString(),
+            name: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+            messageCount: item.messageCount,
+          };
+        })
+      );
+
+      // Calculate average response time (simplified - time between messages in conversations)
+      const responseTimeResult = await ChatMessage.aggregate([
+        { $match: { ...dateFilter, isDeleted: false } },
+        { $sort: { conversationId: 1, createdAt: 1 } },
+        {
+          $group: {
+            _id: '$conversationId',
+            messages: { $push: { createdAt: '$createdAt', senderId: '$senderId' } },
+          },
+        },
+      ]);
+
+      let totalResponseTime = 0;
+      let responseCount = 0;
+
+      responseTimeResult.forEach((conv) => {
+        for (let i = 1; i < conv.messages.length; i++) {
+          const prevMsg = conv.messages[i - 1];
+          const currMsg = conv.messages[i];
+          
+          // Only count if different senders (actual response)
+          if (prevMsg.senderId.toString() !== currMsg.senderId.toString()) {
+            const timeDiff = new Date(currMsg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime();
+            totalResponseTime += timeDiff;
+            responseCount++;
+          }
+        }
+      });
+
+      const averageResponseTime = responseCount > 0 
+        ? Math.round(totalResponseTime / responseCount / 1000 / 60) // Convert to minutes
+        : 0;
+
+      logger.info('Communication analytics retrieved', {
+        workplaceId,
+        messagesSent,
+        activeUsers,
+      });
+
+      return {
+        messagesSent,
+        activeUsers,
+        averageResponseTime,
+        conversationsByType,
+        messagesByDay,
+        topUsers,
+      };
+    } catch (error) {
+      logger.error('Error getting communication analytics', { error, workplaceId });
+      throw error;
+    }
+  }
+
+  /**
+   * Log admin action to audit trail
+   */
+  private async logAdminAction(
+    adminId: string,
+    action: string,
+    details: any,
+    workplaceId: string
+  ): Promise<void> {
+    try {
+      // Import audit service dynamically to avoid circular dependencies
+      const { unifiedAuditService } = await import('../unifiedAuditService');
+      
+      await unifiedAuditService.logAction({
+        userId: new mongoose.Types.ObjectId(adminId),
+        action,
+        resourceType: 'message',
+        resourceId: details.messageId,
+        details,
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        ipAddress: 'system',
+        userAgent: 'admin-action',
+      });
+    } catch (error) {
+      logger.error('Error logging admin action', { error });
+      // Don't throw - audit logging failure shouldn't block the action
+    }
+  }
+
   // ==================== PRIVATE HELPER METHODS ====================
+
+  /**
+   * Notify admins of flagged message
+   */
+  private async notifyAdminsOfFlaggedMessage(
+    message: IMessage,
+    reportedBy: string,
+    reason: string,
+    workplaceId: string
+  ): Promise<void> {
+    try {
+      // Find all admins in the workplace
+      const admins = await User.find({
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        role: { $in: ['admin', 'super_admin'] },
+      }).select('_id');
+
+      const reporter = await User.findById(reportedBy).select('firstName lastName');
+      const reporterName = reporter ? `${reporter.firstName} ${reporter.lastName}` : 'A user';
+
+      // Send notification to each admin
+      for (const admin of admins) {
+        try {
+          await chatNotificationService.sendFlaggedMessageNotification(
+            admin._id.toString(),
+            message._id.toString(),
+            message.conversationId.toString(),
+            reporterName,
+            reason,
+            workplaceId
+          );
+        } catch (notifError) {
+          logger.error('Failed to send flagged message notification to admin', {
+            error: notifError,
+            adminId: admin._id,
+          });
+        }
+      }
+    } catch (error) {
+      logger.error('Error notifying admins of flagged message', { error });
+    }
+  }
 
   /**
    * Handle mention notifications

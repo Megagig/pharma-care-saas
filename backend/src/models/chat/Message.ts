@@ -25,6 +25,17 @@ export interface IMessageReadReceipt {
   readAt: Date;
 }
 
+export interface IMessageFlag {
+  reportedBy: mongoose.Types.ObjectId;
+  reportedAt: Date;
+  reason: 'inappropriate' | 'spam' | 'harassment' | 'privacy_violation' | 'other';
+  description?: string;
+  status: 'pending' | 'reviewed' | 'dismissed';
+  reviewedBy?: mongoose.Types.ObjectId;
+  reviewedAt?: Date;
+  reviewNotes?: string;
+}
+
 export interface IMessage extends Document {
   _id: mongoose.Types.ObjectId;
   conversationId: mongoose.Types.ObjectId;
@@ -53,6 +64,10 @@ export interface IMessage extends Document {
   isDeleted: boolean;
   deletedAt?: Date;
   
+  // Moderation
+  flags: IMessageFlag[];
+  isFlagged: boolean;
+  
   // Timestamps and tenancy
   createdAt: Date;
   updatedAt: Date;
@@ -65,6 +80,8 @@ export interface IMessage extends Document {
   isReadBy(userId: mongoose.Types.ObjectId): boolean;
   edit(newContent: string): void;
   softDelete(): void;
+  addFlag(reportedBy: mongoose.Types.ObjectId, reason: string, description?: string): void;
+  dismissFlag(flagId: string, reviewedBy: mongoose.Types.ObjectId, reviewNotes?: string): void;
 }
 
 // Message content sub-schema
@@ -116,6 +133,46 @@ const messageReadReceiptSchema = new Schema({
     required: true,
   },
 }, { _id: false });
+
+// Flag sub-schema for moderation
+const messageFlagSchema = new Schema({
+  reportedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  reportedAt: {
+    type: Date,
+    default: Date.now,
+    required: true,
+  },
+  reason: {
+    type: String,
+    enum: ['inappropriate', 'spam', 'harassment', 'privacy_violation', 'other'],
+    required: true,
+  },
+  description: {
+    type: String,
+    maxlength: [500, 'Flag description cannot exceed 500 characters'],
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'reviewed', 'dismissed'],
+    default: 'pending',
+    required: true,
+  },
+  reviewedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  reviewedAt: {
+    type: Date,
+  },
+  reviewNotes: {
+    type: String,
+    maxlength: [1000, 'Review notes cannot exceed 1000 characters'],
+  },
+}, { _id: true });
 
 // Main message schema
 const messageSchema = new Schema({
@@ -178,6 +235,15 @@ const messageSchema = new Schema({
   deletedAt: {
     type: Date,
   },
+  flags: {
+    type: [messageFlagSchema],
+    default: [],
+  },
+  isFlagged: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
   workplaceId: {
     type: Schema.Types.ObjectId,
     ref: 'Workplace',
@@ -196,6 +262,7 @@ messageSchema.index({ conversationId: 1, threadId: 1, createdAt: 1 });
 messageSchema.index({ workplaceId: 1, createdAt: -1 });
 messageSchema.index({ mentions: 1, createdAt: -1 });
 messageSchema.index({ conversationId: 1, isDeleted: 1, createdAt: -1 });
+messageSchema.index({ isFlagged: 1, 'flags.status': 1, createdAt: -1 });
 
 // Text index for search
 messageSchema.index({ 'content.text': 'text' });
@@ -324,6 +391,67 @@ messageSchema.methods.softDelete = function (this: IMessage): void {
   this.isDeleted = true;
   this.deletedAt = new Date();
   this.content.text = 'This message was deleted';
+};
+
+messageSchema.methods.addFlag = function (
+  this: IMessage,
+  reportedBy: mongoose.Types.ObjectId,
+  reason: string,
+  description?: string
+): void {
+  // Check if user already flagged this message
+  const alreadyFlagged = this.flags.some(
+    flag => flag.reportedBy.toString() === reportedBy.toString() && flag.status === 'pending'
+  );
+
+  if (alreadyFlagged) {
+    throw new Error('You have already flagged this message');
+  }
+
+  // Validate reason
+  const validReasons = ['inappropriate', 'spam', 'harassment', 'privacy_violation', 'other'];
+  if (!validReasons.includes(reason)) {
+    throw new Error('Invalid flag reason');
+  }
+
+  // Add flag
+  this.flags.push({
+    reportedBy,
+    reportedAt: new Date(),
+    reason: reason as any,
+    description,
+    status: 'pending',
+  } as any);
+
+  this.isFlagged = true;
+};
+
+messageSchema.methods.dismissFlag = function (
+  this: IMessage,
+  flagId: string,
+  reviewedBy: mongoose.Types.ObjectId,
+  reviewNotes?: string
+): void {
+  const flag = this.flags.id(flagId);
+
+  if (!flag) {
+    throw new Error('Flag not found');
+  }
+
+  if (flag.status !== 'pending') {
+    throw new Error('Flag has already been reviewed');
+  }
+
+  flag.status = 'dismissed';
+  flag.reviewedBy = reviewedBy;
+  flag.reviewedAt = new Date();
+  flag.reviewNotes = reviewNotes;
+
+  // Check if there are any pending flags left
+  const hasPendingFlags = this.flags.some(f => f.status === 'pending');
+  if (!hasPendingFlags) {
+    this.isFlagged = false;
+  }
 };
 
 // Pre-save middleware
