@@ -370,8 +370,12 @@ app.use('/api/manual-lab', manualLabRoutes);
 // AI Diagnostic routes
 app.use('/api/diagnostics', diagnosticRoutes);
 
-// Communication Hub routes
+// Communication Hub routes (old - will be deprecated)
 app.use('/api/communication', communicationRoutes);
+
+// New Chat routes (simplified communication module)
+import chatRoutes from './routes/chatRoutes';
+app.use('/api/chat', chatRoutes);
 
 // Communication Audit routes
 import communicationAuditRoutes from './routes/communicationAuditRoutes';
