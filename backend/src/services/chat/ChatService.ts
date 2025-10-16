@@ -166,6 +166,113 @@ export class ChatService {
   }
 
   /**
+   * Create a prescription discussion conversation
+   * Automatically adds prescribing doctor, patient, and pharmacist as participants
+   */
+  async createPrescriptionDiscussion(
+    prescriptionId: string,
+    patientId: string,
+    doctorId: string,
+    pharmacistId: string,
+    workplaceId: string,
+    prescriptionDetails?: {
+      medicationName?: string;
+      rxNumber?: string;
+    }
+  ): Promise<IConversation> {
+    try {
+      logger.info('Creating prescription discussion', {
+        prescriptionId,
+        patientId,
+        doctorId,
+        pharmacistId,
+        workplaceId,
+      });
+
+      // Check if a discussion already exists for this prescription
+      const existingDiscussion = await ChatConversation.findOne({
+        prescriptionId: new mongoose.Types.ObjectId(prescriptionId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        status: { $ne: 'archived' },
+      });
+
+      if (existingDiscussion) {
+        logger.info('Prescription discussion already exists', {
+          conversationId: existingDiscussion._id,
+          prescriptionId,
+        });
+        return existingDiscussion;
+      }
+
+      // Fetch user details to determine roles
+      const [doctor, patient, pharmacist] = await Promise.all([
+        User.findById(doctorId).select('firstName lastName role'),
+        Patient.findById(patientId).select('firstName lastName'),
+        User.findById(pharmacistId).select('firstName lastName role'),
+      ]);
+
+      if (!doctor || !patient || !pharmacist) {
+        throw new Error('Doctor, patient, or pharmacist not found');
+      }
+
+      // Create conversation title
+      const medicationName = prescriptionDetails?.medicationName || 'Prescription';
+      const rxNumber = prescriptionDetails?.rxNumber || '';
+      const title = rxNumber
+        ? `${medicationName} Discussion (Rx: ${rxNumber})`
+        : `${medicationName} Discussion`;
+
+      // Create participants array
+      const participants = [
+        {
+          userId: doctorId,
+          role: 'doctor' as const,
+        },
+        {
+          userId: patientId,
+          role: 'patient' as const,
+        },
+        {
+          userId: pharmacistId,
+          role: 'pharmacist' as const,
+        },
+      ];
+
+      // Create the conversation
+      const conversation = await this.createConversation({
+        type: 'prescription_discussion',
+        title,
+        participants,
+        patientId,
+        prescriptionId,
+        createdBy: pharmacistId,
+        workplaceId,
+      });
+
+      // Send initial system message
+      await this.sendMessage({
+        conversationId: conversation._id.toString(),
+        senderId: pharmacistId,
+        content: {
+          text: `Prescription discussion started for ${medicationName}${rxNumber ? ` (Rx: ${rxNumber})` : ''}. All parties can now discuss this prescription.`,
+          type: 'system',
+        },
+        workplaceId,
+      });
+
+      logger.info('Prescription discussion created successfully', {
+        conversationId: conversation._id,
+        prescriptionId,
+      });
+
+      return conversation;
+    } catch (error) {
+      logger.error('Error creating prescription discussion', { error, prescriptionId });
+      throw error;
+    }
+  }
+
+  /**
    * Get conversations for a user with filtering
    */
   async getConversations(
@@ -1001,6 +1108,183 @@ export class ChatService {
       });
     } catch (error) {
       logger.error('Error marking conversation messages as read', { error, conversationId });
+      throw error;
+    }
+  }
+
+  /**
+   * Post prescription update notification to discussion
+   * Sends a system message when prescription is updated
+   */
+  async postPrescriptionUpdate(
+    prescriptionId: string,
+    workplaceId: string,
+    updateDetails: {
+      field: string;
+      oldValue?: string;
+      newValue?: string;
+      updatedBy: string;
+    }
+  ): Promise<void> {
+    try {
+      logger.info('Posting prescription update to discussion', {
+        prescriptionId,
+        field: updateDetails.field,
+      });
+
+      // Find the prescription discussion conversation
+      const conversation = await ChatConversation.findOne({
+        prescriptionId: new mongoose.Types.ObjectId(prescriptionId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        type: 'prescription_discussion',
+        status: { $ne: 'archived' },
+      });
+
+      if (!conversation) {
+        logger.debug('No active prescription discussion found', { prescriptionId });
+        return;
+      }
+
+      // Get updater info
+      const updater = await User.findById(updateDetails.updatedBy).select('firstName lastName role');
+      const updaterName = updater ? `${updater.firstName} ${updater.lastName}` : 'Someone';
+
+      // Create update message
+      let updateMessage = `${updaterName} updated the prescription`;
+      
+      if (updateDetails.field && updateDetails.newValue) {
+        updateMessage += `: ${updateDetails.field} changed`;
+        if (updateDetails.oldValue) {
+          updateMessage += ` from "${updateDetails.oldValue}" to "${updateDetails.newValue}"`;
+        } else {
+          updateMessage += ` to "${updateDetails.newValue}"`;
+        }
+      }
+
+      // Post system message
+      await this.sendMessage({
+        conversationId: conversation._id.toString(),
+        senderId: updateDetails.updatedBy,
+        content: {
+          text: updateMessage,
+          type: 'system',
+        },
+        workplaceId,
+      });
+
+      // Notify all participants
+      for (const participant of conversation.participants) {
+        if (participant.userId.toString() === updateDetails.updatedBy) continue; // Skip updater
+
+        try {
+          await chatNotificationService.sendNewMessageNotification(
+            participant.userId.toString(),
+            updateDetails.updatedBy,
+            conversation._id.toString(),
+            '', // messageId will be set by sendMessage
+            updateMessage,
+            workplaceId
+          );
+        } catch (notifError) {
+          logger.error('Failed to send prescription update notification', {
+            error: notifError,
+            participantId: participant.userId,
+          });
+        }
+      }
+
+      logger.info('Prescription update posted successfully', {
+        conversationId: conversation._id,
+        prescriptionId,
+      });
+    } catch (error) {
+      logger.error('Error posting prescription update', { error, prescriptionId });
+      // Don't throw - this is a non-critical operation
+    }
+  }
+
+  /**
+   * Resolve prescription discussion
+   * Marks the conversation as resolved
+   */
+  async resolvePrescriptionDiscussion(
+    conversationId: string,
+    userId: string,
+    workplaceId: string,
+    resolutionNote?: string
+  ): Promise<IConversation> {
+    try {
+      logger.info('Resolving prescription discussion', {
+        conversationId,
+        userId,
+      });
+
+      const conversation = await ChatConversation.findOne({
+        _id: new mongoose.Types.ObjectId(conversationId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        type: 'prescription_discussion',
+      });
+
+      if (!conversation) {
+        throw new Error('Prescription discussion not found');
+      }
+
+      // Verify user is a participant
+      if (!conversation.hasParticipant(new mongoose.Types.ObjectId(userId))) {
+        throw new Error('User is not a participant in this discussion');
+      }
+
+      // Update status to resolved
+      conversation.status = 'resolved';
+      await conversation.save();
+
+      // Get resolver info
+      const resolver = await User.findById(userId).select('firstName lastName role');
+      const resolverName = resolver ? `${resolver.firstName} ${resolver.lastName}` : 'Someone';
+
+      // Post resolution message
+      const resolutionMessage = resolutionNote
+        ? `${resolverName} marked this discussion as resolved: ${resolutionNote}`
+        : `${resolverName} marked this discussion as resolved`;
+
+      await this.sendMessage({
+        conversationId: conversation._id.toString(),
+        senderId: userId,
+        content: {
+          text: resolutionMessage,
+          type: 'system',
+        },
+        workplaceId,
+      });
+
+      // Notify all participants
+      for (const participant of conversation.participants) {
+        if (participant.userId.toString() === userId) continue; // Skip resolver
+
+        try {
+          await chatNotificationService.sendNewMessageNotification(
+            participant.userId.toString(),
+            userId,
+            conversation._id.toString(),
+            '',
+            resolutionMessage,
+            workplaceId
+          );
+        } catch (notifError) {
+          logger.error('Failed to send resolution notification', {
+            error: notifError,
+            participantId: participant.userId,
+          });
+        }
+      }
+
+      logger.info('Prescription discussion resolved successfully', {
+        conversationId,
+      });
+
+      return conversation;
+    } catch (error) {
+      logger.error('Error resolving prescription discussion', { error, conversationId });
       throw error;
     }
   }

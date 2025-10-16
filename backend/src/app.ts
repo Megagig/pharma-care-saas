@@ -377,6 +377,26 @@ app.use('/api/communication', communicationRoutes);
 import chatRoutes from './routes/chatRoutes';
 app.use('/api/chat', chatRoutes);
 
+// Template routes (message templates)
+import templateRoutes from './routes/templateRoutes';
+app.use('/api/chat/templates', templateRoutes);
+
+// Consultation routes (consultation requests)
+import consultationRoutes from './routes/consultationRoutes';
+app.use('/api/chat/consultations', consultationRoutes);
+
+// Prescription discussion routes
+import prescriptionDiscussionRoutes from './routes/prescriptionDiscussionRoutes';
+app.use('/api/chat/prescription-discussions', prescriptionDiscussionRoutes);
+
+// Reminder routes (medication reminders)
+import reminderRoutes from './routes/reminderRoutes';
+app.use('/api/chat/reminders', reminderRoutes);
+
+// Chatbot routes
+import chatbotRoutes from './routes/chatbotRoutes';
+app.use('/api/chatbot', chatbotRoutes);
+
 // Communication Audit routes
 import communicationAuditRoutes from './routes/communicationAuditRoutes';
 

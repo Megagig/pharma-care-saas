@@ -13,6 +13,7 @@ import { Send, AttachFile, EmojiEmotions, Reply } from '@mui/icons-material';
 import { Message } from '../../stores/types';
 import MessageItem from './MessageItem';
 import MentionInput from './MentionInput';
+import TemplateSelector from './TemplateSelector';
 import { useSocketConnection } from '../../hooks/useSocket';
 import { socketService } from '../../services/socketService';
 
@@ -48,6 +49,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   const [mentions, setMentions] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [sending, setSending] = useState(false);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -97,11 +99,25 @@ const MessageThread: React.FC<MessageThreadProps> = ({
     setMessageText(value);
     setMentions(newMentions);
 
+    // Check for "/" command to trigger template selector
+    if (value === '/') {
+      setShowTemplateSelector(true);
+      setMessageText(''); // Clear the "/" character
+      return;
+    }
+
     if (value.trim()) {
       handleTypingStart();
     } else {
       handleTypingStop();
     }
+  };
+
+  // Handle template selection
+  const handleTemplateSelect = (renderedContent: string) => {
+    setMessageText(renderedContent);
+    setShowTemplateSelector(false);
+    messageInputRef.current?.focus();
   };
 
   // Handle sending message
@@ -430,7 +446,23 @@ const MessageThread: React.FC<MessageThreadProps> = ({
             Offline - Messages will be sent when connection is restored
           </Typography>
         )}
+
+        {/* Template Hint */}
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mt: 0.5, display: 'block' }}
+        >
+          Tip: Type "/" to use message templates
+        </Typography>
       </Box>
+
+      {/* Template Selector Dialog */}
+      <TemplateSelector
+        open={showTemplateSelector}
+        onClose={() => setShowTemplateSelector(false)}
+        onSelect={handleTemplateSelect}
+      />
     </Box>
   );
 };

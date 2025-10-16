@@ -484,6 +484,82 @@ export class ChatSocketService {
       averageConnectionsPerUser: connectedUsers > 0 ? totalConnections / connectedUsers : 0,
     };
   }
+
+  /**
+   * Notify pharmacists about new consultation request
+   */
+  notifyConsultationRequest(pharmacistIds: string[], consultationData: any): void {
+    pharmacistIds.forEach(pharmacistId => {
+      this.io.to(`user:${pharmacistId}`).emit('consultation:new_request', {
+        ...consultationData,
+        timestamp: new Date(),
+      });
+    });
+
+    logger.info('Consultation request notification sent', {
+      pharmacistCount: pharmacistIds.length,
+      requestId: consultationData.requestId,
+    });
+  }
+
+  /**
+   * Notify patient that consultation was accepted
+   */
+  notifyConsultationAccepted(patientId: string, consultationData: any): void {
+    this.io.to(`user:${patientId}`).emit('consultation:accepted', {
+      ...consultationData,
+      timestamp: new Date(),
+    });
+
+    logger.info('Consultation accepted notification sent', {
+      patientId,
+      requestId: consultationData.requestId,
+    });
+  }
+
+  /**
+   * Notify supervisors about escalated consultation
+   */
+  notifyConsultationEscalated(supervisorIds: string[], consultationData: any): void {
+    supervisorIds.forEach(supervisorId => {
+      this.io.to(`user:${supervisorId}`).emit('consultation:escalated', {
+        ...consultationData,
+        timestamp: new Date(),
+      });
+    });
+
+    logger.info('Consultation escalation notification sent', {
+      supervisorCount: supervisorIds.length,
+      requestId: consultationData.requestId,
+    });
+  }
+
+  /**
+   * Notify patient that consultation was completed
+   */
+  notifyConsultationCompleted(patientId: string, consultationData: any): void {
+    this.io.to(`user:${patientId}`).emit('consultation:completed', {
+      ...consultationData,
+      timestamp: new Date(),
+    });
+
+    logger.info('Consultation completed notification sent', {
+      patientId,
+      requestId: consultationData.requestId,
+    });
+  }
+
+  /**
+   * Broadcast consultation queue update to all pharmacists in workplace
+   */
+  broadcastQueueUpdate(workplaceId: string, queueData: any): void {
+    this.io.to(`workplace:${workplaceId}:pharmacists`).emit('consultation:queue_update', {
+      ...queueData,
+      timestamp: new Date(),
+    });
+
+    logger.debug('Consultation queue update broadcasted', { workplaceId });
+  }
 }
 
 // Export singleton instance (will be initialized in server.ts)

@@ -20,3 +20,17 @@ export type { UploadFileData, FileUploadResult } from './ChatFileService';
 
 export { ChatNotificationService, chatNotificationService } from './ChatNotificationService';
 export type { ChatNotificationPreferences } from './ChatNotificationService';
+
+export { TemplateService, templateService } from './TemplateService';
+export type { CreateTemplateDTO, UpdateTemplateDTO, TemplateFilters } from './TemplateService';
+
+export { ConsultationRequestService, consultationRequestService } from './ConsultationRequestService';
+export type { CreateConsultationRequestDTO, ConsultationRequestFilters } from './ConsultationRequestService';
+
+export { ReminderService, reminderService } from './ReminderService';
+export type { CreateReminderDTO, UpdateReminderDTO, ReminderFilters } from './ReminderService';
+
+export { ReminderJobService, reminderJobService } from './ReminderJobService';
+
+export { ChatbotService, chatbotService } from './ChatbotService';
+export type { ChatbotMessage, ChatbotContext, ChatbotResponse } from './ChatbotService';
