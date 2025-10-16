@@ -77,8 +77,29 @@ const io = new socket_io_1.Server(httpServer, {
 });
 const communicationSocketService = new communicationSocketService_1.default(io);
 const socketNotificationService = new socketNotificationService_1.default(io);
+const ChatSocketService_1 = require("./services/chat/ChatSocketService");
+const Presence_1 = require("./models/chat/Presence");
+const ioredis_1 = __importDefault(require("ioredis"));
+const redisClient = new ioredis_1.default({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+    retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+    },
+});
+redisClient.on('connect', () => {
+    console.log('✅ Redis connected for presence tracking');
+});
+redisClient.on('error', (err) => {
+    console.error('❌ Redis connection error:', err);
+});
+(0, Presence_1.initializePresenceModel)(redisClient);
+const chatSocketService = (0, ChatSocketService_1.initializeChatSocketService)(io);
 app_1.default.set('communicationSocket', communicationSocketService);
 app_1.default.set('socketNotification', socketNotificationService);
+app_1.default.set('chatSocket', chatSocketService);
 const server = httpServer.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
     console.log(`📡 Socket.IO server initialized for real-time communication`);

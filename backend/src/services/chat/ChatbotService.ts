@@ -302,7 +302,6 @@ export class ChatbotService {
         patientId,
         reason: `Chatbot escalation: ${reason}`,
         priority: reason.toLowerCase().includes('urgent') ? 'urgent' : 'normal',
-        preferredContactMethod: 'chat',
         workplaceId,
       });
 

@@ -375,15 +375,15 @@ app.use('/api/communication', communicationRoutes);
 
 // New Chat routes (simplified communication module)
 import chatRoutes from './routes/chatRoutes';
+import auditLogRoutes from './routes/auditLogRoutes';
 app.use('/api/chat', chatRoutes);
+app.use('/api/chat/audit', auditLogRoutes);
 
 // Template routes (message templates)
 import templateRoutes from './routes/templateRoutes';
 app.use('/api/chat/templates', templateRoutes);
 
-// Consultation routes (consultation requests)
-import consultationRoutes from './routes/consultationRoutes';
-app.use('/api/chat/consultations', consultationRoutes);
+// Note: Consultation routes are handled in chatRoutes.ts
 
 // Prescription discussion routes
 import prescriptionDiscussionRoutes from './routes/prescriptionDiscussionRoutes';

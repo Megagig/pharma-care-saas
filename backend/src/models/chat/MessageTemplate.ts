@@ -25,6 +25,15 @@ export interface IMessageTemplate extends Document {
   // Metadata
   createdAt: Date;
   updatedAt: Date;
+  
+  // Instance methods
+  incrementUsage(): Promise<this>;
+  renderTemplate(variables: Record<string, string>): string;
+}
+
+export interface IMessageTemplateModel extends mongoose.Model<IMessageTemplate> {
+  findByCategory(category: string, workplaceId: string): Promise<IMessageTemplate[]>;
+  searchTemplates(searchTerm: string, workplaceId: string): Promise<IMessageTemplate[]>;
 }
 
 const MessageTemplateSchema = new Schema<IMessageTemplate>(
@@ -142,7 +151,7 @@ MessageTemplateSchema.statics.searchTemplates = function (
   }).sort({ score: { $meta: 'textScore' } });
 };
 
-export const MessageTemplate = mongoose.model<IMessageTemplate>(
+export const MessageTemplate = mongoose.model<IMessageTemplate, IMessageTemplateModel>(
   'MessageTemplate',
   MessageTemplateSchema
 );

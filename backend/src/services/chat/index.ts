@@ -34,3 +34,6 @@ export { ReminderJobService, reminderJobService } from './ReminderJobService';
 
 export { ChatbotService, chatbotService } from './ChatbotService';
 export type { ChatbotMessage, ChatbotContext, ChatbotResponse } from './ChatbotService';
+
+export { ChatAuditService, chatAuditService } from './ChatAuditService';
+export type { AuditLogContext, AuditLogFilters } from './ChatAuditService';

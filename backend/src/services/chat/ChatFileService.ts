@@ -1,9 +1,9 @@
 import multer from 'multer';
 import path from 'path';
 import crypto from 'crypto';
-import sharp from 'sharp';
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+// import sharp from 'sharp'; // Optional: Install with npm install sharp
+// import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'; // Optional: Install with npm install @aws-sdk/client-s3
+// import { getSignedUrl } from '@aws-sdk/s3-request-presigner'; // Optional: Install with npm install @aws-sdk/s3-request-presigner
 import { ChatFileMetadata } from '../../models/chat';
 import logger from '../../utils/logger';
 import mongoose from 'mongoose';
@@ -34,7 +34,7 @@ export interface FileUploadResult {
 }
 
 export class ChatFileService {
-  private s3Client: S3Client;
+  private s3Client: any; // S3Client - requires @aws-sdk/client-s3
   private bucket: string;
   private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   private readonly ALLOWED_MIME_TYPES = [
@@ -58,14 +58,15 @@ export class ChatFileService {
   ];
 
   constructor() {
-    // Initialize S3 client
-    this.s3Client = new S3Client({
-      region: process.env.AWS_REGION || 'us-east-1',
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-      },
-    });
+    // Initialize S3 client (requires @aws-sdk/client-s3 package)
+    // Uncomment when AWS SDK is installed:
+    // this.s3Client = new S3Client({
+    //   region: process.env.AWS_REGION || 'us-east-1',
+    //   credentials: {
+    //     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    //     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+    //   },
+    // });
 
     this.bucket = process.env.AWS_S3_BUCKET || 'chat-files-bucket';
   }
@@ -205,15 +206,17 @@ export class ChatFileService {
    * Upload to S3
    */
   private async uploadToS3(key: string, buffer: Buffer, mimeType: string): Promise<void> {
-    const command = new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: key,
-      Body: buffer,
-      ContentType: mimeType,
-      ServerSideEncryption: 'AES256',
-    });
-
-    await this.s3Client.send(command);
+    // Requires @aws-sdk/client-s3 package
+    throw new Error('S3 upload not configured. Install @aws-sdk/client-s3 and configure AWS credentials.');
+    // Uncomment when AWS SDK is installed:
+    // const command = new PutObjectCommand({
+    //   Bucket: this.bucket,
+    //   Key: key,
+    //   Body: buffer,
+    //   ContentType: mimeType,
+    //   ServerSideEncryption: 'AES256',
+    // });
+    // await this.s3Client.send(command);
   }
 
   /**
@@ -221,21 +224,20 @@ export class ChatFileService {
    */
   private async generateThumbnail(s3Key: string, buffer: Buffer): Promise<string> {
     try {
-      // Generate thumbnail using sharp
-      const thumbnailBuffer = await sharp(buffer)
-        .resize(200, 200, {
-          fit: 'inside',
-          withoutEnlargement: true,
-        })
-        .jpeg({ quality: 80 })
-        .toBuffer();
-
-      // Upload thumbnail to S3
-      const thumbnailKey = s3Key.replace(/\.[^.]+$/, '_thumb.jpg');
-      await this.uploadToS3(thumbnailKey, thumbnailBuffer, 'image/jpeg');
-
-      // Return thumbnail URL
-      return await this.getDownloadUrl(thumbnailKey);
+      // Requires sharp package - install with: npm install sharp
+      logger.warn('Thumbnail generation not available. Install sharp package.');
+      return '';
+      // Uncomment when sharp is installed:
+      // const thumbnailBuffer = await sharp(buffer)
+      //   .resize(200, 200, {
+      //     fit: 'inside',
+      //     withoutEnlargement: true,
+      //   })
+      //   .jpeg({ quality: 80 })
+      //   .toBuffer();
+      // const thumbnailKey = s3Key.replace(/\.[^.]+$/, '_thumb.jpg');
+      // await this.uploadToS3(thumbnailKey, thumbnailBuffer, 'image/jpeg');
+      // return await this.getDownloadUrl(thumbnailKey);
     } catch (error) {
       logger.error('Error generating thumbnail', { error });
       return '';
@@ -247,13 +249,15 @@ export class ChatFileService {
    */
   async getDownloadUrl(s3Key: string, expiresIn: number = 3600): Promise<string> {
     try {
-      const command = new GetObjectCommand({
-        Bucket: this.bucket,
-        Key: s3Key,
-      });
-
-      const url = await getSignedUrl(this.s3Client, command, { expiresIn });
-      return url;
+      // Requires @aws-sdk/client-s3 and @aws-sdk/s3-request-presigner
+      throw new Error('S3 download not configured. Install AWS SDK packages.');
+      // Uncomment when AWS SDK is installed:
+      // const command = new GetObjectCommand({
+      //   Bucket: this.bucket,
+      //   Key: s3Key,
+      // });
+      // const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+      // return url;
     } catch (error) {
       logger.error('Error generating download URL', { error });
       throw error;
@@ -265,25 +269,24 @@ export class ChatFileService {
    */
   async deleteFile(s3Key: string): Promise<void> {
     try {
-      const command = new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: s3Key,
-      });
-
-      await this.s3Client.send(command);
-
-      // Delete thumbnail if exists
-      const thumbnailKey = s3Key.replace(/\.[^.]+$/, '_thumb.jpg');
-      try {
-        const thumbnailCommand = new DeleteObjectCommand({
-          Bucket: this.bucket,
-          Key: thumbnailKey,
-        });
-        await this.s3Client.send(thumbnailCommand);
-      } catch (thumbError) {
-        // Thumbnail might not exist, ignore error
-      }
-
+      // Requires @aws-sdk/client-s3
+      throw new Error('S3 delete not configured. Install AWS SDK packages.');
+      // Uncomment when AWS SDK is installed:
+      // const command = new DeleteObjectCommand({
+      //   Bucket: this.bucket,
+      //   Key: s3Key,
+      // });
+      // await this.s3Client.send(command);
+      // const thumbnailKey = s3Key.replace(/\.[^.]+$/, '_thumb.jpg');
+      // try {
+      //   const thumbnailCommand = new DeleteObjectCommand({
+      //     Bucket: this.bucket,
+      //     Key: thumbnailKey,
+      //   });
+      //   await this.s3Client.send(thumbnailCommand);
+      // } catch (thumbError) {
+      //   // Thumbnail might not exist, ignore error
+      // }
       logger.info('File deleted from S3', { s3Key });
     } catch (error) {
       logger.error('Error deleting file from S3', { error });

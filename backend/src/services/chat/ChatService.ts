@@ -350,7 +350,7 @@ export class ChatService {
         userId,
       });
 
-      return conversations as IConversation[];
+      return conversations as any;
     } catch (error) {
       logger.error('Error getting conversations', { error, userId });
       throw error;
@@ -1437,7 +1437,7 @@ export class ChatService {
       
       // Count read receipts
       const readCount = conversation.participants.filter(
-        p => p.lastReadAt !== undefined
+        p => (p as any).lastReadAt !== undefined
       ).length;
 
       return {
@@ -1878,15 +1878,20 @@ export class ChatService {
   ): Promise<void> {
     try {
       // Import audit service dynamically to avoid circular dependencies
-      const { unifiedAuditService } = await import('../unifiedAuditService');
+      const { default: UnifiedAuditService } = await import('../unifiedAuditService');
       
-      await unifiedAuditService.logAction({
+      await UnifiedAuditService.logActivity({
         userId: new mongoose.Types.ObjectId(adminId),
-        action,
-        resourceType: 'message',
-        resourceId: details.messageId,
-        details,
         workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        activityType: 'admin_action',
+        action,
+        description: `Admin action: ${action}`,
+        targetEntity: details.messageId ? {
+          entityType: 'message',
+          entityId: details.messageId,
+          entityName: 'Message'
+        } : undefined,
+        metadata: details,
         ipAddress: 'system',
         userAgent: 'admin-action',
       });

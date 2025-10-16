@@ -47,7 +47,7 @@ export interface INotification extends Document {
     'conversation_invite' | 'file_shared' | 'intervention_assigned' |
     'patient_query' | 'urgent_message' | 'system_notification' |
     'consultation_request' | 'consultation_accepted' | 'consultation_completed' | 'consultation_escalated' |
-    'medication_reminder' | 'missed_medication' | 'reminder_setup';
+    'medication_reminder' | 'missed_medication' | 'reminder_setup' | 'flagged_message';
     title: string;
     content: string;
     data: INotificationData;
@@ -229,7 +229,7 @@ const notificationSchema = new Schema({
             'conversation_invite', 'file_shared', 'intervention_assigned',
             'patient_query', 'urgent_message', 'system_notification',
             'consultation_request', 'consultation_accepted', 'consultation_completed', 'consultation_escalated',
-            'medication_reminder', 'missed_medication', 'reminder_setup'
+            'medication_reminder', 'missed_medication', 'reminder_setup', 'flagged_message'
         ],
         required: true,
         index: true,

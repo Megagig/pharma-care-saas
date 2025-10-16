@@ -14,6 +14,7 @@ export interface IConsultationRequest extends Document {
   // Request details
   reason: string;
   priority: 'normal' | 'urgent';
+  requestedAt: Date; // Alias for createdAt
   
   // Assignment
   assignedTo?: mongoose.Types.ObjectId; // Pharmacist who accepted
@@ -27,12 +28,28 @@ export interface IConsultationRequest extends Document {
   
   // Escalation tracking
   escalationCount: number;
+  escalationLevel: number; // Alias for escalationCount
   lastEscalatedAt?: Date;
   
   // Metadata
   workplaceId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  
+  // Instance methods
+  accept(pharmacistId: mongoose.Types.ObjectId): Promise<this>;
+  complete(): Promise<this>;
+  cancel(reason?: string): Promise<this>;
+  escalate(): Promise<this>;
+  isExpired(): boolean;
+  needsEscalation(): boolean;
+}
+
+export interface IConsultationRequestModel extends mongoose.Model<IConsultationRequest> {
+  findPending(workplaceId: string): Promise<any[]>;
+  findByPatient(patientId: string, workplaceId: string): Promise<any[]>;
+  findByPharmacist(pharmacistId: string, workplaceId: string): Promise<any[]>;
+  findNeedingEscalation(workplaceId: string): Promise<IConsultationRequest[]>;
 }
 
 const ConsultationRequestSchema = new Schema<IConsultationRequest>(
@@ -223,7 +240,20 @@ ConsultationRequestSchema.statics.findNeedingEscalation = function (workplaceId:
   });
 };
 
-export const ConsultationRequest = mongoose.model<IConsultationRequest>(
+// Virtual properties for aliases
+ConsultationRequestSchema.virtual('requestedAt').get(function(this: IConsultationRequest) {
+  return this.createdAt;
+});
+
+ConsultationRequestSchema.virtual('escalationLevel').get(function(this: IConsultationRequest) {
+  return this.escalationCount;
+});
+
+// Ensure virtuals are included in JSON
+ConsultationRequestSchema.set('toJSON', { virtuals: true });
+ConsultationRequestSchema.set('toObject', { virtuals: true });
+
+export const ConsultationRequest = mongoose.model<IConsultationRequest, IConsultationRequestModel>(
   'ConsultationRequest',
   ConsultationRequestSchema
 );

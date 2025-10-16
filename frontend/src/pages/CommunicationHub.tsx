@@ -12,7 +12,7 @@ import {
 import { useLocation } from 'react-router-dom';
 import ResponsiveCommunicationHub from '../components/communication/ResponsiveCommunicationHub';
 import UnifiedNotificationCenter from '../components/communication/UnifiedNotificationCenter';
-import AuditLogViewer from '../components/communication/AuditLogViewer';
+import { AuditLogViewer } from '../components/audit/AuditLogViewer';
 import PatientQueryDashboard from '../components/communication/PatientQueryDashboard';
 import { CommunicationDeepLinks } from '../utils/communicationDeepLinks';
 
@@ -41,47 +41,55 @@ const CommunicationHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
-    // Parse URL parameters for deep linking
-    const searchParams = new URLSearchParams(location.search);
-    const params = CommunicationDeepLinks.parseUrlParams(searchParams);
+    try {
+      // Parse URL parameters for deep linking
+      const searchParams = new URLSearchParams(location.search);
+      const params = CommunicationDeepLinks.parseUrlParams(searchParams);
 
-    // Set active tab based on URL parameters
-    if (params.tab) {
-      switch (params.tab) {
-        case 'messages':
-          setActiveTab(0);
-          break;
-        case 'notifications':
-          setActiveTab(1);
-          break;
-        case 'queries':
-          setActiveTab(2);
-          break;
-        case 'audit':
-          setActiveTab(3);
-          break;
-        default:
-          setActiveTab(0);
+      // Set active tab based on URL parameters
+      if (params.tab) {
+        switch (params.tab) {
+          case 'messages':
+            setActiveTab(0);
+            break;
+          case 'notifications':
+            setActiveTab(1);
+            break;
+          case 'queries':
+            setActiveTab(2);
+            break;
+          case 'audit':
+            setActiveTab(3);
+            break;
+          default:
+            setActiveTab(0);
+        }
       }
+    } catch (error) {
+      console.error('Error parsing URL parameters:', error);
     }
   }, [location.search]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+    try {
+      setActiveTab(newValue);
 
-    // Update URL without triggering navigation
-    const searchParams = new URLSearchParams(location.search);
-    const tabNames = ['messages', 'notifications', 'queries', 'audit'];
+      // Update URL without triggering navigation
+      const searchParams = new URLSearchParams(location.search);
+      const tabNames = ['messages', 'notifications', 'queries', 'audit'];
 
-    if (newValue === 0) {
-      searchParams.delete('tab');
-    } else {
-      searchParams.set('tab', tabNames[newValue]);
+      if (newValue === 0) {
+        searchParams.delete('tab');
+      } else {
+        searchParams.set('tab', tabNames[newValue]);
+      }
+
+      const newUrl = `${location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''
+        }`;
+      window.history.replaceState(null, '', newUrl);
+    } catch (error) {
+      console.error('Error changing tab:', error);
     }
-
-    const newUrl = `${location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''
-      }`;
-    window.history.replaceState(null, '', newUrl);
   };
 
   return (
@@ -145,19 +153,27 @@ const CommunicationHub: React.FC = () => {
         </Box>
 
         <TabPanel value={activeTab} index={0}>
-          <ResponsiveCommunicationHub />
+          <React.Suspense fallback={<Box sx={{ p: 3 }}>Loading messages...</Box>}>
+            <ResponsiveCommunicationHub />
+          </React.Suspense>
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
-          <UnifiedNotificationCenter />
+          <React.Suspense fallback={<Box sx={{ p: 3 }}>Loading notifications...</Box>}>
+            <UnifiedNotificationCenter />
+          </React.Suspense>
         </TabPanel>
 
         <TabPanel value={activeTab} index={2}>
-          <PatientQueryDashboard />
+          <React.Suspense fallback={<Box sx={{ p: 3 }}>Loading queries...</Box>}>
+            <PatientQueryDashboard />
+          </React.Suspense>
         </TabPanel>
 
         <TabPanel value={activeTab} index={3}>
-          <AuditLogViewer />
+          <React.Suspense fallback={<Box sx={{ p: 3 }}>Loading audit logs...</Box>}>
+            <AuditLogViewer />
+          </React.Suspense>
         </TabPanel>
       </Paper>
     </Container>

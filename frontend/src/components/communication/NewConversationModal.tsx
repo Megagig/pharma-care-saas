@@ -39,6 +39,7 @@ import { useCommunicationStore } from '../../stores/communicationStore';
 import { usePatients } from '../../queries/usePatients';
 import { CreateConversationData, Conversation } from '../../stores/types';
 import { apiClient } from '../../services/apiClient';
+import { useAuth } from '../../context/AuthContext';
 
 interface NewConversationModalProps {
   open: boolean;
@@ -73,6 +74,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
 }) => {
   console.log('🚀 [NewConversationModal] Component rendered. Open:', open);
 
+  const { user } = useAuth();
   const { createConversation, createPatientQuery, loading, errors } = useCommunicationStore();
   const { data: patientsResponse } = usePatients() || { data: null };
 
@@ -338,13 +340,24 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
           tags: tags.length > 0 ? tags : undefined,
         });
       } else {
+        // Ensure current user is included in participants
+        const participants = selectedParticipants.map((p) => ({
+          userId: p.userId,
+          role: p.role,
+        }));
+        
+        // Add current user if not already in the list
+        if (user && !participants.some(p => p.userId === user.id)) {
+          participants.push({
+            userId: user.id,
+            role: user.role || 'pharmacist',
+          });
+        }
+
         const conversationData: CreateConversationData = {
           type: conversationType,
           title: conversationTitle || undefined,
-          participants: selectedParticipants.map((p) => ({
-            userId: p.userId,
-            role: p.role,
-          })),
+          participants,
           patientId: selectedPatient || undefined,
           caseId: caseId || undefined,
           priority,
@@ -355,6 +368,8 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
           conversationData,
           participantsCount: conversationData.participants.length,
           participantDetails: conversationData.participants,
+          currentUser: user?.id,
+          currentUserRole: user?.role,
         });
         newConversation = await createConversation(conversationData);
       }

@@ -432,7 +432,7 @@ messageSchema.methods.dismissFlag = function (
   reviewedBy: mongoose.Types.ObjectId,
   reviewNotes?: string
 ): void {
-  const flag = this.flags.id(flagId);
+  const flag = this.flags.find((f: any) => f._id.toString() === flagId);
 
   if (!flag) {
     throw new Error('Flag not found');

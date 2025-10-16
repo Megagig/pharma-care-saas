@@ -436,7 +436,8 @@ export const validateParticipantRoles = (
       'pharmacy_team',
       'pharmacy_outlet',
       'nurse',
-      'admin'
+      'admin',
+      'super_admin'
     ];
 
     const hasHealthcareProvider = roles.some((role: string) =>
