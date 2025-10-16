@@ -1,0 +1,14 @@
+/**
+ * Chat Services Index
+ * 
+ * Exports all chat-related services for the communication module rebuild
+ */
+
+export { ChatService, chatService } from './ChatService';
+export type {
+  CreateConversationDTO,
+  UpdateConversationDTO,
+  ConversationFilters,
+  SendMessageDTO,
+  MessageFilters,
+} from './ChatService';
