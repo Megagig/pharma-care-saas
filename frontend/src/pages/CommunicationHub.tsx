@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import ResponsiveCommunicationHub from '../components/communication/ResponsiveCommunicationHub';
-import NotificationCenter from '../components/communication/NotificationCenter';
+import UnifiedNotificationCenter from '../components/communication/UnifiedNotificationCenter';
 import AuditLogViewer from '../components/communication/AuditLogViewer';
 import PatientQueryDashboard from '../components/communication/PatientQueryDashboard';
 import { CommunicationDeepLinks } from '../utils/communicationDeepLinks';
@@ -66,7 +66,7 @@ const CommunicationHub: React.FC = () => {
     }
   }, [location.search]);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
 
     // Update URL without triggering navigation
@@ -79,9 +79,8 @@ const CommunicationHub: React.FC = () => {
       searchParams.set('tab', tabNames[newValue]);
     }
 
-    const newUrl = `${location.pathname}${
-      searchParams.toString() ? `?${searchParams.toString()}` : ''
-    }`;
+    const newUrl = `${location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''
+      }`;
     window.history.replaceState(null, '', newUrl);
   };
 
@@ -150,7 +149,7 @@ const CommunicationHub: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
-          <NotificationCenter />
+          <UnifiedNotificationCenter />
         </TabPanel>
 
         <TabPanel value={activeTab} index={2}>

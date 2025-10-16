@@ -125,6 +125,26 @@ const notificationService = {
     },
 
     /**
+     * Create a new notification
+     */
+    async createNotification(data: {
+        userId: string;
+        title: string;
+        content: string;
+        type: string;
+        priority?: 'low' | 'normal' | 'high' | 'urgent';
+        data?: Record<string, any>;
+        deliveryChannels?: Array<'in-app' | 'email' | 'sms' | 'push'>;
+    }): Promise<Notification> {
+        const response = await apiClient.post('/notifications', {
+            ...data,
+            priority: data.priority || 'normal',
+            deliveryChannels: data.deliveryChannels || ['in-app'],
+        });
+        return response.data.data;
+    },
+
+    /**
      * Send a test notification (for testing purposes)
      */
     async sendTestNotification(title: string, content: string): Promise<void> {
