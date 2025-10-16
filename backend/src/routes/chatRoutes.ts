@@ -4,6 +4,7 @@ import { auth, AuthRequest } from '../middlewares/auth';
 import { chatService } from '../services/chat';
 import { getChatSocketService } from '../services/chat/ChatSocketService';
 import { chatFileService } from '../services/chat/ChatFileService';
+import { chatNotificationService } from '../services/chat/ChatNotificationService';
 import logger from '../utils/logger';
 
 const router = express.Router();

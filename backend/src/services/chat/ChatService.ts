@@ -3,7 +3,7 @@ import { ChatConversation, IConversation, ChatMessage, IMessage } from '../../mo
 import User from '../../models/User';
 import Patient from '../../models/Patient';
 import logger from '../../utils/logger';
-import { notificationService } from '../notificationService';
+import { chatNotificationService } from './ChatNotificationService';
 
 /**
  * ChatService - Complete Chat Service
@@ -138,24 +138,13 @@ export class ChatService {
       
       for (const participant of otherParticipants) {
         try {
-          await notificationService.createNotification({
-            userId: participant._id,
-            type: 'conversation_invite',
-            title: 'New Conversation',
-            content: `You've been added to a new conversation: ${conversation.title}`,
-            data: {
-              conversationId: conversation._id,
-              senderId: new mongoose.Types.ObjectId(data.createdBy),
-            },
-            priority: 'normal',
-            deliveryChannels: {
-              inApp: true,
-              email: false,
-              sms: false,
-            },
-            workplaceId: new mongoose.Types.ObjectId(data.workplaceId),
-            createdBy: new mongoose.Types.ObjectId(data.createdBy),
-          });
+          await chatNotificationService.sendConversationInviteNotification(
+            participant._id.toString(),
+            data.createdBy,
+            conversation._id.toString(),
+            conversation.title,
+            data.workplaceId
+          );
         } catch (notifError) {
           logger.error('Failed to send conversation notification', {
             error: notifError,
@@ -432,24 +421,13 @@ export class ChatService {
 
       // Send notification to new participant
       try {
-        await notificationService.createNotification({
-          userId: newUser._id,
-          type: 'conversation_invite',
-          title: 'Added to Conversation',
-          content: `You've been added to: ${conversation.title}`,
-          data: {
-            conversationId: conversation._id,
-            senderId: new mongoose.Types.ObjectId(addedBy),
-          },
-          priority: 'normal',
-          deliveryChannels: {
-            inApp: true,
-            email: false,
-            sms: false,
-          },
-          workplaceId: new mongoose.Types.ObjectId(workplaceId),
-          createdBy: new mongoose.Types.ObjectId(addedBy),
-        });
+        await chatNotificationService.sendConversationInviteNotification(
+          newUser._id.toString(),
+          addedBy,
+          conversation._id.toString(),
+          conversation.title,
+          workplaceId
+        );
       } catch (notifError) {
         logger.error('Failed to send participant added notification', {
           error: notifError,
@@ -1057,25 +1035,14 @@ export class ChatService {
         }
 
         try {
-          await notificationService.createNotification({
-            userId: mentionedUserId,
-            type: 'mention',
-            title: `${senderName} mentioned you`,
-            content: messagePreview,
-            data: {
-              conversationId: conversation._id,
-              messageId: message._id,
-              senderId: message.senderId,
-            },
-            priority: 'normal',
-            deliveryChannels: {
-              inApp: true,
-              email: false,
-              sms: false,
-            },
-            workplaceId: conversation.workplaceId,
-            createdBy: message.senderId,
-          });
+          await chatNotificationService.sendMentionNotification(
+            mentionedUserId.toString(),
+            message.senderId.toString(),
+            conversation._id.toString(),
+            message._id.toString(),
+            messagePreview,
+            conversation.workplaceId.toString()
+          );
         } catch (notifError) {
           logger.error('Failed to send mention notification', {
             error: notifError,
