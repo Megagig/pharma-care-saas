@@ -10,6 +10,11 @@ export const parseDate = (dateValue: any): Date | null => {
     if (typeof dateValue === 'string') {
       return new Date(dateValue);
     } else if (typeof dateValue === 'object' && dateValue !== null) {
+      // Check if it's an empty object
+      if (Object.keys(dateValue).length === 0) {
+        return null;
+      }
+      
       if (dateValue.$date) {
         // MongoDB date object format
         return new Date(dateValue.$date);
@@ -42,7 +47,9 @@ export const formatMessageTimestamp = (timestamp: any): string => {
   const dateValue = parseDate(timestamp);
   
   if (!dateValue || isNaN(dateValue.getTime())) {
-    return 'Invalid date';
+    // If timestamp is invalid, try to use current time as fallback
+    console.warn('Invalid timestamp received:', timestamp, typeof timestamp);
+    return 'just now';
   }
   
   const now = new Date();

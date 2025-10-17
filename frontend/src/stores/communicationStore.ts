@@ -603,16 +603,29 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                         // Ensure senderId is populated with current user info if available
                         if (data.currentUser && typeof newMessage.senderId === 'string') {
-                            newMessage.senderId = {
-                                _id: data.currentUser.id,
-                                firstName: data.currentUser.firstName,
-                                lastName: data.currentUser.lastName,
-                                role: data.currentUser.role,
+                            // Create a new message object to avoid mutating the original
+                            const enhancedMessage = {
+                                ...newMessage,
+                                senderId: {
+                                    _id: data.currentUser.id,
+                                    firstName: data.currentUser.firstName,
+                                    lastName: data.currentUser.lastName,
+                                    role: data.currentUser.role,
+                                },
+                                // Ensure createdAt is properly set
+                                createdAt: newMessage.createdAt || new Date().toISOString()
                             };
+                            
+                            // Add the enhanced message to conversation
+                            get().addMessage(data.conversationId, enhancedMessage);
+                        } else {
+                            // Add message as-is if no enhancement needed, but ensure createdAt is valid
+                            const messageToAdd = {
+                                ...newMessage,
+                                createdAt: newMessage.createdAt || new Date().toISOString()
+                            };
+                            get().addMessage(data.conversationId, messageToAdd);
                         }
-
-                        // Add message to conversation
-                        get().addMessage(data.conversationId, newMessage);
 
                         // Update conversation's lastMessageAt
                         get().updateConversation(data.conversationId, {
@@ -657,9 +670,21 @@ export const useCommunicationStore = create<CommunicationState>()(
                                     existingMessages.forEach(msg => messageMap.set(msg._id, msg));
                                     cachedMessages.forEach(msg => {
                                         const existingMsg = messageMap.get(msg._id);
-                                        if (existingMsg && typeof existingMsg.senderId === 'object' && typeof msg.senderId === 'string') {
-                                            // Preserve the populated senderId from existing message
-                                            messageMap.set(msg._id, { ...msg, senderId: existingMsg.senderId });
+                                        if (existingMsg) {
+                                            // Merge messages, preserving populated fields from existing message
+                                            const mergedMsg = { ...msg };
+                                            
+                                            // Preserve populated senderId if it exists in existing message
+                                            if (typeof existingMsg.senderId === 'object' && typeof msg.senderId === 'string') {
+                                                mergedMsg.senderId = existingMsg.senderId;
+                                            }
+                                            
+                                            // Preserve valid createdAt if the new one is invalid
+                                            if (existingMsg.createdAt && (!msg.createdAt || typeof msg.createdAt === 'object')) {
+                                                mergedMsg.createdAt = existingMsg.createdAt;
+                                            }
+                                            
+                                            messageMap.set(msg._id, mergedMsg);
                                         } else {
                                             messageMap.set(msg._id, msg);
                                         }
@@ -735,12 +760,24 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 // Add existing messages first
                                 existingMessages.forEach(msg => messageMap.set(msg._id, msg));
                                 
-                                // Add/update with fetched messages, but preserve populated senderId
+                                // Add/update with fetched messages, but preserve populated senderId and other enhanced fields
                                 messages.forEach(msg => {
                                     const existingMsg = messageMap.get(msg._id);
-                                    if (existingMsg && typeof existingMsg.senderId === 'object' && typeof msg.senderId === 'string') {
-                                        // Preserve the populated senderId from existing message
-                                        messageMap.set(msg._id, { ...msg, senderId: existingMsg.senderId });
+                                    if (existingMsg) {
+                                        // Merge messages, preserving populated fields from existing message
+                                        const mergedMsg = { ...msg };
+                                        
+                                        // Preserve populated senderId if it exists in existing message
+                                        if (typeof existingMsg.senderId === 'object' && typeof msg.senderId === 'string') {
+                                            mergedMsg.senderId = existingMsg.senderId;
+                                        }
+                                        
+                                        // Preserve valid createdAt if the new one is invalid
+                                        if (existingMsg.createdAt && (!msg.createdAt || typeof msg.createdAt === 'object')) {
+                                            mergedMsg.createdAt = existingMsg.createdAt;
+                                        }
+                                        
+                                        messageMap.set(msg._id, mergedMsg);
                                     } else {
                                         messageMap.set(msg._id, msg);
                                     }

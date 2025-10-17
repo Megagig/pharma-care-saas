@@ -1108,6 +1108,10 @@ export class CommunicationService {
     });
 
     await message.save();
+
+    // Populate sender data for system messages too
+    await message.populate("senderId", "firstName lastName role");
+
     return message;
   }
 
