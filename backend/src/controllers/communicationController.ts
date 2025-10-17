@@ -109,6 +109,8 @@ export class CommunicationController {
         ...req.body,
         createdBy: userId,
         workplaceId,
+        // Allow super admins to create cross-workplace conversations
+        skipWorkplaceValidation: req.user!.role === 'super_admin',
       };
 
       const conversation =

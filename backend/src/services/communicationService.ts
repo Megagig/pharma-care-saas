@@ -97,19 +97,56 @@ export class CommunicationService {
 
       // Validate participants exist and belong to the same workplace
       // Skip workplace validation for super admins creating cross-workplace conversations
+      // Validate participants - they can be either users or patients
       const participantQuery: any = { _id: { $in: participantIds } };
       if (!data.skipWorkplaceValidation) {
         participantQuery.workplaceId = data.workplaceId;
       }
 
-      const participants = await User.find(participantQuery).select("_id role firstName lastName");
+      // Check both User and Patient collections for participants
+      logger.info('Searching for participants', {
+        participantIds,
+        participantQuery,
+        workplaceId: data.workplaceId,
+        skipWorkplaceValidation: data.skipWorkplaceValidation,
+      });
 
-      if (participants.length !== participantIds.length) {
+      const [users, patients] = await Promise.all([
+        User.find(participantQuery).select("_id role firstName lastName"),
+        Patient.find(participantQuery).select("_id firstName lastName")
+      ]);
+
+      logger.info('Participant search results', {
+        usersFound: users.map(u => ({ id: u._id.toString(), role: u.role, name: `${u.firstName} ${u.lastName}` })),
+        patientsFound: patients.map(p => ({ id: p._id.toString(), name: `${p.firstName} ${p.lastName}` })),
+      });
+
+      // If no patients found with workspace filter, check if they exist at all
+      if (patients.length === 0 && !data.skipWorkplaceValidation) {
+        const patientsWithoutWorkspaceFilter = await Patient.find({ _id: { $in: participantIds } }).select("_id firstName lastName workplaceId");
+        logger.info('Patients found without workspace filter', {
+          patientsFound: patientsWithoutWorkspaceFilter.map(p => ({
+            id: p._id.toString(),
+            name: `${p.firstName} ${p.lastName}`,
+            workplaceId: p.workplaceId?.toString()
+          })),
+        });
+      }
+
+      // Combine users and patients, adding role for patients
+      const allParticipants = [
+        ...users.map(u => ({ _id: u._id, role: u.role, firstName: u.firstName, lastName: u.lastName })),
+        ...patients.map(p => ({ _id: p._id, role: 'patient', firstName: p.firstName, lastName: p.lastName }))
+      ];
+
+      if (allParticipants.length !== participantIds.length) {
         logger.error('Participant validation failed', {
           expected: participantIds.length,
-          found: participants.length,
+          found: allParticipants.length,
           participantIds,
-          foundIds: participants.map(p => p._id.toString()),
+          foundIds: allParticipants.map(p => p._id.toString()),
+          foundUsers: users.length,
+          foundPatients: patients.length,
           workplaceId: data.workplaceId,
           skipValidation: data.skipWorkplaceValidation,
         });
@@ -117,6 +154,8 @@ export class CommunicationService {
           "Some participants not found or not in the same workplace",
         );
       }
+
+      const participants = allParticipants;
 
       // Validate patient if provided
       if (data.patientId) {
