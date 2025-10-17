@@ -16,6 +16,7 @@ import MentionInput from './MentionInput';
 import TemplateSelector from './TemplateSelector';
 import { useSocketConnection } from '../../hooks/useSocket';
 import { socketService } from '../../services/socketService';
+import { parseDate, generateSafeKey } from '../../utils/dateUtils';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -292,60 +293,38 @@ const MessageThread: React.FC<MessageThreadProps> = ({
         ) : (
           threadMessages.map((message, index) => {
             const prevMessage = index > 0 ? threadMessages[index - 1] : null;
+
+            // Use imported parseDate function
+
             const showDateDivider = (() => {
-              if (!prevMessage || !message.createdAt || !prevMessage.createdAt) {
+              if (!prevMessage) return false;
+
+              const messageDate = parseDate(message.createdAt);
+              const prevDate = parseDate(prevMessage.createdAt);
+
+              if (!messageDate || !prevDate || isNaN(messageDate.getTime()) || isNaN(prevDate.getTime())) {
                 return false;
               }
-              try {
-                // Handle different date formats
-                const parseDate = (dateValue: any) => {
-                  if (typeof dateValue === 'string') {
-                    return new Date(dateValue);
-                  } else if (typeof dateValue === 'object' && dateValue.$date) {
-                    return new Date(dateValue.$date);
-                  } else if (typeof dateValue === 'object' && dateValue.toString) {
-                    return new Date(dateValue.toString());
-                  }
-                  return new Date(dateValue);
-                };
-                
-                const messageDate = parseDate(message.createdAt);
-                const prevDate = parseDate(prevMessage.createdAt);
-                
-                if (isNaN(messageDate.getTime()) || isNaN(prevDate.getTime())) {
-                  return false;
-                }
-                
-                return messageDate.toDateString() !== prevDate.toDateString();
-              } catch {
-                return false;
-              }
+
+              return messageDate.toDateString() !== prevDate.toDateString();
             })();
 
+            // Generate safe key for React - use index and timestamp as fallback
+            const messageKey = message._id && typeof message._id === 'string' && message._id.length > 0
+              ? message._id 
+              : `message-${conversationId}-${index}-${message.createdAt || Date.now()}`;
+
             return (
-              <React.Fragment key={typeof message._id === 'object' ? message._id.toString() : message._id}>
+              <React.Fragment key={messageKey}>
                 {showDateDivider && (
                   <Box sx={{ my: 2 }}>
                     <Divider>
                       <Typography variant="caption" color="text.secondary">
                         {(() => {
-                          try {
-                            // Handle different date formats
-                            let dateValue: Date;
-                            if (typeof message.createdAt === 'string') {
-                              dateValue = new Date(message.createdAt);
-                            } else if (typeof message.createdAt === 'object' && message.createdAt.$date) {
-                              dateValue = new Date(message.createdAt.$date);
-                            } else if (typeof message.createdAt === 'object' && message.createdAt.toString) {
-                              dateValue = new Date(message.createdAt.toString());
-                            } else {
-                              dateValue = new Date(message.createdAt);
-                            }
-                            
-                            return isNaN(dateValue.getTime()) ? 'Invalid date' : dateValue.toLocaleDateString();
-                          } catch {
-                            return 'Invalid date';
-                          }
+                          const messageDate = parseDate(message.createdAt);
+                          return messageDate && !isNaN(messageDate.getTime())
+                            ? messageDate.toLocaleDateString()
+                            : 'Invalid date';
                         })()}
                       </Typography>
                     </Divider>
@@ -371,7 +350,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                         }}
                         onReaction={(messageId, emoji) => {
                           // TODO: Implement message reactions
-                          console.log('Add reaction:', messageId, emoji);
+                          console.log('Add reaction:', { messageId, emoji }, '✅');
                         }}
                         onCreateThread={handleCreateThread}
                         onViewThread={handleViewThread}
@@ -453,7 +432,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
             onChange={handleMessageChange}
             onKeyPress={handleKeyPress}
             placeholder={threadId ? 'Reply to thread...' : 'Type a message...'}
-            disabled={sending || !isConnected}
+            disabled={sending}
             multiline
             maxRows={4}
             conversationId={conversationId}
@@ -471,8 +450,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
             onClick={handleSend}
             disabled={
               (!messageText.trim() && attachments.length === 0) ||
-              sending ||
-              !isConnected
+              sending
             }
             sx={{
               bgcolor: 'primary.main',

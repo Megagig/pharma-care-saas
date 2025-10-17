@@ -336,6 +336,7 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                 fetchConversations: async (filters) => {
                     const { setLoading, setError } = get();
+                    // Fetching conversations (debug log removed)
 
                     return performanceMonitor.measureFunction('fetch_conversations', async () => {
                         setLoading('fetchConversations', true);
@@ -386,6 +387,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                                     total: result.pagination?.total || 0,
                                     pages: Math.ceil((result.pagination?.total || 0) / (result.pagination?.limit || 20)),
                                 };
+                                
+                                // Conversations fetched successfully
+
 
                                 // Cache the results
                                 communicationCache.cacheConversationList(cacheKey, conversations);
@@ -561,11 +565,12 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('sendMessage', null);
 
                     try {
-                        // Ensure we have a valid CSRF token before sending
+                        // Try to get CSRF token, but don't block if it fails
                         try {
                             await apiClient.get('/communication/csrf-token');
                         } catch (csrfError) {
-                            console.warn('Failed to fetch CSRF token:', csrfError);
+                            console.warn('Failed to fetch CSRF token, proceeding without it:', csrfError);
+                            // Continue with message sending even if CSRF token fails
                         }
 
                         const formData = new FormData();
@@ -587,7 +592,9 @@ export const useCommunicationStore = create<CommunicationState>()(
                             });
                         }
 
-                        const result = (await apiClient.post(`/communication/conversations/${data.conversationId}/messages`, formData)).data;
+                        const response = await apiClient.post(`/communication/conversations/${data.conversationId}/messages`, formData);
+                        const result = response.data;
+                        
                         if (!result.success) {
                             throw new Error(result.message || 'Failed to send message');
                         }

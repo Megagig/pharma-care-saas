@@ -72,7 +72,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
   onConversationCreated,
   defaultType,
 }) => {
-  console.log('🚀 [NewConversationModal] Component rendered. Open:', open);
+  // Component rendered (debug log removed)
 
   const { user } = useAuth();
   const { createConversation, createPatientQuery, loading, errors } = useCommunicationStore();
@@ -123,63 +123,33 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
   >([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
-  console.log('📍 [NewConversationModal] Component state - open:', open, 'availableParticipants:', availableParticipants.length);
+  // Component state (debug log removed)
 
   // Fetch available participants from API
   useEffect(() => {
     const fetchParticipants = async () => {
-      console.log('🔍 [NewConversationModal] Starting fetchParticipants...');
       setLoadingParticipants(true);
       try {
         const url = `/communication/participants/search?limit=100`;
-        console.log('📡 [NewConversationModal] Fetching from:', url);
-
         const response = await apiClient.get(url);
 
-        console.log('📨 [NewConversationModal] Response status:', response.status, response.statusText);
-        console.log('✅ [NewConversationModal] API result:', response.data);
-        console.log('📊 [NewConversationModal] Result structure:', {
-          success: response.data.success,
-          hasData: !!response.data.data,
-          isArray: Array.isArray(response.data.data),
-          dataLength: Array.isArray(response.data.data) ? response.data.data.length : 'not array',
-          dataType: typeof response.data.data
-        });
-
         if (response.data.success && Array.isArray(response.data.data)) {
-          console.log('✅ [NewConversationModal] Setting', response.data.data.length, 'participants');
-          console.log('👥 [NewConversationModal] Sample participant:', response.data.data[0]);
           setAvailableParticipants(response.data.data);
         } else if (response.data.data) {
-          console.warn('⚠️ [NewConversationModal] Data exists but not in expected format, attempting fallback');
           setAvailableParticipants(Array.isArray(response.data.data) ? response.data.data : []);
         } else {
-          console.error('❌ [NewConversationModal] No data in API response:', response.data);
           setAvailableParticipants([]);
         }
       } catch (error: any) {
-        console.error('💥 [NewConversationModal] Exception during fetch:', error);
-        if (error.response) {
-          console.error('❌ [NewConversationModal] API error response:', {
-            status: error.response.status,
-            statusText: error.response.statusText,
-            data: error.response.data
-          });
-          console.error('📋 [NewConversationModal] Full error response data:', JSON.stringify(error.response.data, null, 2));
-        }
+        console.error('Failed to fetch participants:', error);
         setAvailableParticipants([]);
       } finally {
         setLoadingParticipants(false);
-        console.log('🏁 [NewConversationModal] Fetch completed');
       }
     };
 
-    console.log('🎯 [NewConversationModal] useEffect triggered. Modal open?', open);
     if (open) {
-      console.log('✨ [NewConversationModal] Modal is open, fetching participants...');
       fetchParticipants();
-    } else {
-      console.log('⏸️ [NewConversationModal] Modal is closed, skipping fetch');
     }
   }, [open]); // Re-run when modal opens
 
@@ -197,20 +167,16 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
     const participantMap = new Map<string, ParticipantOption>();
 
     // Add available participants from API
-    console.log('Available participants from API:', availableParticipants.length);
     availableParticipants.forEach((p) => {
       participantMap.set(p.userId, p);
     });
 
     // Add patients (will override if already exists)
-    console.log('Patient options:', patientOptions.length);
     patientOptions.forEach((p) => {
       participantMap.set(p.userId, p);
     });
 
     const result = Array.from(participantMap.values());
-    console.log('All participants combined:', result.length, 'total');
-    console.log('Sample participants:', result.slice(0, 3));
     return result;
   }, [availableParticipants, patientOptions]);
 
@@ -325,13 +291,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
       let newConversation: Conversation | null = null;
 
       if (conversationType === 'patient_query' && selectedPatient) {
-        // Create via dedicated endpoint with initial message
-        console.log('📤 [NewConversationModal] Creating patient query via dedicated endpoint', {
-          patientId: selectedPatient,
-          title: conversationTitle,
-          priority,
-          tags,
-        });
+        // Creating patient query via dedicated endpoint
         newConversation = await createPatientQuery({
           patientId: selectedPatient,
           title: conversationTitle || undefined,
@@ -364,38 +324,24 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
           tags: tags.length > 0 ? tags : undefined,
         };
 
-        console.log('📤 [NewConversationModal] Submitting conversation:', {
-          conversationData,
-          participantsCount: conversationData.participants.length,
-          participantDetails: conversationData.participants,
-          currentUser: user?.id,
-          currentUserRole: user?.role,
-        });
+        // Submitting conversation data
         newConversation = await createConversation(conversationData);
       }
 
-      console.log('✅ [NewConversationModal] Conversation created successfully:', newConversation);
+      // Conversation created successfully
 
       if (newConversation) {
         onConversationCreated?.(newConversation);
         onClose();
       }
     } catch (error: any) {
-      console.error('❌ [NewConversationModal] Failed to create conversation:', error);
-      console.error('❌ [NewConversationModal] Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
+      console.error('Failed to create conversation:', error);
     }
   };
 
   // Filter participants based on search
   const filteredParticipants = React.useMemo(() => {
-    console.log('Filtering participants. Total available:', allParticipants.length, 'Search term:', participantSearch);
-
     if (!participantSearch || participantSearch.trim() === '') {
-      console.log('No search term, returning all participants');
       return allParticipants;
     }
 
@@ -413,7 +359,6 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
       return matches;
     });
 
-    console.log('Filtered participants:', filtered.length, 'matches');
     return filtered;
   }, [allParticipants, participantSearch]);
 

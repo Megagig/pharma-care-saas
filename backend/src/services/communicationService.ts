@@ -101,7 +101,7 @@ export class CommunicationService {
       if (!data.skipWorkplaceValidation) {
         participantQuery.workplaceId = data.workplaceId;
       }
-      
+
       const participants = await User.find(participantQuery).select("_id role firstName lastName");
 
       if (participants.length !== participantIds.length) {
@@ -124,7 +124,7 @@ export class CommunicationService {
         if (!data.skipWorkplaceValidation) {
           patientQuery.workplaceId = data.workplaceId;
         }
-        
+
         const patient = await Patient.findOne(patientQuery);
 
         if (!patient) {
@@ -575,7 +575,7 @@ export class CommunicationService {
 
       // Check message count first to avoid loading too much data
       const messageCount = await Message.countDocuments(query).maxTimeMS(3000);
-      
+
       logger.info('🔍 [CommunicationService.getMessages] Executing query', {
         conversationId,
         queryKeys: Object.keys(query),

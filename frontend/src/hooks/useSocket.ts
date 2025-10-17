@@ -21,20 +21,17 @@ export const useSocket = (): Socket | null => {
   const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
 
   useEffect(() => {
-    // Get auth token from localStorage or your auth context
-    const token = localStorage.getItem('authToken');
-
-    if (!token) {
-      console.warn('No auth token found, socket connection not established');
-      return;
-    }
+    // Check if user is authenticated via cookies (no token needed for socket)
+    // The socket will use the same cookies as the HTTP requests
+    console.log('🔍 [useSocket] Checking authentication via cookies');
+    
+    // For cookie-based auth, we don't need to check localStorage
+    // The socket connection will use the same cookies as HTTP requests
 
     // Create socket connection if it doesn't exist
     if (!socket) {
       socket = io(SOCKET_URL, {
-        auth: {
-          token,
-        },
+        withCredentials: true, // Use cookies for authentication
         transports: ['websocket', 'polling'],
       });
 
@@ -67,20 +64,13 @@ export const useSocketConnection = (): SocketConnectionInfo => {
   const [connectionInfo, setConnectionInfo] = useState<SocketConnectionInfo['connectionInfo']>();
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-
-    if (!token) {
-      setConnectionStatus('disconnected');
-      return;
-    }
+    // For cookie-based auth, we don't need to check localStorage
 
     // Create socket connection if it doesn't exist
     if (!socket) {
       setConnectionStatus('connecting');
       socket = io(SOCKET_URL, {
-        auth: {
-          token,
-        },
+        withCredentials: true, // Use cookies for authentication
         transports: ['websocket', 'polling'],
       });
 

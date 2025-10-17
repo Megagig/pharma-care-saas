@@ -447,9 +447,22 @@ export class CommunicationController {
         isAdmin, // Skip participant check for super admins
       );
 
+      // Ensure ObjectIds are properly serialized to strings
+      const serializedMessages = messages.map(message => {
+        const messageObj = message.toObject ? message.toObject() : message;
+        return {
+          ...messageObj,
+          _id: messageObj._id ? messageObj._id.toString() : undefined,
+          conversationId: messageObj.conversationId ? messageObj.conversationId.toString() : undefined,
+          senderId: typeof messageObj.senderId === 'object' && messageObj.senderId._id 
+            ? messageObj.senderId._id.toString() 
+            : messageObj.senderId ? messageObj.senderId.toString() : undefined,
+        };
+      });
+
       res.json({
         success: true,
-        data: messages,
+        data: serializedMessages,
         pagination: {
           limit: filters.limit,
           offset: filters.offset,

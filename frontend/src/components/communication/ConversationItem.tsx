@@ -27,6 +27,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { Conversation } from '../../stores/types';
 import { useCommunicationStore } from '../../stores/communicationStore';
+// Removed useThrottle import as it was causing click issues
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -36,7 +37,7 @@ interface ConversationItemProps {
   compact?: boolean;
 }
 
-const ConversationItem: React.FC<ConversationItemProps> = ({
+const ConversationItem: React.FC<ConversationItemProps> = React.memo(({
   conversation,
   selected = false,
   onClick,
@@ -135,8 +136,16 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
 
   // Handle menu click
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
     event.stopPropagation();
     setMenuAnchor(event.currentTarget);
+  };
+
+  // Handle conversation click
+  const handleConversationClick = (event: React.MouseEvent) => {
+    if (onClick) {
+      onClick();
+    }
   };
 
   // Get available actions based on conversation status
@@ -182,7 +191,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     <>
       <ListItemButton
         selected={selected}
-        onClick={onClick}
+        onClick={handleConversationClick}
         sx={{
           width: '100%',
           p: compact ? 1 : 2,
@@ -380,6 +389,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       </Menu>
     </>
   );
-};
+});
 
 export default ConversationItem;

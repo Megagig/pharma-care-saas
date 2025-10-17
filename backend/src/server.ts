@@ -157,9 +157,8 @@ const gracefulShutdown = (signal: string) => {
     
     // Close database connection
     const mongoose = require('mongoose');
-    mongoose.connection.close(() => {
-      console.log('Database connection closed');
-    });
+    mongoose.connection.close();
+    console.log('Database connection closed');
     
     // Exit after cleanup
     setTimeout(() => {

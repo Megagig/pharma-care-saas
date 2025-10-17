@@ -63,6 +63,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const conversation =
     activeConversation?._id === conversationId ? activeConversation : null;
 
+
+
+
+
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -74,12 +78,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Load messages when conversation changes
   useEffect(() => {
-    if (conversationId) {
+    const hasMessages = conversationMessages.length > 0;
+    const shouldFetch = conversationId && !hasMessages;
+    
+    if (shouldFetch) {
       fetchMessages(conversationId);
       markConversationAsRead(conversationId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
+  }, [conversationId, conversationMessages.length]);
 
   // Handle sending messages
   const handleSendMessage = async (
@@ -263,9 +269,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Connection Status Alert */}
       {!isConnected && (
-        <Alert severity="warning" sx={{ m: 1 }}>
-          You're currently offline. Messages will be sent when connection is
-          restored.
+        <Alert severity="info" sx={{ m: 1 }}>
+          Real-time features unavailable. Messages will still be sent normally.
         </Alert>
       )}
 

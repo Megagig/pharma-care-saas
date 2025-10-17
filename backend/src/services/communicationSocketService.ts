@@ -70,22 +70,64 @@ export class CommunicationSocketService {
      * Setup Socket.IO event handlers with authentication middleware
      */
     private setupSocketHandlers(): void {
-        // Authentication middleware
+        // Authentication middleware - support both token and cookie auth
         this.io.use(async (socket: AuthenticatedSocket, next) => {
             try {
+                let user = null;
+                logger.info('🔍 [Socket Auth] Attempting authentication for socket:', socket.id);
+                
+                // Try token-based auth first (for backward compatibility)
                 const token = socket.handshake.auth.token ||
                     socket.handshake.headers.authorization?.replace('Bearer ', '');
 
-                if (!token) {
-                    return next(new Error('Authentication token required'));
+                if (token) {
+                    try {
+                        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+                        user = await User.findById(decoded.id)
+                            .select('_id workplaceId role email firstName lastName');
+                    } catch (tokenError) {
+                        logger.warn('Token authentication failed for socket:', tokenError);
+                    }
                 }
 
-                const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-                const user = await User.findById(decoded.id)
-                    .select('_id workplaceId role email firstName lastName');
+                // If token auth failed, try cookie-based auth
+                if (!user) {
+                    const cookies = socket.handshake.headers.cookie;
+                    logger.info('🔍 [Socket Auth] Checking cookies:', cookies);
+                    
+                    if (cookies) {
+                        // Parse cookies to find auth token
+                        const cookieObj: Record<string, string> = {};
+                        cookies.split(';').forEach(cookie => {
+                            const [name, value] = cookie.trim().split('=');
+                            if (name && value) {
+                                cookieObj[name] = decodeURIComponent(value);
+                            }
+                        });
+
+                        logger.info('🔍 [Socket Auth] Parsed cookies:', Object.keys(cookieObj));
+                        
+                        // Look for auth token in cookies (using the same name as HTTP auth)
+                        const authToken = cookieObj['accessToken'];
+                        
+                        if (authToken) {
+                            logger.info('🔍 [Socket Auth] Found accessToken cookie, verifying...');
+                            try {
+                                const decoded = jwt.verify(authToken, process.env.JWT_SECRET!) as any;
+                                user = await User.findById(decoded.id)
+                                    .select('_id workplaceId role email firstName lastName');
+                                logger.info('🔍 [Socket Auth] Cookie auth successful for user:', user?.email);
+                            } catch (cookieError) {
+                                logger.warn('Cookie authentication failed for socket:', cookieError);
+                            }
+                        } else {
+                            logger.warn('🔍 [Socket Auth] No accessToken cookie found');
+                        }
+                    }
+                }
 
                 if (!user) {
-                    return next(new Error('User not found'));
+                    return next(new Error('Authentication required - no valid token or session found'));
                 }
 
                 // Attach user data to socket
