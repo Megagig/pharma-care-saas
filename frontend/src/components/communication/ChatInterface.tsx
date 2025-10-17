@@ -59,9 +59,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Get conversation messages
   const conversationMessages = messages[conversationId] || [];
 
-  // Get current conversation
-  const conversation =
-    activeConversation?._id === conversationId ? activeConversation : null;
+  // Get current conversation - check activeConversation first, then fall back to conversations list
+  const { conversations } = useCommunicationStore();
+  const conversation = activeConversation?._id === conversationId 
+    ? activeConversation 
+    : conversations.find(conv => conv._id === conversationId) || null;
 
 
 
@@ -75,6 +77,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [conversationMessages]);
+
+  // Polling for new messages when socket is not connected
+  useEffect(() => {
+    if (!isConnected && conversationId) {
+      const pollInterval = setInterval(() => {
+        // Only poll if we have messages (to avoid initial fetch conflicts)
+        if (conversationMessages.length > 0) {
+          fetchMessages(conversationId);
+        }
+      }, 10000); // Poll every 10 seconds
+
+      return () => clearInterval(pollInterval);
+    }
+  }, [isConnected, conversationId, conversationMessages.length, fetchMessages]);
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -270,7 +286,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Connection Status Alert */}
       {!isConnected && (
         <Alert severity="info" sx={{ m: 1 }}>
-          Real-time features unavailable. Messages will still be sent normally.
+          Using polling for updates. Messages will still be sent normally.
         </Alert>
       )}
 

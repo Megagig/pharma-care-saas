@@ -52,7 +52,7 @@ const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({
     if (selectedConversationId === conversation._id) {
       return;
     }
-    
+
     setSelectedConversationId(conversation._id);
     setActiveConversation(conversation);
     onConversationChange?.(conversation._id);

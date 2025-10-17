@@ -23,20 +23,29 @@ export const useSocket = (): Socket | null => {
   useEffect(() => {
     // Check if user is authenticated via cookies (no token needed for socket)
     // The socket will use the same cookies as the HTTP requests
-    console.log('🔍 [useSocket] Checking authentication via cookies');
     
     // For cookie-based auth, we don't need to check localStorage
     // The socket connection will use the same cookies as HTTP requests
 
     // Create socket connection if it doesn't exist
     if (!socket) {
-      socket = io(SOCKET_URL, {
-        withCredentials: true, // Use cookies for authentication
-        transports: ['websocket', 'polling'],
-      });
+      try {
+        socket = io(SOCKET_URL, {
+          withCredentials: true, // Use cookies for authentication
+          transports: ['websocket', 'polling'],
+          timeout: 20000, // 20 second timeout
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 5,
+          maxReconnectionAttempts: 5,
+        });
+      } catch (error) {
+        console.error('Socket creation error:', error);
+        return;
+      }
 
       socket.on('connect', () => {
-        console.log('Socket connected:', socket?.id);
+        console.log('✅ Socket connected successfully');
       });
 
       socket.on('disconnect', (reason) => {
@@ -44,7 +53,11 @@ export const useSocket = (): Socket | null => {
       });
 
       socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
+        console.warn('Socket connection error:', error.message);
+      });
+
+      socket.on('reconnect', (attemptNumber) => {
+        console.log('Socket reconnected after', attemptNumber, 'attempts');
       });
     }
 
@@ -69,13 +82,25 @@ export const useSocketConnection = (): SocketConnectionInfo => {
     // Create socket connection if it doesn't exist
     if (!socket) {
       setConnectionStatus('connecting');
-      socket = io(SOCKET_URL, {
-        withCredentials: true, // Use cookies for authentication
-        transports: ['websocket', 'polling'],
-      });
+      
+      try {
+        socket = io(SOCKET_URL, {
+          withCredentials: true, // Use cookies for authentication
+          transports: ['websocket', 'polling'],
+          timeout: 20000, // 20 second timeout
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 5,
+          maxReconnectionAttempts: 5,
+        });
+      } catch (error) {
+        console.error('Socket creation error:', error);
+        setConnectionStatus('error');
+        return;
+      }
 
       socket.on('connect', () => {
-        console.log('Socket connected:', socket?.id);
+        console.log('✅ Socket connected successfully:', socket?.id);
         setConnectionStatus('connected');
         setConnectionInfo({
           connectedAt: new Date(),
@@ -84,7 +109,7 @@ export const useSocketConnection = (): SocketConnectionInfo => {
       });
 
       socket.on('disconnect', (reason) => {
-        console.log('Socket disconnected:', reason);
+        console.log('🔌 Socket disconnected:', reason);
         setConnectionStatus('disconnected');
       });
 
@@ -96,8 +121,17 @@ export const useSocketConnection = (): SocketConnectionInfo => {
         }));
       });
 
+      socket.on('reconnect', (attemptNumber) => {
+        console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
+        setConnectionStatus('connected');
+        setConnectionInfo({
+          connectedAt: new Date(),
+          reconnectAttempts: attemptNumber,
+        });
+      });
+
       socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
+        console.warn('🔍 Socket connection error:', error.message);
         setConnectionStatus('error');
       });
     } else {
