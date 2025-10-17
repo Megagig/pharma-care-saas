@@ -17,6 +17,7 @@ import {
 } from '@mui/icons-material';
 import { useCommunicationStore } from '../../stores/communicationStore';
 import { useSocketConnection } from '../../hooks/useSocket';
+import { useAuth } from '../../hooks/useAuth';
 import MessageThread from './MessageThread';
 import ParticipantList from './ParticipantList';
 import ConnectionStatus from './ConnectionStatus';
@@ -53,6 +54,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   } = useCommunicationStore();
 
   const { isConnected } = useSocketConnection();
+  const { user } = useAuth();
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -125,6 +127,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       threadId,
       parentMessageId,
       mentions,
+      currentUser: user ? {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      } : undefined,
     };
 
     await sendMessage(messageData);

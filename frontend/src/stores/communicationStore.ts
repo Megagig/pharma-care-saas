@@ -601,6 +601,16 @@ export const useCommunicationStore = create<CommunicationState>()(
 
                         const newMessage = result.data;
 
+                        // Ensure senderId is populated with current user info if available
+                        if (data.currentUser && typeof newMessage.senderId === 'string') {
+                            newMessage.senderId = {
+                                _id: data.currentUser.id,
+                                firstName: data.currentUser.firstName,
+                                lastName: data.currentUser.lastName,
+                                role: data.currentUser.role,
+                            };
+                        }
+
                         // Add message to conversation
                         get().addMessage(data.conversationId, newMessage);
 
@@ -639,12 +649,32 @@ export const useCommunicationStore = create<CommunicationState>()(
                             // Check cache first
                             const cachedMessages = communicationCache.getCachedMessageList(conversationId, page);
                             if (cachedMessages) {
-                                set((state) => ({
-                                    messages: {
-                                        ...state.messages,
-                                        [conversationId]: cachedMessages,
-                                    },
-                                }));
+                                set((state) => {
+                                    const existingMessages = state.messages[conversationId] || [];
+                                    
+                                    // Merge cached messages with existing ones, preserving populated fields
+                                    const messageMap = new Map();
+                                    existingMessages.forEach(msg => messageMap.set(msg._id, msg));
+                                    cachedMessages.forEach(msg => {
+                                        const existingMsg = messageMap.get(msg._id);
+                                        if (existingMsg && typeof existingMsg.senderId === 'object' && typeof msg.senderId === 'string') {
+                                            // Preserve the populated senderId from existing message
+                                            messageMap.set(msg._id, { ...msg, senderId: existingMsg.senderId });
+                                        } else {
+                                            messageMap.set(msg._id, msg);
+                                        }
+                                    });
+                                    
+                                    const mergedMessages = Array.from(messageMap.values())
+                                        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+                                    return {
+                                        messages: {
+                                            ...state.messages,
+                                            [conversationId]: mergedMessages,
+                                        },
+                                    };
+                                });
                                 return;
                             }
 
@@ -696,16 +726,40 @@ export const useCommunicationStore = create<CommunicationState>()(
                                 }
                             }
 
-                            set((state) => ({
-                                messages: {
-                                    ...state.messages,
-                                    [conversationId]: messages,
-                                },
-                                messagePagination: {
-                                    ...state.messagePagination,
-                                    [conversationId]: pagination,
-                                },
-                            }));
+                            set((state) => {
+                                const existingMessages = state.messages[conversationId] || [];
+                                
+                                // Merge messages, avoiding duplicates and preserving populated fields
+                                const messageMap = new Map();
+                                
+                                // Add existing messages first
+                                existingMessages.forEach(msg => messageMap.set(msg._id, msg));
+                                
+                                // Add/update with fetched messages, but preserve populated senderId
+                                messages.forEach(msg => {
+                                    const existingMsg = messageMap.get(msg._id);
+                                    if (existingMsg && typeof existingMsg.senderId === 'object' && typeof msg.senderId === 'string') {
+                                        // Preserve the populated senderId from existing message
+                                        messageMap.set(msg._id, { ...msg, senderId: existingMsg.senderId });
+                                    } else {
+                                        messageMap.set(msg._id, msg);
+                                    }
+                                });
+                                
+                                const mergedMessages = Array.from(messageMap.values())
+                                    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+                                return {
+                                    messages: {
+                                        ...state.messages,
+                                        [conversationId]: mergedMessages,
+                                    },
+                                    messagePagination: {
+                                        ...state.messagePagination,
+                                        [conversationId]: pagination,
+                                    },
+                                };
+                            });
                         } catch (error) {
                             const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
                             setError('fetchMessages', errorMessage);

@@ -357,8 +357,10 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({
               fontWeight="bold"
               sx={{ fontSize: isMobileMode ? '0.875rem' : undefined }}
             >
-              {/* TODO: Get user name */}
-              User Name
+              {message.senderId && typeof message.senderId === 'object' 
+                ? `${message.senderId.firstName} ${message.senderId.lastName}`
+                : 'Unknown User'
+              }
             </Typography>
 
             {message.priority === 'urgent' && (

@@ -36,7 +36,12 @@ export interface Conversation {
 export interface Message {
   _id: string;
   conversationId: string;
-  senderId: string;
+  senderId: string | {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+  };
   content: {
     text?: string; // Encrypted
     type: 'text' | 'file' | 'image' | 'clinical_note' | 'system';
@@ -142,6 +147,12 @@ export interface SendMessageData {
   parentMessageId?: string;
   mentions?: string[];
   priority?: 'normal' | 'urgent';
+  currentUser?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+  };
 }
 
 export interface CreateConversationData {
