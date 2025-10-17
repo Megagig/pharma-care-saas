@@ -78,6 +78,14 @@ const MessageItem: React.FC<MessageItemProps> = ({
 }) => {
   const theme = useTheme();
   const { isMobile, isSmallMobile } = useResponsive();
+
+  // Debug message data
+  console.log('🔍 [MessageItem] Rendering message:', {
+    messageId: message._id,
+    createdAt: message.createdAt,
+    content: message.content?.text?.substring(0, 50),
+    senderId: message.senderId,
+  });
   const isTouchDevice = useIsTouchDevice();
 
   // Use mobile mode if explicitly set or detected
@@ -249,15 +257,48 @@ const MessageItem: React.FC<MessageItemProps> = ({
   };
 
   // Format timestamp
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 24) {
-      return formatDistanceToNow(date, { addSuffix: true });
+  const formatTimestamp = (timestamp: any) => {
+    console.log('🔍 [MessageItem] Formatting timestamp:', { timestamp, type: typeof timestamp });
+    
+    if (!timestamp) {
+      console.warn('🔍 [MessageItem] No timestamp provided');
+      return 'Unknown time';
     }
-    return format(date, 'MMM d, yyyy h:mm a');
+    
+    try {
+      let dateValue: Date;
+      
+      // Handle different timestamp formats
+      if (typeof timestamp === 'string') {
+        dateValue = new Date(timestamp);
+      } else if (typeof timestamp === 'object' && timestamp.$date) {
+        // MongoDB date object format
+        dateValue = new Date(timestamp.$date);
+      } else if (typeof timestamp === 'object' && timestamp.toString) {
+        // ObjectId or other object with toString
+        dateValue = new Date(timestamp.toString());
+      } else {
+        console.warn('🔍 [MessageItem] Unknown timestamp format:', timestamp);
+        return 'Invalid date';
+      }
+      
+      // Check if date is valid
+      if (isNaN(dateValue.getTime())) {
+        console.warn('🔍 [MessageItem] Invalid date after parsing:', timestamp);
+        return 'Invalid date';
+      }
+      
+      const now = new Date();
+      const diffInHours = (now.getTime() - dateValue.getTime()) / (1000 * 60 * 60);
+
+      if (diffInHours < 24) {
+        return formatDistanceToNow(dateValue, { addSuffix: true });
+      }
+      return format(dateValue, 'MMM d, yyyy h:mm a');
+    } catch (error) {
+      console.warn('🔍 [MessageItem] Error formatting timestamp:', timestamp, error);
+      return 'Invalid time';
+    }
   };
 
   // Check if user has reacted with emoji

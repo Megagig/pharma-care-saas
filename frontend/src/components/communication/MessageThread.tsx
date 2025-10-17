@@ -292,46 +292,104 @@ const MessageThread: React.FC<MessageThreadProps> = ({
         ) : (
           threadMessages.map((message, index) => {
             const prevMessage = index > 0 ? threadMessages[index - 1] : null;
-            const showDateDivider =
-              prevMessage &&
-              new Date(message.createdAt).toDateString() !==
-                new Date(prevMessage.createdAt).toDateString();
+            const showDateDivider = (() => {
+              if (!prevMessage || !message.createdAt || !prevMessage.createdAt) {
+                return false;
+              }
+              try {
+                // Handle different date formats
+                const parseDate = (dateValue: any) => {
+                  if (typeof dateValue === 'string') {
+                    return new Date(dateValue);
+                  } else if (typeof dateValue === 'object' && dateValue.$date) {
+                    return new Date(dateValue.$date);
+                  } else if (typeof dateValue === 'object' && dateValue.toString) {
+                    return new Date(dateValue.toString());
+                  }
+                  return new Date(dateValue);
+                };
+                
+                const messageDate = parseDate(message.createdAt);
+                const prevDate = parseDate(prevMessage.createdAt);
+                
+                if (isNaN(messageDate.getTime()) || isNaN(prevDate.getTime())) {
+                  return false;
+                }
+                
+                return messageDate.toDateString() !== prevDate.toDateString();
+              } catch {
+                return false;
+              }
+            })();
 
             return (
-              <React.Fragment key={message._id}>
+              <React.Fragment key={typeof message._id === 'object' ? message._id.toString() : message._id}>
                 {showDateDivider && (
                   <Box sx={{ my: 2 }}>
                     <Divider>
                       <Typography variant="caption" color="text.secondary">
-                        {new Date(message.createdAt).toLocaleDateString()}
+                        {(() => {
+                          try {
+                            // Handle different date formats
+                            let dateValue: Date;
+                            if (typeof message.createdAt === 'string') {
+                              dateValue = new Date(message.createdAt);
+                            } else if (typeof message.createdAt === 'object' && message.createdAt.$date) {
+                              dateValue = new Date(message.createdAt.$date);
+                            } else if (typeof message.createdAt === 'object' && message.createdAt.toString) {
+                              dateValue = new Date(message.createdAt.toString());
+                            } else {
+                              dateValue = new Date(message.createdAt);
+                            }
+                            
+                            return isNaN(dateValue.getTime()) ? 'Invalid date' : dateValue.toLocaleDateString();
+                          } catch {
+                            return 'Invalid date';
+                          }
+                        })()}
                       </Typography>
                     </Divider>
                   </Box>
                 )}
-                <MessageItem
-                  message={message}
-                  showAvatar={
-                    !prevMessage || prevMessage.senderId !== message.senderId
+                {(() => {
+                  try {
+                    return (
+                      <MessageItem
+                        message={message}
+                        showAvatar={
+                          !prevMessage || prevMessage.senderId !== message.senderId
+                        }
+                        showTimestamp={true}
+                        onReply={() => handleReplyToMessage(message)}
+                        onEdit={(messageId, newContent) => {
+                          // TODO: Implement message editing
+                          console.log('Edit message:', messageId, newContent);
+                        }}
+                        onDelete={(messageId) => {
+                          // TODO: Implement message deletion
+                          console.log('Delete message:', messageId);
+                        }}
+                        onReaction={(messageId, emoji) => {
+                          // TODO: Implement message reactions
+                          console.log('Add reaction:', messageId, emoji);
+                        }}
+                        onCreateThread={handleCreateThread}
+                        onViewThread={handleViewThread}
+                        showThreading={!threadId} // Don't show threading inside a thread
+                        conversationId={conversationId}
+                      />
+                    );
+                  } catch (error) {
+                    console.error('Error rendering message:', message._id, error);
+                    return (
+                      <Box sx={{ p: 2, bgcolor: 'error.light', borderRadius: 1, my: 1 }}>
+                        <Typography variant="body2" color="error">
+                          Failed to load message
+                        </Typography>
+                      </Box>
+                    );
                   }
-                  showTimestamp={true}
-                  onReply={() => handleReplyToMessage(message)}
-                  onEdit={(messageId, newContent) => {
-                    // TODO: Implement message editing
-                    console.log('Edit message:', messageId, newContent);
-                  }}
-                  onDelete={(messageId) => {
-                    // TODO: Implement message deletion
-                    console.log('Delete message:', messageId);
-                  }}
-                  onReaction={(messageId, emoji) => {
-                    // TODO: Implement message reactions
-                    console.log('Add reaction:', messageId, emoji);
-                  }}
-                  onCreateThread={handleCreateThread}
-                  onViewThread={handleViewThread}
-                  showThreading={!threadId} // Don't show threading inside a thread
-                  conversationId={conversationId}
-                />
+                })()}
               </React.Fragment>
             );
           })

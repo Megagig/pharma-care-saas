@@ -48,7 +48,7 @@ export interface Alert {
 
 export class PerformanceCollector extends EventEmitter {
   private metrics: PerformanceMetric[] = [];
-  private maxMetrics = 10000;
+  private maxMetrics = 1000; // Reduced from 10000 to save memory
   private alertRules: AlertRule[] = [];
   private activeAlerts: Map<string, Alert> = new Map();
   private alertHistory: Alert[] = [];
@@ -671,7 +671,7 @@ export const createPerformanceMiddleware = (
 
 export const performanceCollector = new PerformanceCollector();
 
-// Start system metrics collection
-performanceCollector.startSystemMetricsCollection();
+// Don't start metrics collection immediately - let the server start it after DB connection
+// performanceCollector.startSystemMetricsCollection();
 
 export default performanceCollector;

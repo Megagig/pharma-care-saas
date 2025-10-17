@@ -521,7 +521,15 @@ export class CommunicationService {
         conversationQuery["participants.leftAt"] = { $exists: false };
       }
 
-      const conversation = await Conversation.findOne(conversationQuery);
+      logger.info('🔍 [CommunicationService.getMessages] Looking up conversation', {
+        conversationId,
+        workplaceId,
+        skipParticipantCheck,
+      });
+
+      const conversation = await Conversation.findOne(conversationQuery)
+        .lean() // Use lean for better performance
+        .maxTimeMS(5000); // 5 second timeout
 
       if (!conversation) {
         logger.error('Conversation not found', {
@@ -533,6 +541,11 @@ export class CommunicationService {
         });
         throw new Error("Conversation not found or access denied");
       }
+
+      logger.info('✅ [CommunicationService.getMessages] Conversation found', {
+        conversationId,
+        conversationType: conversation.type,
+      });
 
       const query: any = { conversationId };
 
@@ -560,13 +573,37 @@ export class CommunicationService {
         query.createdAt = { ...query.createdAt, $gt: filters.after };
       }
 
+      // Check message count first to avoid loading too much data
+      const messageCount = await Message.countDocuments(query).maxTimeMS(3000);
+      
+      logger.info('🔍 [CommunicationService.getMessages] Executing query', {
+        conversationId,
+        queryKeys: Object.keys(query),
+        messageCount,
+        limit: Math.min(filters.limit || 50, 100),
+        skip: filters.offset || 0,
+      });
+
+      if (messageCount > 10000) {
+        logger.warn('⚠️ [CommunicationService.getMessages] Large message count detected', {
+          conversationId,
+          messageCount,
+        });
+      }
+
+      // Use lean() for better performance and limit populate to essential fields only
       const messages = await Message.find(query)
         .populate("senderId", "firstName lastName role")
-        .populate("mentions", "firstName lastName role")
-        .populate("readBy.userId", "firstName lastName")
         .sort({ createdAt: -1 })
-        .limit(filters.limit || 50)
-        .skip(filters.offset || 0);
+        .limit(Math.min(filters.limit || 50, 100)) // Cap at 100 messages max
+        .skip(filters.offset || 0)
+        .lean() // Use lean for better memory performance
+        .maxTimeMS(10000); // 10 second timeout
+
+      logger.info('✅ [CommunicationService.getMessages] Query completed', {
+        conversationId,
+        messagesCount: messages.length,
+      });
 
       return messages;
     } catch (error) {
