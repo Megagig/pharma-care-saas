@@ -630,18 +630,30 @@ export class CommunicationService {
         });
       }
 
-      // Use lean() for better performance and limit populate to essential fields only
+      // Populate sender data for all messages including system messages
       const messages = await Message.find(query)
         .populate("senderId", "firstName lastName role")
         .sort({ createdAt: -1 })
         .limit(Math.min(filters.limit || 50, 100)) // Cap at 100 messages max
         .skip(filters.offset || 0)
-        .lean() // Use lean for better memory performance
         .maxTimeMS(10000); // 10 second timeout
 
       logger.info('✅ [CommunicationService.getMessages] Query completed', {
         conversationId,
         messagesCount: messages.length,
+      });
+
+      // Debug: Log sender information for each message
+      messages.forEach((msg, index) => {
+        const sender = msg.senderId as any; // Type assertion for populated field
+        logger.info(`Message ${index} sender info`, {
+          messageId: msg._id,
+          senderId: sender,
+          senderType: typeof sender,
+          contentType: msg.content?.type,
+          hasFirstName: sender?.firstName,
+          hasLastName: sender?.lastName,
+        });
       });
 
       return messages;
@@ -1111,6 +1123,14 @@ export class CommunicationService {
 
     // Populate sender data for system messages too
     await message.populate("senderId", "firstName lastName role");
+
+    logger.info('System message created with populated sender', {
+      messageId: message._id,
+      senderId: message.senderId,
+      senderType: typeof message.senderId,
+      action,
+      text
+    });
 
     return message;
   }

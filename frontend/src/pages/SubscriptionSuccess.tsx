@@ -20,6 +20,8 @@ import CheckIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import HomeIcon from '@mui/icons-material/Home';
 import ReceiptIcon from '@mui/icons-material/Receipt';
+import { useSubscriptionStatus } from '../hooks/useSubscription';
+import { useAuth } from '../hooks/useAuth';
 
 const SubscriptionSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -28,6 +30,8 @@ const SubscriptionSuccess: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [subscriptionData, setSubscriptionData] = useState<any>(null);
+  const { refetch: refetchSubscription } = useSubscriptionStatus();
+  const { refreshUser } = useAuth();
 
   const reference = searchParams.get('reference');
   const trxref = searchParams.get('trxref'); // Paystack also uses this parameter
@@ -70,6 +74,9 @@ const SubscriptionSuccess: React.FC = () => {
         if (activateResponse.data.success) {
           setSuccess(true);
           setSubscriptionData(activateResponse.data.data);
+          
+          // Refresh subscription status and user data
+          await Promise.all([refetchSubscription(), refreshUser()]);
         } else {
           setError(
             activateResponse.data.message || 'Failed to activate subscription'
@@ -87,7 +94,7 @@ const SubscriptionSuccess: React.FC = () => {
     };
 
     verifyPayment();
-  }, [reference, trxref]);
+  }, [reference, trxref, refetchSubscription, refreshUser]);
 
   const handleGoToDashboard = () => {
     navigate('/dashboard');

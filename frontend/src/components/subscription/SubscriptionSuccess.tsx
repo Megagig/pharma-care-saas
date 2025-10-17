@@ -12,6 +12,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { subscriptionService } from '../../services/subscriptionService';
+import { useSubscriptionStatus } from '../../hooks/useSubscription';
+import { useAuth } from '../../hooks/useAuth';
 import { useUIStore } from '../../stores';
 
 const SubscriptionSuccess: React.FC = () => {
@@ -20,6 +22,8 @@ const SubscriptionSuccess: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { refetch: refetchSubscription } = useSubscriptionStatus();
+  const { refreshUser } = useAuth();
   const addNotification = useUIStore((state) => state.addNotification);
 
   useEffect(() => {
@@ -38,6 +42,10 @@ const SubscriptionSuccess: React.FC = () => {
 
         if (result.success) {
           setSuccess(true);
+          
+          // Refresh subscription status and user data
+          await Promise.all([refetchSubscription(), refreshUser()]);
+          
           addNotification({
             type: 'success',
             title: 'Subscription Activated',
@@ -63,7 +71,7 @@ const SubscriptionSuccess: React.FC = () => {
     };
 
     verifyPayment();
-  }, [searchParams, addNotification]);
+  }, [searchParams, addNotification, refetchSubscription, refreshUser]);
 
   const handleContinue = () => {
     navigate('/dashboard');
