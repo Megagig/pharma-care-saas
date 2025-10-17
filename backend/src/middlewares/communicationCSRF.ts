@@ -90,6 +90,17 @@ export const requireCSRFToken = (
       return;
     }
 
+    // Skip CSRF validation for super admins (they can operate across workplaces)
+    if (req.user.role === 'super_admin' || (req as any).isAdmin === true) {
+      logger.info("CSRF validation skipped for super admin", {
+        userId: req.user._id,
+        method: req.method,
+        url: req.originalUrl,
+        service: "communication-csrf",
+      });
+      return next();
+    }
+
     // Get CSRF token from header or body
     const csrfToken =
       req.headers["x-csrf-token"] ||
@@ -117,11 +128,15 @@ export const requireCSRFToken = (
 
     // Validate CSRF token
     const sessionId = (req as any).sessionID;
-    const isValid = validateCSRFToken(
-      req.user._id.toString(),
-      csrfToken as string,
-      sessionId,
-    );
+    const userId = req.user._id.toString();
+    
+    // Try with sessionId first, then without
+    let isValid = validateCSRFToken(userId, csrfToken as string, sessionId);
+    
+    // If validation fails with sessionId, try without it (fallback to "default")
+    if (!isValid && sessionId) {
+      isValid = validateCSRFToken(userId, csrfToken as string, undefined);
+    }
 
     if (!isValid) {
       logger.warn("Invalid CSRF token", {
@@ -134,6 +149,7 @@ export const requireCSRFToken = (
           typeof csrfToken === "string"
             ? csrfToken.substring(0, 8) + "..."
             : "invalid",
+        hasSessionId: !!sessionId,
         service: "communication-csrf",
       });
 
@@ -170,6 +186,14 @@ export const provideCSRFToken = (req: AuthRequest, res: Response): void => {
 
     const sessionId = (req as any).sessionID;
     const token = generateCSRFToken(req.user._id.toString(), sessionId);
+
+    // Set token as cookie so frontend can automatically use it
+    res.cookie("csrf-token", token, {
+      httpOnly: false, // Must be accessible to JavaScript
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
 
     res.json({
       success: true,

@@ -176,7 +176,8 @@ const MobileChatInterface: React.FC<MobileChatInterfaceProps> = ({
       markConversationAsRead(conversationId);
       setConversationListOpen(false);
     }
-  }, [conversationId, fetchMessages, markConversationAsRead]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
 
   // Handle conversation selection
   const handleConversationSelect = (conv: Conversation) => {

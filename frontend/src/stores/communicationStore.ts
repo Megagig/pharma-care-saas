@@ -561,6 +561,13 @@ export const useCommunicationStore = create<CommunicationState>()(
                     setError('sendMessage', null);
 
                     try {
+                        // Ensure we have a valid CSRF token before sending
+                        try {
+                            await apiClient.get('/communication/csrf-token');
+                        } catch (csrfError) {
+                            console.warn('Failed to fetch CSRF token:', csrfError);
+                        }
+
                         const formData = new FormData();
                         formData.append('conversationId', data.conversationId);
                         formData.append('content', JSON.stringify({

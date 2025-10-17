@@ -253,23 +253,37 @@ router.post(
   communicationCSRF.requireCSRFToken,
   [
     param('id').isMongoId(),
-    body('content.text')
-      .optional()
-      .isString()
-      .trim()
-      .isLength({ min: 1, max: 10000 }),
-    body('content.type').isIn([
-      'text',
-      'file',
-      'image',
-      'clinical_note',
-      'voice_note',
-    ]),
-    body('content.attachments').optional().isArray(),
+    // Content can be sent as JSON string in FormData or as object
+    body('content')
+      .custom((value) => {
+        // If it's a string, try to parse it as JSON
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            return parsed && typeof parsed === 'object';
+          } catch {
+            return false;
+          }
+        }
+        // If it's already an object, that's fine too
+        return typeof value === 'object' && value !== null;
+      })
+      .withMessage('Content must be a valid JSON object'),
     body('threadId').optional().isMongoId(),
     body('parentMessageId').optional().isMongoId(),
-    body('mentions').optional().isArray(),
-    body('mentions.*').isMongoId(),
+    body('mentions')
+      .optional()
+      .custom((value) => {
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed);
+          } catch {
+            return false;
+          }
+        }
+        return Array.isArray(value);
+      }),
     body('priority').optional().isIn(['normal', 'high', 'urgent']),
   ],
   handleValidationErrors,

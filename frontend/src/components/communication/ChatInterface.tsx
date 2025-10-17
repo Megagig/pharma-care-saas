@@ -78,7 +78,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       fetchMessages(conversationId);
       markConversationAsRead(conversationId);
     }
-  }, [conversationId, fetchMessages, markConversationAsRead]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
 
   // Handle sending messages
   const handleSendMessage = async (

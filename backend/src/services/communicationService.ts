@@ -17,6 +17,7 @@ export interface CreateConversationData {
   tags?: string[];
   createdBy: string;
   workplaceId: string;
+  skipWorkplaceValidation?: boolean; // Allow super admins to create cross-workplace conversations
 }
 
 export interface SendMessageData {
@@ -95,12 +96,23 @@ export class CommunicationService {
       }
 
       // Validate participants exist and belong to the same workplace
-      const participants = await User.find({
-        _id: { $in: participantIds },
-        workplaceId: data.workplaceId,
-      }).select("_id role firstName lastName");
+      // Skip workplace validation for super admins creating cross-workplace conversations
+      const participantQuery: any = { _id: { $in: participantIds } };
+      if (!data.skipWorkplaceValidation) {
+        participantQuery.workplaceId = data.workplaceId;
+      }
+      
+      const participants = await User.find(participantQuery).select("_id role firstName lastName");
 
       if (participants.length !== participantIds.length) {
+        logger.error('Participant validation failed', {
+          expected: participantIds.length,
+          found: participants.length,
+          participantIds,
+          foundIds: participants.map(p => p._id.toString()),
+          workplaceId: data.workplaceId,
+          skipValidation: data.skipWorkplaceValidation,
+        });
         throw new Error(
           "Some participants not found or not in the same workplace",
         );
@@ -108,10 +120,12 @@ export class CommunicationService {
 
       // Validate patient if provided
       if (data.patientId) {
-        const patient = await Patient.findOne({
-          _id: data.patientId,
-          workplaceId: data.workplaceId,
-        });
+        const patientQuery: any = { _id: data.patientId };
+        if (!data.skipWorkplaceValidation) {
+          patientQuery.workplaceId = data.workplaceId;
+        }
+        
+        const patient = await Patient.findOne(patientQuery);
 
         if (!patient) {
           throw new Error("Patient not found or not in the same workplace");
@@ -332,9 +346,21 @@ export class CommunicationService {
    */
   async sendMessage(data: SendMessageData): Promise<IMessage> {
     try {
+      logger.info('🔍 [CommunicationService.sendMessage] Starting', {
+        conversationId: data.conversationId,
+        senderId: data.senderId,
+        workplaceId: data.workplaceId,
+      });
+
       // Validate conversation exists and user is participant
       const conversation = await Conversation.findOne({
         _id: data.conversationId,
+        workplaceId: data.workplaceId,
+      });
+
+      logger.info('🔍 [CommunicationService.sendMessage] Conversation lookup', {
+        found: !!conversation,
+        conversationId: data.conversationId,
         workplaceId: data.workplaceId,
       });
 
@@ -342,7 +368,14 @@ export class CommunicationService {
         throw new Error("Conversation not found");
       }
 
-      if (!conversation.hasParticipant(data.senderId as any)) {
+      const isParticipant = conversation.hasParticipant(data.senderId as any);
+      logger.info('🔍 [CommunicationService.sendMessage] Participant check', {
+        senderId: data.senderId,
+        isParticipant,
+        participants: conversation.participants.map(p => p.userId.toString()),
+      });
+
+      if (!isParticipant) {
         throw new Error("User is not a participant in this conversation");
       }
 
@@ -465,28 +498,37 @@ export class CommunicationService {
     userId: string,
     workplaceId: string,
     filters: MessageFilters = {},
+    skipParticipantCheck: boolean = false,
   ): Promise<IMessage[]> {
     try {
-      // Validate user is participant
+      // Validate user is participant (skip for super admins)
       logger.info('Getting messages', {
         conversationId,
         userId,
         workplaceId,
+        skipParticipantCheck,
         service: 'communication-service'
       });
 
-      const conversation = await Conversation.findOne({
+      const conversationQuery: any = {
         _id: conversationId,
         workplaceId,
-        "participants.userId": userId,
-        "participants.leftAt": { $exists: false },
-      });
+      };
+
+      // Only check participant if not skipping
+      if (!skipParticipantCheck) {
+        conversationQuery["participants.userId"] = userId;
+        conversationQuery["participants.leftAt"] = { $exists: false };
+      }
+
+      const conversation = await Conversation.findOne(conversationQuery);
 
       if (!conversation) {
         logger.error('Conversation not found', {
           conversationId,
           userId,
           workplaceId,
+          skipParticipantCheck,
           service: 'communication-service'
         });
         throw new Error("Conversation not found or access denied");
