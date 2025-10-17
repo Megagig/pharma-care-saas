@@ -10,6 +10,7 @@ export interface CreateConversationData {
     tags?: string[];
     createdBy: string;
     workplaceId: string;
+    skipWorkplaceValidation?: boolean;
 }
 export interface SendMessageData {
     conversationId: string;
@@ -61,7 +62,7 @@ export declare class CommunicationService {
     removeParticipant(conversationId: string, userId: string, removedBy: string, workplaceId: string): Promise<void>;
     sendMessage(data: SendMessageData): Promise<IMessage>;
     getConversations(userId: string, workplaceId: string, filters?: ConversationFilters): Promise<IConversation[]>;
-    getMessages(conversationId: string, userId: string, workplaceId: string, filters?: MessageFilters): Promise<IMessage[]>;
+    getMessages(conversationId: string, userId: string, workplaceId: string, filters?: MessageFilters, skipParticipantCheck?: boolean): Promise<IMessage[]>;
     markMessageAsRead(messageId: string, userId: string, workplaceId: string): Promise<void>;
     searchMessages(workplaceId: string, query: string, userId: string, filters?: SearchFilters): Promise<IMessage[]>;
     createThread(messageId: string, userId: string, workplaceId: string): Promise<string>;

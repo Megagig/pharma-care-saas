@@ -24,18 +24,58 @@ class CommunicationService {
                 });
                 participantIds.push(data.createdBy);
             }
-            const participants = await User_1.default.find({
-                _id: { $in: participantIds },
+            const participantQuery = { _id: { $in: participantIds } };
+            if (!data.skipWorkplaceValidation) {
+                participantQuery.workplaceId = data.workplaceId;
+            }
+            logger_1.default.info('Searching for participants', {
+                participantIds,
+                participantQuery,
                 workplaceId: data.workplaceId,
-            }).select("_id role firstName lastName");
-            if (participants.length !== participantIds.length) {
+                skipWorkplaceValidation: data.skipWorkplaceValidation,
+            });
+            const [users, patients] = await Promise.all([
+                User_1.default.find(participantQuery).select("_id role firstName lastName"),
+                Patient_1.default.find(participantQuery).select("_id firstName lastName")
+            ]);
+            logger_1.default.info('Participant search results', {
+                usersFound: users.map(u => ({ id: u._id.toString(), role: u.role, name: `${u.firstName} ${u.lastName}` })),
+                patientsFound: patients.map(p => ({ id: p._id.toString(), name: `${p.firstName} ${p.lastName}` })),
+            });
+            if (patients.length === 0 && !data.skipWorkplaceValidation) {
+                const patientsWithoutWorkspaceFilter = await Patient_1.default.find({ _id: { $in: participantIds } }).select("_id firstName lastName workplaceId");
+                logger_1.default.info('Patients found without workspace filter', {
+                    patientsFound: patientsWithoutWorkspaceFilter.map(p => ({
+                        id: p._id.toString(),
+                        name: `${p.firstName} ${p.lastName}`,
+                        workplaceId: p.workplaceId?.toString()
+                    })),
+                });
+            }
+            const allParticipants = [
+                ...users.map(u => ({ _id: u._id, role: u.role, firstName: u.firstName, lastName: u.lastName })),
+                ...patients.map(p => ({ _id: p._id, role: 'patient', firstName: p.firstName, lastName: p.lastName }))
+            ];
+            if (allParticipants.length !== participantIds.length) {
+                logger_1.default.error('Participant validation failed', {
+                    expected: participantIds.length,
+                    found: allParticipants.length,
+                    participantIds,
+                    foundIds: allParticipants.map(p => p._id.toString()),
+                    foundUsers: users.length,
+                    foundPatients: patients.length,
+                    workplaceId: data.workplaceId,
+                    skipValidation: data.skipWorkplaceValidation,
+                });
                 throw new Error("Some participants not found or not in the same workplace");
             }
+            const participants = allParticipants;
             if (data.patientId) {
-                const patient = await Patient_1.default.findOne({
-                    _id: data.patientId,
-                    workplaceId: data.workplaceId,
-                });
+                const patientQuery = { _id: data.patientId };
+                if (!data.skipWorkplaceValidation) {
+                    patientQuery.workplaceId = data.workplaceId;
+                }
+                const patient = await Patient_1.default.findOne(patientQuery);
                 if (!patient) {
                     throw new Error("Patient not found or not in the same workplace");
                 }
@@ -174,14 +214,30 @@ class CommunicationService {
     }
     async sendMessage(data) {
         try {
+            logger_1.default.info('🔍 [CommunicationService.sendMessage] Starting', {
+                conversationId: data.conversationId,
+                senderId: data.senderId,
+                workplaceId: data.workplaceId,
+            });
             const conversation = await Conversation_1.default.findOne({
                 _id: data.conversationId,
+                workplaceId: data.workplaceId,
+            });
+            logger_1.default.info('🔍 [CommunicationService.sendMessage] Conversation lookup', {
+                found: !!conversation,
+                conversationId: data.conversationId,
                 workplaceId: data.workplaceId,
             });
             if (!conversation) {
                 throw new Error("Conversation not found");
             }
-            if (!conversation.hasParticipant(data.senderId)) {
+            const isParticipant = conversation.hasParticipant(data.senderId);
+            logger_1.default.info('🔍 [CommunicationService.sendMessage] Participant check', {
+                senderId: data.senderId,
+                isParticipant,
+                participants: conversation.participants.map(p => p.userId.toString()),
+            });
+            if (!isParticipant) {
                 throw new Error("User is not a participant in this conversation");
             }
             if (data.parentMessageId) {
@@ -265,29 +321,45 @@ class CommunicationService {
             throw error;
         }
     }
-    async getMessages(conversationId, userId, workplaceId, filters = {}) {
+    async getMessages(conversationId, userId, workplaceId, filters = {}, skipParticipantCheck = false) {
         try {
             logger_1.default.info('Getting messages', {
                 conversationId,
                 userId,
                 workplaceId,
+                skipParticipantCheck,
                 service: 'communication-service'
             });
-            const conversation = await Conversation_1.default.findOne({
+            const conversationQuery = {
                 _id: conversationId,
                 workplaceId,
-                "participants.userId": userId,
-                "participants.leftAt": { $exists: false },
+            };
+            if (!skipParticipantCheck) {
+                conversationQuery["participants.userId"] = userId;
+                conversationQuery["participants.leftAt"] = { $exists: false };
+            }
+            logger_1.default.info('🔍 [CommunicationService.getMessages] Looking up conversation', {
+                conversationId,
+                workplaceId,
+                skipParticipantCheck,
             });
+            const conversation = await Conversation_1.default.findOne(conversationQuery)
+                .lean()
+                .maxTimeMS(5000);
             if (!conversation) {
                 logger_1.default.error('Conversation not found', {
                     conversationId,
                     userId,
                     workplaceId,
+                    skipParticipantCheck,
                     service: 'communication-service'
                 });
                 throw new Error("Conversation not found or access denied");
             }
+            logger_1.default.info('✅ [CommunicationService.getMessages] Conversation found', {
+                conversationId,
+                conversationType: conversation.type,
+            });
             const query = { conversationId };
             if (filters.type) {
                 query["content.type"] = filters.type;
@@ -307,13 +379,41 @@ class CommunicationService {
             if (filters.after) {
                 query.createdAt = { ...query.createdAt, $gt: filters.after };
             }
+            const messageCount = await Message_1.default.countDocuments(query).maxTimeMS(3000);
+            logger_1.default.info('🔍 [CommunicationService.getMessages] Executing query', {
+                conversationId,
+                queryKeys: Object.keys(query),
+                messageCount,
+                limit: Math.min(filters.limit || 50, 100),
+                skip: filters.offset || 0,
+            });
+            if (messageCount > 10000) {
+                logger_1.default.warn('⚠️ [CommunicationService.getMessages] Large message count detected', {
+                    conversationId,
+                    messageCount,
+                });
+            }
             const messages = await Message_1.default.find(query)
                 .populate("senderId", "firstName lastName role")
-                .populate("mentions", "firstName lastName role")
-                .populate("readBy.userId", "firstName lastName")
                 .sort({ createdAt: -1 })
-                .limit(filters.limit || 50)
-                .skip(filters.offset || 0);
+                .limit(Math.min(filters.limit || 50, 100))
+                .skip(filters.offset || 0)
+                .maxTimeMS(10000);
+            logger_1.default.info('✅ [CommunicationService.getMessages] Query completed', {
+                conversationId,
+                messagesCount: messages.length,
+            });
+            messages.forEach((msg, index) => {
+                const sender = msg.senderId;
+                logger_1.default.info(`Message ${index} sender info`, {
+                    messageId: msg._id,
+                    senderId: sender,
+                    senderType: typeof sender,
+                    contentType: msg.content?.type,
+                    hasFirstName: sender?.firstName,
+                    hasLastName: sender?.lastName,
+                });
+            });
             return messages;
         }
         catch (error) {
@@ -631,6 +731,14 @@ class CommunicationService {
             createdBy: performedBy,
         });
         await message.save();
+        await message.populate("senderId", "firstName lastName role");
+        logger_1.default.info('System message created with populated sender', {
+            messageId: message._id,
+            senderId: message.senderId,
+            senderType: typeof message.senderId,
+            action,
+            text
+        });
         return message;
     }
     async handleMentions(mentions, message, conversation) {

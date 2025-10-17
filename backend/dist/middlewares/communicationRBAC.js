@@ -286,7 +286,8 @@ const validateParticipantRoles = (req, res, next) => {
             'pharmacy_team',
             'pharmacy_outlet',
             'nurse',
-            'admin'
+            'admin',
+            'super_admin'
         ];
         const hasHealthcareProvider = roles.some((role) => healthcareProviderRoles.includes(role));
         const hasPatient = roles.includes('patient');

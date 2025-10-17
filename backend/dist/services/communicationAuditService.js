@@ -360,12 +360,22 @@ class CommunicationAuditService {
         return csvContent;
     }
     static createAuditContext(req) {
+        let ipAddress = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress;
+        if (!ipAddress || ipAddress === '::ffff:127.0.0.1') {
+            ipAddress = '127.0.0.1';
+        }
+        else if (ipAddress.startsWith('::ffff:')) {
+            ipAddress = ipAddress.substring(7);
+        }
+        if (!ipAddress || ipAddress === 'undefined') {
+            ipAddress = '127.0.0.1';
+        }
         return {
             userId: req.user._id,
             workplaceId: typeof req.user.workplaceId === 'string'
                 ? new mongoose_1.default.Types.ObjectId(req.user.workplaceId)
                 : req.user.workplaceId,
-            ipAddress: req.ip || req.connection.remoteAddress || "unknown",
+            ipAddress,
             userAgent: req.get("User-Agent") || "unknown",
             sessionId: req.sessionID || req.get("X-Session-ID"),
         };

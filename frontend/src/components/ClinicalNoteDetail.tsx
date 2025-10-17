@@ -233,10 +233,12 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
   };
 
   const formatPatientName = (patient: ClinicalNote['patient']) => {
+    if (!patient) return 'Unknown Patient';
     return `${patient.firstName} ${patient.lastName}`;
   };
 
   const formatPharmacistName = (pharmacist: ClinicalNote['pharmacist']) => {
+    if (!pharmacist) return 'Unknown Pharmacist';
     return `${pharmacist.firstName} ${pharmacist.lastName}`;
   };
 
@@ -335,7 +337,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
     !readonly &&
     note &&
     user &&
-    (note.pharmacist._id === user.id ||
+    (note.pharmacist?._id === user.id ||
       user.role === 'admin' ||
       user.role === 'super_admin');
 
@@ -343,7 +345,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
     !readonly &&
     note &&
     user &&
-    (note.pharmacist._id === user.id ||
+    (note.pharmacist?._id === user.id ||
       user.role === 'admin' ||
       user.role === 'super_admin');
 
@@ -680,7 +682,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                           fontWeight: 600,
                         }}
                       >
-                        {getInitials(note.patient.firstName, note.patient.lastName)}
+                        {note.patient ? getInitials(note.patient.firstName, note.patient.lastName) : 'N/A'}
                       </Avatar>
                       <Box>
                         <Typography
@@ -710,7 +712,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                         fontWeight: 500,
                       }}
                     >
-                      MRN: {note.patient.mrn}
+                      MRN: {note.patient?.mrn || 'N/A'}
                     </Typography>
                   </Paper>
                 </Box>
@@ -738,7 +740,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                           fontWeight: 600,
                         }}
                       >
-                        {getInitials(note.pharmacist.firstName, note.pharmacist.lastName)}
+                        {note.pharmacist ? getInitials(note.pharmacist.firstName, note.pharmacist.lastName) : 'N/A'}
                       </Avatar>
                       <Box>
                         <Typography
@@ -768,7 +770,7 @@ const ClinicalNoteDetail: React.FC<ClinicalNoteDetailProps> = ({
                         fontWeight: 500,
                       }}
                     >
-                      Role: {note.pharmacist.role}
+                      Role: {note.pharmacist?.role || 'N/A'}
                     </Typography>
                   </Paper>
                 </Box>

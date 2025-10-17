@@ -395,10 +395,10 @@ export class SubscriptionController {
 
       if (pendingPayment) {
         console.log('Found existing pending payment, checking if it can be reused:', pendingPayment.paymentReference);
-        
+
         // Check if the pending payment is recent (within last 30 minutes)
         const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-        
+
         if (pendingPayment.createdAt > thirtyMinutesAgo) {
           console.log('Reusing recent pending payment:', pendingPayment.paymentReference);
           return res.json({
@@ -563,7 +563,7 @@ export class SubscriptionController {
       if (paymentData.status === 'success') {
         try {
           console.log('Payment verified as successful, looking for payment record:', reference);
-          
+
           // Find the payment record
           const paymentRecord = await Payment.findOne({
             paymentReference: reference,
@@ -578,7 +578,7 @@ export class SubscriptionController {
 
           if (paymentRecord && paymentRecord.status !== 'completed') {
             console.log('Processing subscription activation for verified payment:', reference);
-            
+
             // Update payment status
             paymentRecord.status = 'completed';
             paymentRecord.completedAt = new Date();
@@ -586,7 +586,7 @@ export class SubscriptionController {
 
             // Process subscription activation
             await this.processSubscriptionActivation(paymentRecord);
-            
+
             console.log('Subscription activation completed for payment:', reference);
           } else if (paymentRecord && paymentRecord.status === 'completed') {
             console.log('Payment already processed, skipping activation:', reference);

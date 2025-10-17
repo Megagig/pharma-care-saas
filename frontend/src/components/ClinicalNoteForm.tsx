@@ -317,7 +317,7 @@ const ClinicalNoteForm: React.FC<ClinicalNoteFormProps> = ({
     if (existingNote?.note) {
       const note = existingNote.note;
       reset({
-        patient: note.patient._id,
+        patient: note.patient?._id || '',
         title: note.title,
         type: note.type,
         content: note.content,

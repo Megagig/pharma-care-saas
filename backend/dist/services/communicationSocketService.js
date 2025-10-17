@@ -23,16 +23,84 @@ class CommunicationSocketService {
     setupSocketHandlers() {
         this.io.use(async (socket, next) => {
             try {
+                let user = null;
+                logger_1.default.info('🔍 [Socket Auth] Attempting authentication for socket:', socket.id);
                 const token = socket.handshake.auth.token ||
                     socket.handshake.headers.authorization?.replace('Bearer ', '');
-                if (!token) {
-                    return next(new Error('Authentication token required'));
+                if (token) {
+                    try {
+                        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+                        const userId = decoded.userId || decoded.id;
+                        logger_1.default.info('🔍 [Socket Auth] Header token decoded:', {
+                            userId: userId,
+                            iat: decoded.iat,
+                            exp: decoded.exp
+                        });
+                        user = await User_1.default.findById(userId)
+                            .select('_id workplaceId role email firstName lastName');
+                    }
+                    catch (tokenError) {
+                        logger_1.default.warn('🔍 [Socket Auth] Token authentication failed:', tokenError.message);
+                    }
                 }
-                const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-                const user = await User_1.default.findById(decoded.id)
-                    .select('_id workplaceId role email firstName lastName');
                 if (!user) {
-                    return next(new Error('User not found'));
+                    const cookies = socket.handshake.headers.cookie;
+                    logger_1.default.info('🔍 [Socket Auth] Checking cookies:', !!cookies);
+                    logger_1.default.info('🔍 [Socket Auth] All headers:', Object.keys(socket.handshake.headers));
+                    logger_1.default.info('🔍 [Socket Auth] Cookie header length:', cookies?.length || 0);
+                    if (cookies) {
+                        const cookieObj = {};
+                        cookies.split(';').forEach(cookie => {
+                            const [name, value] = cookie.trim().split('=');
+                            if (name && value) {
+                                try {
+                                    cookieObj[name] = decodeURIComponent(value);
+                                }
+                                catch (e) {
+                                    cookieObj[name] = value;
+                                }
+                            }
+                        });
+                        logger_1.default.info('🔍 [Socket Auth] Parsed cookies:', Object.keys(cookieObj));
+                        logger_1.default.info('🔍 [Socket Auth] Cookie values:', {
+                            hasAccessToken: !!cookieObj['accessToken'],
+                            hasToken: !!cookieObj['token'],
+                            accessTokenLength: cookieObj['accessToken']?.length || 0,
+                            tokenLength: cookieObj['token']?.length || 0
+                        });
+                        const authToken = cookieObj['accessToken'] || cookieObj['token'];
+                        if (authToken) {
+                            logger_1.default.info('🔍 [Socket Auth] Found auth cookie, verifying...');
+                            try {
+                                const decoded = jsonwebtoken_1.default.verify(authToken, process.env.JWT_SECRET);
+                                const userId = decoded.userId || decoded.id;
+                                logger_1.default.info('🔍 [Socket Auth] Token decoded successfully:', {
+                                    userId: userId,
+                                    iat: decoded.iat,
+                                    exp: decoded.exp
+                                });
+                                user = await User_1.default.findById(userId)
+                                    .select('_id workplaceId role email firstName lastName');
+                                if (user) {
+                                    logger_1.default.info('🔍 [Socket Auth] Cookie auth successful for user:', user.email);
+                                }
+                                else {
+                                    logger_1.default.warn('🔍 [Socket Auth] User not found in database for ID:', userId);
+                                    const anyUser = await User_1.default.findOne().select('_id email');
+                                    logger_1.default.info('🔍 [Socket Auth] Database test - found any user:', !!anyUser);
+                                }
+                            }
+                            catch (cookieError) {
+                                logger_1.default.warn('🔍 [Socket Auth] Cookie authentication failed:', cookieError.message);
+                            }
+                        }
+                        else {
+                            logger_1.default.warn('🔍 [Socket Auth] No auth cookies found. Available cookies:', Object.keys(cookieObj));
+                        }
+                    }
+                }
+                if (!user) {
+                    return next(new Error('Authentication required - no valid token or session found'));
                 }
                 socket.userId = user._id.toString();
                 socket.workplaceId = user.workplaceId?.toString();
