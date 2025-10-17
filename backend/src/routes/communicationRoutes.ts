@@ -95,7 +95,7 @@ router.post(
   '/conversations',
   auth,
   communicationRateLimiting.conversationRateLimit,
-  communicationCSRF.requireCSRFToken,
+  communicationCSRF.doubleSubmitCSRF,  // Use double-submit pattern instead of token store
   [
     body('title').optional().isString().trim().isLength({ min: 1, max: 200 }),
     body('type').isIn([
@@ -105,7 +105,18 @@ router.post(
       'clinical_consultation',
     ]),
     body('participants').isArray({ min: 1, max: 50 }),
-    body('participants.*').isMongoId(),
+    // Accept both string IDs and objects with userId/role
+    body('participants.*').custom((value) => {
+      // If it's a string, it should be a valid MongoDB ID
+      if (typeof value === 'string') {
+        return /^[a-f\d]{24}$/i.test(value);
+      }
+      // If it's an object, it should have userId and role
+      if (typeof value === 'object' && value.userId && value.role) {
+        return /^[a-f\d]{24}$/i.test(value.userId);
+      }
+      throw new Error('Invalid participant format');
+    }),
     body('patientId').optional().isMongoId(),
     body('caseId').optional().isString().trim().isLength({ max: 100 }),
     body('priority').optional().isIn(['low', 'normal', 'high', 'urgent']),
@@ -242,23 +253,37 @@ router.post(
   communicationCSRF.requireCSRFToken,
   [
     param('id').isMongoId(),
-    body('content.text')
-      .optional()
-      .isString()
-      .trim()
-      .isLength({ min: 1, max: 10000 }),
-    body('content.type').isIn([
-      'text',
-      'file',
-      'image',
-      'clinical_note',
-      'voice_note',
-    ]),
-    body('content.attachments').optional().isArray(),
+    // Content can be sent as JSON string in FormData or as object
+    body('content')
+      .custom((value) => {
+        // If it's a string, try to parse it as JSON
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            return parsed && typeof parsed === 'object';
+          } catch {
+            return false;
+          }
+        }
+        // If it's already an object, that's fine too
+        return typeof value === 'object' && value !== null;
+      })
+      .withMessage('Content must be a valid JSON object'),
     body('threadId').optional().isMongoId(),
     body('parentMessageId').optional().isMongoId(),
-    body('mentions').optional().isArray(),
-    body('mentions.*').isMongoId(),
+    body('mentions')
+      .optional()
+      .custom((value) => {
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed);
+          } catch {
+            return false;
+          }
+        }
+        return Array.isArray(value);
+      }),
     body('priority').optional().isIn(['normal', 'high', 'urgent']),
   ],
   handleValidationErrors,
@@ -874,6 +899,27 @@ router.get(
   handleValidationErrors,
   auditConversation('participant_added'),
   communicationController.getConversationThreads
+);
+
+/**
+ * @route   GET /api/communication/participants/search
+ * @desc    Search for participants (users) to add to conversations
+ * @access  Private
+ */
+router.get(
+  '/participants/search',
+  auth,
+  communicationRateLimiting.searchRateLimit,
+  [
+    query('q').optional().isString().trim().isLength({ min: 0, max: 100 }),
+    query('role')
+      .optional()
+      .isIn(['doctor', 'pharmacist', 'patient', 'admin', 'super_admin']),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+  ],
+  handleValidationErrors,
+  communicationSecurity.sanitizeSearchQuery,
+  communicationController.searchParticipants
 );
 
 export default router;

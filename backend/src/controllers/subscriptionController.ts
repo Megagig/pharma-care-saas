@@ -354,12 +354,14 @@ export class SubscriptionController {
 
       console.log(
         'Checking for existing subscription for user:',
-        user._id.toString()
+        user._id.toString(),
+        'workplaceId:',
+        user.workplaceId?.toString()
       );
 
       // Check if user already has active subscription
       const existingSubscription = await Subscription.findOne({
-        userId: user._id,
+        workspaceId: user.workplaceId,
         status: { $in: ['active', 'trial'] },
       });
 
@@ -376,11 +378,43 @@ export class SubscriptionController {
       );
 
       if (existingSubscription) {
-        console.log('User already has an active subscription, returning 400');
-        return res.status(400).json({
-          success: false,
-          message: 'User already has an active subscription',
+        console.log('User has existing subscription, allowing upgrade/change:', {
+          currentStatus: existingSubscription.status,
+          currentTier: existingSubscription.tier,
+          newTier: plan.tier
         });
+        // Allow upgrades/changes - the processSubscriptionActivation will handle canceling the old one
+      }
+
+      // Check for pending payments to avoid duplicates
+      const pendingPayment = await Payment.findOne({
+        userId: user._id,
+        status: 'pending',
+        planId: plan._id
+      });
+
+      if (pendingPayment) {
+        console.log('Found existing pending payment, checking if it can be reused:', pendingPayment.paymentReference);
+
+        // Check if the pending payment is recent (within last 30 minutes)
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+
+        if (pendingPayment.createdAt > thirtyMinutesAgo) {
+          console.log('Reusing recent pending payment:', pendingPayment.paymentReference);
+          return res.json({
+            success: true,
+            data: {
+              authorization_url: `${process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : process.env.FRONTEND_URL}/subscriptions?payment=pending&reference=${pendingPayment.paymentReference}`,
+              access_code: 'existing_pending',
+              reference: pendingPayment.paymentReference,
+            },
+            message: 'Existing pending payment found',
+          });
+        } else {
+          console.log('Pending payment is old, marking as expired and creating new one');
+          pendingPayment.status = 'failed';
+          await pendingPayment.save();
+        }
       }
 
       // Create payment with Paystack
@@ -390,7 +424,7 @@ export class SubscriptionController {
         currency: 'NGN',
         callback_url:
           req.body.callbackUrl ||
-          `${process.env.FRONTEND_URL}/subscription/success`,
+          `${process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : process.env.FRONTEND_URL}/subscription/success`,
         metadata: {
           userId: user._id.toString(),
           planId: plan._id.toString(),
@@ -416,7 +450,7 @@ export class SubscriptionController {
       ) {
         // Mock payment response for development
         const mockReference = `mock_${Date.now()}_${user._id}`;
-        const mockCheckoutUrl = `${process.env.FRONTEND_URL}/subscription-management/checkout?reference=${mockReference}&planId=${planId}`;
+        const mockCheckoutUrl = `${process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : process.env.FRONTEND_URL}/subscription-management/checkout?reference=${mockReference}&planId=${planId}`;
 
         // Store pending payment record with mock data
         await Payment.create({
@@ -524,6 +558,44 @@ export class SubscriptionController {
       }
 
       const paymentData = verificationResult.data;
+
+      // If payment is successful, also process subscription activation
+      if (paymentData.status === 'success') {
+        try {
+          console.log('Payment verified as successful, looking for payment record:', reference);
+
+          // Find the payment record
+          const paymentRecord = await Payment.findOne({
+            paymentReference: reference,
+          });
+
+          console.log('Payment record found:', paymentRecord ? {
+            id: paymentRecord._id,
+            userId: paymentRecord.userId,
+            status: paymentRecord.status,
+            amount: paymentRecord.amount
+          } : 'No payment record found');
+
+          if (paymentRecord && paymentRecord.status !== 'completed') {
+            console.log('Processing subscription activation for verified payment:', reference);
+
+            // Update payment status
+            paymentRecord.status = 'completed';
+            paymentRecord.completedAt = new Date();
+            await paymentRecord.save();
+
+            // Process subscription activation
+            await this.processSubscriptionActivation(paymentRecord);
+
+            console.log('Subscription activation completed for payment:', reference);
+          } else if (paymentRecord && paymentRecord.status === 'completed') {
+            console.log('Payment already processed, skipping activation:', reference);
+          }
+        } catch (activationError) {
+          console.error('Error during subscription activation:', activationError);
+          // Don't fail the verification response, just log the error
+        }
+      }
 
       // Return basic payment verification info
       return res.status(200).json({
@@ -1275,6 +1347,14 @@ export class SubscriptionController {
         return;
       }
 
+      if (!user.workplaceId) {
+        console.error('User does not have a workplaceId for subscription activation', {
+          userId,
+          userEmail: user.email,
+        });
+        return;
+      }
+
       console.log('Activating subscription for user:', {
         userId: user._id,
         email: user.email,
@@ -1282,9 +1362,9 @@ export class SubscriptionController {
         tier: plan.tier,
       });
 
-      // Cancel existing active subscriptions
+      // Cancel existing active subscriptions for the workspace
       await Subscription.updateMany(
-        { userId: userId, status: { $in: ['active', 'trial'] } },
+        { workspaceId: user.workplaceId, status: { $in: ['active', 'trial'] } },
         { status: 'cancelled' }
       );
 
@@ -1299,7 +1379,7 @@ export class SubscriptionController {
 
       // Create new subscription
       const subscription = new Subscription({
-        userId: userId,
+        workspaceId: user.workplaceId,
         planId: planId,
         tier: plan.tier,
         status: plan.tier === 'free_trial' ? 'trial' : 'active',

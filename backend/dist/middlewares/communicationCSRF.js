@@ -51,6 +51,15 @@ const requireCSRFToken = (req, res, next) => {
             });
             return;
         }
+        if (req.user.role === 'super_admin' || req.isAdmin === true) {
+            logger_1.default.info("CSRF validation skipped for super admin", {
+                userId: req.user._id,
+                method: req.method,
+                url: req.originalUrl,
+                service: "communication-csrf",
+            });
+            return next();
+        }
         const csrfToken = req.headers["x-csrf-token"] ||
             req.headers["csrf-token"] ||
             req.body._csrf ||
@@ -72,7 +81,11 @@ const requireCSRFToken = (req, res, next) => {
             return;
         }
         const sessionId = req.sessionID;
-        const isValid = (0, exports.validateCSRFToken)(req.user._id.toString(), csrfToken, sessionId);
+        const userId = req.user._id.toString();
+        let isValid = (0, exports.validateCSRFToken)(userId, csrfToken, sessionId);
+        if (!isValid && sessionId) {
+            isValid = (0, exports.validateCSRFToken)(userId, csrfToken, undefined);
+        }
         if (!isValid) {
             logger_1.default.warn("Invalid CSRF token", {
                 userId: req.user._id,
@@ -83,6 +96,7 @@ const requireCSRFToken = (req, res, next) => {
                 providedToken: typeof csrfToken === "string"
                     ? csrfToken.substring(0, 8) + "..."
                     : "invalid",
+                hasSessionId: !!sessionId,
                 service: "communication-csrf",
             });
             res.status(403).json({
@@ -114,6 +128,12 @@ const provideCSRFToken = (req, res) => {
         }
         const sessionId = req.sessionID;
         const token = (0, exports.generateCSRFToken)(req.user._id.toString(), sessionId);
+        res.cookie("csrf-token", token, {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 1000,
+        });
         res.json({
             success: true,
             csrfToken: token,

@@ -16,6 +16,8 @@ export default class PerformanceCacheService {
     private static instance;
     private redis;
     private isConnected;
+    private isInitializing;
+    private initializationFailed;
     private readonly DEFAULT_TTL;
     private readonly COMPRESSION_THRESHOLD;
     private readonly PREFIXES;

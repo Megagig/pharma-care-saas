@@ -361,11 +361,13 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
   };
 
   const formatPatientName = (patient: ClinicalNote['patient']) => {
-    return `${patient.firstName} ${patient.lastName}`;
+    if (!patient) return 'Unknown Patient';
+    return `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown Patient';
   };
 
   const formatPharmacistName = (pharmacist: ClinicalNote['pharmacist']) => {
-    return `${pharmacist.firstName} ${pharmacist.lastName}`;
+    if (!pharmacist) return 'Unknown Pharmacist';
+    return `${pharmacist.firstName || ''} ${pharmacist.lastName || ''}`.trim() || 'Unknown Pharmacist';
   };
 
   // Priority chip component
@@ -496,7 +498,7 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
             {formatPatientName(params.value)}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            MRN: {params.value.mrn}
+            MRN: {params.value?.mrn || 'N/A'}
           </Typography>
         </Box>
       ),
@@ -741,7 +743,7 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                 {formatPatientName(note.patient)}
               </Box>
               <Chip
-                label={`MRN: ${note.patient.mrn}`}
+                label={`MRN: ${note.patient?.mrn || 'N/A'}`}
                 size="small"
                 variant="outlined"
                 sx={{ ml: 1, fontSize: '0.7rem', height: '20px' }}

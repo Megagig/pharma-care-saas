@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Dialog,
@@ -22,9 +22,34 @@ const TrialExpiryHandler: React.FC<TrialExpiryHandlerProps> = ({
   const { status, daysRemaining, loading } = useSubscriptionStatus();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isDismissed, setIsDismissed] = useState(false);
 
   // Don't show expiry dialog on subscription-related pages
   const isSubscriptionPage = location.pathname.includes('/subscription');
+
+  // Check if user has dismissed the popup recently (within 24 hours)
+  useEffect(() => {
+    const dismissedUntil = localStorage.getItem('trialWarningDismissedUntil');
+    if (dismissedUntil) {
+      const dismissedTime = new Date(dismissedUntil);
+      const now = new Date();
+      if (now < dismissedTime) {
+        setIsDismissed(true);
+      } else {
+        // Clear expired dismissal
+        localStorage.removeItem('trialWarningDismissedUntil');
+        setIsDismissed(false);
+      }
+    }
+  }, []);
+
+  const handleRemindLater = () => {
+    // Dismiss for 24 hours
+    const dismissUntil = new Date();
+    dismissUntil.setHours(dismissUntil.getHours() + 24);
+    localStorage.setItem('trialWarningDismissedUntil', dismissUntil.toISOString());
+    setIsDismissed(true);
+  };
 
   useEffect(() => {
     // If trial has expired and user is not on a subscription page, redirect
@@ -45,7 +70,8 @@ const TrialExpiryHandler: React.FC<TrialExpiryHandlerProps> = ({
     daysRemaining !== undefined &&
     daysRemaining <= 3 &&
     daysRemaining > 0 &&
-    !isSubscriptionPage;
+    !isSubscriptionPage &&
+    !isDismissed;
 
   return (
     <>
@@ -102,9 +128,7 @@ const TrialExpiryHandler: React.FC<TrialExpiryHandlerProps> = ({
             Upgrade Now
           </Button>
           <Button
-            onClick={() => {
-              /* Close dialog logic */
-            }}
+            onClick={handleRemindLater}
             variant="text"
           >
             Remind Me Later

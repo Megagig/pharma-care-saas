@@ -548,12 +548,28 @@ export class CommunicationAuditService {
    * Create audit context from request
    */
   static createAuditContext(req: AuthRequest): CommunicationAuditContext {
+    // Extract and validate IP address
+    let ipAddress = req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress;
+    
+    // Handle cases where IP might be undefined or in wrong format
+    if (!ipAddress || ipAddress === '::ffff:127.0.0.1') {
+      ipAddress = '127.0.0.1';
+    } else if (ipAddress.startsWith('::ffff:')) {
+      // Convert IPv4-mapped IPv6 to IPv4
+      ipAddress = ipAddress.substring(7);
+    }
+    
+    // Fallback to localhost if still invalid
+    if (!ipAddress || ipAddress === 'undefined') {
+      ipAddress = '127.0.0.1';
+    }
+
     return {
       userId: req.user!._id,
       workplaceId: typeof req.user!.workplaceId === 'string'
         ? new mongoose.Types.ObjectId(req.user!.workplaceId)
         : req.user!.workplaceId!,
-      ipAddress: req.ip || req.connection.remoteAddress || "unknown",
+      ipAddress,
       userAgent: req.get("User-Agent") || "unknown",
       sessionId: (req as any).sessionID || req.get("X-Session-ID"),
     };

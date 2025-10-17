@@ -265,6 +265,20 @@ export const validateSession = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Skip session validation for certain utility routes
+    const sessionExemptRoutes = [
+      '/participants/search',  // User search doesn't require active communication session
+      '/conversations',        // Creating/viewing conversations is a utility action, not active messaging
+      '/messages',             // Fetching messages doesn't require active session
+      '/read',                 // Marking as read doesn't require active session
+      '/patients',             // Patient-specific utilities (e.g., creating patient queries) shouldn't require an active session
+    ];
+
+    const isExempt = sessionExemptRoutes.some(route => req.path.includes(route));
+    if (isExempt) {
+      return next();
+    }
+
     if (!req.user) {
       return next();
     }

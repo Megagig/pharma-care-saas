@@ -136,6 +136,7 @@ const communicationAuditLogSchema = new mongoose_1.Schema({
         enum: ['low', 'medium', 'high', 'critical'],
         required: true,
         index: true,
+        default: 'low',
     },
     complianceCategory: {
         type: String,
@@ -146,6 +147,7 @@ const communicationAuditLogSchema = new mongoose_1.Schema({
         ],
         required: true,
         index: true,
+        default: 'audit_trail',
     },
     workplaceId: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -258,7 +260,7 @@ communicationAuditLogSchema.methods.getFormattedDetails = function () {
     }
     return details.join(', ');
 };
-communicationAuditLogSchema.pre('save', function () {
+communicationAuditLogSchema.pre('validate', function () {
     if (!this.riskLevel) {
         this.setRiskLevel();
     }

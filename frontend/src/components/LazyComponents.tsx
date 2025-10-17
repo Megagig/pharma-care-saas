@@ -58,6 +58,7 @@ export const LazySubscriptionManagement = lazy(() => import('../pages/Subscripti
 export const LazySubscriptionSuccess = lazy(() => import('../pages/SubscriptionSuccess'));
 export const LazySettings = lazy(() => import('../pages/Settings'));
 export const LazySettingsTheme = lazy(() => import('../pages/SettingsTheme'));
+export const LazyNotifications = lazy(() => import('../pages/Notifications'));
 export const LazyHelp = lazy(() => import('../pages/Help'));
 export const LazyMTRHelp = lazy(() => import('../pages/MTRHelp'));
 export const LazyLicenseUpload = lazy(() => import('../components/license/LicenseUpload'));

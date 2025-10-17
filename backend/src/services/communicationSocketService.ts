@@ -70,22 +70,99 @@ export class CommunicationSocketService {
      * Setup Socket.IO event handlers with authentication middleware
      */
     private setupSocketHandlers(): void {
-        // Authentication middleware
+        // Authentication middleware - support both token and cookie auth
         this.io.use(async (socket: AuthenticatedSocket, next) => {
             try {
+                let user = null;
+                logger.info('🔍 [Socket Auth] Attempting authentication for socket:', socket.id);
+                
+                // Try token-based auth first (for backward compatibility)
                 const token = socket.handshake.auth.token ||
                     socket.handshake.headers.authorization?.replace('Bearer ', '');
 
-                if (!token) {
-                    return next(new Error('Authentication token required'));
+                if (token) {
+                    try {
+                        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+                        // Handle both old and new token formats
+                        const userId = decoded.userId || decoded.id;
+                        logger.info('🔍 [Socket Auth] Header token decoded:', {
+                            userId: userId,
+                            iat: decoded.iat,
+                            exp: decoded.exp
+                        });
+                        user = await User.findById(userId)
+                            .select('_id workplaceId role email firstName lastName');
+                    } catch (tokenError) {
+                        logger.warn('🔍 [Socket Auth] Token authentication failed:', tokenError.message);
+                    }
                 }
 
-                const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-                const user = await User.findById(decoded.id)
-                    .select('_id workplaceId role email firstName lastName');
+                // If token auth failed, try cookie-based auth
+                if (!user) {
+                    const cookies = socket.handshake.headers.cookie;
+                    logger.info('🔍 [Socket Auth] Checking cookies:', !!cookies);
+                    logger.info('🔍 [Socket Auth] All headers:', Object.keys(socket.handshake.headers));
+                    logger.info('🔍 [Socket Auth] Cookie header length:', cookies?.length || 0);
+                    
+                    if (cookies) {
+                        // Parse cookies to find auth token
+                        const cookieObj: Record<string, string> = {};
+                        cookies.split(';').forEach(cookie => {
+                            const [name, value] = cookie.trim().split('=');
+                            if (name && value) {
+                                try {
+                                    cookieObj[name] = decodeURIComponent(value);
+                                } catch (e) {
+                                    // If decoding fails, use raw value
+                                    cookieObj[name] = value;
+                                }
+                            }
+                        });
+
+                        logger.info('🔍 [Socket Auth] Parsed cookies:', Object.keys(cookieObj));
+                        logger.info('🔍 [Socket Auth] Cookie values:', {
+                            hasAccessToken: !!cookieObj['accessToken'],
+                            hasToken: !!cookieObj['token'],
+                            accessTokenLength: cookieObj['accessToken']?.length || 0,
+                            tokenLength: cookieObj['token']?.length || 0
+                        });
+                        
+                        // Look for auth token in cookies (try multiple cookie names for compatibility)
+                        const authToken = cookieObj['accessToken'] || cookieObj['token'];
+                        
+                        if (authToken) {
+                            logger.info('🔍 [Socket Auth] Found auth cookie, verifying...');
+                            try {
+                                const decoded = jwt.verify(authToken, process.env.JWT_SECRET!) as any;
+                                // Handle both old and new token formats
+                                const userId = decoded.userId || decoded.id;
+                                logger.info('🔍 [Socket Auth] Token decoded successfully:', {
+                                    userId: userId,
+                                    iat: decoded.iat,
+                                    exp: decoded.exp
+                                });
+                                
+                                user = await User.findById(userId)
+                                    .select('_id workplaceId role email firstName lastName');
+                                if (user) {
+                                    logger.info('🔍 [Socket Auth] Cookie auth successful for user:', user.email);
+                                } else {
+                                    logger.warn('🔍 [Socket Auth] User not found in database for ID:', userId);
+                                    // Try to find any user to see if database connection is working
+                                    const anyUser = await User.findOne().select('_id email');
+                                    logger.info('🔍 [Socket Auth] Database test - found any user:', !!anyUser);
+                                }
+                            } catch (cookieError) {
+                                logger.warn('🔍 [Socket Auth] Cookie authentication failed:', cookieError.message);
+                            }
+                        } else {
+                            logger.warn('🔍 [Socket Auth] No auth cookies found. Available cookies:', Object.keys(cookieObj));
+                        }
+                    }
+                }
 
                 if (!user) {
-                    return next(new Error('User not found'));
+                    return next(new Error('Authentication required - no valid token or session found'));
                 }
 
                 // Attach user data to socket

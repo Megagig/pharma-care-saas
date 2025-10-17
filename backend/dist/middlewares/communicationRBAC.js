@@ -263,6 +263,11 @@ exports.requirePatientAccess = requirePatientAccess;
 const validateParticipantRoles = (req, res, next) => {
     try {
         const { participants } = req.body;
+        logger_1.default.info('Validating participant roles', {
+            participantsCount: participants?.length,
+            participants: JSON.stringify(participants),
+            service: 'communication-rbac',
+        });
         if (!participants || !Array.isArray(participants)) {
             res.status(400).json({
                 success: false,
@@ -271,10 +276,28 @@ const validateParticipantRoles = (req, res, next) => {
             return;
         }
         const roles = participants.map((p) => p.role || 'patient');
-        const hasPharmacist = roles.includes('pharmacist');
-        const hasDoctor = roles.includes('doctor');
+        logger_1.default.info('Extracted roles from participants', {
+            roles: JSON.stringify(roles),
+            service: 'communication-rbac',
+        });
+        const healthcareProviderRoles = [
+            'pharmacist',
+            'doctor',
+            'pharmacy_team',
+            'pharmacy_outlet',
+            'nurse',
+            'admin',
+            'super_admin'
+        ];
+        const hasHealthcareProvider = roles.some((role) => healthcareProviderRoles.includes(role));
         const hasPatient = roles.includes('patient');
-        if (hasPatient && !hasPharmacist && !hasDoctor) {
+        logger_1.default.info('Role validation check', {
+            hasHealthcareProvider,
+            hasPatient,
+            roles: JSON.stringify(roles),
+            service: 'communication-rbac',
+        });
+        if (hasPatient && !hasHealthcareProvider) {
             res.status(400).json({
                 success: false,
                 message: 'Patient conversations must include at least one healthcare provider',
@@ -397,19 +420,38 @@ const enforceConversationTypeRestrictions = (req, res, next) => {
                 }
                 break;
             case 'direct':
-                if (participants.length !== 2) {
+                const creatorId = req.user?._id?.toString();
+                const creatorInParticipants = participants.some((p) => {
+                    const participantId = typeof p === 'string' ? p : p.userId;
+                    return participantId === creatorId;
+                });
+                if (creatorInParticipants && participants.length !== 2) {
                     res.status(400).json({
                         success: false,
-                        message: 'Direct conversations must have exactly 2 participants',
+                        message: 'Direct conversations must have exactly 2 participants (you + 1 other person)',
+                    });
+                    return;
+                }
+                if (!creatorInParticipants && participants.length !== 1) {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Direct conversations must have exactly 1 other participant (you will be added automatically)',
                     });
                     return;
                 }
                 break;
             case 'group':
-                if (participants.length < 3) {
+                const groupCreatorInParticipants = participants.some((p) => {
+                    const participantId = typeof p === 'string' ? p : p.userId;
+                    return participantId === creatorId;
+                });
+                const minParticipants = groupCreatorInParticipants ? 3 : 2;
+                if (participants.length < minParticipants) {
                     res.status(400).json({
                         success: false,
-                        message: 'Group conversations must have at least 3 participants',
+                        message: groupCreatorInParticipants
+                            ? 'Group conversations must have at least 3 participants (including you)'
+                            : 'Group conversations must have at least 2 other participants (you will be added automatically)',
                     });
                     return;
                 }

@@ -19,93 +19,149 @@ import './models/Message';
 // Load environment variables
 config();
 
-// Connect to MongoDB
-connectDB();
-
 const PORT: number = parseInt(process.env.PORT || '5000', 10);
 
-// Create HTTP server
-const httpServer = createServer(app);
-
-// Configure Socket.IO CORS origins
-const socketCorsOrigins = [
-  'http://localhost:3000', // Create React App dev server
-  'http://localhost:5173', // Vite dev server
-  'http://127.0.0.1:5173', // Alternative Vite URL
-  'http://192.168.8.167:5173', // Local network Vite URL
-  'https://PharmaPilot-nttq.onrender.com', // Production frontend
-  process.env.FRONTEND_URL || 'http://localhost:3000',
-];
-
-// Add additional origins from environment variable
-if (process.env.CORS_ORIGINS) {
-  socketCorsOrigins.push(...process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()));
-}
-
-// Setup Socket.IO server
-const io = new SocketIOServer(httpServer, {
-  cors: {
-    origin: socketCorsOrigins,
-    credentials: true,
-    methods: ['GET', 'POST'],
-  },
-  transports: ['websocket', 'polling'],
-  pingTimeout: 60000,
-  pingInterval: 25000,
-});
-
-// Initialize Socket.IO services
-const communicationSocketService = new CommunicationSocketService(io);
-const socketNotificationService = new SocketNotificationService(io);
-
-// Make socket services available globally for other services
-app.set('communicationSocket', communicationSocketService);
-app.set('socketNotification', socketNotificationService);
-
-const server = httpServer.listen(PORT, () => {
-  console.log(
-    `🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`
-  );
-  console.log(`📡 Socket.IO server initialized for real-time communication`);
-
-  // Start cron services
-  if (process.env.NODE_ENV !== 'test') {
-    invitationCronService.start();
-    WorkspaceStatsCronService.start();
-    UsageAlertCronService.start();
-    emailDeliveryCronService.start();
+// Async function to initialize server
+async function initializeServer() {
+  try {
+    // Connect to MongoDB first
+    await connectDB();
+    console.log('✅ Database connected successfully');
+    
+    // Start performance monitoring after DB is connected
+    performanceCollector.startSystemMetricsCollection();
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    process.exit(1);
   }
 
-  // Start memory optimization
-  if (process.env.NODE_ENV === 'production') {
-    // Force garbage collection every 5 minutes in production
-    setInterval(() => {
+  // Create HTTP server
+  const httpServer = createServer(app);
+
+  // Configure Socket.IO CORS origins
+  const socketCorsOrigins = [
+    'http://localhost:3000', // Create React App dev server
+    'http://localhost:5173', // Vite dev server
+    'http://127.0.0.1:5173', // Alternative Vite URL
+    'http://192.168.8.167:5173', // Local network Vite URL
+    'https://PharmaPilot-nttq.onrender.com', // Production frontend
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+  ];
+
+  // Add additional origins from environment variable
+  if (process.env.CORS_ORIGINS) {
+    socketCorsOrigins.push(...process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()));
+  }
+
+  // Setup Socket.IO server
+  const io = new SocketIOServer(httpServer, {
+    cors: {
+      origin: socketCorsOrigins,
+      credentials: true,
+      methods: ['GET', 'POST'],
+    },
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000,
+  });
+
+  // Initialize Socket.IO services
+  const communicationSocketService = new CommunicationSocketService(io);
+  const socketNotificationService = new SocketNotificationService(io);
+
+  // Initialize new Chat Socket Service
+  const { initializeChatSocketService } = await import('./services/chat/ChatSocketService');
+  const { initializePresenceModel } = await import('./models/chat/Presence');
+  const Redis = (await import('ioredis')).default;
+
+  // Initialize Redis for presence tracking
+  const redisClient = new Redis({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+    retryStrategy: (times) => {
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    },
+  });
+
+  redisClient.on('connect', () => {
+    console.log('✅ Redis connected for presence tracking');
+  });
+
+  redisClient.on('error', (err) => {
+    console.error('❌ Redis connection error:', err);
+  });
+
+  // Initialize presence model
+  initializePresenceModel(redisClient);
+
+  // Initialize chat socket service
+  const chatSocketService = initializeChatSocketService(io);
+
+  // Make socket services available globally for other services
+  app.set('communicationSocket', communicationSocketService);
+  app.set('socketNotification', socketNotificationService);
+  app.set('chatSocket', chatSocketService);
+
+  const server = httpServer.listen(PORT, () => {
+    console.log(
+      `🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`
+    );
+    console.log(`📡 Socket.IO server initialized for real-time communication`);
+
+    // Start cron services with delays to reduce memory spike
+    if (process.env.NODE_ENV !== 'test') {
+      invitationCronService.start();
+      
+      // Stagger the other services to reduce memory pressure
+      setTimeout(() => WorkspaceStatsCronService.start(), 1000);
+      setTimeout(() => UsageAlertCronService.start(), 2000);
+      setTimeout(() => emailDeliveryCronService.start(), 3000);
+    }
+
+    // Start memory optimization
+    if (process.env.NODE_ENV === 'production') {
+      // Force garbage collection every 5 minutes in production
+      setInterval(() => {
+        if (global.gc) {
+          global.gc();
+          console.log('Garbage collection triggered');
+        }
+      }, 5 * 60 * 1000);
+    }
+    
+    // Trigger initial garbage collection after startup
+    setTimeout(() => {
       if (global.gc) {
         global.gc();
-        console.log('Garbage collection triggered');
+        console.log('Initial garbage collection after startup');
       }
-    }, 5 * 60 * 1000);
-  }
-});
+    }, 10000); // 10 seconds after startup
+  });
 
-// Set server timeout to 5 minutes to handle long AI processing
-server.timeout = 300000; // 5 minutes
+  return server;
+}
 
 // Graceful shutdown function
-const gracefulShutdown = async (signal: string) => {
+const gracefulShutdown = (signal: string) => {
   console.log(`Received ${signal}. Starting graceful shutdown...`);
   
   try {
-    // Import cleanup functions
-    const { cleanupAuditLogging } = await import('./middlewares/auditLogging');
-    const { cleanupSessionManagement } = await import('./middlewares/communicationSessionManagement');
+    // Stop accepting new connections
+    if (server) {
+      server.close(() => {
+        console.log('HTTP server closed');
+      });
+    }
     
-    // Stop all intervals and cleanup
-    cleanupAuditLogging();
-    cleanupSessionManagement();
+    // Close database connection
+    const mongoose = require('mongoose');
+    mongoose.connection.close();
+    console.log('Database connection closed');
     
-    // Close server
-    server.close(() => {
+    // Exit after cleanup
+    setTimeout(() => {
       console.log('Server closed successfully');
       process.exit(0);
     });
@@ -145,5 +201,16 @@ process.on('uncaughtException', (err: Error) => {
 // Handle graceful shutdown signals
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Initialize server
+let server: any;
+initializeServer()
+  .then((serverInstance) => {
+    server = serverInstance;
+  })
+  .catch((error) => {
+    console.error('Failed to initialize server:', error);
+    process.exit(1);
+  });
 
 export default server;

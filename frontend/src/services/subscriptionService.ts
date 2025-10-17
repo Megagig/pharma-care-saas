@@ -347,6 +347,30 @@ export const subscriptionService = {
       return null;
     }
   },
+
+  // Verify payment by reference
+  async verifyPayment(reference: string) {
+    try {
+      const response = await apiClient.get(`/subscription/verify-payment?reference=${reference}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to verify payment', error);
+      return { success: false, message: 'Payment verification failed' };
+    }
+  },
+
+  // Handle successful payment
+  async handleSuccessfulPayment(paymentReference: string) {
+    try {
+      const response = await apiClient.post('/subscription/payment-success', {
+        paymentReference,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to handle successful payment', error);
+      return null;
+    }
+  },
 };
 
 export default subscriptionService;

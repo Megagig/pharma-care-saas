@@ -191,7 +191,10 @@ const messageSchema = new mongoose_1.Schema({
             required: true,
             index: true,
         },
-        attachments: [messageAttachmentSchema],
+        attachments: {
+            type: [messageAttachmentSchema],
+            default: [],
+        },
         metadata: {
             originalText: String,
             clinicalData: {
@@ -240,7 +243,10 @@ const messageSchema = new mongoose_1.Schema({
             ref: 'User',
             index: true,
         }],
-    reactions: [messageReactionSchema],
+    reactions: {
+        type: [messageReactionSchema],
+        default: [],
+    },
     status: {
         type: String,
         enum: ['sending', 'sent', 'delivered', 'read', 'failed'],
@@ -255,8 +261,14 @@ const messageSchema = new mongoose_1.Schema({
         required: true,
         index: true,
     },
-    readBy: [messageReadReceiptSchema],
-    editHistory: [messageEditHistorySchema],
+    readBy: {
+        type: [messageReadReceiptSchema],
+        default: [],
+    },
+    editHistory: {
+        type: [messageEditHistorySchema],
+        default: [],
+    },
     isEncrypted: {
         type: Boolean,
         default: true,
@@ -313,7 +325,7 @@ messageSchema.virtual('attachmentCount').get(function () {
     return this.content.attachments?.length || 0;
 });
 messageSchema.virtual('readCount').get(function () {
-    return this.readBy.length;
+    return Array.isArray(this.readBy) ? this.readBy.length : 0;
 });
 messageSchema.methods.addReaction = function (userId, emoji) {
     this.reactions = this.reactions.filter(r => !(r.userId.toString() === userId.toString() && r.emoji === emoji));
@@ -327,8 +339,10 @@ messageSchema.methods.removeReaction = function (userId, emoji) {
     this.reactions = this.reactions.filter(r => !(r.userId.toString() === userId.toString() && r.emoji === emoji));
 };
 messageSchema.methods.markAsRead = function (userId) {
-    const existingRead = this.readBy.find(r => r.userId.toString() === userId.toString());
+    const existingRead = (this.readBy || []).find(r => r.userId.toString() === userId.toString());
     if (!existingRead) {
+        if (!Array.isArray(this.readBy))
+            this.readBy = [];
         this.readBy.push({
             userId,
             readAt: new Date(),
@@ -340,6 +354,8 @@ messageSchema.methods.isReadBy = function (userId) {
 };
 messageSchema.methods.addEdit = function (content, editedBy, reason) {
     if (this.content.text) {
+        if (!Array.isArray(this.editHistory))
+            this.editHistory = [];
         this.editHistory.push({
             content: this.content.text,
             editedAt: new Date(),

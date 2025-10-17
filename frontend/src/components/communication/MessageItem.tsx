@@ -35,6 +35,7 @@ import ForumIcon from '@mui/icons-material/Forum';
 import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 import { Message } from '../../stores/types';
 import { formatDistanceToNow, format } from 'date-fns';
+import { formatMessageTimestamp } from '../../utils/dateUtils';
 import { useResponsive, useIsTouchDevice } from '../../hooks/useResponsive';
 import { useTouchGestures } from '../../hooks/useTouchGestures';
 import MentionDisplay from './MentionDisplay';
@@ -59,7 +60,7 @@ interface MessageItemProps {
   touchOptimized?: boolean;
 }
 
-const MessageItem: React.FC<MessageItemProps> = ({
+const MessageItem: React.FC<MessageItemProps> = React.memo(({
   message,
   showAvatar = true,
   showTimestamp = true,
@@ -78,6 +79,8 @@ const MessageItem: React.FC<MessageItemProps> = ({
 }) => {
   const theme = useTheme();
   const { isMobile, isSmallMobile } = useResponsive();
+
+  // Debug message data (removed for performance)
   const isTouchDevice = useIsTouchDevice();
 
   // Use mobile mode if explicitly set or detected
@@ -248,17 +251,8 @@ const MessageItem: React.FC<MessageItemProps> = ({
     return <DescriptionIcon />;
   };
 
-  // Format timestamp
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 24) {
-      return formatDistanceToNow(date, { addSuffix: true });
-    }
-    return format(date, 'MMM d, yyyy h:mm a');
-  };
+  // Use optimized timestamp formatting
+  const formatTimestamp = formatMessageTimestamp;
 
   // Check if user has reacted with emoji
   const hasUserReacted = (emoji: string) => {
@@ -363,8 +357,10 @@ const MessageItem: React.FC<MessageItemProps> = ({
               fontWeight="bold"
               sx={{ fontSize: isMobileMode ? '0.875rem' : undefined }}
             >
-              {/* TODO: Get user name */}
-              User Name
+              {message.senderId && typeof message.senderId === 'object' 
+                ? `${message.senderId.firstName} ${message.senderId.lastName}`
+                : 'Unknown User'
+              }
             </Typography>
 
             {message.priority === 'urgent' && (
@@ -719,6 +715,6 @@ const MessageItem: React.FC<MessageItemProps> = ({
       </Dialog>
     </Box>
   );
-};
+});
 
 export default MessageItem;

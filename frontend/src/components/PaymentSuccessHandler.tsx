@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useSubscriptionStatus } from '../hooks/useSubscription';
 import { subscriptionService } from '../services/subscriptionService';
 import { useUIStore } from '../stores';
 
@@ -11,6 +12,7 @@ import { useUIStore } from '../stores';
  */
 const PaymentSuccessHandler: React.FC = () => {
   const { refreshUser } = useAuth();
+  const { refetch: refetchSubscription } = useSubscriptionStatus();
   const location = useLocation();
   const addNotification = useUIStore((state) => state.addNotification);
 
@@ -51,16 +53,16 @@ const PaymentSuccessHandler: React.FC = () => {
             );
           }
 
-          // Refresh user data multiple times to ensure we have the latest
+          // Refresh user data and subscription status multiple times to ensure we have the latest
           console.log('First refresh attempt...');
-          await refreshUser();
+          await Promise.all([refreshUser(), refetchSubscription()]);
 
           // Small delay
           await new Promise((resolve) => setTimeout(resolve, 500));
 
           // One more refresh for good measure
           console.log('Second refresh attempt...');
-          await refreshUser();
+          await Promise.all([refreshUser(), refetchSubscription()]);
 
           // Show success notification
           addNotification({
@@ -88,9 +90,9 @@ const PaymentSuccessHandler: React.FC = () => {
         } catch (error) {
           console.error('Error handling payment success:', error);
 
-          // Try one more time to refresh user
+          // Try one more time to refresh user and subscription
           try {
-            await refreshUser();
+            await Promise.all([refreshUser(), refetchSubscription()]);
           } catch (e) {
             console.error('Final refresh attempt failed:', e);
           }
@@ -99,7 +101,7 @@ const PaymentSuccessHandler: React.FC = () => {
     };
 
     handlePaymentSuccess();
-  }, [location, refreshUser, addNotification]);
+  }, [location, refreshUser, refetchSubscription, addNotification]);
 
   // This is an invisible component that just runs the effect
   return null;

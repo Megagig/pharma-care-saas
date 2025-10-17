@@ -621,7 +621,7 @@ export const logNoteAccess = async (
       await auditOperations.noteAccess(req, note._id, action, {
         noteTitle: note.title,
         noteType: note.type,
-        patientId: note.patient._id || note.patient,
+        patientId: note.patient?._id || note.patient || null,
         isConfidential: note.isConfidential,
       });
     }

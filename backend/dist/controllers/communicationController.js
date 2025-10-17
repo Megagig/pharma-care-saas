@@ -70,6 +70,7 @@ class CommunicationController {
                 ...req.body,
                 createdBy: userId,
                 workplaceId,
+                skipWorkplaceValidation: req.user.role === 'super_admin',
             };
             const conversation = await communicationService_1.communicationService.createConversation(conversationData);
             const app = req.app;
@@ -283,7 +284,30 @@ class CommunicationController {
         try {
             const conversationId = req.params.id;
             const userId = req.user.id;
-            const workplaceId = toStringId(req.user.workplaceId);
+            const userRole = req.user.role;
+            const isAdmin = userRole === 'super_admin' || req.isAdmin === true;
+            if (!conversationId || typeof conversationId !== "string") {
+                res.status(400).json({
+                    success: false,
+                    message: "Valid conversation ID is required",
+                });
+                return;
+            }
+            let workplaceId;
+            if (isAdmin) {
+                const conversation = await Conversation_1.default.findById(conversationId).select('workplaceId');
+                if (!conversation) {
+                    res.status(404).json({
+                        success: false,
+                        message: "Conversation not found",
+                    });
+                    return;
+                }
+                workplaceId = toStringId(conversation.workplaceId);
+            }
+            else {
+                workplaceId = toStringId(req.user.workplaceId);
+            }
             const filters = {
                 type: req.query.type,
                 senderId: req.query.senderId,
@@ -298,17 +322,21 @@ class CommunicationController {
                 limit: parseInt(req.query.limit) || 50,
                 offset: parseInt(req.query.offset) || 0,
             };
-            if (!conversationId || typeof conversationId !== "string") {
-                res.status(400).json({
-                    success: false,
-                    message: "Valid conversation ID is required",
-                });
-                return;
-            }
-            const messages = await communicationService_1.communicationService.getMessages(conversationId, userId, workplaceId, filters);
+            const messages = await communicationService_1.communicationService.getMessages(conversationId, userId, workplaceId, filters, isAdmin);
+            const serializedMessages = messages.map(message => {
+                const messageObj = message.toObject ? message.toObject() : message;
+                return {
+                    ...messageObj,
+                    _id: messageObj._id ? messageObj._id.toString() : undefined,
+                    conversationId: messageObj.conversationId ? messageObj.conversationId.toString() : undefined,
+                    senderId: typeof messageObj.senderId === 'object' && messageObj.senderId._id
+                        ? messageObj.senderId._id.toString()
+                        : messageObj.senderId ? messageObj.senderId.toString() : undefined,
+                };
+            });
             res.json({
                 success: true,
-                data: messages,
+                data: serializedMessages,
                 pagination: {
                     limit: filters.limit,
                     offset: filters.offset,
@@ -329,13 +357,8 @@ class CommunicationController {
         try {
             const conversationId = req.params.id;
             const senderId = req.user.id;
-            const workplaceId = req.user.workplaceId;
-            const messageData = {
-                conversationId,
-                senderId,
-                workplaceId,
-                ...req.body,
-            };
+            const userRole = req.user.role;
+            const isAdmin = userRole === 'super_admin' || req.isAdmin === true;
             if (!conversationId || typeof conversationId !== "string") {
                 res.status(400).json({
                     success: false,
@@ -343,7 +366,70 @@ class CommunicationController {
                 });
                 return;
             }
+            let workplaceId;
+            if (isAdmin) {
+                const conversation = await Conversation_1.default.findById(conversationId).select('workplaceId');
+                if (!conversation) {
+                    res.status(404).json({
+                        success: false,
+                        message: "Conversation not found",
+                    });
+                    return;
+                }
+                workplaceId = toStringId(conversation.workplaceId);
+                logger_1.default.info('🔍 [sendMessage] Super admin sending message to cross-workplace conversation', {
+                    conversationId,
+                    conversationWorkplaceId: workplaceId,
+                    userWorkplaceId: toStringId(req.user.workplaceId),
+                });
+            }
+            else {
+                workplaceId = toStringId(req.user.workplaceId);
+            }
+            let content = req.body.content;
+            if (typeof content === 'string') {
+                try {
+                    content = JSON.parse(content);
+                }
+                catch (error) {
+                    res.status(400).json({
+                        success: false,
+                        message: "Invalid content format",
+                    });
+                    return;
+                }
+            }
+            let mentions = req.body.mentions;
+            if (typeof mentions === 'string') {
+                try {
+                    mentions = JSON.parse(mentions);
+                }
+                catch (error) {
+                    mentions = [];
+                }
+            }
+            const messageData = {
+                conversationId,
+                senderId,
+                workplaceId,
+                content,
+                threadId: req.body.threadId,
+                parentMessageId: req.body.parentMessageId,
+                mentions,
+                priority: req.body.priority,
+            };
+            logger_1.default.info('🔍 [sendMessage] Attempting to send message', {
+                conversationId,
+                senderId,
+                workplaceId,
+                hasContent: !!messageData.content,
+                contentType: messageData.content?.type,
+            });
             const message = await communicationService_1.communicationService.sendMessage(messageData);
+            logger_1.default.info('✅ [sendMessage] Message sent successfully', {
+                messageId: message._id,
+                conversationId,
+            });
             const app = req.app;
             const communicationSocket = app.get("communicationSocket");
             if (communicationSocket) {
@@ -356,7 +442,12 @@ class CommunicationController {
             });
         }
         catch (error) {
-            logger_1.default.error("Error sending message:", error);
+            logger_1.default.error("❌ [sendMessage] Error sending message:", {
+                error: error instanceof Error ? error.message : "Unknown error",
+                stack: error instanceof Error ? error.stack : undefined,
+                conversationId: req.params.id,
+                senderId: req.user?.id,
+            });
             res.status(400).json({
                 success: false,
                 message: "Failed to send message",
@@ -824,20 +915,39 @@ class CommunicationController {
             const patientId = req.params.patientId;
             const { title, message, priority, tags } = req.body;
             const userId = req.user.id;
+            const userRole = req.user.role;
             const workplaceId = toStringId(req.user.workplaceId);
-            const patient = await Patient_1.default.findOne({
-                _id: patientId,
+            const isAdmin = userRole === 'super_admin' || req.isAdmin === true;
+            logger_1.default.info('🔍 [createPatientQuery] Request details:', {
+                patientId,
+                userId,
+                userRole,
                 workplaceId,
+                isAdmin,
+                hasMessage: !!message,
+            });
+            const patientQuery = { _id: patientId };
+            if (!isAdmin) {
+                patientQuery.workplaceId = workplaceId;
+            }
+            logger_1.default.info('🔍 [createPatientQuery] Patient query:', patientQuery);
+            const patient = await Patient_1.default.findOne(patientQuery);
+            logger_1.default.info('🔍 [createPatientQuery] Patient found:', {
+                found: !!patient,
+                patientWorkplaceId: patient?.workplaceId?.toString(),
+                requestWorkplaceId: workplaceId,
             });
             if (!patient) {
+                logger_1.default.warn('⚠️ [createPatientQuery] Patient not found with query:', patientQuery);
                 res.status(404).json({
                     success: false,
                     message: "Patient not found",
                 });
                 return;
             }
+            const targetWorkplaceId = toStringId(patient.workplaceId);
             const healthcareProviders = await User_1.default.find({
-                workplaceId,
+                workplaceId: targetWorkplaceId,
                 role: { $in: ["pharmacist", "doctor"] },
                 isActive: true,
             }).limit(5);
@@ -853,13 +963,19 @@ class CommunicationController {
                 priority: priority || "normal",
                 tags: tags || ["patient-query"],
                 createdBy: userId,
-                workplaceId,
+                workplaceId: targetWorkplaceId,
+                skipWorkplaceValidation: isAdmin,
             };
+            logger_1.default.info('🔍 [createPatientQuery] Creating conversation with data:', {
+                participantsCount: participants.length,
+                targetWorkplaceId,
+                skipWorkplaceValidation: isAdmin,
+            });
             const conversation = await communicationService_1.communicationService.createConversation(conversationData);
             const messageData = {
                 conversationId: conversation._id.toString(),
                 senderId: userId,
-                workplaceId,
+                workplaceId: targetWorkplaceId,
                 content: {
                     text: message,
                     type: "text",
@@ -1664,6 +1780,81 @@ class CommunicationController {
             res.status(500).json({
                 success: false,
                 message: "Failed to get conversation threads",
+                error: error instanceof Error ? error.message : "Unknown error",
+            });
+        }
+    }
+    async searchParticipants(req, res) {
+        try {
+            const userId = req.user.id;
+            const workplaceId = req.user.workplaceId;
+            const { q = '', role, limit = 50 } = req.query;
+            logger_1.default.info('Searching participants:', { userId, workplaceId, q, role, limit });
+            const searchQuery = {
+                status: 'active',
+                _id: { $ne: new mongoose_1.default.Types.ObjectId(userId) },
+            };
+            if (workplaceId) {
+                searchQuery.workplaceId = new mongoose_1.default.Types.ObjectId(workplaceId);
+            }
+            if (role) {
+                searchQuery.role = role;
+            }
+            if (q && typeof q === 'string' && q.trim()) {
+                searchQuery.$or = [
+                    { firstName: { $regex: q, $options: 'i' } },
+                    { lastName: { $regex: q, $options: 'i' } },
+                    { email: { $regex: q, $options: 'i' } },
+                ];
+            }
+            logger_1.default.info('Search query:', JSON.stringify(searchQuery));
+            let users = await User_1.default.find(searchQuery)
+                .select('_id firstName lastName email role avatar')
+                .limit(Number(limit))
+                .lean();
+            logger_1.default.info(`Found ${users.length} participants with workplace filter`);
+            if (users.length === 0 && workplaceId) {
+                logger_1.default.info('No participants found with workplace filter, searching without workplace restriction');
+                const broadSearchQuery = {
+                    status: 'active',
+                    _id: { $ne: new mongoose_1.default.Types.ObjectId(userId) },
+                };
+                if (role) {
+                    broadSearchQuery.role = role;
+                }
+                if (q && typeof q === 'string' && q.trim()) {
+                    broadSearchQuery.$or = [
+                        { firstName: { $regex: q, $options: 'i' } },
+                        { lastName: { $regex: q, $options: 'i' } },
+                        { email: { $regex: q, $options: 'i' } },
+                    ];
+                }
+                users = await User_1.default.find(broadSearchQuery)
+                    .select('_id firstName lastName email role avatar')
+                    .limit(Number(limit))
+                    .lean();
+                logger_1.default.info(`Found ${users.length} participants without workplace filter`);
+            }
+            const participants = users.map((user) => ({
+                userId: user._id.toString(),
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.role,
+                avatar: user.avatar,
+            }));
+            res.json({
+                success: true,
+                message: "Participants retrieved successfully",
+                data: participants,
+                count: participants.length,
+            });
+        }
+        catch (error) {
+            logger_1.default.error("Error searching participants:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to search participants",
                 error: error instanceof Error ? error.message : "Unknown error",
             });
         }

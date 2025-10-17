@@ -47,7 +47,7 @@ router.get('/conversations', auth_1.auth, communicationRateLimiting_1.default.se
     (0, express_validator_1.query)('limit').optional().isInt({ min: 1, max: 100 }),
     (0, express_validator_1.query)('offset').optional().isInt({ min: 0 }),
 ], handleValidationErrors, communicationSecurity_1.default.sanitizeSearchQuery, (0, securityMonitoring_1.monitorDataAccess)('conversation'), communicationController_1.default.getConversations);
-router.post('/conversations', auth_1.auth, communicationRateLimiting_1.default.conversationRateLimit, communicationCSRF_1.default.requireCSRFToken, [
+router.post('/conversations', auth_1.auth, communicationRateLimiting_1.default.conversationRateLimit, communicationCSRF_1.default.doubleSubmitCSRF, [
     (0, express_validator_1.body)('title').optional().isString().trim().isLength({ min: 1, max: 200 }),
     (0, express_validator_1.body)('type').isIn([
         'direct',
@@ -56,7 +56,15 @@ router.post('/conversations', auth_1.auth, communicationRateLimiting_1.default.c
         'clinical_consultation',
     ]),
     (0, express_validator_1.body)('participants').isArray({ min: 1, max: 50 }),
-    (0, express_validator_1.body)('participants.*').isMongoId(),
+    (0, express_validator_1.body)('participants.*').custom((value) => {
+        if (typeof value === 'string') {
+            return /^[a-f\d]{24}$/i.test(value);
+        }
+        if (typeof value === 'object' && value.userId && value.role) {
+            return /^[a-f\d]{24}$/i.test(value.userId);
+        }
+        throw new Error('Invalid participant format');
+    }),
     (0, express_validator_1.body)('patientId').optional().isMongoId(),
     (0, express_validator_1.body)('caseId').optional().isString().trim().isLength({ max: 100 }),
     (0, express_validator_1.body)('priority').optional().isIn(['low', 'normal', 'high', 'urgent']),
@@ -101,23 +109,36 @@ router.get('/conversations/:id/messages', auth_1.auth, [
 ], handleValidationErrors, encryptionMiddleware_1.decryptMessageContent, communicationController_1.default.getMessages);
 router.post('/conversations/:id/messages', auth_1.auth, communicationRateLimiting_1.default.messageRateLimit, communicationRateLimiting_1.default.burstProtection, communicationRateLimiting_1.default.spamDetection, communicationCSRF_1.default.requireCSRFToken, [
     (0, express_validator_1.param)('id').isMongoId(),
-    (0, express_validator_1.body)('content.text')
-        .optional()
-        .isString()
-        .trim()
-        .isLength({ min: 1, max: 10000 }),
-    (0, express_validator_1.body)('content.type').isIn([
-        'text',
-        'file',
-        'image',
-        'clinical_note',
-        'voice_note',
-    ]),
-    (0, express_validator_1.body)('content.attachments').optional().isArray(),
+    (0, express_validator_1.body)('content')
+        .custom((value) => {
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return parsed && typeof parsed === 'object';
+            }
+            catch {
+                return false;
+            }
+        }
+        return typeof value === 'object' && value !== null;
+    })
+        .withMessage('Content must be a valid JSON object'),
     (0, express_validator_1.body)('threadId').optional().isMongoId(),
     (0, express_validator_1.body)('parentMessageId').optional().isMongoId(),
-    (0, express_validator_1.body)('mentions').optional().isArray(),
-    (0, express_validator_1.body)('mentions.*').isMongoId(),
+    (0, express_validator_1.body)('mentions')
+        .optional()
+        .custom((value) => {
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed);
+            }
+            catch {
+                return false;
+            }
+        }
+        return Array.isArray(value);
+    }),
     (0, express_validator_1.body)('priority').optional().isIn(['normal', 'high', 'urgent']),
 ], handleValidationErrors, communicationSecurity_1.default.sanitizeMessageContent, communicationRBAC_1.default.requireConversationAccess('canSendMessage'), encryptionMiddleware_1.encryptMessageContent, encryptionMiddleware_1.validateEncryptionCompliance, (0, securityMonitoring_1.monitorSecurityEvents)('message_sent'), (0, communicationAuditMiddleware_1.auditMessage)('message_sent'), communicationController_1.default.sendMessage);
 router.put('/messages/:id/read', auth_1.auth, [(0, express_validator_1.param)('id').isMongoId()], handleValidationErrors, ...(0, communicationAuditMiddleware_1.auditMessage)('message_read'), communicationController_1.default.markMessageAsRead);
@@ -310,5 +331,12 @@ router.get('/conversations/:conversationId/threads', auth_1.auth, [
         .isMongoId()
         .withMessage('Valid conversation ID is required'),
 ], handleValidationErrors, (0, communicationAuditMiddleware_1.auditConversation)('participant_added'), communicationController_1.default.getConversationThreads);
+router.get('/participants/search', auth_1.auth, communicationRateLimiting_1.default.searchRateLimit, [
+    (0, express_validator_1.query)('q').optional().isString().trim().isLength({ min: 0, max: 100 }),
+    (0, express_validator_1.query)('role')
+        .optional()
+        .isIn(['doctor', 'pharmacist', 'patient', 'admin', 'super_admin']),
+    (0, express_validator_1.query)('limit').optional().isInt({ min: 1, max: 100 }),
+], handleValidationErrors, communicationSecurity_1.default.sanitizeSearchQuery, communicationController_1.default.searchParticipants);
 exports.default = router;
 //# sourceMappingURL=communicationRoutes.js.map

@@ -68,6 +68,7 @@ import {
   LazySubscriptionSuccess,
   LazySettings,
   LazySettingsTheme,
+  LazyNotifications,
   LazyHelp,
   LazyMTRHelp,
   LazyLicenseUpload,
@@ -828,6 +829,19 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazySettings />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* Notifications Page */}
+                          <Route
+                            path="/notifications"
+                            element={
+                              <ProtectedRoute>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyNotifications />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>

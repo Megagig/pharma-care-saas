@@ -144,6 +144,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
     onConversationSelect?.(conversation);
   };
 
+  // Debug conversations loading (removed for performance)
+
   // Handle filter changes
   const handleFilterChange = (
     filterKey: keyof ConversationFilters,
@@ -352,6 +354,17 @@ const ConversationList: React.FC<ConversationListProps> = ({
               {searchTerm || activeFilterCount > 0
                 ? 'Try adjusting your search or filters'
                 : 'Start a new conversation to get started'}
+            </Typography>
+            
+            {/* Debug info */}
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+              Debug: {conversations.length} total conversations, {filteredConversations.length} filtered
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              Loading: {loading.fetchConversations ? 'Yes' : 'No'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              Error: {errors.fetchConversations || 'None'}
             </Typography>
           </Box>
         ) : (

@@ -394,7 +394,7 @@ const logNoteAccess = async (req, res, next) => {
             await auditLogging_1.auditOperations.noteAccess(req, note._id, action, {
                 noteTitle: note.title,
                 noteType: note.type,
-                patientId: note.patient._id || note.patient,
+                patientId: note.patient?._id || note.patient || null,
                 isConfidential: note.isConfidential,
             });
         }

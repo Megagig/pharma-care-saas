@@ -32,20 +32,27 @@ const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({
   >(initialConversationId);
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
-  // Update conversation selection when prop changes
+
+
+  // Update conversation selection when prop changes (only if initialConversationId is provided)
   useEffect(() => {
-    if (initialConversationId !== selectedConversationId) {
+    if (initialConversationId && initialConversationId !== selectedConversationId) {
       setSelectedConversationId(initialConversationId);
     }
-  }, [initialConversationId, selectedConversationId]);
+  }, [initialConversationId]);
 
   // Fetch conversations on mount
   useEffect(() => {
     fetchConversations();
-  }, [fetchConversations]);
+  }, []); // Empty dependency array - only run on mount
 
   // Handle conversation selection
-  const handleConversationSelect = (conversation: Conversation) => {
+  const handleConversationSelect = React.useCallback((conversation: Conversation) => {
+    // Prevent selecting the same conversation multiple times
+    if (selectedConversationId === conversation._id) {
+      return;
+    }
+
     setSelectedConversationId(conversation._id);
     setActiveConversation(conversation);
     onConversationChange?.(conversation._id);
@@ -54,7 +61,7 @@ const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({
     if (isMobile) {
       setSidebarOpen(false);
     }
-  };
+  }, [selectedConversationId, setActiveConversation, onConversationChange, isMobile]);
 
   // Handle back navigation (mobile)
   const handleBack = () => {

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
-  Grid,
   Card,
   CardContent,
   Tabs,
@@ -13,28 +12,25 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Chip,
   Button,
   IconButton,
   Tooltip,
   Badge,
   LinearProgress,
   Alert,
+  Grid,
 } from '@mui/material';
-import {
-  Search,
-  FilterList,
-  Refresh,
-  Assignment,
-  Schedule,
-  CheckCircle,
-  Archive,
-  PriorityHigh,
-  TrendingUp,
-  Assessment,
-  Download,
-  Add,
-} from '@mui/icons-material';
+import Search from '@mui/icons-material/Search';
+import FilterList from '@mui/icons-material/FilterList';
+import Refresh from '@mui/icons-material/Refresh';
+import Assignment from '@mui/icons-material/Assignment';
+import Schedule from '@mui/icons-material/Schedule';
+import CheckCircle from '@mui/icons-material/CheckCircle';
+import PriorityHigh from '@mui/icons-material/PriorityHigh';
+import TrendingUp from '@mui/icons-material/TrendingUp';
+import Assessment from '@mui/icons-material/Assessment';
+import Download from '@mui/icons-material/Download';
+import Add from '@mui/icons-material/Add';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -43,6 +39,15 @@ import QueryCard from './QueryCard';
 import NewConversationModal from './NewConversationModal';
 import { useCommunicationStore } from '../../stores/communicationStore';
 import { Conversation, ConversationFilters } from '../../stores/types';
+import { toast } from 'react-hot-toast';
+import apiClient from '../../services/apiClient';
+import {
+  ReplyDialog,
+  AssignDialog,
+  EditQueryDialog,
+  ForwardDialog,
+  ConfirmDialog,
+} from './dialogs';
 
 interface PatientQueryDashboardProps {
   patientId?: string;
@@ -71,17 +76,33 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
   onQuerySelect,
   onCreateQuery,
 }) => {
+  // Helper to normalize various ID shapes to a stable string for React keys and comparisons
+  const toIdString = (id: any): string => {
+    if (typeof id === 'string') return id;
+    if (id && typeof id === 'object') {
+      if (typeof (id as any)._id === 'string') return (id as any)._id;
+      if (typeof (id as any)._id === 'object') return toIdString((id as any)._id);
+      if (typeof (id as any).$oid === 'string') return (id as any).$oid;
+      if (typeof (id as any).toHexString === 'function') return (id as any).toHexString();
+      const str = typeof (id as any).toString === 'function' ? (id as any).toString() : '';
+      if (str && str !== '[object Object]') return str;
+      try { return JSON.stringify(id); } catch { return String(id ?? ''); }
+    }
+    return String(id ?? '');
+  };
   const {
     conversations,
-    conversationFilters,
     loading,
     errors,
     fetchConversations,
-    setConversationFilters,
     clearConversationFilters,
     resolveConversation,
     archiveConversation,
     updateConversation,
+    deleteConversation,
+    sendMessage,
+    addParticipant,
+    setActiveConversation,
   } = useCommunicationStore();
 
   // Local state
@@ -89,7 +110,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  // const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{
     start: Date | null;
     end: Date | null;
@@ -99,6 +120,14 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
   });
   const [showNewQueryModal, setShowNewQueryModal] = useState(false);
   const [selectedQueries, setSelectedQueries] = useState<string[]>([]);
+  // Dialog state
+  const [replyState, setReplyState] = useState<{ open: boolean; query: Conversation | null }>({ open: false, query: null });
+  const [assignState, setAssignState] = useState<{ open: boolean; query: Conversation | null }>({ open: false, query: null });
+  const [editState, setEditState] = useState<{ open: boolean; query: Conversation | null }>({ open: false, query: null });
+  const [forwardState, setForwardState] = useState<{ open: boolean; query: Conversation | null }>({ open: false, query: null });
+  const [confirmState, setConfirmState] = useState<{ open: boolean; query: Conversation | null; action?: 'delete' }>(
+    { open: false, query: null }
+  );
 
   // Filter conversations to only patient queries
   const patientQueries = useMemo(() => {
@@ -107,7 +136,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
       if (conv.type !== 'patient_query') return false;
 
       // Filter by patient ID if provided
-      if (patientId && conv.patientId !== patientId) return false;
+      if (patientId && toIdString(conv.patientId) !== patientId) return false;
 
       // Apply search filter
       if (searchTerm) {
@@ -244,25 +273,50 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
   // Handle query actions
   const handleQueryAction = async (action: string, queryId: string) => {
     try {
+      const query = conversations.find(c => c._id === queryId) || null;
       switch (action) {
         case 'resolve':
           await resolveConversation(queryId);
+          toast.success('Marked as resolved');
           break;
         case 'archive':
           await archiveConversation(queryId);
+          toast.success('Archived');
           break;
         case 'assign':
-          // TODO: Implement assignment logic
-          console.log('Assign query:', queryId);
+          setAssignState({ open: true, query });
           break;
         case 'escalate':
           await updateConversation(queryId, { priority: 'urgent' });
+          try {
+            await apiClient.put(`/communication/conversations/${queryId}`, { priority: 'urgent' });
+          } catch { }
+          toast.success('Escalated to urgent');
+          break;
+        case 'reply':
+          setReplyState({ open: true, query });
+          break;
+        case 'edit':
+          setEditState({ open: true, query });
+          break;
+        case 'forward':
+          setForwardState({ open: true, query });
+          break;
+        case 'delete':
+          setConfirmState({ open: true, query, action: 'delete' });
+          break;
+        case 'view':
+          if (query) {
+            setActiveConversation(query);
+            onQuerySelect?.(query);
+          }
           break;
         default:
           console.log('Unknown action:', action);
       }
     } catch (error) {
       console.error('Query action failed:', error);
+      toast.error('Action failed');
     }
   };
 
@@ -310,7 +364,6 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
     setSearchTerm('');
     setStatusFilter('all');
     setPriorityFilter('all');
-    setAssigneeFilter('all');
     setDateRange({ start: null, end: null });
     clearConversationFilters();
   };
@@ -367,7 +420,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
           {/* Analytics Cards */}
           {showAnalytics && (
             <Grid container spacing={2} sx={{ mb: 2 }}>
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card>
                   <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -385,7 +438,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
                 </Card>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card>
                   <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -403,7 +456,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
                 </Card>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card>
                   <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -421,7 +474,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
                 </Card>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card>
                   <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -439,7 +492,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
                 </Card>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card>
                   <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -461,7 +514,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
 
           {/* Filters */}
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={3}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 fullWidth
                 size="small"
@@ -478,7 +531,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
               />
             </Grid>
 
-            <Grid item xs={6} md={2}>
+            <Grid size={{ xs: 6, md: 2 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Status</InputLabel>
                 <Select
@@ -494,7 +547,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
               </FormControl>
             </Grid>
 
-            <Grid item xs={6} md={2}>
+            <Grid size={{ xs: 6, md: 2 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Priority</InputLabel>
                 <Select
@@ -511,29 +564,29 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
               </FormControl>
             </Grid>
 
-            <Grid item xs={6} md={2}>
+            <Grid size={{ xs: 6, md: 2 }}>
               <DatePicker
                 label="Start Date"
                 value={dateRange.start}
                 onChange={(date) =>
-                  setDateRange((prev) => ({ ...prev, start: date }))
+                  setDateRange((prev) => ({ ...prev, start: date as Date | null }))
                 }
                 slotProps={{ textField: { size: 'small', fullWidth: true } }}
               />
             </Grid>
 
-            <Grid item xs={6} md={2}>
+            <Grid size={{ xs: 6, md: 2 }}>
               <DatePicker
                 label="End Date"
                 value={dateRange.end}
                 onChange={(date) =>
-                  setDateRange((prev) => ({ ...prev, end: date }))
+                  setDateRange((prev) => ({ ...prev, end: date as Date | null }))
                 }
                 slotProps={{ textField: { size: 'small', fullWidth: true } }}
               />
             </Grid>
 
-            <Grid item xs={12} md={1}>
+            <Grid size={{ xs: 12, md: 1 }}>
               <Button
                 variant="outlined"
                 startIcon={<FilterList />}
@@ -559,7 +612,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
         {/* Tabs */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={activeTab} onChange={handleTabChange}>
-            {tabs.map((tab, index) => (
+            {tabs.map((tab) => (
               <Tab
                 key={tab.value}
                 label={
@@ -651,16 +704,16 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
           ) : (
             <Grid container spacing={2}>
               {currentTabQueries.map((query) => (
-                <Grid item xs={12} key={query._id}>
+                <Grid size={{ xs: 12 }} key={toIdString(query._id)}>
                   <QueryCard
                     query={query}
-                    selected={selectedQueries.includes(query._id)}
+                    selected={selectedQueries.includes(toIdString(query._id))}
                     onSelect={(selected) => {
                       if (selected) {
-                        setSelectedQueries((prev) => [...prev, query._id]);
+                        setSelectedQueries((prev) => [...prev, toIdString(query._id)]);
                       } else {
                         setSelectedQueries((prev) =>
-                          prev.filter((id) => id !== query._id)
+                          prev.filter((id) => id !== toIdString(query._id))
                         );
                       }
                     }}
@@ -681,6 +734,96 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
           patientId={patientId}
         />
       </Box>
+      {/* Action Dialogs */}
+      <ReplyDialog
+        open={replyState.open}
+        onClose={() => setReplyState({ open: false, query: null })}
+        onSubmit={async (message: string) => {
+          if (!replyState.query) return;
+          const res = await sendMessage({
+            conversationId: replyState.query._id,
+            content: { text: message, type: 'text' },
+          } as any);
+          if (res) {
+            toast.success('Reply sent');
+            setReplyState({ open: false, query: null });
+          } else {
+            toast.error('Failed to send reply');
+          }
+        }}
+      />
+
+      <AssignDialog
+        open={assignState.open}
+        onClose={() => setAssignState({ open: false, query: null })}
+        onSubmit={async ({ userId, role }: { userId: string; role: string }) => {
+          if (!assignState.query) return;
+          const ok = await addParticipant(assignState.query._id, userId, role);
+          if (ok) {
+            toast.success('Assigned');
+            setAssignState({ open: false, query: null });
+          } else {
+            toast.error('Failed to assign');
+          }
+        }}
+      />
+
+      <EditQueryDialog
+        open={editState.open}
+        initialTitle={editState.query?.title || ''}
+        initialPriority={(editState.query?.priority || 'normal') as any}
+        onClose={() => setEditState({ open: false, query: null })}
+        onSubmit={async ({ title, priority }: { title: string; priority: 'low' | 'normal' | 'high' | 'urgent' }) => {
+          if (!editState.query) return;
+          try {
+            updateConversation(editState.query._id, { title, priority } as any);
+            await apiClient.put(`/communication/conversations/${editState.query._id}`, { title, priority });
+            toast.success('Query updated');
+            setEditState({ open: false, query: null });
+          } catch (e) {
+            toast.error('Failed to update');
+          }
+        }}
+      />
+
+      <ForwardDialog
+        open={forwardState.open}
+        onClose={() => setForwardState({ open: false, query: null })}
+        onSubmit={async ({ userId, note }: { userId: string; note?: string }) => {
+          if (!forwardState.query) return;
+          const ok = await addParticipant(forwardState.query._id, userId, 'forwarded');
+          if (ok) {
+            if (note) {
+              await sendMessage({
+                conversationId: forwardState.query._id,
+                content: { text: `Forwarded to ${userId}: ${note}`, type: 'text' },
+              } as any);
+            }
+            toast.success('Forwarded');
+            setForwardState({ open: false, query: null });
+          } else {
+            toast.error('Failed to forward');
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmState.open}
+        title="Delete Query"
+        description="This will permanently delete the conversation. This action cannot be undone."
+        confirmText="Delete"
+        onClose={() => setConfirmState({ open: false, query: null })}
+        onConfirm={async () => {
+          if (!confirmState.query) return;
+          const ok = await deleteConversation(confirmState.query._id);
+          if (ok) {
+            toast.success('Deleted');
+          } else {
+            toast.error('Failed to delete');
+          }
+          setConfirmState({ open: false, query: null });
+        }}
+      />
     </LocalizationProvider>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -9,6 +9,8 @@ import {
   MenuItem,
   Box,
   Chip,
+  CircularProgress,
+  Divider,
 } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -16,8 +18,10 @@ import LogoutIcon from '@mui/icons-material/ExitToApp';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
+import { useNotificationStore } from '../stores/notificationStore';
 import ThemeToggle from './common/ThemeToggle';
 import CommunicationNotificationBadge from './communication/CommunicationNotificationBadge';
+import { formatDistanceToNow } from 'date-fns';
 
 /**
  * Main navigation bar component displayed at the top of the application
@@ -31,17 +35,48 @@ const Navbar: React.FC = () => {
   const { tier } = useSubscriptionStatus();
   const navigate = useNavigate();
 
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    fetchNotifications,
+    fetchUnreadCount,
+    markAsRead,
+  } = useNotificationStore();
+
+  // Fetch notifications on mount and periodically
+  useEffect(() => {
+    fetchNotifications({ limit: 10 });
+    fetchUnreadCount();
+
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchNotifications, fetchUnreadCount]);
+
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
   const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setNotificationAnchor(event.currentTarget);
+    // Refresh notifications when opening the menu
+    fetchNotifications({ limit: 10 });
   };
 
   const handleMenuClose = () => {
     setAnchorEl(null);
     setNotificationAnchor(null);
+  };
+
+  const handleNotificationClick = async (notificationId: string, isRead: boolean) => {
+    if (!isRead) {
+      await markAsRead(notificationId);
+    }
+    handleMenuClose();
   };
 
   const handleLogout = async () => {
@@ -88,10 +123,10 @@ const Navbar: React.FC = () => {
               label={tier.replace('_', ' ').toUpperCase()}
               color={
                 getSubscriptionChipColor() as
-                  | 'default'
-                  | 'primary'
-                  | 'secondary'
-                  | 'error'
+                | 'default'
+                | 'primary'
+                | 'secondary'
+                | 'error'
               }
             />
           )}
@@ -109,7 +144,7 @@ const Navbar: React.FC = () => {
             color="inherit"
             onClick={handleNotificationMenuOpen}
           >
-            <Badge badgeContent={3} color="error">
+            <Badge badgeContent={unreadCount} color="error">
               <NotificationsIcon />
             </Badge>
           </IconButton>
@@ -162,25 +197,74 @@ const Navbar: React.FC = () => {
           onClose={handleMenuClose}
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          PaperProps={{
+            sx: { width: 360, maxHeight: 480 },
+          }}
         >
-          <MenuItem onClick={handleMenuClose}>
-            <Typography variant="body2">New patient registered</Typography>
-          </MenuItem>
-          <MenuItem onClick={handleMenuClose}>
-            <Typography variant="body2">Prescription renewal needed</Typography>
-          </MenuItem>
-          <MenuItem onClick={handleMenuClose}>
-            <Typography variant="body2">Subscription expires soon</Typography>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              handleMenuClose();
-              navigate('/notifications');
-            }}
-            sx={{ justifyContent: 'center', color: 'primary.main' }}
-          >
-            <Typography variant="body2">View all notifications</Typography>
-          </MenuItem>
+          <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="h6">Notifications</Typography>
+            {unreadCount > 0 && (
+              <Typography variant="caption" color="textSecondary">
+                {unreadCount} unread
+              </Typography>
+            )}
+          </Box>
+
+          {loading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          )}
+
+          {!loading && notifications.length === 0 && (
+            <Box sx={{ px: 2, py: 3, textAlign: 'center' }}>
+              <Typography variant="body2" color="textSecondary">
+                No notifications
+              </Typography>
+            </Box>
+          )}
+
+          {!loading &&
+            notifications.slice(0, 5).map((notification) => (
+              <MenuItem
+                key={notification._id}
+                onClick={() => handleNotificationClick(notification._id, notification.isRead)}
+                sx={{
+                  backgroundColor: notification.isRead ? 'transparent' : 'action.hover',
+                  borderLeft: notification.isRead ? 'none' : 3,
+                  borderColor: 'primary.main',
+                  whiteSpace: 'normal',
+                  py: 1.5,
+                }}
+              >
+                <Box sx={{ width: '100%' }}>
+                  <Typography variant="body2" fontWeight={notification.isRead ? 'normal' : 'bold'}>
+                    {notification.title}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" display="block">
+                    {notification.content}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 0.5 }}>
+                    {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                  </Typography>
+                </Box>
+              </MenuItem>
+            ))}
+
+          {notifications.length > 0 && (
+            <>
+              <Divider />
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  navigate('/notifications');
+                }}
+                sx={{ justifyContent: 'center', color: 'primary.main' }}
+              >
+                <Typography variant="body2">View all notifications</Typography>
+              </MenuItem>
+            </>
+          )}
         </Menu>
       </Toolbar>
     </AppBar>

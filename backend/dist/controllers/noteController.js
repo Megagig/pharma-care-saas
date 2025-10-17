@@ -239,21 +239,26 @@ const getNote = async (req, res) => {
             { path: 'medications', select: 'name dosage strength' },
         ]);
         if (note.isConfidential) {
-            await auditService_1.AuditService.createAuditLog({
-                action: 'VIEW_CONFIDENTIAL_NOTE',
-                userId: req.user?.id || 'unknown',
-                resourceType: 'ClinicalNote',
-                resourceId: note._id,
-                patientId: note.patient._id || note.patient,
-                details: {
-                    noteTitle: note.title,
-                    noteType: note.type,
-                    confidentialityLevel: 'high',
-                    accessJustification: 'Clinical care review',
-                },
-                complianceCategory: 'data_access',
-                riskLevel: 'critical',
-            });
+            try {
+                await auditService_1.AuditService.createAuditLog({
+                    action: 'VIEW_CONFIDENTIAL_NOTE',
+                    userId: req.user?.id || 'unknown',
+                    resourceType: 'ClinicalNote',
+                    resourceId: note._id,
+                    patientId: note.patient?._id || note.patient || null,
+                    details: {
+                        noteTitle: note.title,
+                        noteType: note.type,
+                        confidentialityLevel: 'high',
+                        accessJustification: 'Clinical care review',
+                    },
+                    complianceCategory: 'data_access',
+                    riskLevel: 'critical',
+                });
+            }
+            catch (auditError) {
+                console.error('Failed to create confidential note audit log:', auditError);
+            }
         }
         res.json({
             success: true,
@@ -307,31 +312,36 @@ const createNote = async (req, res) => {
             .populate('patient', 'firstName lastName mrn')
             .populate('pharmacist', 'firstName lastName role')
             .populate('medications', 'name dosage');
-        await auditService_1.AuditService.createAuditLog({
-            action: req.body.isConfidential
-                ? 'CREATE_CONFIDENTIAL_NOTE'
-                : 'CREATE_CLINICAL_NOTE',
-            userId: req.user?.id || 'unknown',
-            resourceType: 'ClinicalNote',
-            resourceId: note._id,
-            patientId: new mongoose_1.default.Types.ObjectId(patientId),
-            newValues: {
-                ...noteData,
-                content: req.body.isConfidential
-                    ? '[CONFIDENTIAL_CONTENT]'
-                    : noteData.content,
-            },
-            details: {
-                noteType: type,
-                title,
-                priority: req.body.priority || 'medium',
-                isConfidential: req.body.isConfidential || false,
-                patientMrn: patient.mrn,
-                attachmentCount: req.body.attachments?.length || 0,
-            },
-            complianceCategory: 'clinical_documentation',
-            riskLevel: req.body.isConfidential ? 'critical' : 'medium',
-        });
+        try {
+            await auditService_1.AuditService.createAuditLog({
+                action: req.body.isConfidential
+                    ? 'CREATE_CONFIDENTIAL_NOTE'
+                    : 'CREATE_CLINICAL_NOTE',
+                userId: req.user?.id || 'unknown',
+                resourceType: 'ClinicalNote',
+                resourceId: note._id,
+                patientId: new mongoose_1.default.Types.ObjectId(patientId),
+                newValues: {
+                    ...noteData,
+                    content: req.body.isConfidential
+                        ? '[CONFIDENTIAL_CONTENT]'
+                        : noteData.content,
+                },
+                details: {
+                    noteType: type,
+                    title,
+                    priority: req.body.priority || 'medium',
+                    isConfidential: req.body.isConfidential || false,
+                    patientMrn: patient.mrn,
+                    attachmentCount: req.body.attachments?.length || 0,
+                },
+                complianceCategory: 'clinical_documentation',
+                riskLevel: req.body.isConfidential ? 'critical' : 'medium',
+            });
+        }
+        catch (auditError) {
+            console.error('Failed to create note creation audit log:', auditError);
+        }
         res.status(201).json({
             success: true,
             note: populatedNote,
@@ -399,25 +409,30 @@ const updateNote = async (req, res) => {
                 .json({ message: 'Clinical note not found or access denied' });
             return;
         }
-        await auditService_1.AuditService.createAuditLog({
-            action: 'UPDATE_CLINICAL_NOTE',
-            userId: req.user?.id || 'unknown',
-            resourceType: 'ClinicalNote',
-            resourceId: updatedNote._id,
-            details: {
-                noteId: updatedNote._id,
-                patientId: updatedNote.patient._id,
-                noteType: updatedNote.type,
-                title: updatedNote.title,
-                priority: updatedNote.priority,
-                isConfidential: updatedNote.isConfidential,
-            },
-            oldValues,
-            newValues: updatedNote.toObject(),
-            changedFields: Object.keys(req.body),
-            complianceCategory: 'clinical_documentation',
-            riskLevel: updatedNote.isConfidential ? 'high' : 'medium',
-        });
+        try {
+            await auditService_1.AuditService.createAuditLog({
+                action: 'UPDATE_CLINICAL_NOTE',
+                userId: req.user?.id || 'unknown',
+                resourceType: 'ClinicalNote',
+                resourceId: updatedNote._id,
+                details: {
+                    noteId: updatedNote._id,
+                    patientId: updatedNote.patient?._id || updatedNote.patient || null,
+                    noteType: updatedNote.type,
+                    title: updatedNote.title,
+                    priority: updatedNote.priority,
+                    isConfidential: updatedNote.isConfidential,
+                },
+                oldValues,
+                newValues: updatedNote.toObject(),
+                changedFields: Object.keys(req.body),
+                complianceCategory: 'clinical_documentation',
+                riskLevel: updatedNote.isConfidential ? 'high' : 'medium',
+            });
+        }
+        catch (auditError) {
+            console.error('Failed to create note update audit log:', auditError);
+        }
         res.json({ note: updatedNote });
     }
     catch (error) {
@@ -571,12 +586,12 @@ const getPatientNotes = async (req, res) => {
             totalPages: Math.ceil(total / Number(limit)),
             currentPage: Number(page),
             total,
-            patient: {
+            patient: patient ? {
                 _id: patient._id,
                 firstName: patient.firstName,
                 lastName: patient.lastName,
                 mrn: patient.mrn,
-            },
+            } : null,
         });
     }
     catch (error) {

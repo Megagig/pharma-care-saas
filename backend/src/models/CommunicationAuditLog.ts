@@ -60,6 +60,47 @@ export interface ICommunicationAuditLog extends Document {
     getFormattedDetails(): string;
 }
 
+export interface ICommunicationAuditLogModel extends mongoose.Model<ICommunicationAuditLog> {
+    logAction(
+        action: string,
+        userId: mongoose.Types.ObjectId,
+        targetId: mongoose.Types.ObjectId,
+        targetType: string,
+        details: ICommunicationAuditLogDetails,
+        context: {
+            workplaceId: mongoose.Types.ObjectId;
+            ipAddress: string;
+            userAgent: string;
+            sessionId?: string;
+            success?: boolean;
+            errorMessage?: string;
+            duration?: number;
+        }
+    ): Promise<ICommunicationAuditLog>;
+    
+    findByConversation(
+        conversationId: mongoose.Types.ObjectId,
+        workplaceId: mongoose.Types.ObjectId,
+        options?: any
+    ): Promise<ICommunicationAuditLog[]>;
+    
+    findHighRiskActivities(
+        workplaceId: mongoose.Types.ObjectId,
+        timeRange: { start: Date; end: Date }
+    ): Promise<ICommunicationAuditLog[]>;
+    
+    getComplianceReport(
+        workplaceId: mongoose.Types.ObjectId,
+        dateRange: { start: Date; end: Date }
+    ): Promise<any[]>;
+    
+    getUserActivitySummary(
+        userId: mongoose.Types.ObjectId,
+        workplaceId: mongoose.Types.ObjectId,
+        dateRange: { start: Date; end: Date }
+    ): Promise<any[]>;
+}
+
 const communicationAuditLogDetailsSchema = new Schema({
     conversationId: {
         type: Schema.Types.ObjectId,
@@ -167,6 +208,7 @@ const communicationAuditLogSchema = new Schema({
         enum: ['low', 'medium', 'high', 'critical'],
         required: true,
         index: true,
+        default: 'low',
     },
     complianceCategory: {
         type: String,
@@ -177,6 +219,7 @@ const communicationAuditLogSchema = new Schema({
         ],
         required: true,
         index: true,
+        default: 'audit_trail',
     },
 
     workplaceId: {
@@ -321,8 +364,8 @@ communicationAuditLogSchema.methods.getFormattedDetails = function (this: ICommu
     return details.join(', ');
 };
 
-// Pre-save middleware for validation and defaults
-communicationAuditLogSchema.pre('save', function (this: ICommunicationAuditLog) {
+// Ensure defaults before validation runs
+communicationAuditLogSchema.pre('validate', function (this: ICommunicationAuditLog) {
     // Auto-set risk level if not provided
     if (!this.riskLevel) {
         this.setRiskLevel();
@@ -498,4 +541,4 @@ communicationAuditLogSchema.statics.getUserActivitySummary = function (
     ]);
 };
 
-export default mongoose.model<ICommunicationAuditLog>('CommunicationAuditLog', communicationAuditLogSchema);
+export default mongoose.model<ICommunicationAuditLog, ICommunicationAuditLogModel>('CommunicationAuditLog', communicationAuditLogSchema);

@@ -44,7 +44,7 @@ const conversationParticipantSchema = new mongoose_1.Schema({
     },
     role: {
         type: String,
-        enum: ['pharmacist', 'doctor', 'patient', 'pharmacy_team', 'intern_pharmacist'],
+        enum: ['pharmacist', 'doctor', 'patient', 'pharmacy_team', 'intern_pharmacist', 'pharmacy_outlet', 'nurse', 'admin', 'super_admin', 'owner'],
         required: true,
         index: true,
     },

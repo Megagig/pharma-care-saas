@@ -338,9 +338,9 @@ class SubscriptionController {
                     message: 'Authentication required',
                 });
             }
-            console.log('Checking for existing subscription for user:', user._id.toString());
+            console.log('Checking for existing subscription for user:', user._id.toString(), 'workplaceId:', user.workplaceId?.toString());
             const existingSubscription = await Subscription_1.default.findOne({
-                userId: user._id,
+                workspaceId: user.workplaceId,
                 status: { $in: ['active', 'trial'] },
             });
             console.log('Existing subscription check result:', existingSubscription
@@ -352,18 +352,44 @@ class SubscriptionController {
                 }
                 : 'No active subscription');
             if (existingSubscription) {
-                console.log('User already has an active subscription, returning 400');
-                return res.status(400).json({
-                    success: false,
-                    message: 'User already has an active subscription',
+                console.log('User has existing subscription, allowing upgrade/change:', {
+                    currentStatus: existingSubscription.status,
+                    currentTier: existingSubscription.tier,
+                    newTier: plan.tier
                 });
+            }
+            const pendingPayment = await Payment_1.default.findOne({
+                userId: user._id,
+                status: 'pending',
+                planId: plan._id
+            });
+            if (pendingPayment) {
+                console.log('Found existing pending payment, checking if it can be reused:', pendingPayment.paymentReference);
+                const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+                if (pendingPayment.createdAt > thirtyMinutesAgo) {
+                    console.log('Reusing recent pending payment:', pendingPayment.paymentReference);
+                    return res.json({
+                        success: true,
+                        data: {
+                            authorization_url: `${process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : process.env.FRONTEND_URL}/subscriptions?payment=pending&reference=${pendingPayment.paymentReference}`,
+                            access_code: 'existing_pending',
+                            reference: pendingPayment.paymentReference,
+                        },
+                        message: 'Existing pending payment found',
+                    });
+                }
+                else {
+                    console.log('Pending payment is old, marking as expired and creating new one');
+                    pendingPayment.status = 'failed';
+                    await pendingPayment.save();
+                }
             }
             const paymentData = {
                 email: user.email,
                 amount: paystackService_1.PaystackService.convertToKobo(plan.priceNGN),
                 currency: 'NGN',
                 callback_url: req.body.callbackUrl ||
-                    `${process.env.FRONTEND_URL}/subscription/success`,
+                    `${process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : process.env.FRONTEND_URL}/subscription/success`,
                 metadata: {
                     userId: user._id.toString(),
                     planId: plan._id.toString(),
@@ -384,7 +410,7 @@ class SubscriptionController {
             if (process.env.NODE_ENV === 'development' &&
                 !paystackService_1.paystackService.isConfigured()) {
                 const mockReference = `mock_${Date.now()}_${user._id}`;
-                const mockCheckoutUrl = `${process.env.FRONTEND_URL}/subscription-management/checkout?reference=${mockReference}&planId=${planId}`;
+                const mockCheckoutUrl = `${process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : process.env.FRONTEND_URL}/subscription-management/checkout?reference=${mockReference}&planId=${planId}`;
                 await Payment_1.default.create({
                     userId: user._id,
                     planId: plan._id,
@@ -470,6 +496,34 @@ class SubscriptionController {
                 });
             }
             const paymentData = verificationResult.data;
+            if (paymentData.status === 'success') {
+                try {
+                    console.log('Payment verified as successful, looking for payment record:', reference);
+                    const paymentRecord = await Payment_1.default.findOne({
+                        paymentReference: reference,
+                    });
+                    console.log('Payment record found:', paymentRecord ? {
+                        id: paymentRecord._id,
+                        userId: paymentRecord.userId,
+                        status: paymentRecord.status,
+                        amount: paymentRecord.amount
+                    } : 'No payment record found');
+                    if (paymentRecord && paymentRecord.status !== 'completed') {
+                        console.log('Processing subscription activation for verified payment:', reference);
+                        paymentRecord.status = 'completed';
+                        paymentRecord.completedAt = new Date();
+                        await paymentRecord.save();
+                        await this.processSubscriptionActivation(paymentRecord);
+                        console.log('Subscription activation completed for payment:', reference);
+                    }
+                    else if (paymentRecord && paymentRecord.status === 'completed') {
+                        console.log('Payment already processed, skipping activation:', reference);
+                    }
+                }
+                catch (activationError) {
+                    console.error('Error during subscription activation:', activationError);
+                }
+            }
             return res.status(200).json({
                 success: true,
                 data: {
@@ -1037,13 +1091,20 @@ class SubscriptionController {
                 });
                 return;
             }
+            if (!user.workplaceId) {
+                console.error('User does not have a workplaceId for subscription activation', {
+                    userId,
+                    userEmail: user.email,
+                });
+                return;
+            }
             console.log('Activating subscription for user:', {
                 userId: user._id,
                 email: user.email,
                 planName: plan.name,
                 tier: plan.tier,
             });
-            await Subscription_1.default.updateMany({ userId: userId, status: { $in: ['active', 'trial'] } }, { status: 'cancelled' });
+            await Subscription_1.default.updateMany({ workspaceId: user.workplaceId, status: { $in: ['active', 'trial'] } }, { status: 'cancelled' });
             const startDate = new Date();
             const endDate = new Date();
             if (billingInterval === 'yearly') {
@@ -1053,7 +1114,7 @@ class SubscriptionController {
                 endDate.setMonth(endDate.getMonth() + 1);
             }
             const subscription = new Subscription_1.default({
-                userId: userId,
+                workspaceId: user.workplaceId,
                 planId: planId,
                 tier: plan.tier,
                 status: plan.tier === 'free_trial' ? 'trial' : 'active',

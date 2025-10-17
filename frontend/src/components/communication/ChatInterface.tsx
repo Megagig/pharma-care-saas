@@ -17,6 +17,7 @@ import {
 } from '@mui/icons-material';
 import { useCommunicationStore } from '../../stores/communicationStore';
 import { useSocketConnection } from '../../hooks/useSocket';
+import { useAuth } from '../../hooks/useAuth';
 import MessageThread from './MessageThread';
 import ParticipantList from './ParticipantList';
 import ConnectionStatus from './ConnectionStatus';
@@ -53,15 +54,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   } = useCommunicationStore();
 
   const { isConnected } = useSocketConnection();
+  const { user } = useAuth();
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get conversation messages
   const conversationMessages = messages[conversationId] || [];
 
-  // Get current conversation
-  const conversation =
-    activeConversation?._id === conversationId ? activeConversation : null;
+  // Get current conversation - check activeConversation first, then fall back to conversations list
+  const { conversations } = useCommunicationStore();
+  const conversation = activeConversation?._id === conversationId 
+    ? activeConversation 
+    : conversations.find(conv => conv._id === conversationId) || null;
+
+
+
+
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -72,13 +80,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     scrollToBottom();
   }, [conversationMessages]);
 
+  // Polling for new messages when socket is not connected
+  useEffect(() => {
+    if (!isConnected && conversationId) {
+      const pollInterval = setInterval(() => {
+        // Only poll if we have messages (to avoid initial fetch conflicts)
+        if (conversationMessages.length > 0) {
+          fetchMessages(conversationId);
+        }
+      }, 10000); // Poll every 10 seconds
+
+      return () => clearInterval(pollInterval);
+    }
+  }, [isConnected, conversationId, conversationMessages.length, fetchMessages]);
+
   // Load messages when conversation changes
   useEffect(() => {
-    if (conversationId) {
+    const hasMessages = conversationMessages.length > 0;
+    const shouldFetch = conversationId && !hasMessages;
+    
+    if (shouldFetch) {
       fetchMessages(conversationId);
       markConversationAsRead(conversationId);
     }
-  }, [conversationId, fetchMessages, markConversationAsRead]);
+  }, [conversationId, conversationMessages.length]);
 
   // Handle sending messages
   const handleSendMessage = async (
@@ -102,6 +127,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       threadId,
       parentMessageId,
       mentions,
+      currentUser: user ? {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      } : undefined,
     };
 
     await sendMessage(messageData);
@@ -262,9 +293,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Connection Status Alert */}
       {!isConnected && (
-        <Alert severity="warning" sx={{ m: 1 }}>
-          You're currently offline. Messages will be sent when connection is
-          restored.
+        <Alert severity="info" sx={{ m: 1 }}>
+          Using polling for updates. Messages will still be sent normally.
         </Alert>
       )}
 

@@ -407,6 +407,12 @@ export const validateParticipantRoles = (
   try {
     const { participants } = req.body;
 
+    logger.info('Validating participant roles', {
+      participantsCount: participants?.length,
+      participants: JSON.stringify(participants),
+      service: 'communication-rbac',
+    });
+
     if (!participants || !Array.isArray(participants)) {
       res.status(400).json({
         success: false,
@@ -417,12 +423,37 @@ export const validateParticipantRoles = (
 
     // Validate role combinations
     const roles = participants.map((p: any) => p.role || 'patient');
-    const hasPharmacist = roles.includes('pharmacist');
-    const hasDoctor = roles.includes('doctor');
+
+    logger.info('Extracted roles from participants', {
+      roles: JSON.stringify(roles),
+      service: 'communication-rbac',
+    });
+
+    // Define healthcare provider roles
+    const healthcareProviderRoles = [
+      'pharmacist',
+      'doctor',
+      'pharmacy_team',
+      'pharmacy_outlet',
+      'nurse',
+      'admin',
+      'super_admin'
+    ];
+
+    const hasHealthcareProvider = roles.some((role: string) =>
+      healthcareProviderRoles.includes(role)
+    );
     const hasPatient = roles.includes('patient');
 
+    logger.info('Role validation check', {
+      hasHealthcareProvider,
+      hasPatient,
+      roles: JSON.stringify(roles),
+      service: 'communication-rbac',
+    });
+
     // Business rules for role combinations
-    if (hasPatient && !hasPharmacist && !hasDoctor) {
+    if (hasPatient && !hasHealthcareProvider) {
       res.status(400).json({
         success: false,
         message:
@@ -603,22 +634,48 @@ export const enforceConversationTypeRestrictions = (
         break;
 
       case 'direct':
-        // Must have exactly 2 participants
-        if (participants.length !== 2) {
+        // Direct conversations need exactly 2 participants total
+        // If creator is not in participants list, they will be auto-added by service layer
+        // So we accept either 1 participant (creator will be added) or 2 participants (creator already included)
+        const creatorId = req.user?._id?.toString();
+        const creatorInParticipants = participants.some((p: any) => {
+          const participantId = typeof p === 'string' ? p : p.userId;
+          return participantId === creatorId;
+        });
+
+        if (creatorInParticipants && participants.length !== 2) {
           res.status(400).json({
             success: false,
-            message: 'Direct conversations must have exactly 2 participants',
+            message: 'Direct conversations must have exactly 2 participants (you + 1 other person)',
+          });
+          return;
+        }
+
+        if (!creatorInParticipants && participants.length !== 1) {
+          res.status(400).json({
+            success: false,
+            message: 'Direct conversations must have exactly 1 other participant (you will be added automatically)',
           });
           return;
         }
         break;
 
       case 'group':
-        // Must have at least 3 participants
-        if (participants.length < 3) {
+        // Group conversations need at least 3 participants total
+        // If creator is not in participants list, they will be auto-added by service layer
+        // So we accept either 2+ participants (creator will be added to make 3+) or 3+ participants (creator already included)
+        const groupCreatorInParticipants = participants.some((p: any) => {
+          const participantId = typeof p === 'string' ? p : p.userId;
+          return participantId === creatorId;
+        });
+
+        const minParticipants = groupCreatorInParticipants ? 3 : 2;
+        if (participants.length < minParticipants) {
           res.status(400).json({
             success: false,
-            message: 'Group conversations must have at least 3 participants',
+            message: groupCreatorInParticipants
+              ? 'Group conversations must have at least 3 participants (including you)'
+              : 'Group conversations must have at least 2 other participants (you will be added automatically)',
           });
           return;
         }

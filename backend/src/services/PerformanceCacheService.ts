@@ -26,6 +26,8 @@ export default class PerformanceCacheService {
   private static instance: PerformanceCacheService;
   private redis: Redis | null = null;
   private isConnected = false;
+  private isInitializing = false;
+  private initializationFailed = false;
   private readonly DEFAULT_TTL = 300; // 5 minutes
   private readonly COMPRESSION_THRESHOLD = 1024; // 1KB
 
@@ -79,13 +81,18 @@ export default class PerformanceCacheService {
 
       this.redis = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
-        lazyConnect: true,
+        lazyConnect: false, // Connect immediately
         keepAlive: 30000,
         connectTimeout: 10000,
         commandTimeout: 5000,
         enableReadyCheck: true,
-        enableOfflineQueue: false,
+        enableOfflineQueue: true, // Enable offline queue to prevent errors
         db: 1, // Use different database than CacheManager
+        retryStrategy: (times) => {
+          // Retry with exponential backoff, max 3 seconds
+          const delay = Math.min(times * 50, 3000);
+          return delay;
+        },
       });
 
       this.redis.on('connect', () => {
@@ -93,23 +100,38 @@ export default class PerformanceCacheService {
         logger.info('Performance cache service connected to Redis');
       });
 
+      this.redis.on('ready', () => {
+        this.isConnected = true;
+      });
+
       this.redis.on('error', (error) => {
         this.isConnected = false;
-        logger.error('Performance cache service Redis error:', error);
+        // Only log error once, not repeatedly
+        if (!error.message.includes('ECONNREFUSED')) {
+          logger.error('Performance cache service Redis error:', error);
+        }
       });
 
       this.redis.on('close', () => {
         this.isConnected = false;
-        logger.warn('Performance cache service Redis connection closed');
       });
 
-      // Test connection
+      // Wait for connection to be ready
       await this.redis.ping();
+      this.isConnected = true;
+      this.initializationFailed = false;
 
     } catch (error) {
-      logger.error('Failed to initialize performance cache service:', error);
+      // Silently fail - caching is optional
+      logger.warn('Performance cache service unavailable, continuing without cache');
       this.redis = null;
       this.isConnected = false;
+      this.initializationFailed = true;
+      
+      // Reset failure flag after 30 seconds to allow retry
+      setTimeout(() => {
+        this.initializationFailed = false;
+      }, 30000);
     }
   }
 
@@ -117,12 +139,29 @@ export default class PerformanceCacheService {
    * Ensure Redis connection is initialized
    */
   private async ensureConnection(): Promise<boolean> {
+    // If already connected, return true
     if (this.isConnected && this.redis) {
       return true;
     }
 
+    // If initialization failed before, don't retry immediately
+    if (this.initializationFailed) {
+      return false;
+    }
+
+    // If currently initializing, wait a bit
+    if (this.isInitializing) {
+      return false;
+    }
+
+    // Try to initialize if not already done
     if (!this.redis) {
-      await this.initializeRedis();
+      this.isInitializing = true;
+      try {
+        await this.initializeRedis();
+      } finally {
+        this.isInitializing = false;
+      }
     }
 
     return this.isConnected;

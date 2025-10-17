@@ -310,7 +310,8 @@ export function useCacheWarming() {
           await queryClient.prefetchQuery({
             queryKey: queryKeys.user.profile(),
             queryFn: async () => {
-              const response = await fetch('/api/user/settings/profile', {
+              const base = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
+              const response = await fetch(`${base}/api/user/settings/profile`, {
                 credentials: 'include',
               });
               if (!response.ok) throw new Error('Failed to warm user profile cache');
@@ -324,7 +325,8 @@ export function useCacheWarming() {
           await queryClient.prefetchQuery({
             queryKey: queryKeys.workspace.settings(),
             queryFn: async () => {
-              const response = await fetch('/api/workspace/settings', {
+              const base = import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '';
+              const response = await fetch(`${base}/api/workspace/settings`, {
                 credentials: 'include',
               });
               if (!response.ok) throw new Error('Failed to warm workspace settings cache');

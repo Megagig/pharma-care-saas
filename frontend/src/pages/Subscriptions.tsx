@@ -121,19 +121,56 @@ const Subscriptions: React.FC = () => {
     
     // Check for payment success in URL
     const params = new URLSearchParams(window.location.search);
-    if (params.get('payment') === 'success') {
-      setShowSuccessMessage(true);
-      setTabValue(0); // Show Plans tab
-      // Clear query params
-      window.history.replaceState({}, '', '/subscriptions');
-      // Force refresh after a short delay
-      setTimeout(() => {
-        fetchData();
-      }, 1000);
+    const paymentStatus = params.get('payment');
+    const reference = params.get('reference') || params.get('trxref');
+    
+    if (paymentStatus === 'success' || reference) {
+      handlePaymentSuccess(reference);
     }
   }, [billingInterval]);
 
+  const handlePaymentSuccess = async (reference: string | null) => {
+    if (!reference) {
+      console.warn('No payment reference found in URL');
+      return;
+    }
 
+    try {
+      console.log('Verifying payment with reference:', reference);
+      
+      // Verify the payment
+      const verifyResponse = await apiClient.get(`/subscriptions/verify-payment?reference=${reference}`);
+      
+      if (verifyResponse.data.success) {
+        setShowSuccessMessage(true);
+        setTabValue(0); // Show Plans tab
+        
+        // Show success notification
+        console.log('Payment verified successfully! Subscription should be activated.');
+        
+        // Clear query params
+        window.history.replaceState({}, '', '/subscriptions');
+        
+        // Force refresh subscription data immediately and multiple times to ensure update
+        fetchData();
+        setTimeout(() => {
+          fetchData();
+        }, 1000);
+        setTimeout(() => {
+          fetchData();
+        }, 3000);
+        setTimeout(() => {
+          fetchData();
+        }, 5000);
+      } else {
+        console.error('Payment verification failed:', verifyResponse.data.message);
+        setError('Payment verification failed. Please contact support if your payment was processed.');
+      }
+    } catch (error: any) {
+      console.error('Error verifying payment:', error);
+      setError('Error verifying payment. Please contact support if your payment was processed.');
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -319,6 +356,22 @@ const Subscriptions: React.FC = () => {
 
       {/* Plans Tab */}
       <TabPanel value={tabValue} index={0}>
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <Alert 
+            severity="success" 
+            sx={{ mb: 3 }}
+            onClose={() => setShowSuccessMessage(false)}
+          >
+            <Typography variant="h6" gutterBottom>
+              Payment Successful! 🎉
+            </Typography>
+            <Typography variant="body2">
+              Your subscription has been activated successfully. You now have access to all premium features.
+            </Typography>
+          </Alert>
+        )}
+
         {/* Billing Interval Toggle */}
         <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center', gap: 2 }}>
           <Button

@@ -10,7 +10,7 @@ class PerformanceCollector extends events_1.EventEmitter {
     constructor() {
         super();
         this.metrics = [];
-        this.maxMetrics = 10000;
+        this.maxMetrics = 1000;
         this.alertRules = [];
         this.activeAlerts = new Map();
         this.alertHistory = [];
@@ -358,6 +358,5 @@ const createPerformanceMiddleware = (collector) => {
 };
 exports.createPerformanceMiddleware = createPerformanceMiddleware;
 exports.performanceCollector = new PerformanceCollector();
-exports.performanceCollector.startSystemMetricsCollection();
 exports.default = exports.performanceCollector;
 //# sourceMappingURL=performanceMonitoring.js.map

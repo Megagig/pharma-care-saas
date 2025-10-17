@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, User, LogOut, Settings, CreditCard, Shield } from 'lucide-react';
 import ThemeToggle from './common/ThemeToggle';
 import { useAuth } from '../hooks/useAuth';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
+import { useNotificationStore } from '../stores/notificationStore';
+import { formatDistanceToNow } from 'date-fns';
 
 /**
  * Modern Tailwind-based navigation bar with theme support
@@ -14,6 +16,41 @@ const TailwindNavbar: React.FC = () => {
   const { user, logout } = useAuth();
   const { tier } = useSubscriptionStatus();
   const navigate = useNavigate();
+
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    fetchNotifications,
+    fetchUnreadCount,
+    markAsRead,
+  } = useNotificationStore();
+
+  // Fetch notifications on mount and periodically
+  useEffect(() => {
+    fetchNotifications({ limit: 10 });
+    fetchUnreadCount();
+
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchNotifications, fetchUnreadCount]);
+
+  const handleNotificationClick = async (notificationId: string, isRead: boolean) => {
+    if (!isRead) {
+      await markAsRead(notificationId);
+    }
+    setShowNotificationMenu(false);
+  };
+
+  const handleNotificationMenuOpen = () => {
+    setShowNotificationMenu(!showNotificationMenu);
+    // Refresh notifications when opening the menu
+    fetchNotifications({ limit: 10 });
+  };
 
   const handleLogout = async () => {
     setShowProfileMenu(false);
@@ -71,7 +108,7 @@ const TailwindNavbar: React.FC = () => {
             {/* Notifications */}
             <div className="relative">
               <button
-                onClick={() => setShowNotificationMenu(!showNotificationMenu)}
+                onClick={handleNotificationMenuOpen}
                 className="
                   relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200
                   hover:bg-gray-100 dark:hover:bg-dark-800 rounded-lg transition-colors
@@ -81,9 +118,11 @@ const TailwindNavbar: React.FC = () => {
               >
                 <Bell size={20} />
                 {/* Notification badge */}
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  3
-                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
 
               {/* Notifications Dropdown */}
@@ -93,44 +132,72 @@ const TailwindNavbar: React.FC = () => {
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Notifications
                     </h3>
+                    {unreadCount > 0 && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {unreadCount} unread
+                      </p>
+                    )}
                   </div>
+
+                  {loading && (
+                    <div className="flex justify-center py-6">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 dark:border-accent-400"></div>
+                    </div>
+                  )}
+
+                  {!loading && notifications.length === 0 && (
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        No notifications
+                      </p>
+                    </div>
+                  )}
+
                   <div className="max-h-64 overflow-y-auto">
-                    <div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors">
-                      <p className="text-sm text-gray-900 dark:text-gray-100">
-                        New patient registered
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        2 minutes ago
-                      </p>
-                    </div>
-                    <div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors">
-                      <p className="text-sm text-gray-900 dark:text-gray-100">
-                        Prescription renewal needed
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        1 hour ago
-                      </p>
-                    </div>
-                    <div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors">
-                      <p className="text-sm text-gray-900 dark:text-gray-100">
-                        Subscription expires soon
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        1 day ago
-                      </p>
-                    </div>
+                    {!loading &&
+                      notifications.slice(0, 5).map((notification) => (
+                        <button
+                          key={notification._id}
+                          onClick={() => handleNotificationClick(notification._id, notification.isRead)}
+                          className={`
+                            w-full px-4 py-3 text-left transition-colors
+                            ${notification.isRead
+                              ? 'hover:bg-gray-50 dark:hover:bg-dark-700'
+                              : 'bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 border-l-3 border-primary-500 dark:border-accent-400'
+                            }
+                          `}
+                        >
+                          <p
+                            className={`text-sm ${notification.isRead
+                                ? 'text-gray-900 dark:text-gray-100'
+                                : 'text-gray-900 dark:text-gray-100 font-semibold'
+                              }`}
+                          >
+                            {notification.title}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {notification.content}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                          </p>
+                        </button>
+                      ))}
                   </div>
-                  <div className="border-t border-gray-200 dark:border-dark-600 px-4 py-2">
-                    <button
-                      onClick={() => {
-                        setShowNotificationMenu(false);
-                        navigate('/notifications');
-                      }}
-                      className="text-sm text-primary-600 dark:text-accent-400 hover:text-primary-700 dark:hover:text-accent-300 font-medium"
-                    >
-                      View all notifications
-                    </button>
-                  </div>
+
+                  {notifications.length > 0 && (
+                    <div className="border-t border-gray-200 dark:border-dark-600 px-4 py-2">
+                      <button
+                        onClick={() => {
+                          setShowNotificationMenu(false);
+                          navigate('/notifications');
+                        }}
+                        className="text-sm text-primary-600 dark:text-accent-400 hover:text-primary-700 dark:hover:text-accent-300 font-medium"
+                      >
+                        View all notifications
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

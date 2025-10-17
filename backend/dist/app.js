@@ -163,7 +163,7 @@ app.use((0, cors_1.default)({
     credentials: true,
     exposedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-csrf-token', 'X-CSRF-Token'],
     preflightContinue: false,
     optionsSuccessStatus: 200,
 }));
@@ -196,7 +196,7 @@ app.use((0, hpp_1.default)());
 app.options('*', (req, res) => {
     res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-csrf-token, X-CSRF-Token');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Max-Age', '86400');
     res.sendStatus(200);
@@ -315,6 +315,20 @@ app.use('/api/drugs', drugRoutes_1.default);
 app.use('/api/manual-lab', manualLabRoutes_1.default);
 app.use('/api/diagnostics', diagnosticRoutes_1.default);
 app.use('/api/communication', communicationRoutes_1.default);
+const chatRoutes_1 = __importDefault(require("./routes/chatRoutes"));
+const auditLogRoutes_1 = __importDefault(require("./routes/auditLogRoutes"));
+app.use('/api/chat', chatRoutes_1.default);
+app.use('/api/chat/audit', auditLogRoutes_1.default);
+const templateRoutes_1 = __importDefault(require("./routes/templateRoutes"));
+app.use('/api/chat/templates', templateRoutes_1.default);
+const prescriptionDiscussionRoutes_1 = __importDefault(require("./routes/prescriptionDiscussionRoutes"));
+app.use('/api/chat/prescription-discussions', prescriptionDiscussionRoutes_1.default);
+const reminderRoutes_1 = __importDefault(require("./routes/reminderRoutes"));
+app.use('/api/chat/reminders', reminderRoutes_1.default);
+const chatbotRoutes_1 = __importDefault(require("./routes/chatbotRoutes"));
+app.use('/api/chatbot', chatbotRoutes_1.default);
+const broadcastRoutes_1 = __importDefault(require("./routes/broadcastRoutes"));
+app.use('/api/chat/broadcasts', broadcastRoutes_1.default);
 const communicationAuditRoutes_1 = __importDefault(require("./routes/communicationAuditRoutes"));
 app.use('/api/communication/audit', communicationAuditRoutes_1.default);
 app.use('/api/notifications', notificationRoutes_1.default);

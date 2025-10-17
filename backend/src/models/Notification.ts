@@ -7,6 +7,18 @@ export interface INotificationData {
     senderId?: mongoose.Types.ObjectId;
     patientId?: mongoose.Types.ObjectId;
     interventionId?: mongoose.Types.ObjectId;
+    consultationRequestId?: mongoose.Types.ObjectId;
+    pharmacistId?: mongoose.Types.ObjectId;
+    reminderId?: mongoose.Types.ObjectId;
+    medicationName?: string;
+    dosage?: string;
+    scheduledTime?: Date;
+    frequency?: string;
+    times?: string[];
+    priority?: string;
+    reason?: string;
+    waitTime?: number;
+    escalationLevel?: number;
     actionUrl?: string;
     metadata?: Record<string, any>;
 }
@@ -33,7 +45,9 @@ export interface INotification extends Document {
     userId: mongoose.Types.ObjectId;
     type: 'new_message' | 'mention' | 'therapy_update' | 'clinical_alert' |
     'conversation_invite' | 'file_shared' | 'intervention_assigned' |
-    'patient_query' | 'urgent_message' | 'system_notification';
+    'patient_query' | 'urgent_message' | 'system_notification' |
+    'consultation_request' | 'consultation_accepted' | 'consultation_completed' | 'consultation_escalated' |
+    'medication_reminder' | 'missed_medication' | 'reminder_setup' | 'flagged_message';
     title: string;
     content: string;
     data: INotificationData;
@@ -98,6 +112,48 @@ const notificationDataSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'ClinicalIntervention',
         index: true,
+    },
+    consultationRequestId: {
+        type: Schema.Types.ObjectId,
+        ref: 'ConsultationRequest',
+        index: true,
+    },
+    pharmacistId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        index: true,
+    },
+    priority: {
+        type: String,
+    },
+    reason: {
+        type: String,
+    },
+    waitTime: {
+        type: Number,
+    },
+    escalationLevel: {
+        type: Number,
+    },
+    reminderId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Reminder',
+        index: true,
+    },
+    medicationName: {
+        type: String,
+    },
+    dosage: {
+        type: String,
+    },
+    scheduledTime: {
+        type: Date,
+    },
+    frequency: {
+        type: String,
+    },
+    times: {
+        type: [String],
     },
     actionUrl: {
         type: String,
@@ -171,7 +227,9 @@ const notificationSchema = new Schema({
         enum: [
             'new_message', 'mention', 'therapy_update', 'clinical_alert',
             'conversation_invite', 'file_shared', 'intervention_assigned',
-            'patient_query', 'urgent_message', 'system_notification'
+            'patient_query', 'urgent_message', 'system_notification',
+            'consultation_request', 'consultation_accepted', 'consultation_completed', 'consultation_escalated',
+            'medication_reminder', 'missed_medication', 'reminder_setup', 'flagged_message'
         ],
         required: true,
         index: true,

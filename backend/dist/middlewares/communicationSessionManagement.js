@@ -163,6 +163,17 @@ const validateUserSession = (userId, sessionId, req) => {
 exports.validateUserSession = validateUserSession;
 const validateSession = async (req, res, next) => {
     try {
+        const sessionExemptRoutes = [
+            '/participants/search',
+            '/conversations',
+            '/messages',
+            '/read',
+            '/patients',
+        ];
+        const isExempt = sessionExemptRoutes.some(route => req.path.includes(route));
+        if (isExempt) {
+            return next();
+        }
         if (!req.user) {
             return next();
         }

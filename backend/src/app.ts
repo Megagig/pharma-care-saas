@@ -145,7 +145,7 @@ app.use(
     credentials: true,
     exposedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-csrf-token', 'X-CSRF-Token'],
     preflightContinue: false,
     optionsSuccessStatus: 200,
   })
@@ -196,7 +196,7 @@ app.use(hpp()); // Against HTTP Parameter Pollution
 app.options('*', (req: Request, res: Response) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-csrf-token, X-CSRF-Token');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Max-Age', '86400'); // 24 hours
   res.sendStatus(200);
@@ -370,8 +370,36 @@ app.use('/api/manual-lab', manualLabRoutes);
 // AI Diagnostic routes
 app.use('/api/diagnostics', diagnosticRoutes);
 
-// Communication Hub routes
+// Communication Hub routes (old - will be deprecated)
 app.use('/api/communication', communicationRoutes);
+
+// New Chat routes (simplified communication module)
+import chatRoutes from './routes/chatRoutes';
+import auditLogRoutes from './routes/auditLogRoutes';
+app.use('/api/chat', chatRoutes);
+app.use('/api/chat/audit', auditLogRoutes);
+
+// Template routes (message templates)
+import templateRoutes from './routes/templateRoutes';
+app.use('/api/chat/templates', templateRoutes);
+
+// Note: Consultation routes are handled in chatRoutes.ts
+
+// Prescription discussion routes
+import prescriptionDiscussionRoutes from './routes/prescriptionDiscussionRoutes';
+app.use('/api/chat/prescription-discussions', prescriptionDiscussionRoutes);
+
+// Reminder routes (medication reminders)
+import reminderRoutes from './routes/reminderRoutes';
+app.use('/api/chat/reminders', reminderRoutes);
+
+// Chatbot routes
+import chatbotRoutes from './routes/chatbotRoutes';
+app.use('/api/chatbot', chatbotRoutes);
+
+// Broadcast routes
+import broadcastRoutes from './routes/broadcastRoutes';
+app.use('/api/chat/broadcasts', broadcastRoutes);
 
 // Communication Audit routes
 import communicationAuditRoutes from './routes/communicationAuditRoutes';

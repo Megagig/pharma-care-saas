@@ -13,8 +13,10 @@ import { Send, AttachFile, EmojiEmotions, Reply } from '@mui/icons-material';
 import { Message } from '../../stores/types';
 import MessageItem from './MessageItem';
 import MentionInput from './MentionInput';
+import TemplateSelector from './TemplateSelector';
 import { useSocketConnection } from '../../hooks/useSocket';
 import { socketService } from '../../services/socketService';
+import { parseDate, generateSafeKey } from '../../utils/dateUtils';
 
 interface MessageThreadProps {
   conversationId: string;
@@ -48,6 +50,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   const [mentions, setMentions] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [sending, setSending] = useState(false);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -97,11 +100,25 @@ const MessageThread: React.FC<MessageThreadProps> = ({
     setMessageText(value);
     setMentions(newMentions);
 
+    // Check for "/" command to trigger template selector
+    if (value === '/') {
+      setShowTemplateSelector(true);
+      setMessageText(''); // Clear the "/" character
+      return;
+    }
+
     if (value.trim()) {
       handleTypingStart();
     } else {
       handleTypingStop();
     }
+  };
+
+  // Handle template selection
+  const handleTemplateSelect = (renderedContent: string) => {
+    setMessageText(renderedContent);
+    setShowTemplateSelector(false);
+    messageInputRef.current?.focus();
   };
 
   // Handle sending message
@@ -276,46 +293,82 @@ const MessageThread: React.FC<MessageThreadProps> = ({
         ) : (
           threadMessages.map((message, index) => {
             const prevMessage = index > 0 ? threadMessages[index - 1] : null;
-            const showDateDivider =
-              prevMessage &&
-              new Date(message.createdAt).toDateString() !==
-                new Date(prevMessage.createdAt).toDateString();
+
+            // Use imported parseDate function
+
+            const showDateDivider = (() => {
+              if (!prevMessage) return false;
+
+              const messageDate = parseDate(message.createdAt);
+              const prevDate = parseDate(prevMessage.createdAt);
+
+              if (!messageDate || !prevDate || isNaN(messageDate.getTime()) || isNaN(prevDate.getTime())) {
+                return false;
+              }
+
+              return messageDate.toDateString() !== prevDate.toDateString();
+            })();
+
+            // Generate safe key for React - use index and timestamp as fallback
+            const messageKey = message._id && typeof message._id === 'string' && message._id.length > 0
+              ? message._id 
+              : `message-${conversationId}-${index}-${message.createdAt || Date.now()}`;
 
             return (
-              <React.Fragment key={message._id}>
+              <React.Fragment key={messageKey}>
                 {showDateDivider && (
                   <Box sx={{ my: 2 }}>
                     <Divider>
                       <Typography variant="caption" color="text.secondary">
-                        {new Date(message.createdAt).toLocaleDateString()}
+                        {(() => {
+                          const messageDate = parseDate(message.createdAt);
+                          return messageDate && !isNaN(messageDate.getTime())
+                            ? messageDate.toLocaleDateString()
+                            : 'Invalid date';
+                        })()}
                       </Typography>
                     </Divider>
                   </Box>
                 )}
-                <MessageItem
-                  message={message}
-                  showAvatar={
-                    !prevMessage || prevMessage.senderId !== message.senderId
+                {(() => {
+                  try {
+                    return (
+                      <MessageItem
+                        message={message}
+                        showAvatar={
+                          !prevMessage || prevMessage.senderId !== message.senderId
+                        }
+                        showTimestamp={true}
+                        onReply={() => handleReplyToMessage(message)}
+                        onEdit={(messageId, newContent) => {
+                          // TODO: Implement message editing
+                          console.log('Edit message:', messageId, newContent);
+                        }}
+                        onDelete={(messageId) => {
+                          // TODO: Implement message deletion
+                          console.log('Delete message:', messageId);
+                        }}
+                        onReaction={(messageId, emoji) => {
+                          // TODO: Implement message reactions
+                          console.log('Add reaction:', { messageId, emoji }, '✅');
+                        }}
+                        onCreateThread={handleCreateThread}
+                        onViewThread={handleViewThread}
+                        showThreading={!threadId} // Don't show threading inside a thread
+                        conversationId={conversationId}
+                      />
+                    );
+                  } catch (error) {
+                    console.error('Error rendering message:', message._id, error);
+                    return (
+                      <Box sx={{ p: 2, bgcolor: 'error.light', borderRadius: 1, my: 1 }}>
+                        <Typography variant="body2" color="error">
+                          Failed to load message
+                        </Typography>
+                      </Box>
+                    );
                   }
-                  showTimestamp={true}
-                  onReply={() => handleReplyToMessage(message)}
-                  onEdit={(messageId, newContent) => {
-                    // TODO: Implement message editing
-                    console.log('Edit message:', messageId, newContent);
-                  }}
-                  onDelete={(messageId) => {
-                    // TODO: Implement message deletion
-                    console.log('Delete message:', messageId);
-                  }}
-                  onReaction={(messageId, emoji) => {
-                    // TODO: Implement message reactions
-                    console.log('Add reaction:', messageId, emoji);
-                  }}
-                  onCreateThread={handleCreateThread}
-                  onViewThread={handleViewThread}
-                  showThreading={!threadId} // Don't show threading inside a thread
-                  conversationId={conversationId}
-                />
+                })()}
               </React.Fragment>
             );
           })
@@ -379,7 +432,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
             onChange={handleMessageChange}
             onKeyPress={handleKeyPress}
             placeholder={threadId ? 'Reply to thread...' : 'Type a message...'}
-            disabled={sending || !isConnected}
+            disabled={sending}
             multiline
             maxRows={4}
             conversationId={conversationId}
@@ -397,8 +450,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
             onClick={handleSend}
             disabled={
               (!messageText.trim() && attachments.length === 0) ||
-              sending ||
-              !isConnected
+              sending
             }
             sx={{
               bgcolor: 'primary.main',
@@ -430,7 +482,23 @@ const MessageThread: React.FC<MessageThreadProps> = ({
             Offline - Messages will be sent when connection is restored
           </Typography>
         )}
+
+        {/* Template Hint */}
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mt: 0.5, display: 'block' }}
+        >
+          Tip: Type "/" to use message templates
+        </Typography>
       </Box>
+
+      {/* Template Selector Dialog */}
+      <TemplateSelector
+        open={showTemplateSelector}
+        onClose={() => setShowTemplateSelector(false)}
+        onSelect={handleTemplateSelect}
+      />
     </Box>
   );
 };

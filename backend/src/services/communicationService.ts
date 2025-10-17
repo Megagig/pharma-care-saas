@@ -17,6 +17,7 @@ export interface CreateConversationData {
   tags?: string[];
   createdBy: string;
   workplaceId: string;
+  skipWorkplaceValidation?: boolean; // Allow super admins to create cross-workplace conversations
 }
 
 export interface SendMessageData {
@@ -78,24 +79,92 @@ export class CommunicationService {
     data: CreateConversationData,
   ): Promise<IConversation> {
     try {
-      // Validate participants exist and belong to the same workplace
-      const participants = await User.find({
-        _id: { $in: data.participants },
-        workplaceId: data.workplaceId,
-      }).select("_id role firstName lastName");
+      // Extract participant IDs (handle both string array and object array formats)
+      const participantIds = data.participants.map((p: any) =>
+        typeof p === 'string' ? p : p.userId
+      );
 
-      if (participants.length !== data.participants.length) {
+      // Ensure the creator is included as a participant for ALL conversation types
+      if (!participantIds.includes(data.createdBy)) {
+        logger.warn('Creator not in participants, adding them', {
+          createdBy: data.createdBy,
+          type: data.type,
+          participants: participantIds,
+          service: 'communication-service'
+        });
+        participantIds.push(data.createdBy);
+      }
+
+      // Validate participants exist and belong to the same workplace
+      // Skip workplace validation for super admins creating cross-workplace conversations
+      // Validate participants - they can be either users or patients
+      const participantQuery: any = { _id: { $in: participantIds } };
+      if (!data.skipWorkplaceValidation) {
+        participantQuery.workplaceId = data.workplaceId;
+      }
+
+      // Check both User and Patient collections for participants
+      logger.info('Searching for participants', {
+        participantIds,
+        participantQuery,
+        workplaceId: data.workplaceId,
+        skipWorkplaceValidation: data.skipWorkplaceValidation,
+      });
+
+      const [users, patients] = await Promise.all([
+        User.find(participantQuery).select("_id role firstName lastName"),
+        Patient.find(participantQuery).select("_id firstName lastName")
+      ]);
+
+      logger.info('Participant search results', {
+        usersFound: users.map(u => ({ id: u._id.toString(), role: u.role, name: `${u.firstName} ${u.lastName}` })),
+        patientsFound: patients.map(p => ({ id: p._id.toString(), name: `${p.firstName} ${p.lastName}` })),
+      });
+
+      // If no patients found with workspace filter, check if they exist at all
+      if (patients.length === 0 && !data.skipWorkplaceValidation) {
+        const patientsWithoutWorkspaceFilter = await Patient.find({ _id: { $in: participantIds } }).select("_id firstName lastName workplaceId");
+        logger.info('Patients found without workspace filter', {
+          patientsFound: patientsWithoutWorkspaceFilter.map(p => ({
+            id: p._id.toString(),
+            name: `${p.firstName} ${p.lastName}`,
+            workplaceId: p.workplaceId?.toString()
+          })),
+        });
+      }
+
+      // Combine users and patients, adding role for patients
+      const allParticipants = [
+        ...users.map(u => ({ _id: u._id, role: u.role, firstName: u.firstName, lastName: u.lastName })),
+        ...patients.map(p => ({ _id: p._id, role: 'patient', firstName: p.firstName, lastName: p.lastName }))
+      ];
+
+      if (allParticipants.length !== participantIds.length) {
+        logger.error('Participant validation failed', {
+          expected: participantIds.length,
+          found: allParticipants.length,
+          participantIds,
+          foundIds: allParticipants.map(p => p._id.toString()),
+          foundUsers: users.length,
+          foundPatients: patients.length,
+          workplaceId: data.workplaceId,
+          skipValidation: data.skipWorkplaceValidation,
+        });
         throw new Error(
           "Some participants not found or not in the same workplace",
         );
       }
 
+      const participants = allParticipants;
+
       // Validate patient if provided
       if (data.patientId) {
-        const patient = await Patient.findOne({
-          _id: data.patientId,
-          workplaceId: data.workplaceId,
-        });
+        const patientQuery: any = { _id: data.patientId };
+        if (!data.skipWorkplaceValidation) {
+          patientQuery.workplaceId = data.workplaceId;
+        }
+
+        const patient = await Patient.findOne(patientQuery);
 
         if (!patient) {
           throw new Error("Patient not found or not in the same workplace");
@@ -316,9 +385,21 @@ export class CommunicationService {
    */
   async sendMessage(data: SendMessageData): Promise<IMessage> {
     try {
+      logger.info('🔍 [CommunicationService.sendMessage] Starting', {
+        conversationId: data.conversationId,
+        senderId: data.senderId,
+        workplaceId: data.workplaceId,
+      });
+
       // Validate conversation exists and user is participant
       const conversation = await Conversation.findOne({
         _id: data.conversationId,
+        workplaceId: data.workplaceId,
+      });
+
+      logger.info('🔍 [CommunicationService.sendMessage] Conversation lookup', {
+        found: !!conversation,
+        conversationId: data.conversationId,
         workplaceId: data.workplaceId,
       });
 
@@ -326,7 +407,14 @@ export class CommunicationService {
         throw new Error("Conversation not found");
       }
 
-      if (!conversation.hasParticipant(data.senderId as any)) {
+      const isParticipant = conversation.hasParticipant(data.senderId as any);
+      logger.info('🔍 [CommunicationService.sendMessage] Participant check', {
+        senderId: data.senderId,
+        isParticipant,
+        participants: conversation.participants.map(p => p.userId.toString()),
+      });
+
+      if (!isParticipant) {
         throw new Error("User is not a participant in this conversation");
       }
 
@@ -449,19 +537,54 @@ export class CommunicationService {
     userId: string,
     workplaceId: string,
     filters: MessageFilters = {},
+    skipParticipantCheck: boolean = false,
   ): Promise<IMessage[]> {
     try {
-      // Validate user is participant
-      const conversation = await Conversation.findOne({
-        _id: conversationId,
+      // Validate user is participant (skip for super admins)
+      logger.info('Getting messages', {
+        conversationId,
+        userId,
         workplaceId,
-        "participants.userId": userId,
-        "participants.leftAt": { $exists: false },
+        skipParticipantCheck,
+        service: 'communication-service'
       });
 
+      const conversationQuery: any = {
+        _id: conversationId,
+        workplaceId,
+      };
+
+      // Only check participant if not skipping
+      if (!skipParticipantCheck) {
+        conversationQuery["participants.userId"] = userId;
+        conversationQuery["participants.leftAt"] = { $exists: false };
+      }
+
+      logger.info('🔍 [CommunicationService.getMessages] Looking up conversation', {
+        conversationId,
+        workplaceId,
+        skipParticipantCheck,
+      });
+
+      const conversation = await Conversation.findOne(conversationQuery)
+        .lean() // Use lean for better performance
+        .maxTimeMS(5000); // 5 second timeout
+
       if (!conversation) {
+        logger.error('Conversation not found', {
+          conversationId,
+          userId,
+          workplaceId,
+          skipParticipantCheck,
+          service: 'communication-service'
+        });
         throw new Error("Conversation not found or access denied");
       }
+
+      logger.info('✅ [CommunicationService.getMessages] Conversation found', {
+        conversationId,
+        conversationType: conversation.type,
+      });
 
       const query: any = { conversationId };
 
@@ -489,13 +612,49 @@ export class CommunicationService {
         query.createdAt = { ...query.createdAt, $gt: filters.after };
       }
 
+      // Check message count first to avoid loading too much data
+      const messageCount = await Message.countDocuments(query).maxTimeMS(3000);
+
+      logger.info('🔍 [CommunicationService.getMessages] Executing query', {
+        conversationId,
+        queryKeys: Object.keys(query),
+        messageCount,
+        limit: Math.min(filters.limit || 50, 100),
+        skip: filters.offset || 0,
+      });
+
+      if (messageCount > 10000) {
+        logger.warn('⚠️ [CommunicationService.getMessages] Large message count detected', {
+          conversationId,
+          messageCount,
+        });
+      }
+
+      // Populate sender data for all messages including system messages
       const messages = await Message.find(query)
         .populate("senderId", "firstName lastName role")
-        .populate("mentions", "firstName lastName role")
-        .populate("readBy.userId", "firstName lastName")
         .sort({ createdAt: -1 })
-        .limit(filters.limit || 50)
-        .skip(filters.offset || 0);
+        .limit(Math.min(filters.limit || 50, 100)) // Cap at 100 messages max
+        .skip(filters.offset || 0)
+        .maxTimeMS(10000); // 10 second timeout
+
+      logger.info('✅ [CommunicationService.getMessages] Query completed', {
+        conversationId,
+        messagesCount: messages.length,
+      });
+
+      // Debug: Log sender information for each message
+      messages.forEach((msg, index) => {
+        const sender = msg.senderId as any; // Type assertion for populated field
+        logger.info(`Message ${index} sender info`, {
+          messageId: msg._id,
+          senderId: sender,
+          senderType: typeof sender,
+          contentType: msg.content?.type,
+          hasFirstName: sender?.firstName,
+          hasLastName: sender?.lastName,
+        });
+      });
 
       return messages;
     } catch (error) {
@@ -961,6 +1120,18 @@ export class CommunicationService {
     });
 
     await message.save();
+
+    // Populate sender data for system messages too
+    await message.populate("senderId", "firstName lastName role");
+
+    logger.info('System message created with populated sender', {
+      messageId: message._id,
+      senderId: message.senderId,
+      senderType: typeof message.senderId,
+      action,
+      text
+    });
+
     return message;
   }
 

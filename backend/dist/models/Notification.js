@@ -61,6 +61,48 @@ const notificationDataSchema = new mongoose_1.Schema({
         ref: 'ClinicalIntervention',
         index: true,
     },
+    consultationRequestId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'ConsultationRequest',
+        index: true,
+    },
+    pharmacistId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
+        index: true,
+    },
+    priority: {
+        type: String,
+    },
+    reason: {
+        type: String,
+    },
+    waitTime: {
+        type: Number,
+    },
+    escalationLevel: {
+        type: Number,
+    },
+    reminderId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Reminder',
+        index: true,
+    },
+    medicationName: {
+        type: String,
+    },
+    dosage: {
+        type: String,
+    },
+    scheduledTime: {
+        type: Date,
+    },
+    frequency: {
+        type: String,
+    },
+    times: {
+        type: [String],
+    },
     actionUrl: {
         type: String,
         validate: {
@@ -130,7 +172,9 @@ const notificationSchema = new mongoose_1.Schema({
         enum: [
             'new_message', 'mention', 'therapy_update', 'clinical_alert',
             'conversation_invite', 'file_shared', 'intervention_assigned',
-            'patient_query', 'urgent_message', 'system_notification'
+            'patient_query', 'urgent_message', 'system_notification',
+            'consultation_request', 'consultation_accepted', 'consultation_completed', 'consultation_escalated',
+            'medication_reminder', 'missed_medication', 'reminder_setup', 'flagged_message'
         ],
         required: true,
         index: true,

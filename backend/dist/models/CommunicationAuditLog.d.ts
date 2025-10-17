@@ -33,8 +33,30 @@ export interface ICommunicationAuditLog extends Document {
     isHighRisk(): boolean;
     getFormattedDetails(): string;
 }
-declare const _default: mongoose.Model<ICommunicationAuditLog, {}, {}, {}, mongoose.Document<unknown, {}, ICommunicationAuditLog> & ICommunicationAuditLog & Required<{
-    _id: mongoose.Types.ObjectId;
-}>, any>;
+export interface ICommunicationAuditLogModel extends mongoose.Model<ICommunicationAuditLog> {
+    logAction(action: string, userId: mongoose.Types.ObjectId, targetId: mongoose.Types.ObjectId, targetType: string, details: ICommunicationAuditLogDetails, context: {
+        workplaceId: mongoose.Types.ObjectId;
+        ipAddress: string;
+        userAgent: string;
+        sessionId?: string;
+        success?: boolean;
+        errorMessage?: string;
+        duration?: number;
+    }): Promise<ICommunicationAuditLog>;
+    findByConversation(conversationId: mongoose.Types.ObjectId, workplaceId: mongoose.Types.ObjectId, options?: any): Promise<ICommunicationAuditLog[]>;
+    findHighRiskActivities(workplaceId: mongoose.Types.ObjectId, timeRange: {
+        start: Date;
+        end: Date;
+    }): Promise<ICommunicationAuditLog[]>;
+    getComplianceReport(workplaceId: mongoose.Types.ObjectId, dateRange: {
+        start: Date;
+        end: Date;
+    }): Promise<any[]>;
+    getUserActivitySummary(userId: mongoose.Types.ObjectId, workplaceId: mongoose.Types.ObjectId, dateRange: {
+        start: Date;
+        end: Date;
+    }): Promise<any[]>;
+}
+declare const _default: ICommunicationAuditLogModel;
 export default _default;
 //# sourceMappingURL=CommunicationAuditLog.d.ts.map

@@ -109,6 +109,8 @@ export class CommunicationController {
         ...req.body,
         createdBy: userId,
         workplaceId,
+        // Allow super admins to create cross-workplace conversations
+        skipWorkplaceValidation: req.user!.role === 'super_admin',
       };
 
       const conversation =
@@ -385,7 +387,33 @@ export class CommunicationController {
     try {
       const conversationId = req.params.id;
       const userId = req.user!.id;
-      const workplaceId = toStringId(req.user!.workplaceId);
+      const userRole = req.user!.role;
+      const isAdmin = userRole === 'super_admin' || (req as any).isAdmin === true;
+
+      if (!conversationId || typeof conversationId !== "string") {
+        res.status(400).json({
+          success: false,
+          message: "Valid conversation ID is required",
+        });
+        return;
+      }
+
+      // For super admins, fetch the conversation to get its workplaceId
+      // For regular users, use their workplaceId
+      let workplaceId: string;
+      if (isAdmin) {
+        const conversation = await Conversation.findById(conversationId).select('workplaceId');
+        if (!conversation) {
+          res.status(404).json({
+            success: false,
+            message: "Conversation not found",
+          });
+          return;
+        }
+        workplaceId = toStringId(conversation.workplaceId);
+      } else {
+        workplaceId = toStringId(req.user!.workplaceId);
+      }
 
       const filters = {
         type: req.query.type as
@@ -413,24 +441,30 @@ export class CommunicationController {
         offset: parseInt(req.query.offset as string) || 0,
       };
 
-      if (!conversationId || typeof conversationId !== "string") {
-        res.status(400).json({
-          success: false,
-          message: "Valid conversation ID is required",
-        });
-        return;
-      }
-
       const messages = await communicationService.getMessages(
         conversationId,
         userId,
         workplaceId,
         filters,
+        isAdmin, // Skip participant check for super admins
       );
+
+      // Ensure ObjectIds are properly serialized to strings
+      const serializedMessages = messages.map(message => {
+        const messageObj = message.toObject ? message.toObject() : message;
+        return {
+          ...messageObj,
+          _id: messageObj._id ? messageObj._id.toString() : undefined,
+          conversationId: messageObj.conversationId ? messageObj.conversationId.toString() : undefined,
+          senderId: typeof messageObj.senderId === 'object' && messageObj.senderId._id 
+            ? messageObj.senderId._id.toString() 
+            : messageObj.senderId ? messageObj.senderId.toString() : undefined,
+        };
+      });
 
       res.json({
         success: true,
-        data: messages,
+        data: serializedMessages,
         pagination: {
           limit: filters.limit,
           offset: filters.offset,
@@ -454,14 +488,8 @@ export class CommunicationController {
     try {
       const conversationId = req.params.id;
       const senderId = req.user!.id;
-      const workplaceId = req.user!.workplaceId;
-
-      const messageData = {
-        conversationId,
-        senderId,
-        workplaceId,
-        ...req.body,
-      };
+      const userRole = req.user!.role;
+      const isAdmin = userRole === 'super_admin' || (req as any).isAdmin === true;
 
       if (!conversationId || typeof conversationId !== "string") {
         res.status(400).json({
@@ -471,7 +499,76 @@ export class CommunicationController {
         return;
       }
 
+      // For super admins, fetch the conversation to get its workplaceId
+      // For regular users, use their workplaceId
+      let workplaceId: string;
+      if (isAdmin) {
+        const conversation = await Conversation.findById(conversationId).select('workplaceId');
+        if (!conversation) {
+          res.status(404).json({
+            success: false,
+            message: "Conversation not found",
+          });
+          return;
+        }
+        workplaceId = toStringId(conversation.workplaceId);
+        logger.info('🔍 [sendMessage] Super admin sending message to cross-workplace conversation', {
+          conversationId,
+          conversationWorkplaceId: workplaceId,
+          userWorkplaceId: toStringId(req.user!.workplaceId),
+        });
+      } else {
+        workplaceId = toStringId(req.user!.workplaceId);
+      }
+
+      // Parse JSON strings from FormData if needed
+      let content = req.body.content;
+      if (typeof content === 'string') {
+        try {
+          content = JSON.parse(content);
+        } catch (error) {
+          res.status(400).json({
+            success: false,
+            message: "Invalid content format",
+          });
+          return;
+        }
+      }
+
+      let mentions = req.body.mentions;
+      if (typeof mentions === 'string') {
+        try {
+          mentions = JSON.parse(mentions);
+        } catch (error) {
+          mentions = [];
+        }
+      }
+
+      const messageData = {
+        conversationId,
+        senderId,
+        workplaceId,
+        content,
+        threadId: req.body.threadId,
+        parentMessageId: req.body.parentMessageId,
+        mentions,
+        priority: req.body.priority,
+      };
+
+      logger.info('🔍 [sendMessage] Attempting to send message', {
+        conversationId,
+        senderId,
+        workplaceId,
+        hasContent: !!messageData.content,
+        contentType: messageData.content?.type,
+      });
+
       const message = await communicationService.sendMessage(messageData);
+
+      logger.info('✅ [sendMessage] Message sent successfully', {
+        messageId: message._id,
+        conversationId,
+      });
 
       // Notify via socket
       const app = req.app;
@@ -490,7 +587,12 @@ export class CommunicationController {
         message: "Message sent successfully",
       });
     } catch (error) {
-      logger.error("Error sending message:", error);
+      logger.error("❌ [sendMessage] Error sending message:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+        conversationId: req.params.id,
+        senderId: req.user?.id,
+      });
       res.status(400).json({
         success: false,
         message: "Failed to send message",
@@ -1130,15 +1232,40 @@ export class CommunicationController {
       const patientId = req.params.patientId;
       const { title, message, priority, tags } = req.body;
       const userId = req.user!.id;
+      const userRole = req.user!.role;
       const workplaceId = toStringId(req.user!.workplaceId);
+      
+      // Check if user is super admin or has admin flag set by middleware
+      const isAdmin = userRole === 'super_admin' || (req as any).isAdmin === true;
 
-      // Verify patient exists
-      const patient = await Patient.findOne({
-        _id: patientId,
+      // Debug logging
+      logger.info('🔍 [createPatientQuery] Request details:', {
+        patientId,
+        userId,
+        userRole,
         workplaceId,
+        isAdmin,
+        hasMessage: !!message,
+      });
+
+      // Verify patient exists - admins can access patients from any workplace
+      const patientQuery: any = { _id: patientId };
+      if (!isAdmin) {
+        patientQuery.workplaceId = workplaceId;
+      }
+      
+      logger.info('🔍 [createPatientQuery] Patient query:', patientQuery);
+      
+      const patient = await Patient.findOne(patientQuery);
+
+      logger.info('🔍 [createPatientQuery] Patient found:', {
+        found: !!patient,
+        patientWorkplaceId: patient?.workplaceId?.toString(),
+        requestWorkplaceId: workplaceId,
       });
 
       if (!patient) {
+        logger.warn('⚠️ [createPatientQuery] Patient not found with query:', patientQuery);
         res.status(404).json({
           success: false,
           message: "Patient not found",
@@ -1146,9 +1273,12 @@ export class CommunicationController {
         return;
       }
 
+      // Use the patient's workplace for finding healthcare providers
+      const targetWorkplaceId = toStringId(patient.workplaceId);
+
       // Find appropriate healthcare providers to include
       const healthcareProviders = await User.find({
-        workplaceId,
+        workplaceId: targetWorkplaceId,
         role: { $in: ["pharmacist", "doctor"] },
         isActive: true,
       }).limit(5); // Include up to 5 providers
@@ -1158,7 +1288,7 @@ export class CommunicationController {
         ...healthcareProviders.map((p) => p._id.toString()),
       ];
 
-      // Create conversation
+      // Create conversation - use patient's workplace
       const conversationData = {
         title: title || `Query for ${patient.firstName} ${patient.lastName}`,
         type: "patient_query" as const,
@@ -1167,17 +1297,24 @@ export class CommunicationController {
         priority: priority || "normal",
         tags: tags || ["patient-query"],
         createdBy: userId,
-        workplaceId,
+        workplaceId: targetWorkplaceId,
+        skipWorkplaceValidation: isAdmin, // Allow super admins to create cross-workplace conversations
       };
+
+      logger.info('🔍 [createPatientQuery] Creating conversation with data:', {
+        participantsCount: participants.length,
+        targetWorkplaceId,
+        skipWorkplaceValidation: isAdmin,
+      });
 
       const conversation =
         await communicationService.createConversation(conversationData);
 
-      // Send initial message
+      // Send initial message - use patient's workplace
       const messageData = {
         conversationId: conversation._id.toString(),
         senderId: userId,
-        workplaceId,
+        workplaceId: targetWorkplaceId,
         content: {
           text: message,
           type: "text" as const,
@@ -2223,6 +2360,109 @@ export class CommunicationController {
       res.status(500).json({
         success: false,
         message: "Failed to get conversation threads",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  /**
+   * Search for participants to add to conversations
+   */
+  async searchParticipants(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const workplaceId = req.user!.workplaceId;
+      const { q = '', role, limit = 50 } = req.query;
+
+      logger.info('Searching participants:', { userId, workplaceId, q, role, limit });
+
+      // Build search query - make workplaceId optional for flexibility
+      const searchQuery: any = {
+        status: 'active', // Only active users
+        _id: { $ne: new mongoose.Types.ObjectId(userId) }, // Exclude current user
+      };
+
+      // Add workplace filter if user has a workplace
+      if (workplaceId) {
+        searchQuery.workplaceId = new mongoose.Types.ObjectId(workplaceId);
+      }
+
+      // Add role filter if specified
+      if (role) {
+        searchQuery.role = role;
+      }
+
+      // Add text search if query provided
+      if (q && typeof q === 'string' && q.trim()) {
+        searchQuery.$or = [
+          { firstName: { $regex: q, $options: 'i' } },
+          { lastName: { $regex: q, $options: 'i' } },
+          { email: { $regex: q, $options: 'i' } },
+        ];
+      }
+
+      logger.info('Search query:', JSON.stringify(searchQuery));
+
+      // Find users
+      let users = await User.find(searchQuery)
+        .select('_id firstName lastName email role avatar')
+        .limit(Number(limit))
+        .lean();
+
+      logger.info(`Found ${users.length} participants with workplace filter`);
+
+      // If no users found and workplaceId was used, try again without workplace restriction
+      if (users.length === 0 && workplaceId) {
+        logger.info('No participants found with workplace filter, searching without workplace restriction');
+        const broadSearchQuery: any = {
+          status: 'active',
+          _id: { $ne: new mongoose.Types.ObjectId(userId) },
+        };
+
+        if (role) {
+          broadSearchQuery.role = role;
+        }
+
+        if (q && typeof q === 'string' && q.trim()) {
+          broadSearchQuery.$or = [
+            { firstName: { $regex: q, $options: 'i' } },
+            { lastName: { $regex: q, $options: 'i' } },
+            { email: { $regex: q, $options: 'i' } },
+          ];
+        }
+
+        users = await User.find(broadSearchQuery)
+          .select('_id firstName lastName email role avatar')
+          .limit(Number(limit))
+          .lean();
+
+        logger.info(`Found ${users.length} participants without workplace filter`);
+      }
+
+      // Format response
+      const participants = users.map((user: any) => ({
+        userId: user._id.toString(),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+      }));
+
+      res.json({
+        success: true,
+        message: "Participants retrieved successfully",
+        data: participants,
+        count: participants.length,
+      });
+    } catch (error) {
+      logger.error("Error searching participants:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to search participants",
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
