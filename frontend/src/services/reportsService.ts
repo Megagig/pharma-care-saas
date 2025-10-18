@@ -125,12 +125,12 @@ class ReportsService {
       console.log(`📡 Making API call to: ${url}`);
       console.log(`🔗 Full URL: ${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}${url}`);
       
-      // Add timeout and better error handling
+      // Add timeout and better error handling with shorter timeout for better UX
       console.log('🔐 Making authenticated API request...');
       const response = await Promise.race([
         apiHelpers.get(url),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout after 2 minutes')), 120000)
+          setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
         )
       ]) as any;
       
@@ -343,8 +343,18 @@ class ReportsService {
       return backendData.adherenceMetrics.reduce((sum: number, item: any) => sum + (item.totalReviews || 0), 0);
     }
     
-    // If no data found, return a placeholder value to show the report is working
-    console.log('⚠️ No data found in backend response, using placeholder');
+    // Check for any array data in the response
+    const dataArrays = Object.values(backendData).filter(Array.isArray);
+    if (dataArrays.length > 0) {
+      const totalFromArrays = dataArrays.reduce((sum: number, arr: any) => sum + arr.length, 0);
+      if (totalFromArrays > 0) {
+        console.log('📊 Found data in arrays, total records:', totalFromArrays);
+        return totalFromArrays;
+      }
+    }
+    
+    // If no data found, return 0 (real data only)
+    console.log('⚠️ No data found in backend response');
     return 0;
   }
 
