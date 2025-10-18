@@ -33,20 +33,18 @@ const reportRateLimit = rateLimit({
     legacyHeaders: false,
 });
 
-// Optimized report data generation with real database queries
-async function generateOptimizedReportData(reportType: string, workspaceFilter: any) {
-    console.log(`📊 Generating real data for ${reportType} with workspace filter:`, workspaceFilter);
+// Enhanced report data generation with flexible date filtering
+async function generateOptimizedReportData(reportType: string, combinedFilter: any) {
+    console.log(`📊 Generating real data for ${reportType} with enhanced filters:`, combinedFilter);
 
     try {
-        // Build base match criteria with performance optimizations
+        // Build base match criteria with enhanced filtering
         const baseMatch = {
             isDeleted: { $ne: true },
-            ...workspaceFilter,
-            // Limit to recent data for performance (last 30 days)
-            createdAt: {
-                $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-            }
+            ...combinedFilter
         };
+
+        console.log(`🔍 Final database query filter:`, baseMatch);
 
         // Generate report-specific data with timeout protection
         switch (reportType) {
@@ -1087,50 +1085,72 @@ async function generateGenericReportData(baseMatch: any, reportType: string) {
     }
 }
 
-// Validation middleware for report parameters
-const validateReportType = (req: Request, res: Response, next: NextFunction) => {
-    const { reportType } = req.params;
+// Enhanced validation middleware for comprehensive date parameters
+const validateDateRange = (req: Request, res: Response, next: NextFunction) => {
+    const { startDate, endDate, preset, dateRange } = req.query;
 
-    const validReportTypes = [
-        'patient-outcomes',
-        'pharmacist-interventions',
-        'therapy-effectiveness',
-        'quality-improvement',
-        'regulatory-compliance',
-        'cost-effectiveness',
-        'trend-forecasting',
-        'operational-efficiency',
-        'medication-inventory',
-        'patient-demographics',
-        'adverse-events'
-    ];
+    // Handle preset date ranges
+    if (preset) {
+        const validPresets = ['7d', '30d', '90d', '1y', 'ytd', 'mtd', 'wtd', 'custom'];
+        if (!validPresets.includes(preset as string)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid preset. Valid options: ${validPresets.join(', ')}`
+            });
+        }
 
-    if (!reportType || !validReportTypes.includes(reportType)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid report type specified',
-            validTypes: validReportTypes
-        });
+        // Calculate dates based on preset
+        const now = new Date();
+        let calculatedStartDate: Date;
+        let calculatedEndDate: Date = now;
+
+        switch (preset) {
+            case '7d':
+                calculatedStartDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case '30d':
+                calculatedStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                break;
+            case '90d':
+                calculatedStartDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+                break;
+            case '1y':
+                calculatedStartDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                break;
+            case 'ytd':
+                calculatedStartDate = new Date(now.getFullYear(), 0, 1);
+                break;
+            case 'mtd':
+                calculatedStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case 'wtd':
+                const dayOfWeek = now.getDay();
+                calculatedStartDate = new Date(now.getTime() - dayOfWeek * 24 * 60 * 60 * 1000);
+                break;
+            default:
+                calculatedStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Default to 30 days
+        }
+
+        // Add calculated dates to request for use in handlers
+        (req as any).calculatedDateRange = {
+            startDate: calculatedStartDate,
+            endDate: calculatedEndDate,
+            preset: preset as string
+        };
     }
 
-    next();
-};
-
-// Validation middleware for date parameters
-const validateDateRange = (req: Request, res: Response, next: NextFunction) => {
-    const { startDate, endDate } = req.query;
-
+    // Validate custom date ranges
     if (startDate && !moment(startDate as string).isValid()) {
         return res.status(400).json({
             success: false,
-            message: 'Invalid start date format. Use YYYY-MM-DD format.'
+            message: 'Invalid start date format. Use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ) or YYYY-MM-DD.'
         });
     }
 
     if (endDate && !moment(endDate as string).isValid()) {
         return res.status(400).json({
             success: false,
-            message: 'Invalid end date format. Use YYYY-MM-DD format.'
+            message: 'Invalid end date format. Use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ) or YYYY-MM-DD.'
         });
     }
 
@@ -1141,29 +1161,45 @@ const validateDateRange = (req: Request, res: Response, next: NextFunction) => {
         });
     }
 
+    // Validate date range is not too large (performance protection)
+    if (startDate && endDate) {
+        const start = moment(startDate as string);
+        const end = moment(endDate as string);
+        const daysDiff = end.diff(start, 'days');
+
+        if (daysDiff > 1095) { // 3 years max
+            return res.status(400).json({
+                success: false,
+                message: 'Date range cannot exceed 3 years for performance reasons.'
+            });
+        }
+    }
+
+    // Handle JSON date range object
+    if (dateRange) {
+        try {
+            const parsedRange = typeof dateRange === 'string' ? JSON.parse(dateRange as string) : dateRange;
+            if (parsedRange.startDate && parsedRange.endDate) {
+                if (!moment(parsedRange.startDate).isValid() || !moment(parsedRange.endDate).isValid()) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid date range format in dateRange object.'
+                    });
+                }
+                (req as any).parsedDateRange = parsedRange;
+            }
+        } catch (error) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid JSON format for dateRange parameter.'
+            });
+        }
+    }
+
     next();
 };
 
-// Validation middleware for MongoDB ObjectIds
-const validateObjectIds = (req: Request, res: Response, next: NextFunction) => {
-    const { patientId, pharmacistId } = req.query;
 
-    if (patientId && !mongoose.Types.ObjectId.isValid(patientId as string)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid patient ID format.'
-        });
-    }
-
-    if (pharmacistId && !mongoose.Types.ObjectId.isValid(pharmacistId as string)) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid pharmacist ID format.'
-        });
-    }
-
-    next();
-};
 
 // Apply essential middleware - Final Configuration (Phase 2 Stable)
 router.use(auth);
@@ -1191,42 +1227,114 @@ router.get('/summary',
     getReportSummary
 );
 
-// GET /api/reports/:reportType - Get specific report data
-// Optimized handler with real database queries and fallback to sample data
-router.get('/:reportType', async (req: AuthRequest, res: Response) => {
-    try {
-        const { reportType } = req.params;
-        const userWorkplaceId = req.user?.workplaceId;
-        const userRole = req.user?.role;
+// GET /api/reports/:reportType - Get specific report data with enhanced date filtering
+router.get('/:reportType',
+    validateDateRange,
+    async (req: AuthRequest, res: Response) => {
+        try {
+            const { reportType } = req.params;
+            const { startDate, endDate, preset } = req.query;
+            const userWorkplaceId = req.user?.workplaceId;
+            const userRole = req.user?.role;
 
-        console.log(`🚀 Optimized Report Generation - ${reportType} requested by ${req.user?.email}`);
+            console.log(`🚀 Enhanced Report Generation - ${reportType} requested by ${req.user?.email}`);
+            console.log(`📅 Date filters - startDate: ${startDate}, endDate: ${endDate}, preset: ${preset}`);
 
-        // Determine workspace filter
-        const workspaceFilter = userRole === 'super_admin' ? {} : { workplaceId: userWorkplaceId };
+            // Determine workspace filter
+            const workspaceFilter = userRole === 'super_admin' ? {} : { workplaceId: userWorkplaceId };
 
-        // Get real data with optimized queries and fallback
-        const reportData = await generateOptimizedReportData(reportType, workspaceFilter);
+            // Determine date range for filtering with proper typing
+            interface DateRangeFilter {
+                createdAt?: {
+                    $gte: Date;
+                    $lte: Date;
+                };
+            }
 
-        res.json({
-            success: true,
-            data: reportData,
-            reportType,
-            generatedAt: new Date(),
-            message: 'Optimized report with real database data (last 30 days)',
-            dataSource: 'database',
-            workspaceFilter: userRole === 'super_admin' ? 'all-workspaces' : 'current-workspace'
-        });
+            let dateRangeFilter: DateRangeFilter = {};
+            let actualStartDate: Date | null = null;
+            let actualEndDate: Date | null = null;
 
-        console.log(`✅ Optimized Report - ${reportType} generated successfully with real data`);
-    } catch (error) {
-        console.error('❌ Fast Report Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Report generation failed',
-            error: error.message
-        });
+            // Use calculated date range from middleware if preset was provided
+            if ((req as any).calculatedDateRange) {
+                const { startDate: calcStart, endDate: calcEnd } = (req as any).calculatedDateRange;
+                actualStartDate = calcStart;
+                actualEndDate = calcEnd;
+                dateRangeFilter = {
+                    createdAt: {
+                        $gte: calcStart,
+                        $lte: calcEnd
+                    }
+                };
+                console.log(`📅 Using preset date range: ${calcStart.toISOString()} to ${calcEnd.toISOString()}`);
+            }
+            // Use custom date range if provided
+            else if (startDate && endDate) {
+                actualStartDate = new Date(startDate as string);
+                actualEndDate = new Date(endDate as string);
+                dateRangeFilter = {
+                    createdAt: {
+                        $gte: actualStartDate,
+                        $lte: actualEndDate
+                    }
+                };
+                console.log(`📅 Using custom date range: ${startDate} to ${endDate}`);
+            }
+            // Default to last 30 days if no date range specified
+            else {
+                actualEndDate = new Date();
+                actualStartDate = new Date(actualEndDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+                dateRangeFilter = {
+                    createdAt: {
+                        $gte: actualStartDate,
+                        $lte: actualEndDate
+                    }
+                };
+                console.log(`📅 Using default 30-day range: ${actualStartDate.toISOString()} to ${actualEndDate.toISOString()}`);
+            }
+
+            // Combine workspace and date filters
+            const combinedFilter = {
+                ...workspaceFilter,
+                ...dateRangeFilter
+            };
+
+            // Get real data with enhanced date filtering
+            const reportData = await generateOptimizedReportData(reportType, combinedFilter);
+
+            // Add date range metadata to response
+            const responseMetadata = {
+                dateRange: {
+                    startDate: actualStartDate,
+                    endDate: actualEndDate,
+                    preset: preset || 'custom',
+                    appliedFilter: dateRangeFilter
+                },
+                workspaceFilter: userRole === 'super_admin' ? 'all-workspaces' : 'current-workspace',
+                generatedAt: new Date(),
+                reportType,
+                dataSource: 'database'
+            };
+
+            res.json({
+                success: true,
+                data: reportData,
+                metadata: responseMetadata,
+                message: `Enhanced report with date filtering (${preset || 'custom range'})`,
+            });
+
+            console.log(`✅ Enhanced Report - ${reportType} generated successfully with date filtering`);
+        } catch (error) {
+            console.error('❌ Enhanced Report Error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Report generation failed',
+                error: error.message,
+                timestamp: new Date()
+            });
+        }
     }
-});
+);
 
 // ===============================
 // PERFORMANCE & EXPORT ENDPOINTS
