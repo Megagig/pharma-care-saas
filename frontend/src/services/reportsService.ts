@@ -419,7 +419,7 @@ class ReportsService {
             type: 'bar',
             title: 'Age Distribution',
             data: backendData.ageDistribution.map((item: any) => ({
-              category: item._id === 'Unknown' ? 'Unknown Age' : `${item._id}-${item._id + 17} years`,
+              category: item._id === 'Unknown' ? 'Unknown Age' : `${item._id} years`,
               value: item.count || 0
             }))
           });
@@ -432,6 +432,58 @@ class ReportsService {
             type: 'pie',
             title: 'Gender Distribution',
             data: backendData.genderDistribution.map((item: any) => ({
+              category: item._id || 'Not Specified',
+              value: item.count || 0
+            }))
+          });
+        }
+
+        // Marital status distribution chart
+        if (backendData.maritalStatusDistribution && backendData.maritalStatusDistribution.length > 0) {
+          charts.push({
+            id: 'marital-status-chart',
+            type: 'pie',
+            title: 'Marital Status Distribution',
+            data: backendData.maritalStatusDistribution.map((item: any) => ({
+              category: item._id || 'Not Specified',
+              value: item.count || 0
+            }))
+          });
+        }
+
+        // Blood group distribution chart
+        if (backendData.bloodGroupDistribution && backendData.bloodGroupDistribution.length > 0) {
+          charts.push({
+            id: 'blood-group-chart',
+            type: 'bar',
+            title: 'Blood Group Distribution',
+            data: backendData.bloodGroupDistribution.map((item: any) => ({
+              category: item._id || 'Not Specified',
+              value: item.count || 0
+            }))
+          });
+        }
+
+        // Genotype distribution chart
+        if (backendData.genotypeDistribution && backendData.genotypeDistribution.length > 0) {
+          charts.push({
+            id: 'genotype-chart',
+            type: 'bar',
+            title: 'Genotype Distribution',
+            data: backendData.genotypeDistribution.map((item: any) => ({
+              category: item._id || 'Not Specified',
+              value: item.count || 0
+            }))
+          });
+        }
+
+        // Geographic distribution chart (top states)
+        if (backendData.stateDistribution && backendData.stateDistribution.length > 0) {
+          charts.push({
+            id: 'state-distribution-chart',
+            type: 'bar',
+            title: 'Geographic Distribution (Top States)',
+            data: backendData.stateDistribution.map((item: any) => ({
               category: item._id || 'Not Specified',
               value: item.count || 0
             }))
@@ -588,14 +640,15 @@ class ReportsService {
           tables.push({
             id: 'age-distribution-table',
             title: 'Age Distribution',
-            headers: ['Age Group', 'Patient Count', 'Percentage'],
+            headers: ['Age Group', 'Patient Count', 'Percentage', 'Avg Age'],
             rows: backendData.ageDistribution.map((item: any) => {
               const total = backendData.totalPatients || 1;
               const percentage = ((item.count || 0) / total * 100).toFixed(1);
               return [
                 item._id === 'Unknown' ? 'Unknown Age' : `${item._id} years`,
                 (item.count || 0).toString(),
-                `${percentage}%`
+                `${percentage}%`,
+                item.avgAge ? item.avgAge.toFixed(1) : 'N/A'
               ];
             })
           });
@@ -618,8 +671,80 @@ class ReportsService {
             })
           });
         }
+
+        // Marital status distribution table
+        if (backendData.maritalStatusDistribution && backendData.maritalStatusDistribution.length > 0) {
+          tables.push({
+            id: 'marital-status-table',
+            title: 'Marital Status Distribution',
+            headers: ['Marital Status', 'Patient Count', 'Percentage'],
+            rows: backendData.maritalStatusDistribution.map((item: any) => {
+              const total = backendData.totalPatients || 1;
+              const percentage = ((item.count || 0) / total * 100).toFixed(1);
+              return [
+                item._id || 'Not Specified',
+                (item.count || 0).toString(),
+                `${percentage}%`
+              ];
+            })
+          });
+        }
+
+        // Blood group distribution table
+        if (backendData.bloodGroupDistribution && backendData.bloodGroupDistribution.length > 0) {
+          tables.push({
+            id: 'blood-group-table',
+            title: 'Blood Group Distribution',
+            headers: ['Blood Group', 'Patient Count', 'Percentage'],
+            rows: backendData.bloodGroupDistribution.map((item: any) => {
+              const total = backendData.totalPatients || 1;
+              const percentage = ((item.count || 0) / total * 100).toFixed(1);
+              return [
+                item._id || 'Not Specified',
+                (item.count || 0).toString(),
+                `${percentage}%`
+              ];
+            })
+          });
+        }
+
+        // Genotype distribution table
+        if (backendData.genotypeDistribution && backendData.genotypeDistribution.length > 0) {
+          tables.push({
+            id: 'genotype-table',
+            title: 'Genotype Distribution',
+            headers: ['Genotype', 'Patient Count', 'Percentage'],
+            rows: backendData.genotypeDistribution.map((item: any) => {
+              const total = backendData.totalPatients || 1;
+              const percentage = ((item.count || 0) / total * 100).toFixed(1);
+              return [
+                item._id || 'Not Specified',
+                (item.count || 0).toString(),
+                `${percentage}%`
+              ];
+            })
+          });
+        }
+
+        // Geographic distribution table (top states)
+        if (backendData.stateDistribution && backendData.stateDistribution.length > 0) {
+          tables.push({
+            id: 'state-distribution-table',
+            title: 'Geographic Distribution (Top States)',
+            headers: ['State', 'Patient Count', 'Percentage'],
+            rows: backendData.stateDistribution.map((item: any) => {
+              const total = backendData.totalPatients || 1;
+              const percentage = ((item.count || 0) / total * 100).toFixed(1);
+              return [
+                item._id || 'Not Specified',
+                (item.count || 0).toString(),
+                `${percentage}%`
+              ];
+            })
+          });
+        }
         
-        // Summary table
+        // Comprehensive summary table
         tables.push({
           id: 'demographics-summary-table',
           title: 'Demographics Summary',
@@ -628,6 +753,10 @@ class ReportsService {
             ['Total Patients', (backendData.totalPatients || 0).toString()],
             ['Age Groups', (backendData.ageDistribution?.length || 0).toString()],
             ['Gender Categories', (backendData.genderDistribution?.length || 0).toString()],
+            ['Marital Status Types', (backendData.maritalStatusDistribution?.length || 0).toString()],
+            ['Blood Group Types', (backendData.bloodGroupDistribution?.length || 0).toString()],
+            ['Genotype Types', (backendData.genotypeDistribution?.length || 0).toString()],
+            ['States Represented', (backendData.stateDistribution?.length || 0).toString()],
             ['Data Source', 'Real Patient Database'],
             ['Last Updated', new Date().toLocaleDateString()]
           ]

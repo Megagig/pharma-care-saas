@@ -36,18 +36,18 @@ const reportRateLimit = rateLimit({
 // Optimized report data generation with real database queries
 async function generateOptimizedReportData(reportType: string, workspaceFilter: any) {
     console.log(`📊 Generating real data for ${reportType} with workspace filter:`, workspaceFilter);
-    
+
     try {
         // Build base match criteria with performance optimizations
         const baseMatch = {
             isDeleted: { $ne: true },
             ...workspaceFilter,
             // Limit to recent data for performance (last 30 days)
-            createdAt: { 
-                $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) 
+            createdAt: {
+                $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
             }
         };
-        
+
         // Generate report-specific data with timeout protection
         switch (reportType) {
             case 'patient-outcomes':
@@ -89,7 +89,7 @@ async function generateOptimizedReportData(reportType: string, workspaceFilter: 
 // Fast patient outcomes data with real database query
 async function generatePatientOutcomesData(baseMatch: any) {
     const startTime = Date.now();
-    
+
     try {
         const therapyEffectiveness = await Promise.race([
             MedicationTherapyReview.aggregate([
@@ -111,10 +111,10 @@ async function generatePatientOutcomesData(baseMatch: any) {
             ]).allowDiskUse(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
         ]) as any[];
-        
+
         const queryTime = Date.now() - startTime;
         console.log(`✅ Patient outcomes query completed in ${queryTime}ms, found ${therapyEffectiveness.length} records`);
-        
+
         return {
             therapyEffectiveness,
             clinicalImprovements: {},
@@ -133,7 +133,7 @@ async function generatePatientOutcomesData(baseMatch: any) {
 // Fast pharmacist interventions data with real database query
 async function generatePharmacistInterventionsData(baseMatch: any) {
     const startTime = Date.now();
-    
+
     try {
         const interventionMetrics = await Promise.race([
             MTRIntervention.aggregate([
@@ -152,10 +152,10 @@ async function generatePharmacistInterventionsData(baseMatch: any) {
             ]).allowDiskUse(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
         ]) as any[];
-        
+
         const queryTime = Date.now() - startTime;
         console.log(`✅ Pharmacist interventions query completed in ${queryTime}ms, found ${interventionMetrics.length} records`);
-        
+
         return {
             therapyEffectiveness: [],
             interventionMetrics,
@@ -174,7 +174,7 @@ async function generatePharmacistInterventionsData(baseMatch: any) {
 // Fast therapy effectiveness data with real database query
 async function generateTherapyEffectivenessData(baseMatch: any) {
     const startTime = Date.now();
-    
+
     try {
         const adherenceMetrics = await Promise.race([
             MedicationTherapyReview.aggregate([
@@ -193,10 +193,10 @@ async function generateTherapyEffectivenessData(baseMatch: any) {
             ]).allowDiskUse(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
         ]) as any[];
-        
+
         const queryTime = Date.now() - startTime;
         console.log(`✅ Therapy effectiveness query completed in ${queryTime}ms, found ${adherenceMetrics.length} records`);
-        
+
         return {
             therapyEffectiveness: [],
             interventionMetrics: [],
@@ -212,50 +212,78 @@ async function generateTherapyEffectivenessData(baseMatch: any) {
     }
 }
 
-// Real patient demographics data
+// Real patient demographics data with comprehensive analysis
 async function generatePatientDemographicsData(baseMatch: any) {
     const startTime = Date.now();
-    console.log('📊 Generating REAL patient demographics data...');
-    
+    console.log('📊 Generating COMPREHENSIVE patient demographics data...');
+
     try {
         // Remove createdAt filter for patient demographics as we want all patients
         const patientMatch = { ...baseMatch };
         delete patientMatch.createdAt;
-        
-        // Get real patient demographics
-        const [ageDistribution, genderDistribution, totalPatients] = await Promise.all([
-            // Age distribution
+
+        // Get comprehensive patient demographics
+        const [
+            ageDistribution,
+            genderDistribution,
+            maritalStatusDistribution,
+            bloodGroupDistribution,
+            genotypeDistribution,
+            stateDistribution,
+            totalPatients
+        ] = await Promise.all([
+            // Age distribution with proper field name and better grouping
             Promise.race([
                 Patient.aggregate([
                     { $match: patientMatch },
                     { $limit: 1000 },
                     {
                         $addFields: {
-                            age: {
-                                $floor: {
-                                    $divide: [
-                                        { $subtract: [new Date(), '$dateOfBirth'] },
-                                        365.25 * 24 * 60 * 60 * 1000
-                                    ]
+                            calculatedAge: {
+                                $cond: [
+                                    { $ne: ['$dob', null] },
+                                    {
+                                        $floor: {
+                                            $divide: [
+                                                { $subtract: [new Date(), '$dob'] },
+                                                365.25 * 24 * 60 * 60 * 1000
+                                            ]
+                                        }
+                                    },
+                                    { $ifNull: ['$age', null] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $addFields: {
+                            ageGroup: {
+                                $switch: {
+                                    branches: [
+                                        { case: { $and: [{ $gte: ['$calculatedAge', 0] }, { $lt: ['$calculatedAge', 18] }] }, then: '0-17' },
+                                        { case: { $and: [{ $gte: ['$calculatedAge', 18] }, { $lt: ['$calculatedAge', 30] }] }, then: '18-29' },
+                                        { case: { $and: [{ $gte: ['$calculatedAge', 30] }, { $lt: ['$calculatedAge', 45] }] }, then: '30-44' },
+                                        { case: { $and: [{ $gte: ['$calculatedAge', 45] }, { $lt: ['$calculatedAge', 60] }] }, then: '45-59' },
+                                        { case: { $and: [{ $gte: ['$calculatedAge', 60] }, { $lt: ['$calculatedAge', 75] }] }, then: '60-74' },
+                                        { case: { $gte: ['$calculatedAge', 75] }, then: '75+' }
+                                    ],
+                                    default: 'Unknown'
                                 }
                             }
                         }
                     },
                     {
-                        $bucket: {
-                            groupBy: '$age',
-                            boundaries: [0, 18, 30, 45, 60, 75, 100],
-                            default: 'Unknown',
-                            output: {
-                                count: { $sum: 1 },
-                                ageGroup: { $first: '$age' }
-                            }
+                        $group: {
+                            _id: '$ageGroup',
+                            count: { $sum: 1 },
+                            avgAge: { $avg: '$calculatedAge' }
                         }
-                    }
+                    },
+                    { $sort: { _id: 1 } }
                 ]).allowDiskUse(true),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Age query timeout')), 3000))
             ]),
-            
+
             // Gender distribution
             Promise.race([
                 Patient.aggregate([
@@ -271,24 +299,94 @@ async function generatePatientDemographicsData(baseMatch: any) {
                 ]).allowDiskUse(true),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Gender query timeout')), 3000))
             ]),
-            
+
+            // Marital status distribution
+            Promise.race([
+                Patient.aggregate([
+                    { $match: patientMatch },
+                    { $limit: 1000 },
+                    {
+                        $group: {
+                            _id: { $ifNull: ['$maritalStatus', 'Not Specified'] },
+                            count: { $sum: 1 }
+                        }
+                    },
+                    { $sort: { count: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Marital status timeout')), 2000))
+            ]),
+
+            // Blood group distribution
+            Promise.race([
+                Patient.aggregate([
+                    { $match: patientMatch },
+                    { $limit: 1000 },
+                    {
+                        $group: {
+                            _id: { $ifNull: ['$bloodGroup', 'Not Specified'] },
+                            count: { $sum: 1 }
+                        }
+                    },
+                    { $sort: { count: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Blood group timeout')), 2000))
+            ]),
+
+            // Genotype distribution
+            Promise.race([
+                Patient.aggregate([
+                    { $match: patientMatch },
+                    { $limit: 1000 },
+                    {
+                        $group: {
+                            _id: { $ifNull: ['$genotype', 'Not Specified'] },
+                            count: { $sum: 1 }
+                        }
+                    },
+                    { $sort: { count: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Genotype timeout')), 2000))
+            ]),
+
+            // Geographic distribution (by state)
+            Promise.race([
+                Patient.aggregate([
+                    { $match: patientMatch },
+                    { $limit: 1000 },
+                    {
+                        $group: {
+                            _id: { $ifNull: ['$state', 'Not Specified'] },
+                            count: { $sum: 1 }
+                        }
+                    },
+                    { $sort: { count: -1 } },
+                    { $limit: 10 } // Top 10 states
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('State timeout')), 2000))
+            ]),
+
             // Total patient count
             Promise.race([
                 Patient.countDocuments(patientMatch),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Count query timeout')), 2000))
             ])
-        ]) as [any[], any[], number];
-        
+        ]) as [any[], any[], any[], any[], any[], any[], number];
+
         const queryTime = Date.now() - startTime;
         console.log(`✅ Patient demographics query completed in ${queryTime}ms`);
         console.log(`📈 Found ${totalPatients} total patients`);
-        console.log(`📊 Age groups: ${Array.isArray(ageDistribution) ? ageDistribution.length : 0}, Gender groups: ${Array.isArray(genderDistribution) ? genderDistribution.length : 0}`);
-        
+        console.log(`📊 Age groups: ${ageDistribution.length}, Gender: ${genderDistribution.length}, Marital: ${maritalStatusDistribution.length}`);
+        console.log(`🩸 Blood groups: ${bloodGroupDistribution.length}, Genotypes: ${genotypeDistribution.length}, States: ${stateDistribution.length}`);
+
         return {
             ageDistribution,
             genderDistribution,
+            maritalStatusDistribution,
+            bloodGroupDistribution,
+            genotypeDistribution,
+            stateDistribution,
             totalPatients,
-            geographicPatterns: [],
+            geographicPatterns: stateDistribution,
             conditionSegmentation: [],
         };
     } catch (error) {
@@ -301,7 +399,7 @@ async function generatePatientDemographicsData(baseMatch: any) {
 // Fallback: Get patient data from MTR if Patient collection fails
 async function generateBasicPatientDataFromMTR(baseMatch: any) {
     console.log('📊 Fallback: Getting patient data from MTR records...');
-    
+
     try {
         const patientData = await Promise.race([
             MedicationTherapyReview.aggregate([
@@ -324,10 +422,10 @@ async function generateBasicPatientDataFromMTR(baseMatch: any) {
             ]).allowDiskUse(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('MTR fallback timeout')), 2000))
         ]) as any[];
-        
+
         const result = patientData[0] || { totalPatients: 0, totalReviews: 0 };
         console.log(`✅ MTR fallback found ${result.totalPatients} patients with ${result.totalReviews} reviews`);
-        
+
         return {
             totalPatients: result.totalPatients,
             totalReviews: result.totalReviews,
@@ -351,7 +449,7 @@ async function generateBasicPatientDataFromMTR(baseMatch: any) {
 // Real quality improvement data
 async function generateQualityImprovementData(baseMatch: any) {
     console.log('📊 Generating quality improvement data...');
-    
+
     try {
         const qualityMetrics = await Promise.race([
             MedicationTherapyReview.aggregate([
@@ -376,9 +474,9 @@ async function generateQualityImprovementData(baseMatch: any) {
             ]).allowDiskUse(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Quality query timeout')), 3000))
         ]) as any[];
-        
+
         console.log(`✅ Quality improvement data: ${qualityMetrics.length} priority groups`);
-        
+
         return {
             completionTimeAnalysis: qualityMetrics,
             qualityMetrics: qualityMetrics,
@@ -407,7 +505,7 @@ async function generateRegulatoryComplianceData(baseMatch: any) {
             ]).allowDiskUse(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Compliance timeout')), 2000))
         ]) as any[];
-        
+
         return { complianceMetrics: complianceData[0] || {} };
     } catch (error) {
         console.error('❌ Regulatory compliance query failed:', error);
@@ -433,7 +531,7 @@ async function generateCostEffectivenessData(baseMatch: any) {
             ]).allowDiskUse(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Cost timeout')), 2000))
         ]) as any[];
-        
+
         return { costSavings: costData };
     } catch (error) {
         console.error('❌ Cost effectiveness query failed:', error);
@@ -462,7 +560,7 @@ async function generateTrendForecastingData(baseMatch: any) {
             ]).allowDiskUse(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Trend timeout')), 2000))
         ]) as any[];
-        
+
         return { trends: trendData };
     } catch (error) {
         console.error('❌ Trend forecasting query failed:', error);
@@ -495,7 +593,7 @@ async function generateOperationalEfficiencyData(baseMatch: any) {
             ]).allowDiskUse(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Efficiency timeout')), 2000))
         ]) as any[];
-        
+
         return { workflowMetrics: efficiencyData };
     } catch (error) {
         console.error('❌ Operational efficiency query failed:', error);
@@ -535,7 +633,7 @@ async function generateAdverseEventsData(baseMatch: any) {
             ]).allowDiskUse(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Adverse events timeout')), 2000))
         ]) as any[];
-        
+
         return { adverseEvents: adverseData };
     } catch (error) {
         console.error('❌ Adverse events query failed:', error);
@@ -546,7 +644,7 @@ async function generateAdverseEventsData(baseMatch: any) {
 // Generic report data for truly unknown report types
 async function generateGenericReportData(baseMatch: any, reportType: string) {
     console.log(`📊 Generating generic data for unknown report type: ${reportType}`);
-    
+
     // Try to get some basic data from MTR collection
     try {
         const basicData = await Promise.race([
@@ -563,10 +661,10 @@ async function generateGenericReportData(baseMatch: any, reportType: string) {
             ]).allowDiskUse(true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 2000))
         ]) as any[];
-        
+
         const result = basicData[0] || { totalRecords: 0, completedRecords: 0 };
         console.log(`✅ Generic data for ${reportType}: ${result.totalRecords} records`);
-        
+
         return {
             basicMetrics: [result],
             message: `Basic data for ${reportType} - specific implementation needed`,
@@ -691,12 +789,12 @@ router.get('/:reportType', async (req: AuthRequest, res: Response) => {
         const { reportType } = req.params;
         const userWorkplaceId = req.user?.workplaceId;
         const userRole = req.user?.role;
-        
+
         console.log(`🚀 Optimized Report Generation - ${reportType} requested by ${req.user?.email}`);
-        
+
         // Determine workspace filter
         const workspaceFilter = userRole === 'super_admin' ? {} : { workplaceId: userWorkplaceId };
-        
+
         // Get real data with optimized queries and fallback
         const reportData = await generateOptimizedReportData(reportType, workspaceFilter);
 
