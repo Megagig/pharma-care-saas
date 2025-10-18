@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -9,6 +9,7 @@ import {
   Button,
   IconButton,
   useTheme,
+  useMediaQuery,
   Stack,
   Divider,
   Avatar,
@@ -21,6 +22,8 @@ import {
   TableRow,
   Alert,
   LinearProgress,
+  Fade,
+  Zoom,
 } from '@mui/material';
 import { alpha, styled } from '@mui/material/styles';
 import {
@@ -51,6 +54,7 @@ import {
 import { format } from 'date-fns';
 import { useReportsStore } from '../stores/reportsStore';
 import { ReportType } from '../types/reports';
+import DateRangePicker, { DateRange } from './DateRangePicker';
 
 const StyledContainer = styled(Container)(({ theme }) => ({
   paddingTop: theme.spacing(3),
@@ -93,10 +97,22 @@ const COLORS = ['#1976d2', '#388e3c', '#f57c00', '#d32f2f', '#7b1fa2', '#00796b'
 
 const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportType, onBack }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const reportData = useReportsStore((state) => state.reportData[reportType]);
   const loading = useReportsStore((state) => state.loading[reportType] || false);
   const error = useReportsStore((state) => state.errors[reportType]);
   const generateReport = useReportsStore((state) => state.generateReport);
+
+  // Local date range state for this report
+  const [reportDateRange, setReportDateRange] = useState<DateRange>(() => {
+    const endDate = new Date();
+    const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return {
+      startDate,
+      endDate,
+      preset: '30d',
+    };
+  });
 
   // Debug logging
   console.log('🔍 ReportDisplay - reportType:', reportType);
@@ -185,31 +201,103 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportType, onBack }) => 
   const handleRefresh = async () => {
     const filters = {
       dateRange: {
-        startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        endDate: new Date(),
-        preset: '30d' as const,
+        startDate: reportDateRange.startDate,
+        endDate: reportDateRange.endDate,
+        preset: reportDateRange.preset || 'custom',
       },
     };
     await generateReport(reportType, filters);
   };
 
+  const handleReportDateRangeChange = useCallback((newDateRange: DateRange) => {
+    console.log('📅 Report date range changed:', newDateRange);
+    setReportDateRange(newDateRange);
+  }, []);
+
+  const handleReportDateRangeApply = useCallback(async (dateRange: DateRange) => {
+    console.log('📅 Applying date range to report:', dateRange);
+    setReportDateRange(dateRange);
+    
+    // Regenerate the report with new date range
+    const filters = {
+      dateRange: {
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+        preset: dateRange.preset || 'custom',
+      },
+    };
+    
+    await generateReport(reportType, filters);
+  }, [reportType, generateReport]);
+
   const renderChart = (chart: any) => {
+    const chartHeight = isMobile ? 250 : 350;
     const chartProps = {
       width: '100%',
-      height: 300,
+      height: chartHeight,
       data: chart.data,
+    };
+
+    // Enhanced tooltip with better formatting
+    const CustomTooltip = ({ active, payload, label }: any) => {
+      if (active && payload && payload.length) {
+        return (
+          <Paper
+            sx={{
+              p: 2,
+              boxShadow: 4,
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+              {label}
+            </Typography>
+            {payload.map((entry: any, index: number) => (
+              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                <Box
+                  sx={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    backgroundColor: entry.color,
+                    mr: 1,
+                  }}
+                />
+                <Typography variant="body2">
+                  {entry.name}: <strong>{entry.value.toLocaleString()}</strong>
+                </Typography>
+              </Box>
+            ))}
+          </Paper>
+        );
+      }
+      return null;
     };
 
     switch (chart.type) {
       case 'bar':
         return (
           <ResponsiveContainer {...chartProps}>
-            <BarChart data={chart.data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="category" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value" fill={theme.palette.primary.main} />
+            <BarChart data={chart.data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.3)} />
+              <XAxis 
+                dataKey="category" 
+                tick={{ fontSize: 12 }}
+                angle={isMobile ? -45 : 0}
+                textAnchor={isMobile ? 'end' : 'middle'}
+                height={isMobile ? 60 : 30}
+              />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar 
+                dataKey="value" 
+                fill={theme.palette.primary.main}
+                radius={[4, 4, 0, 0]}
+                animationDuration={1000}
+              />
             </BarChart>
           </ResponsiveContainer>
         );
@@ -217,12 +305,26 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportType, onBack }) => 
       case 'line':
         return (
           <ResponsiveContainer {...chartProps}>
-            <LineChart data={chart.data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="category" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke={theme.palette.primary.main} strokeWidth={2} />
+            <LineChart data={chart.data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.3)} />
+              <XAxis 
+                dataKey="category" 
+                tick={{ fontSize: 12 }}
+                angle={isMobile ? -45 : 0}
+                textAnchor={isMobile ? 'end' : 'middle'}
+                height={isMobile ? 60 : 30}
+              />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke={theme.palette.primary.main} 
+                strokeWidth={3}
+                dot={{ fill: theme.palette.primary.main, strokeWidth: 2, r: 6 }}
+                activeDot={{ r: 8, stroke: theme.palette.primary.main, strokeWidth: 2 }}
+                animationDuration={1500}
+              />
             </LineChart>
           </ResponsiveContainer>
         );
@@ -230,12 +332,31 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportType, onBack }) => 
       case 'area':
         return (
           <ResponsiveContainer {...chartProps}>
-            <AreaChart data={chart.data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="category" />
-              <YAxis />
-              <Tooltip />
-              <Area type="monotone" dataKey="value" stroke={theme.palette.primary.main} fill={alpha(theme.palette.primary.main, 0.3)} />
+            <AreaChart data={chart.data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.3)} />
+              <XAxis 
+                dataKey="category" 
+                tick={{ fontSize: 12 }}
+                angle={isMobile ? -45 : 0}
+                textAnchor={isMobile ? 'end' : 'middle'}
+                height={isMobile ? 60 : 30}
+              />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Area 
+                type="monotone" 
+                dataKey="value" 
+                stroke={theme.palette.primary.main} 
+                fill={`url(#colorGradient-${chart.id})`}
+                strokeWidth={2}
+                animationDuration={1500}
+              />
+              <defs>
+                <linearGradient id={`colorGradient-${chart.id}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0.1}/>
+                </linearGradient>
+              </defs>
             </AreaChart>
           </ResponsiveContainer>
         );
@@ -249,16 +370,24 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportType, onBack }) => 
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ category, percent }) => `${category} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
+                label={({ category, percent }) => 
+                  percent > 0.05 ? `${category} ${(percent * 100).toFixed(0)}%` : ''
+                }
+                outerRadius={isMobile ? 60 : 100}
                 fill="#8884d8"
                 dataKey="value"
+                animationDuration={1000}
               >
                 {chart.data.map((entry: any, index: number) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={COLORS[index % COLORS.length]}
+                    stroke={theme.palette.background.paper}
+                    strokeWidth={2}
+                  />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
         );
@@ -476,6 +605,21 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportType, onBack }) => 
         </Stack>
       </ReportHeader>
 
+      {/* Report Date Range Picker */}
+      <Fade in timeout={600}>
+        <Box sx={{ mb: 4 }}>
+          <DateRangePicker
+            value={reportDateRange}
+            onChange={handleReportDateRangeChange}
+            onApply={handleReportDateRangeApply}
+            showPresets={true}
+            showCustomRange={true}
+            maxRange={1095} // 3 years
+            compact={isMobile}
+          />
+        </Box>
+      </Fade>
+
       {/* Summary Metrics */}
       <Stack direction="row" spacing={3} sx={{ mb: 4 }}>
         <MetricCard sx={{ flex: 1 }}>
@@ -515,52 +659,169 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportType, onBack }) => 
         ))}
       </Stack>
 
-      {/* Charts */}
-      {reportData.charts.map((chart) => (
-        <ChartCard key={chart.id}>
-          <CardContent>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 3 }}>
-              {chart.title}
-            </Typography>
-            {renderChart(chart)}
-          </CardContent>
-        </ChartCard>
-      ))}
+      {/* Enhanced Charts with Responsive Grid */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" fontWeight="600" sx={{ mb: 3 }}>
+          Visual Analytics
+        </Typography>
+        <Stack spacing={3}>
+          {reportData.charts.map((chart, index) => (
+            <Zoom in timeout={300 + index * 100} key={chart.id}>
+              <ChartCard>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Stack 
+                    direction={{ xs: 'column', sm: 'row' }} 
+                    justifyContent="space-between" 
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    spacing={2}
+                    sx={{ mb: 3 }}
+                  >
+                    <Typography variant="h6" fontWeight="600">
+                      {chart.title}
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                      <IconButton size="small" sx={{ color: 'text.secondary' }}>
+                        <DownloadIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton size="small" sx={{ color: 'text.secondary' }}>
+                        <ShareIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  </Stack>
+                  <Box sx={{ 
+                    width: '100%', 
+                    overflow: 'hidden',
+                    '& .recharts-wrapper': {
+                      fontSize: { xs: '12px', sm: '14px' }
+                    }
+                  }}>
+                    {renderChart(chart)}
+                  </Box>
+                </CardContent>
+              </ChartCard>
+            </Zoom>
+          ))}
+        </Stack>
+      </Box>
 
-      {/* Tables */}
-      {reportData.tables.map((table) => (
-        <ChartCard key={table.id}>
-          <CardContent>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 3 }}>
-              {table.title}
-            </Typography>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    {table.headers.map((header, index) => (
-                      <TableCell key={index} sx={{ fontWeight: 600 }}>
-                        {header}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {table.rows.map((row, rowIndex) => (
-                    <TableRow key={rowIndex}>
-                      {row.map((cell, cellIndex) => (
-                        <TableCell key={cellIndex}>
-                          {cell}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </ChartCard>
-      ))}
+      {/* Enhanced Tables with Mobile Optimization */}
+      <Box>
+        <Typography variant="h5" fontWeight="600" sx={{ mb: 3 }}>
+          Detailed Data
+        </Typography>
+        <Stack spacing={3}>
+          {reportData.tables.map((table, index) => (
+            <Zoom in timeout={600 + index * 100} key={table.id}>
+              <ChartCard>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Stack 
+                    direction={{ xs: 'column', sm: 'row' }} 
+                    justifyContent="space-between" 
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    spacing={2}
+                    sx={{ mb: 3 }}
+                  >
+                    <Typography variant="h6" fontWeight="600">
+                      {table.title}
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        size="small"
+                        startIcon={<DownloadIcon />}
+                        variant="outlined"
+                        sx={{ 
+                          borderRadius: 2,
+                          textTransform: 'none',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        Export
+                      </Button>
+                    </Stack>
+                  </Stack>
+                  <TableContainer 
+                    sx={{ 
+                      borderRadius: 2,
+                      border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                      maxHeight: { xs: 400, sm: 600 },
+                      '& .MuiTable-root': {
+                        minWidth: { xs: 300, sm: 650 }
+                      }
+                    }}
+                  >
+                    <Table stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          {table.headers.map((header, headerIndex) => (
+                            <TableCell 
+                              key={headerIndex} 
+                              sx={{ 
+                                fontWeight: 600,
+                                backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                whiteSpace: 'nowrap',
+                                '&:first-of-type': {
+                                  position: 'sticky',
+                                  left: 0,
+                                  zIndex: 1,
+                                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                                }
+                              }}
+                            >
+                              {header}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {table.rows.map((row, rowIndex) => (
+                          <TableRow 
+                            key={rowIndex}
+                            sx={{
+                              '&:nth-of-type(odd)': {
+                                backgroundColor: alpha(theme.palette.action.hover, 0.02),
+                              },
+                              '&:hover': {
+                                backgroundColor: alpha(theme.palette.action.hover, 0.04),
+                              }
+                            }}
+                          >
+                            {row.map((cell, cellIndex) => (
+                              <TableCell 
+                                key={cellIndex}
+                                sx={{ 
+                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                  whiteSpace: 'nowrap',
+                                  '&:first-of-type': {
+                                    position: 'sticky',
+                                    left: 0,
+                                    backgroundColor: 'inherit',
+                                    zIndex: 1,
+                                    fontWeight: 500,
+                                  }
+                                }}
+                              >
+                                {cell}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  {table.rows.length === 0 && (
+                    <Box sx={{ p: 4, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No data available for the selected date range
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </ChartCard>
+            </Zoom>
+          ))}
+        </Stack>
+      </Box>
     </StyledContainer>
   );
 };

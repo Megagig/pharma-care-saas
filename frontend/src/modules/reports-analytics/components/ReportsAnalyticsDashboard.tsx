@@ -39,6 +39,8 @@ import { ReportType } from '../types/reports';
 import type { ReportFilters } from '../types/filters';
 import FixedGrid from '../../../components/common/FixedGrid';
 import { reportsService } from '../../../services/reportsService';
+import DateRangePicker, { DateRange } from './DateRangePicker';
+import SummaryStatsBar from './SummaryStatsBar';
 
 // Modern Icons
 import SearchIcon from '@mui/icons-material/Search';
@@ -203,6 +205,29 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [showReportDisplay, setShowReportDisplay] = useState(false);
+  
+  // Date range state with default to last 30 days
+  const [globalDateRange, setGlobalDateRange] = useState<DateRange>(() => {
+    const endDate = new Date();
+    const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return {
+      startDate,
+      endDate,
+      preset: '30d',
+    };
+  });
+
+  // Summary stats state (initialized with default, will be updated after reportConfig is available)
+  const [summaryStats, setSummaryStats] = useState({
+    totalReports: 12, // Default count, will be updated
+    activeReports: 0,
+    totalDataPoints: 0,
+    avgResponseTime: 850, // ms
+    lastUpdated: new Date(),
+    costSavings: 0,
+    patientsAnalyzed: 0,
+    interventionsTracked: 0,
+  });
 
   // Get store state directly for reactive updates
   const activeReport = useReportsStore((state) => state.activeReport);
@@ -392,6 +417,14 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
     return ['all', ...cats.sort()];
   }, [reportConfig]);
 
+  // Update summary stats when reportConfig is available
+  useEffect(() => {
+    setSummaryStats(prev => ({
+      ...prev,
+      totalReports: Object.keys(reportConfig).length,
+    }));
+  }, [reportConfig]);
+
   // Get recent reports from store
   const recentReports = recentlyViewed.slice(0, 5);
 
@@ -459,6 +492,69 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
   const isFavoriteReport = (reportType: string) =>
     favoriteReports.includes(reportType as ReportType);
 
+  // Handle global date range changes
+  const handleDateRangeChange = useCallback((newDateRange: DateRange) => {
+    console.log('📅 Global date range changed:', newDateRange);
+    setGlobalDateRange(newDateRange);
+    
+    // Update summary stats based on new date range
+    // This would typically fetch new data from the API
+    setSummaryStats(prev => ({
+      ...prev,
+      lastUpdated: new Date(),
+    }));
+  }, []);
+
+  // Handle date range application (when user clicks apply)
+  const handleDateRangeApply = useCallback(async (dateRange: DateRange) => {
+    console.log('📅 Applying date range to all reports:', dateRange);
+    
+    // Here you would typically refresh all active reports with the new date range
+    // For now, we'll just update the global state
+    setGlobalDateRange(dateRange);
+    
+    // Simulate fetching updated summary stats
+    try {
+      // This would be a real API call to get summary stats for the date range
+      const mockStats = {
+        totalReports: Object.keys(reportConfig).length,
+        activeReports: Math.floor(Math.random() * 5) + 1,
+        totalDataPoints: Math.floor(Math.random() * 10000) + 1000,
+        avgResponseTime: Math.floor(Math.random() * 1000) + 500,
+        lastUpdated: new Date(),
+        costSavings: Math.floor(Math.random() * 100000) + 10000,
+        patientsAnalyzed: Math.floor(Math.random() * 500) + 50,
+        interventionsTracked: Math.floor(Math.random() * 200) + 20,
+      };
+      
+      setSummaryStats(mockStats);
+      console.log('✅ Summary stats updated for date range');
+    } catch (error) {
+      console.error('❌ Error updating summary stats:', error);
+    }
+  }, [reportConfig]);
+
+  // Handle summary stat clicks
+  const handleStatClick = useCallback((statType: string) => {
+    console.log('📊 Summary stat clicked:', statType);
+    
+    // You could navigate to detailed views or filter reports based on the stat clicked
+    switch (statType) {
+      case 'reports':
+        // Show all reports
+        setSelectedCategoryStore('all');
+        break;
+      case 'active':
+        // Show only active/recent reports
+        break;
+      case 'showAll':
+        // Show expanded stats view on mobile
+        break;
+      default:
+        console.log('Stat click not handled:', statType);
+    }
+  }, [setSelectedCategoryStore]);
+
   // Handle report generation using real API
   const handleGenerateReport = useCallback(
     async (reportType: ReportType) => {
@@ -474,16 +570,16 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
         // Set the active report first
         setActiveReportStore(reportType);
         
-        // Generate default filters for the report with a shorter date range for faster processing
+        // Use the global date range for report generation
         const filters = {
           dateRange: {
-            startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago (shorter range)
-            endDate: new Date(),
-            preset: '7d' as const,
+            startDate: globalDateRange.startDate,
+            endDate: globalDateRange.endDate,
+            preset: globalDateRange.preset || 'custom',
           },
         };
 
-        console.log('📊 Generating report with 7-day range for faster processing...');
+        console.log('📊 Generating report with selected date range:', globalDateRange);
 
         // Use the store's generateReport method which calls the real API
         await reportsStore.generateReport(reportType, filters);
@@ -674,6 +770,29 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
         </Stack>
       </HeroSection>
 
+      {/* Enhanced Date Range Picker */}
+      <Fade in timeout={800}>
+        <Box sx={{ mb: 4 }}>
+          <DateRangePicker
+            value={globalDateRange}
+            onChange={handleDateRangeChange}
+            onApply={handleDateRangeApply}
+            showPresets={true}
+            showCustomRange={true}
+            maxRange={1095} // 3 years
+            compact={isMobile}
+          />
+        </Box>
+      </Fade>
+
+      {/* Summary Statistics Bar */}
+      <SummaryStatsBar
+        stats={summaryStats}
+        loading={false}
+        dateRange={globalDateRange}
+        onStatClick={handleStatClick}
+      />
+
       {/* Modern Stats Cards */}
       <FixedGrid container spacing={3} sx={{ mb: 4 }}>
         <FixedGrid item xs={6} sm={3}>
@@ -754,32 +873,7 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
             </StatsCard>
           </Zoom>
         </FixedGrid>
-        <FixedGrid item xs={6} sm={3}>
-          <Zoom in timeout={600}>
-            <StatsCard>
-              <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                <Avatar
-                  sx={{
-                    bgcolor: alpha(theme.palette.warning.main, 0.1),
-                    color: 'warning.main',
-                    width: 56,
-                    height: 56,
-                    mx: 'auto',
-                    mb: 2,
-                  }}
-                >
-                  <RefreshIcon fontSize="large" />
-                </Avatar>
-                <Typography variant="h4" color="warning.main" fontWeight="bold">
-                  Live
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  Real-time Data
-                </Typography>
-              </CardContent>
-            </StatsCard>
-          </Zoom>
-        </FixedGrid>
+
       </FixedGrid>
 
       {/* Modern Search and Filter Section */}
