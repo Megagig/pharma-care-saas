@@ -86,128 +86,537 @@ async function generateOptimizedReportData(reportType: string, workspaceFilter: 
     }
 }
 
-// Fast patient outcomes data with real database query
+// Comprehensive patient outcomes data with detailed clinical analysis
 async function generatePatientOutcomesData(baseMatch: any) {
     const startTime = Date.now();
+    console.log('📊 Generating COMPREHENSIVE patient outcomes data...');
 
     try {
-        const therapyEffectiveness = await Promise.race([
-            MedicationTherapyReview.aggregate([
-                { $match: baseMatch },
-                { $limit: 50 },
-                {
-                    $group: {
-                        _id: { $ifNull: ['$reviewType', 'Unknown'] },
-                        totalReviews: { $sum: 1 },
-                        completedReviews: {
-                            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
-                        },
-                        totalCostSavings: {
-                            $sum: { $ifNull: ['$clinicalOutcomes.costSavings', 0] }
+        const [
+            therapyEffectiveness,
+            clinicalImprovements,
+            adverseEventReduction,
+            outcomesByPriority,
+            completionTimeAnalysis,
+            costEffectivenessAnalysis
+        ] = await Promise.all([
+            // Therapy effectiveness by review type
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: baseMatch },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: { $ifNull: ['$reviewType', 'Unknown'] },
+                            totalReviews: { $sum: 1 },
+                            completedReviews: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+                            inProgressReviews: { $sum: { $cond: [{ $eq: ['$status', 'in_progress'] }, 1, 0] } },
+                            pendingReviews: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
+                            totalCostSavings: { $sum: { $ifNull: ['$clinicalOutcomes.costSavings', 0] } },
+                            avgCompletionTime: {
+                                $avg: {
+                                    $cond: [
+                                        { $and: [{ $ne: ['$completedAt', null] }, { $ne: ['$startedAt', null] }] },
+                                        { $divide: [{ $subtract: ['$completedAt', '$startedAt'] }, 1000 * 60 * 60 * 24] },
+                                        null
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    { $sort: { totalReviews: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Therapy effectiveness timeout')), 3000))
+            ]),
+
+            // Clinical improvements analysis
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: { ...baseMatch, status: 'completed' } },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: null,
+                            totalCompleted: { $sum: 1 },
+                            adherenceImproved: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.adherenceImproved', true] }, 1, 0] } },
+                            symptomsImproved: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.symptomsImproved', true] }, 1, 0] } },
+                            qualityOfLifeImproved: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.qualityOfLifeImproved', true] }, 1, 0] } },
+                            medicationOptimized: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.medicationOptimized', true] }, 1, 0] } },
+                            avgPatientSatisfaction: { $avg: { $ifNull: ['$clinicalOutcomes.patientSatisfactionScore', 0] } }
                         }
                     }
-                },
-                { $sort: { totalReviews: -1 } }
-            ]).allowDiskUse(true),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
-        ]) as any[];
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Clinical improvements timeout')), 2000))
+            ]),
+
+            // Adverse event reduction analysis
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: baseMatch },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: '$reviewType',
+                            totalReviews: { $sum: 1 },
+                            adverseEventsReduced: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.adverseEventsReduced', true] }, 1, 0] } },
+                            drugInteractionsResolved: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.drugInteractionsResolved', true] }, 1, 0] } },
+                            contraIndicationsAddressed: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.contraIndicationsAddressed', true] }, 1, 0] } }
+                        }
+                    },
+                    { $sort: { adverseEventsReduced: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Adverse events timeout')), 2000))
+            ]),
+
+            // Outcomes by priority level
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: baseMatch },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: { $ifNull: ['$priority', 'Unknown'] },
+                            totalReviews: { $sum: 1 },
+                            completedReviews: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+                            avgCostSavings: { $avg: { $ifNull: ['$clinicalOutcomes.costSavings', 0] } },
+                            totalCostSavings: { $sum: { $ifNull: ['$clinicalOutcomes.costSavings', 0] } }
+                        }
+                    },
+                    { $sort: { totalReviews: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Priority outcomes timeout')), 2000))
+            ]),
+
+            // Completion time analysis
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: { ...baseMatch, status: 'completed' } },
+                    { $limit: 100 },
+                    {
+                        $addFields: {
+                            completionDays: {
+                                $cond: [
+                                    { $and: [{ $ne: ['$completedAt', null] }, { $ne: ['$startedAt', null] }] },
+                                    { $divide: [{ $subtract: ['$completedAt', '$startedAt'] }, 1000 * 60 * 60 * 24] },
+                                    null
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $bucket: {
+                            groupBy: '$completionDays',
+                            boundaries: [0, 1, 3, 7, 14, 30, 100],
+                            default: 'Over 100 days',
+                            output: {
+                                count: { $sum: 1 },
+                                avgDays: { $avg: '$completionDays' }
+                            }
+                        }
+                    }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Completion time timeout')), 2000))
+            ]),
+
+            // Cost effectiveness analysis
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: baseMatch },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: {
+                                year: { $year: '$createdAt' },
+                                month: { $month: '$createdAt' }
+                            },
+                            totalReviews: { $sum: 1 },
+                            totalCostSavings: { $sum: { $ifNull: ['$clinicalOutcomes.costSavings', 0] } },
+                            avgCostSavings: { $avg: { $ifNull: ['$clinicalOutcomes.costSavings', 0] } }
+                        }
+                    },
+                    { $sort: { '_id.year': 1, '_id.month': 1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Cost effectiveness timeout')), 2000))
+            ])
+        ]) as [any[], any[], any[], any[], any[], any[]];
 
         const queryTime = Date.now() - startTime;
-        console.log(`✅ Patient outcomes query completed in ${queryTime}ms, found ${therapyEffectiveness.length} records`);
+        console.log(`✅ Patient outcomes comprehensive analysis completed in ${queryTime}ms`);
+        console.log(`📊 Found: ${therapyEffectiveness.length} therapy types, ${adverseEventReduction.length} adverse event categories`);
 
         return {
             therapyEffectiveness,
-            clinicalImprovements: {},
-            adverseEventReduction: [],
+            clinicalImprovements: clinicalImprovements[0] || {},
+            adverseEventReduction,
+            outcomesByPriority,
+            completionTimeAnalysis,
+            costEffectivenessAnalysis,
         };
     } catch (error) {
-        console.error('❌ Patient outcomes query failed:', error);
+        console.error('❌ Patient outcomes comprehensive query failed:', error);
         return {
             therapyEffectiveness: [],
             clinicalImprovements: {},
             adverseEventReduction: [],
+            outcomesByPriority: [],
+            completionTimeAnalysis: [],
+            costEffectivenessAnalysis: [],
         };
     }
 }
 
-// Fast pharmacist interventions data with real database query
+// Comprehensive pharmacist interventions data with detailed analysis
 async function generatePharmacistInterventionsData(baseMatch: any) {
     const startTime = Date.now();
+    console.log('📊 Generating COMPREHENSIVE pharmacist interventions data...');
 
     try {
-        const interventionMetrics = await Promise.race([
-            MTRIntervention.aggregate([
-                { $match: baseMatch },
-                { $limit: 50 },
-                {
-                    $group: {
-                        _id: { $ifNull: ['$type', 'Unknown'] },
-                        totalInterventions: { $sum: 1 },
-                        acceptedInterventions: {
-                            $sum: { $cond: [{ $eq: ['$outcome', 'accepted'] }, 1, 0] }
+        const [
+            interventionMetrics,
+            interventionsByPharmacist,
+            interventionOutcomes,
+            interventionTrends,
+            interventionPriority,
+            interventionEffectiveness
+        ] = await Promise.all([
+            // Intervention metrics by type
+            Promise.race([
+                MTRIntervention.aggregate([
+                    { $match: baseMatch },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: { $ifNull: ['$type', 'Unknown'] },
+                            totalInterventions: { $sum: 1 },
+                            acceptedInterventions: { $sum: { $cond: [{ $eq: ['$outcome', 'accepted'] }, 1, 0] } },
+                            rejectedInterventions: { $sum: { $cond: [{ $eq: ['$outcome', 'rejected'] }, 1, 0] } },
+                            pendingInterventions: { $sum: { $cond: [{ $eq: ['$outcome', 'pending'] }, 1, 0] } },
+                            avgResponseTime: {
+                                $avg: {
+                                    $cond: [
+                                        { $and: [{ $ne: ['$resolvedAt', null] }, { $ne: ['$createdAt', null] }] },
+                                        { $divide: [{ $subtract: ['$resolvedAt', '$createdAt'] }, 1000 * 60 * 60] },
+                                        null
+                                    ]
+                                }
+                            }
                         }
-                    }
-                },
-                { $sort: { totalInterventions: -1 } }
-            ]).allowDiskUse(true),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
-        ]) as any[];
+                    },
+                    { $sort: { totalInterventions: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Intervention metrics timeout')), 3000))
+            ]),
+
+            // Interventions by pharmacist performance
+            Promise.race([
+                MTRIntervention.aggregate([
+                    { $match: baseMatch },
+                    { $limit: 100 },
+                    { $lookup: { from: 'users', localField: 'pharmacistId', foreignField: '_id', as: 'pharmacist' } },
+                    { $unwind: { path: '$pharmacist', preserveNullAndEmptyArrays: true } },
+                    {
+                        $group: {
+                            _id: '$pharmacistId',
+                            pharmacistName: { $first: { $concat: ['$pharmacist.firstName', ' ', '$pharmacist.lastName'] } },
+                            totalInterventions: { $sum: 1 },
+                            acceptedInterventions: { $sum: { $cond: [{ $eq: ['$outcome', 'accepted'] }, 1, 0] } },
+                            avgResponseTime: {
+                                $avg: {
+                                    $cond: [
+                                        { $and: [{ $ne: ['$resolvedAt', null] }, { $ne: ['$createdAt', null] }] },
+                                        { $divide: [{ $subtract: ['$resolvedAt', '$createdAt'] }, 1000 * 60 * 60] },
+                                        null
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    { $sort: { totalInterventions: -1 } },
+                    { $limit: 10 }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Pharmacist performance timeout')), 2000))
+            ]),
+
+            // Intervention outcomes analysis
+            Promise.race([
+                MTRIntervention.aggregate([
+                    { $match: baseMatch },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: { $ifNull: ['$outcome', 'Unknown'] },
+                            count: { $sum: 1 },
+                            avgSeverity: { $avg: { $ifNull: ['$severity', 0] } },
+                            avgImpact: { $avg: { $ifNull: ['$clinicalImpact', 0] } }
+                        }
+                    },
+                    { $sort: { count: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Outcomes timeout')), 2000))
+            ]),
+
+            // Intervention trends over time
+            Promise.race([
+                MTRIntervention.aggregate([
+                    { $match: baseMatch },
+                    { $limit: 200 },
+                    {
+                        $group: {
+                            _id: {
+                                year: { $year: '$createdAt' },
+                                month: { $month: '$createdAt' }
+                            },
+                            totalInterventions: { $sum: 1 },
+                            acceptedInterventions: { $sum: { $cond: [{ $eq: ['$outcome', 'accepted'] }, 1, 0] } },
+                            avgResponseTime: {
+                                $avg: {
+                                    $cond: [
+                                        { $and: [{ $ne: ['$resolvedAt', null] }, { $ne: ['$createdAt', null] }] },
+                                        { $divide: [{ $subtract: ['$resolvedAt', '$createdAt'] }, 1000 * 60 * 60] },
+                                        null
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    { $sort: { '_id.year': 1, '_id.month': 1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Trends timeout')), 2000))
+            ]),
+
+            // Intervention priority analysis
+            Promise.race([
+                MTRIntervention.aggregate([
+                    { $match: baseMatch },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: { $ifNull: ['$priority', 'Unknown'] },
+                            totalInterventions: { $sum: 1 },
+                            acceptedInterventions: { $sum: { $cond: [{ $eq: ['$outcome', 'accepted'] }, 1, 0] } },
+                            avgSeverity: { $avg: { $ifNull: ['$severity', 0] } }
+                        }
+                    },
+                    { $sort: { totalInterventions: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Priority timeout')), 2000))
+            ]),
+
+            // Intervention effectiveness analysis
+            Promise.race([
+                MTRIntervention.aggregate([
+                    { $match: { ...baseMatch, outcome: 'accepted' } },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: '$type',
+                            totalAccepted: { $sum: 1 },
+                            avgClinicalImpact: { $avg: { $ifNull: ['$clinicalImpact', 0] } },
+                            avgPatientSatisfaction: { $avg: { $ifNull: ['$patientSatisfaction', 0] } },
+                            costSavingsGenerated: { $sum: { $ifNull: ['$costSavings', 0] } }
+                        }
+                    },
+                    { $sort: { avgClinicalImpact: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Effectiveness timeout')), 2000))
+            ])
+        ]) as [any[], any[], any[], any[], any[], any[]];
 
         const queryTime = Date.now() - startTime;
-        console.log(`✅ Pharmacist interventions query completed in ${queryTime}ms, found ${interventionMetrics.length} records`);
+        console.log(`✅ Pharmacist interventions comprehensive analysis completed in ${queryTime}ms`);
+        console.log(`📊 Found: ${interventionMetrics.length} intervention types, ${interventionsByPharmacist.length} pharmacists`);
 
         return {
-            therapyEffectiveness: [],
             interventionMetrics,
-            adherenceMetrics: [],
+            interventionsByPharmacist,
+            interventionOutcomes,
+            interventionTrends,
+            interventionPriority,
+            interventionEffectiveness,
         };
     } catch (error) {
-        console.error('❌ Pharmacist interventions query failed:', error);
+        console.error('❌ Pharmacist interventions comprehensive query failed:', error);
         return {
-            therapyEffectiveness: [],
             interventionMetrics: [],
-            adherenceMetrics: [],
+            interventionsByPharmacist: [],
+            interventionOutcomes: [],
+            interventionTrends: [],
+            interventionPriority: [],
+            interventionEffectiveness: [],
         };
     }
 }
 
-// Fast therapy effectiveness data with real database query
+// Comprehensive therapy effectiveness data with detailed clinical analysis
 async function generateTherapyEffectivenessData(baseMatch: any) {
     const startTime = Date.now();
+    console.log('📊 Generating COMPREHENSIVE therapy effectiveness data...');
 
     try {
-        const adherenceMetrics = await Promise.race([
-            MedicationTherapyReview.aggregate([
-                { $match: { ...baseMatch, status: 'completed' } },
-                { $limit: 50 },
-                {
-                    $group: {
-                        _id: { $ifNull: ['$reviewType', 'Unknown'] },
-                        totalReviews: { $sum: 1 },
-                        adherenceImproved: {
-                            $sum: { $cond: [{ $eq: ['$clinicalOutcomes.adherenceImproved', true] }, 1, 0] }
+        const [
+            adherenceMetrics,
+            therapyOutcomes,
+            medicationOptimization,
+            patientSatisfaction,
+            clinicalIndicators,
+            therapyDuration
+        ] = await Promise.all([
+            // Adherence improvement metrics
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: { ...baseMatch, status: 'completed' } },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: { $ifNull: ['$reviewType', 'Unknown'] },
+                            totalReviews: { $sum: 1 },
+                            adherenceImproved: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.adherenceImproved', true] }, 1, 0] } },
+                            avgAdherenceScore: { $avg: { $ifNull: ['$clinicalOutcomes.adherenceScore', 0] } },
+                            baselineAdherence: { $avg: { $ifNull: ['$clinicalOutcomes.baselineAdherence', 0] } },
+                            followUpAdherence: { $avg: { $ifNull: ['$clinicalOutcomes.followUpAdherence', 0] } }
+                        }
+                    },
+                    { $sort: { totalReviews: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Adherence timeout')), 3000))
+            ]),
+
+            // Therapy outcomes analysis
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: { ...baseMatch, status: 'completed' } },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: null,
+                            totalCompleted: { $sum: 1 },
+                            symptomsImproved: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.symptomsImproved', true] }, 1, 0] } },
+                            qualityOfLifeImproved: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.qualityOfLifeImproved', true] }, 1, 0] } },
+                            adverseEventsReduced: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.adverseEventsReduced', true] }, 1, 0] } },
+                            drugInteractionsResolved: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.drugInteractionsResolved', true] }, 1, 0] } },
+                            avgClinicalImprovement: { $avg: { $ifNull: ['$clinicalOutcomes.clinicalImprovementScore', 0] } }
                         }
                     }
-                },
-                { $sort: { totalReviews: -1 } }
-            ]).allowDiskUse(true),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
-        ]) as any[];
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Outcomes timeout')), 2000))
+            ]),
+
+            // Medication optimization analysis
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: baseMatch },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: '$reviewType',
+                            totalReviews: { $sum: 1 },
+                            medicationOptimized: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.medicationOptimized', true] }, 1, 0] } },
+                            dosageAdjusted: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.dosageAdjusted', true] }, 1, 0] } },
+                            medicationSwitched: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.medicationSwitched', true] }, 1, 0] } },
+                            medicationDiscontinued: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.medicationDiscontinued', true] }, 1, 0] } },
+                            avgCostSavings: { $avg: { $ifNull: ['$clinicalOutcomes.costSavings', 0] } }
+                        }
+                    },
+                    { $sort: { medicationOptimized: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Optimization timeout')), 2000))
+            ]),
+
+            // Patient satisfaction analysis
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: { ...baseMatch, status: 'completed' } },
+                    { $limit: 100 },
+                    {
+                        $bucket: {
+                            groupBy: { $ifNull: ['$clinicalOutcomes.patientSatisfactionScore', 0] },
+                            boundaries: [0, 2, 4, 6, 8, 10],
+                            default: 'No Rating',
+                            output: {
+                                count: { $sum: 1 },
+                                avgScore: { $avg: '$clinicalOutcomes.patientSatisfactionScore' },
+                                reviewTypes: { $addToSet: '$reviewType' }
+                            }
+                        }
+                    }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Satisfaction timeout')), 2000))
+            ]),
+
+            // Clinical indicators improvement
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: { ...baseMatch, status: 'completed' } },
+                    { $limit: 100 },
+                    {
+                        $group: {
+                            _id: '$priority',
+                            totalReviews: { $sum: 1 },
+                            vitalSignsImproved: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.vitalSignsImproved', true] }, 1, 0] } },
+                            labValuesImproved: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.labValuesImproved', true] }, 1, 0] } },
+                            functionalStatusImproved: { $sum: { $cond: [{ $eq: ['$clinicalOutcomes.functionalStatusImproved', true] }, 1, 0] } },
+                            avgImprovementScore: { $avg: { $ifNull: ['$clinicalOutcomes.overallImprovementScore', 0] } }
+                        }
+                    },
+                    { $sort: { totalReviews: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Clinical indicators timeout')), 2000))
+            ]),
+
+            // Therapy duration analysis
+            Promise.race([
+                MedicationTherapyReview.aggregate([
+                    { $match: { ...baseMatch, status: 'completed' } },
+                    { $limit: 100 },
+                    {
+                        $addFields: {
+                            therapyDurationDays: {
+                                $cond: [
+                                    { $and: [{ $ne: ['$completedAt', null] }, { $ne: ['$startedAt', null] }] },
+                                    { $divide: [{ $subtract: ['$completedAt', '$startedAt'] }, 1000 * 60 * 60 * 24] },
+                                    null
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $bucket: {
+                            groupBy: '$therapyDurationDays',
+                            boundaries: [0, 7, 14, 30, 60, 90, 365],
+                            default: 'Over 1 year',
+                            output: {
+                                count: { $sum: 1 },
+                                avgDuration: { $avg: '$therapyDurationDays' },
+                                successRate: { $avg: { $cond: [{ $eq: ['$clinicalOutcomes.treatmentSuccessful', true] }, 1, 0] } }
+                            }
+                        }
+                    }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Duration timeout')), 2000))
+            ])
+        ]) as [any[], any[], any[], any[], any[], any[]];
 
         const queryTime = Date.now() - startTime;
-        console.log(`✅ Therapy effectiveness query completed in ${queryTime}ms, found ${adherenceMetrics.length} records`);
+        console.log(`✅ Therapy effectiveness comprehensive analysis completed in ${queryTime}ms`);
+        console.log(`📊 Found: ${adherenceMetrics.length} therapy types, ${medicationOptimization.length} optimization categories`);
 
         return {
-            therapyEffectiveness: [],
-            interventionMetrics: [],
             adherenceMetrics,
+            therapyOutcomes: therapyOutcomes[0] || {},
+            medicationOptimization,
+            patientSatisfaction,
+            clinicalIndicators,
+            therapyDuration,
         };
     } catch (error) {
-        console.error('❌ Therapy effectiveness query failed:', error);
+        console.error('❌ Therapy effectiveness comprehensive query failed:', error);
         return {
-            therapyEffectiveness: [],
-            interventionMetrics: [],
             adherenceMetrics: [],
+            therapyOutcomes: {},
+            medicationOptimization: [],
+            patientSatisfaction: [],
+            clinicalIndicators: [],
+            therapyDuration: [],
         };
     }
 }

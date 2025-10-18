@@ -367,7 +367,8 @@ class ReportsService {
     // Transform based on report type and available data
     switch (reportType) {
       case 'patient-outcomes':
-        if (backendData.therapyEffectiveness) {
+        // Therapy effectiveness chart
+        if (backendData.therapyEffectiveness && backendData.therapyEffectiveness.length > 0) {
           charts.push({
             id: 'therapy-effectiveness-chart',
             type: 'bar',
@@ -379,10 +380,67 @@ class ReportsService {
             }))
           });
         }
+
+        // Clinical improvements overview
+        if (backendData.clinicalImprovements && Object.keys(backendData.clinicalImprovements).length > 0) {
+          const improvements = backendData.clinicalImprovements;
+          charts.push({
+            id: 'clinical-improvements-chart',
+            type: 'pie',
+            title: 'Clinical Improvements Overview',
+            data: [
+              { category: 'Adherence Improved', value: improvements.adherenceImproved || 0 },
+              { category: 'Symptoms Improved', value: improvements.symptomsImproved || 0 },
+              { category: 'Quality of Life Improved', value: improvements.qualityOfLifeImproved || 0 },
+              { category: 'Medication Optimized', value: improvements.medicationOptimized || 0 }
+            ].filter(item => item.value > 0)
+          });
+        }
+
+        // Outcomes by priority
+        if (backendData.outcomesByPriority && backendData.outcomesByPriority.length > 0) {
+          charts.push({
+            id: 'outcomes-priority-chart',
+            type: 'bar',
+            title: 'Outcomes by Priority Level',
+            data: backendData.outcomesByPriority.map((item: any) => ({
+              category: item._id || 'Unknown',
+              value: item.completedReviews || 0,
+              total: item.totalReviews || 0
+            }))
+          });
+        }
+
+        // Completion time analysis
+        if (backendData.completionTimeAnalysis && backendData.completionTimeAnalysis.length > 0) {
+          charts.push({
+            id: 'completion-time-chart',
+            type: 'bar',
+            title: 'Review Completion Time Distribution',
+            data: backendData.completionTimeAnalysis.map((item: any) => ({
+              category: typeof item._id === 'number' ? `${item._id}-${item._id + 1} days` : item._id,
+              value: item.count || 0
+            }))
+          });
+        }
+
+        // Cost effectiveness trends
+        if (backendData.costEffectivenessAnalysis && backendData.costEffectivenessAnalysis.length > 0) {
+          charts.push({
+            id: 'cost-trends-chart',
+            type: 'line',
+            title: 'Cost Savings Trends',
+            data: backendData.costEffectivenessAnalysis.map((item: any) => ({
+              category: `${item._id.year}-${String(item._id.month).padStart(2, '0')}`,
+              value: item.totalCostSavings || 0
+            }))
+          });
+        }
         break;
 
       case 'pharmacist-interventions':
-        if (backendData.interventionMetrics) {
+        // Intervention metrics by type
+        if (backendData.interventionMetrics && backendData.interventionMetrics.length > 0) {
           charts.push({
             id: 'intervention-metrics-chart',
             type: 'pie',
@@ -393,17 +451,123 @@ class ReportsService {
             }))
           });
         }
+
+        // Intervention outcomes
+        if (backendData.interventionOutcomes && backendData.interventionOutcomes.length > 0) {
+          charts.push({
+            id: 'intervention-outcomes-chart',
+            type: 'pie',
+            title: 'Intervention Outcomes',
+            data: backendData.interventionOutcomes.map((item: any) => ({
+              category: item._id || 'Unknown',
+              value: item.count || 0
+            }))
+          });
+        }
+
+        // Top performing pharmacists
+        if (backendData.interventionsByPharmacist && backendData.interventionsByPharmacist.length > 0) {
+          charts.push({
+            id: 'pharmacist-performance-chart',
+            type: 'bar',
+            title: 'Top Performing Pharmacists',
+            data: backendData.interventionsByPharmacist.slice(0, 10).map((item: any) => ({
+              category: item.pharmacistName || 'Unknown',
+              value: item.totalInterventions || 0
+            }))
+          });
+        }
+
+        // Intervention trends
+        if (backendData.interventionTrends && backendData.interventionTrends.length > 0) {
+          charts.push({
+            id: 'intervention-trends-chart',
+            type: 'line',
+            title: 'Intervention Trends Over Time',
+            data: backendData.interventionTrends.map((item: any) => ({
+              category: `${item._id.year}-${String(item._id.month).padStart(2, '0')}`,
+              value: item.totalInterventions || 0
+            }))
+          });
+        }
+
+        // Intervention priority analysis
+        if (backendData.interventionPriority && backendData.interventionPriority.length > 0) {
+          charts.push({
+            id: 'intervention-priority-chart',
+            type: 'bar',
+            title: 'Interventions by Priority',
+            data: backendData.interventionPriority.map((item: any) => ({
+              category: item._id || 'Unknown',
+              value: item.totalInterventions || 0
+            }))
+          });
+        }
         break;
 
       case 'therapy-effectiveness':
-        if (backendData.adherenceMetrics) {
+        // Adherence improvement trends
+        if (backendData.adherenceMetrics && backendData.adherenceMetrics.length > 0) {
           charts.push({
             id: 'adherence-chart',
-            type: 'line',
-            title: 'Adherence Improvement Trends',
+            type: 'bar',
+            title: 'Adherence Improvement by Therapy Type',
             data: backendData.adherenceMetrics.map((item: any) => ({
               category: item._id || 'Unknown',
-              value: item.avgAdherenceScore || 0
+              value: item.adherenceImproved || 0,
+              total: item.totalReviews || 0
+            }))
+          });
+        }
+
+        // Medication optimization analysis
+        if (backendData.medicationOptimization && backendData.medicationOptimization.length > 0) {
+          charts.push({
+            id: 'medication-optimization-chart',
+            type: 'bar',
+            title: 'Medication Optimization by Review Type',
+            data: backendData.medicationOptimization.map((item: any) => ({
+              category: item._id || 'Unknown',
+              value: item.medicationOptimized || 0
+            }))
+          });
+        }
+
+        // Patient satisfaction distribution
+        if (backendData.patientSatisfaction && backendData.patientSatisfaction.length > 0) {
+          charts.push({
+            id: 'patient-satisfaction-chart',
+            type: 'bar',
+            title: 'Patient Satisfaction Score Distribution',
+            data: backendData.patientSatisfaction.map((item: any) => ({
+              category: typeof item._id === 'number' ? `${item._id}-${item._id + 2}` : item._id,
+              value: item.count || 0
+            }))
+          });
+        }
+
+        // Clinical indicators improvement
+        if (backendData.clinicalIndicators && backendData.clinicalIndicators.length > 0) {
+          charts.push({
+            id: 'clinical-indicators-chart',
+            type: 'bar',
+            title: 'Clinical Indicators Improvement by Priority',
+            data: backendData.clinicalIndicators.map((item: any) => ({
+              category: item._id || 'Unknown',
+              value: item.vitalSignsImproved + item.labValuesImproved + item.functionalStatusImproved || 0
+            }))
+          });
+        }
+
+        // Therapy duration effectiveness
+        if (backendData.therapyDuration && backendData.therapyDuration.length > 0) {
+          charts.push({
+            id: 'therapy-duration-chart',
+            type: 'bar',
+            title: 'Therapy Duration vs Success Rate',
+            data: backendData.therapyDuration.map((item: any) => ({
+              category: typeof item._id === 'number' ? `${item._id}-${item._id + 7} days` : item._id,
+              value: Math.round((item.successRate || 0) * 100)
             }))
           });
         }
@@ -598,16 +762,71 @@ class ReportsService {
     // Transform based on report type and available data
     switch (reportType) {
       case 'patient-outcomes':
-        if (backendData.therapyEffectiveness) {
+        // Therapy effectiveness table
+        if (backendData.therapyEffectiveness && backendData.therapyEffectiveness.length > 0) {
           tables.push({
             id: 'therapy-effectiveness-table',
             title: 'Therapy Effectiveness Details',
-            headers: ['Review Type', 'Total Reviews', 'Completed', 'Completion Rate', 'Cost Savings'],
+            headers: ['Review Type', 'Total', 'Completed', 'In Progress', 'Pending', 'Completion Rate', 'Avg Days', 'Cost Savings'],
             rows: backendData.therapyEffectiveness.map((item: any) => [
               item._id || 'Unknown',
               (item.totalReviews || 0).toString(),
               (item.completedReviews || 0).toString(),
+              (item.inProgressReviews || 0).toString(),
+              (item.pendingReviews || 0).toString(),
               item.totalReviews > 0 ? `${Math.round((item.completedReviews / item.totalReviews) * 100)}%` : '0%',
+              item.avgCompletionTime ? item.avgCompletionTime.toFixed(1) : 'N/A',
+              `₦${(item.totalCostSavings || 0).toLocaleString()}`
+            ])
+          });
+        }
+
+        // Clinical improvements summary
+        if (backendData.clinicalImprovements && Object.keys(backendData.clinicalImprovements).length > 0) {
+          const improvements = backendData.clinicalImprovements;
+          const total = improvements.totalCompleted || 1;
+          tables.push({
+            id: 'clinical-improvements-table',
+            title: 'Clinical Improvements Summary',
+            headers: ['Improvement Type', 'Count', 'Percentage'],
+            rows: [
+              ['Adherence Improved', (improvements.adherenceImproved || 0).toString(), `${Math.round(((improvements.adherenceImproved || 0) / total) * 100)}%`],
+              ['Symptoms Improved', (improvements.symptomsImproved || 0).toString(), `${Math.round(((improvements.symptomsImproved || 0) / total) * 100)}%`],
+              ['Quality of Life Improved', (improvements.qualityOfLifeImproved || 0).toString(), `${Math.round(((improvements.qualityOfLifeImproved || 0) / total) * 100)}%`],
+              ['Medication Optimized', (improvements.medicationOptimized || 0).toString(), `${Math.round(((improvements.medicationOptimized || 0) / total) * 100)}%`],
+              ['Avg Patient Satisfaction', (improvements.avgPatientSatisfaction || 0).toFixed(1), 'Score (0-10)']
+            ]
+          });
+        }
+
+        // Adverse events reduction
+        if (backendData.adverseEventReduction && backendData.adverseEventReduction.length > 0) {
+          tables.push({
+            id: 'adverse-events-table',
+            title: 'Adverse Events Reduction',
+            headers: ['Review Type', 'Total Reviews', 'Adverse Events Reduced', 'Drug Interactions Resolved', 'Contraindications Addressed'],
+            rows: backendData.adverseEventReduction.map((item: any) => [
+              item._id || 'Unknown',
+              (item.totalReviews || 0).toString(),
+              (item.adverseEventsReduced || 0).toString(),
+              (item.drugInteractionsResolved || 0).toString(),
+              (item.contraIndicationsAddressed || 0).toString()
+            ])
+          });
+        }
+
+        // Outcomes by priority
+        if (backendData.outcomesByPriority && backendData.outcomesByPriority.length > 0) {
+          tables.push({
+            id: 'priority-outcomes-table',
+            title: 'Outcomes by Priority Level',
+            headers: ['Priority', 'Total Reviews', 'Completed', 'Completion Rate', 'Avg Cost Savings', 'Total Cost Savings'],
+            rows: backendData.outcomesByPriority.map((item: any) => [
+              item._id || 'Unknown',
+              (item.totalReviews || 0).toString(),
+              (item.completedReviews || 0).toString(),
+              item.totalReviews > 0 ? `${Math.round((item.completedReviews / item.totalReviews) * 100)}%` : '0%',
+              `₦${(item.avgCostSavings || 0).toLocaleString()}`,
               `₦${(item.totalCostSavings || 0).toLocaleString()}`
             ])
           });
@@ -615,16 +834,186 @@ class ReportsService {
         break;
 
       case 'pharmacist-interventions':
-        if (backendData.interventionMetrics) {
+        // Intervention metrics table
+        if (backendData.interventionMetrics && backendData.interventionMetrics.length > 0) {
           tables.push({
             id: 'intervention-metrics-table',
-            title: 'Intervention Metrics',
-            headers: ['Intervention Type', 'Total', 'Accepted', 'Acceptance Rate'],
+            title: 'Intervention Metrics by Type',
+            headers: ['Type', 'Total', 'Accepted', 'Rejected', 'Pending', 'Acceptance Rate', 'Avg Response Time (hrs)'],
             rows: backendData.interventionMetrics.map((item: any) => [
               item._id || 'Unknown',
               (item.totalInterventions || 0).toString(),
               (item.acceptedInterventions || 0).toString(),
-              item.totalInterventions > 0 ? `${Math.round((item.acceptedInterventions / item.totalInterventions) * 100)}%` : '0%'
+              (item.rejectedInterventions || 0).toString(),
+              (item.pendingInterventions || 0).toString(),
+              item.totalInterventions > 0 ? `${Math.round((item.acceptedInterventions / item.totalInterventions) * 100)}%` : '0%',
+              item.avgResponseTime ? item.avgResponseTime.toFixed(1) : 'N/A'
+            ])
+          });
+        }
+
+        // Pharmacist performance table
+        if (backendData.interventionsByPharmacist && backendData.interventionsByPharmacist.length > 0) {
+          tables.push({
+            id: 'pharmacist-performance-table',
+            title: 'Pharmacist Performance',
+            headers: ['Pharmacist', 'Total Interventions', 'Accepted', 'Acceptance Rate', 'Avg Response Time (hrs)'],
+            rows: backendData.interventionsByPharmacist.map((item: any) => [
+              item.pharmacistName || 'Unknown',
+              (item.totalInterventions || 0).toString(),
+              (item.acceptedInterventions || 0).toString(),
+              item.totalInterventions > 0 ? `${Math.round((item.acceptedInterventions / item.totalInterventions) * 100)}%` : '0%',
+              item.avgResponseTime ? item.avgResponseTime.toFixed(1) : 'N/A'
+            ])
+          });
+        }
+
+        // Intervention outcomes summary
+        if (backendData.interventionOutcomes && backendData.interventionOutcomes.length > 0) {
+          tables.push({
+            id: 'intervention-outcomes-table',
+            title: 'Intervention Outcomes Analysis',
+            headers: ['Outcome', 'Count', 'Avg Severity', 'Avg Clinical Impact'],
+            rows: backendData.interventionOutcomes.map((item: any) => [
+              item._id || 'Unknown',
+              (item.count || 0).toString(),
+              item.avgSeverity ? item.avgSeverity.toFixed(1) : 'N/A',
+              item.avgImpact ? item.avgImpact.toFixed(1) : 'N/A'
+            ])
+          });
+        }
+
+        // Intervention effectiveness
+        if (backendData.interventionEffectiveness && backendData.interventionEffectiveness.length > 0) {
+          tables.push({
+            id: 'intervention-effectiveness-table',
+            title: 'Intervention Effectiveness',
+            headers: ['Type', 'Accepted Count', 'Avg Clinical Impact', 'Avg Patient Satisfaction', 'Cost Savings Generated'],
+            rows: backendData.interventionEffectiveness.map((item: any) => [
+              item._id || 'Unknown',
+              (item.totalAccepted || 0).toString(),
+              item.avgClinicalImpact ? item.avgClinicalImpact.toFixed(1) : 'N/A',
+              item.avgPatientSatisfaction ? item.avgPatientSatisfaction.toFixed(1) : 'N/A',
+              `₦${(item.costSavingsGenerated || 0).toLocaleString()}`
+            ])
+          });
+        }
+
+        // Priority analysis
+        if (backendData.interventionPriority && backendData.interventionPriority.length > 0) {
+          tables.push({
+            id: 'intervention-priority-table',
+            title: 'Interventions by Priority',
+            headers: ['Priority', 'Total Interventions', 'Accepted', 'Acceptance Rate', 'Avg Severity'],
+            rows: backendData.interventionPriority.map((item: any) => [
+              item._id || 'Unknown',
+              (item.totalInterventions || 0).toString(),
+              (item.acceptedInterventions || 0).toString(),
+              item.totalInterventions > 0 ? `${Math.round((item.acceptedInterventions / item.totalInterventions) * 100)}%` : '0%',
+              item.avgSeverity ? item.avgSeverity.toFixed(1) : 'N/A'
+            ])
+          });
+        }
+        break;
+
+      case 'therapy-effectiveness':
+        // Adherence metrics table
+        if (backendData.adherenceMetrics && backendData.adherenceMetrics.length > 0) {
+          tables.push({
+            id: 'adherence-metrics-table',
+            title: 'Adherence Improvement Analysis',
+            headers: ['Therapy Type', 'Total Reviews', 'Adherence Improved', 'Improvement Rate', 'Avg Score', 'Baseline', 'Follow-up'],
+            rows: backendData.adherenceMetrics.map((item: any) => [
+              item._id || 'Unknown',
+              (item.totalReviews || 0).toString(),
+              (item.adherenceImproved || 0).toString(),
+              item.totalReviews > 0 ? `${Math.round((item.adherenceImproved / item.totalReviews) * 100)}%` : '0%',
+              item.avgAdherenceScore ? item.avgAdherenceScore.toFixed(1) : 'N/A',
+              item.baselineAdherence ? item.baselineAdherence.toFixed(1) : 'N/A',
+              item.followUpAdherence ? item.followUpAdherence.toFixed(1) : 'N/A'
+            ])
+          });
+        }
+
+        // Therapy outcomes summary
+        if (backendData.therapyOutcomes && Object.keys(backendData.therapyOutcomes).length > 0) {
+          const outcomes = backendData.therapyOutcomes;
+          const total = outcomes.totalCompleted || 1;
+          tables.push({
+            id: 'therapy-outcomes-table',
+            title: 'Therapy Outcomes Summary',
+            headers: ['Outcome Type', 'Count', 'Percentage', 'Clinical Impact'],
+            rows: [
+              ['Symptoms Improved', (outcomes.symptomsImproved || 0).toString(), `${Math.round(((outcomes.symptomsImproved || 0) / total) * 100)}%`, 'High'],
+              ['Quality of Life Improved', (outcomes.qualityOfLifeImproved || 0).toString(), `${Math.round(((outcomes.qualityOfLifeImproved || 0) / total) * 100)}%`, 'High'],
+              ['Adverse Events Reduced', (outcomes.adverseEventsReduced || 0).toString(), `${Math.round(((outcomes.adverseEventsReduced || 0) / total) * 100)}%`, 'Critical'],
+              ['Drug Interactions Resolved', (outcomes.drugInteractionsResolved || 0).toString(), `${Math.round(((outcomes.drugInteractionsResolved || 0) / total) * 100)}%`, 'Critical'],
+              ['Avg Clinical Improvement', (outcomes.avgClinicalImprovement || 0).toFixed(1), 'Score (0-10)', 'Overall']
+            ]
+          });
+        }
+
+        // Medication optimization table
+        if (backendData.medicationOptimization && backendData.medicationOptimization.length > 0) {
+          tables.push({
+            id: 'medication-optimization-table',
+            title: 'Medication Optimization Analysis',
+            headers: ['Review Type', 'Total', 'Optimized', 'Dosage Adjusted', 'Switched', 'Discontinued', 'Avg Cost Savings'],
+            rows: backendData.medicationOptimization.map((item: any) => [
+              item._id || 'Unknown',
+              (item.totalReviews || 0).toString(),
+              (item.medicationOptimized || 0).toString(),
+              (item.dosageAdjusted || 0).toString(),
+              (item.medicationSwitched || 0).toString(),
+              (item.medicationDiscontinued || 0).toString(),
+              `₦${(item.avgCostSavings || 0).toLocaleString()}`
+            ])
+          });
+        }
+
+        // Patient satisfaction analysis
+        if (backendData.patientSatisfaction && backendData.patientSatisfaction.length > 0) {
+          tables.push({
+            id: 'patient-satisfaction-table',
+            title: 'Patient Satisfaction Analysis',
+            headers: ['Score Range', 'Patient Count', 'Avg Score', 'Review Types'],
+            rows: backendData.patientSatisfaction.map((item: any) => [
+              typeof item._id === 'number' ? `${item._id}-${item._id + 2}` : item._id,
+              (item.count || 0).toString(),
+              item.avgScore ? item.avgScore.toFixed(1) : 'N/A',
+              (item.reviewTypes || []).join(', ') || 'N/A'
+            ])
+          });
+        }
+
+        // Clinical indicators improvement
+        if (backendData.clinicalIndicators && backendData.clinicalIndicators.length > 0) {
+          tables.push({
+            id: 'clinical-indicators-table',
+            title: 'Clinical Indicators Improvement',
+            headers: ['Priority', 'Total Reviews', 'Vital Signs', 'Lab Values', 'Functional Status', 'Avg Improvement Score'],
+            rows: backendData.clinicalIndicators.map((item: any) => [
+              item._id || 'Unknown',
+              (item.totalReviews || 0).toString(),
+              (item.vitalSignsImproved || 0).toString(),
+              (item.labValuesImproved || 0).toString(),
+              (item.functionalStatusImproved || 0).toString(),
+              item.avgImprovementScore ? item.avgImprovementScore.toFixed(1) : 'N/A'
+            ])
+          });
+        }
+
+        // Therapy duration effectiveness
+        if (backendData.therapyDuration && backendData.therapyDuration.length > 0) {
+          tables.push({
+            id: 'therapy-duration-table',
+            title: 'Therapy Duration vs Effectiveness',
+            headers: ['Duration Range', 'Patient Count', 'Avg Duration (days)', 'Success Rate'],
+            rows: backendData.therapyDuration.map((item: any) => [
+              typeof item._id === 'number' ? `${item._id}-${item._id + 7} days` : item._id,
+              (item.count || 0).toString(),
+              item.avgDuration ? item.avgDuration.toFixed(1) : 'N/A',
+              `${Math.round((item.successRate || 0) * 100)}%`
             ])
           });
         }
