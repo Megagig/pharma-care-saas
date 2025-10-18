@@ -362,6 +362,7 @@ class ReportsService {
 
   private transformChartsData(backendData: any, reportType: string): Array<any> {
     const charts = [];
+    console.log(`📈 Transforming charts data for report type: "${reportType}"`);
 
     // Transform based on report type and available data
     switch (reportType) {
@@ -408,16 +409,118 @@ class ReportsService {
         }
         break;
 
+      case 'patient-demographics':
+        console.log('✅ Matched patient-demographics case in transformChartsData');
+        
+        // Age distribution chart
+        if (backendData.ageDistribution && backendData.ageDistribution.length > 0) {
+          charts.push({
+            id: 'age-distribution-chart',
+            type: 'bar',
+            title: 'Age Distribution',
+            data: backendData.ageDistribution.map((item: any) => ({
+              category: item._id === 'Unknown' ? 'Unknown Age' : `${item._id}-${item._id + 17} years`,
+              value: item.count || 0
+            }))
+          });
+        }
+        
+        // Gender distribution chart
+        if (backendData.genderDistribution && backendData.genderDistribution.length > 0) {
+          charts.push({
+            id: 'gender-distribution-chart',
+            type: 'pie',
+            title: 'Gender Distribution',
+            data: backendData.genderDistribution.map((item: any) => ({
+              category: item._id || 'Not Specified',
+              value: item.count || 0
+            }))
+          });
+        }
+        break;
+
+      case 'quality-improvement':
+        if (backendData.qualityMetrics) {
+          charts.push({
+            id: 'quality-metrics-chart',
+            type: 'bar',
+            title: 'Quality Metrics by Priority',
+            data: backendData.qualityMetrics.map((item: any) => ({
+              category: item._id || 'Unknown',
+              value: item.totalReviews || 0
+            }))
+          });
+        }
+        break;
+
+      case 'cost-effectiveness':
+        if (backendData.costSavings) {
+          charts.push({
+            id: 'cost-savings-chart',
+            type: 'bar',
+            title: 'Cost Savings by Review Type',
+            data: backendData.costSavings.map((item: any) => ({
+              category: item._id || 'Unknown',
+              value: item.totalCostSavings || 0
+            }))
+          });
+        }
+        break;
+
+      case 'trend-forecasting':
+        if (backendData.trends) {
+          charts.push({
+            id: 'trends-chart',
+            type: 'line',
+            title: 'Monthly Trends',
+            data: backendData.trends.map((item: any) => ({
+              category: `${item._id.year}-${String(item._id.month).padStart(2, '0')}`,
+              value: item.totalReviews || 0
+            }))
+          });
+        }
+        break;
+
+      case 'operational-efficiency':
+        if (backendData.workflowMetrics) {
+          charts.push({
+            id: 'workflow-metrics-chart',
+            type: 'bar',
+            title: 'Workflow Metrics by Status',
+            data: backendData.workflowMetrics.map((item: any) => ({
+              category: item._id || 'Unknown',
+              value: item.count || 0
+            }))
+          });
+        }
+        break;
+
+      case 'adverse-events':
+        if (backendData.adverseEvents) {
+          charts.push({
+            id: 'adverse-events-chart',
+            type: 'bar',
+            title: 'Adverse Events by Review Type',
+            data: backendData.adverseEvents.map((item: any) => ({
+              category: item._id || 'Unknown',
+              value: item.adverseEventsReduced || 0
+            }))
+          });
+        }
+        break;
+
       default:
-        // Generic chart for other report types
-        charts.push({
-          id: 'generic-chart',
-          type: 'bar',
-          title: 'Data Overview',
-          data: [
-            { category: 'Sample Data', value: 1 }
-          ]
-        });
+        // Only show generic chart if no specific data is available
+        if (Object.keys(backendData).length === 0) {
+          charts.push({
+            id: 'no-data-chart',
+            type: 'bar',
+            title: 'No Data Available',
+            data: [
+              { category: 'No Data', value: 0 }
+            ]
+          });
+        }
     }
 
     // If no charts were created, add a placeholder
@@ -437,6 +540,8 @@ class ReportsService {
 
   private transformTablesData(backendData: any, reportType: string): Array<any> {
     const tables = [];
+    console.log(`🔄 Transforming tables data for report type: "${reportType}"`);
+    console.log('📊 Backend data keys:', Object.keys(backendData));
 
     // Transform based on report type and available data
     switch (reportType) {
@@ -473,9 +578,145 @@ class ReportsService {
         }
         break;
 
+      case 'patient-demographics':
+        console.log('✅ Matched patient-demographics case in transformTablesData');
+        console.log('📊 Age distribution data:', backendData.ageDistribution);
+        console.log('📊 Gender distribution data:', backendData.genderDistribution);
+        
+        // Age distribution table
+        if (backendData.ageDistribution && backendData.ageDistribution.length > 0) {
+          tables.push({
+            id: 'age-distribution-table',
+            title: 'Age Distribution',
+            headers: ['Age Group', 'Patient Count', 'Percentage'],
+            rows: backendData.ageDistribution.map((item: any) => {
+              const total = backendData.totalPatients || 1;
+              const percentage = ((item.count || 0) / total * 100).toFixed(1);
+              return [
+                item._id === 'Unknown' ? 'Unknown Age' : `${item._id} years`,
+                (item.count || 0).toString(),
+                `${percentage}%`
+              ];
+            })
+          });
+        }
+        
+        // Gender distribution table
+        if (backendData.genderDistribution && backendData.genderDistribution.length > 0) {
+          tables.push({
+            id: 'gender-distribution-table',
+            title: 'Gender Distribution',
+            headers: ['Gender', 'Patient Count', 'Percentage'],
+            rows: backendData.genderDistribution.map((item: any) => {
+              const total = backendData.totalPatients || 1;
+              const percentage = ((item.count || 0) / total * 100).toFixed(1);
+              return [
+                item._id || 'Not Specified',
+                (item.count || 0).toString(),
+                `${percentage}%`
+              ];
+            })
+          });
+        }
+        
+        // Summary table
+        tables.push({
+          id: 'demographics-summary-table',
+          title: 'Demographics Summary',
+          headers: ['Metric', 'Value'],
+          rows: [
+            ['Total Patients', (backendData.totalPatients || 0).toString()],
+            ['Age Groups', (backendData.ageDistribution?.length || 0).toString()],
+            ['Gender Categories', (backendData.genderDistribution?.length || 0).toString()],
+            ['Data Source', 'Real Patient Database'],
+            ['Last Updated', new Date().toLocaleDateString()]
+          ]
+        });
+        break;
+
+      case 'quality-improvement':
+        if (backendData.qualityMetrics) {
+          tables.push({
+            id: 'quality-metrics-table',
+            title: 'Quality Metrics',
+            headers: ['Priority Level', 'Total Reviews', 'Avg Completion Time (Days)'],
+            rows: backendData.qualityMetrics.map((item: any) => [
+              item._id || 'Unknown',
+              (item.totalReviews || 0).toString(),
+              (item.avgCompletionTime || 0).toFixed(1)
+            ])
+          });
+        }
+        break;
+
+      case 'cost-effectiveness':
+        if (backendData.costSavings) {
+          tables.push({
+            id: 'cost-savings-table',
+            title: 'Cost Savings Analysis',
+            headers: ['Review Type', 'Total Cost Savings', 'Review Count', 'Avg Savings per Review'],
+            rows: backendData.costSavings.map((item: any) => [
+              item._id || 'Unknown',
+              `₦${(item.totalCostSavings || 0).toLocaleString()}`,
+              (item.reviewCount || 0).toString(),
+              `₦${((item.totalCostSavings || 0) / (item.reviewCount || 1)).toLocaleString()}`
+            ])
+          });
+        }
+        break;
+
+      case 'trend-forecasting':
+        if (backendData.trends) {
+          tables.push({
+            id: 'trends-table',
+            title: 'Monthly Trends',
+            headers: ['Month', 'Total Reviews', 'Completed Reviews', 'Completion Rate'],
+            rows: backendData.trends.map((item: any) => [
+              `${item._id.year}-${String(item._id.month).padStart(2, '0')}`,
+              (item.totalReviews || 0).toString(),
+              (item.completedReviews || 0).toString(),
+              item.totalReviews > 0 ? `${Math.round((item.completedReviews / item.totalReviews) * 100)}%` : '0%'
+            ])
+          });
+        }
+        break;
+
+      case 'operational-efficiency':
+        if (backendData.workflowMetrics) {
+          tables.push({
+            id: 'workflow-table',
+            title: 'Workflow Efficiency',
+            headers: ['Status', 'Count', 'Avg Processing Time (Hours)'],
+            rows: backendData.workflowMetrics.map((item: any) => [
+              item._id || 'Unknown',
+              (item.count || 0).toString(),
+              (item.avgProcessingTime || 0).toFixed(1)
+            ])
+          });
+        }
+        break;
+
+      case 'adverse-events':
+        if (backendData.adverseEvents) {
+          tables.push({
+            id: 'adverse-events-table',
+            title: 'Adverse Events Analysis',
+            headers: ['Review Type', 'Total Reviews', 'Adverse Events Reduced'],
+            rows: backendData.adverseEvents.map((item: any) => [
+              item._id || 'Unknown',
+              (item.totalReviews || 0).toString(),
+              (item.adverseEventsReduced || 0).toString()
+            ])
+          });
+        }
+        break;
+
       default:
-        // Generic table for other report types
-        const entries = Object.entries(backendData).slice(0, 10);
+        // Only show generic table if we have actual data
+        const entries = Object.entries(backendData).filter(([key, value]) => 
+          key !== 'error' && key !== 'message' && key !== 'timestamp'
+        ).slice(0, 10);
+        
         if (entries.length > 0) {
           tables.push({
             id: 'generic-table',

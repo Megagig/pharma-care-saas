@@ -1,9 +1,8 @@
 import express from 'express';
 import { Request, Response, NextFunction } from 'express';
-import { AuthRequest } from '../middlewares/auth';
 import mongoose from 'mongoose';
 import moment from 'moment';
-import { auth, requireLicense } from '../middlewares/auth';
+import { auth, requireLicense, AuthRequest } from '../middlewares/auth';
 import { auditTimer, auditMTRActivity } from '../middlewares/auditMiddleware';
 import { requirePermission } from '../middlewares/rbac';
 import reportsRBAC from '../middlewares/reportsRBAC';
@@ -17,8 +16,22 @@ import {
 } from '../controllers/reportsController';
 import MedicationTherapyReview from '../models/MedicationTherapyReview';
 import MTRIntervention from '../models/MTRIntervention';
+import DrugTherapyProblem from '../models/DrugTherapyProblem';
+import Patient from '../models/Patient';
+import MedicationManagement from '../models/MedicationManagement';
 
 const router = express.Router();
+
+// Rate limiting for report endpoints
+const reportRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: {
+        error: 'Too many report requests from this IP, please try again later.',
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Optimized report data generation with real database queries
 async function generateOptimizedReportData(reportType: string, workspaceFilter: any) {
@@ -43,13 +56,33 @@ async function generateOptimizedReportData(reportType: string, workspaceFilter: 
                 return await generatePharmacistInterventionsData(baseMatch);
             case 'therapy-effectiveness':
                 return await generateTherapyEffectivenessData(baseMatch);
+            case 'patient-demographics':
+                return await generatePatientDemographicsData(baseMatch);
+            case 'quality-improvement':
+                return await generateQualityImprovementData(baseMatch);
+            case 'regulatory-compliance':
+                return await generateRegulatoryComplianceData(baseMatch);
+            case 'cost-effectiveness':
+                return await generateCostEffectivenessData(baseMatch);
+            case 'trend-forecasting':
+                return await generateTrendForecastingData(baseMatch);
+            case 'operational-efficiency':
+                return await generateOperationalEfficiencyData(baseMatch);
+            case 'medication-inventory':
+                return await generateMedicationInventoryData(baseMatch);
+            case 'adverse-events':
+                return await generateAdverseEventsData(baseMatch);
             default:
                 return await generateGenericReportData(baseMatch, reportType);
         }
     } catch (error) {
         console.error(`❌ Error generating real data for ${reportType}:`, error);
-        // Fallback to sample data if database query fails
-        return getFallbackSampleData();
+        // Return empty structure instead of sample data
+        return {
+            error: `Failed to generate ${reportType} report`,
+            message: 'Database query failed - please try again',
+            timestamp: new Date()
+        };
     }
 }
 
@@ -57,105 +90,462 @@ async function generateOptimizedReportData(reportType: string, workspaceFilter: 
 async function generatePatientOutcomesData(baseMatch: any) {
     const startTime = Date.now();
     
-    // Ultra-fast query with strict limits and timeout
-    const therapyEffectiveness = await Promise.race([
-        MedicationTherapyReview.aggregate([
-            { $match: baseMatch },
-            { $limit: 50 }, // Small limit for speed
-            {
-                $group: {
-                    _id: { $ifNull: ['$reviewType', 'Unknown'] },
-                    totalReviews: { $sum: 1 },
-                    completedReviews: {
-                        $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
-                    },
-                    totalCostSavings: {
-                        $sum: { $ifNull: ['$clinicalOutcomes.costSavings', 0] }
+    try {
+        const therapyEffectiveness = await Promise.race([
+            MedicationTherapyReview.aggregate([
+                { $match: baseMatch },
+                { $limit: 50 },
+                {
+                    $group: {
+                        _id: { $ifNull: ['$reviewType', 'Unknown'] },
+                        totalReviews: { $sum: 1 },
+                        completedReviews: {
+                            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
+                        },
+                        totalCostSavings: {
+                            $sum: { $ifNull: ['$clinicalOutcomes.costSavings', 0] }
+                        }
                     }
-                }
-            },
-            { $sort: { totalReviews: -1 } }
-        ]).allowDiskUse(true),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
-    ]) as any[];
-    
-    const queryTime = Date.now() - startTime;
-    console.log(`✅ Patient outcomes query completed in ${queryTime}ms, found ${therapyEffectiveness.length} records`);
-    
-    return {
-        therapyEffectiveness,
-        clinicalImprovements: {}, // Can be populated later
-        adverseEventReduction: [], // Can be populated later
-    };
+                },
+                { $sort: { totalReviews: -1 } }
+            ]).allowDiskUse(true),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
+        ]) as any[];
+        
+        const queryTime = Date.now() - startTime;
+        console.log(`✅ Patient outcomes query completed in ${queryTime}ms, found ${therapyEffectiveness.length} records`);
+        
+        return {
+            therapyEffectiveness,
+            clinicalImprovements: {},
+            adverseEventReduction: [],
+        };
+    } catch (error) {
+        console.error('❌ Patient outcomes query failed:', error);
+        return {
+            therapyEffectiveness: [],
+            clinicalImprovements: {},
+            adverseEventReduction: [],
+        };
+    }
 }
 
 // Fast pharmacist interventions data with real database query
 async function generatePharmacistInterventionsData(baseMatch: any) {
     const startTime = Date.now();
     
-    const interventionMetrics = await Promise.race([
-        MTRIntervention.aggregate([
-            { $match: baseMatch },
-            { $limit: 50 }, // Small limit for speed
-            {
-                $group: {
-                    _id: { $ifNull: ['$type', 'Unknown'] },
-                    totalInterventions: { $sum: 1 },
-                    acceptedInterventions: {
-                        $sum: { $cond: [{ $eq: ['$outcome', 'accepted'] }, 1, 0] }
+    try {
+        const interventionMetrics = await Promise.race([
+            MTRIntervention.aggregate([
+                { $match: baseMatch },
+                { $limit: 50 },
+                {
+                    $group: {
+                        _id: { $ifNull: ['$type', 'Unknown'] },
+                        totalInterventions: { $sum: 1 },
+                        acceptedInterventions: {
+                            $sum: { $cond: [{ $eq: ['$outcome', 'accepted'] }, 1, 0] }
+                        }
                     }
-                }
-            },
-            { $sort: { totalInterventions: -1 } }
-        ]).allowDiskUse(true),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
-    ]) as any[];
-    
-    const queryTime = Date.now() - startTime;
-    console.log(`✅ Pharmacist interventions query completed in ${queryTime}ms, found ${interventionMetrics.length} records`);
-    
-    return {
-        therapyEffectiveness: [], // Not applicable for this report
-        interventionMetrics,
-        adherenceMetrics: [], // Not applicable for this report
-    };
+                },
+                { $sort: { totalInterventions: -1 } }
+            ]).allowDiskUse(true),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
+        ]) as any[];
+        
+        const queryTime = Date.now() - startTime;
+        console.log(`✅ Pharmacist interventions query completed in ${queryTime}ms, found ${interventionMetrics.length} records`);
+        
+        return {
+            therapyEffectiveness: [],
+            interventionMetrics,
+            adherenceMetrics: [],
+        };
+    } catch (error) {
+        console.error('❌ Pharmacist interventions query failed:', error);
+        return {
+            therapyEffectiveness: [],
+            interventionMetrics: [],
+            adherenceMetrics: [],
+        };
+    }
 }
 
 // Fast therapy effectiveness data with real database query
 async function generateTherapyEffectivenessData(baseMatch: any) {
     const startTime = Date.now();
     
-    const adherenceMetrics = await Promise.race([
-        MedicationTherapyReview.aggregate([
-            { $match: { ...baseMatch, status: 'completed' } },
-            { $limit: 50 }, // Small limit for speed
-            {
-                $group: {
-                    _id: { $ifNull: ['$reviewType', 'Unknown'] },
-                    totalReviews: { $sum: 1 },
-                    adherenceImproved: {
-                        $sum: { $cond: [{ $eq: ['$clinicalOutcomes.adherenceImproved', true] }, 1, 0] }
+    try {
+        const adherenceMetrics = await Promise.race([
+            MedicationTherapyReview.aggregate([
+                { $match: { ...baseMatch, status: 'completed' } },
+                { $limit: 50 },
+                {
+                    $group: {
+                        _id: { $ifNull: ['$reviewType', 'Unknown'] },
+                        totalReviews: { $sum: 1 },
+                        adherenceImproved: {
+                            $sum: { $cond: [{ $eq: ['$clinicalOutcomes.adherenceImproved', true] }, 1, 0] }
+                        }
+                    }
+                },
+                { $sort: { totalReviews: -1 } }
+            ]).allowDiskUse(true),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
+        ]) as any[];
+        
+        const queryTime = Date.now() - startTime;
+        console.log(`✅ Therapy effectiveness query completed in ${queryTime}ms, found ${adherenceMetrics.length} records`);
+        
+        return {
+            therapyEffectiveness: [],
+            interventionMetrics: [],
+            adherenceMetrics,
+        };
+    } catch (error) {
+        console.error('❌ Therapy effectiveness query failed:', error);
+        return {
+            therapyEffectiveness: [],
+            interventionMetrics: [],
+            adherenceMetrics: [],
+        };
+    }
+}
+
+// Real patient demographics data
+async function generatePatientDemographicsData(baseMatch: any) {
+    const startTime = Date.now();
+    console.log('📊 Generating REAL patient demographics data...');
+    
+    try {
+        // Remove createdAt filter for patient demographics as we want all patients
+        const patientMatch = { ...baseMatch };
+        delete patientMatch.createdAt;
+        
+        // Get real patient demographics
+        const [ageDistribution, genderDistribution, totalPatients] = await Promise.all([
+            // Age distribution
+            Promise.race([
+                Patient.aggregate([
+                    { $match: patientMatch },
+                    { $limit: 1000 },
+                    {
+                        $addFields: {
+                            age: {
+                                $floor: {
+                                    $divide: [
+                                        { $subtract: [new Date(), '$dateOfBirth'] },
+                                        365.25 * 24 * 60 * 60 * 1000
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    {
+                        $bucket: {
+                            groupBy: '$age',
+                            boundaries: [0, 18, 30, 45, 60, 75, 100],
+                            default: 'Unknown',
+                            output: {
+                                count: { $sum: 1 },
+                                ageGroup: { $first: '$age' }
+                            }
+                        }
+                    }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Age query timeout')), 3000))
+            ]),
+            
+            // Gender distribution
+            Promise.race([
+                Patient.aggregate([
+                    { $match: patientMatch },
+                    { $limit: 1000 },
+                    {
+                        $group: {
+                            _id: { $ifNull: ['$gender', 'Not Specified'] },
+                            count: { $sum: 1 }
+                        }
+                    },
+                    { $sort: { count: -1 } }
+                ]).allowDiskUse(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Gender query timeout')), 3000))
+            ]),
+            
+            // Total patient count
+            Promise.race([
+                Patient.countDocuments(patientMatch),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Count query timeout')), 2000))
+            ])
+        ]) as [any[], any[], number];
+        
+        const queryTime = Date.now() - startTime;
+        console.log(`✅ Patient demographics query completed in ${queryTime}ms`);
+        console.log(`📈 Found ${totalPatients} total patients`);
+        console.log(`📊 Age groups: ${Array.isArray(ageDistribution) ? ageDistribution.length : 0}, Gender groups: ${Array.isArray(genderDistribution) ? genderDistribution.length : 0}`);
+        
+        return {
+            ageDistribution,
+            genderDistribution,
+            totalPatients,
+            geographicPatterns: [],
+            conditionSegmentation: [],
+        };
+    } catch (error) {
+        console.error('❌ Patient demographics query failed:', error);
+        // If patient query fails, try to get basic data from MTR
+        return await generateBasicPatientDataFromMTR(baseMatch);
+    }
+}
+
+// Fallback: Get patient data from MTR if Patient collection fails
+async function generateBasicPatientDataFromMTR(baseMatch: any) {
+    console.log('📊 Fallback: Getting patient data from MTR records...');
+    
+    try {
+        const patientData = await Promise.race([
+            MedicationTherapyReview.aggregate([
+                { $match: baseMatch },
+                { $limit: 100 },
+                {
+                    $group: {
+                        _id: '$patientId',
+                        reviewCount: { $sum: 1 },
+                        lastReview: { $max: '$createdAt' }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalPatients: { $sum: 1 },
+                        totalReviews: { $sum: '$reviewCount' }
                     }
                 }
-            },
-            { $sort: { totalReviews: -1 } }
-        ]).allowDiskUse(true),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 3000))
-    ]) as any[];
+            ]).allowDiskUse(true),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('MTR fallback timeout')), 2000))
+        ]) as any[];
+        
+        const result = patientData[0] || { totalPatients: 0, totalReviews: 0 };
+        console.log(`✅ MTR fallback found ${result.totalPatients} patients with ${result.totalReviews} reviews`);
+        
+        return {
+            totalPatients: result.totalPatients,
+            totalReviews: result.totalReviews,
+            ageDistribution: [],
+            genderDistribution: [],
+            geographicPatterns: [],
+            conditionSegmentation: [],
+        };
+    } catch (error) {
+        console.error('❌ MTR fallback also failed:', error);
+        return {
+            totalPatients: 0,
+            ageDistribution: [],
+            genderDistribution: [],
+            geographicPatterns: [],
+            conditionSegmentation: [],
+        };
+    }
+}
+
+// Real quality improvement data
+async function generateQualityImprovementData(baseMatch: any) {
+    console.log('📊 Generating quality improvement data...');
     
-    const queryTime = Date.now() - startTime;
-    console.log(`✅ Therapy effectiveness query completed in ${queryTime}ms, found ${adherenceMetrics.length} records`);
-    
+    try {
+        const qualityMetrics = await Promise.race([
+            MedicationTherapyReview.aggregate([
+                { $match: { ...baseMatch, status: 'completed' } },
+                { $limit: 100 },
+                {
+                    $group: {
+                        _id: '$priority',
+                        totalReviews: { $sum: 1 },
+                        avgCompletionTime: {
+                            $avg: {
+                                $cond: [
+                                    { $and: [{ $ne: ['$completedAt', null] }, { $ne: ['$startedAt', null] }] },
+                                    { $divide: [{ $subtract: ['$completedAt', '$startedAt'] }, 1000 * 60 * 60 * 24] },
+                                    null
+                                ]
+                            }
+                        }
+                    }
+                },
+                { $sort: { totalReviews: -1 } }
+            ]).allowDiskUse(true),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Quality query timeout')), 3000))
+        ]) as any[];
+        
+        console.log(`✅ Quality improvement data: ${qualityMetrics.length} priority groups`);
+        
+        return {
+            completionTimeAnalysis: qualityMetrics,
+            qualityMetrics: qualityMetrics,
+        };
+    } catch (error) {
+        console.error('❌ Quality improvement query failed:', error);
+        return { completionTimeAnalysis: [], qualityMetrics: [] };
+    }
+}
+
+// Add other report type functions
+async function generateRegulatoryComplianceData(baseMatch: any) {
+    console.log('📊 Generating regulatory compliance data...');
+    try {
+        const complianceData = await Promise.race([
+            MedicationTherapyReview.aggregate([
+                { $match: baseMatch },
+                { $limit: 100 },
+                {
+                    $group: {
+                        _id: null,
+                        totalReviews: { $sum: 1 },
+                        compliantReviews: { $sum: { $cond: [{ $ne: ['$completedAt', null] }, 1, 0] } }
+                    }
+                }
+            ]).allowDiskUse(true),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Compliance timeout')), 2000))
+        ]) as any[];
+        
+        return { complianceMetrics: complianceData[0] || {} };
+    } catch (error) {
+        console.error('❌ Regulatory compliance query failed:', error);
+        return { complianceMetrics: {} };
+    }
+}
+
+async function generateCostEffectivenessData(baseMatch: any) {
+    console.log('📊 Generating cost effectiveness data...');
+    try {
+        const costData = await Promise.race([
+            MedicationTherapyReview.aggregate([
+                { $match: baseMatch },
+                { $limit: 100 },
+                {
+                    $group: {
+                        _id: '$reviewType',
+                        totalCostSavings: { $sum: { $ifNull: ['$clinicalOutcomes.costSavings', 0] } },
+                        reviewCount: { $sum: 1 }
+                    }
+                },
+                { $sort: { totalCostSavings: -1 } }
+            ]).allowDiskUse(true),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Cost timeout')), 2000))
+        ]) as any[];
+        
+        return { costSavings: costData };
+    } catch (error) {
+        console.error('❌ Cost effectiveness query failed:', error);
+        return { costSavings: [] };
+    }
+}
+
+async function generateTrendForecastingData(baseMatch: any) {
+    console.log('📊 Generating trend forecasting data...');
+    try {
+        const trendData = await Promise.race([
+            MedicationTherapyReview.aggregate([
+                { $match: baseMatch },
+                { $limit: 200 },
+                {
+                    $group: {
+                        _id: {
+                            year: { $year: '$createdAt' },
+                            month: { $month: '$createdAt' }
+                        },
+                        totalReviews: { $sum: 1 },
+                        completedReviews: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } }
+                    }
+                },
+                { $sort: { '_id.year': 1, '_id.month': 1 } }
+            ]).allowDiskUse(true),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Trend timeout')), 2000))
+        ]) as any[];
+        
+        return { trends: trendData };
+    } catch (error) {
+        console.error('❌ Trend forecasting query failed:', error);
+        return { trends: [] };
+    }
+}
+
+async function generateOperationalEfficiencyData(baseMatch: any) {
+    console.log('📊 Generating operational efficiency data...');
+    try {
+        const efficiencyData = await Promise.race([
+            MedicationTherapyReview.aggregate([
+                { $match: baseMatch },
+                { $limit: 100 },
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 },
+                        avgProcessingTime: {
+                            $avg: {
+                                $cond: [
+                                    { $and: [{ $ne: ['$completedAt', null] }, { $ne: ['$createdAt', null] }] },
+                                    { $divide: [{ $subtract: ['$completedAt', '$createdAt'] }, 1000 * 60 * 60] },
+                                    null
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]).allowDiskUse(true),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Efficiency timeout')), 2000))
+        ]) as any[];
+        
+        return { workflowMetrics: efficiencyData };
+    } catch (error) {
+        console.error('❌ Operational efficiency query failed:', error);
+        return { workflowMetrics: [] };
+    }
+}
+
+async function generateMedicationInventoryData(baseMatch: any) {
+    console.log('📊 Generating medication inventory data...');
+    // This would typically query medication/inventory collections
+    // For now, return structure indicating no specific inventory data
     return {
-        therapyEffectiveness: [], // Not applicable for this report
-        interventionMetrics: [], // Not applicable for this report
-        adherenceMetrics,
+        usagePatterns: [],
+        inventoryTurnover: [],
+        expirationTracking: [],
+        message: 'Medication inventory tracking not yet implemented'
     };
 }
 
-// Generic report data for other report types
+async function generateAdverseEventsData(baseMatch: any) {
+    console.log('📊 Generating adverse events data...');
+    try {
+        // Try to get adverse events from clinical outcomes
+        const adverseData = await Promise.race([
+            MedicationTherapyReview.aggregate([
+                { $match: baseMatch },
+                { $limit: 100 },
+                {
+                    $group: {
+                        _id: '$reviewType',
+                        totalReviews: { $sum: 1 },
+                        adverseEventsReduced: {
+                            $sum: { $cond: [{ $eq: ['$clinicalOutcomes.adverseEventsReduced', true] }, 1, 0] }
+                        }
+                    }
+                }
+            ]).allowDiskUse(true),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Adverse events timeout')), 2000))
+        ]) as any[];
+        
+        return { adverseEvents: adverseData };
+    } catch (error) {
+        console.error('❌ Adverse events query failed:', error);
+        return { adverseEvents: [] };
+    }
+}
+
+// Generic report data for truly unknown report types
 async function generateGenericReportData(baseMatch: any, reportType: string) {
-    console.log(`📊 Generating generic data for ${reportType}`);
+    console.log(`📊 Generating generic data for unknown report type: ${reportType}`);
     
     // Try to get some basic data from MTR collection
     try {
@@ -174,46 +564,21 @@ async function generateGenericReportData(baseMatch: any, reportType: string) {
             new Promise((_, reject) => setTimeout(() => reject(new Error('Query timeout')), 2000))
         ]) as any[];
         
+        const result = basicData[0] || { totalRecords: 0, completedRecords: 0 };
+        console.log(`✅ Generic data for ${reportType}: ${result.totalRecords} records`);
+        
         return {
-            therapyEffectiveness: basicData,
-            interventionMetrics: [],
-            adherenceMetrics: [],
+            basicMetrics: [result],
+            message: `Basic data for ${reportType} - specific implementation needed`,
         };
     } catch (error) {
-        console.log(`⚠️ Generic query failed for ${reportType}, using fallback`);
-        return getFallbackSampleData();
+        console.log(`⚠️ Generic query failed for ${reportType}`);
+        return {
+            basicMetrics: [],
+            message: `No data available for ${reportType}`,
+        };
     }
 }
-
-// Fallback sample data (same as before)
-function getFallbackSampleData() {
-    console.log('📋 Using fallback sample data');
-    return {
-        therapyEffectiveness: [
-            { _id: 'initial', totalReviews: 10, completedReviews: 7 },
-            { _id: 'follow-up', totalReviews: 5, completedReviews: 4 }
-        ],
-        interventionMetrics: [
-            { _id: 'medication-review', totalInterventions: 8, acceptedInterventions: 6 },
-            { _id: 'dosage-adjustment', totalInterventions: 3, acceptedInterventions: 2 }
-        ],
-        adherenceMetrics: [
-            { _id: 'diabetes', totalReviews: 12 },
-            { _id: 'hypertension', totalReviews: 8 }
-        ],
-    };
-}
-
-// Rate limiting for report endpoints
-const reportRateLimit = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message: {
-        error: 'Too many report requests from this IP, please try again later.',
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
 
 // Validation middleware for report parameters
 const validateReportType = (req: Request, res: Response, next: NextFunction) => {
@@ -310,18 +675,6 @@ router.get('/types',
     getAvailableReports
 );
 
-// GET /api/reports/test - Test endpoint to verify controller is working
-router.get('/test', (req: Request, res: Response) => {
-    console.log('🧪 Test endpoint hit - reports controller is loaded');
-    res.json({
-        success: true,
-        message: 'Reports controller is working',
-        timestamp: new Date(),
-        controllerVersion: 'minimal-v1',
-        note: 'Backend server is responding correctly'
-    });
-});
-
 // GET /api/reports/summary - Get report summary statistics
 router.get('/summary',
     requirePermission('view_reports', { useDynamicRBAC: true }),
@@ -332,19 +685,19 @@ router.get('/summary',
 );
 
 // GET /api/reports/:reportType - Get specific report data
-// Fast inline handler - bypasses complex database queries that were causing timeouts
+// Optimized handler with real database queries and fallback to sample data
 router.get('/:reportType', async (req: AuthRequest, res: Response) => {
     try {
         const { reportType } = req.params;
-        console.log(`🚀 Fast Report Generation - ${reportType} requested by ${req.user?.email}`);
-
-        // Get real data with optimized queries and fallback to sample data
         const userWorkplaceId = req.user?.workplaceId;
         const userRole = req.user?.role;
         
-        // Determine workspace filter for data isolation
+        console.log(`🚀 Optimized Report Generation - ${reportType} requested by ${req.user?.email}`);
+        
+        // Determine workspace filter
         const workspaceFilter = userRole === 'super_admin' ? {} : { workplaceId: userWorkplaceId };
         
+        // Get real data with optimized queries and fallback
         const reportData = await generateOptimizedReportData(reportType, workspaceFilter);
 
         res.json({
@@ -369,49 +722,6 @@ router.get('/:reportType', async (req: AuthRequest, res: Response) => {
 });
 
 // ===============================
-// CACHING MIDDLEWARE
-// ===============================
-
-// Simple in-memory cache for frequently accessed reports
-const reportCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
-
-const cacheMiddleware = (ttlMinutes: number = 15) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        const cacheKey = `${req.originalUrl}-${JSON.stringify(req.query)}`;
-        const cached = reportCache.get(cacheKey);
-
-        if (cached && Date.now() - cached.timestamp < cached.ttl) {
-            return res.json({
-                ...cached.data,
-                cached: true,
-                cacheTimestamp: new Date(cached.timestamp)
-            });
-        }
-
-        // Override res.json to cache the response
-        const originalJson = res.json;
-        res.json = function (data: any) {
-            if (res.statusCode === 200) {
-                reportCache.set(cacheKey, {
-                    data,
-                    timestamp: Date.now(),
-                    ttl: ttlMinutes * 60 * 1000
-                });
-
-                // Clean up old cache entries
-                if (reportCache.size > 100) {
-                    const oldestKey = reportCache.keys().next().value;
-                    reportCache.delete(oldestKey);
-                }
-            }
-            return originalJson.call(this, data);
-        };
-
-        next();
-    };
-};
-
-// ===============================
 // PERFORMANCE & EXPORT ENDPOINTS
 // ===============================
 
@@ -434,12 +744,6 @@ router.get('/performance/stats',
     requirePermission('view_system_stats', { useDynamicRBAC: true }),
     getPerformanceStats
 );
-
-// Apply caching to summary endpoint (cache for 15 minutes)
-router.get('/summary', cacheMiddleware(15));
-
-// Apply caching to report data endpoints (cache for 10 minutes)
-router.get('/:reportType', cacheMiddleware(10));
 
 // ===============================
 // ERROR HANDLING MIDDLEWARE
