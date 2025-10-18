@@ -293,11 +293,11 @@ const validateObjectIds = (req: Request, res: Response, next: NextFunction) => {
     next();
 };
 
-// Apply minimal middleware - keep auth but remove complex ones
+// Apply essential middleware carefully - Phase 2: Add rate limiting
 router.use(auth);
-// router.use(requireLicense);  // Temporarily disabled
-// router.use(reportRateLimit);  // Temporarily disabled  
-// router.use(auditTimer);  // Temporarily disabled
+router.use(requireLicense);  // Phase 1: ✅ Working
+router.use(reportRateLimit);  // Phase 2: Re-enabled - protects against abuse
+// router.use(auditTimer);  // Phase 3: Will enable after testing
 
 // ===============================
 // UNIFIED REPORTS ENDPOINTS
