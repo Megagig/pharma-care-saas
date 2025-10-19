@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.medicationExistsValidator = exports.getAdherenceByPatientSchema = exports.getMedicationsByPatientSchema = exports.checkInteractionsSchema = exports.createAdherenceLogSchema = exports.updateMedicationSchema = exports.createMedicationSchema = exports.validateObjectId = exports.validateRequest = void 0;
+exports.getMedicationSettingsSchema = exports.updateMedicationSettingsSchema = exports.medicationExistsValidator = exports.getAdherenceByPatientSchema = exports.getMedicationsByPatientSchema = exports.checkInteractionsSchema = exports.createAdherenceLogSchema = exports.updateMedicationSchema = exports.createMedicationSchema = exports.validateObjectId = exports.validateRequest = void 0;
 const express_validator_1 = require("express-validator");
 const mongoose_1 = require("mongoose");
 const validateRequest = (req, res, next) => {
@@ -231,4 +231,74 @@ exports.medicationExistsValidator = (0, express_validator_1.param)('id')
     return true;
 })
     .withMessage('Medication not found');
+exports.updateMedicationSettingsSchema = [
+    (0, express_validator_1.param)('patientId')
+        .custom((value) => {
+        if (value === 'system') {
+            return true;
+        }
+        if (!(0, mongoose_1.isValidObjectId)(value)) {
+            throw new Error('Patient ID must be a valid MongoDB ID or "system"');
+        }
+        return true;
+    })
+        .withMessage('Patient ID must be a valid MongoDB ID or "system"'),
+    (0, express_validator_1.body)('reminderSettings')
+        .optional()
+        .isObject()
+        .withMessage('Reminder settings must be an object'),
+    (0, express_validator_1.body)('reminderSettings.enabled')
+        .optional()
+        .isBoolean()
+        .withMessage('Enabled must be a boolean'),
+    (0, express_validator_1.body)('reminderSettings.defaultReminderTimes')
+        .optional()
+        .isArray()
+        .withMessage('Default reminder times must be an array'),
+    (0, express_validator_1.body)('reminderSettings.reminderMethod')
+        .optional()
+        .isIn(['email', 'sms', 'both'])
+        .withMessage('Reminder method must be email, sms, or both'),
+    (0, express_validator_1.body)('reminderSettings.defaultNotificationLeadTime')
+        .optional()
+        .isInt({ min: 0, max: 120 })
+        .withMessage('Lead time must be between 0 and 120 minutes'),
+    (0, express_validator_1.body)('monitoringSettings')
+        .optional()
+        .isObject()
+        .withMessage('Monitoring settings must be an object'),
+    (0, express_validator_1.body)('monitoringSettings.adherenceMonitoring')
+        .optional()
+        .isBoolean()
+        .withMessage('Adherence monitoring must be a boolean'),
+    (0, express_validator_1.body)('monitoringSettings.refillReminders')
+        .optional()
+        .isBoolean()
+        .withMessage('Refill reminders must be a boolean'),
+    (0, express_validator_1.body)('monitoringSettings.interactionChecking')
+        .optional()
+        .isBoolean()
+        .withMessage('Interaction checking must be a boolean'),
+    (0, express_validator_1.body)('monitoringSettings.refillThreshold')
+        .optional()
+        .isInt({ min: 0, max: 50 })
+        .withMessage('Refill threshold must be between 0 and 50 percent'),
+    (0, express_validator_1.body)('monitoringSettings.reportFrequency')
+        .optional()
+        .isIn(['daily', 'weekly', 'monthly'])
+        .withMessage('Report frequency must be daily, weekly, or monthly'),
+];
+exports.getMedicationSettingsSchema = [
+    (0, express_validator_1.param)('patientId')
+        .custom((value) => {
+        if (value === 'system') {
+            return true;
+        }
+        if (!(0, mongoose_1.isValidObjectId)(value)) {
+            throw new Error('Patient ID must be a valid MongoDB ID or "system"');
+        }
+        return true;
+    })
+        .withMessage('Patient ID must be a valid MongoDB ID or "system"'),
+];
 //# sourceMappingURL=medicationValidators.js.map

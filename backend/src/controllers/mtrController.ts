@@ -70,8 +70,16 @@ export const getMTRSessions = asyncHandler(
     if (status) query.status = status;
     if (priority) query.priority = priority;
     if (reviewType) query.reviewType = reviewType;
-    if (pharmacistId) query.pharmacistId = pharmacistId;
-    if (patientId) query.patientId = patientId;
+    if (pharmacistId) {
+      query.pharmacistId = mongoose.Types.ObjectId.isValid(pharmacistId) 
+        ? new mongoose.Types.ObjectId(pharmacistId) 
+        : pharmacistId;
+    }
+    if (patientId) {
+      query.patientId = mongoose.Types.ObjectId.isValid(patientId) 
+        ? new mongoose.Types.ObjectId(patientId) 
+        : patientId;
+    }
 
     // Execute query with pagination
     const [sessions, total] = await Promise.all([
@@ -525,16 +533,21 @@ export const getPatientMTRHistory = asyncHandler(
       Math.max(1, parseInt(limit as string) || 10)
     );
 
+    // Convert patientId to ObjectId for query
+    const patientObjectId = mongoose.Types.ObjectId.isValid(patientId) 
+      ? new mongoose.Types.ObjectId(patientId) 
+      : patientId;
+
     // Get MTR sessions for patient
     const [sessions, total] = await Promise.all([
-      MedicationTherapyReview.find({ patientId })
+      MedicationTherapyReview.find({ patientId: patientObjectId })
         .populate('pharmacistId', 'firstName lastName')
         .sort('-createdAt')
         .limit(parsedLimit)
         .skip((parsedPage - 1) * parsedLimit)
         .select('-medications -plan -__v')
         .lean(),
-      MedicationTherapyReview.countDocuments({ patientId }),
+      MedicationTherapyReview.countDocuments({ patientId: patientObjectId }),
     ]);
 
     respondWithPaginatedResults(
@@ -566,9 +579,14 @@ export const createPatientMTRSession = asyncHandler(
       context.isAdmin
     );
 
+    // Convert patientId to ObjectId for queries
+    const patientObjectId = mongoose.Types.ObjectId.isValid(patientId) 
+      ? new mongoose.Types.ObjectId(patientId) 
+      : patientId;
+
     // Check for active MTR session
     const activeSession = await MedicationTherapyReview.findOne({
-      patientId,
+      patientId: patientObjectId,
       status: { $in: ['in_progress', 'on_hold'] },
     });
 
@@ -585,7 +603,7 @@ export const createPatientMTRSession = asyncHandler(
     // Create new session with patient ID
     const sessionData = {
       ...req.body,
-      patientId,
+      patientId: patientObjectId,
       patientConsent: req.body.patientConsent || false,
       confidentialityAgreed: req.body.confidentialityAgreed || false,
     };
@@ -608,7 +626,7 @@ export const createPatientMTRSession = asyncHandler(
     // Create MTR session
     const session = new MedicationTherapyReview({
       workplaceId: context.workplaceId,
-      patientId,
+      patientId: patientObjectId,
       pharmacistId: context.userId,
       reviewNumber,
       priority,

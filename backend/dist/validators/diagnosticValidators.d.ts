@@ -15,4 +15,5 @@ declare const _default: {
     validateVitalSigns: (vitalSigns: any) => any[];
 };
 export default _default;
+export declare const validatePatientAccessRequest: import("express-validator").ValidationChain[];
 //# sourceMappingURL=diagnosticValidators.d.ts.map

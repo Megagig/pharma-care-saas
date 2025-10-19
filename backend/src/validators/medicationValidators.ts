@@ -253,3 +253,79 @@ export const medicationExistsValidator = param('id')
     return true;
   })
   .withMessage('Medication not found');
+// Medication Settings validation schemas
+export const updateMedicationSettingsSchema = [
+  param('patientId')
+    .custom((value) => {
+      // Allow "system" as a special case for system-wide settings
+      if (value === 'system') {
+        return true;
+      }
+      // Otherwise, validate as MongoDB ObjectId
+      if (!isValidObjectId(value)) {
+        throw new Error('Patient ID must be a valid MongoDB ID or "system"');
+      }
+      return true;
+    })
+    .withMessage('Patient ID must be a valid MongoDB ID or "system"'),
+  body('reminderSettings')
+    .optional()
+    .isObject()
+    .withMessage('Reminder settings must be an object'),
+  body('reminderSettings.enabled')
+    .optional()
+    .isBoolean()
+    .withMessage('Enabled must be a boolean'),
+  body('reminderSettings.defaultReminderTimes')
+    .optional()
+    .isArray()
+    .withMessage('Default reminder times must be an array'),
+  body('reminderSettings.reminderMethod')
+    .optional()
+    .isIn(['email', 'sms', 'both'])
+    .withMessage('Reminder method must be email, sms, or both'),
+  body('reminderSettings.defaultNotificationLeadTime')
+    .optional()
+    .isInt({ min: 0, max: 120 })
+    .withMessage('Lead time must be between 0 and 120 minutes'),
+  body('monitoringSettings')
+    .optional()
+    .isObject()
+    .withMessage('Monitoring settings must be an object'),
+  body('monitoringSettings.adherenceMonitoring')
+    .optional()
+    .isBoolean()
+    .withMessage('Adherence monitoring must be a boolean'),
+  body('monitoringSettings.refillReminders')
+    .optional()
+    .isBoolean()
+    .withMessage('Refill reminders must be a boolean'),
+  body('monitoringSettings.interactionChecking')
+    .optional()
+    .isBoolean()
+    .withMessage('Interaction checking must be a boolean'),
+  body('monitoringSettings.refillThreshold')
+    .optional()
+    .isInt({ min: 0, max: 50 })
+    .withMessage('Refill threshold must be between 0 and 50 percent'),
+  body('monitoringSettings.reportFrequency')
+    .optional()
+    .isIn(['daily', 'weekly', 'monthly'])
+    .withMessage('Report frequency must be daily, weekly, or monthly'),
+];
+
+export const getMedicationSettingsSchema = [
+  param('patientId')
+    .custom((value) => {
+      // Allow "system" as a special case for system-wide settings
+      if (value === 'system') {
+        return true;
+      }
+      // Otherwise, validate as MongoDB ObjectId
+      if (!isValidObjectId(value)) {
+        throw new Error('Patient ID must be a valid MongoDB ID or "system"');
+      }
+      return true;
+    })
+    .withMessage('Patient ID must be a valid MongoDB ID or "system"'),
+];

@@ -17,5 +17,8 @@ export declare const checkInteractions: (req: AuthRequest, res: Response) => Pro
 export declare const getMedicationDashboardStats: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const getMedicationAdherenceTrends: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const getRecentPatientsWithMedications: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const getPatientMedicationSettings: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const updatePatientMedicationSettings: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const sendTestNotification: (req: AuthRequest, res: Response) => Promise<void>;
 export {};
 //# sourceMappingURL=medicationManagementController.d.ts.map

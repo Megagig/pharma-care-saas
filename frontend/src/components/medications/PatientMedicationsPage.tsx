@@ -72,6 +72,8 @@ import dayjs from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import MedicationSettingsPanel from './MedicationSettingsPanel';
+import ModernMedicationSettings from './ModernMedicationSettings';
+import EnhancedMedicationAnalytics from './EnhancedMedicationAnalytics';
 
 interface Medication {
   id: string;
@@ -949,16 +951,12 @@ const PatientMedicationsPage: React.FC<PatientMedicationsPageProps> = ({
 
         {/* Analytics Tab */}
         {tabValue === 3 && (
-          <Box sx={{ p: 2 }}>
-            <MedicationAnalyticsPanel patientId={patientId} />
-          </Box>
+          <EnhancedMedicationAnalytics patientId={patientId} />
         )}
 
         {/* Settings Tab */}
         {tabValue === 4 && (
-          <Box sx={{ p: 2 }}>
-            <MedicationSettingsPanel patientId={patientId} />
-          </Box>
+          <ModernMedicationSettings patientId={patientId} />
         )}
       </Paper>
 

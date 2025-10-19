@@ -17,9 +17,9 @@ import { Helmet } from 'react-helmet-async';
 // PageHeader is not found in the project
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
-// Import the MedicationAnalyticsPanel and MedicationSettingsPanel components
-import MedicationAnalyticsPanel from '../components/medications/MedicationAnalyticsPanel.js';
-import MedicationSettingsPanel from '../components/medications/MedicationSettingsPanel';
+// Import the modern components
+import ModernSystemAnalytics from '../components/medications/ModernSystemAnalytics';
+import ModernMedicationSettings from '../components/medications/ModernMedicationSettings';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -186,42 +186,89 @@ const Medications = () => {
         </Box>
 
         <TabPanel value={tabValue} index={0}>
-          <Typography variant="h6" gutterBottom>
-            Medication Dashboard
-          </Typography>
-          <Typography paragraph>
-            Please select a patient to view their medication dashboard.
-          </Typography>
-          <Button
-            variant="outlined"
-            component={Link}
-            to="/patients"
-            startIcon={<AddIcon />}
-            sx={{ mr: 2 }}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 400,
+              textAlign: 'center',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: 4,
+              color: 'white',
+              p: 4,
+            }}
           >
-            Select Patient
-          </Button>
-          <Button
-            variant="contained"
-            component={Link}
-            to="/medications/dashboard"
-          >
-            View Medications Dashboard
-          </Button>
+            <Box
+              sx={{
+                width: 120,
+                height: 120,
+                bgcolor: 'rgba(255,255,255,0.2)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 3,
+              }}
+            >
+              <MedicationIcon sx={{ fontSize: 60 }} />
+            </Box>
+            <Typography variant="h4" fontWeight="bold" sx={{ mb: 2 }}>
+              Medication Dashboard
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 4, opacity: 0.9, maxWidth: 600 }}>
+              Welcome to the comprehensive medication management system. Select a patient to view their detailed medication dashboard or explore system-wide analytics.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Button
+                variant="contained"
+                size="large"
+                component={Link}
+                to="/patients?for=medications"
+                startIcon={<AddIcon />}
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  borderRadius: 3,
+                  px: 4,
+                  py: 1.5,
+                  '&:hover': {
+                    bgcolor: 'rgba(255,255,255,0.3)',
+                  },
+                }}
+              >
+                Select Patient
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                component={Link}
+                to="/medications/dashboard"
+                sx={{
+                  borderColor: 'rgba(255,255,255,0.5)',
+                  color: 'white',
+                  borderRadius: 3,
+                  px: 4,
+                  py: 1.5,
+                  '&:hover': {
+                    borderColor: 'white',
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                  },
+                }}
+              >
+                View System Dashboard
+              </Button>
+            </Box>
+          </Box>
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          <Box>
-            {/* Use the MedicationAnalyticsPanel component */}
-            <MedicationAnalyticsPanel patientId="system" />
-          </Box>
+          <ModernSystemAnalytics patientId="system" />
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
-          <Box>
-            {/* Use the MedicationSettingsPanel component */}
-            <MedicationSettingsPanel patientId="system" />
-          </Box>
+          <ModernMedicationSettings patientId="system" />
         </TabPanel>
       </Card>
     </Box>

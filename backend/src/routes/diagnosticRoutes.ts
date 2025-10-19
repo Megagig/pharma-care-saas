@@ -25,13 +25,15 @@ import {
   downloadReferralDocument,
   sendReferralElectronically,
   deleteReferral,
+  validatePatientAccess,
 } from '../controllers/diagnosticController';
 import {
   validateDiagnosticAnalysis,
   validateDiagnosticDecision,
   validateDiagnosticHistory,
   validateGetDiagnosticCase,
-  validateDrugInteractions
+  validateDrugInteractions,
+  validatePatientAccessRequest
 } from '../validators/diagnosticValidators';
 import { auth, requireFeature, requireLicense } from '../middlewares/auth';
 import { auditLogger } from '../middlewares/auditMiddleware';
@@ -188,6 +190,21 @@ router.get(
   auth,
   auditLogger('AI_CONNECTION_TEST', 'system_security'),
   testAIConnection
+);
+
+/**
+ * @route POST /api/diagnostics/patient/validate
+ * @desc Validate patient access for diagnostics
+ * @access Private (requires clinical_decision_support feature)
+ */
+router.post(
+  '/patient/validate',
+  diagnosticRateLimit,
+  auth,
+  requireFeature('clinical_decision_support'),
+  auditLogger('VIEW_DIAGNOSTIC_HISTORY', 'data_access'),
+  validatePatientAccessRequest,
+  validatePatientAccess
 );
 
 /**

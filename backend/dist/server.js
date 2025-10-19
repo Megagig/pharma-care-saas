@@ -36,11 +36,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const dotenv_1 = require("dotenv");
+(0, dotenv_1.config)();
 const http_1 = require("http");
 const socket_io_1 = require("socket.io");
 const app_1 = __importDefault(require("./app"));
 const db_1 = __importDefault(require("./config/db"));
-const dotenv_1 = require("dotenv");
 const performanceMonitoring_1 = require("./utils/performanceMonitoring");
 const InvitationCronService_1 = require("./services/InvitationCronService");
 const WorkspaceStatsCronService_1 = __importDefault(require("./services/WorkspaceStatsCronService"));
@@ -51,7 +52,6 @@ const socketNotificationService_1 = __importDefault(require("./services/socketNo
 require("./models/Medication");
 require("./models/Conversation");
 require("./models/Message");
-(0, dotenv_1.config)();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 async function initializeServer() {
     try {

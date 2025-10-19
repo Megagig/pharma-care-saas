@@ -1,8 +1,11 @@
+// Load environment variables FIRST before any other imports
+import { config } from 'dotenv';
+config();
+
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import app from './app';
 import connectDB from './config/db';
-import { config } from 'dotenv';
 import { performanceCollector } from './utils/performanceMonitoring';
 import { invitationCronService } from './services/InvitationCronService';
 import WorkspaceStatsCronService from './services/WorkspaceStatsCronService';
@@ -16,8 +19,7 @@ import './models/Medication';
 import './models/Conversation';
 import './models/Message';
 
-// Load environment variables
-config();
+// Environment variables already loaded at the top
 
 const PORT: number = parseInt(process.env.PORT || '5000', 10);
 
@@ -27,7 +29,7 @@ async function initializeServer() {
     // Connect to MongoDB first
     await connectDB();
     console.log('✅ Database connected successfully');
-    
+
     // Start performance monitoring after DB is connected
     performanceCollector.startSystemMetricsCollection();
   } catch (error) {
@@ -113,7 +115,7 @@ async function initializeServer() {
     // Start cron services with delays to reduce memory spike
     if (process.env.NODE_ENV !== 'test') {
       invitationCronService.start();
-      
+
       // Stagger the other services to reduce memory pressure
       setTimeout(() => WorkspaceStatsCronService.start(), 1000);
       setTimeout(() => UsageAlertCronService.start(), 2000);
@@ -130,7 +132,7 @@ async function initializeServer() {
         }
       }, 5 * 60 * 1000);
     }
-    
+
     // Trigger initial garbage collection after startup
     setTimeout(() => {
       if (global.gc) {
@@ -146,7 +148,7 @@ async function initializeServer() {
 // Graceful shutdown function
 const gracefulShutdown = (signal: string) => {
   console.log(`Received ${signal}. Starting graceful shutdown...`);
-  
+
   try {
     // Stop accepting new connections
     if (server) {
@@ -154,24 +156,24 @@ const gracefulShutdown = (signal: string) => {
         console.log('HTTP server closed');
       });
     }
-    
+
     // Close database connection
     const mongoose = require('mongoose');
     mongoose.connection.close();
     console.log('Database connection closed');
-    
+
     // Exit after cleanup
     setTimeout(() => {
       console.log('Server closed successfully');
       process.exit(0);
     });
-    
+
     // Force exit after 10 seconds
     setTimeout(() => {
       console.log('Forcing exit...');
       process.exit(1);
     }, 10000);
-    
+
   } catch (error) {
     console.error('Error during graceful shutdown:', error);
     process.exit(1);
@@ -182,13 +184,13 @@ const gracefulShutdown = (signal: string) => {
 process.on('unhandledRejection', (err: Error, promise) => {
   console.log(`Unhandled Rejection: ${err.message}`);
   console.log('Promise:', promise);
-  
+
   // Don't shutdown for headers errors - just log them
   if (err.message.includes('Cannot set headers after they are sent')) {
     console.warn('Headers already sent error - this is likely a timing issue with async operations');
     return;
   }
-  
+
   gracefulShutdown('unhandledRejection');
 });
 

@@ -21,6 +21,7 @@ import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 import MedicationChart from './MedicationChart';
 import medicationManagementService from '../../services/medicationManagementService';
+import SystemWideAnalytics from './SystemWideAnalytics';
 
 interface DashboardStats {
   activeMedications: number;
@@ -43,6 +44,7 @@ interface AdherenceTrend {
 const MedicationsManagementDashboard = () => {
   // State for time period filtering
   const [trendsPeriod, setTrendsPeriod] = React.useState<string>('month');
+  const [showSystemAnalytics, setShowSystemAnalytics] = React.useState<boolean>(false);
 
   // Export menu state
   const [exportMenuAnchorEl, setExportMenuAnchorEl] =
@@ -135,6 +137,11 @@ const MedicationsManagementDashboard = () => {
     },
   });
 
+  // If system analytics is requested, show that component
+  if (showSystemAnalytics) {
+    return <SystemWideAnalytics onBack={() => setShowSystemAnalytics(false)} />;
+  }
+
   return (
     <Box>
       {/* Page header with export button */}
@@ -143,13 +150,26 @@ const MedicationsManagementDashboard = () => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          mb: 3,
+          mb: 4,
         }}
       >
-        <Typography variant="h5" component="h1">
-          Medication Management Dashboard
-        </Typography>
         <Box>
+          <Typography variant="h4" component="h1" fontWeight="bold" sx={{ mb: 1 }}>
+            Medication Management Dashboard
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Comprehensive medication oversight and patient care management
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setShowSystemAnalytics(true)}
+            sx={{ borderRadius: 3, px: 3 }}
+          >
+            View System Analytics
+          </Button>
           <Tooltip title="Export Data">
             <Button
               variant="outlined"
@@ -181,19 +201,39 @@ const MedicationsManagementDashboard = () => {
 
       <Grid container spacing={3}>
         {/* Stats Cards */}
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Active Medications
-              </Typography>
+        <Grid item xs={12} md={4}>
+          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    bgcolor: 'primary.main',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 2,
+                  }}
+                >
+                  <Typography variant="h6" color="white" fontWeight="bold">
+                    Rx
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="h6" fontWeight="medium">
+                    Active Medications
+                  </Typography>
+                </Box>
+              </Box>
               {statsLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
                   <CircularProgress size={40} />
                 </Box>
               ) : (
                 <>
-                  <Typography variant="h3">
+                  <Typography variant="h3" fontWeight="bold" color="primary.main">
                     {statsData?.activeMedications || 0}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -204,19 +244,37 @@ const MedicationsManagementDashboard = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Average Adherence
-              </Typography>
+        <Grid item xs={12} md={4}>
+          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    bgcolor: 'success.main',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 2,
+                  }}
+                >
+                  <CheckCircleIcon sx={{ color: 'white' }} />
+                </Box>
+                <Box>
+                  <Typography variant="h6" fontWeight="medium">
+                    Average Adherence
+                  </Typography>
+                </Box>
+              </Box>
               {statsLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
                   <CircularProgress size={40} />
                 </Box>
               ) : (
                 <>
-                  <Typography variant="h3">
+                  <Typography variant="h3" fontWeight="bold" color="success.main">
                     {statsData?.averageAdherence || 0}%
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -227,19 +285,37 @@ const MedicationsManagementDashboard = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Interaction Alerts
-              </Typography>
+        <Grid item xs={12} md={4}>
+          <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    bgcolor: 'warning.main',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 2,
+                  }}
+                >
+                  <Typography sx={{ color: 'white', fontSize: '1.2rem', fontWeight: 'bold' }}>!</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="h6" fontWeight="medium">
+                    Interaction Alerts
+                  </Typography>
+                </Box>
+              </Box>
               {statsLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
                   <CircularProgress size={40} />
                 </Box>
               ) : (
                 <>
-                  <Typography variant="h3">
+                  <Typography variant="h3" fontWeight="bold" color="warning.main">
                     {statsData?.interactionAlerts || 0}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -252,7 +328,7 @@ const MedicationsManagementDashboard = () => {
         </Grid>
 
         {/* Medication Interaction Alerts Summary */}
-        <Grid size={{ xs: 12, md: 12 }}>
+        <Grid item xs={12}>
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Box
@@ -314,7 +390,7 @@ const MedicationsManagementDashboard = () => {
         </Grid>
 
         {/* Charts */}
-        <Grid size={{ xs: 12, md: 8 }}>
+        <Grid item xs={12} md={8}>
           <Paper sx={{ p: 3 }}>
             <Box
               sx={{
@@ -387,7 +463,7 @@ const MedicationsManagementDashboard = () => {
         </Grid>
 
         {/* Recent Patients */}
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3 }}>
             <Box
               sx={{

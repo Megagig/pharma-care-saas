@@ -28,5 +28,8 @@ router.post('/check-interactions', medicationValidators_1.checkInteractionsSchem
 router.get('/dashboard/stats', medicationManagementController_1.getMedicationDashboardStats);
 router.get('/dashboard/adherence-trends', medicationManagementController_1.getMedicationAdherenceTrends);
 router.get('/dashboard/recent-patients', medicationManagementController_1.getRecentPatientsWithMedications);
+router.get('/settings/:patientId', medicationValidators_1.getMedicationSettingsSchema, validate, medicationManagementController_1.getPatientMedicationSettings);
+router.put('/settings/:patientId', medicationValidators_1.updateMedicationSettingsSchema, validate, medicationManagementController_1.updatePatientMedicationSettings);
+router.post('/settings/:patientId/test-notification', medicationManagementController_1.sendTestNotification);
 exports.default = router;
 //# sourceMappingURL=medicationManagementRoutes.js.map

@@ -14,31 +14,303 @@ import mongoose from 'mongoose';
  */
 
 /**
- * Middleware to check if user can create clinical notes
+ * Map system roles to workplace roles for clinical notes permissions
  */
-export const canCreateClinicalNote = requirePermission('clinical_notes.create');
+const mapSystemRoleToWorkplaceRole = (systemRole: string): 'Owner' | 'Pharmacist' | 'Technician' | null => {
+  switch (systemRole) {
+    case 'pharmacy_outlet':
+      return 'Owner';
+    case 'pharmacist':
+    case 'pharmacy_team':
+      return 'Pharmacist';
+    case 'intern_pharmacist':
+      return 'Technician';
+    default:
+      return null;
+  }
+};
 
 /**
- * Middleware to check if user can read clinical notes
+ * Enhanced middleware to check if user can create clinical notes
+ * Includes role mapping for backward compatibility
  */
-export const canReadClinicalNote = requirePermission('clinical_notes.read');
+export const canCreateClinicalNote = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+      return;
+    }
+
+    // Super admin bypasses all checks
+    if (req.user.role === 'super_admin') {
+      return next();
+    }
+
+    // Check if user has workplaceRole set
+    let userWorkplaceRole = req.user.workplaceRole;
+    
+    // If no workplaceRole, try to map from system role
+    if (!userWorkplaceRole && req.user.role) {
+      const mappedRole = mapSystemRoleToWorkplaceRole(req.user.role);
+      if (mappedRole) {
+        userWorkplaceRole = mappedRole as any;
+      }
+    }
+
+    // Check if user has required workplace role for clinical notes
+    const allowedRoles = ['Owner', 'Pharmacist'];
+    if (!userWorkplaceRole || !allowedRoles.includes(userWorkplaceRole)) {
+      res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to create clinical notes',
+        requiredRoles: allowedRoles,
+        userRole: req.user.role,
+        userWorkplaceRole: userWorkplaceRole,
+      });
+      return;
+    }
+
+    // If we get here, user has permission
+    next();
+  } catch (error) {
+    logger.error('Error checking clinical note creation permission:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Permission check failed',
+    });
+  }
+};
 
 /**
- * Middleware to check if user can update clinical notes
+ * Enhanced middleware to check if user can read clinical notes
  */
-export const canUpdateClinicalNote = requirePermission('clinical_notes.update');
+export const canReadClinicalNote = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+      return;
+    }
+
+    // Super admin bypasses all checks
+    if (req.user.role === 'super_admin') {
+      return next();
+    }
+
+    // Check if user has workplaceRole set
+    let userWorkplaceRole = req.user.workplaceRole;
+    
+    // If no workplaceRole, try to map from system role
+    if (!userWorkplaceRole && req.user.role) {
+      const mappedRole = mapSystemRoleToWorkplaceRole(req.user.role);
+      if (mappedRole) {
+        userWorkplaceRole = mappedRole as any;
+      }
+    }
+
+    // Check if user has required workplace role for clinical notes
+    const allowedRoles = ['Owner', 'Pharmacist', 'Technician'];
+    if (!userWorkplaceRole || !allowedRoles.includes(userWorkplaceRole)) {
+      res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to read clinical notes',
+        requiredRoles: allowedRoles,
+        userRole: req.user.role,
+        userWorkplaceRole: userWorkplaceRole,
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    logger.error('Error checking clinical note read permission:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Permission check failed',
+    });
+  }
+};
 
 /**
- * Middleware to check if user can delete clinical notes
+ * Enhanced middleware to check if user can update clinical notes
  */
-export const canDeleteClinicalNote = requirePermission('clinical_notes.delete');
+export const canUpdateClinicalNote = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+      return;
+    }
+
+    // Super admin bypasses all checks
+    if (req.user.role === 'super_admin') {
+      return next();
+    }
+
+    // Check if user has workplaceRole set
+    let userWorkplaceRole = req.user.workplaceRole;
+    
+    // If no workplaceRole, try to map from system role
+    if (!userWorkplaceRole && req.user.role) {
+      const mappedRole = mapSystemRoleToWorkplaceRole(req.user.role);
+      if (mappedRole) {
+        userWorkplaceRole = mappedRole as any;
+      }
+    }
+
+    // Check if user has required workplace role for clinical notes
+    const allowedRoles = ['Owner', 'Pharmacist'];
+    if (!userWorkplaceRole || !allowedRoles.includes(userWorkplaceRole)) {
+      res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to update clinical notes',
+        requiredRoles: allowedRoles,
+        userRole: req.user.role,
+        userWorkplaceRole: userWorkplaceRole,
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    logger.error('Error checking clinical note update permission:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Permission check failed',
+    });
+  }
+};
 
 /**
- * Middleware to check if user can export clinical notes
+ * Enhanced middleware to check if user can delete clinical notes
  */
-export const canExportClinicalNotes = requirePermission(
-  'clinical_notes.export'
-);
+export const canDeleteClinicalNote = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+      return;
+    }
+
+    // Super admin bypasses all checks
+    if (req.user.role === 'super_admin') {
+      return next();
+    }
+
+    // Check if user has workplaceRole set
+    let userWorkplaceRole = req.user.workplaceRole;
+    
+    // If no workplaceRole, try to map from system role
+    if (!userWorkplaceRole && req.user.role) {
+      const mappedRole = mapSystemRoleToWorkplaceRole(req.user.role);
+      if (mappedRole) {
+        userWorkplaceRole = mappedRole as any;
+      }
+    }
+
+    // Check if user has required workplace role for clinical notes
+    const allowedRoles = ['Owner', 'Pharmacist'];
+    if (!userWorkplaceRole || !allowedRoles.includes(userWorkplaceRole)) {
+      res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to delete clinical notes',
+        requiredRoles: allowedRoles,
+        userRole: req.user.role,
+        userWorkplaceRole: userWorkplaceRole,
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    logger.error('Error checking clinical note delete permission:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Permission check failed',
+    });
+  }
+};
+
+/**
+ * Enhanced middleware to check if user can export clinical notes
+ */
+export const canExportClinicalNotes = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+      return;
+    }
+
+    // Super admin bypasses all checks
+    if (req.user.role === 'super_admin') {
+      return next();
+    }
+
+    // Check if user has workplaceRole set
+    let userWorkplaceRole = req.user.workplaceRole;
+    
+    // If no workplaceRole, try to map from system role
+    if (!userWorkplaceRole && req.user.role) {
+      const mappedRole = mapSystemRoleToWorkplaceRole(req.user.role);
+      if (mappedRole) {
+        userWorkplaceRole = mappedRole as any;
+      }
+    }
+
+    // Check if user has required workplace role for clinical notes export
+    const allowedRoles = ['Owner', 'Pharmacist'];
+    if (!userWorkplaceRole || !allowedRoles.includes(userWorkplaceRole)) {
+      res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to export clinical notes',
+        requiredRoles: allowedRoles,
+        userRole: req.user.role,
+        userWorkplaceRole: userWorkplaceRole,
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    logger.error('Error checking clinical note export permission:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Permission check failed',
+    });
+  }
+};
 
 /**
  * Middleware to check if user can access confidential notes
