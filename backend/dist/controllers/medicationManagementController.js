@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRecentPatientsWithMedications = exports.getMedicationAdherenceTrends = exports.getMedicationDashboardStats = exports.checkInteractions = exports.getAdherenceLogs = exports.logAdherence = exports.archiveMedication = exports.updateMedication = exports.getMedicationById = exports.getMedicationsByPatient = exports.createMedication = void 0;
+exports.sendTestNotification = exports.updatePatientMedicationSettings = exports.getPatientMedicationSettings = exports.getRecentPatientsWithMedications = exports.getMedicationAdherenceTrends = exports.getMedicationDashboardStats = exports.checkInteractions = exports.getAdherenceLogs = exports.logAdherence = exports.archiveMedication = exports.updateMedication = exports.getMedicationById = exports.getMedicationsByPatient = exports.createMedication = void 0;
 const MedicationManagement_1 = __importDefault(require("../models/MedicationManagement"));
 const AdherenceLog_1 = __importDefault(require("../models/AdherenceLog"));
 const Patient_1 = __importDefault(require("../models/Patient"));
+const MedicationSettings_1 = __importDefault(require("../models/MedicationSettings"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const checkPatientExists = async (patientId) => {
@@ -662,4 +663,122 @@ const getRecentPatientsWithMedications = async (req, res) => {
     }
 };
 exports.getRecentPatientsWithMedications = getRecentPatientsWithMedications;
+const getPatientMedicationSettings = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        const workplaceId = req.user?.workplaceId;
+        const patientExists = await checkPatientExists(patientId);
+        if (!patientExists) {
+            return res.status(404).json({
+                success: false,
+                message: 'Patient not found'
+            });
+        }
+        let settings = await MedicationSettings_1.default.findOne({
+            patientId,
+            workplaceId,
+        });
+        if (!settings) {
+            settings = new MedicationSettings_1.default({
+                patientId,
+                workplaceId,
+                createdBy: req.user?._id ? new mongoose_1.default.Types.ObjectId(req.user._id) : undefined,
+                updatedBy: req.user?._id ? new mongoose_1.default.Types.ObjectId(req.user._id) : undefined,
+            });
+            await settings.save();
+        }
+        res.json({
+            success: true,
+            data: {
+                reminderSettings: settings.reminderSettings,
+                monitoringSettings: settings.monitoringSettings,
+            },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Error getting patient medication settings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error retrieving medication settings',
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+};
+exports.getPatientMedicationSettings = getPatientMedicationSettings;
+const updatePatientMedicationSettings = async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        const { reminderSettings, monitoringSettings } = req.body;
+        const workplaceId = req.user?.workplaceId;
+        const patientExists = await checkPatientExists(patientId);
+        if (!patientExists) {
+            return res.status(404).json({
+                success: false,
+                message: 'Patient not found'
+            });
+        }
+        let settings = await MedicationSettings_1.default.findOne({
+            patientId,
+            workplaceId,
+        });
+        if (!settings) {
+            settings = new MedicationSettings_1.default({
+                patientId,
+                workplaceId,
+                createdBy: req.user?._id ? new mongoose_1.default.Types.ObjectId(req.user._id) : undefined,
+                updatedBy: req.user?._id ? new mongoose_1.default.Types.ObjectId(req.user._id) : undefined,
+            });
+        }
+        else {
+            settings.updatedBy = req.user?._id ? new mongoose_1.default.Types.ObjectId(req.user._id) : undefined;
+        }
+        if (reminderSettings) {
+            settings.reminderSettings = {
+                ...settings.reminderSettings,
+                ...reminderSettings,
+            };
+        }
+        if (monitoringSettings) {
+            settings.monitoringSettings = {
+                ...settings.monitoringSettings,
+                ...monitoringSettings,
+            };
+        }
+        await settings.save();
+        res.json({
+            success: true,
+            data: {
+                reminderSettings: settings.reminderSettings,
+                monitoringSettings: settings.monitoringSettings,
+            },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Error updating patient medication settings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating medication settings',
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+};
+exports.updatePatientMedicationSettings = updatePatientMedicationSettings;
+const sendTestNotification = async (req, res) => {
+    try {
+        res.json({
+            success: false,
+            message: 'Test notifications have been removed from this version',
+            details: 'Please use the production notification system for testing',
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Error in test notification endpoint:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Test notification feature is not available',
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+};
+exports.sendTestNotification = sendTestNotification;
 //# sourceMappingURL=medicationManagementController.js.map

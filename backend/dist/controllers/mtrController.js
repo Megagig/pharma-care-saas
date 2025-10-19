@@ -27,10 +27,16 @@ exports.getMTRSessions = (0, responseHelpers_1.asyncHandler)(async (req, res) =>
         query.priority = priority;
     if (reviewType)
         query.reviewType = reviewType;
-    if (pharmacistId)
-        query.pharmacistId = pharmacistId;
-    if (patientId)
-        query.patientId = patientId;
+    if (pharmacistId) {
+        query.pharmacistId = mongoose_1.default.Types.ObjectId.isValid(pharmacistId)
+            ? new mongoose_1.default.Types.ObjectId(pharmacistId)
+            : pharmacistId;
+    }
+    if (patientId) {
+        query.patientId = mongoose_1.default.Types.ObjectId.isValid(patientId)
+            ? new mongoose_1.default.Types.ObjectId(patientId)
+            : patientId;
+    }
     const [sessions, total] = await Promise.all([
         MedicationTherapyReview_1.default.find(query)
             .populate('patientId', 'firstName lastName mrn')
@@ -262,15 +268,18 @@ exports.getPatientMTRHistory = (0, responseHelpers_1.asyncHandler)(async (req, r
     (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
     const parsedPage = Math.max(1, parseInt(page) || 1);
     const parsedLimit = Math.min(50, Math.max(1, parseInt(limit) || 10));
+    const patientObjectId = mongoose_1.default.Types.ObjectId.isValid(patientId)
+        ? new mongoose_1.default.Types.ObjectId(patientId)
+        : patientId;
     const [sessions, total] = await Promise.all([
-        MedicationTherapyReview_1.default.find({ patientId })
+        MedicationTherapyReview_1.default.find({ patientId: patientObjectId })
             .populate('pharmacistId', 'firstName lastName')
             .sort('-createdAt')
             .limit(parsedLimit)
             .skip((parsedPage - 1) * parsedLimit)
             .select('-medications -plan -__v')
             .lean(),
-        MedicationTherapyReview_1.default.countDocuments({ patientId }),
+        MedicationTherapyReview_1.default.countDocuments({ patientId: patientObjectId }),
     ]);
     (0, responseHelpers_1.respondWithPaginatedResults)(res, sessions, total, parsedPage, parsedLimit, `Found ${total} MTR sessions for patient`);
 });
@@ -280,8 +289,11 @@ exports.createPatientMTRSession = (0, responseHelpers_1.asyncHandler)(async (req
     const patient = await Patient_1.default.findById(patientId);
     (0, responseHelpers_1.ensureResourceExists)(patient, 'Patient', patientId);
     (0, responseHelpers_1.checkTenantAccess)(patient.workplaceId.toString(), context.workplaceId, context.isAdmin);
+    const patientObjectId = mongoose_1.default.Types.ObjectId.isValid(patientId)
+        ? new mongoose_1.default.Types.ObjectId(patientId)
+        : patientId;
     const activeSession = await MedicationTherapyReview_1.default.findOne({
-        patientId,
+        patientId: patientObjectId,
         status: { $in: ['in_progress', 'on_hold'] },
     });
     if (activeSession) {
@@ -289,7 +301,7 @@ exports.createPatientMTRSession = (0, responseHelpers_1.asyncHandler)(async (req
     }
     const sessionData = {
         ...req.body,
-        patientId,
+        patientId: patientObjectId,
         patientConsent: req.body.patientConsent || false,
         confidentialityAgreed: req.body.confidentialityAgreed || false,
     };
@@ -297,7 +309,7 @@ exports.createPatientMTRSession = (0, responseHelpers_1.asyncHandler)(async (req
     const reviewNumber = await MedicationTherapyReview_1.default.generateNextReviewNumber(context.workplaceId);
     const session = new MedicationTherapyReview_1.default({
         workplaceId: context.workplaceId,
-        patientId,
+        patientId: patientObjectId,
         pharmacistId: context.userId,
         reviewNumber,
         priority,

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateVitalSigns = exports.validateMedication = exports.validateDrugInteractions = exports.validateGetDiagnosticCase = exports.validateDiagnosticHistory = exports.validateDiagnosticDecision = exports.validateDiagnosticAnalysis = void 0;
+exports.validatePatientAccessRequest = exports.validateVitalSigns = exports.validateMedication = exports.validateDrugInteractions = exports.validateGetDiagnosticCase = exports.validateDiagnosticHistory = exports.validateDiagnosticDecision = exports.validateDiagnosticAnalysis = void 0;
 const express_validator_1 = require("express-validator");
 exports.validateDiagnosticAnalysis = [
     (0, express_validator_1.body)('patientId')
@@ -259,4 +259,11 @@ exports.default = {
     validateMedication: exports.validateMedication,
     validateVitalSigns: exports.validateVitalSigns
 };
+exports.validatePatientAccessRequest = [
+    (0, express_validator_1.body)('patientId')
+        .notEmpty()
+        .withMessage('Patient ID is required')
+        .isMongoId()
+        .withMessage('Valid patient ID is required'),
+];
 //# sourceMappingURL=diagnosticValidators.js.map

@@ -295,49 +295,17 @@ const medicationManagementService = {
     currencyCode?: string;
     currencySymbol?: string;
   }> => {
-    try {
-      const response = await api.get(
-        `/medication-analytics/adherence/${patientId}`,
-        {
-          params: { period },
-        }
-      );
-      return {
-        ...response.data,
-        currencyCode: 'NGN',
-        currencySymbol: '₦',
-      };
-    } catch (error) {
-      console.error('Error fetching enhanced adherence analytics:', error);
-      // Return empty data with zero values
-      const currentDate = new Date();
-      const months = [];
-      for (let i = 5; i >= 0; i--) {
-        const month = new Date(currentDate);
-        month.setMonth(currentDate.getMonth() - i);
-        months.push(month.toLocaleDateString('en-US', { month: 'short' }));
+    const response = await api.get(
+      `/medication-analytics/adherence/${patientId}`,
+      {
+        params: { period },
       }
-
-      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      const timeOfDay = ['Morning', 'Noon', 'Evening', 'Night'];
-
-      return {
-        monthlyAdherence: months.map((month) => ({ month, adherence: 0 })),
-        averageAdherence: 0,
-        trendDirection: 'stable',
-        complianceDays: days.map((day) => ({ day, count: 0 })),
-        missedDoses: days.map((day) => ({ day, count: 0 })),
-        adherenceByTimeOfDay: timeOfDay.map((time) => ({ time, adherence: 0 })),
-        costsData: {
-          saved: 0,
-          potential: 0,
-          formattedSaved: '₦0.00',
-          formattedPotential: '₦0.00',
-        },
-        currencyCode: 'NGN',
-        currencySymbol: '₦',
-      };
-    }
+    );
+    return {
+      ...response.data,
+      currencyCode: 'NGN',
+      currencySymbol: '₦',
+    };
   },
 
   getPrescriptionPatternAnalytics: async (
@@ -363,63 +331,14 @@ const medicationManagementService = {
     currencyCode?: string;
     currencySymbol?: string;
   }> => {
-    try {
-      const response = await api.get(
-        `/medication-analytics/prescriptions/${patientId}`
-      );
-      return {
-        ...response.data,
-        currencyCode: 'NGN',
-        currencySymbol: '₦',
-      };
-    } catch (error) {
-      console.error(
-        'Error fetching enhanced prescription pattern analytics:',
-        error
-      );
-      // Return empty data with zero values
-      return {
-        medicationsByCategory: [],
-        medicationsByRoute: [],
-        prescriptionFrequency: [
-          { month: 'Jan', count: 3 },
-          { month: 'Feb', count: 2 },
-          { month: 'Mar', count: 4 },
-          { month: 'Apr', count: 1 },
-          { month: 'May', count: 5 },
-          { month: 'Jun', count: 2 },
-        ],
-        topPrescribers: [
-          { prescriber: 'Dr. Smith', count: 8 },
-          { prescriber: 'Dr. Johnson', count: 5 },
-          { prescriber: 'Dr. Williams', count: 4 },
-          { prescriber: 'Dr. Brown', count: 3 },
-        ],
-        medicationDurationTrends: [
-          { duration: '< 7 days', count: 6 },
-          { duration: '1-4 weeks', count: 8 },
-          { duration: '1-3 months', count: 4 },
-          { duration: '3-6 months', count: 3 },
-          { duration: '> 6 months', count: 7 },
-        ],
-        seasonalPrescriptionPatterns: [
-          { season: 'Winter', count: 9 },
-          { season: 'Spring', count: 6 },
-          { season: 'Summer', count: 4 },
-          { season: 'Fall', count: 7 },
-        ],
-        costByMonth: [
-          { month: 'Jan', cost: 12500, formattedCost: '₦12,500.00' },
-          { month: 'Feb', cost: 8900, formattedCost: '₦8,900.00' },
-          { month: 'Mar', cost: 15200, formattedCost: '₦15,200.00' },
-          { month: 'Apr', cost: 7600, formattedCost: '₦7,600.00' },
-          { month: 'May', cost: 18700, formattedCost: '₦18,700.00' },
-          { month: 'Jun', cost: 9800, formattedCost: '₦9,800.00' },
-        ],
-        currencyCode: 'NGN',
-        currencySymbol: '₦',
-      };
-    }
+    const response = await api.get(
+      `/medication-analytics/prescriptions/${patientId}`
+    );
+    return {
+      ...response.data,
+      currencyCode: 'NGN',
+      currencySymbol: '₦',
+    };
   },
 
   getMedicationInteractionAnalytics: async (
@@ -447,30 +366,14 @@ const medicationManagementService = {
     currencyCode?: string;
     currencySymbol?: string;
   }> => {
-    try {
-      const response = await api.get(
-        `/medication-analytics/interactions/${patientId}`
-      );
-      return {
-        ...response.data,
-        currencyCode: 'NGN',
-        currencySymbol: '₦',
-      };
-    } catch (error) {
-      console.error('Error fetching enhanced interaction analytics:', error);
-      // Return empty data with zero values
-      return {
-        severityDistribution: [
-          { severity: 'Minor', count: 0 },
-          { severity: 'Moderate', count: 0 },
-          { severity: 'Severe', count: 0 },
-        ],
-        interactionTrends: [],
-        commonInteractions: [],
-        riskFactorsByMedication: [],
-        interactionsByBodySystem: [],
-      };
-    }
+    const response = await api.get(
+      `/medication-analytics/interactions/${patientId}`
+    );
+    return {
+      ...response.data,
+      currencyCode: 'NGN',
+      currencySymbol: '₦',
+    };
   },
 
   getMedicationCostAnalytics: async (
@@ -517,45 +420,10 @@ const medicationManagementService = {
     formattedTotalProfit?: string;
     formattedProfitMargin?: string;
   }> => {
-    try {
-      const response = await api.get(
-        `/medication-analytics/costs/${patientId}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching medication cost analytics:', error);
-      // Return empty data with zero values instead of mock data
-      return {
-        monthlyCosts: Array.from({ length: 6 }, (_, i) => {
-          const date = new Date();
-          date.setMonth(date.getMonth() - i);
-          return {
-            month: date.toLocaleDateString('en-US', {
-              month: 'short',
-              year: 'numeric',
-            }),
-            totalCost: 0,
-            formattedCost: '₦0.00',
-          };
-        }).reverse(),
-        costByCategory: [],
-        totalCost: 0,
-        formattedTotalCost: '₦0.00',
-        totalRevenue: 0,
-        totalProfit: 0,
-        profitMargin: 0,
-        formattedTotalRevenue: '₦0.00',
-        formattedTotalProfit: '₦0.00',
-        formattedProfitMargin: '0%',
-        monthlyFinancials: [],
-        financialsByCategory: [],
-        topProfitableMedications: [],
-        currency: {
-          code: 'NGN',
-          symbol: '₦',
-        },
-      };
-    }
+    const response = await api.get(
+      `/medication-analytics/costs/${patientId}`
+    );
+    return response.data;
   },
 
   getPatientMedicationSummary: async (
@@ -590,46 +458,16 @@ const medicationManagementService = {
       symbol: string;
     };
   }> => {
-    try {
-      const response = await api.get(
-        `/medication-analytics/dashboard/${patientId}`
-      );
-      return {
-        ...response.data,
-        currency: {
-          code: 'NGN',
-          symbol: '₦',
-        },
-      };
-    } catch (error) {
-      console.error(
-        'Error fetching enhanced patient medication summary:',
-        error
-      );
-      // Return empty data with zero values instead of mock data
-      return {
-        activeCount: 0,
-        archivedCount: 0,
-        cancelledCount: 0,
-        adherenceRate: 0,
-        interactionCount: 0,
-        mostCommonCategory: 'None',
-        mostCommonRoute: 'None',
-        lastUpdated: new Date().toISOString(),
-        adherenceTrend: 'stable',
-        costAnalysis: {
-          totalMonthlyCost: 0,
-          formattedMonthlyCost: '₦0.00',
-          costByCategory: [],
-          insuranceCoverageRate: 0,
-        },
-        medicationComplexity: {
-          complexityScore: 0,
-          doseFrequency: 0,
-          uniqueScheduleCount: 0,
-        },
-      };
-    }
+    const response = await api.get(
+      `/medication-analytics/dashboard/${patientId}`
+    );
+    return {
+      ...response.data,
+      currency: {
+        code: 'NGN',
+        symbol: '₦',
+      },
+    };
   },
 
   // Settings endpoints
@@ -639,43 +477,10 @@ const medicationManagementService = {
     reminderSettings: MedicationReminderSettings;
     monitoringSettings: MedicationMonitoringSettings;
   }> => {
-    try {
-      const response = await api.get(
-        `/medication-management/settings/${patientId}`
-      );
-      return response.data.data;
-    } catch (error) {
-      console.error('Error fetching patient medication settings:', error);
-      // Return empty data instead of mock data
-      return {
-        reminderSettings: {
-          enabled: false,
-          defaultReminderTimes: [],
-          reminderMethod: 'email',
-          defaultNotificationLeadTime: 0,
-          customMessage: '',
-          repeatReminders: false,
-          repeatInterval: 30,
-          smartReminders: false,
-          allowSnooze: true,
-          snoozeOptions: [5, 10, 15, 30],
-          notifyCaregiver: false,
-          caregiverContact: '',
-        },
-        monitoringSettings: {
-          adherenceMonitoring: true,
-          refillReminders: true,
-          interactionChecking: true,
-          refillThreshold: 20,
-          missedDoseThreshold: 2,
-          adherenceReporting: true,
-          reportFrequency: 'weekly',
-          alertOnLowAdherence: true,
-          lowAdherenceThreshold: 70,
-          stockoutPrediction: true,
-        },
-      };
-    }
+    const response = await api.get(
+      `/medication-management/settings/${patientId}`
+    );
+    return response.data.data;
   },
 
   updatePatientMedicationSettings: async (
@@ -688,55 +493,11 @@ const medicationManagementService = {
     reminderSettings: MedicationReminderSettings;
     monitoringSettings: MedicationMonitoringSettings;
   }> => {
-    try {
-      const response = await api.put(
-        `/medication-management/settings/${patientId}`,
-        settings
-      );
-      return response.data.data;
-    } catch (error) {
-      console.error('Error updating patient medication settings:', error);
-
-      // Return empty default settings instead of mock data
-      return {
-        reminderSettings: {
-          enabled: settings.reminderSettings?.enabled ?? false,
-          defaultReminderTimes:
-            settings.reminderSettings?.defaultReminderTimes ?? [],
-          reminderMethod: settings.reminderSettings?.reminderMethod ?? 'email',
-          defaultNotificationLeadTime:
-            settings.reminderSettings?.defaultNotificationLeadTime ?? 0,
-          customMessage: settings.reminderSettings?.customMessage ?? '',
-          repeatReminders: settings.reminderSettings?.repeatReminders ?? false,
-          repeatInterval: settings.reminderSettings?.repeatInterval ?? 0,
-          smartReminders: settings.reminderSettings?.smartReminders ?? false,
-          allowSnooze: settings.reminderSettings?.allowSnooze ?? false,
-          snoozeOptions: settings.reminderSettings?.snoozeOptions ?? [],
-          notifyCaregiver: settings.reminderSettings?.notifyCaregiver ?? false,
-          caregiverContact: settings.reminderSettings?.caregiverContact ?? '',
-        },
-        monitoringSettings: {
-          adherenceMonitoring:
-            settings.monitoringSettings?.adherenceMonitoring ?? true,
-          refillReminders: settings.monitoringSettings?.refillReminders ?? true,
-          interactionChecking:
-            settings.monitoringSettings?.interactionChecking ?? true,
-          refillThreshold: settings.monitoringSettings?.refillThreshold ?? 20,
-          missedDoseThreshold:
-            settings.monitoringSettings?.missedDoseThreshold ?? 2,
-          adherenceReporting:
-            settings.monitoringSettings?.adherenceReporting ?? true,
-          reportFrequency:
-            settings.monitoringSettings?.reportFrequency ?? 'weekly',
-          alertOnLowAdherence:
-            settings.monitoringSettings?.alertOnLowAdherence ?? true,
-          lowAdherenceThreshold:
-            settings.monitoringSettings?.lowAdherenceThreshold ?? 70,
-          stockoutPrediction:
-            settings.monitoringSettings?.stockoutPrediction ?? true,
-        },
-      };
-    }
+    const response = await api.put(
+      `/medication-management/settings/${patientId}`,
+      settings
+    );
+    return response.data.data;
   },
 
   testNotification: async (
@@ -745,25 +506,15 @@ const medicationManagementService = {
     contact: string,
     testMessage?: string
   ): Promise<{ success: boolean; message: string; details?: string }> => {
-    try {
-      const response = await api.post(
-        `/medication-management/settings/${patientId}/test-notification`,
-        {
-          type,
-          contact,
-          testMessage,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error sending test notification:', error);
-      // Return error response instead of mock success
-      return {
-        success: false,
-        message: `Failed to send test notification`,
-        details: `Could not connect to notification service. Please try again or check your network connection.`,
-      };
-    }
+    const response = await api.post(
+      `/medication-management/settings/${patientId}/test-notification`,
+      {
+        type,
+        contact,
+        testMessage,
+      }
+    );
+    return response.data;
   },
 };
 

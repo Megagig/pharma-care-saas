@@ -37,6 +37,8 @@ export declare class PatientMTRIntegrationService {
         mtrSummary: PatientMTRSummary;
         pendingActions: any[];
     }>;
+    private calculateCompletionPercentage;
+    private isSessionOverdue;
     searchPatientsWithMTR(params: any, workplaceId: string): Promise<{
         results: any[];
         total: number;

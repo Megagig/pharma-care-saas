@@ -24,4 +24,5 @@ export declare const getFollowUpCases: (req: AuthRequest, res: Response) => Prom
 export declare const downloadReferralDocument: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const sendReferralElectronically: (req: AuthRequest, res: Response) => Promise<void>;
 export declare const deleteReferral: (req: AuthRequest, res: Response) => Promise<void>;
+export declare const validatePatientAccess: (req: AuthRequest, res: Response) => Promise<void>;
 //# sourceMappingURL=diagnosticController.d.ts.map

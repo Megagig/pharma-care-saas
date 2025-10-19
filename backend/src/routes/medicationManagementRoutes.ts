@@ -11,6 +11,9 @@ import {
   getMedicationDashboardStats,
   getMedicationAdherenceTrends,
   getRecentPatientsWithMedications,
+  getPatientMedicationSettings,
+  updatePatientMedicationSettings,
+  sendTestNotification,
 } from '../controllers/medicationManagementController';
 import {
   createMedicationSchema,
@@ -19,6 +22,8 @@ import {
   createAdherenceLogSchema,
   getAdherenceByPatientSchema,
   checkInteractionsSchema,
+  updateMedicationSettingsSchema,
+  getMedicationSettingsSchema,
 } from '../validators/medicationValidators';
 import { auth } from '../middlewares/auth';
 import { body, validationResult } from 'express-validator';
@@ -87,5 +92,15 @@ router.get('/dashboard/adherence-trends', getMedicationAdherenceTrends);
 
 // GET /api/medication-management/dashboard/recent-patients - Get recent patients with medications
 router.get('/dashboard/recent-patients', getRecentPatientsWithMedications);
+
+// Settings Routes
+// GET /api/medication-management/settings/:patientId - Get patient medication settings
+router.get('/settings/:patientId', getMedicationSettingsSchema, validate, getPatientMedicationSettings);
+
+// PUT /api/medication-management/settings/:patientId - Update patient medication settings
+router.put('/settings/:patientId', updateMedicationSettingsSchema, validate, updatePatientMedicationSettings);
+
+// POST /api/medication-management/settings/:patientId/test-notification - Send test notification (deprecated)
+router.post('/settings/:patientId/test-notification', sendTestNotification);
 
 export default router;

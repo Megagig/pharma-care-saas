@@ -313,3 +313,15 @@ export const usePatientMedicationSummary = (patientId: string) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
+/**
+ * Hook to get medication cost analytics for a patient
+ */
+export const useMedicationCostAnalytics = (patientId: string) => {
+  return useQuery({
+    queryKey: [...medicationKeys.analytics(), 'costs', patientId],
+    queryFn: () =>
+      medicationManagementService.getMedicationCostAnalytics(patientId),
+    enabled: !!patientId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};

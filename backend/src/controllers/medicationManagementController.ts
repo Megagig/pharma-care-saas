@@ -4,6 +4,7 @@ import MedicationManagement, {
 } from '../models/MedicationManagement';
 import AdherenceLog from '../models/AdherenceLog';
 import Patient from '../models/Patient';
+import MedicationSettings, { IMedicationSettings } from '../models/MedicationSettings';
 import mongoose from 'mongoose';
 import logger from '../utils/logger';
 import moment from 'moment';
@@ -872,6 +873,156 @@ export const getRecentPatientsWithMedications = async (
     res.status(500).json({
       success: false,
       message: 'Error retrieving recent patients with medications',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+/**
+ * Get patient medication settings
+ */
+export const getPatientMedicationSettings = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { patientId } = req.params;
+    const workplaceId = req.user?.workplaceId;
+
+    // Check if patient exists
+    const patientExists = await checkPatientExists(patientId);
+    if (!patientExists) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Patient not found' 
+      });
+    }
+
+    // Find existing settings or create default ones
+    let settings = await MedicationSettings.findOne({
+      patientId,
+      workplaceId,
+    });
+
+    if (!settings) {
+      // Create default settings if none exist
+      settings = new MedicationSettings({
+        patientId,
+        workplaceId,
+        createdBy: req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : undefined,
+        updatedBy: req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : undefined,
+      });
+      await settings.save();
+    }
+
+    res.json({
+      success: true,
+      data: {
+        reminderSettings: settings.reminderSettings,
+        monitoringSettings: settings.monitoringSettings,
+      },
+    });
+  } catch (error) {
+    logger.error('Error getting patient medication settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving medication settings',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+/**
+ * Update patient medication settings
+ */
+export const updatePatientMedicationSettings = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { patientId } = req.params;
+    const { reminderSettings, monitoringSettings } = req.body;
+    const workplaceId = req.user?.workplaceId;
+
+    // Check if patient exists
+    const patientExists = await checkPatientExists(patientId);
+    if (!patientExists) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Patient not found' 
+      });
+    }
+
+    // Find existing settings or create new ones
+    let settings = await MedicationSettings.findOne({
+      patientId,
+      workplaceId,
+    });
+
+    if (!settings) {
+      settings = new MedicationSettings({
+        patientId,
+        workplaceId,
+        createdBy: req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : undefined,
+        updatedBy: req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : undefined,
+      });
+    } else {
+      settings.updatedBy = req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : undefined;
+    }
+
+    // Update settings
+    if (reminderSettings) {
+      settings.reminderSettings = {
+        ...settings.reminderSettings,
+        ...reminderSettings,
+      };
+    }
+
+    if (monitoringSettings) {
+      settings.monitoringSettings = {
+        ...settings.monitoringSettings,
+        ...monitoringSettings,
+      };
+    }
+
+    await settings.save();
+
+    res.json({
+      success: true,
+      data: {
+        reminderSettings: settings.reminderSettings,
+        monitoringSettings: settings.monitoringSettings,
+      },
+    });
+  } catch (error) {
+    logger.error('Error updating patient medication settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating medication settings',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+/**
+ * Send test notification (removed as per requirements)
+ * This endpoint is kept for backward compatibility but returns a message
+ */
+export const sendTestNotification = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    res.json({
+      success: false,
+      message: 'Test notifications have been removed from this version',
+      details: 'Please use the production notification system for testing',
+    });
+  } catch (error) {
+    logger.error('Error in test notification endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Test notification feature is not available',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
