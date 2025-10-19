@@ -58,14 +58,7 @@ const PatientMTRSessionsList: React.FC<PatientMTRSessionsListProps> = ({
     error,
   } = useMTRSessionsByPatient(patientId);
 
-  // Debug logging
-  console.log('PatientMTRSessionsList Debug:', {
-    patientId,
-    sessionsResponse,
-    isLoading,
-    isError,
-    error,
-  });
+
 
   // Mutations
   const createMTRMutation = useCreateMTRSession();

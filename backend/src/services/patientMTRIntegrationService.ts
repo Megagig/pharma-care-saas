@@ -1,4 +1,5 @@
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
+import MedicationTherapyReview from '../models/MedicationTherapyReview';
 
 // Simple error class
 class AppError extends Error {
@@ -131,18 +132,90 @@ export class PatientMTRIntegrationService {
         pendingActions: any[];
     }> {
         try {
+            // Convert patientId to ObjectId for queries
+            const patientObjectId = mongoose.Types.ObjectId.isValid(patientId) 
+                ? new mongoose.Types.ObjectId(patientId) 
+                : patientId;
+
+            // Get MTR sessions for the patient
+            const mtrSessions = await MedicationTherapyReview.find({
+                patientId: patientObjectId,
+                workplaceId: new mongoose.Types.ObjectId(workplaceId)
+            })
+            .populate('pharmacistId', 'firstName lastName')
+            .sort('-createdAt')
+            .lean();
+
+            // Filter active and recent MTRs
+            const activeMTRs = mtrSessions.filter(session => 
+                session.status === 'in_progress' || session.status === 'on_hold'
+            );
+
+            const recentMTRs = mtrSessions.slice(0, 5); // Get 5 most recent
+
+            // Calculate completion percentage for each session
+            const processedActiveMTRs = activeMTRs.map(session => ({
+                ...session,
+                completionPercentage: this.calculateCompletionPercentage(session),
+                isOverdue: this.isSessionOverdue(session)
+            }));
+
+            const processedRecentMTRs = recentMTRs.map(session => ({
+                ...session,
+                completionPercentage: this.calculateCompletionPercentage(session),
+                isOverdue: this.isSessionOverdue(session)
+            }));
+
+            // Get MTR summary
             const mtrSummary = await this.getPatientMTRSummary(patientId, workplaceId);
 
+            // Get pending actions (simplified for now)
+            const pendingActions = activeMTRs.map(session => ({
+                type: 'review' as const,
+                description: `Continue MTR session ${session.reviewNumber}`,
+                priority: session.priority === 'high_risk' ? 'high' as const : 
+                         session.priority === 'urgent' ? 'medium' as const : 'low' as const,
+                dueDate: session.nextReviewDate
+            }));
+
             return {
-                activeMTRs: [],
-                recentMTRs: [],
+                activeMTRs: processedActiveMTRs,
+                recentMTRs: processedRecentMTRs,
                 mtrSummary,
-                pendingActions: [],
+                pendingActions,
             };
         } catch (error) {
             console.error('Error getting patient dashboard MTR data:', error);
             throw new AppError('Failed to get patient dashboard MTR data', 500);
         }
+    }
+
+    /**
+     * Calculate completion percentage for an MTR session
+     */
+    private calculateCompletionPercentage(session: any): number {
+        if (!session.steps) return 0;
+        
+        const stepNames = ['patientSelection', 'medicationHistory', 'therapyAssessment', 'planDevelopment', 'interventions', 'followUp'];
+        const completedSteps = stepNames.filter(stepName => 
+            session.steps[stepName] && session.steps[stepName].completed
+        ).length;
+        
+        return Math.round((completedSteps / stepNames.length) * 100);
+    }
+
+    /**
+     * Check if an MTR session is overdue
+     */
+    private isSessionOverdue(session: any): boolean {
+        if (session.status === 'completed') return false;
+        
+        // Consider a session overdue if it's been in progress for more than 7 days
+        const startDate = new Date(session.startedAt);
+        const now = new Date();
+        const daysDiff = (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        return daysDiff > 7;
     }
 
     /**
