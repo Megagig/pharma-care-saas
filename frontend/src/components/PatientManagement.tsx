@@ -37,6 +37,7 @@ import DTPManagement from './DTPManagement';
 import CarePlanManagement from './CarePlanManagement';
 import VisitManagement from './VisitManagement';
 import PatientMTRWidget from './PatientMTRWidget';
+import PatientMTRSessionsList from './PatientMTRSessionsList';
 import PatientClinicalNotes from './PatientClinicalNotes';
 
 import { usePatient } from '../queries/usePatients';
@@ -356,7 +357,7 @@ const PatientManagement = () => {
 
         <TabPanel value={currentTab} index={9}>
           <Box sx={{ p: 3 }}>
-            <PatientMTRWidget patientId={patientId || ''} />
+            <PatientMTRSessionsList patientId={patientId || ''} />
           </Box>
         </TabPanel>
       </Box>
