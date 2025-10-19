@@ -889,20 +889,24 @@ export const getPatientMedicationSettings = async (
     const { patientId } = req.params;
     const workplaceId = req.user?.workplaceId;
 
-    // Check if patient exists
-    const patientExists = await checkPatientExists(patientId);
-    if (!patientExists) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Patient not found' 
-      });
+    // Check if patient exists (skip check for system-wide settings)
+    if (patientId !== 'system') {
+      const patientExists = await checkPatientExists(patientId);
+      if (!patientExists) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Patient not found' 
+        });
+      }
     }
 
     // Find existing settings or create default ones
-    let settings = await MedicationSettings.findOne({
-      patientId,
-      workplaceId,
-    });
+    // For system-wide settings, use a special query
+    const query = patientId === 'system' 
+      ? { patientId: 'system', workplaceId }
+      : { patientId, workplaceId };
+    
+    let settings = await MedicationSettings.findOne(query);
 
     if (!settings) {
       // Create default settings if none exist
@@ -944,20 +948,24 @@ export const updatePatientMedicationSettings = async (
     const { reminderSettings, monitoringSettings } = req.body;
     const workplaceId = req.user?.workplaceId;
 
-    // Check if patient exists
-    const patientExists = await checkPatientExists(patientId);
-    if (!patientExists) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Patient not found' 
-      });
+    // Check if patient exists (skip check for system-wide settings)
+    if (patientId !== 'system') {
+      const patientExists = await checkPatientExists(patientId);
+      if (!patientExists) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Patient not found' 
+        });
+      }
     }
 
     // Find existing settings or create new ones
-    let settings = await MedicationSettings.findOne({
-      patientId,
-      workplaceId,
-    });
+    // For system-wide settings, use a special query
+    const query = patientId === 'system' 
+      ? { patientId: 'system', workplaceId }
+      : { patientId, workplaceId };
+    
+    let settings = await MedicationSettings.findOne(query);
 
     if (!settings) {
       settings = new MedicationSettings({

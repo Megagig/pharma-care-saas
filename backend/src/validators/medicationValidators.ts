@@ -255,7 +255,19 @@ export const medicationExistsValidator = param('id')
   .withMessage('Medication not found');
 // Medication Settings validation schemas
 export const updateMedicationSettingsSchema = [
-  validateObjectId('patientId'),
+  param('patientId')
+    .custom((value) => {
+      // Allow "system" as a special case for system-wide settings
+      if (value === 'system') {
+        return true;
+      }
+      // Otherwise, validate as MongoDB ObjectId
+      if (!isValidObjectId(value)) {
+        throw new Error('Patient ID must be a valid MongoDB ID or "system"');
+      }
+      return true;
+    })
+    .withMessage('Patient ID must be a valid MongoDB ID or "system"'),
   body('reminderSettings')
     .optional()
     .isObject()
@@ -303,5 +315,17 @@ export const updateMedicationSettingsSchema = [
 ];
 
 export const getMedicationSettingsSchema = [
-  validateObjectId('patientId'),
+  param('patientId')
+    .custom((value) => {
+      // Allow "system" as a special case for system-wide settings
+      if (value === 'system') {
+        return true;
+      }
+      // Otherwise, validate as MongoDB ObjectId
+      if (!isValidObjectId(value)) {
+        throw new Error('Patient ID must be a valid MongoDB ID or "system"');
+      }
+      return true;
+    })
+    .withMessage('Patient ID must be a valid MongoDB ID or "system"'),
 ];

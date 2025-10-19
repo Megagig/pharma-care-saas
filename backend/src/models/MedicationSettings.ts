@@ -29,7 +29,7 @@ export interface IMedicationMonitoringSettings {
 }
 
 export interface IMedicationSettings extends Document {
-    patientId: mongoose.Types.ObjectId;
+    patientId: mongoose.Types.ObjectId | string; // Allow both ObjectId and string (for "system")
     workplaceId: mongoose.Types.ObjectId;
     reminderSettings: IMedicationReminderSettings;
     monitoringSettings: IMedicationMonitoringSettings;
@@ -77,8 +77,7 @@ const MedicationMonitoringSettingsSchema = new Schema<IMedicationMonitoringSetti
 
 const MedicationSettingsSchema = new Schema<IMedicationSettings>({
     patientId: {
-        type: Schema.Types.ObjectId,
-        ref: 'Patient',
+        type: Schema.Types.Mixed, // Allow both ObjectId and string (for "system")
         required: true,
         index: true
     },

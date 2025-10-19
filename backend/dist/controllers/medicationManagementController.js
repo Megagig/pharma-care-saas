@@ -667,17 +667,19 @@ const getPatientMedicationSettings = async (req, res) => {
     try {
         const { patientId } = req.params;
         const workplaceId = req.user?.workplaceId;
-        const patientExists = await checkPatientExists(patientId);
-        if (!patientExists) {
-            return res.status(404).json({
-                success: false,
-                message: 'Patient not found'
-            });
+        if (patientId !== 'system') {
+            const patientExists = await checkPatientExists(patientId);
+            if (!patientExists) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Patient not found'
+                });
+            }
         }
-        let settings = await MedicationSettings_1.default.findOne({
-            patientId,
-            workplaceId,
-        });
+        const query = patientId === 'system'
+            ? { patientId: 'system', workplaceId }
+            : { patientId, workplaceId };
+        let settings = await MedicationSettings_1.default.findOne(query);
         if (!settings) {
             settings = new MedicationSettings_1.default({
                 patientId,
@@ -710,17 +712,19 @@ const updatePatientMedicationSettings = async (req, res) => {
         const { patientId } = req.params;
         const { reminderSettings, monitoringSettings } = req.body;
         const workplaceId = req.user?.workplaceId;
-        const patientExists = await checkPatientExists(patientId);
-        if (!patientExists) {
-            return res.status(404).json({
-                success: false,
-                message: 'Patient not found'
-            });
+        if (patientId !== 'system') {
+            const patientExists = await checkPatientExists(patientId);
+            if (!patientExists) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Patient not found'
+                });
+            }
         }
-        let settings = await MedicationSettings_1.default.findOne({
-            patientId,
-            workplaceId,
-        });
+        const query = patientId === 'system'
+            ? { patientId: 'system', workplaceId }
+            : { patientId, workplaceId };
+        let settings = await MedicationSettings_1.default.findOne(query);
         if (!settings) {
             settings = new MedicationSettings_1.default({
                 patientId,

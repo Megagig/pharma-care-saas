@@ -232,7 +232,17 @@ exports.medicationExistsValidator = (0, express_validator_1.param)('id')
 })
     .withMessage('Medication not found');
 exports.updateMedicationSettingsSchema = [
-    (0, exports.validateObjectId)('patientId'),
+    (0, express_validator_1.param)('patientId')
+        .custom((value) => {
+        if (value === 'system') {
+            return true;
+        }
+        if (!(0, mongoose_1.isValidObjectId)(value)) {
+            throw new Error('Patient ID must be a valid MongoDB ID or "system"');
+        }
+        return true;
+    })
+        .withMessage('Patient ID must be a valid MongoDB ID or "system"'),
     (0, express_validator_1.body)('reminderSettings')
         .optional()
         .isObject()
@@ -279,6 +289,16 @@ exports.updateMedicationSettingsSchema = [
         .withMessage('Report frequency must be daily, weekly, or monthly'),
 ];
 exports.getMedicationSettingsSchema = [
-    (0, exports.validateObjectId)('patientId'),
+    (0, express_validator_1.param)('patientId')
+        .custom((value) => {
+        if (value === 'system') {
+            return true;
+        }
+        if (!(0, mongoose_1.isValidObjectId)(value)) {
+            throw new Error('Patient ID must be a valid MongoDB ID or "system"');
+        }
+        return true;
+    })
+        .withMessage('Patient ID must be a valid MongoDB ID or "system"'),
 ];
 //# sourceMappingURL=medicationValidators.js.map
