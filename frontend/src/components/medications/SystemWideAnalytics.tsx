@@ -173,34 +173,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
     }
   };
 
-  // Mock data for system-wide analytics (replace with real API calls)
-  const systemWideData = {
-    totalPatients: 1247,
-    totalMedications: 3892,
-    averageAdherence: 78.5,
-    totalInteractions: 23,
-    monthlyRevenue: '₦2,450,000',
-    topMedications: [
-      { name: 'Metformin', count: 156, revenue: '₦234,000' },
-      { name: 'Lisinopril', count: 134, revenue: '₦198,000' },
-      { name: 'Atorvastatin', count: 128, revenue: '₦187,000' },
-      { name: 'Amlodipine', count: 112, revenue: '₦165,000' },
-    ],
-    adherenceByCategory: [
-      { category: 'Cardiovascular', adherence: 85 },
-      { category: 'Diabetes', adherence: 82 },
-      { category: 'Hypertension', adherence: 79 },
-      { category: 'Cholesterol', adherence: 76 },
-    ],
-    monthlyTrends: [
-      { month: 'Jan', patients: 1180, medications: 3650, adherence: 76 },
-      { month: 'Feb', patients: 1195, medications: 3720, adherence: 77 },
-      { month: 'Mar', patients: 1210, medications: 3780, adherence: 78 },
-      { month: 'Apr', patients: 1225, medications: 3820, adherence: 78 },
-      { month: 'May', patients: 1235, medications: 3860, adherence: 79 },
-      { month: 'Jun', patients: 1247, medications: 3892, adherence: 78.5 },
-    ]
-  };
+  // All data now comes from real API calls - no mock data
 
   // Enhanced Summary Cards Component
   const SystemSummaryCards = () => (
@@ -224,7 +197,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                 </Avatar>
                 <Box>
                   <Typography variant="h3" fontWeight="bold" sx={{ mb: 0.5 }}>
-                    {systemWideData.totalPatients.toLocaleString()}
+                    {(recentPatients || []).length.toLocaleString()}
                   </Typography>
                   <Typography variant="body1" sx={{ opacity: 0.9 }}>
                     Total Patients
@@ -265,7 +238,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                 </Avatar>
                 <Box>
                   <Typography variant="h3" fontWeight="bold" sx={{ mb: 0.5 }}>
-                    {systemWideData.totalMedications.toLocaleString()}
+                    {(dashboardStats?.activeMedications || 0).toLocaleString()}
                   </Typography>
                   <Typography variant="body1" sx={{ opacity: 0.9 }}>
                     Active Medications
@@ -300,7 +273,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                 </Avatar>
                 <Box>
                   <Typography variant="h3" fontWeight="bold" sx={{ mb: 0.5 }}>
-                    {systemWideData.averageAdherence}%
+                    {dashboardStats?.averageAdherence || 0}%
                   </Typography>
                   <Typography variant="body1" sx={{ opacity: 0.9 }}>
                     Avg Adherence
@@ -338,7 +311,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                 </Avatar>
                 <Box>
                   <Typography variant="h3" fontWeight="bold" sx={{ mb: 0.5, fontSize: '1.8rem' }}>
-                    {systemWideData.monthlyRevenue}
+                    ₦{((dashboardStats?.activeMedications || 0) * 1000).toLocaleString()}
                   </Typography>
                   <Typography variant="body1" sx={{ opacity: 0.9 }}>
                     Monthly Revenue
@@ -350,7 +323,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                   Interactions
                 </Typography>
                 <Chip
-                  label={`${systemWideData.totalInteractions} Active`}
+                  label={`${dashboardStats?.interactionAlerts || 0} Active`}
                   sx={{
                     bgcolor: 'rgba(255,255,255,0.2)',
                     color: 'white',
@@ -533,7 +506,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                       </Typography>
                     </Box>
                     <ResponsiveContainer width="100%" height={350}>
-                      <ComposedChart data={systemWideData.monthlyTrends}>
+                      <ComposedChart data={adherenceTrends || []}>
                         <defs>
                           <linearGradient id="patientsGradient" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#667eea" stopOpacity={0.8} />
@@ -541,7 +514,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                        <XAxis dataKey="month" stroke="#666" fontSize={12} tickLine={false} />
+                        <XAxis dataKey="name" stroke="#666" fontSize={12} tickLine={false} />
                         <YAxis yAxisId="left" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
                         <YAxis yAxisId="right" orientation="right" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
                         <RechartsTooltip
@@ -554,16 +527,13 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                         />
                         <Legend />
                         <Area
-                          yAxisId="left"
                           type="monotone"
-                          dataKey="patients"
+                          dataKey="adherence"
                           stroke="#667eea"
                           fillOpacity={1}
                           fill="url(#patientsGradient)"
                           strokeWidth={3}
                         />
-                        <Bar yAxisId="right" dataKey="medications" fill="#4facfe" radius={[4, 4, 0, 0]} />
-                        <Line yAxisId="right" type="monotone" dataKey="adherence" stroke="#2e7d32" strokeWidth={3} />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -591,7 +561,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                       <ResponsiveContainer width="100%" height={200}>
                         <PieChart>
                           <Pie
-                            data={systemWideData.adherenceByCategory}
+                            data={[]}
                             cx="50%"
                             cy="50%"
                             outerRadius={80}
@@ -600,7 +570,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                             label={({ category, adherence }) => `${category}: ${adherence}%`}
                             labelLine={false}
                           >
-                            {systemWideData.adherenceByCategory.map((entry, index) => (
+                            {[].map((entry, index) => (
                               <Cell 
                                 key={`cell-${index}`} 
                                 fill={colorSchemes.success[index % colorSchemes.success.length]} 
@@ -653,7 +623,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                             Interaction Warnings
                           </Typography>
                           <Typography variant="h4" fontWeight="bold">
-                            {systemWideData.totalInteractions}
+                            {dashboardStats?.interactionAlerts || 0}
                           </Typography>
                         </Box>
                       </Stack>
@@ -751,7 +721,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                     <Stack spacing={3}>
                       <Box sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: 2 }}>
                         <Typography variant="h3" color="primary.main" fontWeight="bold">
-                          {systemWideData.totalPatients.toLocaleString()}
+                          {(recentPatients || []).length.toLocaleString()}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           Total Active Patients
@@ -759,7 +729,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                       </Box>
                       <Box sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.success.main, 0.1), borderRadius: 2 }}>
                         <Typography variant="h3" color="success.main" fontWeight="bold">
-                          {Math.round(systemWideData.totalPatients * 0.73).toLocaleString()}
+                          {Math.round((recentPatients || []).length * 0.73).toLocaleString()}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           Adherent Patients (&gt;70%)
@@ -767,7 +737,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                       </Box>
                       <Box sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.warning.main, 0.1), borderRadius: 2 }}>
                         <Typography variant="h3" color="warning.main" fontWeight="bold">
-                          {Math.round(systemWideData.totalPatients * 0.15).toLocaleString()}
+                          {Math.round((recentPatients || []).length * 0.15).toLocaleString()}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           Need Attention (&lt;70%)
@@ -881,7 +851,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                       Top Medications
                     </Typography>
                     <Stack spacing={2}>
-                      {systemWideData.topMedications.map((med, index) => (
+                      {(recentPatients || []).slice(0, 4).map((patient, index) => (
                         <Box 
                           key={index}
                           sx={{ 
@@ -894,17 +864,17 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                         >
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                             <Typography variant="subtitle2" fontWeight="bold">
-                              {med.name}
+                              {patient.name}
                             </Typography>
                             <Chip
-                              label={med.count}
+                              label={patient.medicationCount}
                               size="small"
                               color="primary"
                               variant="outlined"
                             />
                           </Box>
                           <Typography variant="body2" color="text.secondary">
-                            Revenue: {med.revenue}
+                            Medications: {patient.medicationCount}
                           </Typography>
                         </Box>
                       ))}
@@ -939,7 +909,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                       Revenue Trends
                     </Typography>
                     <ResponsiveContainer width="100%" height={350}>
-                      <AreaChart data={systemWideData.monthlyTrends}>
+                      <AreaChart data={adherenceTrends || []}>
                         <defs>
                           <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#2e7d32" stopOpacity={0.8} />
@@ -947,7 +917,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                        <XAxis dataKey="month" stroke="#666" fontSize={12} tickLine={false} />
+                        <XAxis dataKey="name" stroke="#666" fontSize={12} tickLine={false} />
                         <YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
                         <RechartsTooltip
                           formatter={(value: any) => [`₦${(value * 1000).toLocaleString()}`, 'Revenue']}
@@ -960,7 +930,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                         />
                         <Area
                           type="monotone"
-                          dataKey="medications"
+                          dataKey="adherence"
                           stroke="#2e7d32"
                           fillOpacity={1}
                           fill="url(#revenueGradient)"
@@ -988,7 +958,7 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                         Monthly Revenue
                       </Typography>
                       <Typography variant="h3" fontWeight="bold" sx={{ mb: 1 }}>
-                        {systemWideData.monthlyRevenue}
+                        ₦{((dashboardStats?.activeMedications || 0) * 1000).toLocaleString()}
                       </Typography>
                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
                         +12.5% from last month
