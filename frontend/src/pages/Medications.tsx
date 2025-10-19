@@ -225,7 +225,7 @@ const Medications = () => {
                 variant="contained"
                 size="large"
                 component={Link}
-                to="/patients"
+                to="/patients?for=medications"
                 startIcon={<AddIcon />}
                 sx={{
                   bgcolor: 'rgba(255,255,255,0.2)',
