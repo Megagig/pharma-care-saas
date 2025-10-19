@@ -490,8 +490,34 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
       const response = await mtrService.getMTRSession(reviewId);
 
       if (response.review) {
+        // Calculate the next step directly from the loaded review
+        let nextStep = 0;
+        if (response.review.steps) {
+          const stepOrder = [
+            'patientSelection',
+            'medicationHistory',
+            'therapyAssessment',
+            'planDevelopment',
+            'interventions',
+            'followUp',
+          ];
+
+          for (let i = 0; i < stepOrder.length; i++) {
+            const stepName = stepOrder[i] as keyof typeof response.review.steps;
+            const stepData = response.review.steps[stepName];
+            const isCompleted = stepData && stepData.completed;
+            
+            if (!isCompleted) {
+              nextStep = i;
+              break;
+            }
+          }
+        }
+
+        // Set all the data including the calculated step
         set({
           currentReview: response.review,
+          currentStep: nextStep,
           medications: (response.review.medications || []).map(
             convertMedicationEntryToMTRMedication
           ),
@@ -499,8 +525,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
           therapyPlan: response.review.plan || null,
           interventions: [], // Will be populated from actual MTRIntervention objects
           followUps: [], // Will be populated from actual MTRFollowUp objects
-          // Set current step based on review progress
-          currentStep: get().getNextStep() || 0,
         });
 
       } else {
@@ -562,8 +586,34 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
         // Load the most recent in-progress review
         const inProgressReview = response.results[0];
 
+        // Calculate the next step directly from the loaded review
+        let nextStep = 0;
+        if (inProgressReview.steps) {
+          const stepOrder = [
+            'patientSelection',
+            'medicationHistory',
+            'therapyAssessment',
+            'planDevelopment',
+            'interventions',
+            'followUp',
+          ];
+
+          for (let i = 0; i < stepOrder.length; i++) {
+            const stepName = stepOrder[i] as keyof typeof inProgressReview.steps;
+            const stepData = inProgressReview.steps[stepName];
+            const isCompleted = stepData && stepData.completed;
+            
+            if (!isCompleted) {
+              nextStep = i;
+              break;
+            }
+          }
+        }
+
+        // Set all the data including the calculated step
         set({
           currentReview: inProgressReview,
+          currentStep: nextStep,
           medications: (inProgressReview.medications || []).map(
             convertMedicationEntryToMTRMedication
           ),
@@ -571,7 +621,6 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
           therapyPlan: inProgressReview.plan || null,
           interventions: [],
           followUps: [],
-          currentStep: get().getNextStep() || 0,
         });
 
         return inProgressReview;
@@ -852,10 +901,10 @@ export const useMTRStore = create<MTRStore>()((set, get) => ({
 
       for (let i = 0; i < stepOrder.length; i++) {
         const stepName = stepOrder[i] as keyof typeof currentReview.steps;
-        if (
-          !currentReview.steps[stepName] ||
-          !currentReview.steps[stepName].completed
-        ) {
+        const stepData = currentReview.steps[stepName];
+        const isCompleted = stepData && stepData.completed;
+        
+        if (!isCompleted) {
           return i;
         }
       }
