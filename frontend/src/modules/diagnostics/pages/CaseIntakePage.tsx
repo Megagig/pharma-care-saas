@@ -3,14 +3,8 @@ import {
   Box,
   Container,
   Grid,
-  Card,
-  CardContent,
   Typography,
   Button,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
   Alert,
   LinearProgress,
   IconButton,
@@ -22,12 +16,10 @@ import {
   FormControlLabel,
   Checkbox,
   Chip,
-  Autocomplete,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Divider,
   Paper,
   Avatar,
   Stack,
@@ -42,7 +34,6 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
 import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
@@ -268,7 +259,7 @@ const CaseIntakePage: React.FC = () => {
       // First validate patient access
       console.log('Validating patient access for:', data.patientId);
       const accessValidation = await aiDiagnosticService.validatePatientAccess(data.patientId);
-      
+
       if (!accessValidation.hasAccess) {
         toast.error(`Patient Access Error: ${accessValidation.error}`);
         setSubmitting(false);
@@ -306,9 +297,9 @@ const CaseIntakePage: React.FC = () => {
                 .map((s) => s.trim())
                 .filter((s) => s.length > 0)
               : [],
-          duration: data.symptoms?.duration || undefined,
-          severity: data.symptoms?.severity || undefined,
-          onset: data.symptoms?.onset || undefined,
+          duration: data.symptoms?.duration || '',
+          severity: data.symptoms?.severity || 'mild' as const,
+          onset: data.symptoms?.onset || 'acute' as const,
         },
         vitalSigns: {
           bloodPressure: data.vitals?.bloodPressure || undefined,
