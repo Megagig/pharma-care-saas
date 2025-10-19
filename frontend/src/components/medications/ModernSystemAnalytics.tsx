@@ -30,6 +30,11 @@ import {
   useTheme,
   alpha,
   Container,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
 } from '@mui/material';
 import {
   Analytics as AnalyticsIcon,
@@ -56,6 +61,9 @@ import {
   Speed as SpeedIcon,
   Star as StarIcon,
   ErrorOutline as ErrorIcon,
+  Business as BusinessIcon,
+  Group as GroupIcon,
+  Dashboard as DashboardIcon,
 } from '@mui/icons-material';
 import {
   LineChart,
@@ -76,19 +84,16 @@ import {
   RadialBarChart,
   RadialBar,
   ComposedChart,
-  Scatter,
-  ScatterChart,
-  Treemap,
 } from 'recharts';
 import {
   useAdherenceAnalytics,
   usePrescriptionPatternAnalytics,
   useInteractionAnalytics,
-  useMedicationCostAnalytics,
   usePatientMedicationSummary,
+  useMedicationCostAnalytics,
 } from '../../queries/medicationAnalyticsQueries';
 
-interface EnhancedMedicationAnalyticsProps {
+interface ModernSystemAnalyticsProps {
   patientId: string;
 }
 
@@ -105,8 +110,8 @@ function TabPanel(props: TabPanelProps) {
     <div
       role="tabpanel"
       hidden={value !== index}
-      id={`analytics-tabpanel-${index}`}
-      aria-labelledby={`analytics-tab-${index}`}
+      id={`system-analytics-tabpanel-${index}`}
+      aria-labelledby={`system-analytics-tab-${index}`}
       {...other}
     >
       {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
@@ -114,7 +119,7 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = ({
+const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
   patientId,
 }) => {
   const theme = useTheme();
@@ -157,8 +162,8 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
     setCurrentTab(newValue);
   };
 
-  const handlePeriodChange = (period: string) => {
-    setAdherencePeriod(period);
+  const handleAdherencePeriodChange = (event: SelectChangeEvent) => {
+    setAdherencePeriod(event.target.value);
   };
 
   // Enhanced color schemes
@@ -192,7 +197,7 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
   };
 
   // Enhanced Summary Cards Component
-  const EnhancedSummaryCards = () => (
+  const SystemSummaryCards = () => (
     <Grid container spacing={3} sx={{ mb: 4 }}>
       <Grid item xs={12} sm={6} md={3}>
         <Grow in timeout={500}>
@@ -204,19 +209,9 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
               borderRadius: 4,
               position: 'relative',
               overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(255,255,255,0.1)',
-                backdropFilter: 'blur(10px)',
-              }
             }}
           >
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 3 }}>
+            <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', mr: 2, width: 56, height: 56 }}>
                   <MedicationIcon sx={{ fontSize: 28 }} />
@@ -255,8 +250,6 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
               background: colorSchemes.gradient.success,
               color: 'white',
               borderRadius: 4,
-              position: 'relative',
-              overflow: 'hidden',
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -292,8 +285,6 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
               background: colorSchemes.gradient.warning,
               color: 'white',
               borderRadius: 4,
-              position: 'relative',
-              overflow: 'hidden',
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -332,8 +323,6 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
               background: colorSchemes.gradient.error,
               color: 'white',
               borderRadius: 4,
-              position: 'relative',
-              overflow: 'hidden',
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -343,19 +332,19 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                 </Avatar>
                 <Box>
                   <Typography variant="h3" fontWeight="bold" sx={{ mb: 0.5, fontSize: '1.8rem' }}>
-                    {summaryData?.costAnalysis?.formattedMonthlyCost || '₦0.00'}
+                    {summaryData?.costAnalysis?.formattedMonthlyCost || costData?.formattedTotalCost || '₦0.00'}
                   </Typography>
                   <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                    Monthly Cost
+                    Total Cost
                   </Typography>
                 </Box>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  Complexity Score
+                  Profit Margin
                 </Typography>
                 <Chip
-                  label={`${summaryData?.medicationComplexity?.complexityScore || 0}/100`}
+                  label={costData?.formattedProfitMargin || '0%'}
                   sx={{
                     bgcolor: 'rgba(255,255,255,0.2)',
                     color: 'white',
@@ -371,13 +360,18 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
     </Grid>
   );
 
+  // Determine the title based on patientId
+  const analyticsTitle = patientId === 'system' 
+    ? 'System-wide Medication Analytics' 
+    : 'Patient Medication Analytics';
+
   if (summaryLoading) {
     return (
       <Container maxWidth="xl">
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
           <CircularProgress size={60} thickness={4} />
           <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>
-            Loading Analytics Dashboard...
+            Loading {analyticsTitle}...
           </Typography>
         </Box>
       </Container>
@@ -415,7 +409,7 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
               </Avatar>
               <Box>
                 <Typography variant="h3" component="h1" fontWeight="bold" sx={{ mb: 0.5 }}>
-                  Medication Analytics
+                  {analyticsTitle}
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
                   Comprehensive insights and data-driven medication management
@@ -450,7 +444,7 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
       </Fade>
 
       {/* Enhanced Summary Cards */}
-      <EnhancedSummaryCards />
+      <SystemSummaryCards />
 
       {/* Enhanced Analytics Tabs */}
       <Paper 
@@ -507,7 +501,7 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
               iconPosition="start"
             />
             <Tab 
-              label="Cost Analysis" 
+              label="Financial Analytics" 
               icon={<AccountBalanceIcon />} 
               iconPosition="start"
             />
@@ -526,35 +520,19 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                   Track medication compliance patterns and identify improvement opportunities
                 </Typography>
               </Box>
-              <ButtonGroup 
-                size="medium" 
-                sx={{ 
-                  '& .MuiButton-root': {
-                    borderRadius: 3,
-                    px: 3,
-                    fontWeight: 600
-                  }
-                }}
-              >
-                <Button
-                  variant={adherencePeriod === '3months' ? 'contained' : 'outlined'}
-                  onClick={() => handlePeriodChange('3months')}
+              <FormControl sx={{ minWidth: 200 }}>
+                <InputLabel>Time Period</InputLabel>
+                <Select
+                  value={adherencePeriod}
+                  label="Time Period"
+                  onChange={handleAdherencePeriodChange}
+                  sx={{ borderRadius: 3 }}
                 >
-                  3 Months
-                </Button>
-                <Button
-                  variant={adherencePeriod === '6months' ? 'contained' : 'outlined'}
-                  onClick={() => handlePeriodChange('6months')}
-                >
-                  6 Months
-                </Button>
-                <Button
-                  variant={adherencePeriod === '1year' ? 'contained' : 'outlined'}
-                  onClick={() => handlePeriodChange('1year')}
-                >
-                  1 Year
-                </Button>
-              </ButtonGroup>
+                  <MenuItem value="3months">Last 3 Months</MenuItem>
+                  <MenuItem value="6months">Last 6 Months</MenuItem>
+                  <MenuItem value="1year">Last Year</MenuItem>
+                </Select>
+              </FormControl>
             </Box>
 
             {adherenceLoading ? (
@@ -604,6 +582,7 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
+                            domain={[0, 100]}
                           />
                           <RechartsTooltip
                             contentStyle={{
@@ -637,39 +616,58 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                         border: '1px solid', 
                         borderColor: 'divider', 
                         borderRadius: 3,
-                        background: colorSchemes.gradient.success
+                        background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
                       }}
                     >
-                      <CardContent sx={{ p: 3, color: 'white' }}>
+                      <CardContent sx={{ p: 3 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                          <ScheduleIcon sx={{ mr: 2 }} />
+                          <SpeedIcon sx={{ mr: 2, color: 'primary.main' }} />
                           <Typography variant="h6" fontWeight="bold">
-                            Adherence by Time
+                            Overall Adherence
                           </Typography>
                         </Box>
-                        <ResponsiveContainer width="100%" height={200}>
-                          <RadialBarChart
-                            cx="50%"
-                            cy="50%"
-                            innerRadius="30%"
-                            outerRadius="80%"
-                            data={adherenceData?.adherenceByTimeOfDay || []}
-                          >
-                            <RadialBar 
-                              dataKey="adherence" 
-                              cornerRadius={10} 
-                              fill="rgba(255,255,255,0.8)" 
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 2 }}>
+                          <Box sx={{ position: 'relative', display: 'inline-flex', mb: 2 }}>
+                            <CircularProgress
+                              variant="determinate"
+                              value={adherenceData?.averageAdherence || 0}
+                              size={120}
+                              thickness={6}
+                              sx={{ color: 'primary.main' }}
                             />
-                            <RechartsTooltip 
-                              contentStyle={{
-                                backgroundColor: 'rgba(0,0,0,0.8)',
-                                border: 'none',
-                                borderRadius: '8px',
-                                color: 'white'
+                            <Box
+                              sx={{
+                                top: 0,
+                                left: 0,
+                                bottom: 0,
+                                right: 0,
+                                position: 'absolute',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
                               }}
-                            />
-                          </RadialBarChart>
-                        </ResponsiveContainer>
+                            >
+                              <Typography variant="h4" component="div" fontWeight="bold" color="primary.main">
+                                {`${adherenceData?.averageAdherence || 0}%`}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Typography variant="body1" align="center" fontWeight="medium">
+                            {(adherenceData?.averageAdherence || 0) >= 90
+                              ? 'Excellent Adherence'
+                              : (adherenceData?.averageAdherence || 0) >= 80
+                              ? 'Good Adherence'
+                              : (adherenceData?.averageAdherence || 0) >= 70
+                              ? 'Fair Adherence'
+                              : 'Needs Improvement'}
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                            {renderTrendIcon(adherenceData?.trendDirection || 'stable')}
+                            <Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                              {adherenceData?.trendDirection || 'stable'} trend
+                            </Typography>
+                          </Box>
+                        </Box>
                       </CardContent>
                     </Card>
 
@@ -679,33 +677,34 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                         border: '1px solid', 
                         borderColor: 'divider', 
                         borderRadius: 3,
-                        background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                        background: colorSchemes.gradient.success
                       }}
                     >
-                      <CardContent sx={{ p: 3 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                          <MoneyIcon sx={{ mr: 2, color: 'success.main' }} />
+                      <CardContent sx={{ p: 3, color: 'white' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                          <MoneyIcon sx={{ mr: 2 }} />
                           <Typography variant="h6" fontWeight="bold">
                             Cost Impact
                           </Typography>
                         </Box>
                         <Box sx={{ textAlign: 'center' }}>
-                          <Typography variant="h3" color="success.main" fontWeight="bold" sx={{ mb: 1 }}>
+                          <Typography variant="h3" fontWeight="bold" sx={{ mb: 1 }}>
                             {adherenceData?.costsData?.formattedSaved || '₦0.00'}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                          <Typography variant="body2" sx={{ opacity: 0.9, mb: 3 }}>
                             Saved through adherence
                           </Typography>
-                          <Divider sx={{ my: 2 }} />
+                          <Divider sx={{ my: 2, bgcolor: 'rgba(255,255,255,0.2)' }} />
                           <Box sx={{ 
                             p: 2, 
-                            bgcolor: alpha(theme.palette.info.main, 0.1), 
-                            borderRadius: 2 
+                            bgcolor: 'rgba(255,255,255,0.1)', 
+                            borderRadius: 2,
+                            border: '1px solid rgba(255,255,255,0.2)'
                           }}>
-                            <Typography variant="body1" fontWeight="medium" color="info.main">
+                            <Typography variant="body2" fontWeight="medium">
                               Potential Savings
                             </Typography>
-                            <Typography variant="h5" color="info.main" fontWeight="bold">
+                            <Typography variant="h5" fontWeight="bold">
                               {adherenceData?.costsData?.formattedPotential || '₦0.00'}
                             </Typography>
                           </Box>
@@ -1012,12 +1011,6 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                       </Box>
                       <ResponsiveContainer width="100%" height={350}>
                         <LineChart data={interactionData?.interactionTrends || []}>
-                          <defs>
-                            <linearGradient id="interactionGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#ff6b6b" stopOpacity={0.8} />
-                              <stop offset="95%" stopColor="#feca57" stopOpacity={0.3} />
-                            </linearGradient>
-                          </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                           <XAxis 
                             dataKey="month" 
@@ -1039,11 +1032,10 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                               boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
                             }}
                           />
-                          <Area
+                          <Line
                             type="monotone"
                             dataKey="count"
                             stroke="#ff6b6b"
-                            fill="url(#interactionGradient)"
                             strokeWidth={4}
                             dot={{ fill: '#ff6b6b', strokeWidth: 2, r: 6 }}
                             activeDot={{ r: 8, stroke: '#ff6b6b', strokeWidth: 2 }}
@@ -1145,12 +1137,12 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
           </Box>
         </TabPanel>
 
-        {/* Enhanced Cost Analysis Tab */}
+        {/* Enhanced Financial Analytics Tab */}
         <TabPanel value={currentTab} index={3}>
           <Box sx={{ px: 4 }}>
             <Box sx={{ mb: 4 }}>
               <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
-                Cost Analysis & Financial Impact
+                Financial Analytics & Performance
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 Comprehensive financial analysis of medication costs and profitability
@@ -1167,6 +1159,93 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
               </Alert>
             ) : (
               <Grid container spacing={4}>
+                {/* Financial Summary Cards */}
+                <Grid item xs={12} md={3}>
+                  <Card 
+                    elevation={0} 
+                    sx={{ 
+                      border: '1px solid', 
+                      borderColor: 'divider', 
+                      borderRadius: 3,
+                      background: colorSchemes.gradient.success,
+                      color: 'white'
+                    }}
+                  >
+                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                        Total Revenue
+                      </Typography>
+                      <Typography variant="h3" fontWeight="bold">
+                        {costData?.formattedTotalRevenue || '₦0.00'}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Card 
+                    elevation={0} 
+                    sx={{ 
+                      border: '1px solid', 
+                      borderColor: 'divider', 
+                      borderRadius: 3,
+                      background: colorSchemes.gradient.error,
+                      color: 'white'
+                    }}
+                  >
+                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                        Total Cost
+                      </Typography>
+                      <Typography variant="h3" fontWeight="bold">
+                        {costData?.formattedTotalCost || '₦0.00'}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Card 
+                    elevation={0} 
+                    sx={{ 
+                      border: '1px solid', 
+                      borderColor: 'divider', 
+                      borderRadius: 3,
+                      background: colorSchemes.gradient.primary,
+                      color: 'white'
+                    }}
+                  >
+                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                        Net Profit
+                      </Typography>
+                      <Typography variant="h3" fontWeight="bold">
+                        {costData?.formattedTotalProfit || '₦0.00'}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Card 
+                    elevation={0} 
+                    sx={{ 
+                      border: '1px solid', 
+                      borderColor: 'divider', 
+                      borderRadius: 3,
+                      background: colorSchemes.gradient.warning,
+                      color: 'white'
+                    }}
+                  >
+                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                        Profit Margin
+                      </Typography>
+                      <Typography variant="h3" fontWeight="bold">
+                        {costData?.formattedProfitMargin || '0%'}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Financial Charts */}
                 <Grid item xs={12} lg={8}>
                   <Card 
                     elevation={0} 
@@ -1181,17 +1260,11 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                         <ShowChartIcon sx={{ mr: 2, color: 'success.main' }} />
                         <Typography variant="h6" fontWeight="bold">
-                          Monthly Financial Trends
+                          Monthly Revenue vs Cost
                         </Typography>
                       </Box>
                       <ResponsiveContainer width="100%" height={400}>
-                        <ComposedChart data={costData?.monthlyCosts || []}>
-                          <defs>
-                            <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#2e7d32" stopOpacity={0.8} />
-                              <stop offset="95%" stopColor="#4caf50" stopOpacity={0.1} />
-                            </linearGradient>
-                          </defs>
+                        <ComposedChart data={costData?.monthlyFinancials || []}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                           <XAxis 
                             dataKey="month" 
@@ -1206,7 +1279,7 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                             axisLine={false}
                           />
                           <RechartsTooltip
-                            formatter={(value: any) => [`₦${value.toLocaleString()}`, 'Cost']}
+                            formatter={(value: any) => [`₦${value.toLocaleString()}`, '']}
                             contentStyle={{
                               backgroundColor: '#fff',
                               border: 'none',
@@ -1214,15 +1287,30 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                               boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
                             }}
                           />
-                          <Area
+                          <Legend />
+                          <Line
                             type="monotone"
-                            dataKey="totalCost"
-                            stroke="#2e7d32"
-                            fillOpacity={1}
-                            fill="url(#costGradient)"
+                            dataKey="revenue"
+                            stroke="#4caf50"
                             strokeWidth={4}
-                            dot={{ fill: '#2e7d32', strokeWidth: 2, r: 6 }}
-                            activeDot={{ r: 8, stroke: '#2e7d32', strokeWidth: 2 }}
+                            name="Revenue"
+                            dot={{ fill: '#4caf50', strokeWidth: 2, r: 6 }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="cost"
+                            stroke="#f44336"
+                            strokeWidth={4}
+                            name="Cost"
+                            dot={{ fill: '#f44336', strokeWidth: 2, r: 6 }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="profit"
+                            stroke="#2196f3"
+                            strokeWidth={4}
+                            name="Profit"
+                            dot={{ fill: '#2196f3', strokeWidth: 2, r: 6 }}
                           />
                         </ComposedChart>
                       </ResponsiveContainer>
@@ -1231,76 +1319,6 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                 </Grid>
 
                 <Grid item xs={12} lg={4}>
-                  <Stack spacing={3}>
-                    <Card 
-                      elevation={0} 
-                      sx={{ 
-                        border: '1px solid', 
-                        borderColor: 'divider', 
-                        borderRadius: 3,
-                        background: colorSchemes.gradient.success
-                      }}
-                    >
-                      <CardContent sx={{ p: 3, color: 'white' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                          <AccountBalanceIcon sx={{ mr: 2 }} />
-                          <Typography variant="h6" fontWeight="bold">
-                            Financial Summary
-                          </Typography>
-                        </Box>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
-                            {costData?.formattedTotalCost || '₦0.00'}
-                          </Typography>
-                          <Typography variant="body2" sx={{ opacity: 0.9, mb: 3 }}>
-                            Total Cost
-                          </Typography>
-                          <Divider sx={{ my: 2, bgcolor: 'rgba(255,255,255,0.2)' }} />
-                          <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
-                            {costData?.formattedTotalRevenue || '₦0.00'}
-                          </Typography>
-                          <Typography variant="body2" sx={{ opacity: 0.9, mb: 3 }}>
-                            Total Revenue
-                          </Typography>
-                          <Divider sx={{ my: 2, bgcolor: 'rgba(255,255,255,0.2)' }} />
-                          <Typography variant="h5" fontWeight="bold">
-                            {costData?.formattedTotalProfit || '₦0.00'}
-                          </Typography>
-                          <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                            Net Profit
-                          </Typography>
-                        </Box>
-                      </CardContent>
-                    </Card>
-
-                    <Card 
-                      elevation={0} 
-                      sx={{ 
-                        border: '1px solid', 
-                        borderColor: 'divider', 
-                        borderRadius: 3,
-                        background: colorSchemes.gradient.primary
-                      }}
-                    >
-                      <CardContent sx={{ p: 3, color: 'white', textAlign: 'center' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                          <AssessmentIcon sx={{ mr: 2 }} />
-                          <Typography variant="h6" fontWeight="bold">
-                            Profit Margin
-                          </Typography>
-                        </Box>
-                        <Typography variant="h2" fontWeight="bold" sx={{ mb: 1 }}>
-                          {costData?.formattedProfitMargin || '0%'}
-                        </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          Overall Performance
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Stack>
-                </Grid>
-
-                <Grid item xs={12}>
                   <Card 
                     elevation={0} 
                     sx={{ 
@@ -1317,52 +1335,37 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
                           Top Profitable Medications
                         </Typography>
                       </Box>
-                      <Grid container spacing={2}>
-                        {(costData?.topProfitableMedications || []).map((medication, index) => (
-                          <Grid item xs={12} sm={6} md={4} key={index}>
-                            <Card 
-                              elevation={0}
-                              sx={{ 
-                                p: 3, 
-                                border: '1px solid', 
-                                borderColor: 'divider',
-                                borderRadius: 2,
-                                background: alpha(colorSchemes.success[index % colorSchemes.success.length], 0.1)
-                              }}
-                            >
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <Avatar 
-                                  sx={{ 
-                                    bgcolor: colorSchemes.success[index % colorSchemes.success.length],
-                                    mr: 2,
-                                    width: 48,
-                                    height: 48
-                                  }}
-                                >
-                                  <PharmacyIcon />
-                                </Avatar>
-                                <Box sx={{ flex: 1 }}>
-                                  <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 0.5 }}>
-                                    {medication.medicationName}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                    Profit: {medication.formattedProfit}
-                                  </Typography>
-                                  <Typography variant="caption" color="success.main" fontWeight="bold">
-                                    Margin: {medication.formattedProfitMargin}
-                                  </Typography>
-                                </Box>
-                                <Chip
-                                  label={medication.formattedProfit}
-                                  color="success"
-                                  variant="outlined"
-                                  sx={{ fontWeight: 'bold' }}
-                                />
-                              </Box>
-                            </Card>
-                          </Grid>
-                        ))}
-                      </Grid>
+                      <ResponsiveContainer width="100%" height={400}>
+                        <BarChart 
+                          data={costData?.topProfitableMedications || []}
+                          layout="horizontal"
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis type="number" stroke="#666" fontSize={12} tickLine={false} />
+                          <YAxis 
+                            type="category" 
+                            dataKey="medicationName" 
+                            stroke="#666" 
+                            fontSize={12}
+                            tickLine={false}
+                            width={100}
+                          />
+                          <RechartsTooltip
+                            formatter={(value: any) => [`₦${value.toLocaleString()}`, 'Profit']}
+                            contentStyle={{
+                              backgroundColor: '#fff',
+                              border: 'none',
+                              borderRadius: '12px',
+                              boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                            }}
+                          />
+                          <Bar 
+                            dataKey="profit" 
+                            fill="#4caf50" 
+                            radius={[0, 4, 4, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </CardContent>
                   </Card>
                 </Grid>
@@ -1375,4 +1378,4 @@ const EnhancedMedicationAnalytics: React.FC<EnhancedMedicationAnalyticsProps> = 
   );
 };
 
-export default EnhancedMedicationAnalytics;
+export default ModernSystemAnalytics;
