@@ -325,3 +325,14 @@ export default {
   validateMedication,
   validateVitalSigns
 };
+/**
+
+ * Validation for patient access validation
+ */
+export const validatePatientAccessRequest = [
+  body('patientId')
+    .notEmpty()
+    .withMessage('Patient ID is required')
+    .isMongoId()
+    .withMessage('Valid patient ID is required'),
+];

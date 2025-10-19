@@ -74,16 +74,75 @@ export const generateDiagnosticAnalysis = async (
       return;
     }
 
-    // Verify patient exists and belongs to the workplace
-    const patient = await Patient.findOne({
-      _id: patientId,
-      workplaceId: workplaceId,
+    // Check if user is super admin
+    const isSuperAdmin = req.user!.role === 'super_admin';
+    
+    // Check if patient exists at all (for debugging)
+    const patientExists = await Patient.findById(patientId);
+    logger.info('Patient existence check for diagnostic analysis', {
+      patientId,
+      exists: !!patientExists,
+      patientWorkplaceId: patientExists?.workplaceId,
+      userWorkplaceId: workplaceId,
+      isDeleted: patientExists?.isDeleted,
+      isSuperAdmin,
     });
 
+    // Verify patient exists and belongs to the workplace (or super admin bypass)
+    let patient;
+    if (isSuperAdmin) {
+      // Super admin can access patients from any workplace
+      patient = await Patient.findOne({
+        _id: patientId,
+        isDeleted: false,
+      });
+      
+      if (patient && patient.workplaceId.toString() !== workplaceId.toString()) {
+        logger.info('Super admin cross-workplace patient access', {
+          patientId,
+          userId,
+          userWorkplaceId: workplaceId,
+          patientWorkplaceId: patient.workplaceId,
+          patientName: `${patient.firstName} ${patient.lastName}`,
+          action: 'AI_DIAGNOSTIC_ANALYSIS',
+        });
+      }
+    } else {
+      // Regular users can only access patients from their workplace
+      patient = await Patient.findOne({
+        _id: patientId,
+        workplaceId: workplaceId,
+        isDeleted: false,
+      });
+    }
+
     if (!patient) {
+      // Provide detailed error information for debugging
+      let debugInfo = '';
+      if (patientExists) {
+        if (patientExists.isDeleted) {
+          debugInfo = 'Patient is marked as deleted';
+        } else if (!isSuperAdmin && patientExists.workplaceId.toString() !== workplaceId.toString()) {
+          debugInfo = `Patient belongs to different workplace (${patientExists.workplaceId})`;
+        } else {
+          debugInfo = 'Unknown access restriction';
+        }
+      } else {
+        debugInfo = 'Patient does not exist in database';
+      }
+
+      logger.warn('Patient access denied for diagnostic analysis', {
+        patientId,
+        userId,
+        workplaceId,
+        debugInfo,
+        isSuperAdmin,
+      });
+
       res.status(404).json({
         success: false,
         message: 'Patient not found or access denied',
+        debug: process.env.NODE_ENV === 'development' ? debugInfo : undefined,
       });
       return;
     }
@@ -409,11 +468,29 @@ export const getDiagnosticHistory = async (
     const userId = req.user!._id;
     const workplaceId = req.user!.workplaceId;
 
-    // Verify patient access
-    const patient = await Patient.findOne({
-      _id: patientId,
-      workplaceId: workplaceId,
-    });
+    // Check if user is super admin
+    const isSuperAdmin = req.user!.role === 'super_admin';
+
+    // Verify patient access (super admin bypass)
+    let patient;
+    if (isSuperAdmin) {
+      patient = await Patient.findById(patientId);
+      if (patient && patient.workplaceId.toString() !== workplaceId.toString()) {
+        logger.info('Super admin cross-workplace patient access', {
+          patientId,
+          userId,
+          userWorkplaceId: workplaceId,
+          patientWorkplaceId: patient.workplaceId,
+          patientName: `${patient.firstName} ${patient.lastName}`,
+          action: 'VIEW_DIAGNOSTIC_HISTORY',
+        });
+      }
+    } else {
+      patient = await Patient.findOne({
+        _id: patientId,
+        workplaceId: workplaceId,
+      });
+    }
 
     if (!patient) {
       res.status(404).json({
@@ -425,20 +502,20 @@ export const getDiagnosticHistory = async (
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const diagnosticCases = await DiagnosticCase.find({
-      patientId,
-      workplaceId,
-    })
+    // Build query filter (super admin can see cases from any workplace)
+    const caseFilter: any = { patientId };
+    if (!isSuperAdmin) {
+      caseFilter.workplaceId = workplaceId;
+    }
+
+    const diagnosticCases = await DiagnosticCase.find(caseFilter)
       .populate('pharmacistId', 'firstName lastName')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
       .select('-aiRequestData -pharmacistDecision.modifications'); // Exclude sensitive data
 
-    const total = await DiagnosticCase.countDocuments({
-      patientId,
-      workplaceId,
-    });
+    const total = await DiagnosticCase.countDocuments(caseFilter);
 
     res.status(200).json({
       success: true,
@@ -482,11 +559,16 @@ export const getDiagnosticCase = async (
   try {
     const { caseId } = req.params;
     const workplaceId = req.user!.workplaceId;
+    const userId = req.user!._id;
+    const isSuperAdmin = req.user!.role === 'super_admin';
 
-    const diagnosticCase = await DiagnosticCase.findOne({
-      caseId,
-      workplaceId,
-    })
+    // Build query filter (super admin can see cases from any workplace)
+    const caseFilter: any = { caseId };
+    if (!isSuperAdmin) {
+      caseFilter.workplaceId = workplaceId;
+    }
+
+    const diagnosticCase = await DiagnosticCase.findOne(caseFilter)
       .populate('patientId', 'firstName lastName age gender')
       .populate('pharmacistId', 'firstName lastName');
 
@@ -496,6 +578,18 @@ export const getDiagnosticCase = async (
         message: 'Diagnostic case not found or access denied',
       });
       return;
+    }
+
+    // Log super admin cross-workplace access
+    if (isSuperAdmin && diagnosticCase.workplaceId.toString() !== workplaceId.toString()) {
+      logger.info('Super admin cross-workplace case access', {
+        caseId,
+        userId,
+        userWorkplaceId: workplaceId,
+        caseWorkplaceId: diagnosticCase.workplaceId,
+        patientId: diagnosticCase.patientId,
+        action: 'VIEW_DIAGNOSTIC_CASE',
+      });
     }
 
     res.status(200).json({
@@ -2461,6 +2555,146 @@ export const deleteReferral = async (
     res.status(500).json({
       success: false,
       message: 'Failed to delete referral',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+/**
+ * Va
+lidate patient access for diagnostics
+ */
+export const validatePatientAccess = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { patientId } = req.body;
+    const userId = req.user!._id;
+    const workplaceId = req.user!.workplaceId;
+
+    logger.info('Validating patient access', {
+      patientId,
+      userId,
+      workplaceId,
+    });
+
+    // Validate patient ID format
+    if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Valid patient ID is required',
+      });
+      return;
+    }
+
+    // Verify workplaceId exists
+    if (!workplaceId) {
+      res.status(400).json({
+        success: false,
+        message: 'User workplace is required for patient access',
+      });
+      return;
+    }
+
+    // Check if patient exists at all (for debugging)
+    const patientExists = await Patient.findById(patientId);
+    logger.info('Patient existence check', {
+      patientId,
+      exists: !!patientExists,
+      patientWorkplaceId: patientExists?.workplaceId,
+      userWorkplaceId: workplaceId,
+    });
+
+    // Check if user is super admin
+    const isSuperAdmin = req.user!.role === 'super_admin';
+
+    // Verify patient exists and belongs to the workplace (or super admin bypass)
+    let patient;
+    if (isSuperAdmin) {
+      // Super admin can access patients from any workplace
+      patient = await Patient.findOne({
+        _id: patientId,
+        isDeleted: false,
+      });
+      
+      if (patient && patient.workplaceId.toString() !== workplaceId.toString()) {
+        logger.info('Super admin cross-workplace patient access', {
+          patientId,
+          userId,
+          userWorkplaceId: workplaceId,
+          patientWorkplaceId: patient.workplaceId,
+          patientName: `${patient.firstName} ${patient.lastName}`,
+          action: 'VALIDATE_PATIENT_ACCESS',
+        });
+      }
+    } else {
+      // Regular users can only access patients from their workplace
+      patient = await Patient.findOne({
+        _id: patientId,
+        workplaceId: workplaceId,
+        isDeleted: false,
+      });
+    }
+
+    if (!patient) {
+      // Provide detailed error information for debugging
+      let debugInfo = '';
+      if (patientExists) {
+        if (patientExists.isDeleted) {
+          debugInfo = 'Patient is marked as deleted';
+        } else if (!isSuperAdmin && patientExists.workplaceId.toString() !== workplaceId.toString()) {
+          debugInfo = `Patient belongs to different workplace (${patientExists.workplaceId})`;
+        } else {
+          debugInfo = 'Unknown access restriction';
+        }
+      } else {
+        debugInfo = 'Patient does not exist in database';
+      }
+
+      logger.warn('Patient access denied', {
+        patientId,
+        userId,
+        workplaceId,
+        debugInfo,
+        isSuperAdmin,
+      });
+
+      res.status(404).json({
+        success: false,
+        message: 'Patient not found or access denied',
+        debug: process.env.NODE_ENV === 'development' ? debugInfo : undefined,
+      });
+      return;
+    }
+
+    // Patient access validated successfully
+    res.status(200).json({
+      success: true,
+      message: 'Patient access validated',
+      data: {
+        patientId: patient._id,
+        patientName: `${patient.firstName} ${patient.lastName}`,
+        workplaceId: patient.workplaceId,
+        hasAccess: true,
+      },
+    });
+
+  } catch (error) {
+    logger.error('Failed to validate patient access', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      patientId: req.body.patientId,
+      userId: req.user?._id,
+      workplaceId: req.user?.workplaceId,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to validate patient access',
       error:
         process.env.NODE_ENV === 'development'
           ? error instanceof Error

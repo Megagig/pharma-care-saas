@@ -265,6 +265,18 @@ const CaseIntakePage: React.FC = () => {
     try {
       setSubmitting(true);
 
+      // First validate patient access
+      console.log('Validating patient access for:', data.patientId);
+      const accessValidation = await aiDiagnosticService.validatePatientAccess(data.patientId);
+      
+      if (!accessValidation.hasAccess) {
+        toast.error(`Patient Access Error: ${accessValidation.error}`);
+        setSubmitting(false);
+        return;
+      }
+
+      console.log('Patient access validated for:', accessValidation.patientName);
+
       // Show loading message with time expectation
       toast.loading(
         'Submitting case for AI analysis... This may take up to 3 minutes.',

@@ -182,6 +182,48 @@ class AIdiagnosticService {
         };
     }
     /**
+     * Validate patient access before submitting diagnostic case
+     */
+    async validatePatientAccess(patientId: string): Promise<{ hasAccess: boolean; patientName?: string; error?: string }> {
+        try {
+            const response = await apiClient.post('/diagnostics/patient/validate', {
+                patientId
+            });
+
+            return {
+                hasAccess: true,
+                patientName: response.data.data.patientName
+            };
+        } catch (error: unknown) {
+            console.error('Failed to validate patient access:', error);
+
+            if (
+                error &&
+                typeof error === 'object' &&
+                'response' in error &&
+                error.response &&
+                typeof error.response === 'object' &&
+                'data' in error.response
+            ) {
+                const response = error.response as {
+                    status: number;
+                    data?: { message?: string; debug?: string };
+                };
+
+                return {
+                    hasAccess: false,
+                    error: response.data?.message || 'Patient access validation failed',
+                };
+            }
+
+            return {
+                hasAccess: false,
+                error: 'Failed to validate patient access'
+            };
+        }
+    }
+
+    /**
      * Submit a diagnostic case for AI analysis
      */
     async submitCase(caseData: DiagnosticCaseData): Promise<DiagnosticCase> {
@@ -248,6 +290,9 @@ class AIdiagnosticService {
                 } else if (response.status === 403) {
                     const message = response.data?.message || 'Access denied';
                     throw new Error(`Permission Error: ${message}`);
+                } else if (response.status === 404) {
+                    const message = response.data?.message || 'Patient not found or access denied';
+                    throw new Error(`Patient Error: ${message}`);
                 } else if (response.status === 402) {
                     const message = response.data?.message || 'Subscription required';
                     throw new Error(`Subscription Error: ${message}`);
