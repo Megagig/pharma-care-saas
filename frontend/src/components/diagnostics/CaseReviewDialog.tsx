@@ -177,7 +177,10 @@ const CaseReviewDialog: React.FC<CaseReviewDialogProps> = ({
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h6">
-              Case Review - {diagnosticCase.patientId.firstName} {diagnosticCase.patientId.lastName}
+              Case Review - {diagnosticCase.patientId ? 
+                `${diagnosticCase.patientId.firstName} ${diagnosticCase.patientId.lastName}` : 
+                'Unknown Patient'
+              }
             </Typography>
             <Button onClick={onClose} color="inherit">
               <CloseIcon />
@@ -202,7 +205,10 @@ const CaseReviewDialog: React.FC<CaseReviewDialogProps> = ({
                       Date: {format(new Date(diagnosticCase.createdAt), 'MMM dd, yyyy HH:mm')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Patient: {diagnosticCase.patientId.firstName} {diagnosticCase.patientId.lastName} ({diagnosticCase.patientId.age}y, {diagnosticCase.patientId.gender})
+                      Patient: {diagnosticCase.patientId ? 
+                        `${diagnosticCase.patientId.firstName} ${diagnosticCase.patientId.lastName} (${diagnosticCase.patientId.age}y, ${diagnosticCase.patientId.gender})` : 
+                        'Unknown Patient'
+                      }
                     </Typography>
 
                     <Divider sx={{ my: 2 }} />
