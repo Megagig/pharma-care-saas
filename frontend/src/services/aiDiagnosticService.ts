@@ -334,11 +334,11 @@ class AIdiagnosticService {
             // Transform backend response to frontend format
             return {
                 id: diagnosticCase._id,
-                patientId: typeof diagnosticCase.patientId === 'object'
+                patientId: diagnosticCase.patientId && typeof diagnosticCase.patientId === 'object'
                     ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
                     : diagnosticCase.patientId,
                 caseData: {
-                    patientId: typeof diagnosticCase.patientId === 'object'
+                    patientId: diagnosticCase.patientId && typeof diagnosticCase.patientId === 'object'
                         ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
                         : diagnosticCase.patientId,
                     symptoms: diagnosticCase.symptoms,
@@ -423,11 +423,11 @@ class AIdiagnosticService {
                 caseId: string;
             }) => ({
                 id: diagnosticCase._id,
-                patientId: typeof diagnosticCase.patientId === 'object'
+                patientId: diagnosticCase.patientId && typeof diagnosticCase.patientId === 'object'
                     ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
                     : diagnosticCase.patientId,
                 caseData: {
-                    patientId: typeof diagnosticCase.patientId === 'object'
+                    patientId: diagnosticCase.patientId && typeof diagnosticCase.patientId === 'object'
                         ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
                         : diagnosticCase.patientId,
                     symptoms: diagnosticCase.symptoms,

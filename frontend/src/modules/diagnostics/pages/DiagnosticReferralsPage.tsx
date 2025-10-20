@@ -149,8 +149,8 @@ const DiagnosticReferralsPage: React.FC = () => {
       const result = await downloadMutation.mutateAsync({ caseId, format });
 
       // Get patient and pharmacist names from the selected referral
-      const patientName = selectedReferral?.patientId ?
-        `${selectedReferral.patientId.firstName} ${selectedReferral.patientId.lastName}` :
+      const patientName = selectedReferral?.patientId && typeof selectedReferral.patientId === 'object' ?
+        `${selectedReferral.patientId.firstName || ''} ${selectedReferral.patientId.lastName || ''}`.trim() :
         undefined;
       const pharmacistName = selectedReferral?.pharmacistId ?
         `${selectedReferral.pharmacistId.firstName} ${selectedReferral.pharmacistId.lastName}` :
