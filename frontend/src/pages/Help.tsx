@@ -169,7 +169,9 @@ const Help: React.FC = () => {
   const [showContactDialog, setShowContactDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showVideoDialog, setShowVideoDialog] = useState(false);
+  const [showArticleDialog, setShowArticleDialog] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<VideoTutorial | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null);
   
   // Feedback form states
   const [feedbackType, setFeedbackType] = useState('general');
@@ -360,6 +362,11 @@ const Help: React.FC = () => {
   const handleVideoPlay = (video: VideoTutorial) => {
     setSelectedVideo(video);
     setShowVideoDialog(true);
+  };
+
+  const handleArticleRead = (article: HelpArticle) => {
+    setSelectedArticle(article);
+    setShowArticleDialog(true);
   };
 
   const getWhatsAppLink = () => {
@@ -761,6 +768,7 @@ const Help: React.FC = () => {
                       variant="contained" 
                       fullWidth 
                       startIcon={<ArticleIcon />}
+                      onClick={() => handleArticleRead(article)}
                       sx={{
                         background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
                       }}
@@ -1747,6 +1755,87 @@ const Help: React.FC = () => {
             Open in YouTube
           </Button>
           <Button onClick={() => setShowVideoDialog(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Article Reader Dialog */}
+      <Dialog
+        open={showArticleDialog}
+        onClose={() => setShowArticleDialog(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: { maxHeight: '90vh' }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" component="div">
+            {selectedArticle?.title}
+          </Typography>
+          <IconButton onClick={() => setShowArticleDialog(false)}>
+            <ClearIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedArticle && (
+            <Box>
+              <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                {selectedArticle.difficulty && (
+                  <Chip
+                    label={selectedArticle.difficulty}
+                    size="small"
+                    color={
+                      selectedArticle.difficulty === 'beginner'
+                        ? 'success'
+                        : selectedArticle.difficulty === 'intermediate'
+                        ? 'warning'
+                        : 'error'
+                    }
+                  />
+                )}
+                <Chip
+                  label={selectedArticle.category}
+                  size="small"
+                  variant="outlined"
+                />
+              </Box>
+              
+              <Typography variant="body2" color="text.secondary" paragraph>
+                By {selectedArticle.authorName} • {selectedArticle.viewCount} views
+              </Typography>
+              
+              <Typography variant="body1" paragraph sx={{ fontWeight: 500 }}>
+                {selectedArticle.excerpt}
+              </Typography>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Typography variant="body1" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                {selectedArticle.content}
+              </Typography>
+              
+              {selectedArticle.tags.length > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Tags:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selectedArticle.tags.map((tag) => (
+                      <Chip 
+                        key={tag} 
+                        label={tag} 
+                        size="small" 
+                        variant="outlined"
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowArticleDialog(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Container>
