@@ -702,6 +702,12 @@ export class SupportController {
    */
   async getHelpContent(req: AuthRequest, res: Response): Promise<void> {
     try {
+      console.log('🔍 Help content request from user:', {
+        userId: req.user?._id,
+        userRole: req.user?.role,
+        userEmail: req.user?.email
+      });
+      
       const {
         search,
         category,
@@ -823,6 +829,11 @@ export class SupportController {
    */
   async getHelpCategories(req: AuthRequest, res: Response): Promise<void> {
     try {
+      console.log('📂 Help categories request from user:', {
+        userId: req.user?._id,
+        userRole: req.user?.role,
+        userEmail: req.user?.email
+      });
       // Get categories with counts
       const [articleCategories, faqCategories, videoCategories] = await Promise.all([
         KnowledgeBaseArticle.aggregate([
@@ -910,6 +921,42 @@ export class SupportController {
     } catch (error) {
       logger.error('Error submitting feedback:', error);
       sendError(res, 'FEEDBACK_ERROR', 'Failed to submit feedback', 500);
+    }
+  }
+
+  /**
+   * Get public contact information for help page (for all authenticated users)
+   * GET /api/admin/saas/support/help/contact-info
+   */
+  async getHelpContactInfo(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      console.log('📞 Help contact info request from user:', {
+        userId: req.user?._id,
+        userRole: req.user?.role,
+        userEmail: req.user?.email
+      });
+      const settings = await HelpSettings.getSettings();
+      
+      // Return only public contact information
+      const publicInfo = {
+        whatsappNumber: settings.whatsappNumber,
+        supportEmail: settings.supportEmail,
+        supportPhone: settings.supportPhone,
+        businessHours: settings.businessHours,
+        systemStatus: settings.systemStatus,
+        features: {
+          enableWhatsappSupport: settings.features.enableWhatsappSupport,
+          enableLiveChat: settings.features.enableLiveChat,
+        },
+        customization: {
+          welcomeMessage: settings.customization.welcomeMessage,
+        }
+      };
+      
+      sendSuccess(res, publicInfo, 'Help contact information retrieved successfully');
+    } catch (error) {
+      logger.error('Error fetching help contact info:', error);
+      sendError(res, 'HELP_CONTENT_ERROR', 'Failed to fetch help contact information', 500);
     }
   }
 
@@ -1338,6 +1385,107 @@ export class SupportController {
     } catch (error) {
       logger.error('Error responding to feedback:', error);
       sendError(res, 'FEEDBACK_RESPONSE_ERROR', 'Failed to respond to feedback', 500);
+    }
+  }
+
+  // Knowledge Base Article Management (Super Admin only)
+
+  /**
+   * Create Knowledge Base Article
+   * POST /api/admin/saas/support/knowledge-base/articles
+   */
+  async createKnowledgeBaseArticle(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const articleData = {
+        ...req.body,
+        authorId: req.user!._id,
+        authorName: `${req.user!.firstName} ${req.user!.lastName}`,
+        slug: req.body.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
+      };
+
+      const article = await KnowledgeBaseArticle.create(articleData);
+      sendSuccess(res, article, 'Article created successfully', 201);
+    } catch (error) {
+      logger.error('Error creating knowledge base article:', error);
+      sendError(res, 'ARTICLE_CREATION_ERROR', 'Failed to create article', 500);
+    }
+  }
+
+  /**
+   * Update Knowledge Base Article
+   * PUT /api/admin/saas/support/knowledge-base/articles/:id
+   */
+  async updateKnowledgeBaseArticle(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const article = await KnowledgeBaseArticle.findByIdAndUpdate(
+        id,
+        {
+          ...req.body,
+          lastEditedBy: req.user!._id,
+          lastEditedAt: new Date()
+        },
+        { new: true }
+      );
+
+      if (!article) {
+        sendError(res, 'ARTICLE_NOT_FOUND', 'Article not found', 404);
+        return;
+      }
+
+      sendSuccess(res, article, 'Article updated successfully');
+    } catch (error) {
+      logger.error('Error updating knowledge base article:', error);
+      sendError(res, 'ARTICLE_UPDATE_ERROR', 'Failed to update article', 500);
+    }
+  }
+
+  /**
+   * Delete Knowledge Base Article
+   * DELETE /api/admin/saas/support/knowledge-base/articles/:id
+   */
+  async deleteKnowledgeBaseArticle(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const article = await KnowledgeBaseArticle.findByIdAndDelete(id);
+
+      if (!article) {
+        sendError(res, 'ARTICLE_NOT_FOUND', 'Article not found', 404);
+        return;
+      }
+
+      sendSuccess(res, null, 'Article deleted successfully');
+    } catch (error) {
+      logger.error('Error deleting knowledge base article:', error);
+      sendError(res, 'ARTICLE_DELETE_ERROR', 'Failed to delete article', 500);
+    }
+  }
+
+  /**
+   * Get Knowledge Base Article by ID
+   * GET /api/admin/saas/support/knowledge-base/articles/:id
+   */
+  async getKnowledgeBaseArticleById(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const article = await KnowledgeBaseArticle.findById(id)
+        .populate('authorId', 'firstName lastName');
+
+      if (!article) {
+        sendError(res, 'ARTICLE_NOT_FOUND', 'Article not found', 404);
+        return;
+      }
+
+      // Increment view count
+      await article.incrementViewCount();
+
+      sendSuccess(res, article, 'Article retrieved successfully');
+    } catch (error) {
+      logger.error('Error fetching knowledge base article:', error);
+      sendError(res, 'ARTICLE_FETCH_ERROR', 'Failed to fetch article', 500);
     }
   }
 }

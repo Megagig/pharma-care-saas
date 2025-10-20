@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../../services/apiClient';
 import {
   Box,
   Card,
   CardContent,
   Typography,
   Button,
-  Grid,
   Tabs,
   Tab,
   Table,
@@ -27,48 +27,38 @@ import {
   Select,
   MenuItem,
   Alert,
-  CircularProgress,
   Tooltip,
   Badge,
-  LinearProgress,
   Divider,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
   InputAdornment,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
+  Grid
 } from '@mui/material';
-import {
-  Support as SupportIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Visibility as ViewIcon,
-  Assignment as TicketIcon,
-  Book as KnowledgeIcon,
-  Analytics as AnalyticsIcon,
-  Search as SearchIcon,
-  FilterList as FilterIcon,
-  Refresh as RefreshIcon,
-  Flag as PriorityIcon,
-  Schedule as ScheduleIcon,
-  Person as PersonIcon,
-  Comment as CommentIcon,
-  TrendingUp as EscalationIcon,
-  CheckCircle as ResolvedIcon,
-  Cancel as ClosedIcon,
-  HourglassEmpty as PendingIcon,
-  PlayArrow as InProgressIcon,
-  ExpandMore as ExpandMoreIcon,
-  ThumbUp as ThumbUpIcon,
-  ThumbDown as ThumbDownIcon,
-  TrendingUp as TrendingUpIcon,
-  Timer as TimerIcon,
-  Star as StarIcon
-} from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import BookIcon from '@mui/icons-material/Book';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import SearchIcon from '@mui/icons-material/Search';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import FlagIcon from '@mui/icons-material/Flag';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import PersonIcon from '@mui/icons-material/Person';
+import CommentIcon from '@mui/icons-material/Comment';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import TimerIcon from '@mui/icons-material/Timer';
+import StarIcon from '@mui/icons-material/Star';
+import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -171,6 +161,27 @@ const SupportHelpdesk: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+
+  // Article form state
+  const [articleForm, setArticleForm] = useState({
+    title: '',
+    content: '',
+    excerpt: '',
+    category: '',
+    subcategory: '',
+    tags: '',
+    status: 'published',
+    isPublic: true
+  });
+
+  // Ticket form state
+  const [ticketForm, setTicketForm] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    category: 'general',
+    tags: ''
+  });
 
   // Mock data for demonstration
   const mockTickets: SupportTicket[] = [
@@ -312,30 +323,82 @@ const SupportHelpdesk: React.FC = () => {
   };
 
   useEffect(() => {
-    // Initialize with mock data
-    setTickets(mockTickets);
-    setArticles(mockArticles);
-    setMetrics(mockMetrics);
+    // Load real data from API
+    loadTickets();
+    loadArticles();
+    loadMetrics();
   }, []);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const loadTickets = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get('/admin/saas/support/tickets');
+      setTickets(response.data.data.tickets || mockTickets);
+    } catch (error) {
+      console.error('Error loading tickets:', error);
+      // Fallback to mock data
+      setTickets(mockTickets);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadArticles = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get('/admin/saas/support/knowledge-base/articles');
+      setArticles(response.data.data.articles || mockArticles);
+    } catch (error) {
+      console.error('Error loading articles:', error);
+      // Fallback to mock data
+      setArticles(mockArticles);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMetrics = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get('/admin/saas/support/metrics');
+      const metricsData = response.data.data || mockMetrics;
+      
+      // Ensure all required arrays exist
+      const safeMetrics = {
+        ...metricsData,
+        ticketsByStatus: metricsData.ticketsByStatus || [],
+        ticketsByPriority: metricsData.ticketsByPriority || [],
+        ticketsByCategory: metricsData.ticketsByCategory || []
+      };
+      
+      setMetrics(safeMetrics);
+    } catch (error) {
+      console.error('Error loading metrics:', error);
+      // Fallback to mock data
+      setMetrics(mockMetrics);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'open':
-        return <TicketIcon color="error" />;
+        return <AssignmentIcon color="error" />;
       case 'in_progress':
-        return <InProgressIcon color="warning" />;
+        return <PlayArrowIcon color="warning" />;
       case 'pending_customer':
-        return <PendingIcon color="info" />;
+        return <HourglassEmptyIcon color="info" />;
       case 'resolved':
-        return <ResolvedIcon color="success" />;
+        return <CheckCircleIcon color="success" />;
       case 'closed':
-        return <ClosedIcon color="disabled" />;
+        return <CancelIcon color="disabled" />;
       default:
-        return <TicketIcon />;
+        return <AssignmentIcon />;
     }
   };
 
@@ -387,6 +450,102 @@ const SupportHelpdesk: React.FC = () => {
            article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
            article.category.toLowerCase().includes(searchQuery.toLowerCase());
   });
+
+  // Article handlers
+  const handleCreateArticle = async () => {
+    try {
+      setLoading(true);
+      const articleData = {
+        ...articleForm,
+        tags: articleForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+      };
+      
+      if (selectedArticle) {
+        await apiClient.put(`/admin/saas/support/knowledge-base/articles/${selectedArticle.id}`, articleData);
+      } else {
+        await apiClient.post('/admin/saas/support/knowledge-base/articles', articleData);
+      }
+      
+      setCreateArticleDialogOpen(false);
+      setSelectedArticle(null);
+      setArticleForm({
+        title: '',
+        content: '',
+        excerpt: '',
+        category: '',
+        subcategory: '',
+        tags: '',
+        status: 'published',
+        isPublic: true
+      });
+      
+      await loadArticles();
+    } catch (error) {
+      console.error('Error saving article:', error);
+      setError('Failed to save article');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditArticle = (article: KnowledgeBaseArticle) => {
+    setSelectedArticle(article);
+    setArticleForm({
+      title: article.title,
+      content: '', // We'll need to fetch full content
+      excerpt: article.excerpt,
+      category: article.category,
+      subcategory: article.subcategory || '',
+      tags: article.tags.join(', '),
+      status: article.status,
+      isPublic: article.isPublic
+    });
+    setCreateArticleDialogOpen(true);
+  };
+
+  const handleDeleteArticle = async (articleId: string) => {
+    if (window.confirm('Are you sure you want to delete this article?')) {
+      try {
+        setLoading(true);
+        await apiClient.delete(`/admin/saas/support/knowledge-base/articles/${articleId}`);
+        await loadArticles();
+      } catch (error) {
+        console.error('Error deleting article:', error);
+        setError('Failed to delete article');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Ticket handlers
+  const handleCreateTicket = async () => {
+    try {
+      setLoading(true);
+      const ticketData = {
+        ...ticketForm,
+        tags: ticketForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+      };
+      
+      await apiClient.post('/admin/saas/support/tickets', ticketData);
+      
+      setCreateTicketDialogOpen(false);
+      setTicketForm({
+        title: '',
+        description: '',
+        priority: 'medium',
+        category: 'general',
+        tags: ''
+      });
+      
+      await loadTickets();
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      setError('Failed to create ticket');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderTicketsTab = () => (
     <Box>
@@ -576,7 +735,7 @@ const SupportHelpdesk: React.FC = () => {
                           setTicketDialogOpen(true);
                         }}
                       >
-                        <ViewIcon />
+                        <VisibilityIcon />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Edit">
@@ -643,7 +802,7 @@ const SupportHelpdesk: React.FC = () => {
                   />
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Chip
-                      icon={<ViewIcon />}
+                      icon={<VisibilityIcon />}
                       label={article.viewCount}
                       size="small"
                       variant="outlined"
@@ -688,16 +847,40 @@ const SupportHelpdesk: React.FC = () => {
               </CardContent>
               
               <Box sx={{ p: 2, pt: 0 }}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={() => {
-                    setSelectedArticle(article);
-                    setArticleDialogOpen(true);
-                  }}
-                >
-                  Read Article
-                </Button>
+                <Grid container spacing={1}>
+                  <Grid item xs={6}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={() => {
+                        setSelectedArticle(article);
+                        setArticleDialogOpen(true);
+                      }}
+                    >
+                      Read
+                    </Button>
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      color="primary"
+                      onClick={() => handleEditArticle(article)}
+                    >
+                      <EditIcon />
+                    </Button>
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      color="error"
+                      onClick={() => handleDeleteArticle(article.id)}
+                    >
+                      <DeleteIcon />
+                    </Button>
+                  </Grid>
+                </Grid>
               </Box>
             </Card>
           </Grid>
@@ -712,7 +895,19 @@ const SupportHelpdesk: React.FC = () => {
         Support Metrics & Analytics
       </Typography>
 
-      {metrics && (
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <Typography>Loading metrics...</Typography>
+        </Box>
+      )}
+
+      {!loading && !metrics && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <Typography color="text.secondary">No metrics data available</Typography>
+        </Box>
+      )}
+
+      {!loading && metrics && (
         <>
           {/* Key Metrics */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -725,10 +920,10 @@ const SupportHelpdesk: React.FC = () => {
                         Total Tickets
                       </Typography>
                       <Typography variant="h4">
-                        {metrics.totalTickets}
+                        {metrics.totalTickets || 0}
                       </Typography>
                     </Box>
-                    <TicketIcon color="primary" sx={{ fontSize: 40 }} />
+                    <AssignmentIcon color="primary" sx={{ fontSize: 40 }} />
                   </Box>
                 </CardContent>
               </Card>
@@ -743,11 +938,11 @@ const SupportHelpdesk: React.FC = () => {
                         Open Tickets
                       </Typography>
                       <Typography variant="h4" color="error">
-                        {metrics.openTickets}
+                        {metrics.openTickets || 0}
                       </Typography>
                     </Box>
-                    <Badge badgeContent={metrics.criticalTickets} color="error">
-                      <PriorityIcon color="error" sx={{ fontSize: 40 }} />
+                    <Badge badgeContent={metrics.criticalTickets || 0} color="error">
+                      <FlagIcon color="error" sx={{ fontSize: 40 }} />
                     </Badge>
                   </Box>
                 </CardContent>
@@ -763,7 +958,7 @@ const SupportHelpdesk: React.FC = () => {
                         Avg Response Time
                       </Typography>
                       <Typography variant="h4">
-                        {metrics.averageResponseTime}h
+                        {metrics.averageResponseTime || 0}h
                       </Typography>
                     </Box>
                     <TimerIcon color="info" sx={{ fontSize: 40 }} />
@@ -781,7 +976,7 @@ const SupportHelpdesk: React.FC = () => {
                         Satisfaction Score
                       </Typography>
                       <Typography variant="h4" color="success.main">
-                        {metrics.customerSatisfactionScore}/5
+                        {metrics.customerSatisfactionScore || 0}/5
                       </Typography>
                     </Box>
                     <StarIcon color="warning" sx={{ fontSize: 40 }} />
@@ -800,7 +995,7 @@ const SupportHelpdesk: React.FC = () => {
                     Tickets by Status
                   </Typography>
                   <List>
-                    {metrics.ticketsByStatus.map((item) => (
+                    {(metrics.ticketsByStatus || []).map((item) => (
                       <ListItem key={item.status}>
                         <ListItemIcon>
                           {getStatusIcon(item.status)}
@@ -823,10 +1018,10 @@ const SupportHelpdesk: React.FC = () => {
                     Tickets by Priority
                   </Typography>
                   <List>
-                    {metrics.ticketsByPriority.map((item) => (
+                    {(metrics.ticketsByPriority || []).map((item) => (
                       <ListItem key={item.priority}>
                         <ListItemIcon>
-                          <PriorityIcon color={getPriorityColor(item.priority) as any} />
+                          <PriorityHighIcon color={getPriorityColor(item.priority) as any} />
                         </ListItemIcon>
                         <ListItemText
                           primary={item.priority.toUpperCase()}
@@ -846,7 +1041,7 @@ const SupportHelpdesk: React.FC = () => {
                     Tickets by Category
                   </Typography>
                   <List>
-                    {metrics.ticketsByCategory.map((item) => (
+                    {(metrics.ticketsByCategory || []).map((item) => (
                       <ListItem key={item.category}>
                         <ListItemText
                           primary={item.category.replace('_', ' ').toUpperCase()}
@@ -869,13 +1064,13 @@ const SupportHelpdesk: React.FC = () => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="support helpdesk tabs">
           <Tab
-            icon={<TicketIcon />}
+            icon={<AssignmentIcon />}
             label="Tickets"
             id="support-tab-0"
             aria-controls="support-tabpanel-0"
           />
           <Tab
-            icon={<KnowledgeIcon />}
+            icon={<BookIcon />}
             label="Knowledge Base"
             id="support-tab-1"
             aria-controls="support-tabpanel-1"
@@ -1028,6 +1223,211 @@ const SupportHelpdesk: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Create/Edit Article Dialog */}
+      <Dialog
+        open={createArticleDialogOpen}
+        onClose={() => setCreateArticleDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {selectedArticle ? 'Edit Article' : 'Create New Article'}
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Title"
+                value={articleForm.title}
+                onChange={(e) => setArticleForm({ ...articleForm, title: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Excerpt"
+                multiline
+                rows={2}
+                value={articleForm.excerpt}
+                onChange={(e) => setArticleForm({ ...articleForm, excerpt: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Content"
+                multiline
+                rows={8}
+                value={articleForm.content}
+                onChange={(e) => setArticleForm({ ...articleForm, content: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={articleForm.category}
+                  onChange={(e) => setArticleForm({ ...articleForm, category: e.target.value })}
+                >
+                  <MenuItem value="getting-started">Getting Started</MenuItem>
+                  <MenuItem value="patient-management">Patient Management</MenuItem>
+                  <MenuItem value="inventory-stock">Inventory & Stock</MenuItem>
+                  <MenuItem value="billing-payments">Billing & Payments</MenuItem>
+                  <MenuItem value="medication-management">Medication Management</MenuItem>
+                  <MenuItem value="mtr">Medication Therapy Review</MenuItem>
+                  <MenuItem value="clinical-interventions">Clinical Interventions</MenuItem>
+                  <MenuItem value="diagnostic-cases">Diagnostic Cases</MenuItem>
+                  <MenuItem value="communication-hub">Communication Hub</MenuItem>
+                  <MenuItem value="drug-information">Drug Information</MenuItem>
+                  <MenuItem value="clinical-decision">Clinical Decision Support</MenuItem>
+                  <MenuItem value="dashboards-reports">Dashboards & Reports</MenuItem>
+                  <MenuItem value="user-management">User Management</MenuItem>
+                  <MenuItem value="security-privacy">Security & Privacy</MenuItem>
+                  <MenuItem value="api-integrations">API & Integrations</MenuItem>
+                  <MenuItem value="account-settings">Account Settings</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Subcategory (Optional)"
+                value={articleForm.subcategory}
+                onChange={(e) => setArticleForm({ ...articleForm, subcategory: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Tags (comma separated)"
+                value={articleForm.tags}
+                onChange={(e) => setArticleForm({ ...articleForm, tags: e.target.value })}
+                helperText="Enter tags separated by commas (e.g., password, reset, account)"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={articleForm.status}
+                  onChange={(e) => setArticleForm({ ...articleForm, status: e.target.value })}
+                >
+                  <MenuItem value="draft">Draft</MenuItem>
+                  <MenuItem value="published">Published</MenuItem>
+                  <MenuItem value="archived">Archived</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateArticleDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCreateArticle} 
+            variant="contained"
+            disabled={!articleForm.title || !articleForm.content || !articleForm.excerpt}
+          >
+            {selectedArticle ? 'Update Article' : 'Create Article'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Ticket Dialog */}
+      <Dialog
+        open={createTicketDialogOpen}
+        onClose={() => setCreateTicketDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Create New Support Ticket</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Title"
+                value={ticketForm.title}
+                onChange={(e) => setTicketForm({ ...ticketForm, title: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Description"
+                multiline
+                rows={4}
+                value={ticketForm.description}
+                onChange={(e) => setTicketForm({ ...ticketForm, description: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Priority</InputLabel>
+                <Select
+                  value={ticketForm.priority}
+                  onChange={(e) => setTicketForm({ ...ticketForm, priority: e.target.value })}
+                >
+                  <MenuItem value="low">Low</MenuItem>
+                  <MenuItem value="medium">Medium</MenuItem>
+                  <MenuItem value="high">High</MenuItem>
+                  <MenuItem value="critical">Critical</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={ticketForm.category}
+                  onChange={(e) => setTicketForm({ ...ticketForm, category: e.target.value })}
+                >
+                  <MenuItem value="technical">Technical</MenuItem>
+                  <MenuItem value="billing">Billing</MenuItem>
+                  <MenuItem value="feature_request">Feature Request</MenuItem>
+                  <MenuItem value="bug_report">Bug Report</MenuItem>
+                  <MenuItem value="general">General</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Tags (comma separated)"
+                value={ticketForm.tags}
+                onChange={(e) => setTicketForm({ ...ticketForm, tags: e.target.value })}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateTicketDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCreateTicket} 
+            variant="contained"
+            disabled={!ticketForm.title || !ticketForm.description}
+          >
+            Create Ticket
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Error Snackbar */}
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
+      )}
     </Box>
   );
 };

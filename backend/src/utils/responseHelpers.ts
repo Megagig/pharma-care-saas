@@ -159,7 +159,11 @@ export type ErrorCode =
   | 'VIDEO_DELETE_ERROR'
   | 'FEEDBACK_FETCH_ERROR'
   | 'FEEDBACK_NOT_FOUND'
-  | 'FEEDBACK_RESPONSE_ERROR';
+  | 'FEEDBACK_RESPONSE_ERROR'
+  | 'ARTICLE_NOT_FOUND'
+  | 'ARTICLE_FETCH_ERROR'
+  | 'ARTICLE_UPDATE_ERROR'
+  | 'ARTICLE_DELETE_ERROR';
 
 // Standard API response interface
 export interface ApiResponse<T = any> {

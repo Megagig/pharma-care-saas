@@ -205,7 +205,7 @@ const Help: React.FC = () => {
       if (selectedDifficulty !== 'all') params.append('difficulty', selectedDifficulty);
       
       console.log('Fetching help content with params:', params.toString());
-      const response = await apiClient.get(`/admin/saas/support/help/content?${params}`);
+      const response = await apiClient.get(`/help/content?${params}`);
       console.log('Help content response:', response.data);
       
       // Ensure we have the expected data structure
@@ -234,7 +234,7 @@ const Help: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await apiClient.get('/admin/saas/support/help/categories');
+      const response = await apiClient.get('/help/categories');
       setCategories(response.data?.data?.categories || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -244,17 +244,17 @@ const Help: React.FC = () => {
 
   const fetchHelpSettings = async () => {
     try {
-      const response = await apiClient.get('/admin/saas/support/help/settings');
+      const response = await apiClient.get('/help/contact-info');
       setHelpSettings(response.data?.data || null);
     } catch (error) {
-      console.error('Error fetching help settings:', error);
+      console.error('Error fetching help contact info:', error);
       setHelpSettings(null);
     }
   };
 
   const submitFeedback = async () => {
     try {
-      await apiClient.post('/admin/saas/support/help/feedback', {
+      await apiClient.post('/help/feedback', {
         type: feedbackType,
         rating: feedbackRating,
         title: feedbackTitle,
@@ -283,7 +283,7 @@ const Help: React.FC = () => {
         params.append('categories', selectedCategory);
       }
       
-      const response = await apiClient.get(`/admin/saas/support/help/manual/pdf?${params}`, {
+      const response = await apiClient.get(`/help/manual/pdf?${params}`, {
         responseType: 'blob'
       });
       

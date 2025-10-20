@@ -10,7 +10,6 @@ router.use(auth);
 
 // Ticket Management Routes
 router.post('/tickets', 
-  requireRole('super_admin', 'admin', 'support_agent', 'user'), 
   supportController.createTicket.bind(supportController)
 );
 
@@ -20,7 +19,6 @@ router.get('/tickets',
 );
 
 router.get('/tickets/:ticketId', 
-  requireRole('super_admin', 'admin', 'support_agent', 'user'), 
   supportController.getTicketById.bind(supportController)
 );
 
@@ -40,12 +38,10 @@ router.put('/tickets/:ticketId/escalate',
 );
 
 router.post('/tickets/:ticketId/comments', 
-  requireRole('super_admin', 'admin', 'support_agent', 'user'), 
   supportController.addComment.bind(supportController)
 );
 
 router.get('/tickets/:ticketId/comments', 
-  requireRole('super_admin', 'admin', 'support_agent', 'user'), 
   supportController.getTicketComments.bind(supportController)
 );
 
@@ -55,12 +51,10 @@ router.post('/knowledge-base/articles',
 );
 
 router.get('/knowledge-base/articles', 
-  requireRole('super_admin', 'admin', 'support_agent', 'user'), 
   supportController.getArticles.bind(supportController)
 );
 
 router.get('/knowledge-base/search', 
-  requireRole('super_admin', 'admin', 'support_agent', 'user'), 
   supportController.searchArticles.bind(supportController)
 );
 
@@ -76,25 +70,25 @@ router.get('/analytics',
 
 // Help System Routes
 
-// Public help content routes (for pharmacists, admins, super admins)
+// Public help content routes (accessible to ALL authenticated users)
 router.get('/help/content', 
-  requireRole('super_admin', 'admin', 'pharmacist', 'owner', 'user'), 
   supportController.getHelpContent.bind(supportController)
 );
 
 router.get('/help/categories', 
-  requireRole('super_admin', 'admin', 'pharmacist', 'owner', 'user'), 
   supportController.getHelpCategories.bind(supportController)
 );
 
 router.post('/help/feedback', 
-  requireRole('super_admin', 'admin', 'pharmacist', 'owner', 'user'), 
   supportController.submitHelpFeedback.bind(supportController)
 );
 
 router.get('/help/manual/pdf', 
-  requireRole('super_admin', 'admin', 'pharmacist', 'owner', 'user'), 
   supportController.generatePDFManual.bind(supportController)
+);
+
+router.get('/help/contact-info', 
+  supportController.getHelpContactInfo.bind(supportController)
 );
 
 // Super Admin only routes
@@ -154,6 +148,26 @@ router.get('/help/feedback',
 router.put('/help/feedback/:id/respond', 
   requireRole('super_admin'), 
   supportController.respondToFeedback.bind(supportController)
+);
+
+// Knowledge Base Article Management (Super Admin only)
+router.post('/knowledge-base/articles', 
+  requireRole('super_admin'), 
+  supportController.createKnowledgeBaseArticle.bind(supportController)
+);
+
+router.put('/knowledge-base/articles/:id', 
+  requireRole('super_admin'), 
+  supportController.updateKnowledgeBaseArticle.bind(supportController)
+);
+
+router.delete('/knowledge-base/articles/:id', 
+  requireRole('super_admin'), 
+  supportController.deleteKnowledgeBaseArticle.bind(supportController)
+);
+
+router.get('/knowledge-base/articles/:id', 
+  supportController.getKnowledgeBaseArticleById.bind(supportController)
 );
 
 export default router;
