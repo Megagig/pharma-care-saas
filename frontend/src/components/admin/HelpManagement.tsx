@@ -774,6 +774,8 @@ const HelpManagement: React.FC = () => {
                 label="YouTube URL"
                 value={videoForm.youtubeUrl}
                 onChange={(e) => setVideoForm({ ...videoForm, youtubeUrl: e.target.value })}
+                helperText="Enter a valid YouTube URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID)"
+                placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -799,6 +801,19 @@ const HelpManagement: React.FC = () => {
                   <MenuItem value="beginner">Beginner</MenuItem>
                   <MenuItem value="intermediate">Intermediate</MenuItem>
                   <MenuItem value="advanced">Advanced</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={videoForm.status}
+                  onChange={(e) => setVideoForm({ ...videoForm, status: e.target.value })}
+                >
+                  <MenuItem value="draft">Draft</MenuItem>
+                  <MenuItem value="published">Published</MenuItem>
+                  <MenuItem value="archived">Archived</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

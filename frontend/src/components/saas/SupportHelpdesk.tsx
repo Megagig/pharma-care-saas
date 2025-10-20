@@ -153,6 +153,12 @@ const SupportHelpdesk: React.FC = () => {
   const [articleDialogOpen, setArticleDialogOpen] = useState(false);
   const [createArticleDialogOpen, setCreateArticleDialogOpen] = useState(false);
   
+  // Video Tutorials state
+  const [videos, setVideos] = useState<any[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<any>(null);
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false);
+  const [createVideoDialogOpen, setCreateVideoDialogOpen] = useState(false);
+  
   // Metrics state
   const [metrics, setMetrics] = useState<SupportMetrics | null>(null);
   
@@ -181,6 +187,17 @@ const SupportHelpdesk: React.FC = () => {
     priority: 'medium',
     category: 'general',
     tags: ''
+  });
+
+  // Video form state
+  const [videoForm, setVideoForm] = useState({
+    title: '',
+    description: '',
+    youtubeUrl: '',
+    category: 'getting-started',
+    difficulty: 'beginner',
+    tags: '',
+    status: 'published'
   });
 
   // Mock data for demonstration
@@ -326,6 +343,7 @@ const SupportHelpdesk: React.FC = () => {
     // Load real data from API
     loadTickets();
     loadArticles();
+    loadVideos();
     loadMetrics();
   }, []);
 
@@ -376,6 +394,19 @@ const SupportHelpdesk: React.FC = () => {
       console.error('Error loading metrics:', error);
       // Fallback to mock data
       setMetrics(mockMetrics);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadVideos = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get('/admin/saas/support/help/content?contentType=videos');
+      setVideos(response.data.data.videos || []);
+    } catch (error) {
+      console.error('Error loading videos:', error);
+      setVideos([]);
     } finally {
       setLoading(false);
     }
@@ -512,6 +543,96 @@ const SupportHelpdesk: React.FC = () => {
       } catch (error) {
         console.error('Error deleting article:', error);
         setError('Failed to delete article');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Video handlers
+  const handleCreateVideo = async () => {
+    try {
+      setLoading(true);
+      const videoData = {
+        ...videoForm,
+        tags: videoForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+      };
+      
+      const response = await apiClient.post('/admin/saas/support/help/videos', videoData);
+      await loadVideos(); // Reload videos after creation
+      setVideoDialogOpen(false);
+      setVideoForm({
+        title: '',
+        description: '',
+        youtubeUrl: '',
+        category: 'getting-started',
+        difficulty: 'beginner',
+        tags: '',
+        status: 'published'
+      });
+      setError(null);
+    } catch (err) {
+      console.error('Error creating video:', err);
+      setError('Failed to create video tutorial');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditVideo = (video: any) => {
+    setSelectedVideo(video);
+    setVideoForm({
+      title: video.title,
+      description: video.description,
+      youtubeUrl: video.youtubeUrl,
+      category: video.category,
+      difficulty: video.difficulty,
+      tags: video.tags ? video.tags.join(', ') : '',
+      status: video.status
+    });
+    setVideoDialogOpen(true);
+  };
+
+  const handleUpdateVideo = async () => {
+    try {
+      setLoading(true);
+      const videoData = {
+        ...videoForm,
+        tags: videoForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+      };
+      
+      await apiClient.put(`/admin/saas/support/help/videos/${selectedVideo._id}`, videoData);
+      await loadVideos(); // Reload videos after update
+      setVideoDialogOpen(false);
+      setSelectedVideo(null);
+      setVideoForm({
+        title: '',
+        description: '',
+        youtubeUrl: '',
+        category: 'getting-started',
+        difficulty: 'beginner',
+        tags: '',
+        status: 'published'
+      });
+      setError(null);
+    } catch (err) {
+      console.error('Error updating video:', err);
+      setError('Failed to update video tutorial');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteVideo = async (videoId: string) => {
+    if (window.confirm('Are you sure you want to delete this video tutorial?')) {
+      try {
+        setLoading(true);
+        await apiClient.delete(`/admin/saas/support/help/videos/${videoId}`);
+        await loadVideos(); // Reload videos after deletion
+        setError(null);
+      } catch (err) {
+        console.error('Error deleting video:', err);
+        setError('Failed to delete video tutorial');
       } finally {
         setLoading(false);
       }
@@ -1059,6 +1180,115 @@ const SupportHelpdesk: React.FC = () => {
     </Box>
   );
 
+  const renderVideoTutorialsTab = () => (
+    <Box>
+      <Typography variant="h5" component="h2" gutterBottom>
+        Video Tutorials Management
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Manage video tutorials that will be available to all users on the Help page
+      </Typography>
+
+      {/* Video Management Interface */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6">
+          Video Tutorials
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setVideoDialogOpen(true)}
+          sx={{
+            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+          }}
+        >
+          Add Video Tutorial
+        </Button>
+      </Box>
+
+      {/* Videos Table */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Title</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Difficulty</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Views</TableCell>
+              <TableCell>Duration</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {videos.map((video) => (
+              <TableRow key={video._id}>
+                <TableCell>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      {video.title}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {video.description.substring(0, 100)}...
+                    </Typography>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Chip label={video.category} size="small" />
+                </TableCell>
+                <TableCell>
+                  <Chip 
+                    label={video.difficulty}
+                    color={video.difficulty === 'beginner' ? 'success' : video.difficulty === 'intermediate' ? 'warning' : 'error'}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Chip 
+                    label={video.status} 
+                    color={video.status === 'published' ? 'success' : 'default'}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>{video.viewCount || 0}</TableCell>
+                <TableCell>{video.duration || 'N/A'}</TableCell>
+                <TableCell>
+                  <Tooltip title="Edit Video">
+                    <IconButton 
+                      onClick={() => handleEditVideo(video)} 
+                      size="small"
+                      color="primary"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete Video">
+                    <IconButton 
+                      onClick={() => handleDeleteVideo(video._id)} 
+                      size="small" 
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
+            ))}
+            {videos.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  <Typography color="text.secondary" sx={{ py: 4 }}>
+                    No video tutorials found. Click "Add Video Tutorial" to create your first video.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
+  );
+
   return (
     <Box>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -1081,6 +1311,12 @@ const SupportHelpdesk: React.FC = () => {
             id="support-tab-2"
             aria-controls="support-tabpanel-2"
           />
+          <Tab
+            icon={<PlayArrowIcon />}
+            label="Video Tutorials"
+            id="support-tab-3"
+            aria-controls="support-tabpanel-3"
+          />
         </Tabs>
       </Box>
 
@@ -1094,6 +1330,10 @@ const SupportHelpdesk: React.FC = () => {
 
       <TabPanel value={tabValue} index={2}>
         {renderMetricsTab()}
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={3}>
+        {renderVideoTutorialsTab()}
       </TabPanel>
 
       {/* Ticket Details Dialog */}
@@ -1418,6 +1658,125 @@ const SupportHelpdesk: React.FC = () => {
             disabled={!ticketForm.title || !ticketForm.description}
           >
             Create Ticket
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create/Edit Video Dialog */}
+      <Dialog
+        open={videoDialogOpen}
+        onClose={() => setVideoDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {selectedVideo ? 'Edit Video Tutorial' : 'Create New Video Tutorial'}
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Title"
+                value={videoForm.title}
+                onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Description"
+                value={videoForm.description}
+                onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="YouTube URL"
+                value={videoForm.youtubeUrl}
+                onChange={(e) => setVideoForm({ ...videoForm, youtubeUrl: e.target.value })}
+                helperText="Enter a valid YouTube URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID)"
+                placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={videoForm.category}
+                  onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })}
+                >
+                  <MenuItem value="getting-started">Getting Started</MenuItem>
+                  <MenuItem value="patient-management">Patient Management</MenuItem>
+                  <MenuItem value="inventory-stock">Inventory & Stock</MenuItem>
+                  <MenuItem value="billing-payments">Billing & Payments</MenuItem>
+                  <MenuItem value="medication-management">Medication Management</MenuItem>
+                  <MenuItem value="mtr">Medication Therapy Review</MenuItem>
+                  <MenuItem value="clinical-interventions">Clinical Interventions</MenuItem>
+                  <MenuItem value="communication-hub">Communication Hub</MenuItem>
+                  <MenuItem value="drug-information">Drug Information</MenuItem>
+                  <MenuItem value="dashboards-reports">Dashboards & Reports</MenuItem>
+                  <MenuItem value="user-management">User Management</MenuItem>
+                  <MenuItem value="security-privacy">Security & Privacy</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Difficulty</InputLabel>
+                <Select
+                  value={videoForm.difficulty}
+                  onChange={(e) => setVideoForm({ ...videoForm, difficulty: e.target.value })}
+                >
+                  <MenuItem value="beginner">Beginner</MenuItem>
+                  <MenuItem value="intermediate">Intermediate</MenuItem>
+                  <MenuItem value="advanced">Advanced</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={videoForm.status}
+                  onChange={(e) => setVideoForm({ ...videoForm, status: e.target.value })}
+                >
+                  <MenuItem value="draft">Draft</MenuItem>
+                  <MenuItem value="published">Published</MenuItem>
+                  <MenuItem value="archived">Archived</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Tags (comma separated)"
+                value={videoForm.tags}
+                onChange={(e) => setVideoForm({ ...videoForm, tags: e.target.value })}
+                helperText="Enter tags separated by commas (e.g., tutorial, basics, setup)"
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setVideoDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={selectedVideo ? handleUpdateVideo : handleCreateVideo} 
+            variant="contained"
+            disabled={!videoForm.title || !videoForm.description || !videoForm.youtubeUrl}
+            sx={{
+              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+            }}
+          >
+            {selectedVideo ? 'Update Video' : 'Create Video'}
           </Button>
         </DialogActions>
       </Dialog>
