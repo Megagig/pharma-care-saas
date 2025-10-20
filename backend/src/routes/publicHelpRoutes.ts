@@ -39,17 +39,17 @@ router.get('/manual/pdf',
 );
 
 // Get knowledge base articles
-router.get('/articles', 
+router.get('/knowledge-base/articles', 
   supportController.getArticles.bind(supportController)
 );
 
 // Search knowledge base
-router.get('/search', 
+router.get('/knowledge-base/search', 
   supportController.searchArticles.bind(supportController)
 );
 
 // Get specific knowledge base article
-router.get('/articles/:id', 
+router.get('/knowledge-base/articles/:id', 
   supportController.getKnowledgeBaseArticleById.bind(supportController)
 );
 

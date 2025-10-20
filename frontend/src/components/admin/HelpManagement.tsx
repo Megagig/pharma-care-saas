@@ -71,10 +71,16 @@ interface Article {
   _id: string;
   title: string;
   excerpt: string;
+  content: string;
   category: string;
+  subcategory?: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  tags: string[];
   status: string;
   viewCount: number;
   helpfulVotes: number;
+  authorName: string;
+  publishedAt: string;
 }
 
 interface HelpSettings {
@@ -105,6 +111,7 @@ const HelpManagement: React.FC = () => {
   // Dialog states
   const [showFAQDialog, setShowFAQDialog] = useState(false);
   const [showVideoDialog, setShowVideoDialog] = useState(false);
+  const [showArticleDialog, setShowArticleDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   
@@ -123,6 +130,17 @@ const HelpManagement: React.FC = () => {
     description: '',
     youtubeUrl: '',
     category: '',
+    difficulty: 'beginner',
+    tags: '',
+    status: 'published'
+  });
+
+  const [articleForm, setArticleForm] = useState({
+    title: '',
+    excerpt: '',
+    content: '',
+    category: '',
+    subcategory: '',
     difficulty: 'beginner',
     tags: '',
     status: 'published'
@@ -270,6 +288,66 @@ const HelpManagement: React.FC = () => {
         showNotification('Failed to delete video', 'error');
       }
     }
+  };
+
+  const handleCreateArticle = async () => {
+    try {
+      const articleData = {
+        ...articleForm,
+        tags: articleForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+      };
+      
+      if (editingItem) {
+        await apiClient.put(`/admin/saas/support/knowledge-base/articles/${editingItem._id}`, articleData);
+        showNotification('Article updated successfully', 'success');
+      } else {
+        await apiClient.post('/admin/saas/support/knowledge-base/articles', articleData);
+        showNotification('Article created successfully', 'success');
+      }
+      
+      setShowArticleDialog(false);
+      setEditingItem(null);
+      setArticleForm({
+        title: '',
+        excerpt: '',
+        content: '',
+        category: '',
+        subcategory: '',
+        difficulty: 'beginner',
+        tags: '',
+        status: 'published'
+      });
+      fetchData();
+    } catch (error) {
+      showNotification('Failed to save article', 'error');
+    }
+  };
+
+  const handleDeleteArticle = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this article?')) {
+      try {
+        await apiClient.delete(`/admin/saas/support/knowledge-base/articles/${id}`);
+        showNotification('Article deleted successfully', 'success');
+        fetchData();
+      } catch (error) {
+        showNotification('Failed to delete article', 'error');
+      }
+    }
+  };
+
+  const handleEditArticle = (article: Article) => {
+    setEditingItem(article);
+    setArticleForm({
+      title: article.title,
+      excerpt: article.excerpt,
+      content: article.content,
+      category: article.category,
+      subcategory: article.subcategory || '',
+      difficulty: article.difficulty || 'beginner',
+      tags: article.tags.join(', '),
+      status: article.status
+    });
+    setShowArticleDialog(true);
   };
 
   const handleEditFAQ = (faq: FAQ) => {
@@ -437,6 +515,82 @@ const HelpManagement: React.FC = () => {
     </Box>
   );
 
+  const renderArticlesTab = () => (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h5">Manage Knowledge Base Articles</Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setShowArticleDialog(true)}
+        >
+          Create Article
+        </Button>
+      </Box>
+      
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Title</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Difficulty</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Views</TableCell>
+              <TableCell>Helpful Votes</TableCell>
+              <TableCell>Author</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {articles.map((article) => (
+              <TableRow key={article._id}>
+                <TableCell>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {article.title}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {article.excerpt.substring(0, 100)}...
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Chip label={article.category} size="small" />
+                </TableCell>
+                <TableCell>
+                  {article.difficulty && (
+                    <Chip 
+                      label={article.difficulty}
+                      color={article.difficulty === 'beginner' ? 'success' : article.difficulty === 'intermediate' ? 'warning' : 'error'}
+                      size="small"
+                    />
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Chip 
+                    label={article.status} 
+                    color={article.status === 'published' ? 'success' : 'default'}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>{article.viewCount}</TableCell>
+                <TableCell>{article.helpfulVotes}</TableCell>
+                <TableCell>{article.authorName}</TableCell>
+                <TableCell>
+                  <IconButton onClick={() => handleEditArticle(article)} size="small">
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton onClick={() => handleDeleteArticle(article._id)} size="small" color="error">
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
+  );
+
   const renderSettingsTab = () => (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -519,7 +673,7 @@ const HelpManagement: React.FC = () => {
 
       {activeTab === 0 && renderFAQsTab()}
       {activeTab === 1 && renderVideosTab()}
-      {activeTab === 2 && <Typography>Articles management coming soon...</Typography>}
+      {activeTab === 2 && renderArticlesTab()}
       {activeTab === 3 && renderSettingsTab()}
       {activeTab === 4 && <Typography>Analytics coming soon...</Typography>}
 
@@ -661,6 +815,105 @@ const HelpManagement: React.FC = () => {
         <DialogActions>
           <Button onClick={() => setShowVideoDialog(false)}>Cancel</Button>
           <Button onClick={handleCreateVideo} variant="contained">
+            {editingItem ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Article Dialog */}
+      <Dialog open={showArticleDialog} onClose={() => setShowArticleDialog(false)} maxWidth="lg" fullWidth>
+        <DialogTitle>{editingItem ? 'Edit Article' : 'Create New Article'}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Title"
+                value={articleForm.title}
+                onChange={(e) => setArticleForm({ ...articleForm, title: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                label="Excerpt (Brief summary)"
+                value={articleForm.excerpt}
+                onChange={(e) => setArticleForm({ ...articleForm, excerpt: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                rows={8}
+                label="Content (Full article content)"
+                value={articleForm.content}
+                onChange={(e) => setArticleForm({ ...articleForm, content: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={articleForm.category}
+                  onChange={(e) => setArticleForm({ ...articleForm, category: e.target.value })}
+                >
+                  {categories.map((cat) => (
+                    <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Subcategory (optional)"
+                value={articleForm.subcategory}
+                onChange={(e) => setArticleForm({ ...articleForm, subcategory: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Difficulty</InputLabel>
+                <Select
+                  value={articleForm.difficulty}
+                  onChange={(e) => setArticleForm({ ...articleForm, difficulty: e.target.value })}
+                >
+                  <MenuItem value="beginner">Beginner</MenuItem>
+                  <MenuItem value="intermediate">Intermediate</MenuItem>
+                  <MenuItem value="advanced">Advanced</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={articleForm.status}
+                  onChange={(e) => setArticleForm({ ...articleForm, status: e.target.value })}
+                >
+                  <MenuItem value="draft">Draft</MenuItem>
+                  <MenuItem value="published">Published</MenuItem>
+                  <MenuItem value="archived">Archived</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Tags (comma separated)"
+                value={articleForm.tags}
+                onChange={(e) => setArticleForm({ ...articleForm, tags: e.target.value })}
+                helperText="Enter tags separated by commas (e.g., mtr, best practices, clinical)"
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowArticleDialog(false)}>Cancel</Button>
+          <Button onClick={handleCreateArticle} variant="contained">
             {editingItem ? 'Update' : 'Create'}
           </Button>
         </DialogActions>

@@ -45,18 +45,7 @@ router.get('/tickets/:ticketId/comments',
   supportController.getTicketComments.bind(supportController)
 );
 
-router.post('/knowledge-base/articles', 
-  requireRole('super_admin', 'admin', 'support_agent'), 
-  supportController.createArticle.bind(supportController)
-);
-
-router.get('/knowledge-base/articles', 
-  supportController.getArticles.bind(supportController)
-);
-
-router.get('/knowledge-base/search', 
-  supportController.searchArticles.bind(supportController)
-);
+// These routes are moved to the Knowledge Base Article Management section below
 
 router.get('/metrics', 
   requireRole('super_admin', 'admin'), 
@@ -150,10 +139,22 @@ router.put('/help/feedback/:id/respond',
   supportController.respondToFeedback.bind(supportController)
 );
 
-// Knowledge Base Article Management (Super Admin only)
+// Knowledge Base Article Management (Super Admin only for CRUD, public for reading)
 router.post('/knowledge-base/articles', 
   requireRole('super_admin'), 
   supportController.createKnowledgeBaseArticle.bind(supportController)
+);
+
+router.get('/knowledge-base/articles', 
+  supportController.getArticles.bind(supportController)
+);
+
+router.get('/knowledge-base/search', 
+  supportController.searchArticles.bind(supportController)
+);
+
+router.get('/knowledge-base/articles/:id', 
+  supportController.getKnowledgeBaseArticleById.bind(supportController)
 );
 
 router.put('/knowledge-base/articles/:id', 
@@ -164,10 +165,6 @@ router.put('/knowledge-base/articles/:id',
 router.delete('/knowledge-base/articles/:id', 
   requireRole('super_admin'), 
   supportController.deleteKnowledgeBaseArticle.bind(supportController)
-);
-
-router.get('/knowledge-base/articles/:id', 
-  supportController.getKnowledgeBaseArticleById.bind(supportController)
 );
 
 export default router;
