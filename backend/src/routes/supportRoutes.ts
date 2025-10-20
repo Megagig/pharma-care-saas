@@ -74,4 +74,86 @@ router.get('/analytics',
   supportController.getSupportAnalytics.bind(supportController)
 );
 
+// Help System Routes
+
+// Public help content routes (for pharmacists, admins, super admins)
+router.get('/help/content', 
+  requireRole('super_admin', 'admin', 'pharmacist', 'owner', 'user'), 
+  supportController.getHelpContent.bind(supportController)
+);
+
+router.get('/help/categories', 
+  requireRole('super_admin', 'admin', 'pharmacist', 'owner', 'user'), 
+  supportController.getHelpCategories.bind(supportController)
+);
+
+router.post('/help/feedback', 
+  requireRole('super_admin', 'admin', 'pharmacist', 'owner', 'user'), 
+  supportController.submitHelpFeedback.bind(supportController)
+);
+
+router.get('/help/manual/pdf', 
+  requireRole('super_admin', 'admin', 'pharmacist', 'owner', 'user'), 
+  supportController.generatePDFManual.bind(supportController)
+);
+
+// Super Admin only routes
+router.get('/help/settings', 
+  requireRole('super_admin'), 
+  supportController.getHelpSettings.bind(supportController)
+);
+
+router.put('/help/settings', 
+  requireRole('super_admin'), 
+  supportController.updateHelpSettings.bind(supportController)
+);
+
+router.get('/help/analytics', 
+  requireRole('super_admin'), 
+  supportController.getHelpAnalytics.bind(supportController)
+);
+
+// FAQ Management (Super Admin only)
+router.post('/help/faqs', 
+  requireRole('super_admin'), 
+  supportController.createFAQ.bind(supportController)
+);
+
+router.put('/help/faqs/:id', 
+  requireRole('super_admin'), 
+  supportController.updateFAQ.bind(supportController)
+);
+
+router.delete('/help/faqs/:id', 
+  requireRole('super_admin'), 
+  supportController.deleteFAQ.bind(supportController)
+);
+
+// Video Management (Super Admin only)
+router.post('/help/videos', 
+  requireRole('super_admin'), 
+  supportController.createVideo.bind(supportController)
+);
+
+router.put('/help/videos/:id', 
+  requireRole('super_admin'), 
+  supportController.updateVideo.bind(supportController)
+);
+
+router.delete('/help/videos/:id', 
+  requireRole('super_admin'), 
+  supportController.deleteVideo.bind(supportController)
+);
+
+// Feedback Management (Super Admin only)
+router.get('/help/feedback', 
+  requireRole('super_admin'), 
+  supportController.getAllFeedback.bind(supportController)
+);
+
+router.put('/help/feedback/:id/respond', 
+  requireRole('super_admin'), 
+  supportController.respondToFeedback.bind(supportController)
+);
+
 export default router;

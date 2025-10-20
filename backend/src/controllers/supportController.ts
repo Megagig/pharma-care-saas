@@ -7,6 +7,15 @@ import { sendSuccess, sendError } from '../utils/responseHelpers';
 import logger from '../utils/logger';
 import { body, query, param } from 'express-validator';
 
+// Import new help system models
+import HelpFAQ from '../models/HelpFAQ';
+import HelpVideo from '../models/HelpVideo';
+import HelpFeedback from '../models/HelpFeedback';
+import HelpSettings from '../models/HelpSettings';
+import HelpSearchAnalytics from '../models/HelpSearchAnalytics';
+import { KnowledgeBaseArticle } from '../models/KnowledgeBaseArticle';
+import PDFDocument from 'pdfkit';
+
 /**
  * Support Controller
  * Handles support ticket management, knowledge base, and support metrics
@@ -682,6 +691,653 @@ export class SupportController {
         'Failed to fetch support analytics',
         500
       );
+    }
+  }
+
+  // Help System Methods
+
+  /**
+   * Get help content (FAQs, Articles, Videos) with search and filtering
+   * GET /api/admin/saas/support/help/content
+   */
+  async getHelpContent(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const {
+        search,
+        category,
+        contentType = 'all',
+        difficulty,
+        tags,
+        page = 1,
+        limit = 20,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = req.query;
+
+      const searchStartTime = Date.now();
+      let searchResults: any = {
+        articles: [],
+        faqs: [],
+        videos: [],
+        total: 0
+      };
+
+      // Build search query
+      const searchQuery: any = { status: 'published' };
+      
+      if (search) {
+        searchQuery.$text = { $search: search as string };
+      }
+      
+      if (category) {
+        searchQuery.category = category;
+      }
+      
+      if (tags) {
+        const tagArray = Array.isArray(tags) ? tags : [tags];
+        searchQuery.tags = { $in: tagArray };
+      }
+
+      const sortOptions: any = {};
+      sortOptions[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
+
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      const skip = (pageNum - 1) * limitNum;
+
+      // Search Articles
+      if (contentType === 'all' || contentType === 'articles') {
+        const articles = await KnowledgeBaseArticle.find(searchQuery)
+          .sort(sortOptions)
+          .skip(skip)
+          .limit(limitNum)
+          .populate('authorId', 'firstName lastName')
+          .lean();
+        
+        searchResults.articles = articles;
+      }
+
+      // Search FAQs
+      if (contentType === 'all' || contentType === 'faqs') {
+        const faqs = await HelpFAQ.find(searchQuery)
+          .sort(sortOptions)
+          .skip(skip)
+          .limit(limitNum)
+          .populate('authorId', 'firstName lastName')
+          .lean();
+        
+        searchResults.faqs = faqs;
+      }
+
+      // Search Videos
+      if (contentType === 'all' || contentType === 'videos') {
+        const videoQuery = { ...searchQuery };
+        if (difficulty) {
+          videoQuery.difficulty = difficulty;
+        }
+        
+        const videos = await HelpVideo.find(videoQuery)
+          .sort(sortOptions)
+          .skip(skip)
+          .limit(limitNum)
+          .populate('authorId', 'firstName lastName')
+          .lean();
+        
+        searchResults.videos = videos;
+      }
+
+      // Calculate total results
+      searchResults.total = searchResults.articles.length + 
+                           searchResults.faqs.length + 
+                           searchResults.videos.length;
+
+      // Log search analytics
+      if (search) {
+        const searchDuration = Date.now() - searchStartTime;
+        
+        await HelpSearchAnalytics.create({
+          query: search as string,
+          normalizedQuery: (search as string).toLowerCase().trim(),
+          userId: req.user!._id,
+          userRole: req.user!.role,
+          category: category as string,
+          contentType: contentType as any,
+          resultsCount: searchResults.total,
+          hasResults: searchResults.total > 0,
+          searchDurationMs: searchDuration,
+          userAgent: req.get('User-Agent'),
+          ipAddress: req.ip,
+        });
+      }
+
+      sendSuccess(res, searchResults, 'Help content retrieved successfully');
+    } catch (error) {
+      logger.error('Error fetching help content:', error);
+      sendError(res, 'HELP_CONTENT_ERROR', 'Failed to fetch help content', 500);
+    }
+  }
+
+  /**
+   * Get help categories and statistics
+   * GET /api/admin/saas/support/help/categories
+   */
+  async getHelpCategories(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      // Get categories with counts
+      const [articleCategories, faqCategories, videoCategories] = await Promise.all([
+        KnowledgeBaseArticle.aggregate([
+          { $match: { status: 'published' } },
+          { $group: { _id: '$category', count: { $sum: 1 } } },
+          { $sort: { count: -1 } }
+        ]),
+        HelpFAQ.aggregate([
+          { $match: { status: 'published' } },
+          { $group: { _id: '$category', count: { $sum: 1 } } },
+          { $sort: { count: -1 } }
+        ]),
+        HelpVideo.aggregate([
+          { $match: { status: 'published' } },
+          { $group: { _id: '$category', count: { $sum: 1 } } },
+          { $sort: { count: -1 } }
+        ])
+      ]);
+
+      // Merge and organize categories
+      const categoryMap = new Map();
+      
+      [...articleCategories, ...faqCategories, ...videoCategories].forEach(cat => {
+        if (categoryMap.has(cat._id)) {
+          categoryMap.get(cat._id).count += cat.count;
+        } else {
+          categoryMap.set(cat._id, { name: cat._id, count: cat.count });
+        }
+      });
+
+      const categories = Array.from(categoryMap.values()).sort((a, b) => b.count - a.count);
+
+      sendSuccess(res, { categories }, 'Categories retrieved successfully');
+    } catch (error) {
+      logger.error('Error fetching help categories:', error);
+      sendError(res, 'CATEGORIES_ERROR', 'Failed to fetch categories', 500);
+    }
+  }
+
+  /**
+   * Submit help feedback
+   * POST /api/admin/saas/support/help/feedback
+   */
+  async submitHelpFeedback(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const {
+        type,
+        rating,
+        title,
+        message,
+        category,
+        relatedContentType,
+        relatedContentId,
+        relatedContentTitle
+      } = req.body;
+
+      const feedback = await HelpFeedback.create({
+        userId: req.user!._id,
+        userEmail: req.user!.email,
+        userName: `${req.user!.firstName} ${req.user!.lastName}`,
+        type,
+        rating,
+        title,
+        message,
+        category,
+        relatedContentType,
+        relatedContentId,
+        relatedContentTitle,
+        userAgent: req.get('User-Agent'),
+        ipAddress: req.ip,
+        pageUrl: req.get('Referer'),
+      });
+
+      // Send notification for critical feedback
+      if (rating <= 2 || type === 'bug_report') {
+        logger.warn('Critical feedback received', {
+          feedbackId: feedback._id,
+          userId: req.user!._id,
+          rating,
+          type
+        });
+      }
+
+      sendSuccess(res, feedback, 'Feedback submitted successfully', 201);
+    } catch (error) {
+      logger.error('Error submitting feedback:', error);
+      sendError(res, 'FEEDBACK_ERROR', 'Failed to submit feedback', 500);
+    }
+  }
+
+  /**
+   * Get help settings (for super admin)
+   * GET /api/admin/saas/support/help/settings
+   */
+  async getHelpSettings(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const settings = await HelpSettings.getSettings();
+      sendSuccess(res, settings, 'Help settings retrieved successfully');
+    } catch (error) {
+      logger.error('Error fetching help settings:', error);
+      sendError(res, 'SETTINGS_ERROR', 'Failed to fetch help settings', 500);
+    }
+  }
+
+  /**
+   * Update help settings (for super admin)
+   * PUT /api/admin/saas/support/help/settings
+   */
+  async updateHelpSettings(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const settings = await HelpSettings.getSettings();
+      
+      Object.assign(settings, req.body);
+      settings.lastUpdatedBy = req.user!._id;
+      
+      await settings.save();
+
+      sendSuccess(res, settings, 'Help settings updated successfully');
+    } catch (error) {
+      logger.error('Error updating help settings:', error);
+      sendError(res, 'SETTINGS_UPDATE_ERROR', 'Failed to update help settings', 500);
+    }
+  }
+
+  /**
+   * Generate PDF user manual
+   * GET /api/admin/saas/support/help/manual/pdf
+   */
+  async generatePDFManual(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { categories } = req.query;
+      
+      // Get content for PDF
+      const query: any = { status: 'published' };
+      if (categories) {
+        const categoryArray = Array.isArray(categories) ? categories : [categories];
+        query.category = { $in: categoryArray };
+      }
+
+      const [articles, faqs] = await Promise.all([
+        KnowledgeBaseArticle.find(query).sort({ category: 1, title: 1 }),
+        HelpFAQ.find(query).sort({ category: 1, displayOrder: 1, question: 1 })
+      ]);
+
+      // Create PDF
+      const doc = new PDFDocument();
+      
+      // Set response headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="PharmacyCopilot-User-Manual.pdf"');
+      
+      // Pipe PDF to response
+      doc.pipe(res);
+
+      // Add title page
+      doc.fontSize(24).text('PharmacyCopilot User Manual', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12).text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'center' });
+      doc.addPage();
+
+      // Add table of contents
+      doc.fontSize(18).text('Table of Contents');
+      doc.moveDown();
+      
+      let currentCategory = '';
+
+      // Generate content
+      for (const article of articles) {
+        if (article.category !== currentCategory) {
+          currentCategory = article.category;
+          doc.addPage();
+          doc.fontSize(16).text(currentCategory.toUpperCase(), { underline: true });
+          doc.moveDown();
+        }
+        
+        doc.fontSize(14).text(article.title, { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(10).text(article.content);
+        doc.moveDown();
+      }
+
+      // Add FAQs section
+      if (faqs.length > 0) {
+        doc.addPage();
+        doc.fontSize(18).text('Frequently Asked Questions');
+        doc.moveDown();
+
+        currentCategory = '';
+        for (const faq of faqs) {
+          if (faq.category !== currentCategory) {
+            currentCategory = faq.category;
+            doc.fontSize(14).text(currentCategory.toUpperCase(), { underline: true });
+            doc.moveDown();
+          }
+          
+          doc.fontSize(12).text(`Q: ${faq.question}`, { continued: false });
+          doc.fontSize(10).text(`A: ${faq.answer}`);
+          doc.moveDown();
+        }
+      }
+
+      doc.end();
+    } catch (error) {
+      logger.error('Error generating PDF manual:', error);
+      sendError(res, 'PDF_GENERATION_ERROR', 'Failed to generate PDF manual', 500);
+    }
+  }
+
+  /**
+   * Get help analytics (for super admin)
+   * GET /api/admin/saas/support/help/analytics
+   */
+  async getHelpAnalytics(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      const dateRange = startDate && endDate ? {
+        start: new Date(startDate as string),
+        end: new Date(endDate as string)
+      } : {
+        start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+        end: new Date()
+      };
+
+      const [
+        popularQueries,
+        searchTrends,
+        zeroResultQueries,
+        feedbackStats,
+        contentStats
+      ] = await Promise.all([
+        HelpSearchAnalytics.getPopularQueries(10, dateRange),
+        HelpSearchAnalytics.getSearchTrends(dateRange, 'day'),
+        HelpSearchAnalytics.getZeroResultQueries(10, dateRange),
+        HelpFeedback.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: dateRange.start, $lte: dateRange.end }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalFeedback: { $sum: 1 },
+              averageRating: { $avg: '$rating' },
+              criticalFeedback: {
+                $sum: { $cond: [{ $lte: ['$rating', 2] }, 1, 0] }
+              }
+            }
+          }
+        ]),
+        Promise.all([
+          KnowledgeBaseArticle.countDocuments({ status: 'published' }),
+          HelpFAQ.countDocuments({ status: 'published' }),
+          HelpVideo.countDocuments({ status: 'published' })
+        ])
+      ]);
+
+      const analytics = {
+        searchAnalytics: {
+          popularQueries,
+          searchTrends,
+          zeroResultQueries
+        },
+        feedbackStats: feedbackStats[0] || {
+          totalFeedback: 0,
+          averageRating: 0,
+          criticalFeedback: 0
+        },
+        contentStats: {
+          articles: contentStats[0],
+          faqs: contentStats[1],
+          videos: contentStats[2],
+          total: contentStats[0] + contentStats[1] + contentStats[2]
+        }
+      };
+
+      sendSuccess(res, analytics, 'Help analytics retrieved successfully');
+    } catch (error) {
+      logger.error('Error fetching help analytics:', error);
+      sendError(res, 'ANALYTICS_ERROR', 'Failed to fetch help analytics', 500);
+    }
+  }
+
+  // CRUD Operations for Help Content (Super Admin only)
+
+  /**
+   * Create FAQ
+   * POST /api/admin/saas/support/help/faqs
+   */
+  async createFAQ(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const faqData = {
+        ...req.body,
+        authorId: req.user!._id,
+        authorName: `${req.user!.firstName} ${req.user!.lastName}`
+      };
+
+      const faq = await HelpFAQ.create(faqData);
+      sendSuccess(res, faq, 'FAQ created successfully', 201);
+    } catch (error) {
+      logger.error('Error creating FAQ:', error);
+      sendError(res, 'FAQ_CREATION_ERROR', 'Failed to create FAQ', 500);
+    }
+  }
+
+  /**
+   * Update FAQ
+   * PUT /api/admin/saas/support/help/faqs/:id
+   */
+  async updateFAQ(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const faq = await HelpFAQ.findByIdAndUpdate(
+        id,
+        {
+          ...req.body,
+          lastEditedBy: req.user!._id,
+          lastEditedAt: new Date()
+        },
+        { new: true }
+      );
+
+      if (!faq) {
+        sendError(res, 'FAQ_NOT_FOUND', 'FAQ not found', 404);
+        return;
+      }
+
+      sendSuccess(res, faq, 'FAQ updated successfully');
+    } catch (error) {
+      logger.error('Error updating FAQ:', error);
+      sendError(res, 'FAQ_UPDATE_ERROR', 'Failed to update FAQ', 500);
+    }
+  }
+
+  /**
+   * Delete FAQ
+   * DELETE /api/admin/saas/support/help/faqs/:id
+   */
+  async deleteFAQ(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const faq = await HelpFAQ.findByIdAndDelete(id);
+
+      if (!faq) {
+        sendError(res, 'FAQ_NOT_FOUND', 'FAQ not found', 404);
+        return;
+      }
+
+      sendSuccess(res, null, 'FAQ deleted successfully');
+    } catch (error) {
+      logger.error('Error deleting FAQ:', error);
+      sendError(res, 'FAQ_DELETE_ERROR', 'Failed to delete FAQ', 500);
+    }
+  }
+
+  /**
+   * Create Video
+   * POST /api/admin/saas/support/help/videos
+   */
+  async createVideo(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const videoData = {
+        ...req.body,
+        authorId: req.user!._id,
+        authorName: `${req.user!.firstName} ${req.user!.lastName}`
+      };
+
+      const video = await HelpVideo.create(videoData);
+      sendSuccess(res, video, 'Video created successfully', 201);
+    } catch (error) {
+      logger.error('Error creating video:', error);
+      sendError(res, 'VIDEO_CREATION_ERROR', 'Failed to create video', 500);
+    }
+  }
+
+  /**
+   * Update Video
+   * PUT /api/admin/saas/support/help/videos/:id
+   */
+  async updateVideo(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const video = await HelpVideo.findByIdAndUpdate(
+        id,
+        {
+          ...req.body,
+          lastEditedBy: req.user!._id,
+          lastEditedAt: new Date()
+        },
+        { new: true }
+      );
+
+      if (!video) {
+        sendError(res, 'VIDEO_NOT_FOUND', 'Video not found', 404);
+        return;
+      }
+
+      sendSuccess(res, video, 'Video updated successfully');
+    } catch (error) {
+      logger.error('Error updating video:', error);
+      sendError(res, 'VIDEO_UPDATE_ERROR', 'Failed to update video', 500);
+    }
+  }
+
+  /**
+   * Delete Video
+   * DELETE /api/admin/saas/support/help/videos/:id
+   */
+  async deleteVideo(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const video = await HelpVideo.findByIdAndDelete(id);
+
+      if (!video) {
+        sendError(res, 'VIDEO_NOT_FOUND', 'Video not found', 404);
+        return;
+      }
+
+      sendSuccess(res, null, 'Video deleted successfully');
+    } catch (error) {
+      logger.error('Error deleting video:', error);
+      sendError(res, 'VIDEO_DELETE_ERROR', 'Failed to delete video', 500);
+    }
+  }
+
+  /**
+   * Get all feedback (for admin review)
+   * GET /api/admin/saas/support/help/feedback
+   */
+  async getAllFeedback(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const {
+        status,
+        type,
+        priority,
+        rating,
+        page = 1,
+        limit = 20,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = req.query;
+
+      const query: any = {};
+      
+      if (status) query.status = status;
+      if (type) query.type = type;
+      if (priority) query.priority = priority;
+      if (rating) query.rating = parseInt(rating as string);
+
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      const skip = (pageNum - 1) * limitNum;
+
+      const sortOptions: any = {};
+      sortOptions[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
+
+      const [feedback, total] = await Promise.all([
+        HelpFeedback.find(query)
+          .sort(sortOptions)
+          .skip(skip)
+          .limit(limitNum)
+          .populate('userId', 'firstName lastName email')
+          .populate('respondedBy', 'firstName lastName'),
+        HelpFeedback.countDocuments(query)
+      ]);
+
+      sendSuccess(res, {
+        feedback,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          pages: Math.ceil(total / limitNum)
+        }
+      }, 'Feedback retrieved successfully');
+    } catch (error) {
+      logger.error('Error fetching feedback:', error);
+      sendError(res, 'FEEDBACK_FETCH_ERROR', 'Failed to fetch feedback', 500);
+    }
+  }
+
+  /**
+   * Respond to feedback
+   * PUT /api/admin/saas/support/help/feedback/:id/respond
+   */
+  async respondToFeedback(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { response, status = 'resolved' } = req.body;
+
+      const feedback = await HelpFeedback.findByIdAndUpdate(
+        id,
+        {
+          adminResponse: response,
+          status,
+          respondedBy: req.user!._id,
+          respondedAt: new Date()
+        },
+        { new: true }
+      ).populate('userId', 'firstName lastName email');
+
+      if (!feedback) {
+        sendError(res, 'FEEDBACK_NOT_FOUND', 'Feedback not found', 404);
+        return;
+      }
+
+      sendSuccess(res, feedback, 'Response sent successfully');
+    } catch (error) {
+      logger.error('Error responding to feedback:', error);
+      sendError(res, 'FEEDBACK_RESPONSE_ERROR', 'Failed to respond to feedback', 500);
     }
   }
 }
