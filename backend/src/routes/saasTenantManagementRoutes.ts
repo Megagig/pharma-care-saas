@@ -680,9 +680,6 @@ router.delete(
  * @desc Get available subscription plans
  * @access Super Admin only
  */
-router.get(
-  '/subscription-plans',
-  saasTenantManagementController.getAvailableSubscriptionPlans
-);
+// Removed /subscription-plans route - use /pricing/plans endpoint instead
 
 export default router;

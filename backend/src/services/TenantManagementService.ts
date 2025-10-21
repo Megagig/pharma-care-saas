@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { Workplace, IWorkplace } from '../models/Workplace';
 import User, { IUser } from '../models/User';
-import SubscriptionPlan from '../models/SubscriptionPlan';
+import PricingPlan from '../models/PricingPlan';
 import logger from '../utils/logger';
 import { SecurityAuditLog } from '../models/SecurityAuditLog';
 
@@ -134,7 +134,7 @@ export class TenantManagementService {
         }
       }
     } else if (workplace.currentPlanId) {
-      actualPlan = await SubscriptionPlan.findById(workplace.currentPlanId);
+      actualPlan = await PricingPlan.findById(workplace.currentPlanId);
       if (actualPlan) {
         planName = actualPlan.name;
       }
@@ -674,7 +674,7 @@ export class TenantManagementService {
   async getTenantSubscription(tenantId: string): Promise<any> {
     try {
       const Subscription = mongoose.model('Subscription');
-      const SubscriptionPlan = mongoose.model('SubscriptionPlan');
+      const PricingPlan = mongoose.model('PricingPlan');
 
       const workplace = await Workplace.findById(tenantId)
         .populate('currentSubscriptionId')
@@ -737,7 +737,7 @@ export class TenantManagementService {
             throw new Error('Plan ID is required for upgrade/downgrade');
           }
 
-          const newPlan = await SubscriptionPlan.findById(update.planId);
+          const newPlan = await PricingPlan.findById(update.planId);
           if (!newPlan) {
             throw new Error('Subscription plan not found');
           }
@@ -747,12 +747,12 @@ export class TenantManagementService {
             subscription.planId = new mongoose.Types.ObjectId(update.planId);
             subscription.tier = newPlan.tier;
             subscription.status = 'active';
-            subscription.priceAtPurchase = newPlan.priceNGN;
-            subscription.billingInterval = newPlan.billingInterval;
+            subscription.priceAtPurchase = newPlan.price;
+            subscription.billingInterval = newPlan.billingPeriod;
             
             // Update end date based on billing interval
             const now = new Date();
-            if (newPlan.billingInterval === 'yearly') {
+            if (newPlan.billingPeriod === 'yearly') {
               subscription.endDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
             } else {
               subscription.endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
@@ -762,7 +762,7 @@ export class TenantManagementService {
           } else {
             // Create new subscription
             const now = new Date();
-            const endDate = newPlan.billingInterval === 'yearly' 
+            const endDate = newPlan.billingPeriod === 'yearly' 
               ? new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
               : new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
@@ -773,8 +773,8 @@ export class TenantManagementService {
               status: 'active',
               startDate: now,
               endDate: endDate,
-              priceAtPurchase: newPlan.priceNGN,
-              billingInterval: newPlan.billingInterval,
+              priceAtPurchase: newPlan.price,
+              billingInterval: newPlan.billingPeriod,
             });
             await subscription.save();
           }
@@ -811,7 +811,7 @@ export class TenantManagementService {
           workspaceName: workplace.name,
           action: update.action,
           planId: update.planId,
-          planName: update.planId ? (await SubscriptionPlan.findById(update.planId))?.name : null,
+          planName: update.planId ? (await PricingPlan.findById(update.planId))?.name : null,
           reason: update.reason,
         },
         ipAddress: '127.0.0.1',
@@ -1021,21 +1021,7 @@ export class TenantManagementService {
     }
   }
 
-  /**
-   * Get available subscription plans
-   */
-  async getAvailableSubscriptionPlans(): Promise<any[]> {
-    try {
-      const plans = await SubscriptionPlan.find({ isActive: true })
-        .sort({ tier: 1, billingInterval: 1, priceNGN: 1 });
-      
-      logger.info(`Found ${plans.length} active subscription plans`);
-      return plans;
-    } catch (error) {
-      logger.error('Error getting subscription plans:', error);
-      throw error;
-    }
-  }
+  // Removed getAvailableSubscriptionPlans - use PricingManagementController.getAllPlans() instead
 
   /**
    * Remove member from workspace

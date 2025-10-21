@@ -499,8 +499,9 @@ class SaaSService {
     return response.data;
   }
 
-  async getAvailableSubscriptionPlans(): Promise<{ success: boolean; data: { plans: any[] } }> {
-    const response = await apiClient.get(`${this.baseUrl}/tenant-management/subscription-plans`);
+  async getAvailableSubscriptionPlans(billingPeriod?: 'monthly' | 'yearly'): Promise<{ success: boolean; data: { plans: any[] } }> {
+    const params = billingPeriod ? `?billingPeriod=${billingPeriod}` : '';
+    const response = await apiClient.get(`/pricing/plans${params}`);
     return response.data;
   }
 

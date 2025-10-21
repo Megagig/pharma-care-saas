@@ -904,30 +904,7 @@ export class SaasTenantManagementController {
     }
   }
 
-  /**
-   * Get available subscription plans
-   */
-  async getAvailableSubscriptionPlans(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const plans = await tenantManagementService.getAvailableSubscriptionPlans();
-
-      res.json({
-        success: true,
-        data: {
-          plans,
-        },
-      });
-    } catch (error) {
-      logger.error('Error getting subscription plans:', error);
-      res.status(500).json({
-        success: false,
-        error: {
-          code: 'PLANS_FETCH_FAILED',
-          message: error instanceof Error ? error.message : 'Failed to get subscription plans',
-        },
-      });
-    }
-  }
+  // Removed getAvailableSubscriptionPlans - use /pricing/plans endpoint instead
 
   /**
    * Get tenant billing analytics

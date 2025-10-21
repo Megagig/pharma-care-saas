@@ -211,6 +211,7 @@ const TenantManagement: React.FC = () => {
   }>({ open: false, action: null });
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [subscriptionReason, setSubscriptionReason] = useState('');
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
   // Using saasService directly since tenant methods aren't in useSaasSettings hook
 
@@ -234,13 +235,19 @@ const TenantManagement: React.FC = () => {
     loadSubscriptionPlans();
   }, []);
 
-  const loadSubscriptionPlans = async () => {
+  const loadSubscriptionPlans = async (billingPeriod?: 'monthly' | 'yearly') => {
     try {
-      const response = await saasService.getAvailableSubscriptionPlans();
+      const response = await saasService.getAvailableSubscriptionPlans(billingPeriod);
       console.log('Available subscription plans:', response.data.plans);
-      setSubscriptionPlans(response.data.plans);
+      console.log('Plans breakdown:', {
+        total: response.data.plans.length,
+        monthly: response.data.plans.filter((p: any) => p.billingPeriod === 'monthly').length,
+        yearly: response.data.plans.filter((p: any) => p.billingPeriod === 'yearly').length,
+      });
+      setSubscriptionPlans(response.data.plans || []);
     } catch (err) {
       console.error('Error loading subscription plans:', err);
+      setSubscriptionPlans([]);
     }
   };
 
@@ -456,6 +463,11 @@ const TenantManagement: React.FC = () => {
     setSubscriptionDialog({ open: true, action });
     setSelectedPlan('');
     setSubscriptionReason('');
+    setSelectedBillingPeriod('monthly');
+    // Load plans for the default billing period
+    if (action !== 'revoke') {
+      loadSubscriptionPlans('monthly');
+    }
   };
 
   const executeSubscriptionAction = async () => {
@@ -1319,10 +1331,29 @@ const TenantManagement: React.FC = () => {
         <DialogContent sx={{ pt: 2 }}>
           <Grid container spacing={3}>
             {subscriptionDialog.action !== 'revoke' && (
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Select a Plan ({subscriptionPlans.length} available)
-                </Typography>
+              <>
+                <Grid item xs={12}>
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel>Billing Period</InputLabel>
+                    <Select
+                      value={selectedBillingPeriod}
+                      label="Billing Period"
+                      onChange={(e) => {
+                        const newPeriod = e.target.value as 'monthly' | 'yearly';
+                        setSelectedBillingPeriod(newPeriod);
+                        setSelectedPlan(''); // Reset selected plan when changing billing period
+                        loadSubscriptionPlans(newPeriod);
+                      }}
+                    >
+                      <MenuItem value="monthly">Monthly</MenuItem>
+                      <MenuItem value="yearly">Yearly (10% discount)</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom>
+                    Select a Plan ({subscriptionPlans.length} available)
+                  </Typography>
                 <Grid container spacing={2}>
                   {subscriptionPlans.length === 0 && (
                     <Grid item xs={12}>
@@ -1351,31 +1382,39 @@ const TenantManagement: React.FC = () => {
                             {plan.name}
                           </Typography>
                           <Typography variant="h4" color="primary" gutterBottom>
-                            ₦{plan.priceNGN.toLocaleString()}
+                            ₦{plan.price.toLocaleString()}
                           </Typography>
                           <Typography variant="body2" color="textSecondary" gutterBottom>
-                            per {plan.billingInterval}
+                            per {plan.billingPeriod}
                           </Typography>
-                          <Chip
-                            label={plan.tier.replace('_', ' ').toUpperCase()}
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                          />
-                          {plan.popularPlan && (
+                          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
                             <Chip
-                              label="Popular"
+                              label={plan.tier.replace('_', ' ').toUpperCase()}
                               size="small"
-                              color="secondary"
-                              sx={{ ml: 1 }}
+                              color="primary"
+                              variant="outlined"
                             />
-                          )}
+                            <Chip
+                              label={plan.billingPeriod.toUpperCase()}
+                              size="small"
+                              color={plan.billingPeriod === 'yearly' ? 'success' : 'default'}
+                              variant="outlined"
+                            />
+                            {plan.isPopular && (
+                              <Chip
+                                label="Popular"
+                                size="small"
+                                color="secondary"
+                              />
+                            )}
+                          </Box>
                         </CardContent>
                       </Card>
                     </Grid>
                   ))}
                 </Grid>
               </Grid>
+              </>
             )}
             <Grid item xs={12}>
               <TextField
