@@ -279,6 +279,8 @@ app.get('/api/health/cache', async (req, res) => {
 });
 app.use('/api/public', publicApiRoutes_1.default);
 app.use('/api/public/drugs', publicDrugDetailsRoutes_1.default);
+const publicHelpRoutes_1 = __importDefault(require("./routes/publicHelpRoutes"));
+app.use('/api/help', publicHelpRoutes_1.default);
 app.use('/api/analytics', analyticsRoutes_1.default);
 app.use('/api/reports', reportsRoutes_1.default);
 app.use('/api/lighthouse', lighthouseRoutes_1.default);

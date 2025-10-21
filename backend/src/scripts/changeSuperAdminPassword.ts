@@ -35,7 +35,7 @@ async function changeSuperAdminPassword() {
     const hashedPassword = await bcrypt.hash(NEW_PASSWORD, saltRounds);
 
     // Update the password
-    superAdmin.password = hashedPassword;
+    superAdmin.passwordHash = hashedPassword;
     await superAdmin.save();
 
     logger.info('✅ Superadmin password updated successfully!');

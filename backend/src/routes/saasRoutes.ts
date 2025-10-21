@@ -6,6 +6,7 @@ import saasSecurityRoutes from './saasSecurityRoutes';
 import saasAnalyticsRoutes from './saasAnalyticsRoutes';
 import saasNotificationsRoutes from './saasNotificationsRoutes';
 import saasAuditRoutes from './saasAuditRoutes';
+import saasTenantManagementRoutes from './saasTenantManagementRoutes';
 import supportRoutes from './supportRoutes';
 import apiManagementRoutes from './apiManagementRoutes';
 import developerPortalRoutes from './developerPortalRoutes';
@@ -28,6 +29,7 @@ const router = Router();
  * - /api/admin/saas/analytics/* - Analytics and reporting with export functionality
  * - /api/admin/saas/notifications/* - Notification management with multi-channel support
  * - /api/admin/saas/audit/* - Comprehensive audit trail and compliance reporting
+ * - /api/admin/saas/tenant-management/* - Tenant workspace management and subscriptions
  * - /api/admin/saas/support/* - Support ticket management and knowledge base
  * - /api/admin/saas/api-management/* - API endpoint management and documentation
  * - /api/admin/saas/developer-portal/* - Developer portal and sandbox environment
@@ -55,6 +57,9 @@ router.use('/notifications', saasNotificationsRoutes);
 
 // Audit Trail and Compliance Routes
 router.use('/audit', saasAuditRoutes);
+
+// Tenant Management Routes
+router.use('/tenant-management', saasTenantManagementRoutes);
 
 // Support and Helpdesk Routes
 router.use('/support', supportRoutes);
