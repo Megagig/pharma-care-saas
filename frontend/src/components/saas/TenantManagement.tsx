@@ -57,7 +57,6 @@ import {
   Email as EmailIcon,
 } from '@mui/icons-material';
 import saasService from '../../services/saasService';
-import { useSubscriptionContext } from '../../context/SubscriptionContext';
 
 interface TenantBranding {
   logo?: string;
@@ -214,8 +213,8 @@ const TenantManagement: React.FC = () => {
   const [subscriptionReason, setSubscriptionReason] = useState('');
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
-  // Get subscription context to refresh user's subscription status after updates
-  const { refetch: refetchSubscriptionStatus } = useSubscriptionContext();
+  // Note: Subscription status refresh will be handled by the user refreshing the page
+  // or by the natural flow of the application
 
   // Using saasService directly since tenant methods aren't in useSaasSettings hook
 
@@ -486,12 +485,11 @@ const TenantManagement: React.FC = () => {
         reason: subscriptionReason,
       });
 
-      setSuccess(`Subscription ${subscriptionDialog.action} completed successfully. The interface will update automatically to reflect the changes.`);
+      setSuccess(`Subscription ${subscriptionDialog.action} completed successfully. The tenant information has been updated. Please refresh the page to see updated subscription status in the navigation.`);
       setSubscriptionDialog({ open: false, action: null });
       await Promise.all([
         loadTenantSubscription(selectedTenant._id),
         loadTenants(), // Refresh the tenant list to show updated status
-        refetchSubscriptionStatus(), // Refresh user's subscription status in navbar/sidebar
       ]);
     } catch (err: any) {
       setError(`Failed to ${subscriptionDialog.action} subscription: ${err.response?.data?.error?.message || err.message}`);

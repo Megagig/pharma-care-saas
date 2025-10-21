@@ -449,10 +449,7 @@ class SaaSService {
     return response.data;
   }
 
-  async provisionTenant(tenantData: any): Promise<{ success: boolean; data: { tenant: any } }> {
-    const response = await apiClient.post(`${this.baseUrl}/tenant-management/tenants`, tenantData);
-    return response.data;
-  }
+
 
   async deprovisionTenant(tenantId: string, options: any = {}): Promise<{ success: boolean }> {
     const response = await apiClient.delete(`${this.baseUrl}/tenant-management/tenants/${tenantId}`, { data: options });
