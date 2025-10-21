@@ -632,6 +632,15 @@ export class SupportController {
 
       const metrics = await this.metricsService.getSupportKPIs(timeRange);
 
+      logger.info('Support metrics calculated', {
+        totalTickets: metrics.totalTickets,
+        chartDataCounts: {
+          status: metrics.ticketsByStatus?.length || 0,
+          priority: metrics.ticketsByPriority?.length || 0,
+          category: metrics.ticketsByCategory?.length || 0
+        }
+      });
+
       sendSuccess(
         res,
         metrics,

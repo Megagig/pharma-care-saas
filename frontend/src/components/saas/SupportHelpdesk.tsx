@@ -384,15 +384,6 @@ const SupportHelpdesk: React.FC = () => {
       }));
       
       console.log('Loaded tickets:', mappedTickets.length, 'tickets');
-      if (mappedTickets.length > 0) {
-        console.log('First ticket mapping check:', {
-          id: mappedTickets[0].id,
-          ticketNumber: mappedTickets[0].ticketNumber,
-          assignedTo: mappedTickets[0].assignedTo,
-          assignedToName: mappedTickets[0].assignedToName,
-          originalAssignedTo: apiTickets[0].assignedTo
-        });
-      }
       
       setTickets(mappedTickets.length > 0 ? mappedTickets : mockTickets);
     } catch (error) {
@@ -432,9 +423,19 @@ const SupportHelpdesk: React.FC = () => {
         ticketsByCategory: metricsData.ticketsByCategory || []
       };
       
+      console.log('Metrics loaded:', {
+        totalTickets: safeMetrics.totalTickets,
+        chartsData: {
+          status: safeMetrics.ticketsByStatus?.length || 0,
+          priority: safeMetrics.ticketsByPriority?.length || 0,
+          category: safeMetrics.ticketsByCategory?.length || 0
+        }
+      });
+      
       setMetrics(safeMetrics);
     } catch (error) {
       console.error('Error loading metrics:', error);
+      console.log('Using mock metrics as fallback');
       // Fallback to mock data
       setMetrics(mockMetrics);
     } finally {
@@ -713,12 +714,6 @@ const SupportHelpdesk: React.FC = () => {
 
   // Assignment and status change handlers
   const handleAssignTicket = (ticket: SupportTicket) => {
-    console.log('Assigning ticket:', {
-      ticketNumber: ticket.ticketNumber,
-      id: ticket.id,
-      _id: (ticket as any)._id
-    });
-    
     setSelectedTicketForAction(ticket);
     setSelectedAssignee(ticket.assignedTo || '');
     setAssignDialogOpen(true);
