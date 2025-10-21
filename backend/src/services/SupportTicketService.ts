@@ -365,18 +365,26 @@ export class SupportTicketService {
         isInternal: true
       });
 
-      // Send notification to assigned agent
-      await this.notificationService.sendNotification(
-        assignedToId,
-        "notification-template",
-        "email",
-        {
-          type: 'ticket_assigned',
-          title: 'New Ticket Assigned',
-          message: `You have been assigned ticket ${ticket.ticketNumber}: ${ticket.title}`,
-          data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
-        }
-      );
+      // Send notification to assigned agent (non-blocking)
+      try {
+        await this.notificationService.sendNotification(
+          assignedToId,
+          "notification-template",
+          "email",
+          {
+            type: 'ticket_assigned',
+            title: 'New Ticket Assigned',
+            message: `You have been assigned ticket ${ticket.ticketNumber}: ${ticket.title}`,
+            data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
+          }
+        );
+      } catch (notificationError) {
+        logger.warn('Failed to send assignment notification, but ticket was assigned successfully', {
+          ticketId,
+          assignedTo: assignedToId,
+          error: notificationError.message
+        });
+      }
 
       // Clear cache
       await this.clearTicketCache();
@@ -432,9 +440,11 @@ export class SupportTicketService {
         isInternal: true
       });
 
-      // Send notifications
+      // Send notifications (non-blocking)
       if (status === 'resolved') {
-        await this.sendTicketResolvedNotifications(ticket);
+        this.sendTicketResolvedNotifications(ticket).catch(error => {
+          logger.error('Error sending ticket resolved notifications:', error);
+        });
       }
 
       // Clear cache
@@ -484,8 +494,10 @@ export class SupportTicketService {
       // Reassign to higher level support
       await this.autoAssignTicket(ticket);
 
-      // Send escalation notifications
-      await this.sendTicketEscalatedNotifications(ticket, reason);
+      // Send escalation notifications (non-blocking)
+      this.sendTicketEscalatedNotifications(ticket, reason).catch(error => {
+        logger.error('Error sending ticket escalated notifications:', error);
+      });
 
       // Clear cache
       await this.clearTicketCache();

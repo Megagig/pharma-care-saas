@@ -23,7 +23,7 @@ router.get('/tickets/:ticketId',
 );
 
 router.put('/tickets/:ticketId/assign', 
-  requireRole('super_admin', 'admin', 'support_agent'), 
+  requireRole('super_admin'), 
   supportController.assignTicket.bind(supportController)
 );
 

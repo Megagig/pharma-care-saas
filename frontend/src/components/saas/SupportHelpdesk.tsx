@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../services/apiClient';
+import { useAuth } from '../../hooks/useAuth';
+import toast from 'react-hot-toast';
 import {
   Box,
   Card,
@@ -48,6 +50,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FlagIcon from '@mui/icons-material/Flag';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
+import ChangeCircleIcon from '@mui/icons-material/ChangeCircle';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonIcon from '@mui/icons-material/Person';
 import CommentIcon from '@mui/icons-material/Comment';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -137,9 +142,13 @@ interface SupportMetrics {
 }
 
 const SupportHelpdesk: React.FC = () => {
+  const { user } = useAuth();
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Check if user is super admin
+  const isSuperAdmin = user?.role === 'super_admin';
   
   // Tickets state
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -167,6 +176,15 @@ const SupportHelpdesk: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+
+  // Assignment and status change state
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [selectedTicketForAction, setSelectedTicketForAction] = useState<SupportTicket | null>(null);
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [selectedAssignee, setSelectedAssignee] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Article form state
   const [articleForm, setArticleForm] = useState({
@@ -351,7 +369,24 @@ const SupportHelpdesk: React.FC = () => {
     try {
       setLoading(true);
       const response = await apiClient.get('/admin/saas/support/tickets');
-      setTickets(response.data.data.tickets || mockTickets);
+      const apiTickets = response.data.data.tickets || [];
+      
+      // Map API tickets to match frontend interface (convert _id to id)
+      const mappedTickets = apiTickets.map((ticket: any) => ({
+        ...ticket,
+        id: ticket._id || ticket.id, // Use _id from API or fallback to id
+      }));
+      
+      console.log('Loaded tickets:', mappedTickets.length, 'tickets');
+      if (mappedTickets.length > 0) {
+        console.log('First ticket ID check:', {
+          id: mappedTickets[0].id,
+          _id: mappedTickets[0]._id,
+          ticketNumber: mappedTickets[0].ticketNumber
+        });
+      }
+      
+      setTickets(mappedTickets.length > 0 ? mappedTickets : mockTickets);
     } catch (error) {
       console.error('Error loading tickets:', error);
       // Fallback to mock data
@@ -668,6 +703,129 @@ const SupportHelpdesk: React.FC = () => {
     }
   };
 
+  // Assignment and status change handlers
+  const handleAssignTicket = (ticket: SupportTicket) => {
+    console.log('Assigning ticket:', {
+      ticketNumber: ticket.ticketNumber,
+      id: ticket.id,
+      _id: (ticket as any)._id
+    });
+    
+    setSelectedTicketForAction(ticket);
+    setSelectedAssignee(ticket.assignedTo || '');
+    setAssignDialogOpen(true);
+    loadAvailableUsers();
+  };
+
+  const handleChangeStatus = (ticket: SupportTicket) => {
+    setSelectedTicketForAction(ticket);
+    setSelectedStatus(ticket.status);
+    setStatusDialogOpen(true);
+  };
+
+  const loadAvailableUsers = async () => {
+    try {
+      // Load all users and filter for support roles on frontend
+      const response = await apiClient.get('/admin/saas/users?limit=100');
+      const allUsers = response.data.data.users || [];
+      
+      // Filter for users with support-related roles
+      const supportUsers = allUsers.filter((user: any) => 
+        ['admin', 'super_admin', 'support_agent', 'senior_support_agent', 'technical_support'].includes(user.role)
+      );
+      
+      setAvailableUsers(supportUsers);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      setAvailableUsers([]);
+    }
+  };
+
+  const submitAssignment = async () => {
+    if (!selectedTicketForAction || !selectedAssignee) return;
+    
+    try {
+      setActionLoading(true);
+      
+      // Try multiple ways to get the ID - handle both frontend and backend formats
+      const ticketId = selectedTicketForAction.id || 
+                      (selectedTicketForAction as any)._id || 
+                      (selectedTicketForAction as any).ticketId;
+      
+      if (!ticketId) {
+        console.error('No ticket ID found. Ticket object:', selectedTicketForAction);
+        throw new Error('Ticket ID not found');
+      }
+      
+      await apiClient.put(`/admin/saas/support/tickets/${ticketId}/assign`, {
+        assignedToId: selectedAssignee
+      });
+      
+      // Find assigned user name for toast
+      const assignedUser = availableUsers.find(user => user._id === selectedAssignee);
+      const assignedUserName = assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : 'user';
+      
+      toast.success(
+        selectedAssignee 
+          ? `Ticket ${selectedTicketForAction.ticketNumber} assigned to ${assignedUserName}`
+          : `Ticket ${selectedTicketForAction.ticketNumber} unassigned`,
+        { duration: 4000, icon: '👤' }
+      );
+      
+      setAssignDialogOpen(false);
+      setSelectedTicketForAction(null);
+      setSelectedAssignee('');
+      await loadTickets();
+    } catch (error: any) {
+      console.error('Error assigning ticket:', error);
+      toast.error(
+        error.response?.data?.message || 'Failed to assign ticket',
+        { duration: 4000, icon: '❌' }
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const submitStatusChange = async () => {
+    if (!selectedTicketForAction || !selectedStatus) return;
+    
+    try {
+      setActionLoading(true);
+      
+      // Try multiple ways to get the ID - handle both frontend and backend formats
+      const ticketId = selectedTicketForAction.id || 
+                      (selectedTicketForAction as any)._id || 
+                      (selectedTicketForAction as any).ticketId;
+      
+      if (!ticketId) {
+        throw new Error('Ticket ID not found');
+      }
+      
+      await apiClient.put(`/admin/saas/support/tickets/${ticketId}/status`, {
+        status: selectedStatus
+      });
+      
+      toast.success(
+        `Ticket ${selectedTicketForAction.ticketNumber} status changed to ${selectedStatus.replace('_', ' ').toUpperCase()}`,
+        { duration: 4000, icon: '🔄' }
+      );
+      
+      setStatusDialogOpen(false);
+      setSelectedTicketForAction(null);
+      setSelectedStatus('');
+      await loadTickets();
+    } catch (error: any) {
+      console.error('Error updating ticket status:', error);
+      toast.error(
+        error.response?.data?.message || 'Failed to update ticket status',
+        { duration: 4000, icon: '❌' }
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const renderTicketsTab = () => (
     <Box>
       {/* Tickets Header */}
@@ -789,7 +947,7 @@ const SupportHelpdesk: React.FC = () => {
           </TableHead>
           <TableBody>
             {filteredTickets.map((ticket) => (
-              <TableRow key={ticket.id} hover>
+              <TableRow key={ticket.id || (ticket as any)._id || ticket.ticketNumber} hover>
                 <TableCell>
                   <Typography variant="body2" fontWeight="medium">
                     {ticket.ticketNumber}
@@ -857,6 +1015,26 @@ const SupportHelpdesk: React.FC = () => {
                         }}
                       >
                         <VisibilityIcon />
+                      </IconButton>
+                    </Tooltip>
+                    {isSuperAdmin && (
+                      <Tooltip title="Assign Ticket (Super Admin Only)">
+                        <IconButton 
+                          size="small"
+                          onClick={() => handleAssignTicket(ticket)}
+                          color="primary"
+                        >
+                          <PersonAddIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    <Tooltip title="Change Status">
+                      <IconButton 
+                        size="small"
+                        onClick={() => handleChangeStatus(ticket)}
+                        color="secondary"
+                      >
+                        <ChangeCircleIcon />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Edit">
@@ -1777,6 +1955,126 @@ const SupportHelpdesk: React.FC = () => {
             }}
           >
             {selectedVideo ? 'Update Video' : 'Create Video'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Assign Ticket Dialog */}
+      <Dialog
+        open={assignDialogOpen}
+        onClose={() => setAssignDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Assign Ticket - {selectedTicketForAction?.ticketNumber}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Assign this ticket to a support agent or admin user.
+            </Typography>
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Assign To</InputLabel>
+              <Select
+                value={selectedAssignee}
+                onChange={(e) => setSelectedAssignee(e.target.value)}
+                label="Assign To"
+              >
+                <MenuItem value="">
+                  <em>Unassigned</em>
+                </MenuItem>
+                {availableUsers.map((user) => (
+                  <MenuItem key={user._id} value={user._id}>
+                    {user.firstName} {user.lastName} ({user.email}) - {user.role}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAssignDialogOpen(false)} disabled={actionLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={submitAssignment}
+            variant="contained"
+            disabled={actionLoading}
+            startIcon={<PersonAddIcon />}
+          >
+            {actionLoading ? 'Assigning...' : 'Assign Ticket'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Change Status Dialog */}
+      <Dialog
+        open={statusDialogOpen}
+        onClose={() => setStatusDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Change Status - {selectedTicketForAction?.ticketNumber}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Update the status of this support ticket.
+            </Typography>
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                label="Status"
+              >
+                <MenuItem value="open">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AssignmentIcon color="error" />
+                    Open
+                  </Box>
+                </MenuItem>
+                <MenuItem value="in_progress">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PlayArrowIcon color="warning" />
+                    In Progress
+                  </Box>
+                </MenuItem>
+                <MenuItem value="pending_customer">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <HourglassEmptyIcon color="info" />
+                    Pending Customer
+                  </Box>
+                </MenuItem>
+                <MenuItem value="resolved">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CheckCircleIcon color="success" />
+                    Resolved
+                  </Box>
+                </MenuItem>
+                <MenuItem value="closed">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CancelIcon color="disabled" />
+                    Closed
+                  </Box>
+                </MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setStatusDialogOpen(false)} disabled={actionLoading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={submitStatusChange}
+            variant="contained"
+            disabled={actionLoading || !selectedStatus}
+            startIcon={<ChangeCircleIcon />}
+          >
+            {actionLoading ? 'Updating...' : 'Update Status'}
           </Button>
         </DialogActions>
       </Dialog>
