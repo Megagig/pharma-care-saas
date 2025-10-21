@@ -57,6 +57,7 @@ import {
   Email as EmailIcon,
 } from '@mui/icons-material';
 import saasService from '../../services/saasService';
+import { useSubscriptionContext } from '../../context/SubscriptionContext';
 
 interface TenantBranding {
   logo?: string;
@@ -212,6 +213,9 @@ const TenantManagement: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [subscriptionReason, setSubscriptionReason] = useState('');
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+
+  // Get subscription context to refresh user's subscription status after updates
+  const { refetch: refetchSubscriptionStatus } = useSubscriptionContext();
 
   // Using saasService directly since tenant methods aren't in useSaasSettings hook
 
@@ -482,11 +486,12 @@ const TenantManagement: React.FC = () => {
         reason: subscriptionReason,
       });
 
-      setSuccess(`Subscription ${subscriptionDialog.action} completed successfully. Users in this workspace may need to refresh their browser to see the changes.`);
+      setSuccess(`Subscription ${subscriptionDialog.action} completed successfully. The interface will update automatically to reflect the changes.`);
       setSubscriptionDialog({ open: false, action: null });
       await Promise.all([
         loadTenantSubscription(selectedTenant._id),
         loadTenants(), // Refresh the tenant list to show updated status
+        refetchSubscriptionStatus(), // Refresh user's subscription status in navbar/sidebar
       ]);
     } catch (err: any) {
       setError(`Failed to ${subscriptionDialog.action} subscription: ${err.response?.data?.error?.message || err.message}`);
@@ -860,11 +865,18 @@ const TenantManagement: React.FC = () => {
                             color={getStatusColor(subscription.workspace.subscriptionStatus) as any}
                           />
                         </Grid>
-                        {subscription.workspace.trialEndDate && (
+                        {(subscription.workspace.trialEndDate || subscription.subscription?.endDate) && (
                           <Grid item xs={12} md={4}>
-                            <Typography variant="body2" color="textSecondary">Trial End Date</Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              {subscription.workspace.subscriptionStatus === 'trial' ? 'Trial End Date' : 'Subscription End Date'}
+                            </Typography>
                             <Typography variant="body1">
-                              {new Date(subscription.workspace.trialEndDate).toLocaleDateString()}
+                              {subscription.workspace.subscriptionStatus === 'trial' && subscription.workspace.trialEndDate
+                                ? new Date(subscription.workspace.trialEndDate).toLocaleDateString()
+                                : subscription.subscription?.endDate
+                                  ? new Date(subscription.subscription.endDate).toLocaleDateString()
+                                  : 'N/A'
+                              }
                             </Typography>
                           </Grid>
                         )}
