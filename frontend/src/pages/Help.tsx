@@ -191,6 +191,9 @@ const Help: React.FC = () => {
   });
   const [ticketSubmitting, setTicketSubmitting] = useState(false);
   
+  // FAQ voting state
+  const [votingFAQ, setVotingFAQ] = useState<string | null>(null);
+  
   // Data states
   const [helpContent, setHelpContent] = useState<{
     articles: HelpArticle[];
@@ -367,6 +370,45 @@ const Help: React.FC = () => {
         duration: 4000,
         icon: '📄',
       });
+    }
+  };
+
+  const voteFAQ = async (faqId: string, helpful: boolean) => {
+    if (votingFAQ === faqId) return; // Prevent double voting
+    
+    try {
+      setVotingFAQ(faqId);
+      
+      const response = await apiClient.post(`/help/faqs/${faqId}/vote`, {
+        helpful
+      });
+      
+      // Update the FAQ in the local state
+      setHelpContent(prev => ({
+        ...prev,
+        faqs: prev.faqs.map(faq => 
+          faq._id === faqId 
+            ? {
+                ...faq,
+                helpfulVotes: response.data.data.helpfulVotes,
+                notHelpfulVotes: response.data.data.notHelpfulVotes
+              }
+            : faq
+        )
+      }));
+      
+      toast.success(
+        helpful ? 'Thanks for your feedback! 👍' : 'Thanks for your feedback! 👎',
+        { duration: 3000 }
+      );
+    } catch (error: any) {
+      console.error('Error voting on FAQ:', error);
+      toast.error(
+        error.response?.data?.message || 'Failed to record your vote. Please try again.',
+        { duration: 4000, icon: '❌' }
+      );
+    } finally {
+      setVotingFAQ(null);
     }
   };
 
@@ -627,6 +669,14 @@ const Help: React.FC = () => {
                       startIcon={<ThumbUpIcon />}
                       variant="outlined"
                       color="success"
+                      onClick={() => voteFAQ(faq._id, true)}
+                      disabled={votingFAQ === faq._id}
+                      sx={{
+                        '&:hover': {
+                          backgroundColor: 'success.light',
+                          color: 'white',
+                        }
+                      }}
                     >
                       {faq.helpfulVotes}
                     </Button>
@@ -635,6 +685,14 @@ const Help: React.FC = () => {
                       startIcon={<ThumbDownIcon />}
                       variant="outlined"
                       color="error"
+                      onClick={() => voteFAQ(faq._id, false)}
+                      disabled={votingFAQ === faq._id}
+                      sx={{
+                        '&:hover': {
+                          backgroundColor: 'error.light',
+                          color: 'white',
+                        }
+                      }}
                     >
                       {faq.notHelpfulVotes}
                     </Button>

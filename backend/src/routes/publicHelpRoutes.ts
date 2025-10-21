@@ -53,6 +53,11 @@ router.get('/knowledge-base/articles/:id',
   supportController.getKnowledgeBaseArticleById.bind(supportController)
 );
 
+// FAQ voting route
+router.post('/faqs/:id/vote', 
+  supportController.voteFAQ.bind(supportController)
+);
+
 // Support ticket routes for all users
 router.post('/tickets', 
   supportController.createTicket.bind(supportController)

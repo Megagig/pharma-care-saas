@@ -1216,6 +1216,55 @@ export class SupportController {
   }
 
   /**
+   * Vote on FAQ helpfulness
+   * POST /api/help/faqs/:id/vote
+   */
+  async voteFAQ(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { helpful } = req.body; // true for helpful, false for not helpful
+      
+      if (typeof helpful !== 'boolean') {
+        sendError(res, 'VALIDATION_ERROR', 'Vote must be true (helpful) or false (not helpful)', 400);
+        return;
+      }
+
+      const faq = await HelpFAQ.findById(id);
+      if (!faq) {
+        sendError(res, 'NOT_FOUND', 'FAQ not found', 404);
+        return;
+      }
+
+      // Update vote counts
+      if (helpful) {
+        faq.helpfulVotes += 1;
+      } else {
+        faq.notHelpfulVotes += 1;
+      }
+
+      await faq.save();
+
+      logger.info('FAQ vote recorded', {
+        faqId: id,
+        helpful,
+        userId: req.user!._id,
+        newCounts: {
+          helpful: faq.helpfulVotes,
+          notHelpful: faq.notHelpfulVotes
+        }
+      });
+
+      sendSuccess(res, {
+        helpfulVotes: faq.helpfulVotes,
+        notHelpfulVotes: faq.notHelpfulVotes
+      }, 'Vote recorded successfully');
+    } catch (error) {
+      logger.error('Error recording FAQ vote:', error);
+      sendError(res, 'SERVER_ERROR', 'Failed to record vote', 500);
+    }
+  }
+
+  /**
    * Delete FAQ
    * DELETE /api/admin/saas/support/help/faqs/:id
    */
