@@ -207,11 +207,17 @@ supportTicketSchema.index({
   tags: 'text'
 });
 
-// Pre-save middleware to generate ticket number
-supportTicketSchema.pre('save', async function(next) {
+// Pre-validate middleware to ensure ticketNumber is set
+supportTicketSchema.pre('validate', async function(next) {
   if (this.isNew && !this.ticketNumber) {
-    const count = await mongoose.model('SupportTicket').countDocuments();
-    this.ticketNumber = `TKT-${String(count + 1).padStart(6, '0')}`;
+    try {
+      // Generate a simple timestamp-based ticket number as fallback
+      const timestamp = Date.now().toString().slice(-6);
+      this.ticketNumber = `TKT-${timestamp}`;
+      console.log('Generated fallback ticket number in pre-validate:', this.ticketNumber);
+    } catch (error) {
+      console.error('Error in pre-validate middleware:', error);
+    }
   }
   next();
 });

@@ -81,6 +81,7 @@ import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import MessageIcon from '@mui/icons-material/Message';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { Link as RouterLink } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import apiClient from '../services/apiClient';
 
 interface FAQ {
@@ -179,6 +180,17 @@ const Help: React.FC = () => {
   const [feedbackTitle, setFeedbackTitle] = useState('');
   const [feedbackComment, setFeedbackComment] = useState('');
   
+  // Support ticket form states
+  const [showTicketDialog, setShowTicketDialog] = useState(false);
+  const [ticketForm, setTicketForm] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    category: 'general',
+    tags: ''
+  });
+  const [ticketSubmitting, setTicketSubmitting] = useState(false);
+  
   // Data states
   const [helpContent, setHelpContent] = useState<{
     articles: HelpArticle[];
@@ -270,11 +282,61 @@ const Help: React.FC = () => {
       setFeedbackComment('');
       setFeedbackType('general');
       
-      // Show success message
-      alert('Feedback submitted successfully!');
-    } catch (error) {
+      // Show success toast
+      toast.success('Feedback submitted successfully! Thank you for your input.', {
+        duration: 4000,
+        icon: '💬',
+      });
+    } catch (error: any) {
       console.error('Error submitting feedback:', error);
-      alert('Failed to submit feedback. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Failed to submit feedback. Please try again.';
+      toast.error(errorMessage, {
+        duration: 4000,
+        icon: '❌',
+      });
+    }
+  };
+
+  const submitSupportTicket = async () => {
+    try {
+      setTicketSubmitting(true);
+      
+      const ticketData = {
+        title: ticketForm.title,
+        description: ticketForm.description,
+        priority: ticketForm.priority,
+        category: ticketForm.category,
+        tags: ticketForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+      };
+      
+      const response = await apiClient.post('/help/tickets', ticketData);
+      
+      setShowTicketDialog(false);
+      setTicketForm({
+        title: '',
+        description: '',
+        priority: 'medium',
+        category: 'general',
+        tags: ''
+      });
+      
+      // Show success toast
+      toast.success(
+        `Support ticket created successfully! Ticket #${response.data.data.ticketNumber}. You will receive updates via email.`,
+        {
+          duration: 6000,
+          icon: '🎫',
+        }
+      );
+    } catch (error: any) {
+      console.error('Error creating support ticket:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to create support ticket. Please try again.';
+      toast.error(errorMessage, {
+        duration: 5000,
+        icon: '❌',
+      });
+    } finally {
+      setTicketSubmitting(false);
     }
   };
 
@@ -298,9 +360,13 @@ const Help: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error downloading PDF:', error);
-      alert('Failed to download PDF. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Failed to download PDF. Please try again.';
+      toast.error(errorMessage, {
+        duration: 4000,
+        icon: '📄',
+      });
     }
   };
 
@@ -1181,6 +1247,23 @@ const Help: React.FC = () => {
                   Other Ways to Get Help
                 </Typography>
                 <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<SupportIcon />}
+                      onClick={() => setShowTicketDialog(true)}
+                      sx={{ 
+                        py: 2,
+                        mb: 2,
+                        background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                        fontSize: '1.1rem',
+                        fontWeight: 600
+                      }}
+                    >
+                      Create Support Ticket
+                    </Button>
+                  </Grid>
                   <Grid item xs={12} sm={6}>
                     <Button
                       fullWidth
@@ -1706,6 +1789,103 @@ const Help: React.FC = () => {
             disabled={!feedbackRating || !feedbackTitle.trim() || !feedbackComment.trim()}
           >
             Send Feedback
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Support Ticket Creation Dialog */}
+      <Dialog
+        open={showTicketDialog}
+        onClose={() => setShowTicketDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SupportIcon />
+            Create Support Ticket
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Submit a support ticket and our team will get back to you as soon as possible. 
+            You'll receive updates via email.
+          </Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Subject"
+                placeholder="Brief description of your issue"
+                value={ticketForm.title}
+                onChange={(e) => setTicketForm({ ...ticketForm, title: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required>
+                <InputLabel>Priority</InputLabel>
+                <Select
+                  value={ticketForm.priority}
+                  onChange={(e) => setTicketForm({ ...ticketForm, priority: e.target.value })}
+                >
+                  <MenuItem value="low">Low - General inquiry</MenuItem>
+                  <MenuItem value="medium">Medium - Standard issue</MenuItem>
+                  <MenuItem value="high">High - Urgent issue</MenuItem>
+                  <MenuItem value="critical">Critical - System down</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={ticketForm.category}
+                  onChange={(e) => setTicketForm({ ...ticketForm, category: e.target.value })}
+                >
+                  <MenuItem value="general">General Support</MenuItem>
+                  <MenuItem value="technical">Technical Issue</MenuItem>
+                  <MenuItem value="billing">Billing & Subscription</MenuItem>
+                  <MenuItem value="feature_request">Feature Request</MenuItem>
+                  <MenuItem value="bug_report">Bug Report</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                rows={6}
+                label="Description"
+                placeholder="Please provide detailed information about your issue, including steps to reproduce if applicable..."
+                value={ticketForm.description}
+                onChange={(e) => setTicketForm({ ...ticketForm, description: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Tags (optional)"
+                placeholder="Add relevant tags separated by commas (e.g., login, dashboard, mobile)"
+                value={ticketForm.tags}
+                onChange={(e) => setTicketForm({ ...ticketForm, tags: e.target.value })}
+                helperText="Tags help us categorize and route your ticket to the right team"
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowTicketDialog(false)} disabled={ticketSubmitting}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={submitSupportTicket}
+            disabled={!ticketForm.title.trim() || !ticketForm.description.trim() || ticketSubmitting}
+            startIcon={ticketSubmitting ? <CircularProgress size={20} /> : <SupportIcon />}
+          >
+            {ticketSubmitting ? 'Creating...' : 'Create Ticket'}
           </Button>
         </DialogActions>
       </Dialog>

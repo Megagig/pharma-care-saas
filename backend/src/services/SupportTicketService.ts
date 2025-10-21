@@ -89,6 +89,48 @@ export class SupportTicketService {
   }
 
   /**
+   * Generate unique ticket number
+   */
+  private async generateTicketNumber(): Promise<string> {
+    try {
+      logger.info('Starting ticket number generation');
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      while (attempts < maxAttempts) {
+        const count = await SupportTicket.countDocuments();
+        const ticketNumber = `TKT-${String(count + 1).padStart(6, '0')}`;
+        
+        logger.info(`Attempt ${attempts + 1}: Generated ticket number ${ticketNumber} (count: ${count})`);
+        
+        // Check if this ticket number already exists
+        const existingTicket = await SupportTicket.findOne({ ticketNumber });
+        
+        if (!existingTicket) {
+          logger.info(`Ticket number ${ticketNumber} is unique, using it`);
+          return ticketNumber;
+        }
+        
+        logger.warn(`Ticket number ${ticketNumber} already exists, retrying`);
+        attempts++;
+      }
+      
+      // Fallback to timestamp-based approach
+      const timestamp = Date.now().toString().slice(-6);
+      const fallbackNumber = `TKT-${timestamp}`;
+      logger.warn(`Using fallback ticket number: ${fallbackNumber}`);
+      return fallbackNumber;
+    } catch (error) {
+      logger.error('Error generating ticket number:', error);
+      // Ultimate fallback
+      const timestamp = Date.now().toString().slice(-6);
+      const ultimateFallback = `TKT-${timestamp}`;
+      logger.error(`Using ultimate fallback ticket number: ${ultimateFallback}`);
+      return ultimateFallback;
+    }
+  }
+
+  /**
    * Create a new support ticket
    */
   async createTicket(ticketData: {
@@ -102,14 +144,34 @@ export class SupportTicketService {
     attachments?: { filename: string; url: string }[];
   }): Promise<ISupportTicket> {
     try {
+      logger.info('Starting ticket creation process', { userId: ticketData.userId, title: ticketData.title });
+      
       // Get user information
       const user = await User.findById(ticketData.userId);
       if (!user) {
+        logger.error('User not found', { userId: ticketData.userId });
         throw new Error('User not found');
       }
+      
+      logger.info('User found', { userId: ticketData.userId, userEmail: user.email });
 
-      // Create ticket
-      const ticket = new SupportTicket({
+      // Generate ticket number
+      logger.info('Generating ticket number...');
+      let ticketNumber;
+      try {
+        ticketNumber = await this.generateTicketNumber();
+        logger.info('Ticket number generated', { ticketNumber });
+      } catch (error) {
+        logger.error('Failed to generate ticket number, using fallback', error);
+        // Fallback ticket number generation
+        const timestamp = Date.now().toString().slice(-6);
+        ticketNumber = `TKT-${timestamp}`;
+        logger.info('Using fallback ticket number', { ticketNumber });
+      }
+
+      // Create ticket data
+      const ticketCreateData = {
+        ticketNumber,
         title: ticketData.title,
         description: ticketData.description,
         priority: ticketData.priority,
@@ -124,15 +186,39 @@ export class SupportTicketService {
           uploadedAt: new Date(),
           uploadedBy: ticketData.userId
         })) || []
-      });
+      };
+      
+      logger.info('Creating ticket with data', { ticketCreateData: { ...ticketCreateData, description: ticketCreateData.description.substring(0, 50) + '...' } });
 
+      // Create ticket
+      const ticket = new SupportTicket(ticketCreateData);
+      
+      // Ensure ticket number is set
+      if (!ticket.ticketNumber) {
+        const fallbackNumber = `TKT-${Date.now().toString().slice(-6)}`;
+        ticket.ticketNumber = fallbackNumber;
+        logger.warn('Ticket number was not set, using fallback', { fallbackNumber });
+      }
+
+      // Validate before saving
+      logger.info('Validating ticket...');
+      const validationError = ticket.validateSync();
+      if (validationError) {
+        logger.error('Ticket validation failed', { validationError: validationError.errors });
+        throw new Error(`Validation failed: ${Object.keys(validationError.errors).join(', ')}`);
+      }
+
+      logger.info('Saving ticket to database...');
       await ticket.save();
+      logger.info('Ticket saved successfully', { ticketId: ticket._id, ticketNumber: ticket.ticketNumber });
 
       // Auto-assign based on category and priority
       await this.autoAssignTicket(ticket);
 
-      // Send notifications
-      await this.sendTicketCreatedNotifications(ticket);
+      // Send notifications (non-blocking)
+      this.sendTicketCreatedNotifications(ticket).catch(error => {
+        logger.error('Error sending ticket created notifications:', error);
+      });
 
       // Clear cache
       await this.clearTicketCache();
@@ -145,9 +231,24 @@ export class SupportTicketService {
       });
 
       return ticket;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error creating support ticket:', error);
-      throw new Error('Failed to create support ticket');
+      
+      // Provide more specific error messages
+      if (error.name === 'ValidationError') {
+        const validationErrors = Object.values(error.errors).map((err: any) => err.message);
+        throw new Error(`Validation failed: ${validationErrors.join(', ')}`);
+      }
+      
+      if (error.message === 'User not found') {
+        throw new Error('User not found. Please ensure you are logged in.');
+      }
+      
+      if (error.message.includes('ticketNumber')) {
+        throw new Error('Unable to generate ticket number. Please try again.');
+      }
+      
+      throw new Error(error.message || 'Failed to create support ticket');
     }
   }
 
@@ -667,30 +768,45 @@ export class SupportTicketService {
 
   private async sendTicketCreatedNotifications(ticket: ISupportTicket): Promise<void> {
     try {
-      // Notify customer
-      await this.notificationService.sendNotification(
-        ticket.userId.toString(),
-        "notification-template",
-        "email",
-        {
-          type: 'ticket_created',
-          title: 'Support Ticket Created',
-          message: `Your support ticket ${ticket.ticketNumber} has been created and will be reviewed shortly.`,
-          data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
-        });
-
-      // Notify assigned agent if auto-assigned
-      if (ticket.assignedTo) {
+      // Notify customer - wrap in try-catch to prevent notification errors from affecting ticket creation
+      try {
         await this.notificationService.sendNotification(
-          ticket.assignedTo.toString(),
+          ticket.userId.toString(),
           "notification-template",
           "email",
           {
-            type: 'ticket_assigned',
-            title: 'New Ticket Assigned',
-            message: `You have been assigned ticket ${ticket.ticketNumber}: ${ticket.title}`,
+            type: 'ticket_created',
+            title: 'Support Ticket Created',
+            message: `Your support ticket ${ticket.ticketNumber} has been created and will be reviewed shortly.`,
             data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
           });
+      } catch (notificationError) {
+        logger.warn('Failed to send customer notification, but ticket was created successfully', {
+          ticketId: ticket._id,
+          error: notificationError.message
+        });
+      }
+
+      // Notify assigned agent if auto-assigned
+      if (ticket.assignedTo) {
+        try {
+          await this.notificationService.sendNotification(
+            ticket.assignedTo.toString(),
+            "notification-template",
+            "email",
+            {
+              type: 'ticket_assigned',
+              title: 'New Ticket Assigned',
+              message: `You have been assigned ticket ${ticket.ticketNumber}: ${ticket.title}`,
+              data: { ticketId: ticket._id, ticketNumber: ticket.ticketNumber }
+            });
+        } catch (notificationError) {
+          logger.warn('Failed to send agent notification, but ticket was created successfully', {
+            ticketId: ticket._id,
+            assignedTo: ticket.assignedTo,
+            error: notificationError.message
+          });
+        }
       }
     } catch (error) {
       logger.error('Error sending ticket created notifications:', error);
