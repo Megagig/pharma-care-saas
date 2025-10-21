@@ -675,4 +675,14 @@ router.delete(
   saasTenantManagementController.removeMember
 );
 
+/**
+ * @route GET /api/admin/saas/tenant-management/subscription-plans
+ * @desc Get available subscription plans
+ * @access Super Admin only
+ */
+router.get(
+  '/subscription-plans',
+  saasTenantManagementController.getAvailableSubscriptionPlans
+);
+
 export default router;

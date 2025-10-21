@@ -204,6 +204,13 @@ const TenantManagement: React.FC = () => {
     lastName: '',
     role: 'Staff',
   });
+  const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
+  const [subscriptionDialog, setSubscriptionDialog] = useState<{
+    open: boolean;
+    action: 'upgrade' | 'downgrade' | 'revoke' | null;
+  }>({ open: false, action: null });
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
+  const [subscriptionReason, setSubscriptionReason] = useState('');
 
   // Using saasService directly since tenant methods aren't in useSaasSettings hook
 
@@ -224,7 +231,18 @@ const TenantManagement: React.FC = () => {
   useEffect(() => {
     console.log('TenantManagement component mounted, loading tenants...');
     loadTenants();
+    loadSubscriptionPlans();
   }, []);
+
+  const loadSubscriptionPlans = async () => {
+    try {
+      const response = await saasService.getAvailableSubscriptionPlans();
+      console.log('Available subscription plans:', response.data.plans);
+      setSubscriptionPlans(response.data.plans);
+    } catch (err) {
+      console.error('Error loading subscription plans:', err);
+    }
+  };
 
   const loadTenants = async () => {
     try {
@@ -434,25 +452,33 @@ const TenantManagement: React.FC = () => {
     }
   };
 
-  const handleSubscriptionAction = async (action: 'upgrade' | 'downgrade' | 'revoke', planId?: string) => {
-    if (!selectedTenant) return;
+  const handleSubscriptionAction = (action: 'upgrade' | 'downgrade' | 'revoke') => {
+    setSubscriptionDialog({ open: true, action });
+    setSelectedPlan('');
+    setSubscriptionReason('');
+  };
+
+  const executeSubscriptionAction = async () => {
+    if (!selectedTenant || !subscriptionDialog.action) return;
 
     try {
       setLoading(true);
-      const reason = prompt(`Please provide a reason for ${action}:`);
-      if (reason === null) return; // User cancelled
 
       await saasService.updateTenantSubscription(selectedTenant._id, {
-        action,
-        planId,
-        reason,
+        action: subscriptionDialog.action,
+        planId: selectedPlan || undefined,
+        reason: subscriptionReason,
       });
 
-      setSuccess(`Subscription ${action} completed successfully`);
-      await loadTenantSubscription(selectedTenant._id);
-    } catch (err) {
-      setError(`Failed to ${action} subscription`);
-      console.error(`Error ${action} subscription:`, err);
+      setSuccess(`Subscription ${subscriptionDialog.action} completed successfully. Users in this workspace may need to refresh their browser to see the changes.`);
+      setSubscriptionDialog({ open: false, action: null });
+      await Promise.all([
+        loadTenantSubscription(selectedTenant._id),
+        loadTenants(), // Refresh the tenant list to show updated status
+      ]);
+    } catch (err: any) {
+      setError(`Failed to ${subscriptionDialog.action} subscription: ${err.response?.data?.error?.message || err.message}`);
+      console.error(`Error ${subscriptionDialog.action} subscription:`, err);
     } finally {
       setLoading(false);
     }
@@ -664,16 +690,9 @@ const TenantManagement: React.FC = () => {
                               color={getStatusColor(tenant.subscriptionStatus) as any}
                               variant="outlined"
                             />
-                            {tenant.subscriptionStatus === 'trial' && (
-                              <Typography variant="caption" color="warning.main">
-                                Trial Active
-                              </Typography>
-                            )}
-                            {tenant.subscriptionStatus === 'canceled' && (
-                              <Typography variant="caption" color="error.main">
-                                No Subscription
-                              </Typography>
-                            )}
+                            <Typography variant="caption" color="textSecondary">
+                              {tenant.planName || 'Free Trial'}
+                            </Typography>
                           </Box>
                         </TableCell>
                         <TableCell>
@@ -1283,6 +1302,109 @@ const TenantManagement: React.FC = () => {
           <ListItemText>Remove Member</ListItemText>
         </MenuItem>
       </Menu>
+
+      {/* Subscription Action Dialog */}
+      <Dialog
+        open={subscriptionDialog.open}
+        onClose={() => setSubscriptionDialog({ open: false, action: null })}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          {subscriptionDialog.action === 'revoke'
+            ? 'Revoke Subscription'
+            : `${subscriptionDialog.action === 'upgrade' ? 'Upgrade' : 'Downgrade'} Subscription`
+          }
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Grid container spacing={3}>
+            {subscriptionDialog.action !== 'revoke' && (
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  Select a Plan ({subscriptionPlans.length} available)
+                </Typography>
+                <Grid container spacing={2}>
+                  {subscriptionPlans.length === 0 && (
+                    <Grid item xs={12}>
+                      <Alert severity="info">
+                        No subscription plans available. Please contact support.
+                      </Alert>
+                    </Grid>
+                  )}
+                  {subscriptionPlans.map((plan) => (
+                    <Grid item xs={12} sm={6} md={4} key={plan._id}>
+                      <Card
+                        variant="outlined"
+                        sx={{
+                          cursor: 'pointer',
+                          border: selectedPlan === plan._id ? 2 : 1,
+                          borderColor: selectedPlan === plan._id ? 'primary.main' : 'divider',
+                          '&:hover': {
+                            borderColor: 'primary.main',
+                            boxShadow: 1,
+                          }
+                        }}
+                        onClick={() => setSelectedPlan(plan._id)}
+                      >
+                        <CardContent sx={{ textAlign: 'center', p: 2 }}>
+                          <Typography variant="h6" gutterBottom>
+                            {plan.name}
+                          </Typography>
+                          <Typography variant="h4" color="primary" gutterBottom>
+                            ₦{plan.priceNGN.toLocaleString()}
+                          </Typography>
+                          <Typography variant="body2" color="textSecondary" gutterBottom>
+                            per {plan.billingInterval}
+                          </Typography>
+                          <Chip
+                            label={plan.tier.replace('_', ' ').toUpperCase()}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                          {plan.popularPlan && (
+                            <Chip
+                              label="Popular"
+                              size="small"
+                              color="secondary"
+                              sx={{ ml: 1 }}
+                            />
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Grid>
+            )}
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Reason"
+                multiline
+                rows={3}
+                value={subscriptionReason}
+                onChange={(e) => setSubscriptionReason(e.target.value)}
+                placeholder={`Please provide a reason for ${subscriptionDialog.action}...`}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setSubscriptionDialog({ open: false, action: null })}>
+            Cancel
+          </Button>
+          <Button
+            onClick={executeSubscriptionAction}
+            variant="contained"
+            disabled={loading || !subscriptionReason || (subscriptionDialog.action !== 'revoke' && !selectedPlan)}
+            color={subscriptionDialog.action === 'revoke' ? 'error' : 'primary'}
+          >
+            {subscriptionDialog.action === 'revoke' ? 'Revoke' :
+              subscriptionDialog.action === 'upgrade' ? 'Upgrade' : 'Downgrade'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar for success/error messages */}
       <Snackbar

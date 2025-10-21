@@ -764,7 +764,22 @@ export class SaasTenantManagementController {
         return;
       }
 
-      const tenant = await tenantManagementService.getTenantById(tenantId);
+      const tenant = await tenantManagementService.getTenantById(tenantId, {
+        includeUsage: true,
+        includeUsers: false,
+        includeSettings: true,
+      });
+
+      if (!tenant) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 'TENANT_NOT_FOUND',
+            message: 'Tenant not found',
+          },
+        });
+        return;
+      }
 
       res.json({
         success: true,
@@ -774,25 +789,10 @@ export class SaasTenantManagementController {
               primaryColor: '#1976d2',
               secondaryColor: '#dc004e',
             },
-            limits: tenant.limits || {
-              maxUsers: 50,
-              maxPatients: 1000,
-              storageLimit: 5000,
-              apiCallsPerMonth: 10000,
-            },
-            features: tenant.features || [],
-            settings: tenant.settings || {
-              timezone: 'UTC',
-              currency: 'USD',
-              language: 'en',
-            },
-            usageMetrics: tenant.usageMetrics || {
-              currentUsers: 0,
-              currentPatients: 0,
-              storageUsed: 0,
-              apiCallsThisMonth: 0,
-              lastCalculatedAt: new Date(),
-            },
+            limits: tenant.limits,
+            features: tenant.features,
+            settings: tenant.settings,
+            usageMetrics: tenant.usageMetrics,
           },
         },
       });
@@ -899,6 +899,31 @@ export class SaasTenantManagementController {
         error: {
           code: 'PERFORMANCE_FETCH_FAILED',
           message: error instanceof Error ? error.message : 'Failed to get tenant performance metrics',
+        },
+      });
+    }
+  }
+
+  /**
+   * Get available subscription plans
+   */
+  async getAvailableSubscriptionPlans(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const plans = await tenantManagementService.getAvailableSubscriptionPlans();
+
+      res.json({
+        success: true,
+        data: {
+          plans,
+        },
+      });
+    } catch (error) {
+      logger.error('Error getting subscription plans:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'PLANS_FETCH_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to get subscription plans',
         },
       });
     }

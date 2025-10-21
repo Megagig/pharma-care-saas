@@ -113,37 +113,88 @@ export class TenantManagementService {
   /**
    * Transform Workplace to Tenant format for frontend compatibility
    */
-  private transformWorkplaceToTenant(workplace: IWorkplace): any {
+  private async transformWorkplaceToTenant(workplace: IWorkplace): Promise<any> {
+    // Get actual subscription and plan data
+    const Subscription = mongoose.model('Subscription');
+    
+    let actualSubscription = null;
+    let actualPlan = null;
+    let subscriptionStatus = workplace.subscriptionStatus;
+    let planName = 'Free Trial';
+    
+    if (workplace.currentSubscriptionId) {
+      actualSubscription = await Subscription.findById(workplace.currentSubscriptionId)
+        .populate('planId');
+      
+      if (actualSubscription) {
+        subscriptionStatus = actualSubscription.status;
+        actualPlan = actualSubscription.planId;
+        if (actualPlan) {
+          planName = actualPlan.name;
+        }
+      }
+    } else if (workplace.currentPlanId) {
+      actualPlan = await SubscriptionPlan.findById(workplace.currentPlanId);
+      if (actualPlan) {
+        planName = actualPlan.name;
+      }
+    }
+
+    // Calculate real usage metrics - use consistent query
+    const userCount = await User.countDocuments({ 
+      workplaceId: workplace._id
+    });
+
+    // Get patient count (assuming you have a Patient model)
+    let patientCount = 0;
+    try {
+      const Patient = mongoose.model('Patient');
+      patientCount = await Patient.countDocuments({ workplaceId: workplace._id });
+    } catch (error) {
+      // Patient model might not exist, use stats
+      patientCount = workplace.stats?.patientsCount || 0;
+    }
+
     return {
       _id: workplace._id,
       name: workplace.name,
       slug: workplace.name.toLowerCase().replace(/\s+/g, '-'),
       type: workplace.type.toLowerCase(),
-      status: workplace.subscriptionStatus === 'active' ? 'active' : 
-              workplace.subscriptionStatus === 'trial' ? 'trial' : 
-              workplace.subscriptionStatus === 'canceled' ? 'cancelled' : 'pending',
-      subscriptionStatus: workplace.subscriptionStatus,
+      status: subscriptionStatus === 'active' ? 'active' : 
+              subscriptionStatus === 'trial' ? 'trial' : 
+              subscriptionStatus === 'canceled' ? 'cancelled' : 'pending',
+      subscriptionStatus: subscriptionStatus,
+      planName: planName,
       contactInfo: {
         email: workplace.email,
         phone: workplace.phone,
       },
       createdAt: workplace.createdAt,
       lastActivity: workplace.updatedAt,
-      // Add additional fields that might be expected
+      // Real usage metrics
       usageMetrics: {
-        currentUsers: workplace.stats?.usersCount || 0,
-        currentPatients: workplace.stats?.patientsCount || 0,
-        storageUsed: 0,
-        apiCallsThisMonth: 0,
-        lastCalculatedAt: workplace.stats?.lastUpdated || new Date(),
+        currentUsers: userCount,
+        currentPatients: patientCount,
+        storageUsed: 0, // TODO: Calculate actual storage if needed
+        apiCallsThisMonth: 0, // TODO: Calculate actual API calls if needed
+        lastCalculatedAt: new Date(),
       },
-      limits: {
-        maxUsers: 50, // Default limits
+      // Get limits from actual plan or defaults
+      limits: actualPlan?.features ? {
+        maxUsers: actualPlan.features.teamSize || 50,
+        maxPatients: actualPlan.features.patientLimit || 1000,
+        storageLimit: 5000, // TODO: Add to plan features if needed
+        apiCallsPerMonth: 10000, // TODO: Add to plan features if needed
+      } : {
+        maxUsers: 50,
         maxPatients: 1000,
         storageLimit: 5000,
         apiCallsPerMonth: 10000,
       },
-      features: [],
+      // Get features from actual plan
+      features: actualPlan?.features ? Object.keys(actualPlan.features).filter(key => 
+        actualPlan.features[key] === true
+      ) : [],
       branding: {
         primaryColor: '#1976d2',
         secondaryColor: '#dc004e',
@@ -153,6 +204,9 @@ export class TenantManagementService {
         currency: 'USD',
         language: 'en',
       },
+      // Include plan and subscription info
+      currentPlan: actualPlan,
+      currentSubscription: actualSubscription,
     };
   }
 
@@ -290,7 +344,7 @@ export class TenantManagementService {
         tenant.stats.lastUpdated = new Date();
       }
 
-      return this.transformWorkplaceToTenant(tenant);
+      return await this.transformWorkplaceToTenant(tenant);
     } catch (error) {
       logger.error('Error getting tenant by ID:', error);
       throw error;
@@ -386,7 +440,9 @@ export class TenantManagementService {
       }
 
       // Transform workplaces to tenant format
-      const transformedTenants = tenants.map(workplace => this.transformWorkplaceToTenant(workplace));
+      const transformedTenants = await Promise.all(
+        tenants.map(workplace => this.transformWorkplaceToTenant(workplace))
+      );
 
       return {
         tenants: transformedTenants,
@@ -663,7 +719,6 @@ export class TenantManagementService {
 
     try {
       const Subscription = mongoose.model('Subscription');
-      const SubscriptionPlan = mongoose.model('SubscriptionPlan');
 
       const workplace = await Workplace.findById(tenantId);
       if (!workplace) {
@@ -691,22 +746,35 @@ export class TenantManagementService {
             // Update existing subscription
             subscription.planId = new mongoose.Types.ObjectId(update.planId);
             subscription.tier = newPlan.tier;
-            subscription.features = newPlan.features;
-            subscription.limits = newPlan.limits;
-            subscription.priceAtPurchase = newPlan.price;
+            subscription.status = 'active';
+            subscription.priceAtPurchase = newPlan.priceNGN;
+            subscription.billingInterval = newPlan.billingInterval;
+            
+            // Update end date based on billing interval
+            const now = new Date();
+            if (newPlan.billingInterval === 'yearly') {
+              subscription.endDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+            } else {
+              subscription.endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+            }
+            
             await subscription.save();
           } else {
             // Create new subscription
+            const now = new Date();
+            const endDate = newPlan.billingInterval === 'yearly' 
+              ? new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
+              : new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+
             subscription = new Subscription({
               workspaceId: workplace._id,
               planId: update.planId,
               tier: newPlan.tier,
               status: 'active',
-              startDate: new Date(),
-              endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-              priceAtPurchase: newPlan.price,
-              features: newPlan.features,
-              limits: newPlan.limits,
+              startDate: now,
+              endDate: endDate,
+              priceAtPurchase: newPlan.priceNGN,
+              billingInterval: newPlan.billingInterval,
             });
             await subscription.save();
           }
@@ -714,7 +782,7 @@ export class TenantManagementService {
           // Update workplace
           workplace.currentSubscriptionId = subscription._id;
           workplace.currentPlanId = new mongoose.Types.ObjectId(update.planId);
-          workplace.subscriptionStatus = 'active';
+          workplace.subscriptionStatus = 'active' as any;
           break;
 
         case 'revoke':
@@ -723,7 +791,7 @@ export class TenantManagementService {
             await subscription.save();
           }
 
-          workplace.subscriptionStatus = 'canceled';
+          workplace.subscriptionStatus = 'canceled' as any;
           workplace.currentSubscriptionId = undefined;
           workplace.currentPlanId = undefined;
           break;
@@ -737,12 +805,13 @@ export class TenantManagementService {
         action: `subscription_${update.action}`,
         resource: 'workspace',
         resourceId: workplace._id,
-        category: 'subscription_management',
+        category: 'tenant_management',
         severity: 'medium',
         details: {
           workspaceName: workplace.name,
           action: update.action,
           planId: update.planId,
+          planName: update.planId ? (await SubscriptionPlan.findById(update.planId))?.name : null,
           reason: update.reason,
         },
         ipAddress: '127.0.0.1',
@@ -787,14 +856,16 @@ export class TenantManagementService {
 
       const skip = (options.page - 1) * options.limit;
       
+      const memberQuery = { workplaceId: tenantId };
+      
       const [members, total] = await Promise.all([
-        User.find({ workplaceId: tenantId })
+        User.find(memberQuery)
           .select('firstName lastName email role workplaceRole status lastLoginAt createdAt')
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(options.limit)
           .lean(),
-        User.countDocuments({ workplaceId: tenantId })
+        User.countDocuments(memberQuery)
       ]);
 
       return {
@@ -877,7 +948,7 @@ export class TenantManagementService {
         action: 'workspace_member_invited',
         resource: 'workspace',
         resourceId: workplace._id,
-        category: 'member_management',
+        category: 'user_management',
         severity: 'low',
         details: {
           workspaceName: workplace.name,
@@ -928,7 +999,7 @@ export class TenantManagementService {
         action: 'member_role_updated',
         resource: 'user',
         resourceId: member._id,
-        category: 'member_management',
+        category: 'user_management',
         severity: 'medium',
         details: {
           workspaceName: workplace.name,
@@ -946,6 +1017,22 @@ export class TenantManagementService {
       return member;
     } catch (error) {
       logger.error('Error updating member role:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get available subscription plans
+   */
+  async getAvailableSubscriptionPlans(): Promise<any[]> {
+    try {
+      const plans = await SubscriptionPlan.find({ isActive: true })
+        .sort({ tier: 1, billingInterval: 1, priceNGN: 1 });
+      
+      logger.info(`Found ${plans.length} active subscription plans`);
+      return plans;
+    } catch (error) {
+      logger.error('Error getting subscription plans:', error);
       throw error;
     }
   }
@@ -993,7 +1080,7 @@ export class TenantManagementService {
         action: 'member_removed',
         resource: 'user',
         resourceId: member._id,
-        category: 'member_management',
+        category: 'user_management',
         severity: 'medium',
         details: {
           workspaceName: workplace.name,
