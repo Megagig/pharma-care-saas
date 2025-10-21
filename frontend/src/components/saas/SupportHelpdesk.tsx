@@ -371,18 +371,26 @@ const SupportHelpdesk: React.FC = () => {
       const response = await apiClient.get('/admin/saas/support/tickets');
       const apiTickets = response.data.data.tickets || [];
       
-      // Map API tickets to match frontend interface (convert _id to id)
+      // Map API tickets to match frontend interface (convert _id to id and map assignedTo)
       const mappedTickets = apiTickets.map((ticket: any) => ({
         ...ticket,
         id: ticket._id || ticket.id, // Use _id from API or fallback to id
+        // Map assignedTo object to assignedToName string
+        assignedToName: ticket.assignedTo 
+          ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
+          : null,
+        // Keep the original assignedTo ID for API calls
+        assignedTo: ticket.assignedTo?._id || ticket.assignedTo,
       }));
       
       console.log('Loaded tickets:', mappedTickets.length, 'tickets');
       if (mappedTickets.length > 0) {
-        console.log('First ticket ID check:', {
+        console.log('First ticket mapping check:', {
           id: mappedTickets[0].id,
-          _id: mappedTickets[0]._id,
-          ticketNumber: mappedTickets[0].ticketNumber
+          ticketNumber: mappedTickets[0].ticketNumber,
+          assignedTo: mappedTickets[0].assignedTo,
+          assignedToName: mappedTickets[0].assignedToName,
+          originalAssignedTo: apiTickets[0].assignedTo
         });
       }
       
@@ -763,7 +771,7 @@ const SupportHelpdesk: React.FC = () => {
       
       // Find assigned user name for toast
       const assignedUser = availableUsers.find(user => user._id === selectedAssignee);
-      const assignedUserName = assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : 'user';
+      const assignedUserName = assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : 'selected user';
       
       toast.success(
         selectedAssignee 
