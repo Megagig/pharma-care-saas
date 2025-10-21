@@ -36,6 +36,11 @@ export interface SupportKPIs {
   articleViews: number;
   articleHelpfulnessScore: number;
 
+  // Chart data for frontend
+  ticketsByStatus: { status: string; count: number }[];
+  ticketsByPriority: { priority: string; count: number }[];
+  ticketsByCategory: { category: string; count: number }[];
+
   // Trend data
   ticketTrends: TrendData[];
   resolutionTrends: TrendData[];
@@ -338,6 +343,10 @@ export class SupportMetricsService {
       activeAgents: 0,
       topPerformingAgents: [],
       kbArticleViews: 0,
+      // Default chart data
+      ticketsByStatus: [],
+      ticketsByPriority: [],
+      ticketsByCategory: [],
       responseTrends: [],
       resolutionTrends: [],
       satisfactionTrends: [],
@@ -353,7 +362,7 @@ export class SupportMetricsService {
   }
 
   private async getTicketCounts(dateFilter: any): Promise<Partial<SupportKPIs>> {
-    const [total, byStatus, byPriority] = await Promise.all([
+    const [total, byStatus, byPriority, byCategory] = await Promise.all([
       SupportTicket.countDocuments(dateFilter),
       SupportTicket.aggregate([
         { $match: dateFilter },
@@ -362,6 +371,10 @@ export class SupportMetricsService {
       SupportTicket.aggregate([
         { $match: dateFilter },
         { $group: { _id: '$priority', count: { $sum: 1 } } }
+      ]),
+      SupportTicket.aggregate([
+        { $match: dateFilter },
+        { $group: { _id: '$category', count: { $sum: 1 } } }
       ])
     ]);
 
@@ -372,12 +385,32 @@ export class SupportMetricsService {
 
     const criticalTickets = byPriority.find(p => p._id === 'critical')?.count || 0;
 
+    // Format chart data for frontend
+    const ticketsByStatus = byStatus.map(item => ({
+      status: item._id,
+      count: item.count
+    }));
+
+    const ticketsByPriority = byPriority.map(item => ({
+      priority: item._id,
+      count: item.count
+    }));
+
+    const ticketsByCategory = byCategory.map(item => ({
+      category: item._id,
+      count: item.count
+    }));
+
     return {
       totalTickets: total,
       openTickets: statusCounts.openTickets || 0,
       resolvedTickets: statusCounts.resolvedTickets || 0,
       closedTickets: statusCounts.closedTickets || 0,
-      criticalTickets
+      criticalTickets,
+      // Add chart data
+      ticketsByStatus,
+      ticketsByPriority,
+      ticketsByCategory
     };
   }
 

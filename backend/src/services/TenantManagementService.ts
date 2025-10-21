@@ -1,8 +1,7 @@
 import mongoose from 'mongoose';
-import { Tenant, ITenant } from '../models/Tenant';
-import { TenantSettings, ITenantSettings } from '../models/TenantSettings';
+import { Workplace, IWorkplace } from '../models/Workplace';
 import User, { IUser } from '../models/User';
-import SubscriptionPlan from '../models/SubscriptionPlan';
+import PricingPlan from '../models/PricingPlan';
 import logger from '../utils/logger';
 import { SecurityAuditLog } from '../models/SecurityAuditLog';
 
@@ -107,169 +106,140 @@ export interface TenantCustomizationUpdate {
     timezone?: string;
     currency?: string;
     language?: string;
-    dateFormat?: string;
-    timeFormat?: '12h' | '24h';
   };
 }
 
 export class TenantManagementService {
   /**
-   * Provision a new tenant workspace
+   * Transform Workplace to Tenant format for frontend compatibility
+   */
+  private async transformWorkplaceToTenant(workplace: IWorkplace): Promise<any> {
+    // Get actual subscription and plan data
+    const Subscription = mongoose.model('Subscription');
+    
+    let actualSubscription = null;
+    let actualPlan = null;
+    let subscriptionStatus = workplace.subscriptionStatus;
+    let planName = 'Free Trial';
+    
+    if (workplace.currentSubscriptionId) {
+      actualSubscription = await Subscription.findById(workplace.currentSubscriptionId);
+      
+      if (actualSubscription) {
+        subscriptionStatus = actualSubscription.status;
+        
+        // Manually fetch the plan using PricingPlan model
+        if (actualSubscription.planId) {
+          actualPlan = await PricingPlan.findById(actualSubscription.planId);
+          if (actualPlan) {
+            planName = actualPlan.name;
+          }
+        }
+      }
+    } else if (workplace.currentPlanId) {
+      actualPlan = await PricingPlan.findById(workplace.currentPlanId);
+      if (actualPlan) {
+        planName = actualPlan.name;
+      }
+    }
+
+    // Calculate real usage metrics - use consistent query
+    const userCount = await User.countDocuments({ 
+      workplaceId: workplace._id
+    });
+
+    // Get patient count (assuming you have a Patient model)
+    let patientCount = 0;
+    try {
+      const Patient = mongoose.model('Patient');
+      patientCount = await Patient.countDocuments({ workplaceId: workplace._id });
+    } catch (error) {
+      // Patient model might not exist, use stats
+      patientCount = workplace.stats?.patientsCount || 0;
+    }
+
+    return {
+      _id: workplace._id,
+      name: workplace.name,
+      slug: workplace.name.toLowerCase().replace(/\s+/g, '-'),
+      type: workplace.type.toLowerCase(),
+      status: subscriptionStatus === 'active' ? 'active' : 
+              subscriptionStatus === 'trial' ? 'trial' : 
+              subscriptionStatus === 'canceled' ? 'cancelled' : 'pending',
+      subscriptionStatus: subscriptionStatus,
+      planName: planName,
+      contactInfo: {
+        email: workplace.email,
+        phone: workplace.phone,
+      },
+      createdAt: workplace.createdAt,
+      lastActivity: workplace.updatedAt,
+      // Real usage metrics
+      usageMetrics: {
+        currentUsers: userCount,
+        currentPatients: patientCount,
+        storageUsed: 0, // TODO: Calculate actual storage if needed
+        apiCallsThisMonth: 0, // TODO: Calculate actual API calls if needed
+        lastCalculatedAt: new Date(),
+      },
+      // Get limits from actual plan or defaults
+      limits: actualPlan?.features ? {
+        maxUsers: actualPlan.features.teamSize || 50,
+        maxPatients: actualPlan.features.patientLimit || 1000,
+        storageLimit: 5000, // TODO: Add to plan features if needed
+        apiCallsPerMonth: 10000, // TODO: Add to plan features if needed
+      } : {
+        maxUsers: 50,
+        maxPatients: 1000,
+        storageLimit: 5000,
+        apiCallsPerMonth: 10000,
+      },
+      // Get features from actual plan
+      features: actualPlan?.features ? Object.keys(actualPlan.features).filter(key => 
+        actualPlan.features[key] === true
+      ) : [],
+      branding: {
+        primaryColor: '#1976d2',
+        secondaryColor: '#dc004e',
+      },
+      settings: {
+        timezone: 'UTC',
+        currency: 'USD',
+        language: 'en',
+      },
+      // Include plan and subscription info
+      currentPlan: actualPlan,
+      currentSubscription: actualSubscription,
+    };
+  }
+
+  /**
+   * Provision a new tenant workspace (simplified)
    */
   async provisionTenant(
     tenantData: TenantProvisioningData,
     adminId: string
-  ): Promise<ITenant> {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
+  ): Promise<any> {
     try {
-      // Validate subscription plan exists
-      const subscriptionPlan = await SubscriptionPlan.findById(tenantData.subscriptionPlanId);
-      if (!subscriptionPlan) {
-        throw new Error('Invalid subscription plan');
-      }
-
-      // Check if primary contact user exists
-      let primaryContactUser = await User.findOne({ email: tenantData.primaryContact.email });
-      
-      // Create user if doesn't exist
-      if (!primaryContactUser) {
-        primaryContactUser = await User.create({
-          firstName: tenantData.primaryContact.firstName,
-          lastName: tenantData.primaryContact.lastName,
-          email: tenantData.primaryContact.email,
-          phone: tenantData.primaryContact.phone,
-          role: 'pharmacist',
-          status: 'active',
-          passwordHash: 'temporary', // This should be set properly in real implementation
-          emailVerified: false,
-          licenseStatus: 'not_required',
-          currentPlanId: new mongoose.Types.ObjectId(tenantData.subscriptionPlanId),
-        });
-      }
-
-      // Generate unique slug
-      const baseSlug = tenantData.name
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
-
-      let slug = baseSlug;
-      let counter = 1;
-      while (await Tenant.findOne({ slug })) {
-        slug = `${baseSlug}-${counter}`;
-        counter++;
-      }
-
-      // Create tenant
-      const tenant = await Tenant.create({
+      // Create a new workplace
+      const workplace = new Workplace({
         name: tenantData.name,
-        slug,
         type: tenantData.type,
-        status: 'pending',
-        subscriptionPlan: subscriptionPlan._id,
-        subscriptionStatus: 'trialing',
-        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
-        billingCycle: 'monthly',
-        contactInfo: tenantData.contactInfo,
-        primaryContact: {
-          userId: primaryContactUser._id,
-          firstName: tenantData.primaryContact.firstName,
-          lastName: tenantData.primaryContact.lastName,
-          email: tenantData.primaryContact.email,
-          phone: tenantData.primaryContact.phone,
-        },
-        settings: {
-          timezone: tenantData.settings?.timezone || 'UTC',
-          currency: tenantData.settings?.currency || 'USD',
-          language: tenantData.settings?.language || 'en',
-          dateFormat: 'MM/DD/YYYY',
-          timeFormat: '12h',
-        },
-        branding: {
-          primaryColor: '#3B82F6',
-          secondaryColor: '#6B7280',
-        },
-        limits: {
-          maxUsers: tenantData.limits?.maxUsers || subscriptionPlan.features.teamSize || 10,
-          maxPatients: tenantData.limits?.maxPatients || subscriptionPlan.features.patientLimit || 1000,
-          storageLimit: tenantData.limits?.storageLimit || 5000,
-          apiCallsPerMonth: tenantData.limits?.apiCallsPerMonth || 10000,
-          maxWorkspaces: 1,
-          maxIntegrations: 5,
-        },
-        features: tenantData.features || [],
-        integrations: [],
-        usageMetrics: {
-          currentUsers: 1, // Primary contact user
-          currentPatients: 0,
-          storageUsed: 0,
-          apiCallsThisMonth: 0,
-          lastCalculatedAt: new Date(),
-        },
-        complianceSettings: {
-          dataRetentionDays: 2555, // 7 years
-          auditLogsEnabled: true,
-          encryptionEnabled: true,
-          backupEnabled: true,
-          gdprCompliant: true,
-        },
-        billingInfo: {
-          outstandingBalance: 0,
-        },
-        metadata: {},
-        tags: [],
-        createdBy: new mongoose.Types.ObjectId(adminId),
-        lastModifiedBy: new mongoose.Types.ObjectId(adminId),
-        lastActivity: new Date(),
+        email: tenantData.contactInfo.email,
+        phone: tenantData.contactInfo.phone,
+        address: tenantData.contactInfo.address?.street,
+        ownerId: new mongoose.Types.ObjectId(adminId),
+        subscriptionStatus: 'trial',
       });
 
-      // Create default tenant settings
-      await (TenantSettings as any).createDefaultSettings(
-        tenant._id,
-        tenant.name,
-        new mongoose.Types.ObjectId(adminId)
-      );
-
-      // Update user's workspace
-      await User.findByIdAndUpdate(primaryContactUser._id, {
-        workplaceId: tenant._id,
-      });
-
-      // Log audit event
-      await (SecurityAuditLog as any).createLog({
-        userId: new mongoose.Types.ObjectId(adminId),
-        action: 'tenant_provisioned',
-        resource: 'tenant',
-        resourceId: tenant._id,
-        ipAddress: '127.0.0.1',
-        userAgent: 'TenantManagementService',
-        success: true,
-        severity: 'medium',
-        category: 'tenant_management',
-        details: {
-          tenantName: tenant.name,
-          tenantSlug: tenant.slug,
-          tenantType: tenant.type,
-        },
-      });
+      await workplace.save();
       
-      logger.info(`Audit: Tenant provisioned by ${adminId} - ${tenant.name}`);
-
-      await session.commitTransaction();
+      logger.info(`Tenant provisioned: ${workplace.name}`);
       
-      logger.info(`Tenant provisioned successfully: ${tenant.name} (${tenant.slug})`);
-      
-      return tenant;
+      return this.transformWorkplaceToTenant(workplace);
     } catch (error) {
-      await session.abortTransaction();
       logger.error('Error provisioning tenant:', error);
       throw error;
-    } finally {
-      session.endSession();
     }
   }
 
@@ -285,82 +255,31 @@ export class TenantManagementService {
       transferDataTo?: string;
     } = {}
   ): Promise<void> {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
       }
-
-      // Check if tenant can be deprovisioned
-      if (tenant.status === 'active' && tenant.subscriptionStatus === 'active') {
-        throw new Error('Cannot deprovision active tenant with active subscription');
-      }
-
-      // Update tenant status
-      tenant.status = 'cancelled';
-      tenant.subscriptionStatus = 'cancelled';
-      tenant.lastModifiedBy = new mongoose.Types.ObjectId(adminId);
-      tenant.metadata.deprovisionedAt = new Date();
-      tenant.metadata.deprovisionedBy = adminId;
-      tenant.metadata.deprovisionReason = options.reason || 'Manual deprovisioning';
 
       if (options.deleteData) {
-        // Mark for data deletion (actual deletion should be handled by a background job)
-        tenant.metadata.scheduleDataDeletion = true;
-        tenant.metadata.dataDeletionScheduledAt = new Date();
+        // Remove all users from this workspace
+        await User.updateMany(
+          { workplaceId: tenantId },
+          { $unset: { workplaceId: 1 }, status: 'suspended' }
+        );
+        
+        // Delete the workplace
+        await Workplace.findByIdAndDelete(tenantId);
+      } else {
+        // Just mark as cancelled
+        workplace.subscriptionStatus = 'canceled';
+        await workplace.save();
       }
 
-      await tenant.save();
-
-      // Deactivate tenant settings
-      await TenantSettings.findOneAndUpdate(
-        { tenantId: tenant._id },
-        { 
-          isActive: false,
-          lastModifiedBy: new mongoose.Types.ObjectId(adminId),
-        }
-      );
-
-      // Deactivate all users in the tenant
-      await User.updateMany(
-        { workplaceId: tenant._id },
-        { 
-          status: 'suspended',
-          lastModifiedBy: new mongoose.Types.ObjectId(adminId),
-        }
-      );
-
-      // Log audit event
-      await (SecurityAuditLog as any).createLog({
-        userId: new mongoose.Types.ObjectId(adminId),
-        action: 'tenant_deprovisioned',
-        resource: 'tenant',
-        resourceId: tenant._id,
-        category: 'tenant_management',
-        severity: 'high',
-        details: {
-          tenantName: tenant.name,
-          reason: options.reason,
-          deleteData: options.deleteData,
-          transferDataTo: options.transferDataTo,
-        },
-        ipAddress: '127.0.0.1',
-        userAgent: 'System',
-        success: true,
-      });
-
-      await session.commitTransaction();
-      
-      logger.info(`Tenant deprovisioned: ${tenant.name} (${tenant.slug})`);
+      logger.info(`Tenant deprovisioned: ${workplace.name}`);
     } catch (error) {
-      await session.abortTransaction();
       logger.error('Error deprovisioning tenant:', error);
       throw error;
-    } finally {
-      session.endSession();
     }
   }
 
@@ -371,73 +290,19 @@ export class TenantManagementService {
     tenantId: string,
     statusUpdate: TenantStatusUpdate,
     adminId: string
-  ): Promise<ITenant> {
+  ): Promise<any> {
     try {
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
       }
 
-      const previousStatus = tenant.status;
-      tenant.status = statusUpdate.status;
-      tenant.lastModifiedBy = new mongoose.Types.ObjectId(adminId);
-      tenant.lastActivity = new Date();
+      workplace.subscriptionStatus = statusUpdate.status as any;
+      await workplace.save();
 
-      // Handle suspension
-      if (statusUpdate.status === 'suspended') {
-        tenant.metadata.suspensionReason = statusUpdate.reason;
-        tenant.metadata.suspendedAt = new Date();
-        tenant.metadata.suspendedBy = adminId;
-        
-        if (statusUpdate.suspensionDetails?.autoReactivateAt) {
-          tenant.metadata.autoReactivateAt = statusUpdate.suspensionDetails.autoReactivateAt;
-        }
-
-        // Deactivate all users in the tenant
-        await User.updateMany(
-          { workplaceId: tenant._id },
-          { status: 'suspended' }
-        );
-      }
-
-      // Handle reactivation
-      if (statusUpdate.status === 'active' && previousStatus === 'suspended') {
-        delete tenant.metadata.suspensionReason;
-        delete tenant.metadata.suspendedAt;
-        delete tenant.metadata.suspendedBy;
-        delete tenant.metadata.autoReactivateAt;
-
-        // Reactivate all users in the tenant
-        await User.updateMany(
-          { workplaceId: tenant._id },
-          { status: 'active' }
-        );
-      }
-
-      await tenant.save();
-
-      // Log audit event
-      await (SecurityAuditLog as any).createLog({
-        userId: new mongoose.Types.ObjectId(adminId),
-        action: 'tenant_status_updated',
-        resource: 'tenant',
-        resourceId: tenant._id,
-        category: 'tenant_management',
-        severity: 'medium',
-        details: {
-          tenantName: tenant.name,
-          previousStatus,
-          newStatus: statusUpdate.status,
-          reason: statusUpdate.reason,
-        },
-        ipAddress: '127.0.0.1',
-        userAgent: 'System',
-        success: true,
-      });
-
-      logger.info(`Tenant status updated: ${tenant.name} (${previousStatus} -> ${statusUpdate.status})`);
+      logger.info(`Tenant status updated: ${workplace.name} -> ${statusUpdate.status}`);
       
-      return tenant;
+      return this.transformWorkplaceToTenant(workplace);
     } catch (error) {
       logger.error('Error updating tenant status:', error);
       throw error;
@@ -454,11 +319,12 @@ export class TenantManagementService {
       includeUsers?: boolean;
       includeUsage?: boolean;
     } = {}
-  ): Promise<ITenant | null> {
+  ): Promise<any | null> {
     try {
-      let query = Tenant.findById(tenantId);
-
-      // Note: Settings are stored in a separate collection, not as a reference
+      let query = Workplace.findById(tenantId)
+        .populate('ownerId', 'firstName lastName email')
+        .populate('currentSubscriptionId')
+        .populate('currentPlanId');
 
       const tenant = await query.exec();
       
@@ -474,17 +340,14 @@ export class TenantManagementService {
 
       if (options.includeUsage) {
         // Calculate real-time usage metrics
-        const [userCount, patientCount] = await Promise.all([
-          User.countDocuments({ workplaceId: tenant._id, status: 'active' }),
-          // Add patient count query when Patient model is available
-          Promise.resolve(tenant.usageMetrics.currentPatients),
-        ]);
-
-        tenant.usageMetrics.currentUsers = userCount;
-        // tenant.usageMetrics.currentPatients = patientCount;
+        const userCount = await User.countDocuments({ workplaceId: tenant._id, status: 'active' });
+        
+        // Update the stats
+        tenant.stats.usersCount = userCount;
+        tenant.stats.lastUpdated = new Date();
       }
 
-      return tenant;
+      return await this.transformWorkplaceToTenant(tenant);
     } catch (error) {
       logger.error('Error getting tenant by ID:', error);
       throw error;
@@ -498,7 +361,7 @@ export class TenantManagementService {
     filters: TenantFilters = {},
     options: TenantListOptions = {}
   ): Promise<{
-    tenants: ITenant[];
+    tenants: any[];
     pagination: {
       page: number;
       limit: number;
@@ -520,7 +383,7 @@ export class TenantManagementService {
       const query: any = {};
 
       if (filters.status?.length) {
-        query.status = { $in: filters.status };
+        query.subscriptionStatus = { $in: filters.status };
       }
 
       if (filters.type?.length) {
@@ -534,14 +397,8 @@ export class TenantManagementService {
       if (filters.search) {
         query.$or = [
           { name: { $regex: filters.search, $options: 'i' } },
-          { slug: { $regex: filters.search, $options: 'i' } },
-          { 'contactInfo.email': { $regex: filters.search, $options: 'i' } },
-          { 'primaryContact.email': { $regex: filters.search, $options: 'i' } },
+          { email: { $regex: filters.search, $options: 'i' } },
         ];
-      }
-
-      if (filters.tags?.length) {
-        query.tags = { $in: filters.tags };
       }
 
       if (filters.createdAfter || filters.createdBefore) {
@@ -554,31 +411,22 @@ export class TenantManagementService {
         }
       }
 
-      if (filters.lastActivityAfter || filters.lastActivityBefore) {
-        query.lastActivity = {};
-        if (filters.lastActivityAfter) {
-          query.lastActivity.$gte = filters.lastActivityAfter;
-        }
-        if (filters.lastActivityBefore) {
-          query.lastActivity.$lte = filters.lastActivityBefore;
-        }
-      }
-
       // Execute query with pagination
       const skip = (page - 1) * limit;
       const sortOptions: any = {};
       sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-      let tenantQuery = Tenant.find(query)
+      let tenantQuery = Workplace.find(query)
+        .populate('ownerId', 'firstName lastName email')
+        .populate('currentSubscriptionId')
+        .populate('currentPlanId')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit);
 
-      // Note: Settings are stored in a separate collection, not as a reference
-
       const [tenants, total] = await Promise.all([
         tenantQuery.exec(),
-        Tenant.countDocuments(query),
+        Workplace.countDocuments(query),
       ]);
 
       // Include usage data if requested
@@ -588,12 +436,19 @@ export class TenantManagementService {
             workplaceId: tenant._id, 
             status: 'active' 
           });
-          tenant.usageMetrics.currentUsers = userCount;
+          // Update the stats
+          tenant.stats.usersCount = userCount;
+          tenant.stats.lastUpdated = new Date();
         }
       }
 
+      // Transform workplaces to tenant format
+      const transformedTenants = await Promise.all(
+        tenants.map(workplace => this.transformWorkplaceToTenant(workplace))
+      );
+
       return {
-        tenants,
+        tenants: transformedTenants,
         pagination: {
           page,
           limit,
@@ -613,35 +468,25 @@ export class TenantManagementService {
   async updateTenantUsage(
     tenantId: string,
     usageUpdate: TenantUsageUpdate
-  ): Promise<ITenant> {
+  ): Promise<any> {
     try {
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
       }
 
-      // Update usage metrics
+      // Update stats
       if (usageUpdate.currentUsers !== undefined) {
-        tenant.usageMetrics.currentUsers = usageUpdate.currentUsers;
+        workplace.stats.usersCount = usageUpdate.currentUsers;
       }
       if (usageUpdate.currentPatients !== undefined) {
-        tenant.usageMetrics.currentPatients = usageUpdate.currentPatients;
+        workplace.stats.patientsCount = usageUpdate.currentPatients;
       }
-      if (usageUpdate.storageUsed !== undefined) {
-        tenant.usageMetrics.storageUsed = usageUpdate.storageUsed;
-      }
-      if (usageUpdate.apiCallsThisMonth !== undefined) {
-        tenant.usageMetrics.apiCallsThisMonth = usageUpdate.apiCallsThisMonth;
-      }
-
-      tenant.usageMetrics.lastCalculatedAt = new Date();
-      tenant.lastActivity = new Date();
-
-      await tenant.save();
-
-      logger.info(`Tenant usage updated: ${tenant.name}`);
       
-      return tenant;
+      workplace.stats.lastUpdated = new Date();
+      await workplace.save();
+
+      return this.transformWorkplaceToTenant(workplace);
     } catch (error) {
       logger.error('Error updating tenant usage:', error);
       throw error;
@@ -649,10 +494,10 @@ export class TenantManagementService {
   }
 
   /**
-   * Check data isolation for a tenant
+   * Validate data isolation for a tenant
    */
   async validateDataIsolation(tenantId: string): Promise<{
-    isIsolated: boolean;
+    isValid: boolean;
     violations: string[];
     recommendations: string[];
   }> {
@@ -660,48 +505,27 @@ export class TenantManagementService {
       const violations: string[] = [];
       const recommendations: string[] = [];
 
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
       }
 
-      // Check user isolation
-      const usersWithoutWorkspace = await User.find({
+      // Check for users without proper workspace assignment
+      const usersWithoutWorkspace = await User.countDocuments({
+        workplaceId: { $ne: tenantId },
         $or: [
           { workplaceId: { $exists: false } },
           { workplaceId: null },
         ],
       });
 
-      if (usersWithoutWorkspace.length > 0) {
-        violations.push(`${usersWithoutWorkspace.length} users found without workspace assignment`);
-        recommendations.push('Assign all users to appropriate workspaces');
-      }
-
-      // Check cross-tenant data access
-      const usersInMultipleWorkspaces = await User.aggregate([
-        { $match: { workspaces: { $exists: true, $ne: [] } } },
-        { $project: { workspaceCount: { $size: '$workspaces' } } },
-        { $match: { workspaceCount: { $gt: 1 } } },
-      ]);
-
-      if (usersInMultipleWorkspaces.length > 0) {
-        violations.push(`${usersInMultipleWorkspaces.length} users have access to multiple workspaces`);
-        recommendations.push('Review and restrict cross-workspace access');
-      }
-
-      // Check tenant settings isolation
-      const settingsCount = await TenantSettings.countDocuments({ tenantId });
-      if (settingsCount === 0) {
-        violations.push('No tenant settings found');
-        recommendations.push('Create default tenant settings');
-      } else if (settingsCount > 1) {
-        violations.push('Multiple tenant settings found');
-        recommendations.push('Consolidate tenant settings to single document');
+      if (usersWithoutWorkspace > 0) {
+        violations.push(`${usersWithoutWorkspace} users found without proper workspace assignment`);
+        recommendations.push('Assign users to appropriate workspaces or deactivate orphaned accounts');
       }
 
       return {
-        isIsolated: violations.length === 0,
+        isValid: violations.length === 0,
         violations,
         recommendations,
       };
@@ -718,89 +542,32 @@ export class TenantManagementService {
     totalTenants: number;
     activeTenants: number;
     trialTenants: number;
-    suspendedTenants: number;
-    tenantsByType: Record<string, number>;
-    tenantsByStatus: Record<string, number>;
+    canceledTenants: number;
+    totalUsers: number;
     averageUsersPerTenant: number;
-    tenantsExceedingLimits: number;
   }> {
     try {
       const [
-        totalStats,
-        typeStats,
-        statusStats,
-        usageStats,
-        limitsViolations,
+        totalTenants,
+        activeTenants,
+        trialTenants,
+        canceledTenants,
+        totalUsers,
       ] = await Promise.all([
-        Tenant.aggregate([
-          {
-            $group: {
-              _id: null,
-              totalTenants: { $sum: 1 },
-              activeTenants: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
-              trialTenants: { $sum: { $cond: [{ $eq: ['$subscriptionStatus', 'trialing'] }, 1, 0] } },
-              suspendedTenants: { $sum: { $cond: [{ $eq: ['$status', 'suspended'] }, 1, 0] } },
-              totalUsers: { $sum: '$usageMetrics.currentUsers' },
-            },
-          },
-        ]),
-        Tenant.aggregate([
-          { $group: { _id: '$type', count: { $sum: 1 } } },
-        ]),
-        Tenant.aggregate([
-          { $group: { _id: '$status', count: { $sum: 1 } } },
-        ]),
-        Tenant.aggregate([
-          {
-            $group: {
-              _id: null,
-              totalUsers: { $sum: '$usageMetrics.currentUsers' },
-              totalTenants: { $sum: 1 },
-            },
-          },
-        ]),
-        Tenant.countDocuments({
-          $or: [
-            { $expr: { $gt: ['$usageMetrics.currentUsers', '$limits.maxUsers'] } },
-            { $expr: { $gt: ['$usageMetrics.currentPatients', '$limits.maxPatients'] } },
-            { $expr: { $gt: ['$usageMetrics.storageUsed', '$limits.storageLimit'] } },
-            { $expr: { $gt: ['$usageMetrics.apiCallsThisMonth', '$limits.apiCallsPerMonth'] } },
-          ],
-        }),
+        Workplace.countDocuments(),
+        Workplace.countDocuments({ subscriptionStatus: 'active' }),
+        Workplace.countDocuments({ subscriptionStatus: 'trial' }),
+        Workplace.countDocuments({ subscriptionStatus: 'canceled' }),
+        User.countDocuments({ status: 'active' }),
       ]);
 
-      const stats = totalStats[0] || {
-        totalTenants: 0,
-        activeTenants: 0,
-        trialTenants: 0,
-        suspendedTenants: 0,
-        totalUsers: 0,
-      };
-
-      const tenantsByType: Record<string, number> = {};
-      typeStats.forEach((item: any) => {
-        tenantsByType[item._id] = item.count;
-      });
-
-      const tenantsByStatus: Record<string, number> = {};
-      statusStats.forEach((item: any) => {
-        tenantsByStatus[item._id] = item.count;
-      });
-
-      const usageData = usageStats[0] || { totalUsers: 0, totalTenants: 1 };
-      const averageUsersPerTenant = usageData.totalTenants > 0 
-        ? Math.round(usageData.totalUsers / usageData.totalTenants * 100) / 100 
-        : 0;
-
       return {
-        totalTenants: stats.totalTenants,
-        activeTenants: stats.activeTenants,
-        trialTenants: stats.trialTenants,
-        suspendedTenants: stats.suspendedTenants,
-        tenantsByType,
-        tenantsByStatus,
-        averageUsersPerTenant,
-        tenantsExceedingLimits: limitsViolations,
+        totalTenants,
+        activeTenants,
+        trialTenants,
+        canceledTenants,
+        totalUsers,
+        averageUsersPerTenant: totalTenants > 0 ? Math.round(totalUsers / totalTenants) : 0,
       };
     } catch (error) {
       logger.error('Error getting tenant statistics:', error);
@@ -815,49 +582,17 @@ export class TenantManagementService {
     tenantId: string,
     brandingUpdate: TenantBrandingUpdate,
     adminId: string
-  ): Promise<ITenant> {
+  ): Promise<any> {
     try {
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
       }
 
-      // Validate color formats if provided
-      const colorFields = ['primaryColor', 'secondaryColor', 'accentColor'];
-      for (const field of colorFields) {
-        const color = brandingUpdate[field as keyof TenantBrandingUpdate];
-        if (color && typeof color === 'string' && !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)) {
-          throw new Error(`Invalid ${field} format. Use hex format (#RRGGBB or #RGB)`);
-        }
-      }
-
-      // Update branding
-      Object.assign(tenant.branding, brandingUpdate);
-      tenant.lastModifiedBy = new mongoose.Types.ObjectId(adminId);
-      tenant.lastActivity = new Date();
-
-      await tenant.save();
-
-      // Log audit event
-      await (SecurityAuditLog as any).createLog({
-        userId: new mongoose.Types.ObjectId(adminId),
-        action: 'tenant_branding_updated',
-        resource: 'tenant',
-        resourceId: tenant._id,
-        category: 'tenant_management',
-        severity: 'low',
-        details: {
-          tenantName: tenant.name,
-          updatedFields: Object.keys(brandingUpdate),
-        },
-        ipAddress: '127.0.0.1',
-        userAgent: 'System',
-        success: true,
-      });
-
-      logger.info(`Tenant branding updated: ${tenant.name}`);
+      // For now, just log the branding update since Workplace model doesn't have branding fields
+      logger.info(`Branding update requested for workspace: ${workplace.name}`, brandingUpdate);
       
-      return tenant;
+      return this.transformWorkplaceToTenant(workplace);
     } catch (error) {
       logger.error('Error updating tenant branding:', error);
       throw error;
@@ -871,71 +606,17 @@ export class TenantManagementService {
     tenantId: string,
     limitsUpdate: TenantLimitsUpdate,
     adminId: string
-  ): Promise<ITenant> {
+  ): Promise<any> {
     try {
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
       }
 
-      // Validate limits
-      if (limitsUpdate.maxUsers !== undefined && limitsUpdate.maxUsers < 1) {
-        throw new Error('maxUsers must be at least 1');
-      }
-      if (limitsUpdate.maxPatients !== undefined && limitsUpdate.maxPatients < 0) {
-        throw new Error('maxPatients cannot be negative');
-      }
-      if (limitsUpdate.storageLimit !== undefined && limitsUpdate.storageLimit < 100) {
-        throw new Error('storageLimit must be at least 100MB');
-      }
-      if (limitsUpdate.apiCallsPerMonth !== undefined && limitsUpdate.apiCallsPerMonth < 1000) {
-        throw new Error('apiCallsPerMonth must be at least 1000');
-      }
-
-      // Check if current usage exceeds new limits
-      const violations: string[] = [];
-      if (limitsUpdate.maxUsers !== undefined && tenant.usageMetrics.currentUsers > limitsUpdate.maxUsers) {
-        violations.push(`Current users (${tenant.usageMetrics.currentUsers}) exceeds new limit (${limitsUpdate.maxUsers})`);
-      }
-      if (limitsUpdate.maxPatients !== undefined && tenant.usageMetrics.currentPatients > limitsUpdate.maxPatients) {
-        violations.push(`Current patients (${tenant.usageMetrics.currentPatients}) exceeds new limit (${limitsUpdate.maxPatients})`);
-      }
-      if (limitsUpdate.storageLimit !== undefined && tenant.usageMetrics.storageUsed > limitsUpdate.storageLimit) {
-        violations.push(`Current storage (${tenant.usageMetrics.storageUsed}MB) exceeds new limit (${limitsUpdate.storageLimit}MB)`);
-      }
-
-      if (violations.length > 0) {
-        throw new Error(`Cannot update limits: ${violations.join(', ')}`);
-      }
-
-      // Update limits
-      Object.assign(tenant.limits, limitsUpdate);
-      tenant.lastModifiedBy = new mongoose.Types.ObjectId(adminId);
-      tenant.lastActivity = new Date();
-
-      await tenant.save();
-
-      // Log audit event
-      await (SecurityAuditLog as any).createLog({
-        userId: new mongoose.Types.ObjectId(adminId),
-        action: 'tenant_limits_updated',
-        resource: 'tenant',
-        resourceId: tenant._id,
-        category: 'tenant_management',
-        severity: 'medium',
-        details: {
-          tenantName: tenant.name,
-          updatedLimits: limitsUpdate,
-          previousLimits: tenant.limits,
-        },
-        ipAddress: '127.0.0.1',
-        userAgent: 'System',
-        success: true,
-      });
-
-      logger.info(`Tenant limits updated: ${tenant.name}`);
+      // For now, just log the limits update since Workplace model doesn't have limits fields
+      logger.info(`Limits update requested for workspace: ${workplace.name}`, limitsUpdate);
       
-      return tenant;
+      return this.transformWorkplaceToTenant(workplace);
     } catch (error) {
       logger.error('Error updating tenant limits:', error);
       throw error;
@@ -949,43 +630,17 @@ export class TenantManagementService {
     tenantId: string,
     features: string[],
     adminId: string
-  ): Promise<ITenant> {
+  ): Promise<any> {
     try {
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
       }
 
-      const previousFeatures = [...tenant.features];
-      tenant.features = features;
-      tenant.lastModifiedBy = new mongoose.Types.ObjectId(adminId);
-      tenant.lastActivity = new Date();
-
-      await tenant.save();
-
-      // Log audit event
-      await (SecurityAuditLog as any).createLog({
-        userId: new mongoose.Types.ObjectId(adminId),
-        action: 'tenant_features_updated',
-        resource: 'tenant',
-        resourceId: tenant._id,
-        category: 'tenant_management',
-        severity: 'medium',
-        details: {
-          tenantName: tenant.name,
-          previousFeatures,
-          newFeatures: features,
-          addedFeatures: features.filter(f => !previousFeatures.includes(f)),
-          removedFeatures: previousFeatures.filter(f => !features.includes(f)),
-        },
-        ipAddress: '127.0.0.1',
-        userAgent: 'System',
-        success: true,
-      });
-
-      logger.info(`Tenant features updated: ${tenant.name}`);
+      // For now, just log the features update since Workplace model doesn't have features fields
+      logger.info(`Features update requested for workspace: ${workplace.name}`, features);
       
-      return tenant;
+      return this.transformWorkplaceToTenant(workplace);
     } catch (error) {
       logger.error('Error updating tenant features:', error);
       throw error;
@@ -999,89 +654,177 @@ export class TenantManagementService {
     tenantId: string,
     customization: TenantCustomizationUpdate,
     adminId: string
-  ): Promise<ITenant> {
+  ): Promise<any> {
+    try {
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
+      }
+
+      // For now, just log the customization update
+      logger.info(`Customization update requested for workspace: ${workplace.name}`, customization);
+      
+      return this.transformWorkplaceToTenant(workplace);
+    } catch (error) {
+      logger.error('Error updating tenant customization:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get tenant subscription details
+   */
+  async getTenantSubscription(tenantId: string): Promise<any> {
+    try {
+      const Subscription = mongoose.model('Subscription');
+      const PricingPlan = mongoose.model('PricingPlan');
+
+      const workplace = await Workplace.findById(tenantId)
+        .populate('currentSubscriptionId')
+        .populate('currentPlanId');
+
+      if (!workplace) {
+        throw new Error('Workspace not found');
+      }
+
+      let subscription = null;
+      let plan = null;
+      
+      if (workplace.currentSubscriptionId) {
+        subscription = await Subscription.findById(workplace.currentSubscriptionId);
+        
+        // Manually fetch the plan details
+        if (subscription && subscription.planId) {
+          plan = await PricingPlan.findById(subscription.planId);
+        }
+      }
+
+      return {
+        workspace: {
+          id: workplace._id,
+          name: workplace.name,
+          subscriptionStatus: workplace.subscriptionStatus,
+          trialEndDate: workplace.trialEndDate,
+        },
+        subscription: subscription ? {
+          ...subscription.toObject(),
+          plan: plan // Include the plan details in the subscription
+        } : null,
+        plan: plan || workplace.currentPlanId,
+      };
+    } catch (error) {
+      logger.error('Error getting tenant subscription:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update tenant subscription (upgrade/downgrade/revoke)
+   */
+  async updateTenantSubscription(
+    tenantId: string,
+    update: { action: 'upgrade' | 'downgrade' | 'revoke'; planId?: string; reason?: string },
+    adminId: string
+  ): Promise<any> {
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      const Subscription = mongoose.model('Subscription');
+
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
       }
 
-      const updates: string[] = [];
+      let subscription = null;
+      if (workplace.currentSubscriptionId) {
+        subscription = await Subscription.findById(workplace.currentSubscriptionId);
+      }
 
-      // Update branding if provided
-      if (customization.branding) {
-        // Validate color formats
-        const colorFields = ['primaryColor', 'secondaryColor', 'accentColor'];
-        for (const field of colorFields) {
-          const color = customization.branding[field as keyof TenantBrandingUpdate];
-          if (color && typeof color === 'string' && !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)) {
-            throw new Error(`Invalid ${field} format. Use hex format (#RRGGBB or #RGB)`);
+      switch (update.action) {
+        case 'upgrade':
+        case 'downgrade':
+          if (!update.planId) {
+            throw new Error('Plan ID is required for upgrade/downgrade');
           }
-        }
 
-        Object.assign(tenant.branding, customization.branding);
-        updates.push('branding');
+          const newPlan = await PricingPlan.findById(update.planId);
+          if (!newPlan) {
+            throw new Error('Subscription plan not found');
+          }
+
+          if (subscription) {
+            // Update existing subscription
+            subscription.planId = new mongoose.Types.ObjectId(update.planId);
+            subscription.tier = newPlan.tier;
+            subscription.status = 'active';
+            subscription.priceAtPurchase = newPlan.price;
+            subscription.billingInterval = newPlan.billingPeriod;
+            
+            // Update end date based on billing interval
+            const now = new Date();
+            if (newPlan.billingPeriod === 'yearly') {
+              subscription.endDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+            } else {
+              subscription.endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+            }
+            
+            await subscription.save();
+          } else {
+            // Create new subscription
+            const now = new Date();
+            const endDate = newPlan.billingPeriod === 'yearly' 
+              ? new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
+              : new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+
+            subscription = new Subscription({
+              workspaceId: workplace._id,
+              planId: update.planId,
+              tier: newPlan.tier,
+              status: 'active',
+              startDate: now,
+              endDate: endDate,
+              priceAtPurchase: newPlan.price,
+              billingInterval: newPlan.billingPeriod,
+            });
+            await subscription.save();
+          }
+
+          // Update workplace
+          workplace.currentSubscriptionId = subscription._id;
+          workplace.currentPlanId = new mongoose.Types.ObjectId(update.planId);
+          workplace.subscriptionStatus = 'active' as any;
+          break;
+
+        case 'revoke':
+          if (subscription) {
+            subscription.status = 'canceled';
+            await subscription.save();
+          }
+
+          workplace.subscriptionStatus = 'canceled' as any;
+          workplace.currentSubscriptionId = undefined;
+          workplace.currentPlanId = undefined;
+          break;
       }
 
-      // Update limits if provided
-      if (customization.limits) {
-        // Validate limits
-        if (customization.limits.maxUsers !== undefined && customization.limits.maxUsers < 1) {
-          throw new Error('maxUsers must be at least 1');
-        }
-        if (customization.limits.maxPatients !== undefined && customization.limits.maxPatients < 0) {
-          throw new Error('maxPatients cannot be negative');
-        }
-        if (customization.limits.storageLimit !== undefined && customization.limits.storageLimit < 100) {
-          throw new Error('storageLimit must be at least 100MB');
-        }
-
-        // Check usage violations
-        const violations: string[] = [];
-        if (customization.limits.maxUsers !== undefined && tenant.usageMetrics.currentUsers > customization.limits.maxUsers) {
-          violations.push(`Current users (${tenant.usageMetrics.currentUsers}) exceeds new limit (${customization.limits.maxUsers})`);
-        }
-
-        if (violations.length > 0) {
-          throw new Error(`Cannot update limits: ${violations.join(', ')}`);
-        }
-
-        Object.assign(tenant.limits, customization.limits);
-        updates.push('limits');
-      }
-
-      // Update features if provided
-      if (customization.features) {
-        tenant.features = customization.features;
-        updates.push('features');
-      }
-
-      // Update settings if provided
-      if (customization.settings) {
-        Object.assign(tenant.settings, customization.settings);
-        updates.push('settings');
-      }
-
-      tenant.lastModifiedBy = new mongoose.Types.ObjectId(adminId);
-      tenant.lastActivity = new Date();
-
-      await tenant.save();
+      await workplace.save();
 
       // Log audit event
       await (SecurityAuditLog as any).createLog({
         userId: new mongoose.Types.ObjectId(adminId),
-        action: 'tenant_customization_updated',
-        resource: 'tenant',
-        resourceId: tenant._id,
+        action: `subscription_${update.action}`,
+        resource: 'workspace',
+        resourceId: workplace._id,
         category: 'tenant_management',
         severity: 'medium',
         details: {
-          tenantName: tenant.name,
-          updatedSections: updates,
-          customization,
+          workspaceName: workplace.name,
+          action: update.action,
+          planId: update.planId,
+          planName: update.planId ? (await PricingPlan.findById(update.planId))?.name : null,
+          reason: update.reason,
         },
         ipAddress: '127.0.0.1',
         userAgent: 'System',
@@ -1090,12 +833,12 @@ export class TenantManagementService {
 
       await session.commitTransaction();
       
-      logger.info(`Tenant customization updated: ${tenant.name} (${updates.join(', ')})`);
+      logger.info(`Subscription ${update.action} completed for workspace: ${workplace.name}`);
       
-      return tenant;
+      return subscription;
     } catch (error) {
       await session.abortTransaction();
-      logger.error('Error updating tenant customization:', error);
+      logger.error('Error updating tenant subscription:', error);
       throw error;
     } finally {
       session.endSession();
@@ -1103,462 +846,253 @@ export class TenantManagementService {
   }
 
   /**
-   * Get tenant customization settings
+   * Get workspace members
    */
-  async getTenantCustomization(tenantId: string): Promise<{
-    branding: any;
-    limits: any;
-    features: string[];
-    settings: any;
-    usageMetrics: any;
+  async getWorkspaceMembers(
+    tenantId: string,
+    options: { page: number; limit: number }
+  ): Promise<{
+    members: any[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
   }> {
     try {
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
       }
 
+      const skip = (options.page - 1) * options.limit;
+      
+      const memberQuery = { workplaceId: tenantId };
+      
+      const [members, total] = await Promise.all([
+        User.find(memberQuery)
+          .select('firstName lastName email role workplaceRole status lastLoginAt createdAt')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(options.limit)
+          .lean(),
+        User.countDocuments(memberQuery)
+      ]);
+
       return {
-        branding: tenant.branding,
-        limits: tenant.limits,
-        features: tenant.features,
-        settings: tenant.settings,
-        usageMetrics: tenant.usageMetrics,
+        members,
+        pagination: {
+          page: options.page,
+          limit: options.limit,
+          total,
+          totalPages: Math.ceil(total / options.limit),
+        },
       };
     } catch (error) {
-      logger.error('Error getting tenant customization:', error);
+      logger.error('Error getting workspace members:', error);
       throw error;
     }
   }
 
   /**
-   * Get tenant analytics and usage tracking
+   * Invite new member to workspace
    */
-  async getTenantAnalytics(
+  async inviteWorkspaceMember(
     tenantId: string,
-    timeRange: '7d' | '30d' | '90d' | '1y' = '30d'
-  ): Promise<{
-    usage: {
-      users: { current: number; trend: number; history: Array<{ date: string; count: number }> };
-      patients: { current: number; trend: number; history: Array<{ date: string; count: number }> };
-      storage: { current: number; trend: number; history: Array<{ date: string; usage: number }> };
-      apiCalls: { current: number; trend: number; history: Array<{ date: string; calls: number }> };
-    };
-    performance: {
-      responseTime: { average: number; p95: number; trend: number };
-      uptime: { percentage: number; incidents: number };
-      errorRate: { percentage: number; trend: number };
-    };
-    billing: {
-      currentCost: number;
-      projectedCost: number;
-      costTrend: number;
-      costBreakdown: Array<{ category: string; amount: number; percentage: number }>;
-    };
-    features: {
-      mostUsed: Array<{ feature: string; usage: number; percentage: number }>;
-      leastUsed: Array<{ feature: string; usage: number; percentage: number }>;
-    };
-  }> {
+    memberData: { email: string; role: string; firstName: string; lastName: string },
+    adminId: string
+  ): Promise<any> {
     try {
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      const WorkspaceInvite = mongoose.model('WorkspaceInvite');
+
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
       }
 
-      // Calculate date range
-      const endDate = new Date();
-      const startDate = new Date();
-      switch (timeRange) {
-        case '7d':
-          startDate.setDate(endDate.getDate() - 7);
-          break;
-        case '30d':
-          startDate.setDate(endDate.getDate() - 30);
-          break;
-        case '90d':
-          startDate.setDate(endDate.getDate() - 90);
-          break;
-        case '1y':
-          startDate.setFullYear(endDate.getFullYear() - 1);
-          break;
+      // Check if user already exists
+      const existingUser = await User.findOne({ email: memberData.email });
+      if (existingUser && existingUser.workplaceId?.toString() === tenantId) {
+        throw new Error('User is already a member of this workspace');
       }
 
-      // Get current usage metrics
-      const currentUsers = await User.countDocuments({ 
-        workplaceId: tenant._id, 
-        status: 'active' 
+      // Check for existing pending invitation
+      const existingInvite = await WorkspaceInvite.findOne({
+        workplaceId: tenantId,
+        email: memberData.email,
+        status: 'pending'
       });
 
-      // Mock historical data (in a real implementation, this would come from a time-series database)
-      const generateMockHistory = (current: number, days: number) => {
-        const history = [];
-        for (let i = days; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          const variance = Math.random() * 0.2 - 0.1; // ±10% variance
-          const value = Math.max(0, Math.floor(current * (1 + variance)));
-          history.push({
-            date: date.toISOString().split('T')[0],
-            count: value,
-            usage: value,
-            calls: value * 100, // Mock API calls
-          });
-        }
-        return history;
-      };
-
-      const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
-      const userHistory = generateMockHistory(currentUsers, days);
-      const patientHistory = generateMockHistory(tenant.usageMetrics.currentPatients, days);
-      const storageHistory = generateMockHistory(tenant.usageMetrics.storageUsed, days);
-      const apiHistory = generateMockHistory(tenant.usageMetrics.apiCallsThisMonth, days);
-
-      // Calculate trends (percentage change from previous period)
-      const calculateTrend = (current: number, history: any[]) => {
-        if (history.length < 2) return 0;
-        const previous = history[0].count || history[0].usage || history[0].calls;
-        return previous > 0 ? ((current - previous) / previous) * 100 : 0;
-      };
-
-      // Calculate performance metrics (mock data)
-      const performance = {
-        responseTime: {
-          average: 150 + Math.random() * 100, // 150-250ms
-          p95: 300 + Math.random() * 200, // 300-500ms
-          trend: (Math.random() - 0.5) * 20, // ±10%
-        },
-        uptime: {
-          percentage: 99.5 + Math.random() * 0.5, // 99.5-100%
-          incidents: Math.floor(Math.random() * 3), // 0-2 incidents
-        },
-        errorRate: {
-          percentage: Math.random() * 0.5, // 0-0.5%
-          trend: (Math.random() - 0.5) * 0.2, // ±0.1%
-        },
-      };
-
-      // Calculate billing metrics (mock data)
-      const baseCost = tenant.limits.maxUsers * 10; // $10 per user
-      const storageCost = (tenant.usageMetrics.storageUsed / 1000) * 5; // $5 per GB
-      const apiCost = (tenant.usageMetrics.apiCallsThisMonth / 1000) * 0.1; // $0.1 per 1000 calls
-      
-      const billing = {
-        currentCost: baseCost + storageCost + apiCost,
-        projectedCost: (baseCost + storageCost + apiCost) * 1.1, // 10% growth projection
-        costTrend: 5 + Math.random() * 10, // 5-15% increase
-        costBreakdown: [
-          { category: 'Users', amount: baseCost, percentage: (baseCost / (baseCost + storageCost + apiCost)) * 100 },
-          { category: 'Storage', amount: storageCost, percentage: (storageCost / (baseCost + storageCost + apiCost)) * 100 },
-          { category: 'API Calls', amount: apiCost, percentage: (apiCost / (baseCost + storageCost + apiCost)) * 100 },
-        ],
-      };
-
-      // Calculate feature usage (mock data based on enabled features)
-      const featureUsage = tenant.features.map(feature => ({
-        feature: feature.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        usage: Math.floor(Math.random() * 1000),
-        percentage: Math.random() * 100,
-      }));
-
-      featureUsage.sort((a, b) => b.usage - a.usage);
-
-      const analytics = {
-        usage: {
-          users: {
-            current: currentUsers,
-            trend: calculateTrend(currentUsers, userHistory),
-            history: userHistory.map(h => ({ date: h.date, count: h.count })),
-          },
-          patients: {
-            current: tenant.usageMetrics.currentPatients,
-            trend: calculateTrend(tenant.usageMetrics.currentPatients, patientHistory),
-            history: patientHistory.map(h => ({ date: h.date, count: h.count })),
-          },
-          storage: {
-            current: tenant.usageMetrics.storageUsed,
-            trend: calculateTrend(tenant.usageMetrics.storageUsed, storageHistory),
-            history: storageHistory.map(h => ({ date: h.date, usage: h.usage })),
-          },
-          apiCalls: {
-            current: tenant.usageMetrics.apiCallsThisMonth,
-            trend: calculateTrend(tenant.usageMetrics.apiCallsThisMonth, apiHistory),
-            history: apiHistory.map(h => ({ date: h.date, calls: h.calls })),
-          },
-        },
-        performance,
-        billing,
-        features: {
-          mostUsed: featureUsage.slice(0, 5),
-          leastUsed: featureUsage.slice(-3),
-        },
-      };
-
-      logger.info(`Tenant analytics retrieved: ${tenant.name}`);
-      
-      return analytics;
-    } catch (error) {
-      logger.error('Error getting tenant analytics:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get tenant performance monitoring dashboard
-   */
-  async getTenantPerformanceMetrics(tenantId: string): Promise<{
-    realTime: {
-      activeUsers: number;
-      requestsPerSecond: number;
-      averageResponseTime: number;
-      errorRate: number;
-    };
-    alerts: Array<{
-      id: string;
-      type: 'warning' | 'critical';
-      message: string;
-      timestamp: Date;
-      resolved: boolean;
-    }>;
-    systemHealth: {
-      cpu: { usage: number; status: 'healthy' | 'warning' | 'critical' };
-      memory: { usage: number; status: 'healthy' | 'warning' | 'critical' };
-      disk: { usage: number; status: 'healthy' | 'warning' | 'critical' };
-      network: { latency: number; status: 'healthy' | 'warning' | 'critical' };
-    };
-  }> {
-    try {
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      if (existingInvite) {
+        throw new Error('Invitation already sent to this email');
       }
 
-      // Mock real-time metrics (in production, this would come from monitoring systems)
-      const realTime = {
-        activeUsers: Math.floor(tenant.usageMetrics.currentUsers * (0.7 + Math.random() * 0.3)), // 70-100% of total users
-        requestsPerSecond: Math.floor(10 + Math.random() * 50), // 10-60 RPS
-        averageResponseTime: 100 + Math.random() * 200, // 100-300ms
-        errorRate: Math.random() * 2, // 0-2%
-      };
-
-      // Mock alerts
-      const alerts = [];
-      if (realTime.errorRate > 1) {
-        alerts.push({
-          id: 'alert-1',
-          type: 'warning' as const,
-          message: 'Error rate is above 1%',
-          timestamp: new Date(),
-          resolved: false,
-        });
-      }
-      if (tenant.usageMetrics.storageUsed > tenant.limits.storageLimit * 0.9) {
-        alerts.push({
-          id: 'alert-2',
-          type: 'critical' as const,
-          message: 'Storage usage is above 90%',
-          timestamp: new Date(),
-          resolved: false,
-        });
-      }
-
-      // Mock system health
-      const getHealthStatus = (usage: number) => {
-        if (usage < 70) return 'healthy';
-        if (usage < 90) return 'warning';
-        return 'critical';
-      };
-
-      const cpuUsage = 20 + Math.random() * 60; // 20-80%
-      const memoryUsage = 30 + Math.random() * 50; // 30-80%
-      const diskUsage = (tenant.usageMetrics.storageUsed / tenant.limits.storageLimit) * 100;
-      const networkLatency = 10 + Math.random() * 40; // 10-50ms
-
-      const systemHealth = {
-        cpu: { usage: cpuUsage, status: getHealthStatus(cpuUsage) as any },
-        memory: { usage: memoryUsage, status: getHealthStatus(memoryUsage) as any },
-        disk: { usage: diskUsage, status: getHealthStatus(diskUsage) as any },
-        network: { latency: networkLatency, status: getHealthStatus(networkLatency) as any },
-      };
-
-      return {
-        realTime,
-        alerts,
-        systemHealth,
-      };
-    } catch (error) {
-      logger.error('Error getting tenant performance metrics:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get tenant billing and cost tracking
-   */
-  async getTenantBillingAnalytics(
-    tenantId: string,
-    timeRange: '30d' | '90d' | '1y' = '30d'
-  ): Promise<{
-    currentPeriod: {
-      totalCost: number;
-      breakdown: Array<{ category: string; amount: number; percentage: number }>;
-      usage: Array<{ metric: string; current: number; limit: number; cost: number }>;
-    };
-    trends: {
-      costHistory: Array<{ date: string; amount: number }>;
-      usageHistory: Array<{ date: string; users: number; storage: number; apiCalls: number }>;
-      projections: {
-        nextMonth: number;
-        nextQuarter: number;
-        nextYear: number;
-      };
-    };
-    optimization: {
-      recommendations: Array<{ type: string; description: string; potentialSavings: number }>;
-      unusedFeatures: string[];
-      overageAlerts: Array<{ metric: string; current: number; limit: number; overage: number }>;
-    };
-  }> {
-    try {
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
-      }
-
-      // Calculate current costs
-      const userCost = tenant.usageMetrics.currentUsers * 10; // $10 per user
-      const storageCost = (tenant.usageMetrics.storageUsed / 1000) * 5; // $5 per GB
-      const apiCost = (tenant.usageMetrics.apiCallsThisMonth / 1000) * 0.1; // $0.1 per 1000 calls
-      const totalCost = userCost + storageCost + apiCost;
-
-      const breakdown = [
-        { category: 'User Licenses', amount: userCost, percentage: (userCost / totalCost) * 100 },
-        { category: 'Storage', amount: storageCost, percentage: (storageCost / totalCost) * 100 },
-        { category: 'API Usage', amount: apiCost, percentage: (apiCost / totalCost) * 100 },
-      ];
-
-      const usage = [
-        {
-          metric: 'Users',
-          current: tenant.usageMetrics.currentUsers,
-          limit: tenant.limits.maxUsers,
-          cost: userCost,
-        },
-        {
-          metric: 'Storage (MB)',
-          current: tenant.usageMetrics.storageUsed,
-          limit: tenant.limits.storageLimit,
-          cost: storageCost,
-        },
-        {
-          metric: 'API Calls',
-          current: tenant.usageMetrics.apiCallsThisMonth,
-          limit: tenant.limits.apiCallsPerMonth,
-          cost: apiCost,
-        },
-      ];
-
-      // Generate mock historical data
-      const days = timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
-      const costHistory = [];
-      const usageHistory = [];
-
-      for (let i = days; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        
-        const variance = Math.random() * 0.2 - 0.1; // ±10% variance
-        const historicalCost = totalCost * (1 + variance);
-        
-        costHistory.push({
-          date: date.toISOString().split('T')[0],
-          amount: Math.max(0, historicalCost),
-        });
-
-        usageHistory.push({
-          date: date.toISOString().split('T')[0],
-          users: Math.max(0, Math.floor(tenant.usageMetrics.currentUsers * (1 + variance))),
-          storage: Math.max(0, Math.floor(tenant.usageMetrics.storageUsed * (1 + variance))),
-          apiCalls: Math.max(0, Math.floor(tenant.usageMetrics.apiCallsThisMonth * (1 + variance))),
-        });
-      }
-
-      // Calculate projections
-      const growthRate = 0.05; // 5% monthly growth
-      const projections = {
-        nextMonth: totalCost * (1 + growthRate),
-        nextQuarter: totalCost * Math.pow(1 + growthRate, 3),
-        nextYear: totalCost * Math.pow(1 + growthRate, 12),
-      };
-
-      // Generate optimization recommendations
-      const recommendations = [];
-      const unusedFeatures = [];
-      const overageAlerts = [];
-
-      // Check for unused features
-      const allFeatures = ['patient-management', 'prescription-processing', 'inventory-management', 'clinical-notes', 'ai-diagnostics', 'reports-analytics'];
-      allFeatures.forEach(feature => {
-        if (!tenant.features.includes(feature)) {
-          unusedFeatures.push(feature);
+      // Create invitation
+      const invitation = new WorkspaceInvite({
+        workplaceId: tenantId,
+        email: memberData.email,
+        role: memberData.role,
+        invitedBy: new mongoose.Types.ObjectId(adminId),
+        status: 'pending',
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        metadata: {
+          firstName: memberData.firstName,
+          lastName: memberData.lastName,
+          invitedByAdmin: true,
         }
       });
 
-      // Check for overages
-      if (tenant.usageMetrics.currentUsers > tenant.limits.maxUsers) {
-        overageAlerts.push({
-          metric: 'Users',
-          current: tenant.usageMetrics.currentUsers,
-          limit: tenant.limits.maxUsers,
-          overage: tenant.usageMetrics.currentUsers - tenant.limits.maxUsers,
-        });
-      }
+      await invitation.save();
 
-      if (tenant.usageMetrics.storageUsed > tenant.limits.storageLimit) {
-        overageAlerts.push({
-          metric: 'Storage',
-          current: tenant.usageMetrics.storageUsed,
-          limit: tenant.limits.storageLimit,
-          overage: tenant.usageMetrics.storageUsed - tenant.limits.storageLimit,
-        });
-      }
+      // TODO: Send invitation email
+      // await emailService.sendWorkspaceInvitation({
+      //   to: memberData.email,
+      //   workspaceName: workplace.name,
+      //   inviteToken: invitation.inviteToken,
+      //   firstName: memberData.firstName,
+      //   lastName: memberData.lastName,
+      // });
 
-      // Generate recommendations based on usage patterns
-      if (tenant.usageMetrics.currentUsers < tenant.limits.maxUsers * 0.5) {
-        recommendations.push({
-          type: 'Downgrade Plan',
-          description: 'Consider downgrading to a smaller plan to reduce costs',
-          potentialSavings: userCost * 0.3,
-        });
-      }
-
-      if (unusedFeatures.length > 0) {
-        recommendations.push({
-          type: 'Remove Unused Features',
-          description: `Consider removing unused features: ${unusedFeatures.join(', ')}`,
-          potentialSavings: unusedFeatures.length * 5,
-        });
-      }
-
-      return {
-        currentPeriod: {
-          totalCost,
-          breakdown,
-          usage,
+      // Log audit event
+      await (SecurityAuditLog as any).createLog({
+        userId: new mongoose.Types.ObjectId(adminId),
+        action: 'workspace_member_invited',
+        resource: 'workspace',
+        resourceId: workplace._id,
+        category: 'user_management',
+        severity: 'low',
+        details: {
+          workspaceName: workplace.name,
+          invitedEmail: memberData.email,
+          role: memberData.role,
         },
-        trends: {
-          costHistory,
-          usageHistory,
-          projections,
-        },
-        optimization: {
-          recommendations,
-          unusedFeatures,
-          overageAlerts,
-        },
-      };
+        ipAddress: '127.0.0.1',
+        userAgent: 'System',
+        success: true,
+      });
+
+      logger.info(`Member invited to workspace: ${memberData.email} -> ${workplace.name}`);
+      
+      return invitation;
     } catch (error) {
-      logger.error('Error getting tenant billing analytics:', error);
+      logger.error('Error inviting workspace member:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update member role in workspace
+   */
+  async updateMemberRole(
+    tenantId: string,
+    memberId: string,
+    newRole: string,
+    adminId: string
+  ): Promise<any> {
+    try {
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
+      }
+
+      const member = await User.findOne({ _id: memberId, workplaceId: tenantId });
+      if (!member) {
+        throw new Error('Member not found in this workspace');
+      }
+
+      const previousRole = member.workplaceRole;
+      member.workplaceRole = newRole as any;
+      await member.save();
+
+      // Log audit event
+      await (SecurityAuditLog as any).createLog({
+        userId: new mongoose.Types.ObjectId(adminId),
+        action: 'member_role_updated',
+        resource: 'user',
+        resourceId: member._id,
+        category: 'user_management',
+        severity: 'medium',
+        details: {
+          workspaceName: workplace.name,
+          memberEmail: member.email,
+          previousRole,
+          newRole,
+        },
+        ipAddress: '127.0.0.1',
+        userAgent: 'System',
+        success: true,
+      });
+
+      logger.info(`Member role updated: ${member.email} -> ${newRole} in ${workplace.name}`);
+      
+      return member;
+    } catch (error) {
+      logger.error('Error updating member role:', error);
+      throw error;
+    }
+  }
+
+  // Removed getAvailableSubscriptionPlans - use PricingManagementController.getAllPlans() instead
+
+  /**
+   * Remove member from workspace
+   */
+  async removeMember(
+    tenantId: string,
+    memberId: string,
+    reason: string | undefined,
+    adminId: string
+  ): Promise<void> {
+    try {
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
+      }
+
+      const member = await User.findOne({ _id: memberId, workplaceId: tenantId });
+      if (!member) {
+        throw new Error('Member not found in this workspace');
+      }
+
+      // Don't allow removing the workspace owner
+      if (member._id.toString() === workplace.ownerId.toString()) {
+        throw new Error('Cannot remove workspace owner');
+      }
+
+      // Remove member from workspace
+      member.workplaceId = undefined;
+      member.workplaceRole = undefined;
+      member.status = 'suspended';
+      await member.save();
+
+      // Remove from workspace team members array
+      workplace.teamMembers = workplace.teamMembers.filter(
+        (teamMemberId: any) => teamMemberId.toString() !== memberId
+      );
+      await workplace.save();
+
+      // Log audit event
+      await (SecurityAuditLog as any).createLog({
+        userId: new mongoose.Types.ObjectId(adminId),
+        action: 'member_removed',
+        resource: 'user',
+        resourceId: member._id,
+        category: 'user_management',
+        severity: 'medium',
+        details: {
+          workspaceName: workplace.name,
+          memberEmail: member.email,
+          reason,
+        },
+        ipAddress: '127.0.0.1',
+        userAgent: 'System',
+        success: true,
+      });
+
+      logger.info(`Member removed from workspace: ${member.email} from ${workplace.name}`);
+    } catch (error) {
+      logger.error('Error removing member:', error);
       throw error;
     }
   }
@@ -1577,16 +1111,16 @@ export class TenantManagementService {
       const fixed: string[] = [];
       const errors: string[] = [];
 
-      const tenant = await Tenant.findById(tenantId);
-      if (!tenant) {
-        throw new Error('Tenant not found');
+      const workplace = await Workplace.findById(tenantId);
+      if (!workplace) {
+        throw new Error('Workspace not found');
       }
 
       // Fix users without workspace assignment
       const usersWithoutWorkspace = await User.find({
         $or: [
-          { workspaceId: { $exists: false } },
-          { workspaceId: null },
+          { workplaceId: { $exists: false } },
+          { workplaceId: null },
         ],
       });
 
@@ -1595,7 +1129,6 @@ export class TenantManagementService {
           // Assign to default workspace or remove if no valid workspace
           await User.findByIdAndUpdate(user._id, {
             workplaceId: null,
-            workspaces: [],
             status: 'suspended',
           });
           fixed.push(`Deactivated user ${user.email} without valid workspace`);
@@ -1604,24 +1137,9 @@ export class TenantManagementService {
         }
       }
 
-      // Ensure tenant settings exist
-      const settingsCount = await TenantSettings.countDocuments({ tenantId });
-      if (settingsCount === 0) {
-        try {
-          await (TenantSettings as any).createDefaultSettings(
-            tenant._id,
-            tenant.name,
-            tenant.createdBy
-          );
-          fixed.push('Created default tenant settings');
-        } catch (error) {
-          errors.push(`Failed to create tenant settings: ${error}`);
-        }
-      }
-
       await session.commitTransaction();
       
-      logger.info(`Data isolation enforced for tenant: ${tenant.name}`);
+      logger.info(`Data isolation enforced for workspace: ${workplace.name}`);
       
       return { fixed, errors };
     } catch (error) {

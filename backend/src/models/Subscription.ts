@@ -88,7 +88,7 @@ const subscriptionSchema = new Schema(
     },
     planId: {
       type: Schema.Types.ObjectId,
-      ref: 'SubscriptionPlan',
+      ref: 'PricingPlan',
       required: true,
     },
     status: {
@@ -248,7 +248,7 @@ const subscriptionSchema = new Schema(
     scheduledDowngrade: {
       planId: {
         type: Schema.Types.ObjectId,
-        ref: 'SubscriptionPlan',
+        ref: 'PricingPlan',
       },
       effectiveDate: Date,
       scheduledAt: {

@@ -531,4 +531,155 @@ router.get(
   saasTenantManagementController.getTenantBillingAnalytics
 );
 
+/**
+ * @route GET /api/admin/saas/tenant-management/tenants/:tenantId/subscription
+ * @desc Get tenant subscription details
+ * @access Super Admin only
+ */
+router.get(
+  '/tenants/:tenantId/subscription',
+  [
+    param('tenantId')
+      .isMongoId()
+      .withMessage('Invalid tenant ID'),
+    validateRequest,
+  ],
+  saasTenantManagementController.getTenantSubscription
+);
+
+/**
+ * @route PUT /api/admin/saas/tenant-management/tenants/:tenantId/subscription
+ * @desc Update tenant subscription (upgrade/downgrade/revoke)
+ * @access Super Admin only
+ */
+router.put(
+  '/tenants/:tenantId/subscription',
+  [
+    param('tenantId')
+      .isMongoId()
+      .withMessage('Invalid tenant ID'),
+    body('action')
+      .isIn(['upgrade', 'downgrade', 'revoke'])
+      .withMessage('Action must be upgrade, downgrade, or revoke'),
+    body('planId')
+      .optional()
+      .isMongoId()
+      .withMessage('Invalid plan ID'),
+    body('reason')
+      .optional()
+      .isString()
+      .isLength({ min: 1, max: 500 })
+      .withMessage('Reason must be between 1 and 500 characters'),
+    validateRequest,
+  ],
+  saasTenantManagementController.updateTenantSubscription
+);
+
+/**
+ * @route GET /api/admin/saas/tenant-management/tenants/:tenantId/members
+ * @desc Get workspace members
+ * @access Super Admin only
+ */
+router.get(
+  '/tenants/:tenantId/members',
+  [
+    param('tenantId')
+      .isMongoId()
+      .withMessage('Invalid tenant ID'),
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Page must be a positive integer'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Limit must be between 1 and 100'),
+    validateRequest,
+  ],
+  saasTenantManagementController.getWorkspaceMembers
+);
+
+/**
+ * @route POST /api/admin/saas/tenant-management/tenants/:tenantId/members/invite
+ * @desc Invite new member to workspace
+ * @access Super Admin only
+ */
+router.post(
+  '/tenants/:tenantId/members/invite',
+  [
+    param('tenantId')
+      .isMongoId()
+      .withMessage('Invalid tenant ID'),
+    body('email')
+      .isEmail()
+      .withMessage('Valid email is required'),
+    body('role')
+      .isIn(['Owner', 'Staff', 'Pharmacist', 'Cashier', 'Technician', 'Assistant'])
+      .withMessage('Invalid role'),
+    body('firstName')
+      .isString()
+      .isLength({ min: 1, max: 50 })
+      .withMessage('First name must be between 1 and 50 characters'),
+    body('lastName')
+      .isString()
+      .isLength({ min: 1, max: 50 })
+      .withMessage('Last name must be between 1 and 50 characters'),
+    validateRequest,
+  ],
+  saasTenantManagementController.inviteWorkspaceMember
+);
+
+/**
+ * @route PUT /api/admin/saas/tenant-management/tenants/:tenantId/members/:memberId/role
+ * @desc Update member role in workspace
+ * @access Super Admin only
+ */
+router.put(
+  '/tenants/:tenantId/members/:memberId/role',
+  [
+    param('tenantId')
+      .isMongoId()
+      .withMessage('Invalid tenant ID'),
+    param('memberId')
+      .isMongoId()
+      .withMessage('Invalid member ID'),
+    body('role')
+      .isIn(['Owner', 'Staff', 'Pharmacist', 'Cashier', 'Technician', 'Assistant'])
+      .withMessage('Invalid role'),
+    validateRequest,
+  ],
+  saasTenantManagementController.updateMemberRole
+);
+
+/**
+ * @route DELETE /api/admin/saas/tenant-management/tenants/:tenantId/members/:memberId
+ * @desc Remove member from workspace
+ * @access Super Admin only
+ */
+router.delete(
+  '/tenants/:tenantId/members/:memberId',
+  [
+    param('tenantId')
+      .isMongoId()
+      .withMessage('Invalid tenant ID'),
+    param('memberId')
+      .isMongoId()
+      .withMessage('Invalid member ID'),
+    body('reason')
+      .optional()
+      .isString()
+      .isLength({ min: 1, max: 500 })
+      .withMessage('Reason must be between 1 and 500 characters'),
+    validateRequest,
+  ],
+  saasTenantManagementController.removeMember
+);
+
+/**
+ * @route GET /api/admin/saas/tenant-management/subscription-plans
+ * @desc Get available subscription plans
+ * @access Super Admin only
+ */
+// Removed /subscription-plans route - use /pricing/plans endpoint instead
+
 export default router;

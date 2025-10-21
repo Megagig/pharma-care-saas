@@ -764,14 +764,35 @@ export class SaasTenantManagementController {
         return;
       }
 
-      const tenant = await tenantManagementService.getTenantById(tenantId);
+      const tenant = await tenantManagementService.getTenantById(tenantId, {
+        includeUsage: true,
+        includeUsers: false,
+        includeSettings: true,
+      });
+
+      if (!tenant) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 'TENANT_NOT_FOUND',
+            message: 'Tenant not found',
+          },
+        });
+        return;
+      }
 
       res.json({
         success: true,
         data: {
           customization: {
-            branding: tenant.branding,
+            branding: tenant.branding || {
+              primaryColor: '#1976d2',
+              secondaryColor: '#dc004e',
+            },
+            limits: tenant.limits,
+            features: tenant.features,
             settings: tenant.settings,
+            usageMetrics: tenant.usageMetrics,
           },
         },
       });
@@ -883,6 +904,8 @@ export class SaasTenantManagementController {
     }
   }
 
+  // Removed getAvailableSubscriptionPlans - use /pricing/plans endpoint instead
+
   /**
    * Get tenant billing analytics
    */
@@ -922,6 +945,304 @@ export class SaasTenantManagementController {
         error: {
           code: 'BILLING_ANALYTICS_FAILED',
           message: error instanceof Error ? error.message : 'Failed to get tenant billing analytics',
+        },
+      });
+    }
+  }
+
+  /**
+   * Get tenant subscription details
+   */
+  async getTenantSubscription(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { tenantId } = req.params;
+
+      if (!validateObjectId(tenantId)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid tenant ID',
+          },
+        });
+        return;
+      }
+
+      const subscription = await tenantManagementService.getTenantSubscription(tenantId);
+
+      res.json({
+        success: true,
+        data: {
+          subscription,
+        },
+      });
+    } catch (error) {
+      logger.error('Error getting tenant subscription:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'SUBSCRIPTION_FETCH_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to get tenant subscription',
+        },
+      });
+    }
+  }
+
+  /**
+   * Update tenant subscription (upgrade/downgrade/revoke)
+   */
+  async updateTenantSubscription(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const adminId = req.user?.id;
+      if (!adminId) {
+        res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+        });
+        return;
+      }
+
+      const { tenantId } = req.params;
+      const { action, planId, reason } = req.body;
+
+      if (!validateObjectId(tenantId)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid tenant ID',
+          },
+        });
+        return;
+      }
+
+      const result = await tenantManagementService.updateTenantSubscription(
+        tenantId,
+        { action, planId, reason },
+        adminId
+      );
+
+      res.json({
+        success: true,
+        data: {
+          subscription: result,
+          message: `Subscription ${action} completed successfully`,
+        },
+      });
+    } catch (error) {
+      logger.error('Error updating tenant subscription:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'SUBSCRIPTION_UPDATE_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to update tenant subscription',
+        },
+      });
+    }
+  }
+
+  /**
+   * Get workspace members
+   */
+  async getWorkspaceMembers(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { tenantId } = req.params;
+      const { page = '1', limit = '20' } = req.query;
+
+      if (!validateObjectId(tenantId)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid tenant ID',
+          },
+        });
+        return;
+      }
+
+      const result = await tenantManagementService.getWorkspaceMembers(tenantId, {
+        page: parseInt(page as string, 10),
+        limit: parseInt(limit as string, 10),
+      });
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      logger.error('Error getting workspace members:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'MEMBERS_FETCH_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to get workspace members',
+        },
+      });
+    }
+  }
+
+  /**
+   * Invite new member to workspace
+   */
+  async inviteWorkspaceMember(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const adminId = req.user?.id;
+      if (!adminId) {
+        res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+        });
+        return;
+      }
+
+      const { tenantId } = req.params;
+      const { email, role, firstName, lastName } = req.body;
+
+      if (!validateObjectId(tenantId)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid tenant ID',
+          },
+        });
+        return;
+      }
+
+      const invitation = await tenantManagementService.inviteWorkspaceMember(
+        tenantId,
+        { email, role, firstName, lastName },
+        adminId
+      );
+
+      res.status(201).json({
+        success: true,
+        data: {
+          invitation,
+          message: 'Invitation sent successfully',
+        },
+      });
+    } catch (error) {
+      logger.error('Error inviting workspace member:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INVITATION_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to send invitation',
+        },
+      });
+    }
+  }
+
+  /**
+   * Update member role in workspace
+   */
+  async updateMemberRole(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const adminId = req.user?.id;
+      if (!adminId) {
+        res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+        });
+        return;
+      }
+
+      const { tenantId, memberId } = req.params;
+      const { role } = req.body;
+
+      if (!validateObjectId(tenantId) || !validateObjectId(memberId)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid tenant ID or member ID',
+          },
+        });
+        return;
+      }
+
+      const updatedMember = await tenantManagementService.updateMemberRole(
+        tenantId,
+        memberId,
+        role,
+        adminId
+      );
+
+      res.json({
+        success: true,
+        data: {
+          member: updatedMember,
+          message: 'Member role updated successfully',
+        },
+      });
+    } catch (error) {
+      logger.error('Error updating member role:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'ROLE_UPDATE_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to update member role',
+        },
+      });
+    }
+  }
+
+  /**
+   * Remove member from workspace
+   */
+  async removeMember(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const adminId = req.user?.id;
+      if (!adminId) {
+        res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required',
+          },
+        });
+        return;
+      }
+
+      const { tenantId, memberId } = req.params;
+      const { reason } = req.body;
+
+      if (!validateObjectId(tenantId) || !validateObjectId(memberId)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid tenant ID or member ID',
+          },
+        });
+        return;
+      }
+
+      await tenantManagementService.removeMember(tenantId, memberId, reason, adminId);
+
+      res.json({
+        success: true,
+        data: {
+          message: 'Member removed successfully',
+        },
+      });
+    } catch (error) {
+      logger.error('Error removing member:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'MEMBER_REMOVAL_FAILED',
+          message: error instanceof Error ? error.message : 'Failed to remove member',
         },
       });
     }

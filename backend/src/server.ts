@@ -30,6 +30,14 @@ async function initializeServer() {
     await connectDB();
     console.log('✅ Database connected successfully');
 
+    // Seed sample workspaces if none exist
+    try {
+      const seedWorkspaces = (await import('./scripts/seedWorkspaces')).default;
+      await seedWorkspaces();
+    } catch (error) {
+      console.error('⚠️ Error seeding workspaces:', error);
+    }
+
     // Start performance monitoring after DB is connected
     performanceCollector.startSystemMetricsCollection();
   } catch (error) {

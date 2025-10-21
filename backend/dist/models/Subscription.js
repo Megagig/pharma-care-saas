@@ -44,7 +44,7 @@ const subscriptionSchema = new mongoose_1.Schema({
     },
     planId: {
         type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'SubscriptionPlan',
+        ref: 'PricingPlan',
         required: true,
     },
     status: {
@@ -196,7 +196,7 @@ const subscriptionSchema = new mongoose_1.Schema({
     scheduledDowngrade: {
         planId: {
             type: mongoose_1.Schema.Types.ObjectId,
-            ref: 'SubscriptionPlan',
+            ref: 'PricingPlan',
         },
         effectiveDate: Date,
         scheduledAt: {

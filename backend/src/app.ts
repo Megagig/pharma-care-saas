@@ -309,6 +309,10 @@ app.get('/api/health/cache', async (req: Request, res: Response) => {
 app.use('/api/public', publicApiRoutes);
 app.use('/api/public/drugs', publicDrugDetailsRoutes);
 
+// Public Help routes (authentication required but no role restrictions)
+import publicHelpRoutes from './routes/publicHelpRoutes';
+app.use('/api/help', publicHelpRoutes);
+
 // Analytics routes (no authentication required for Web Vitals collection)
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reports', reportsRoutes);

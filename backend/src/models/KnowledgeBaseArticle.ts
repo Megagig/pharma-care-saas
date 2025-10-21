@@ -42,6 +42,11 @@ export interface IKnowledgeBaseArticle extends Document {
 
   createdAt: Date;
   updatedAt: Date;
+
+  // Methods
+  getHelpfulnessScore(): number;
+  isVisible(): boolean;
+  incrementViewCount(): Promise<IKnowledgeBaseArticle>;
 }
 
 const knowledgeBaseArticleSchema = new Schema<IKnowledgeBaseArticle>(
@@ -228,17 +233,8 @@ knowledgeBaseArticleSchema.methods.isVisible = function (): boolean {
 };
 
 // Increment view count
-knowledgeBaseArticleSchema.methods.incrementViewCount = async function (): Promise<void> {
-  await this.constructor.updateOne(
-    { _id: this._id },
-    { $inc: { viewCount: 1 } }
-  );
-};
-
-// Add incrementViewCount method
 knowledgeBaseArticleSchema.methods.incrementViewCount = function (): Promise<IKnowledgeBaseArticle> {
   this.viewCount = (this.viewCount || 0) + 1;
-  this.lastModified = new Date();
   return this.save();
 };
 

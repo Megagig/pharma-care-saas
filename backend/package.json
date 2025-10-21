@@ -14,6 +14,7 @@
     "seed": "ts-node scripts/seedSubscriptionPlans.ts",
     "seed:plans": "ts-node scripts/seedPlansFromConfig.ts",
     "seed:pricing": "ts-node src/scripts/seedPricingData.ts",
+    "seed:help": "ts-node src/scripts/seedHelpData.ts",
     "drop-indexes": "ts-node scripts/dropOldIndexes.ts",
     "clean-db": "ts-node scripts/cleanDatabase.ts",
     "migrate:workspace": "ts-node src/scripts/migrateToWorkspaceSubscriptions.ts",
@@ -67,7 +68,8 @@
     "activate-subscription": "ts-node scripts/activateSubscription.ts",
     "debug-subscription": "ts-node scripts/debugSubscription.ts",
     "list-users": "ts-node scripts/listUsers.ts",
-    "test-subscription-api": "ts-node scripts/testSubscriptionAPI.ts"
+    "test-subscription-api": "ts-node scripts/testSubscriptionAPI.ts",
+    "change-password": "ts-node scripts/changeUserPassword.ts"
   },
   "keywords": [
     "pharmacy",

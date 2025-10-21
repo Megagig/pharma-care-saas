@@ -57,6 +57,13 @@ async function initializeServer() {
     try {
         await (0, db_1.default)();
         console.log('✅ Database connected successfully');
+        try {
+            const seedWorkspaces = (await Promise.resolve().then(() => __importStar(require('./scripts/seedWorkspaces')))).default;
+            await seedWorkspaces();
+        }
+        catch (error) {
+            console.error('⚠️ Error seeding workspaces:', error);
+        }
         performanceMonitoring_1.performanceCollector.startSystemMetricsCollection();
     }
     catch (error) {

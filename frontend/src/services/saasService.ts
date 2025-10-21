@@ -412,10 +412,10 @@ class SaaSService {
   }
 
   // Tenant Management APIs
-  async getTenants(filters: any = {}): Promise<{ success: boolean; tenants: any[]; pagination: any }> {
+  async getTenants(filters: any = {}): Promise<{ success: boolean; data: { tenants: any[]; pagination: any } }> {
     const params = new URLSearchParams(filters);
     const response = await apiClient.get(`${this.baseUrl}/tenant-management/tenants?${params}`);
-    return response.data.data;
+    return response.data;
   }
 
   async getTenantById(tenantId: string, options: any = {}): Promise<{ success: boolean; data: { tenant: any } }> {
@@ -449,10 +449,7 @@ class SaaSService {
     return response.data;
   }
 
-  async provisionTenant(tenantData: any): Promise<{ success: boolean; data: { tenant: any } }> {
-    const response = await apiClient.post(`${this.baseUrl}/tenant-management/tenants`, tenantData);
-    return response.data;
-  }
+
 
   async deprovisionTenant(tenantId: string, options: any = {}): Promise<{ success: boolean }> {
     const response = await apiClient.delete(`${this.baseUrl}/tenant-management/tenants/${tenantId}`, { data: options });
@@ -491,6 +488,81 @@ class SaaSService {
 
   async getTenantBillingAnalytics(tenantId: string, timeRange: string = '30d'): Promise<{ success: boolean; data: { billingAnalytics: any } }> {
     const response = await apiClient.get(`${this.baseUrl}/tenant-management/tenants/${tenantId}/billing-analytics?timeRange=${timeRange}`);
+    return response.data;
+  }
+
+  async provisionTenant(tenantData: any): Promise<{ success: boolean; data: { tenant: any; message: string } }> {
+    const response = await apiClient.post(`${this.baseUrl}/tenant-management/tenants`, tenantData);
+    return response.data;
+  }
+
+  async getAvailableSubscriptionPlans(billingPeriod?: 'monthly' | 'yearly'): Promise<{ success: boolean; data: { plans: any[] } }> {
+    const params = billingPeriod ? `?billingPeriod=${billingPeriod}` : '';
+    const response = await apiClient.get(`/pricing/plans${params}`);
+    return response.data;
+  }
+
+  // Subscription Management APIs
+  async getTenantSubscription(tenantId: string): Promise<{ success: boolean; data: { subscription: any } }> {
+    const response = await apiClient.get(`${this.baseUrl}/tenant-management/tenants/${tenantId}/subscription`);
+    return response.data;
+  }
+
+  async updateTenantSubscription(tenantId: string, update: {
+    action: 'upgrade' | 'downgrade' | 'revoke';
+    planId?: string;
+    reason?: string;
+  }): Promise<{ success: boolean; data: { subscription: any; message: string } }> {
+    const response = await apiClient.put(`${this.baseUrl}/tenant-management/tenants/${tenantId}/subscription`, update);
+    return response.data;
+  }
+
+  // Workspace Member Management APIs
+  async getWorkspaceMembers(tenantId: string, options: { page?: number; limit?: number } = {}): Promise<{
+    success: boolean;
+    data: {
+      members: any[];
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    };
+  }> {
+    const params = new URLSearchParams({
+      page: (options.page || 1).toString(),
+      limit: (options.limit || 20).toString(),
+    });
+    const response = await apiClient.get(`${this.baseUrl}/tenant-management/tenants/${tenantId}/members?${params}`);
+    return response.data;
+  }
+
+  async inviteWorkspaceMember(tenantId: string, memberData: {
+    email: string;
+    role: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<{ success: boolean; data: { invitation: any; message: string } }> {
+    const response = await apiClient.post(`${this.baseUrl}/tenant-management/tenants/${tenantId}/members/invite`, memberData);
+    return response.data;
+  }
+
+  async updateMemberRole(tenantId: string, memberId: string, role: string): Promise<{
+    success: boolean;
+    data: { member: any; message: string };
+  }> {
+    const response = await apiClient.put(`${this.baseUrl}/tenant-management/tenants/${tenantId}/members/${memberId}/role`, { role });
+    return response.data;
+  }
+
+  async removeMember(tenantId: string, memberId: string, reason?: string): Promise<{
+    success: boolean;
+    data: { message: string };
+  }> {
+    const response = await apiClient.delete(`${this.baseUrl}/tenant-management/tenants/${tenantId}/members/${memberId}`, {
+      data: { reason }
+    });
     return response.data;
   }
 }

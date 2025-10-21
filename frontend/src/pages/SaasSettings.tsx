@@ -24,6 +24,7 @@ import SuperAdminIcon from '@mui/icons-material/SupervisorAccount';
 import PricingIcon from '@mui/icons-material/AttachMoney';
 import BusinessIcon from '@mui/icons-material/Business';
 import SupportIcon from '@mui/icons-material/Support';
+import HelpIcon from '@mui/icons-material/Help';
 import ApiIcon from '@mui/icons-material/Api';
 import { Link as RouterLink } from 'react-router-dom';
 import { useRBAC } from '../hooks/useRBAC';
@@ -40,6 +41,7 @@ const BillingSubscriptions = lazy(() => import('../components/saas/BillingSubscr
 const TenantManagement = lazy(() => import('../components/saas/TenantManagement'));
 const TenantLicenseManagement = lazy(() => import('../components/saas/TenantLicenseManagement'));
 const SupportHelpdesk = lazy(() => import('../components/saas/SupportHelpdesk'));
+const HelpManagement = lazy(() => import('../components/admin/HelpManagement'));
 const ApiIntegrations = lazy(() => import('../components/saas/ApiIntegrations'));
 const PricingManagement = lazy(() => import('../components/admin/PricingManagement'));
 
@@ -151,6 +153,13 @@ const SaasSettings: React.FC = () => {
       icon: <SupportIcon />,
       description: 'Customer support and ticketing system',
       component: SupportHelpdesk,
+    },
+    {
+      id: 'help-management',
+      label: 'Help System',
+      icon: <HelpIcon />,
+      description: 'Manage help content, FAQs, videos, and settings',
+      component: HelpManagement,
     },
     {
       id: 'api',
