@@ -207,7 +207,7 @@ const workplaceSchema = new Schema(
     },
     currentPlanId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'SubscriptionPlan',
+      ref: 'PricingPlan',
       index: true,
     },
     subscriptionStatus: {

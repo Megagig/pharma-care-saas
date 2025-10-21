@@ -123,14 +123,17 @@ export class TenantManagementService {
     let planName = 'Free Trial';
     
     if (workplace.currentSubscriptionId) {
-      actualSubscription = await Subscription.findById(workplace.currentSubscriptionId)
-        .populate('planId');
+      actualSubscription = await Subscription.findById(workplace.currentSubscriptionId);
       
       if (actualSubscription) {
         subscriptionStatus = actualSubscription.status;
-        actualPlan = actualSubscription.planId;
-        if (actualPlan) {
-          planName = actualPlan.name;
+        
+        // Manually fetch the plan using PricingPlan model
+        if (actualSubscription.planId) {
+          actualPlan = await PricingPlan.findById(actualSubscription.planId);
+          if (actualPlan) {
+            planName = actualPlan.name;
+          }
         }
       }
     } else if (workplace.currentPlanId) {
@@ -685,9 +688,15 @@ export class TenantManagementService {
       }
 
       let subscription = null;
+      let plan = null;
+      
       if (workplace.currentSubscriptionId) {
-        subscription = await Subscription.findById(workplace.currentSubscriptionId)
-          .populate('planId');
+        subscription = await Subscription.findById(workplace.currentSubscriptionId);
+        
+        // Manually fetch the plan details
+        if (subscription && subscription.planId) {
+          plan = await PricingPlan.findById(subscription.planId);
+        }
       }
 
       return {
@@ -697,8 +706,11 @@ export class TenantManagementService {
           subscriptionStatus: workplace.subscriptionStatus,
           trialEndDate: workplace.trialEndDate,
         },
-        subscription,
-        plan: workplace.currentPlanId,
+        subscription: subscription ? {
+          ...subscription.toObject(),
+          plan: plan // Include the plan details in the subscription
+        } : null,
+        plan: plan || workplace.currentPlanId,
       };
     } catch (error) {
       logger.error('Error getting tenant subscription:', error);

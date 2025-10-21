@@ -783,7 +783,7 @@ const TenantManagement: React.FC = () => {
                             />
                           </Typography>
                           <Typography variant="body1" gutterBottom>
-                            <strong>Price:</strong> ${subscription.subscription.priceAtPurchase}/{subscription.subscription.billingInterval}
+                            <strong>Price:</strong> ₦{subscription.subscription.priceAtPurchase.toLocaleString()}/{subscription.subscription.billingInterval}
                           </Typography>
                           <Typography variant="body1" gutterBottom>
                             <strong>End Date:</strong> {new Date(subscription.subscription.endDate).toLocaleDateString()}
@@ -1354,66 +1354,66 @@ const TenantManagement: React.FC = () => {
                   <Typography variant="h6" gutterBottom>
                     Select a Plan ({subscriptionPlans.length} available)
                   </Typography>
-                <Grid container spacing={2}>
-                  {subscriptionPlans.length === 0 && (
-                    <Grid item xs={12}>
-                      <Alert severity="info">
-                        No subscription plans available. Please contact support.
-                      </Alert>
-                    </Grid>
-                  )}
-                  {subscriptionPlans.map((plan) => (
-                    <Grid item xs={12} sm={6} md={4} key={plan._id}>
-                      <Card
-                        variant="outlined"
-                        sx={{
-                          cursor: 'pointer',
-                          border: selectedPlan === plan._id ? 2 : 1,
-                          borderColor: selectedPlan === plan._id ? 'primary.main' : 'divider',
-                          '&:hover': {
-                            borderColor: 'primary.main',
-                            boxShadow: 1,
-                          }
-                        }}
-                        onClick={() => setSelectedPlan(plan._id)}
-                      >
-                        <CardContent sx={{ textAlign: 'center', p: 2 }}>
-                          <Typography variant="h6" gutterBottom>
-                            {plan.name}
-                          </Typography>
-                          <Typography variant="h4" color="primary" gutterBottom>
-                            ₦{plan.price.toLocaleString()}
-                          </Typography>
-                          <Typography variant="body2" color="textSecondary" gutterBottom>
-                            per {plan.billingPeriod}
-                          </Typography>
-                          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
-                            <Chip
-                              label={plan.tier.replace('_', ' ').toUpperCase()}
-                              size="small"
-                              color="primary"
-                              variant="outlined"
-                            />
-                            <Chip
-                              label={plan.billingPeriod.toUpperCase()}
-                              size="small"
-                              color={plan.billingPeriod === 'yearly' ? 'success' : 'default'}
-                              variant="outlined"
-                            />
-                            {plan.isPopular && (
+                  <Grid container spacing={2}>
+                    {subscriptionPlans.length === 0 && (
+                      <Grid item xs={12}>
+                        <Alert severity="info">
+                          No subscription plans available. Please contact support.
+                        </Alert>
+                      </Grid>
+                    )}
+                    {subscriptionPlans.map((plan) => (
+                      <Grid item xs={12} sm={6} md={4} key={plan._id}>
+                        <Card
+                          variant="outlined"
+                          sx={{
+                            cursor: 'pointer',
+                            border: selectedPlan === plan._id ? 2 : 1,
+                            borderColor: selectedPlan === plan._id ? 'primary.main' : 'divider',
+                            '&:hover': {
+                              borderColor: 'primary.main',
+                              boxShadow: 1,
+                            }
+                          }}
+                          onClick={() => setSelectedPlan(plan._id)}
+                        >
+                          <CardContent sx={{ textAlign: 'center', p: 2 }}>
+                            <Typography variant="h6" gutterBottom>
+                              {plan.name}
+                            </Typography>
+                            <Typography variant="h4" color="primary" gutterBottom>
+                              ₦{plan.price.toLocaleString()}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary" gutterBottom>
+                              per {plan.billingPeriod}
+                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
                               <Chip
-                                label="Popular"
+                                label={plan.tier.replace('_', ' ').toUpperCase()}
                                 size="small"
-                                color="secondary"
+                                color="primary"
+                                variant="outlined"
                               />
-                            )}
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
+                              <Chip
+                                label={plan.billingPeriod.toUpperCase()}
+                                size="small"
+                                color={plan.billingPeriod === 'yearly' ? 'success' : 'default'}
+                                variant="outlined"
+                              />
+                              {plan.isPopular && (
+                                <Chip
+                                  label="Popular"
+                                  size="small"
+                                  color="secondary"
+                                />
+                              )}
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
                 </Grid>
-              </Grid>
               </>
             )}
             <Grid item xs={12}>
