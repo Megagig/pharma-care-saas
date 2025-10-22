@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import {
   Box,
   Container,
@@ -26,7 +26,7 @@ import BusinessIcon from '@mui/icons-material/Business';
 import SupportIcon from '@mui/icons-material/Support';
 import HelpIcon from '@mui/icons-material/Help';
 import ApiIcon from '@mui/icons-material/Api';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { useRBAC } from '../hooks/useRBAC';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -56,7 +56,32 @@ const SaasSettings: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { isSuperAdmin } = useRBAC();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(0);
+
+  // Map tab IDs to indices
+  const tabIdToIndex: Record<string, number> = {
+    overview: 0,
+    pricing: 1,
+    users: 2,
+    security: 3,
+    analytics: 4,
+    notifications: 5,
+    billing: 6,
+    tenants: 7,
+    licenses: 8,
+    support: 9,
+    'help-management': 10,
+    api: 11,
+  };
+
+  // Handle URL query parameter for tab navigation
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabIdToIndex[tabParam] !== undefined) {
+      setActiveTab(tabIdToIndex[tabParam]);
+    }
+  }, [searchParams]);
 
   // Access control - only super_admin can view this page
   if (!isSuperAdmin) {
@@ -164,6 +189,11 @@ const SaasSettings: React.FC = () => {
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+    // Update URL with tab parameter
+    const tabId = settingsCategories[newValue]?.id;
+    if (tabId) {
+      setSearchParams({ tab: tabId });
+    }
   };
 
   const renderTabContent = () => {
