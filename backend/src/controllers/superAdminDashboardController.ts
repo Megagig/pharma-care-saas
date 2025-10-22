@@ -12,6 +12,26 @@ import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import mongoose from 'mongoose';
 
+// Interface for workspace-specific stats
+interface WorkspaceStats {
+    totalPatients: number;
+    totalClinicalNotes: number;
+    totalMedications: number;
+    totalMTRs: number;
+    totalUsers: number;
+}
+
+// Interface for system-wide stats
+interface SystemStats {
+    totalPatients: number;
+    totalClinicalNotes: number;
+    totalMedications: number;
+    totalMTRs: number;
+    totalWorkspaces: number;
+    totalUsers: number;
+    activeSubscriptions: number;
+}
+
 // Get MTR model
 const MedicationTherapyReview = mongoose.model<IMedicationTherapyReview>('MedicationTherapyReview');
 
@@ -85,7 +105,7 @@ export class SuperAdminDashboardController {
     /**
      * Get system-wide aggregated statistics
      */
-    private async getSystemWideStats() {
+    private async getSystemWideStats(): Promise<SystemStats> {
         console.log('📊 Getting system-wide statistics');
 
         const [
@@ -112,15 +132,17 @@ export class SuperAdminDashboardController {
             Subscription.countDocuments({ status: 'active' })
         ]);
 
-        return {
+        const stats: SystemStats = {
             totalPatients: totalPatients.status === 'fulfilled' ? totalPatients.value : 0,
             totalClinicalNotes: totalClinicalNotes.status === 'fulfilled' ? totalClinicalNotes.value : 0,
             totalMedications: totalMedications.status === 'fulfilled' ? totalMedications.value : 0,
-            totalMTRs: totalMTRs.status === 'fulfilled' ? totalMTRs.value : 0,
+            totalMTRs: totalMTRs.status === 'fulfilled' ? Number(totalMTRs.value) || 0 : 0,
             totalWorkspaces: totalWorkspaces.status === 'fulfilled' ? totalWorkspaces.value : 0,
             totalUsers: totalUsers.status === 'fulfilled' ? totalUsers.value : 0,
             activeSubscriptions: activeSubscriptions.status === 'fulfilled' ? activeSubscriptions.value : 0
         };
+
+        return stats;
     }
 
     /**
@@ -359,7 +381,7 @@ export class SuperAdminDashboardController {
     /**
      * Get all workspaces for super admin workspace switching
      */
-    async getAllWorkspaces(req: Request, res: Response): Promise<void> {
+    async getAllWorkspaces(req: AuthRequest, res: Response): Promise<void> {
         try {
             const workspaces = await Workplace.find({})
                 .populate('ownerId', 'firstName lastName email')
@@ -470,7 +492,7 @@ export class SuperAdminDashboardController {
     /**
      * Get statistics for a specific workspace
      */
-    private async getWorkspaceSpecificStats(workspaceId: string) {
+    private async getWorkspaceSpecificStats(workspaceId: string): Promise<WorkspaceStats> {
         const [patientCount, notesCount, medicationsCount, mtrCount, usersCount] = await Promise.allSettled([
             Patient.countDocuments({
                 workplaceId: workspaceId,
@@ -487,13 +509,15 @@ export class SuperAdminDashboardController {
             User.countDocuments({ workplaceId: workspaceId, status: { $ne: 'suspended' } })
         ]);
 
-        return {
+        const stats: WorkspaceStats = {
             totalPatients: patientCount.status === 'fulfilled' ? patientCount.value : 0,
             totalClinicalNotes: notesCount.status === 'fulfilled' ? notesCount.value : 0,
             totalMedications: medicationsCount.status === 'fulfilled' ? medicationsCount.value : 0,
-            totalMTRs: mtrCount.status === 'fulfilled' ? mtrCount.value : 0,
+            totalMTRs: mtrCount.status === 'fulfilled' ? Number(mtrCount.value) || 0 : 0,
             totalUsers: usersCount.status === 'fulfilled' ? usersCount.value : 0
         };
+
+        return stats;
     }
 
     /**
@@ -554,7 +578,7 @@ export class SuperAdminDashboardController {
     /**
      * Default system stats when queries fail
      */
-    private getDefaultSystemStats() {
+    private getDefaultSystemStats(): SystemStats {
         return {
             totalPatients: 0,
             totalClinicalNotes: 0,
