@@ -33,7 +33,6 @@ import { ErrorBoundary } from 'react-error-boundary';
 // Lazy load tab components for better performance
 const SystemOverview = lazy(() => import('../components/saas/SystemOverview'));
 const UserManagement = lazy(() => import('../components/saas/UserManagement'));
-const FeatureFlagsManagement = lazy(() => import('../components/saas/FeatureFlagsManagement'));
 const SecuritySettings = lazy(() => import('../components/saas/SecuritySettings'));
 const AnalyticsReports = lazy(() => import('../components/saas/AnalyticsReports'));
 const NotificationsManagement = lazy(() => import('../components/saas/NotificationsManagement'));
@@ -97,13 +96,6 @@ const SaasSettings: React.FC = () => {
       icon: <PeopleIcon />,
       description: 'Manage users, roles, and permissions',
       component: UserManagement,
-    },
-    {
-      id: 'features',
-      label: 'Feature Flags',
-      icon: <FlagIcon />,
-      description: 'Control feature availability',
-      component: FeatureFlagsManagement,
     },
     {
       id: 'security',

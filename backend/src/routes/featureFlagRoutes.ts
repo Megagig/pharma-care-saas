@@ -126,4 +126,53 @@ router.post(
   featureFlagController.updateTierFeatures
 );
 
+// Enhanced functionality routes (Super Admin only)
+
+// Update targeting rules for a feature flag
+router.put(
+  '/:id/targeting',
+  [
+    body('targetingRules').isObject().withMessage('targetingRules must be an object'),
+    body('targetingRules.pharmacies')
+      .optional()
+      .isArray()
+      .withMessage('pharmacies must be an array'),
+    body('targetingRules.userGroups')
+      .optional()
+      .isArray()
+      .withMessage('userGroups must be an array'),
+    body('targetingRules.percentage')
+      .optional()
+      .isInt({ min: 0, max: 100 })
+      .withMessage('percentage must be between 0 and 100'),
+  ],
+  featureFlagController.updateTargetingRules
+);
+
+// Get usage metrics for a feature flag
+router.get('/:id/metrics', featureFlagController.getFeatureFlagMetrics);
+
+// Public routes (no authentication required)
+
+// Get marketing features for pricing display
+router.get('/public/marketing', featureFlagController.getMarketingFeatures);
+
+// Routes for authenticated users (no super admin required)
+
+// Check advanced feature access
+router.post(
+  '/check-access',
+  auth, // Only require authentication, not super admin
+  [
+    body('featureKey')
+      .notEmpty()
+      .withMessage('featureKey is required'),
+    body('workspaceId')
+      .optional()
+      .isMongoId()
+      .withMessage('workspaceId must be a valid MongoDB ObjectId'),
+  ],
+  featureFlagController.checkAdvancedFeatureAccess
+);
+
 export default router;
