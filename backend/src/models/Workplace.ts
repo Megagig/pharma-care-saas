@@ -363,6 +363,20 @@ workplaceSchema.pre('save', async function (next) {
   next();
 });
 
+// Post-save middleware to create subscription for new workspaces
+workplaceSchema.post('save', async function(doc) {
+  if (doc.isNew) {
+    try {
+      // Import the service dynamically to avoid circular dependencies
+      const { WorkspaceSubscriptionService } = await import('../services/workspaceSubscriptionService');
+      await WorkspaceSubscriptionService.createTrialSubscription(doc._id.toString());
+    } catch (error) {
+      console.error('Error creating trial subscription for new workspace:', error);
+      // Don't throw error to avoid breaking workspace creation
+    }
+  }
+});
+
 // Indexes
 workplaceSchema.index({ ownerId: 1 });
 workplaceSchema.index({ inviteCode: 1 }, { unique: true });

@@ -31,8 +31,8 @@ import SaveIcon from '@mui/icons-material/Save';
 import toast from 'react-hot-toast';
 import featureFlagService, { FeatureFlag } from '../services/featureFlagService';
 
-// Constants
-const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'Pharmily', 'Network', 'enterprise'];
+// Constants - All 6 tiers for both monthly & yearly plans
+const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'];
 const AVAILABLE_ROLES = ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'];
 
 interface TabPanelProps {

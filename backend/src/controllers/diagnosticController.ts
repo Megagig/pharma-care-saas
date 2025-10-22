@@ -1078,6 +1078,7 @@ export const getDiagnosticAnalytics = async (
   req: AuthRequest,
   res: Response
 ): Promise<void> => {
+  console.log('🔧 getDiagnosticAnalytics called for user:', req.user?.email);
   try {
     const { dateFrom, dateTo, patientId } = req.query;
     const workplaceId = req.user!.workplaceId;
@@ -1347,6 +1348,7 @@ export const getAllDiagnosticCases = async (
   req: AuthRequest,
   res: Response
 ): Promise<void> => {
+  console.log('🔧 getAllDiagnosticCases called for user:', req.user?.email);
   try {
     const {
       page = 1,
@@ -1445,6 +1447,7 @@ export const getDiagnosticReferrals = async (
   req: AuthRequest,
   res: Response
 ): Promise<void> => {
+  console.log('🔧 getDiagnosticReferrals called for user:', req.user?.email);
   try {
     const { page = 1, limit = 20, status, specialty } = req.query;
     const workplaceId = req.user!.workplaceId;

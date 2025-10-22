@@ -149,7 +149,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       workplaceId: workplaceId || undefined,
       workplaceRole: workplaceRole || undefined,
       currentPlanId: freeTrialPlan._id,
-      subscriptionTier: 'free_trial',
       status: userStatus,
     });
 
@@ -843,7 +842,6 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
         currentPlan: user.currentPlanId,
         workplace: user.workplaceId,
         workplaceRole: user.workplaceRole,
-        subscriptionTier: user.subscriptionTier,
         subscription: subscriptionData,
         hasSubscription: !!subscriptionData,
         lastLoginAt: user.lastLoginAt,
@@ -1030,7 +1028,6 @@ export const registerWithWorkplace = async (
             role,
             licenseNumber,
             currentPlanId: freeTrialPlan._id,
-            subscriptionTier: 'free_trial',
             status: 'pending',
           },
         ],
@@ -1147,7 +1144,6 @@ export const registerWithWorkplace = async (
             createdUser!._id,
             {
               currentSubscriptionId: workplaceSubscription._id,
-              subscriptionTier: workplaceSubscription.tier,
             },
             { session }
           );

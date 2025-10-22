@@ -298,6 +298,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
+  // Check if this is an admin route - block for non-super-admin users
+  const isAdminRoute = location.pathname.startsWith('/admin/');
+  if (isAdminRoute && user.role !== 'super_admin') {
+    return (
+      <AccessDenied
+        reason="role"
+        requiredRole="super_admin"
+        userRole={user.role}
+      />
+    );
+  }
+
   // Check feature requirement
   if (requiredFeature && !hasFeature(requiredFeature)) {
     // Super admins bypass feature checks

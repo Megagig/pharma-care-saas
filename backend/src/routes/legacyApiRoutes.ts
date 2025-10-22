@@ -91,7 +91,6 @@ router.get('/user/profile', compatibilityAuth, legacyEndpointWrapper(async (req:
                 status: user.status,
                 emailVerified: user.emailVerified,
                 licenseStatus: user.licenseStatus,
-                subscriptionTier: user.subscriptionTier,
                 features: user.features,
                 permissions: user.permissions,
 
@@ -273,7 +272,7 @@ router.get('/user/features/:feature', compatibilityAuth, legacyEndpointWrapper(a
                     req.subscription?.features?.includes(feature) ? 'subscription' :
                         req.subscription?.customFeatures?.includes(feature) ? 'custom' :
                             req.plan?.features?.includes(feature) ? 'plan' : 'none',
-            currentTier: req.subscription?.tier || user.subscriptionTier,
+            currentTier: req.subscription?.tier || 'free_trial',
         });
 
     } catch (error) {

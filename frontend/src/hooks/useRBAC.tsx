@@ -134,20 +134,15 @@ export const useRBAC = (): UseRBACReturn => {
   };
 
   const hasFeature = (feature: string): boolean => {
-    // Basic feature access based on role
-    // In a real implementation, this would check against feature flags/subscription
-    switch (feature) {
-      case 'advanced_analytics':
-        return role === 'owner' || role === 'admin';
-      case 'user_management':
-        return role === 'owner' || role === 'admin';
-      case 'pharmacy_management':
-        return role === 'owner' || role === 'admin' || role === 'pharmacist';
-      case 'patient_management':
-        return true; // All roles can access basic patient management
-      default:
-        return true; // Default to true for unknown features
+    // Super admins have access to all features
+    if (user?.role === 'super_admin') {
+      return true;
     }
+
+    // For now, return true for all features as workspace subscription will handle access control
+    // The actual feature access is controlled by the backend requireFeature middleware
+    // which checks workspace subscription and feature flags
+    return true;
   };
 
   const requiresLicense = (): boolean => {
