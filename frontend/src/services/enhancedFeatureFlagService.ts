@@ -1,6 +1,24 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Create API instance with same pattern as other services
+const api = axios.create({
+  baseURL: import.meta.env.MODE === 'development' 
+    ? 'http://localhost:5000/api' 
+    : '/api',
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add token to requests (same pattern as featureFlagService)
+api.interceptors.request.use(
+  (config) => {
+    config.withCredentials = true;
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Enhanced interfaces matching backend
 export interface TargetingRules {
@@ -64,27 +82,14 @@ export interface FeatureAccessResult {
 }
 
 class EnhancedFeatureFlagService {
-  private getAuthHeaders() {
-    const token = localStorage.getItem('token') || document.cookie
-      .split('; ')
-      .find(row => row.startsWith('accessToken='))
-      ?.split('=')[1];
-
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-  }
-
   /**
    * Update targeting rules for a feature flag
    */
   async updateTargetingRules(featureId: string, targetingRules: TargetingRules): Promise<EnhancedFeatureFlag> {
     try {
-      const response = await axios.put(
-        `${API_BASE_URL}/feature-flags/${featureId}/targeting`,
-        { targetingRules },
-        { headers: this.getAuthHeaders() }
+      const response = await api.put(
+        `/feature-flags/${featureId}/targeting`,
+        { targetingRules }
       );
 
       if (response.data.success) {
@@ -107,9 +112,8 @@ class EnhancedFeatureFlagService {
    */
   async getFeatureMetrics(featureId: string): Promise<UsageMetrics> {
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/feature-flags/${featureId}/metrics`,
-        { headers: this.getAuthHeaders() }
+      const response = await api.get(
+        `/feature-flags/${featureId}/metrics`
       );
 
       if (response.data.success) {
@@ -133,8 +137,8 @@ class EnhancedFeatureFlagService {
   async getMarketingFeatures(tier?: string): Promise<EnhancedFeatureFlag[]> {
     try {
       const params = tier ? { tier } : {};
-      const response = await axios.get(
-        `${API_BASE_URL}/feature-flags/public/marketing`,
+      const response = await api.get(
+        `/feature-flags/public/marketing`,
         { params }
       );
 
@@ -158,10 +162,9 @@ class EnhancedFeatureFlagService {
    */
   async checkFeatureAccess(featureKey: string, workspaceId?: string): Promise<FeatureAccessResult> {
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/feature-flags/check-access`,
-        { featureKey, workspaceId },
-        { headers: this.getAuthHeaders() }
+      const response = await api.post(
+        `/feature-flags/check-access`,
+        { featureKey, workspaceId }
       );
 
       if (response.data.success) {

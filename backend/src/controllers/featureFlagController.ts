@@ -3,6 +3,7 @@ import { FeatureFlag } from '../models/FeatureFlag';
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import { AuthRequest, isExtendedUser } from '../types/auth';
+import EnhancedFeatureFlagService from '../services/enhancedFeatureFlagService';
 
 // Available subscription tiers
 const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'] as const;
@@ -668,8 +669,7 @@ export const checkAdvancedFeatureAccess = async (req: AuthRequest, res: Response
   }
 };
 
-// Import the enhanced service
-import EnhancedFeatureFlagService from '../services/enhancedFeatureFlagService';
+
 
 export default {
   getAllFeatureFlags,

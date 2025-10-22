@@ -9,6 +9,9 @@ const router = express.Router();
 router.get('/', auth, featureFlagController.getAllFeatureFlags);
 router.get('/:id', auth, featureFlagController.getFeatureFlagById);
 
+// Get usage metrics for a feature flag (requires auth but not super admin)
+router.get('/:id/metrics', auth, featureFlagController.getFeatureFlagMetrics);
+
 // Apply authentication and super admin middleware to all admin routes
 router.use(auth);
 router.use(requireSuperAdmin);
@@ -149,8 +152,7 @@ router.put(
   featureFlagController.updateTargetingRules
 );
 
-// Get usage metrics for a feature flag
-router.get('/:id/metrics', featureFlagController.getFeatureFlagMetrics);
+
 
 // Public routes (no authentication required)
 

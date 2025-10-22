@@ -325,6 +325,7 @@ const AdvancedTargeting: React.FC<AdvancedTargetingProps> = ({ features, onUpdat
         ...prev,
         [feature._id]: metrics,
       }));
+      toast.success('Metrics loaded successfully');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to fetch metrics');
       console.error('Error fetching metrics:', error);
