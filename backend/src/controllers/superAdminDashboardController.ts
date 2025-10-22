@@ -84,6 +84,13 @@ export class SuperAdminDashboardController {
             if (monthlyActivityTrends.status === 'rejected') console.error('Monthly trends query failed:', monthlyActivityTrends.reason);
 
             console.log('✅ System overview loaded successfully for super admin');
+            console.log('📊 Super admin data being returned:', {
+                hasSystemStats: !!systemOverview.systemStats,
+                workspacesCount: systemOverview.workspaces?.length || 0,
+                hasUserActivity: !!systemOverview.userActivity,
+                hasSubscriptions: !!systemOverview.subscriptions,
+                hasTrends: !!systemOverview.trends
+            });
 
             res.json({
                 success: true,

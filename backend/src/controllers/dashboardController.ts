@@ -6,6 +6,7 @@ import Patient from '../models/Patient';
 import ClinicalNote from '../models/ClinicalNote';
 import { IMedicationTherapyReview } from '../models/MedicationTherapyReview';
 import MedicationRecord from '../models/MedicationRecord';
+import MedicationManagement from '../models/MedicationManagement';
 import mongoose from 'mongoose';
 
 // Interface for dashboard stats
@@ -456,7 +457,7 @@ export class DashboardController {
             ClinicalNote.countDocuments({
                 workplaceId
             }),
-            MedicationRecord.countDocuments({
+            MedicationManagement.countDocuments({
                 workplaceId
             }),
             // Add timeout for MTR count query
@@ -507,7 +508,7 @@ export class DashboardController {
             const [anyPatients, anyNotes, anyMedications] = await Promise.allSettled([
                 Patient.findOne({ workplaceId }).select('_id'),
                 ClinicalNote.findOne({ workplaceId }).select('_id'),
-                MedicationRecord.findOne({ workplaceId }).select('_id')
+                MedicationManagement.findOne({ workplaceId }).select('_id')
             ]);
 
             console.log(`🔍 Data existence check for workspace ${workplaceId}:`, {
@@ -624,25 +625,29 @@ export class DashboardController {
                 { $project: { name: 1, value: 1, _id: 0 } },
                 { $limit: 5 }
             ]),
-            // Medications by status - enhanced query with debugging
-            MedicationRecord.aggregate([
+            // Medications by status - using correct MedicationManagement collection
+            MedicationManagement.aggregate([
                 {
-                    $match: {
-                        $or: [
-                            { workplaceId: workplaceId },
-                            { workplaceId: { $exists: false } } // Include records without workplaceId for debugging
-                        ]
-                    }
+                    $match: { workplaceId: workplaceId }
                 },
                 {
                     $group: {
-                        _id: { $ifNull: ['$status', 'Active'] },
+                        _id: { $ifNull: ['$status', 'active'] },
                         value: { $sum: 1 }
                     }
                 },
                 {
                     $addFields: {
-                        name: '$_id'
+                        name: {
+                            $switch: {
+                                branches: [
+                                    { case: { $eq: ['$_id', 'active'] }, then: 'Active' },
+                                    { case: { $eq: ['$_id', 'archived'] }, then: 'Archived' },
+                                    { case: { $eq: ['$_id', 'cancelled'] }, then: 'Cancelled' }
+                                ],
+                                default: 'Active'
+                            }
+                        }
                     }
                 },
                 { $sort: { value: -1 } },
@@ -751,8 +756,8 @@ export class DashboardController {
         } else {
             console.log('💊 Medication query result:', medicationsByStatus.value);
             // Check if there are any medications in the system at all
-            const totalMedications = await MedicationRecord.countDocuments({});
-            const workspaceMedications = await MedicationRecord.countDocuments({ workplaceId });
+            const totalMedications = await MedicationManagement.countDocuments({});
+            const workspaceMedications = await MedicationManagement.countDocuments({ workplaceId });
             console.log(`💊 Medication debug: Total in system: ${totalMedications}, In workspace: ${workspaceMedications}`);
         }
         if (mtrsByStatus.status === 'rejected') {
@@ -798,8 +803,8 @@ export class DashboardController {
 
         // Quick medication debug
         console.log(`💊 Quick medication check for workspace ${workplaceId}:`);
-        const quickMedCount = await MedicationRecord.countDocuments({ workplaceId });
-        const totalMedCount = await MedicationRecord.countDocuments({});
+        const quickMedCount = await MedicationManagement.countDocuments({ workplaceId });
+        const totalMedCount = await MedicationManagement.countDocuments({});
         console.log(`💊 Medications in workspace: ${quickMedCount}, Total in system: ${totalMedCount}`);
 
         // Debug: Log actual chart data for troubleshooting
