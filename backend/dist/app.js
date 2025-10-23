@@ -62,6 +62,7 @@ const carePlanRoutes_1 = __importDefault(require("./routes/carePlanRoutes"));
 const visitRoutes_1 = __importDefault(require("./routes/visitRoutes"));
 const noteRoutes_1 = __importDefault(require("./routes/noteRoutes"));
 const paymentRoutes_1 = __importDefault(require("./routes/paymentRoutes"));
+const billingRoutes_1 = __importDefault(require("./routes/billingRoutes"));
 const admin_1 = __importDefault(require("./routes/admin"));
 const adminDashboardRoutes_1 = __importDefault(require("./routes/adminDashboardRoutes"));
 const license_1 = __importDefault(require("./routes/license"));
@@ -97,6 +98,7 @@ const publicDrugDetailsRoutes_1 = __importDefault(require("./routes/publicDrugDe
 const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"));
 const communicationRoutes_1 = __importDefault(require("./routes/communicationRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
+const notificationManagementRoutes_1 = __importDefault(require("./routes/notificationManagementRoutes"));
 const analyticsRoutes_1 = __importDefault(require("./routes/analyticsRoutes"));
 const reportsRoutes_1 = __importDefault(require("./routes/reportsRoutes"));
 const lighthouseRoutes_1 = __importDefault(require("./routes/lighthouseRoutes"));
@@ -335,6 +337,7 @@ const communicationAuditRoutes_1 = __importDefault(require("./routes/communicati
 app.use('/api/communication/audit', communicationAuditRoutes_1.default);
 app.use('/api/notifications', notificationRoutes_1.default);
 app.use('/api/communication/notifications', notificationRoutes_1.default);
+app.use('/api/notification-management', notificationManagementRoutes_1.default);
 app.use('/api/mentions', mentionRoutes_1.default);
 app.use((req, res, next) => {
     if (process.env.NODE_ENV === 'development' && req.path.startsWith('/api/notes')) {
@@ -344,6 +347,7 @@ app.use((req, res, next) => {
 });
 app.use('/api/notes', noteRoutes_1.default);
 app.use('/api/payments', paymentRoutes_1.default);
+app.use('/api/billing', billingRoutes_1.default);
 app.use('/api/mtr', mtrRoutes_1.default);
 app.use('/api/mtr/notifications', mtrNotificationRoutes_1.default);
 app.get('/api/clinical-interventions/health', (req, res) => {
