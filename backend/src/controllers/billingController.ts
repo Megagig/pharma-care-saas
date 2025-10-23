@@ -246,7 +246,7 @@ export class BillingController {
       } else {
         // Development mode or Nomba not configured
         const mockReference = `mock_${Date.now()}_${user._id}`;
-        
+
         await Payment.create({
           userId: user._id,
           amount: invoice.total,
@@ -303,7 +303,7 @@ export class BillingController {
       // Verify payment with Nomba (unless mock)
       if (!paymentReference.startsWith('mock_') && nombaService.isNombaConfigured()) {
         const verificationResult = await nombaService.verifyPayment(paymentReference);
-        
+
         if (!verificationResult.success || verificationResult.data?.status !== 'success') {
           res.status(400).json({
             success: false,
@@ -379,7 +379,7 @@ export class BillingController {
       // Process refund with Nomba
       if (nombaService.isNombaConfigured()) {
         const refundResult = await nombaService.refundPayment(paymentReference, amount);
-        
+
         if (refundResult.success) {
           // Update payment record
           paymentRecord.status = 'refunded';
@@ -426,7 +426,7 @@ export class BillingController {
   async getBillingAnalytics(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { startDate, endDate } = req.query;
-      
+
       let timeRange;
       if (startDate && endDate) {
         timeRange = {
@@ -446,6 +446,271 @@ export class BillingController {
       res.status(500).json({
         success: false,
         message: 'Failed to fetch billing analytics'
+      });
+    }
+  }
+
+  /**
+   * Get all subscriptions (Super Admin only)
+   */
+  async getAllSubscriptions(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { page = 1, limit = 10, status, search } = req.query;
+
+      const query: any = {};
+      if (status) {
+        query.status = status;
+      }
+
+      const skip = (Number(page) - 1) * Number(limit);
+
+      let subscriptions = await BillingSubscription.find(query)
+        .populate('workspaceId', 'name email')
+        .populate('planId', 'name tier priceNGN')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit));
+
+      // Apply search filter if provided
+      if (search) {
+        const searchLower = (search as string).toLowerCase();
+        subscriptions = subscriptions.filter(sub => {
+          const workspace = sub.workspaceId as any;
+          return (
+            workspace?.name?.toLowerCase().includes(searchLower) ||
+            workspace?.email?.toLowerCase().includes(searchLower)
+          );
+        });
+      }
+
+      const total = await BillingSubscription.countDocuments(query);
+
+      // Transform data to include customer info
+      const transformedSubscriptions = subscriptions.map(sub => {
+        const workspace = sub.workspaceId as any;
+        const plan = sub.planId as any;
+
+        return {
+          _id: sub._id,
+          status: sub.status,
+          planName: plan?.name || 'Unknown Plan',
+          unitAmount: sub.unitAmount,
+          currency: sub.currency,
+          currentPeriodStart: sub.currentPeriodStart,
+          currentPeriodEnd: sub.currentPeriodEnd,
+          billingInterval: sub.billingInterval,
+          customerName: workspace?.name || 'Unknown',
+          customerEmail: workspace?.email || 'N/A',
+          cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+          trialEnd: sub.trialEnd,
+          createdAt: sub.createdAt
+        };
+      });
+
+      res.json({
+        success: true,
+        data: {
+          subscriptions: transformedSubscriptions,
+          pagination: {
+            page: Number(page),
+            limit: Number(limit),
+            total,
+            pages: Math.ceil(total / Number(limit))
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Get all subscriptions error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch subscriptions'
+      });
+    }
+  }
+
+  /**
+   * Get revenue trends over time
+   */
+  async getRevenueTrends(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { period = '30d' } = req.query;
+
+      let daysBack = 30;
+      if (period === '7d') daysBack = 7;
+      else if (period === '90d') daysBack = 90;
+      else if (period === '365d') daysBack = 365;
+
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysBack);
+
+      // Get completed payments grouped by date
+      const payments = await Payment.aggregate([
+        {
+          $match: {
+            status: 'completed',
+            completedAt: { $gte: startDate }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: '%Y-%m-%d', date: '$completedAt' }
+            },
+            revenue: { $sum: '$amount' },
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $sort: { _id: 1 }
+        }
+      ]);
+
+      // Fill in missing dates with zero revenue
+      const trends = [];
+      for (let i = 0; i < daysBack; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - (daysBack - i - 1));
+        const dateStr = date.toISOString().split('T')[0];
+
+        const payment = payments.find(p => p._id === dateStr);
+        trends.push({
+          date: dateStr,
+          revenue: payment?.revenue || 0,
+          transactions: payment?.count || 0
+        });
+      }
+
+      res.json({
+        success: true,
+        data: trends
+      });
+    } catch (error) {
+      console.error('Get revenue trends error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch revenue trends'
+      });
+    }
+  }
+
+  /**
+   * Get all invoices with pagination and filters
+   */
+  async getAllInvoices(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { page = 1, limit = 10, status, search } = req.query;
+
+      const query: any = {};
+      if (status) {
+        query.status = status;
+      }
+
+      const skip = (Number(page) - 1) * Number(limit);
+
+      let invoices = await BillingInvoice.find(query)
+        .populate('workspaceId', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit));
+
+      // Apply search filter if provided
+      if (search) {
+        const searchLower = (search as string).toLowerCase();
+        invoices = invoices.filter(inv =>
+          inv.invoiceNumber.toLowerCase().includes(searchLower) ||
+          inv.customerName.toLowerCase().includes(searchLower) ||
+          inv.customerEmail.toLowerCase().includes(searchLower)
+        );
+      }
+
+      const total = await BillingInvoice.countDocuments(query);
+
+      res.json({
+        success: true,
+        data: {
+          invoices,
+          pagination: {
+            page: Number(page),
+            limit: Number(limit),
+            total,
+            pages: Math.ceil(total / Number(limit))
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Get all invoices error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch invoices'
+      });
+    }
+  }
+
+  /**
+   * Get payment methods for all customers (Super Admin only)
+   */
+  async getAllPaymentMethods(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      // Get unique payment methods from completed payments
+      const paymentMethods = await Payment.aggregate([
+        {
+          $match: {
+            status: 'completed'
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user'
+          }
+        },
+        {
+          $unwind: '$user'
+        },
+        {
+          $group: {
+            _id: {
+              userId: '$userId',
+              paymentMethod: '$paymentMethod'
+            },
+            customerName: { $first: { $concat: ['$user.firstName', ' ', '$user.lastName'] } },
+            customerEmail: { $first: '$user.email' },
+            lastUsed: { $max: '$completedAt' },
+            transactionCount: { $sum: 1 },
+            totalAmount: { $sum: '$amount' }
+          }
+        },
+        {
+          $sort: { lastUsed: -1 }
+        },
+        {
+          $limit: 100
+        }
+      ]);
+
+      const transformedMethods = paymentMethods.map(pm => ({
+        _id: `${pm._id.userId}_${pm._id.paymentMethod}`,
+        userId: pm._id.userId,
+        paymentMethod: pm._id.paymentMethod,
+        customerName: pm.customerName,
+        customerEmail: pm.customerEmail,
+        lastUsed: pm.lastUsed,
+        transactionCount: pm.transactionCount,
+        totalAmount: pm.totalAmount,
+        status: 'active'
+      }));
+
+      res.json({
+        success: true,
+        data: transformedMethods
+      });
+    } catch (error) {
+      console.error('Get all payment methods error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch payment methods'
       });
     }
   }

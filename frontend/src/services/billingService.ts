@@ -48,7 +48,7 @@ export interface ApiResponse<T = any> {
 }
 
 class BillingService {
-  private baseUrl = '/api/billing';
+  private baseUrl = '/billing';
 
   /**
    * Create a new subscription
@@ -205,15 +205,73 @@ class BillingService {
   }
 
   /**
-   * Get subscriptions (mock method for now)
+   * Get all subscriptions with pagination
    */
-  async getSubscriptions(): Promise<ApiResponse> {
-    // This would be implemented as a proper API endpoint
-    // For now, return a mock response
-    return {
-      success: false,
-      message: 'Subscriptions endpoint not implemented yet'
-    };
+  async getSubscriptions(page: number = 1, limit: number = 10, status?: string, search?: string): Promise<ApiResponse> {
+    try {
+      const params: any = { page, limit };
+      if (status) params.status = status;
+      if (search) params.search = search;
+
+      const response = await apiClient.get(`${this.baseUrl}/subscriptions`, { params });
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch subscriptions'
+      };
+    }
+  }
+
+  /**
+   * Get revenue trends over time
+   */
+  async getRevenueTrends(period: '7d' | '30d' | '90d' | '365d' = '30d'): Promise<ApiResponse> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/revenue-trends`, {
+        params: { period }
+      });
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch revenue trends'
+      };
+    }
+  }
+
+  /**
+   * Get all invoices with pagination
+   */
+  async getInvoices(page: number = 1, limit: number = 10, status?: string, search?: string): Promise<ApiResponse> {
+    try {
+      const params: any = { page, limit };
+      if (status) params.status = status;
+      if (search) params.search = search;
+
+      const response = await apiClient.get(`${this.baseUrl}/invoices`, { params });
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch invoices'
+      };
+    }
+  }
+
+  /**
+   * Get all payment methods
+   */
+  async getAllPaymentMethods(): Promise<ApiResponse> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/payment-methods`);
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch payment methods'
+      };
+    }
   }
 
   /**

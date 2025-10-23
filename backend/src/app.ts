@@ -29,6 +29,7 @@ import carePlanRoutes from './routes/carePlanRoutes';
 import visitRoutes from './routes/visitRoutes';
 import noteRoutes from './routes/noteRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import billingRoutes from './routes/billingRoutes';
 import adminRoutes from './routes/admin';
 import adminDashboardRoutes from './routes/adminDashboardRoutes';
 import licenseRoutes from './routes/license';
@@ -432,6 +433,7 @@ app.use('/api/notes', noteRoutes);
 
 // Other routes
 app.use('/api/payments', paymentRoutes);
+app.use('/api/billing', billingRoutes);
 app.use('/api/mtr', mtrRoutes);
 app.use('/api/mtr/notifications', mtrNotificationRoutes);
 // Clinical interventions health check (no auth required)
