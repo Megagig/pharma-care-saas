@@ -630,7 +630,6 @@ class SubscriptionController {
             paymentRecord.completedAt = new Date();
             await paymentRecord.save();
             user.currentSubscriptionId = subscription._id;
-            user.subscriptionTier = plan.tier;
             user.currentPlanId = planId;
             await user.save();
             await emailService_1.emailService.sendSubscriptionConfirmation(user.email, {
@@ -766,7 +765,6 @@ class SubscriptionController {
             await currentSubscription.save();
             const user = await User_1.default.findById(req.user._id);
             if (user) {
-                user.subscriptionTier = newTier;
                 user.features = features.map((f) => f.key);
                 await user.save();
             }
@@ -1127,7 +1125,6 @@ class SubscriptionController {
             });
             await subscription.save();
             user.currentSubscriptionId = subscription._id;
-            user.subscriptionTier = plan.tier;
             user.currentPlanId = planId;
             await user.save();
             await emailService_1.emailService.sendSubscriptionConfirmation(user.email, {

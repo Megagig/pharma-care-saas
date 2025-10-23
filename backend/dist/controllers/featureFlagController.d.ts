@@ -9,6 +9,10 @@ export declare const toggleFeatureFlagStatus: (req: Request, res: Response) => P
 export declare const getFeatureFlagsByCategory: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const getFeatureFlagsByTier: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const updateTierFeatures: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const updateTargetingRules: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getFeatureFlagMetrics: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getMarketingFeatures: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const checkAdvancedFeatureAccess: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
 declare const _default: {
     getAllFeatureFlags: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
     getFeatureFlagById: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
@@ -19,6 +23,10 @@ declare const _default: {
     getFeatureFlagsByCategory: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
     getFeatureFlagsByTier: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
     updateTierFeatures: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+    updateTargetingRules: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+    getFeatureFlagMetrics: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
+    getMarketingFeatures: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+    checkAdvancedFeatureAccess: (req: AuthRequest, res: Response) => Promise<Response<any, Record<string, any>>>;
 };
 export default _default;
 //# sourceMappingURL=featureFlagController.d.ts.map

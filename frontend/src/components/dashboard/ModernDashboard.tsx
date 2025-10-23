@@ -57,6 +57,7 @@ import { activityService } from '../../services/activityService';
 import { roleBasedDashboardService } from '../../services/roleBasedDashboardService';
 import DashboardChart from './DashboardChart';
 import SuperAdminDashboard from './SuperAdminDashboard';
+import WorkspaceDebugger from '../../utils/debugWorkspace';
 import QuickActionCard from './QuickActionCard';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useNavigate } from 'react-router-dom';
@@ -304,6 +305,15 @@ export const ModernDashboard: React.FC = () => {
     refresh: refreshDashboard,
   } = useDashboardData();
 
+  // Debug functionality for development
+  const handleDebugWorkspace = async () => {
+    if (process.env.NODE_ENV === 'development') {
+      await WorkspaceDebugger.debugCurrentWorkspace();
+      await WorkspaceDebugger.testDashboardEndpoints();
+      WorkspaceDebugger.getCurrentUserInfo();
+    }
+  };
+
   // Chart data hooks - separate for better performance and real data
   const {
     clinicalNotesByType,
@@ -446,6 +456,21 @@ export const ModernDashboard: React.FC = () => {
           </Box>
 
           <Box display="flex" gap={1}>
+            {/* Debug Panel for Development */}
+            {process.env.NODE_ENV === 'development' && (
+              <Tooltip title="Debug Workspace Data">
+                <IconButton
+                  onClick={handleDebugWorkspace}
+                  sx={{
+                    bgcolor: 'warning.light',
+                    color: 'warning.contrastText',
+                    '&:hover': { bgcolor: 'warning.main' }
+                  }}
+                >
+                  🔍
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip title="Refresh Dashboard">
               <IconButton
                 onClick={handleRefresh}

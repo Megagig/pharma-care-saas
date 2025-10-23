@@ -217,10 +217,18 @@ const SuperAdminDashboard: React.FC = () => {
             console.log('✅ Super admin dashboard data received:', dashboardData);
             console.log('📊 System Stats:', dashboardData.systemStats);
             console.log('🏢 Workspaces count:', dashboardData.workspaces?.length || 0);
+            console.log('🏢 Workspaces data:', dashboardData.workspaces);
             console.log('👥 User Activity:', dashboardData.userActivity);
             console.log('💰 Subscriptions:', dashboardData.subscriptions);
             console.log('📈 Trends:', dashboardData.trends);
-            setData(dashboardData);
+            
+            // Ensure workspaces is always an array
+            const safeData = {
+                ...dashboardData,
+                workspaces: dashboardData.workspaces || []
+            };
+            
+            setData(safeData);
             setError(null);
         } catch (err: any) {
             console.error('❌ Error fetching super admin dashboard:', err);
@@ -255,10 +263,17 @@ const SuperAdminDashboard: React.FC = () => {
         fetchSuperAdminData();
     };
 
-    const filteredWorkspaces = data?.workspaces.filter(workspace =>
-        workspace.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (workspaceFilter === '' || workspace.subscriptionStatus === workspaceFilter)
-    ) || [];
+    const filteredWorkspaces = React.useMemo(() => {
+        if (!data?.workspaces || !Array.isArray(data.workspaces)) {
+            console.warn('⚠️ SuperAdminDashboard: workspaces is not an array:', data?.workspaces);
+            return [];
+        }
+        
+        return data.workspaces.filter(workspace =>
+            workspace?.name?.toLowerCase().includes(searchTerm.toLowerCase()) &&
+            (workspaceFilter === '' || workspace.subscriptionStatus === workspaceFilter)
+        );
+    }, [data?.workspaces, searchTerm, workspaceFilter]);
 
     const handleRoleChange = (role: 'super_admin' | 'workspace_user', workspaceId?: string) => {
         if (role === 'workspace_user' && workspaceId) {

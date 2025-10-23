@@ -3,11 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateTierFeatures = exports.getFeatureFlagsByTier = exports.getFeatureFlagsByCategory = exports.toggleFeatureFlagStatus = exports.deleteFeatureFlag = exports.updateFeatureFlag = exports.createFeatureFlag = exports.getFeatureFlagById = exports.getAllFeatureFlags = void 0;
+exports.checkAdvancedFeatureAccess = exports.getMarketingFeatures = exports.getFeatureFlagMetrics = exports.updateTargetingRules = exports.updateTierFeatures = exports.getFeatureFlagsByTier = exports.getFeatureFlagsByCategory = exports.toggleFeatureFlagStatus = exports.deleteFeatureFlag = exports.updateFeatureFlag = exports.createFeatureFlag = exports.getFeatureFlagById = exports.getAllFeatureFlags = void 0;
 const FeatureFlag_1 = require("../models/FeatureFlag");
 const express_validator_1 = require("express-validator");
 const mongoose_1 = __importDefault(require("mongoose"));
 const auth_1 = require("../types/auth");
+const enhancedFeatureFlagService_1 = __importDefault(require("../services/enhancedFeatureFlagService"));
 const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'];
 const getAllFeatureFlags = async (req, res) => {
     try {
@@ -364,6 +365,143 @@ const updateTierFeatures = async (req, res) => {
     }
 };
 exports.updateTierFeatures = updateTierFeatures;
+const updateTargetingRules = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { targetingRules } = req.body;
+        if (!mongoose_1.default.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid feature flag ID',
+            });
+        }
+        const validation = enhancedFeatureFlagService_1.default.validateTargetingRules(targetingRules);
+        if (!validation.isValid) {
+            return res.status(400).json({
+                success: false,
+                message: validation.error,
+            });
+        }
+        const featureFlag = await FeatureFlag_1.FeatureFlag.findByIdAndUpdate(id, {
+            $set: {
+                targetingRules,
+                updatedBy: req.user?._id,
+                updatedAt: new Date(),
+            },
+        }, { new: true });
+        if (!featureFlag) {
+            return res.status(404).json({
+                success: false,
+                message: 'Feature flag not found',
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: 'Targeting rules updated successfully',
+            data: featureFlag,
+        });
+    }
+    catch (error) {
+        console.error('Error updating targeting rules:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+exports.updateTargetingRules = updateTargetingRules;
+const getFeatureFlagMetrics = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!mongoose_1.default.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid feature flag ID',
+            });
+        }
+        const featureFlag = await FeatureFlag_1.FeatureFlag.findById(id);
+        if (!featureFlag) {
+            return res.status(404).json({
+                success: false,
+                message: 'Feature flag not found',
+            });
+        }
+        const metrics = await enhancedFeatureFlagService_1.default.calculateUsageMetrics(featureFlag.key);
+        return res.status(200).json({
+            success: true,
+            data: {
+                featureFlag: {
+                    id: featureFlag._id,
+                    key: featureFlag.key,
+                    name: featureFlag.name,
+                },
+                metrics,
+            },
+        });
+    }
+    catch (error) {
+        console.error('Error fetching feature flag metrics:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+exports.getFeatureFlagMetrics = getFeatureFlagMetrics;
+const getMarketingFeatures = async (req, res) => {
+    try {
+        const { tier } = req.query;
+        const features = await enhancedFeatureFlagService_1.default.getMarketingFeatures(tier);
+        return res.status(200).json({
+            success: true,
+            count: features.length,
+            data: features,
+        });
+    }
+    catch (error) {
+        console.error('Error fetching marketing features:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+exports.getMarketingFeatures = getMarketingFeatures;
+const checkAdvancedFeatureAccess = async (req, res) => {
+    try {
+        const { featureKey, workspaceId } = req.body;
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not authenticated',
+            });
+        }
+        if (!featureKey) {
+            return res.status(400).json({
+                success: false,
+                message: 'Feature key is required',
+            });
+        }
+        const accessResult = await enhancedFeatureFlagService_1.default.hasAdvancedFeatureAccess(userId.toString(), featureKey, workspaceId);
+        return res.status(200).json({
+            success: true,
+            data: accessResult,
+        });
+    }
+    catch (error) {
+        console.error('Error checking advanced feature access:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+exports.checkAdvancedFeatureAccess = checkAdvancedFeatureAccess;
 exports.default = {
     getAllFeatureFlags: exports.getAllFeatureFlags,
     getFeatureFlagById: exports.getFeatureFlagById,
@@ -374,5 +512,9 @@ exports.default = {
     getFeatureFlagsByCategory: exports.getFeatureFlagsByCategory,
     getFeatureFlagsByTier: exports.getFeatureFlagsByTier,
     updateTierFeatures: exports.updateTierFeatures,
+    updateTargetingRules: exports.updateTargetingRules,
+    getFeatureFlagMetrics: exports.getFeatureFlagMetrics,
+    getMarketingFeatures: exports.getMarketingFeatures,
+    checkAdvancedFeatureAccess: exports.checkAdvancedFeatureAccess,
 };
 //# sourceMappingURL=featureFlagController.js.map

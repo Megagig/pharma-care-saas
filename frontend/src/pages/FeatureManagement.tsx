@@ -28,11 +28,13 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
+import TuneIcon from '@mui/icons-material/Tune';
 import toast from 'react-hot-toast';
 import featureFlagService, { FeatureFlag } from '../services/featureFlagService';
+import AdvancedTargeting from '../components/AdvancedTargeting';
 
-// Constants
-const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'Pharmily', 'Network', 'enterprise'];
+// Constants - All 6 tiers for both monthly & yearly plans
+const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'];
 const AVAILABLE_ROLES = ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin'];
 
 interface TabPanelProps {
@@ -471,6 +473,13 @@ const FeatureManagement: React.FC = () => {
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="feature management tabs">
           <Tab label="Features" id="feature-tab-0" aria-controls="feature-tabpanel-0" />
           <Tab label="Tier Management" id="feature-tab-1" aria-controls="feature-tabpanel-1" />
+          <Tab 
+            label="Advanced Targeting" 
+            id="feature-tab-2" 
+            aria-controls="feature-tabpanel-2"
+            icon={<TuneIcon />}
+            iconPosition="start"
+          />
         </Tabs>
       </Box>
 
@@ -741,6 +750,11 @@ const FeatureManagement: React.FC = () => {
       {/* Tier Management Tab */}
       <TabPanel value={activeTab} index={1}>
         <TierFeatureMatrix features={features} onUpdate={fetchFeatures} />
+      </TabPanel>
+
+      {/* Advanced Targeting Tab */}
+      <TabPanel value={activeTab} index={2}>
+        <AdvancedTargeting features={features} onUpdate={fetchFeatures} />
       </TabPanel>
     </Container>
   );

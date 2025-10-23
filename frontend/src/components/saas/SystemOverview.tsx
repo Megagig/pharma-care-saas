@@ -7,14 +7,6 @@ import {
   CardHeader,
   Typography,
   Button,
-  Chip,
-  Avatar,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemSecondaryAction,
-  LinearProgress,
   Badge,
   Alert,
   Skeleton,
@@ -25,7 +17,6 @@ import {
   Storage as StorageIcon,
   Timeline as MonitoringIcon,
   Notifications as NotificationsIcon,
-  Flag as FlagIcon,
   AdminPanelSettings as AdminIcon,
   Shield as ShieldIcon,
   Tune as TuneIcon,
@@ -34,7 +25,7 @@ import {
   Remove as StableIcon,
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
-import { useSystemMetrics, useSystemHealth, useRecentActivities } from '../../queries/useSaasSettings';
+import { useSystemMetrics } from '../../queries/useSaasSettings';
 
 interface MetricCardProps {
   title: string;
@@ -135,10 +126,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
 
 const SystemOverview: React.FC = () => {
   const { data: metrics, isLoading: metricsLoading, error: metricsError } = useSystemMetrics();
-  const { data: health, isLoading: healthLoading, error: healthError } = useSystemHealth();
-  const { data: activities, isLoading: activitiesLoading, error: activitiesError } = useRecentActivities();
 
-  if (metricsError || healthError || activitiesError) {
+  if (metricsError) {
     return (
       <Alert severity="error" sx={{ mt: 2 }}>
         <Typography variant="h6" gutterBottom>
@@ -150,58 +139,6 @@ const SystemOverview: React.FC = () => {
       </Alert>
     );
   }
-
-  const getHealthStatusColor = (status: string) => {
-    switch (status) {
-      case 'healthy':
-        return 'success';
-      case 'warning':
-        return 'warning';
-      case 'critical':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'user_registration':
-        return <PeopleIcon fontSize="small" />;
-      case 'feature_flag_change':
-        return <FlagIcon fontSize="small" />;
-      case 'license_approval':
-        return <ShieldIcon fontSize="small" />;
-      default:
-        return <NotificationsIcon fontSize="small" />;
-    }
-  };
-
-  const getActivityColor = (type: string) => {
-    switch (type) {
-      case 'user_registration':
-        return 'success.main';
-      case 'feature_flag_change':
-        return 'warning.main';
-      case 'license_approval':
-        return 'info.main';
-      default:
-        return 'primary.main';
-    }
-  };
-
-  const formatTimeAgo = (timestamp: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - new Date(timestamp).getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    return 'Just now';
-  };
 
   return (
     <Grid container spacing={3}>
@@ -272,11 +209,6 @@ const SystemOverview: React.FC = () => {
           <CardHeader
             title="Quick Actions"
             avatar={<TuneIcon />}
-            action={
-              <Button variant="outlined" size="small">
-                View All Settings
-              </Button>
-            }
           />
           <CardContent>
             <Grid container spacing={2}>
@@ -284,33 +216,15 @@ const SystemOverview: React.FC = () => {
                 <Button
                   fullWidth
                   variant="outlined"
-                  startIcon={<FlagIcon />}
+                  startIcon={<PeopleIcon />}
                   component={RouterLink}
-                  to="/feature-flags"
+                  to="/saas-settings?tab=users"
                   sx={{ justifyContent: 'flex-start', p: 2 }}
                 >
                   <Box sx={{ textAlign: 'left', ml: 1 }}>
-                    <Typography variant="subtitle2">Feature Flags</Typography>
+                    <Typography variant="subtitle2">User Management</Typography>
                     <Typography variant="caption" color="textSecondary">
-                      {metrics?.activeFeatureFlags || 0} active flags
-                    </Typography>
-                  </Box>
-                </Button>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<AdminIcon />}
-                  component={RouterLink}
-                  to="/admin"
-                  sx={{ justifyContent: 'flex-start', p: 2 }}
-                >
-                  <Box sx={{ textAlign: 'left', ml: 1 }}>
-                    <Typography variant="subtitle2">Admin Dashboard</Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      User & license management
+                      {metrics?.totalUsers || 0} total users
                     </Typography>
                   </Box>
                 </Button>
@@ -322,131 +236,97 @@ const SystemOverview: React.FC = () => {
                   variant="outlined"
                   startIcon={
                     <Badge
-                      badgeContent={metrics?.pendingLicenses || 0}
+                      badgeContent={metrics?.supportTickets?.open || 0}
                       color="error"
                     >
-                      <ShieldIcon />
+                      <NotificationsIcon />
                     </Badge>
                   }
+                  component={RouterLink}
+                  to="/saas-settings?tab=support"
                   sx={{ justifyContent: 'flex-start', p: 2 }}
                 >
                   <Box sx={{ textAlign: 'left', ml: 1 }}>
-                    <Typography variant="subtitle2">License Reviews</Typography>
+                    <Typography variant="subtitle2">Support Tickets</Typography>
                     <Typography variant="caption" color="textSecondary">
-                      {metrics?.pendingLicenses || 0} pending reviews
+                      {metrics?.supportTickets?.open || 0} open tickets
+                    </Typography>
+                  </Box>
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<AdminIcon />}
+                  component={RouterLink}
+                  to="/admin/feature-management"
+                  sx={{ justifyContent: 'flex-start', p: 2 }}
+                >
+                  <Box sx={{ textAlign: 'left', ml: 1 }}>
+                    <Typography variant="subtitle2">Feature Management</Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      Manage system features
+                    </Typography>
+                  </Box>
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<ShieldIcon />}
+                  component={RouterLink}
+                  to="/saas-settings?tab=security"
+                  sx={{ justifyContent: 'flex-start', p: 2 }}
+                >
+                  <Box sx={{ textAlign: 'left', ml: 1 }}>
+                    <Typography variant="subtitle2">Audit Logs</Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      Security & compliance logs
+                    </Typography>
+                  </Box>
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<AssessmentIcon />}
+                  component={RouterLink}
+                  to="/saas-settings?tab=analytics"
+                  sx={{ justifyContent: 'flex-start', p: 2 }}
+                >
+                  <Box sx={{ textAlign: 'left', ml: 1 }}>
+                    <Typography variant="subtitle2">System Analytics</Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      Reports & insights
+                    </Typography>
+                  </Box>
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<StorageIcon />}
+                  component={RouterLink}
+                  to="/saas-settings?tab=billing"
+                  sx={{ justifyContent: 'flex-start', p: 2 }}
+                >
+                  <Box sx={{ textAlign: 'left', ml: 1 }}>
+                    <Typography variant="subtitle2">Subscription Management</Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      {metrics?.activeSubscriptions || 0} active subscriptions
                     </Typography>
                   </Box>
                 </Button>
               </Grid>
             </Grid>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {/* System Health */}
-      <Grid item xs={12} md={6}>
-        <Card>
-          <CardHeader title="System Health" avatar={<MonitoringIcon />} />
-          <CardContent>
-            {healthLoading ? (
-              <Box>
-                <Skeleton height={60} />
-                <Skeleton height={60} />
-                <Skeleton height={60} />
-              </Box>
-            ) : (
-              <List>
-                <ListItem>
-                  <ListItemText
-                    primary="Database Performance"
-                    secondary={`Average response time: ${health?.database?.value || 'N/A'}`}
-                  />
-                  <ListItemSecondaryAction>
-                    <Chip 
-                      label={health?.database?.status || 'Unknown'} 
-                      color={getHealthStatusColor(health?.database?.status || 'default') as any}
-                      size="small" 
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <ListItem>
-                  <ListItemText
-                    primary="API Response Time"
-                    secondary={`95th percentile: ${health?.api?.value || 'N/A'}`}
-                  />
-                  <ListItemSecondaryAction>
-                    <Chip 
-                      label={health?.api?.status || 'Unknown'} 
-                      color={getHealthStatusColor(health?.api?.status || 'default') as any}
-                      size="small" 
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-                <ListItem>
-                  <ListItemText
-                    primary="Memory Usage"
-                    secondary={`Current usage: ${health?.memory?.value || 'N/A'}`}
-                  />
-                  <ListItemSecondaryAction>
-                    <LinearProgress
-                      variant="determinate"
-                      value={typeof health?.memory?.value === 'number' ? health.memory.value : 0}
-                      sx={{ width: 60 }}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-              </List>
-            )}
-          </CardContent>
-        </Card>
-      </Grid>
-
-      {/* Recent Activities */}
-      <Grid item xs={12} md={6}>
-        <Card>
-          <CardHeader
-            title="Recent Activities"
-            avatar={<NotificationsIcon />}
-          />
-          <CardContent>
-            {activitiesLoading ? (
-              <Box>
-                <Skeleton height={60} />
-                <Skeleton height={60} />
-                <Skeleton height={60} />
-              </Box>
-            ) : (
-              <List>
-                {Array.isArray(activities) && activities.length > 0 ? (
-                  activities.slice(0, 3).map((activity) => (
-                    <ListItem key={activity.id}>
-                      <ListItemIcon>
-                        <Avatar
-                          sx={{ 
-                            bgcolor: getActivityColor(activity.type), 
-                            width: 32, 
-                            height: 32 
-                          }}
-                        >
-                          {getActivityIcon(activity.type)}
-                        </Avatar>
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={activity.title}
-                        secondary={formatTimeAgo(activity.timestamp)}
-                      />
-                    </ListItem>
-                  ))
-                ) : (
-                  <ListItem>
-                    <ListItemText
-                      primary="No recent activities"
-                      secondary="System activities will appear here"
-                    />
-                  </ListItem>
-                )}
-              </List>
-            )}
           </CardContent>
         </Card>
       </Grid>

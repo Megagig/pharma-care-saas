@@ -291,6 +291,11 @@ const requireFeature = (featureKey) => {
                 return;
             }
             console.log(`🔧 RequireFeature Debug - Feature: ${featureKey}, User: ${req.user.email}, Role: ${req.user.role}`);
+            console.log(`🔧 User workplaceId: ${req.user.workplaceId}`);
+            console.log(`🔧 Subscription: ${req.subscription ? 'found' : 'not found'}`);
+            if (req.subscription) {
+                console.log(`🔧 Subscription details: status=${req.subscription.status}, tier=${req.subscription.tier}, trialEndDate=${req.subscription.trialEndDate}`);
+            }
             if (req.user.role === 'super_admin') {
                 console.log('🔧 Super admin bypass granted');
                 return next();
@@ -301,7 +306,7 @@ const requireFeature = (featureKey) => {
             });
             console.log(`🔧 Feature flag found: ${!!featureFlag}, Key: ${featureKey}`);
             if (featureFlag) {
-                console.log(`🔧 Feature flag details: allowedTiers=${featureFlag.allowedTiers}, allowedRoles=${featureFlag.allowedRoles}`);
+                console.log(`🔧 Feature flag details: allowedTiers=${JSON.stringify(featureFlag.allowedTiers)}, allowedRoles=${JSON.stringify(featureFlag.allowedRoles)}, isActive=${featureFlag.isActive}`);
             }
             if (!featureFlag) {
                 console.log(`🔧 Feature flag not found or inactive: ${featureKey}`);
@@ -318,18 +323,20 @@ const requireFeature = (featureKey) => {
                 console.log(`🔧 Subscription details: status=${subscription.status}, tier=${subscription.tier}`);
             }
             if (!subscription) {
-                const basicFeatures = [
-                    'patient_management',
-                    'basic_prescriptions',
-                    'basic_notes'
-                ];
-                if (basicFeatures.includes(featureKey)) {
-                    return next();
+                if (!user.workplaceId) {
+                    res.status(403).json({
+                        message: 'You must join or create a workspace to access this feature.',
+                        feature: featureKey,
+                        subscriptionStatus: 'no_workspace',
+                        requiresAction: 'workspace_required',
+                        upgradeRequired: false,
+                    });
+                    return;
                 }
                 res.status(403).json({
-                    message: 'Active subscription required for this feature.',
+                    message: 'Your workspace subscription is not active.',
                     feature: featureKey,
-                    subscriptionStatus: 'none',
+                    subscriptionStatus: 'no_subscription',
                     requiresAction: 'subscription_required',
                     upgradeRequired: true,
                 });
@@ -338,7 +345,7 @@ const requireFeature = (featureKey) => {
             if (!['active', 'trial', 'past_due'].includes(subscription.status)) {
                 console.log(`🔧 Subscription status check failed: ${subscription.status}`);
                 res.status(403).json({
-                    message: 'Your subscription is not active.',
+                    message: 'Your workspace subscription is not active.',
                     feature: featureKey,
                     subscriptionStatus: subscription.status,
                     requiresAction: 'subscription_renewal',
@@ -346,7 +353,22 @@ const requireFeature = (featureKey) => {
                 });
                 return;
             }
-            if (!featureFlag.allowedTiers.includes(subscription.tier)) {
+            if (subscription.status === 'trial' && subscription.trialEndDate) {
+                const now = new Date();
+                if (now > subscription.trialEndDate) {
+                    res.status(403).json({
+                        message: 'Your 14-day trial has expired. Please upgrade to continue using this feature.',
+                        feature: featureKey,
+                        subscriptionStatus: 'trial_expired',
+                        requiresAction: 'subscription_required',
+                        upgradeRequired: true,
+                    });
+                    return;
+                }
+            }
+            const hasTierAccess = featureFlag.allowedTiers.includes(subscription.tier);
+            console.log(`🔧 Tier access check: user tier=${subscription.tier}, allowed=${JSON.stringify(featureFlag.allowedTiers)}, hasAccess=${hasTierAccess}`);
+            if (!hasTierAccess) {
                 console.log(`🔧 Tier access check failed: user tier=${subscription.tier}, allowed=${featureFlag.allowedTiers}`);
                 res.status(403).json({
                     message: 'Feature not available in your current plan.',

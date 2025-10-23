@@ -231,9 +231,11 @@ const AnalyticsReports: React.FC = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-NG', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -261,70 +263,110 @@ const AnalyticsReports: React.FC = () => {
         </Alert>
       )}
 
-      <Card>
+      <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
         <CardContent>
           {/* Header with Controls */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AnalyticsIcon />
-              Analytics & Reports
-            </Typography>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', md: 'row' },
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', md: 'center' },
+            gap: 2,
+            mb: 3 
+          }}>
+            <Box>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  fontWeight: 700,
+                  color: 'primary.main'
+                }}
+              >
+                <AnalyticsIcon sx={{ fontSize: 32 }} />
+                Analytics & Reports
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Comprehensive insights into your subscription and workspace metrics
+              </Typography>
+            </Box>
             
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <FormControl size="small" sx={{ minWidth: 120 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 1.5, 
+              alignItems: 'center',
+              flexWrap: 'wrap'
+            }}>
+              <FormControl size="small" sx={{ minWidth: 150 }}>
                 <InputLabel>Time Range</InputLabel>
                 <Select
                   value={timeRange}
                   onChange={(e) => setTimeRange(e.target.value)}
                   label="Time Range"
+                  startAdornment={<DateRangeIcon sx={{ mr: 1, fontSize: 20, color: 'action.active' }} />}
                 >
                   <MenuItem value="7d">Last 7 days</MenuItem>
                   <MenuItem value="30d">Last 30 days</MenuItem>
                   <MenuItem value="90d">Last 90 days</MenuItem>
                   <MenuItem value="1y">Last year</MenuItem>
-                  <MenuItem value="custom">Custom range</MenuItem>
                 </Select>
               </FormControl>
               
-              <Button
-                variant="outlined"
-                startIcon={<DownloadIcon />}
-                onClick={() => setExportDialogOpen(true)}
-              >
-                Export
-              </Button>
+              <Tooltip title="Export Report">
+                <Button
+                  variant="outlined"
+                  startIcon={<DownloadIcon />}
+                  onClick={() => setExportDialogOpen(true)}
+                  sx={{ minWidth: { xs: 'auto', sm: 'auto' } }}
+                >
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>Export</Box>
+                </Button>
+              </Tooltip>
               
-              <Button
-                variant="outlined"
-                startIcon={<RefreshIcon />}
-                onClick={loadAnalyticsData}
-                disabled={loading}
-              >
-                Refresh
-              </Button>
+              <Tooltip title="Refresh Data">
+                <Button
+                  variant="contained"
+                  startIcon={<RefreshIcon />}
+                  onClick={loadAnalyticsData}
+                  disabled={loading}
+                  sx={{ minWidth: { xs: 'auto', sm: 'auto' } }}
+                >
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>Refresh</Box>
+                </Button>
+              </Tooltip>
             </Box>
           </Box>
 
           {/* Tabs */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
+            <Tabs 
+              value={activeTab} 
+              onChange={(_, newValue) => setActiveTab(newValue)}
+              variant="scrollable"
+              scrollButtons="auto"
+            >
               <Tab 
                 icon={<AttachMoneyIcon />} 
                 label="Subscription Analytics" 
                 id="analytics-tab-0"
                 aria-controls="analytics-tabpanel-0"
+                sx={{ minHeight: 72 }}
               />
               <Tab 
                 icon={<BusinessIcon />} 
-                label="Pharmacy Usage" 
+                label="Workspace Usage" 
                 id="analytics-tab-1"
                 aria-controls="analytics-tabpanel-1"
+                sx={{ minHeight: 72 }}
               />
               <Tab 
                 icon={<AssessmentIcon />} 
-                label="Clinical Outcomes" 
+                label="Clinical Impact" 
                 id="analytics-tab-2"
                 aria-controls="analytics-tabpanel-2"
+                sx={{ minHeight: 72 }}
               />
             </Tabs>
           </Box>
@@ -338,73 +380,123 @@ const AnalyticsReports: React.FC = () => {
             ) : subscriptionAnalytics ? (
               <Grid container spacing={3}>
                 {/* Key Metrics Cards */}
-                <Grid item xs={12} md={3}>
-                  <Card variant="outlined">
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card 
+                    variant="outlined" 
+                    sx={{ 
+                      height: '100%',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      transition: 'transform 0.2s',
+                      '&:hover': { transform: 'translateY(-4px)' }
+                    }}
+                  >
                     <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box>
-                          <Typography color="textSecondary" gutterBottom>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
                             Monthly Recurring Revenue
                           </Typography>
-                          <Typography variant="h4">
-                            {formatCurrency(subscriptionAnalytics.mrr)}
-                          </Typography>
+                          <AttachMoneyIcon sx={{ fontSize: 32, opacity: 0.8 }} />
                         </Box>
-                        <AttachMoneyIcon color="primary" sx={{ fontSize: 40 }} />
+                        <Typography variant="h4" sx={{ fontWeight: 700, mt: 1 }}>
+                          {formatCurrency(subscriptionAnalytics.mrr)}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          Active subscriptions revenue
+                        </Typography>
                       </Box>
                     </CardContent>
                   </Card>
                 </Grid>
                 
-                <Grid item xs={12} md={3}>
-                  <Card variant="outlined">
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card 
+                    variant="outlined"
+                    sx={{ 
+                      height: '100%',
+                      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                      color: 'white',
+                      transition: 'transform 0.2s',
+                      '&:hover': { transform: 'translateY(-4px)' }
+                    }}
+                  >
                     <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box>
-                          <Typography color="textSecondary" gutterBottom>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
                             Annual Recurring Revenue
                           </Typography>
-                          <Typography variant="h4">
-                            {formatCurrency(subscriptionAnalytics.arr)}
-                          </Typography>
+                          <TrendingUpIcon sx={{ fontSize: 32, opacity: 0.8 }} />
                         </Box>
-                        <TrendingUpIcon color="success" sx={{ fontSize: 40 }} />
+                        <Typography variant="h4" sx={{ fontWeight: 700, mt: 1 }}>
+                          {formatCurrency(subscriptionAnalytics.arr)}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          Projected annual revenue
+                        </Typography>
                       </Box>
                     </CardContent>
                   </Card>
                 </Grid>
                 
-                <Grid item xs={12} md={3}>
-                  <Card variant="outlined">
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card 
+                    variant="outlined"
+                    sx={{ 
+                      height: '100%',
+                      background: subscriptionAnalytics.churnRate > 0.05 
+                        ? 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+                        : 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+                      color: 'white',
+                      transition: 'transform 0.2s',
+                      '&:hover': { transform: 'translateY(-4px)' }
+                    }}
+                  >
                     <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box>
-                          <Typography color="textSecondary" gutterBottom>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
                             Churn Rate
                           </Typography>
-                          <Typography variant="h4" color={subscriptionAnalytics.churnRate > 0.05 ? 'error' : 'success'}>
-                            {formatPercentage(subscriptionAnalytics.churnRate)}
-                          </Typography>
+                          {getGrowthIcon(-subscriptionAnalytics.churnRate)}
                         </Box>
-                        {getGrowthIcon(-subscriptionAnalytics.churnRate)}
+                        <Typography variant="h4" sx={{ fontWeight: 700, mt: 1 }}>
+                          {formatPercentage(subscriptionAnalytics.churnRate)}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          {subscriptionAnalytics.churnRate > 0.05 ? 'Needs attention' : 'Healthy retention'}
+                        </Typography>
                       </Box>
                     </CardContent>
                   </Card>
                 </Grid>
                 
-                <Grid item xs={12} md={3}>
-                  <Card variant="outlined">
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card 
+                    variant="outlined"
+                    sx={{ 
+                      height: '100%',
+                      background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                      color: 'white',
+                      transition: 'transform 0.2s',
+                      '&:hover': { transform: 'translateY(-4px)' }
+                    }}
+                  >
                     <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box>
-                          <Typography color="textSecondary" gutterBottom>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
                             Customer LTV
                           </Typography>
-                          <Typography variant="h4">
-                            {formatCurrency(subscriptionAnalytics.ltv)}
-                          </Typography>
+                          <PeopleIcon sx={{ fontSize: 32, opacity: 0.8 }} />
                         </Box>
-                        <PeopleIcon color="info" sx={{ fontSize: 40 }} />
+                        <Typography variant="h4" sx={{ fontWeight: 700, mt: 1 }}>
+                          {formatCurrency(subscriptionAnalytics.ltv)}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          Average lifetime value
+                        </Typography>
                       </Box>
                     </CardContent>
                   </Card>
@@ -412,37 +504,65 @@ const AnalyticsReports: React.FC = () => {
 
                 {/* Plan Distribution */}
                 <Grid item xs={12} md={6}>
-                  <Card variant="outlined">
+                  <Card variant="outlined" sx={{ height: '100%' }}>
                     <CardContent>
-                      <Typography variant="h6" gutterBottom>
+                      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
                         Subscription Plan Distribution
                       </Typography>
                       <TableContainer>
                         <Table size="small">
                           <TableHead>
                             <TableRow>
-                              <TableCell>Plan</TableCell>
-                              <TableCell align="right">Subscribers</TableCell>
-                              <TableCell align="right">Percentage</TableCell>
-                              <TableCell align="right">Revenue</TableCell>
+                              <TableCell sx={{ fontWeight: 600 }}>Plan</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 600 }}>Subscribers</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 600 }}>Percentage</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 600 }}>Revenue</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {subscriptionAnalytics.planDistribution.map((plan) => (
-                              <TableRow key={plan.planName}>
-                                <TableCell>{plan.planName}</TableCell>
-                                <TableCell align="right">{plan.count}</TableCell>
+                            {subscriptionAnalytics.planDistribution.map((plan, index) => (
+                              <TableRow 
+                                key={plan.planName}
+                                sx={{ 
+                                  '&:hover': { bgcolor: 'action.hover' },
+                                  transition: 'background-color 0.2s'
+                                }}
+                              >
+                                <TableCell>
+                                  <Chip 
+                                    label={plan.planName} 
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                  />
+                                </TableCell>
                                 <TableCell align="right">
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Typography variant="body2" fontWeight={500}>
+                                    {plan.count}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
                                     <LinearProgress
                                       variant="determinate"
                                       value={plan.percentage}
-                                      sx={{ width: 60, height: 6 }}
+                                      sx={{ 
+                                        width: 80, 
+                                        height: 8, 
+                                        borderRadius: 4,
+                                        bgcolor: 'action.hover'
+                                      }}
                                     />
-                                    {formatPercentage(plan.percentage / 100)}
+                                    <Typography variant="body2" fontWeight={500}>
+                                      {formatPercentage(plan.percentage / 100)}
+                                    </Typography>
                                   </Box>
                                 </TableCell>
-                                <TableCell align="right">{formatCurrency(plan.revenue)}</TableCell>
+                                <TableCell align="right">
+                                  <Typography variant="body2" fontWeight={600} color="primary">
+                                    {formatCurrency(plan.revenue)}
+                                  </Typography>
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -454,32 +574,50 @@ const AnalyticsReports: React.FC = () => {
 
                 {/* Revenue by Plan */}
                 <Grid item xs={12} md={6}>
-                  <Card variant="outlined">
+                  <Card variant="outlined" sx={{ height: '100%' }}>
                     <CardContent>
-                      <Typography variant="h6" gutterBottom>
+                      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
                         Revenue Growth by Plan
                       </Typography>
                       <TableContainer>
                         <Table size="small">
                           <TableHead>
                             <TableRow>
-                              <TableCell>Plan</TableCell>
-                              <TableCell align="right">Revenue</TableCell>
-                              <TableCell align="right">Growth</TableCell>
+                              <TableCell sx={{ fontWeight: 600 }}>Plan</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 600 }}>Revenue</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 600 }}>Growth</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {subscriptionAnalytics.revenueByPlan.map((plan) => (
-                              <TableRow key={plan.planName}>
-                                <TableCell>{plan.planName}</TableCell>
-                                <TableCell align="right">{formatCurrency(plan.revenue)}</TableCell>
+                              <TableRow 
+                                key={plan.planName}
+                                sx={{ 
+                                  '&:hover': { bgcolor: 'action.hover' },
+                                  transition: 'background-color 0.2s'
+                                }}
+                              >
+                                <TableCell>
+                                  <Chip 
+                                    label={plan.planName} 
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                  />
+                                </TableCell>
                                 <TableCell align="right">
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Typography variant="body2" fontWeight={600} color="primary">
+                                    {formatCurrency(plan.revenue)}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
                                     {getGrowthIcon(plan.growth)}
                                     <Chip
-                                      label={formatPercentage(Math.abs(plan.growth) / 100)}
+                                      label={formatPercentage(Math.abs(plan.growth))}
                                       color={getGrowthColor(plan.growth) as any}
                                       size="small"
+                                      sx={{ fontWeight: 600 }}
                                     />
                                   </Box>
                                 </TableCell>
@@ -497,119 +635,276 @@ const AnalyticsReports: React.FC = () => {
             )}
           </TabPanel>
 
-          {/* Pharmacy Usage Tab */}
+          {/* Workspace Usage Tab */}
           <TabPanel value={activeTab} index={1}>
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                 <CircularProgress />
               </Box>
             ) : (
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Pharmacy</TableCell>
-                      <TableCell>Plan</TableCell>
-                      <TableCell align="right">Prescriptions</TableCell>
-                      <TableCell align="right">Diagnostics</TableCell>
-                      <TableCell align="right">Patients</TableCell>
-                      <TableCell align="right">Active Users</TableCell>
-                      <TableCell align="right">Interventions</TableCell>
-                      <TableCell>Last Activity</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {pharmacyReports.length === 0 ? (
+              <Box>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+                  Workspace Activity & Engagement
+                </Typography>
+                <TableContainer component={Paper} sx={{ boxShadow: 2, borderRadius: 2 }}>
+                  <Table>
+                    <TableHead sx={{ bgcolor: 'primary.main' }}>
                       <TableRow>
-                        <TableCell colSpan={8} align="center">
-                          No pharmacy usage data available
-                        </TableCell>
+                        <TableCell sx={{ color: 'white', fontWeight: 600 }}>Workspace</TableCell>
+                        <TableCell sx={{ color: 'white', fontWeight: 600 }}>Plan</TableCell>
+                        <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>Prescriptions</TableCell>
+                        <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>Diagnostics</TableCell>
+                        <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>Patients</TableCell>
+                        <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>Active Users</TableCell>
+                        <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>Interventions</TableCell>
+                        <TableCell sx={{ color: 'white', fontWeight: 600 }}>Last Activity</TableCell>
                       </TableRow>
-                    ) : (
-                      pharmacyReports.map((pharmacy) => (
-                        <TableRow key={pharmacy.pharmacyId}>
-                          <TableCell>
-                            <Box>
-                              <Typography variant="body2" fontWeight="medium">
-                                {pharmacy.pharmacyName}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                ID: {pharmacy.pharmacyId.slice(-8)}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              label={pharmacy.subscriptionPlan}
-                              color="primary"
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell align="right">{pharmacy.prescriptionsProcessed.toLocaleString()}</TableCell>
-                          <TableCell align="right">{pharmacy.diagnosticsPerformed.toLocaleString()}</TableCell>
-                          <TableCell align="right">{pharmacy.patientsManaged.toLocaleString()}</TableCell>
-                          <TableCell align="right">{pharmacy.activeUsers}</TableCell>
-                          <TableCell align="right">{pharmacy.clinicalOutcomes.interventions}</TableCell>
-                          <TableCell>
-                            <Typography variant="body2">
-                              {format(new Date(pharmacy.lastActivity), 'MMM dd, yyyy')}
+                    </TableHead>
+                    <TableBody>
+                      {pharmacyReports.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                            <Typography variant="body1" color="text.secondary">
+                              No workspace usage data available for the selected time range
                             </Typography>
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                      ) : (
+                        pharmacyReports.map((pharmacy, index) => (
+                          <TableRow 
+                            key={pharmacy.pharmacyId}
+                            sx={{ 
+                              '&:hover': { bgcolor: 'action.hover' },
+                              transition: 'background-color 0.2s',
+                              bgcolor: index % 2 === 0 ? 'background.default' : 'background.paper'
+                            }}
+                          >
+                            <TableCell>
+                              <Box>
+                                <Typography variant="body2" fontWeight={600}>
+                                  {pharmacy.pharmacyName}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  ID: {pharmacy.pharmacyId.slice(-8)}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={pharmacy.subscriptionPlan}
+                                color="primary"
+                                size="small"
+                                sx={{ fontWeight: 500 }}
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" fontWeight={500}>
+                                {pharmacy.prescriptionsProcessed.toLocaleString()}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" fontWeight={500}>
+                                {pharmacy.diagnosticsPerformed.toLocaleString()}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" fontWeight={500}>
+                                {pharmacy.patientsManaged.toLocaleString()}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Chip 
+                                label={pharmacy.activeUsers} 
+                                size="small" 
+                                color="success"
+                                sx={{ fontWeight: 600 }}
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" fontWeight={500} color="primary">
+                                {pharmacy.clinicalOutcomes.interventions}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="text.secondary">
+                                {format(new Date(pharmacy.lastActivity), 'MMM dd, yyyy')}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
             )}
           </TabPanel>
 
-          {/* Clinical Outcomes Tab */}
+          {/* Clinical Impact Tab */}
           <TabPanel value={activeTab} index={2}>
-            <Typography variant="h6" gutterBottom>
-              Clinical Outcomes & Impact
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+              Clinical Outcomes & Impact Metrics
             </Typography>
             <Grid container spacing={3}>
               <Grid item xs={12} md={4}>
-                <Card variant="outlined">
+                <Card 
+                  variant="outlined"
+                  sx={{ 
+                    height: '100%',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'translateY(-4px)' }
+                  }}
+                >
                   <CardContent>
-                    <Typography color="textSecondary" gutterBottom>
-                      Total Interventions
-                    </Typography>
-                    <Typography variant="h4">
-                      {pharmacyReports.reduce((sum, p) => sum + p.clinicalOutcomes.interventions, 0).toLocaleString()}
-                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                          Total Interventions
+                        </Typography>
+                        <AssessmentIcon sx={{ fontSize: 32, opacity: 0.8 }} />
+                      </Box>
+                      <Typography variant="h3" sx={{ fontWeight: 700, mt: 1 }}>
+                        {pharmacyReports.reduce((sum, p) => sum + p.clinicalOutcomes.interventions, 0).toLocaleString()}
+                      </Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                        Clinical interventions performed
+                      </Typography>
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
               
               <Grid item xs={12} md={4}>
-                <Card variant="outlined">
+                <Card 
+                  variant="outlined"
+                  sx={{ 
+                    height: '100%',
+                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    color: 'white',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'translateY(-4px)' }
+                  }}
+                >
                   <CardContent>
-                    <Typography color="textSecondary" gutterBottom>
-                      Adherence Improvement
-                    </Typography>
-                    <Typography variant="h4">
-                      {formatPercentage(
-                        pharmacyReports.reduce((sum, p) => sum + p.clinicalOutcomes.adherenceImprovement, 0) / 
-                        Math.max(pharmacyReports.length, 1) / 100
-                      )}
-                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                          Adherence Improvement
+                        </Typography>
+                        <TrendingUpIcon sx={{ fontSize: 32, opacity: 0.8 }} />
+                      </Box>
+                      <Typography variant="h3" sx={{ fontWeight: 700, mt: 1 }}>
+                        {formatPercentage(
+                          pharmacyReports.reduce((sum, p) => sum + p.clinicalOutcomes.adherenceImprovement, 0) / 
+                          Math.max(pharmacyReports.length, 1) / 100
+                        )}
+                      </Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                        Average medication adherence gain
+                      </Typography>
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
               
               <Grid item xs={12} md={4}>
-                <Card variant="outlined">
+                <Card 
+                  variant="outlined"
+                  sx={{ 
+                    height: '100%',
+                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    color: 'white',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'translateY(-4px)' }
+                  }}
+                >
                   <CardContent>
-                    <Typography color="textSecondary" gutterBottom>
-                      Cost Savings
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                          Cost Savings
+                        </Typography>
+                        <AttachMoneyIcon sx={{ fontSize: 32, opacity: 0.8 }} />
+                      </Box>
+                      <Typography variant="h3" sx={{ fontWeight: 700, mt: 1 }}>
+                        {formatCurrency(
+                          pharmacyReports.reduce((sum, p) => sum + p.clinicalOutcomes.costSavings, 0)
+                        )}
+                      </Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                        Total healthcare cost savings
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Detailed breakdown by workspace */}
+              <Grid item xs={12}>
+                <Card variant="outlined" sx={{ mt: 2 }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                      Clinical Impact by Workspace
                     </Typography>
-                    <Typography variant="h4">
-                      {formatCurrency(
-                        pharmacyReports.reduce((sum, p) => sum + p.clinicalOutcomes.costSavings, 0)
-                      )}
-                    </Typography>
+                    <TableContainer>
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 600 }}>Workspace</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>Interventions</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>Adherence Improvement</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>Cost Savings</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {pharmacyReports.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                                <Typography variant="body1" color="text.secondary">
+                                  No clinical impact data available
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            pharmacyReports.map((pharmacy, index) => (
+                              <TableRow 
+                                key={pharmacy.pharmacyId}
+                                sx={{ 
+                                  '&:hover': { bgcolor: 'action.hover' },
+                                  transition: 'background-color 0.2s'
+                                }}
+                              >
+                                <TableCell>
+                                  <Typography variant="body2" fontWeight={600}>
+                                    {pharmacy.pharmacyName}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Chip 
+                                    label={pharmacy.clinicalOutcomes.interventions.toLocaleString()} 
+                                    size="small"
+                                    color="primary"
+                                    sx={{ fontWeight: 600 }}
+                                  />
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Typography variant="body2" fontWeight={500} color="success.main">
+                                    {formatPercentage(pharmacy.clinicalOutcomes.adherenceImprovement / 100)}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Typography variant="body2" fontWeight={600} color="primary">
+                                    {formatCurrency(pharmacy.clinicalOutcomes.costSavings)}
+                                  </Typography>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
                   </CardContent>
                 </Card>
               </Grid>

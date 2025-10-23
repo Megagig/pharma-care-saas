@@ -252,6 +252,7 @@ export class SaaSNotificationsController {
         maxExecutions,
         executionCount: 0,
         isActive: true,
+        workplaceId: req.user?.workplaceId,
         createdBy: req.user?._id
       });
 
@@ -461,6 +462,7 @@ export class SaaSNotificationsController {
         variables,
         category,
         isActive: true,
+        workplaceId: req.user?.workplaceId,
         createdBy: req.user?._id
       });
 

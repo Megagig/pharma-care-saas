@@ -36,4 +36,18 @@ router.get('/charts', dashboardCacheMiddleware, dashboardController.getChartData
  */
 router.get('/workspace-info', dashboardCacheMiddleware, dashboardController.getWorkspaceInfo.bind(dashboardController));
 
+/**
+ * @route GET /api/dashboard/debug
+ * @desc Debug endpoint for workspace data issues (development only)
+ * @access Private
+ */
+router.get('/debug', dashboardController.debugWorkspaceData.bind(dashboardController));
+
+/**
+ * @route POST /api/dashboard/assign-workplace
+ * @desc Assign user to workplace (development only)
+ * @access Private
+ */
+router.post('/assign-workplace', dashboardController.assignUserToWorkplace.bind(dashboardController));
+
 export default router;

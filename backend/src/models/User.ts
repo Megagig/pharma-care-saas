@@ -86,16 +86,7 @@ export interface IUser extends Document {
   roleLastModifiedAt?: Date;
   lastPermissionCheck?: Date; // For real-time permission validation
 
-  // Subscription and access
-  subscriptionTier:
-  | 'free_trial'
-  | 'basic'
-  | 'pro'
-  | 'pharmily'
-  | 'network'
-  | 'enterprise';
-  trialStartDate?: Date;
-  trialEndDate?: Date;
+  // Features for this user (legacy - now managed at workspace level)
   features: string[]; // Enabled features for this user
   stripeCustomerId?: string; // Stripe customer ID for payment processing
 
@@ -399,15 +390,7 @@ const userSchema = new Schema(
       index: true,
     },
 
-    // Subscription and access
-    subscriptionTier: {
-      type: String,
-      enum: ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'],
-      default: 'free_trial',
-      index: true,
-    },
-    trialStartDate: Date,
-    trialEndDate: Date,
+    // Features for this user (legacy - now managed at workspace level)
     features: [
       {
         type: String,
@@ -897,12 +880,6 @@ userSchema.pre<IUser>('save', function (next) {
         this.licenseStatus === 'not_required' ? 'pending' : this.licenseStatus;
     } else {
       this.licenseStatus = 'not_required';
-    }
-
-    // Set trial period for new users
-    if (this.isNew && this.subscriptionTier === 'free_trial') {
-      this.trialStartDate = new Date();
-      this.trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
     }
   }
   next();

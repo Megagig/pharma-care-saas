@@ -52,18 +52,35 @@ router.put(
     body('preventReuse')
       .optional()
       .isInt({ min: 0, max: 24 })
-      .withMessage('Prevent reuse must be between 0 and 24 passwords'),
-    body('lockoutThreshold')
-      .optional()
-      .isInt({ min: 1, max: 20 })
-      .withMessage('Lockout threshold must be between 1 and 20 attempts'),
-    body('lockoutDuration')
-      .optional()
-      .isInt({ min: 1, max: 1440 })
-      .withMessage('Lockout duration must be between 1 and 1440 minutes')
+      .withMessage('Prevent reuse must be between 0 and 24 passwords')
   ],
   validateRequest,
   saasSecurityController.updatePasswordPolicy.bind(saasSecurityController)
+);
+
+// Update account lockout settings
+router.put(
+  '/account-lockout',
+  [
+    body('maxFailedAttempts')
+      .optional()
+      .isInt({ min: 3, max: 20 })
+      .withMessage('Max failed attempts must be between 3 and 20'),
+    body('lockoutDuration')
+      .optional()
+      .isInt({ min: 5, max: 1440 })
+      .withMessage('Lockout duration must be between 5 and 1440 minutes'),
+    body('autoUnlock')
+      .optional()
+      .isBoolean()
+      .withMessage('Auto unlock must be a boolean'),
+    body('notifyOnLockout')
+      .optional()
+      .isBoolean()
+      .withMessage('Notify on lockout must be a boolean')
+  ],
+  validateRequest,
+  saasSecurityController.updateAccountLockout.bind(saasSecurityController)
 );
 
 // Get active user sessions

@@ -64,7 +64,7 @@ export class SubscriptionController {
         });
       }
 
-      // Get available features for this subscription
+      // Get available features for this subscription tier
       const availableFeatures = await FeatureFlag.find({
         isActive: true,
         allowedTiers: subscription.tier,
@@ -740,7 +740,6 @@ export class SubscriptionController {
 
       // Update user subscription info
       user.currentSubscriptionId = subscription._id;
-      user.subscriptionTier = plan.tier;
       user.currentPlanId = planId;
       await user.save();
 
@@ -923,13 +922,6 @@ export class SubscriptionController {
       // Update user
       const user = await User.findById(req.user._id);
       if (user) {
-        user.subscriptionTier = newTier as
-          | 'free_trial'
-          | 'basic'
-          | 'pro'
-          | 'pharmily'
-          | 'network'
-          | 'enterprise';
         user.features = features.map((f) => f.key);
         await user.save();
       }
@@ -1397,7 +1389,6 @@ export class SubscriptionController {
 
       // Update user subscription info
       user.currentSubscriptionId = subscription._id;
-      user.subscriptionTier = plan.tier;
       user.currentPlanId = planId;
       await user.save();
 

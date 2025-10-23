@@ -82,6 +82,85 @@ const FeatureFlagSchema = new mongoose_1.Schema({
                 type: String,
                 trim: true,
             }],
+        displayOrder: {
+            type: Number,
+            default: 0,
+        },
+        marketingDescription: {
+            type: String,
+            trim: true,
+        },
+        isMarketingFeature: {
+            type: Boolean,
+            default: false,
+        },
+        icon: {
+            type: String,
+            trim: true,
+        },
+    },
+    targetingRules: {
+        pharmacies: [{
+                type: String,
+                trim: true,
+            }],
+        userGroups: [{
+                type: String,
+                trim: true,
+            }],
+        percentage: {
+            type: Number,
+            min: 0,
+            max: 100,
+        },
+        conditions: {
+            dateRange: {
+                startDate: {
+                    type: Date,
+                },
+                endDate: {
+                    type: Date,
+                },
+            },
+            userAttributes: {
+                type: mongoose_1.Schema.Types.Mixed,
+            },
+            workspaceAttributes: {
+                type: mongoose_1.Schema.Types.Mixed,
+            },
+        },
+    },
+    usageMetrics: {
+        totalUsers: {
+            type: Number,
+            default: 0,
+        },
+        activeUsers: {
+            type: Number,
+            default: 0,
+        },
+        usagePercentage: {
+            type: Number,
+            default: 0,
+            min: 0,
+            max: 100,
+        },
+        lastUsed: {
+            type: Date,
+        },
+        usageByPlan: [{
+                plan: String,
+                userCount: Number,
+                percentage: Number,
+            }],
+        usageByWorkspace: [{
+                workspaceId: {
+                    type: mongoose_1.Schema.Types.ObjectId,
+                    ref: 'Workplace',
+                },
+                workspaceName: String,
+                userCount: Number,
+            }],
     },
     createdBy: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -104,6 +183,11 @@ const FeatureFlagSchema = new mongoose_1.Schema({
 FeatureFlagSchema.index({ key: 1, isActive: 1 });
 FeatureFlagSchema.index({ 'metadata.category': 1, isActive: 1 });
 FeatureFlagSchema.index({ allowedTiers: 1, isActive: 1 });
+FeatureFlagSchema.index({ 'metadata.isMarketingFeature': 1, isActive: 1 });
+FeatureFlagSchema.index({ 'metadata.displayOrder': 1 });
+FeatureFlagSchema.index({ 'targetingRules.pharmacies': 1 });
+FeatureFlagSchema.index({ 'targetingRules.userGroups': 1 });
+FeatureFlagSchema.index({ 'usageMetrics.lastUsed': -1 });
 FeatureFlagSchema.pre('save', function (next) {
     this.updatedAt = new Date();
     next();

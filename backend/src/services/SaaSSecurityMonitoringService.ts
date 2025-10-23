@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { SecuritySettings, ISecuritySettings, IPasswordPolicy } from '../models/SecuritySettings';
+import { SecuritySettings, ISecuritySettings, IPasswordPolicy, IAccountLockout } from '../models/SecuritySettings';
 import { UserSession, IUserSession } from '../models/UserSession';
 import { SecurityAuditLog, ISecurityAuditLog } from '../models/SecurityAuditLog';
 import { User, IUser } from '../models/User';
@@ -170,6 +170,50 @@ export class SecurityMonitoringService {
       logger.info(`Password policy updated by admin ${adminId}`);
     } catch (error) {
       logger.error('Error updating password policy:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update account lockout settings
+   */
+  async updateAccountLockout(lockout: IAccountLockout, adminId: string): Promise<void> {
+    try {
+      const settings = await this.getSecuritySettings();
+
+      // Store old lockout for audit
+      const oldLockout = settings.accountLockout;
+
+      // Update account lockout
+      settings.accountLockout = lockout;
+      settings.lastModifiedBy = new mongoose.Types.ObjectId(adminId);
+      settings.updatedAt = new Date();
+
+      await settings.save();
+
+      // Clear cache
+      await this.cacheService.del('security:settings');
+
+      // Create audit log
+      await this.auditService.createAuditLog({
+        action: 'ACCOUNT_LOCKOUT_UPDATED',
+        userId: adminId,
+        resourceType: 'SecuritySettings',
+        resourceId: settings._id.toString(),
+        details: {
+          newLockout: lockout,
+          oldLockout: oldLockout
+        },
+        complianceCategory: 'security_management',
+        riskLevel: 'high',
+        changedFields: ['accountLockout'],
+        oldValues: { accountLockout: oldLockout },
+        newValues: { accountLockout: lockout }
+      });
+
+      logger.info(`Account lockout settings updated by admin ${adminId}`);
+    } catch (error) {
+      logger.error('Error updating account lockout settings:', error);
       throw error;
     }
   }

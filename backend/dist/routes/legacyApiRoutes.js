@@ -75,7 +75,6 @@ router.get('/user/profile', compatibilityLayer_1.compatibilityAuth, (0, compatib
                 status: user.status,
                 emailVerified: user.emailVerified,
                 licenseStatus: user.licenseStatus,
-                subscriptionTier: user.subscriptionTier,
                 features: user.features,
                 permissions: user.permissions,
                 workplaceId: user.workplaceId,
@@ -223,7 +222,7 @@ router.get('/user/features/:feature', compatibilityLayer_1.compatibilityAuth, (0
                     req.subscription?.features?.includes(feature) ? 'subscription' :
                         req.subscription?.customFeatures?.includes(feature) ? 'custom' :
                             req.plan?.features?.includes(feature) ? 'plan' : 'none',
-            currentTier: req.subscription?.tier || user.subscriptionTier,
+            currentTier: req.subscription?.tier || 'free_trial',
         });
     }
     catch (error) {

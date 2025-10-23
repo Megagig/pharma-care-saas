@@ -32,12 +32,19 @@ class DashboardService {
             // Try to use the new optimized dashboard endpoint first
             try {
                 const response = await api.get('/dashboard/overview');
-                if (response.data) {
+                console.log('🔍 Dashboard API Response:', response.data);
+                if (response.data?.success && response.data.data) {
                     console.log('✅ Using optimized dashboard data');
-                    return this.processDashboardResponse(response.data);
+                    console.log('📊 Processing dashboard response:', response.data.data);
+                    const processedData = this.processDashboardResponse(response.data.data);
+                    console.log('📈 Processed chart data:', processedData);
+                    return processedData;
+                } else {
+                    console.log('⚠️ Optimized endpoint returned invalid data:', response.data);
                 }
             } catch (error) {
-                console.log('📊 Optimized endpoint not available, falling back to legacy fetch');
+                console.error('❌ Optimized endpoint failed:', error);
+                console.log('📊 Falling back to legacy fetch');
             }
 
             // Fallback to individual API calls if optimized endpoint fails

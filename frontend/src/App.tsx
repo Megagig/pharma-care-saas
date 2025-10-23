@@ -56,7 +56,6 @@ import {
   LazyFollowUpCasesPage,
   LazyReportsAnalyticsDashboard,
   LazyAdminDashboard,
-  LazyFeatureFlagsPage,
   LazyFeatureManagement,
   LazySuperAdminAuditTrail,
   LazyPatientForm,
@@ -748,19 +747,7 @@ function App(): JSX.Element {
                               </ProtectedRoute>
                             }
                           />
-                          {/* Feature Flags Route */}
-                          <Route
-                            path="/feature-flags"
-                            element={
-                              <ProtectedRoute requiredRole="super_admin">
-                                <AppLayout>
-                                  <LazyWrapper fallback={PageSkeleton}>
-                                    <LazyFeatureFlagsPage />
-                                  </LazyWrapper>
-                                </AppLayout>
-                              </ProtectedRoute>
-                            }
-                          />
+
                           {/* Admin Feature Management Route */}
                           <Route
                             path="/admin/feature-management"

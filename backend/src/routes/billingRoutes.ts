@@ -196,4 +196,97 @@ router.get(
   billingController.getBillingAnalytics.bind(billingController)
 );
 
+/**
+ * @route GET /api/billing/subscriptions
+ * @desc Get all subscriptions with pagination
+ * @access Private - Super Admin only
+ */
+router.get(
+  '/subscriptions',
+  auth,
+  requireRole('super_admin'),
+  [
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Page must be a positive integer'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Limit must be between 1 and 100'),
+    query('status')
+      .optional()
+      .isIn(['active', 'trialing', 'past_due', 'canceled', 'unpaid', 'incomplete'])
+      .withMessage('Invalid status'),
+    query('search')
+      .optional()
+      .isString()
+      .withMessage('Search must be a string'),
+  ],
+  validateRequest,
+  billingController.getAllSubscriptions.bind(billingController)
+);
+
+/**
+ * @route GET /api/billing/revenue-trends
+ * @desc Get revenue trends over time
+ * @access Private - Super Admin only
+ */
+router.get(
+  '/revenue-trends',
+  auth,
+  requireRole('super_admin'),
+  [
+    query('period')
+      .optional()
+      .isIn(['7d', '30d', '90d', '365d'])
+      .withMessage('Period must be 7d, 30d, 90d, or 365d'),
+  ],
+  validateRequest,
+  billingController.getRevenueTrends.bind(billingController)
+);
+
+/**
+ * @route GET /api/billing/invoices
+ * @desc Get all invoices with pagination
+ * @access Private - Super Admin only
+ */
+router.get(
+  '/invoices',
+  auth,
+  requireRole('super_admin'),
+  [
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Page must be a positive integer'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Limit must be between 1 and 100'),
+    query('status')
+      .optional()
+      .isIn(['draft', 'open', 'paid', 'void', 'uncollectible'])
+      .withMessage('Invalid status'),
+    query('search')
+      .optional()
+      .isString()
+      .withMessage('Search must be a string'),
+  ],
+  validateRequest,
+  billingController.getAllInvoices.bind(billingController)
+);
+
+/**
+ * @route GET /api/billing/payment-methods
+ * @desc Get all payment methods
+ * @access Private - Super Admin only
+ */
+router.get(
+  '/payment-methods',
+  auth,
+  requireRole('super_admin'),
+  billingController.getAllPaymentMethods.bind(billingController)
+);
+
 export default router;

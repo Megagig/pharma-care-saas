@@ -3,6 +3,7 @@ import { FeatureFlag } from '../models/FeatureFlag';
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import { AuthRequest, isExtendedUser } from '../types/auth';
+import EnhancedFeatureFlagService from '../services/enhancedFeatureFlagService';
 
 // Available subscription tiers
 const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'] as const;
@@ -491,6 +492,185 @@ export const updateTierFeatures = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * @desc    Update targeting rules for a feature flag
+ * @route   PUT /api/feature-flags/:id/targeting
+ * @access  Private (Super Admin only)
+ */
+export const updateTargetingRules = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { targetingRules } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid feature flag ID',
+      });
+    }
+
+    // Validate targeting rules
+    const validation = EnhancedFeatureFlagService.validateTargetingRules(targetingRules);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: validation.error,
+      });
+    }
+
+    const featureFlag = await FeatureFlag.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          targetingRules,
+          updatedBy: req.user?._id,
+          updatedAt: new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!featureFlag) {
+      return res.status(404).json({
+        success: false,
+        message: 'Feature flag not found',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Targeting rules updated successfully',
+      data: featureFlag,
+    });
+  } catch (error) {
+    console.error('Error updating targeting rules:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+/**
+ * @desc    Get usage metrics for a feature flag
+ * @route   GET /api/feature-flags/:id/metrics
+ * @access  Private (Super Admin only)
+ */
+export const getFeatureFlagMetrics = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid feature flag ID',
+      });
+    }
+
+    const featureFlag = await FeatureFlag.findById(id);
+    if (!featureFlag) {
+      return res.status(404).json({
+        success: false,
+        message: 'Feature flag not found',
+      });
+    }
+
+    const metrics = await EnhancedFeatureFlagService.calculateUsageMetrics(featureFlag.key);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        featureFlag: {
+          id: featureFlag._id,
+          key: featureFlag.key,
+          name: featureFlag.name,
+        },
+        metrics,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching feature flag metrics:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+/**
+ * @desc    Get marketing features for pricing display
+ * @route   GET /api/feature-flags/marketing
+ * @access  Public
+ */
+export const getMarketingFeatures = async (req: Request, res: Response) => {
+  try {
+    const { tier } = req.query;
+
+    const features = await EnhancedFeatureFlagService.getMarketingFeatures(tier as string);
+
+    return res.status(200).json({
+      success: true,
+      count: features.length,
+      data: features,
+    });
+  } catch (error) {
+    console.error('Error fetching marketing features:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+/**
+ * @desc    Check advanced feature access for a user
+ * @route   POST /api/feature-flags/check-access
+ * @access  Private (All authenticated users)
+ */
+export const checkAdvancedFeatureAccess = async (req: AuthRequest, res: Response) => {
+  try {
+    const { featureKey, workspaceId } = req.body;
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated',
+      });
+    }
+
+    if (!featureKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'Feature key is required',
+      });
+    }
+
+    const accessResult = await EnhancedFeatureFlagService.hasAdvancedFeatureAccess(
+      userId.toString(),
+      featureKey,
+      workspaceId
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: accessResult,
+    });
+  } catch (error) {
+    console.error('Error checking advanced feature access:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+
+
 export default {
   getAllFeatureFlags,
   getFeatureFlagById,
@@ -501,4 +681,9 @@ export default {
   getFeatureFlagsByCategory,
   getFeatureFlagsByTier,
   updateTierFeatures,
+  // Enhanced functionality
+  updateTargetingRules,
+  getFeatureFlagMetrics,
+  getMarketingFeatures,
+  checkAdvancedFeatureAccess,
 };

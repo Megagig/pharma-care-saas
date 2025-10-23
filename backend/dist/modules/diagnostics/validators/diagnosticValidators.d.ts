@@ -175,8 +175,8 @@ export declare const createDiagnosticRequestSchema: z.ZodObject<{
         familyHistory: z.ZodDefault<z.ZodArray<z.ZodString>>;
     }, z.core.$strip>;
     priority: z.ZodDefault<z.ZodEnum<{
-        urgent: "urgent";
         routine: "routine";
+        urgent: "urgent";
         stat: "stat";
     }>>;
     consentObtained: z.ZodBoolean;
@@ -196,8 +196,8 @@ export declare const diagnosticQuerySchema: z.ZodObject<{
         processing: "processing";
     }>>;
     priority: z.ZodOptional<z.ZodEnum<{
-        urgent: "urgent";
         routine: "routine";
+        urgent: "urgent";
         stat: "stat";
     }>>;
     pharmacistId: z.ZodOptional<z.ZodString>;
@@ -216,8 +216,8 @@ export declare const rejectResultSchema: z.ZodObject<{
 }, z.core.$strip>;
 export declare const pendingReviewsQuerySchema: z.ZodObject<{
     priority: z.ZodOptional<z.ZodEnum<{
-        urgent: "urgent";
         routine: "routine";
+        urgent: "urgent";
         stat: "stat";
     }>>;
     confidenceMin: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<number, string>>;

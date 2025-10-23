@@ -13,8 +13,6 @@ export interface PasswordPolicy {
   requireSpecialChars: boolean;
   maxAge: number; // days
   preventReuse: number; // number of previous passwords to check
-  lockoutThreshold: number; // failed attempts before lockout
-  lockoutDuration: number; // minutes
 }
 
 export interface SessionFilters {
@@ -93,9 +91,7 @@ export class SaaSSecurityController {
         requireNumbers,
         requireSpecialChars,
         maxAge,
-        preventReuse,
-        lockoutThreshold,
-        lockoutDuration
+        preventReuse
       } = req.body;
 
       logger.info('Updating password policy', {
@@ -107,9 +103,7 @@ export class SaaSSecurityController {
           requireNumbers,
           requireSpecialChars,
           maxAge,
-          preventReuse,
-          lockoutThreshold,
-          lockoutDuration
+          preventReuse
         }
       });
 
@@ -127,9 +121,7 @@ export class SaaSSecurityController {
         requireNumbers: requireNumbers !== undefined ? requireNumbers : true,
         requireSpecialChars: requireSpecialChars !== undefined ? requireSpecialChars : false,
         maxAge: maxAge || 90,
-        preventReuse: preventReuse || 5,
-        lockoutThreshold: lockoutThreshold || 5,
-        lockoutDuration: lockoutDuration || 30
+        preventReuse: preventReuse || 5
       };
 
       await this.securityMonitoringService.updatePasswordPolicy(passwordPolicy, req.user?._id.toString() || 'system');
@@ -158,6 +150,58 @@ export class SaaSSecurityController {
         res,
         'PASSWORD_POLICY_UPDATE_ERROR',
         'Failed to update password policy',
+        500
+      );
+    }
+  }
+
+  /**
+   * Update account lockout settings
+   * PUT /api/admin/saas/security/account-lockout
+   */
+  async updateAccountLockout(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const {
+        maxFailedAttempts,
+        lockoutDuration,
+        autoUnlock,
+        notifyOnLockout
+      } = req.body;
+
+      logger.info('Updating account lockout settings', {
+        adminId: req.user?._id,
+        changes: {
+          maxFailedAttempts,
+          lockoutDuration,
+          autoUnlock,
+          notifyOnLockout
+        }
+      });
+
+      const accountLockout = {
+        maxFailedAttempts: maxFailedAttempts || 5,
+        lockoutDuration: lockoutDuration || 30,
+        autoUnlock: autoUnlock !== undefined ? autoUnlock : true,
+        notifyOnLockout: notifyOnLockout !== undefined ? notifyOnLockout : true
+      };
+
+      await this.securityMonitoringService.updateAccountLockout(accountLockout, req.user?._id.toString() || 'system');
+
+      sendSuccess(
+        res,
+        {
+          accountLockout,
+          updatedBy: req.user?._id,
+          updatedAt: new Date()
+        },
+        'Account lockout settings updated successfully'
+      );
+    } catch (error) {
+      logger.error('Error updating account lockout settings:', error);
+      sendError(
+        res,
+        'ACCOUNT_LOCKOUT_UPDATE_ERROR',
+        'Failed to update account lockout settings',
         500
       );
     }
@@ -640,14 +684,6 @@ export class SaaSSecurityController {
 
     if (policy.preventReuse !== undefined && (policy.preventReuse < 0 || policy.preventReuse > 24)) {
       return { isValid: false, error: 'Prevent reuse must be between 0 and 24 passwords' };
-    }
-
-    if (policy.lockoutThreshold !== undefined && (policy.lockoutThreshold < 1 || policy.lockoutThreshold > 20)) {
-      return { isValid: false, error: 'Lockout threshold must be between 1 and 20 attempts' };
-    }
-
-    if (policy.lockoutDuration !== undefined && (policy.lockoutDuration < 1 || policy.lockoutDuration > 1440)) {
-      return { isValid: false, error: 'Lockout duration must be between 1 and 1440 minutes' };
     }
 
     return { isValid: true };

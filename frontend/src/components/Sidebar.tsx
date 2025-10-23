@@ -183,12 +183,6 @@ const Sidebar = () => {
       show: hasRole('super_admin'),
     },
     {
-      name: 'Feature Flags',
-      path: '/feature-flags',
-      icon: SettingsIcon,
-      show: hasRole('super_admin') && hasFeature('feature_flag_management'),
-    },
-    {
       name: 'Saas Settings',
       path: '/saas-settings',
       icon: SettingsIcon,

@@ -29,6 +29,7 @@ import carePlanRoutes from './routes/carePlanRoutes';
 import visitRoutes from './routes/visitRoutes';
 import noteRoutes from './routes/noteRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import billingRoutes from './routes/billingRoutes';
 import adminRoutes from './routes/admin';
 import adminDashboardRoutes from './routes/adminDashboardRoutes';
 import licenseRoutes from './routes/license';
@@ -64,6 +65,7 @@ import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
 import diagnosticRoutes from './routes/diagnosticRoutes';
 import communicationRoutes from './routes/communicationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import notificationManagementRoutes from './routes/notificationManagementRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import reportsRoutes from './routes/reportsRoutes';
 import lighthouseRoutes from './routes/lighthouseRoutes';
@@ -416,6 +418,9 @@ app.use('/api/notifications', notificationRoutes);
 // Communication-specific notifications
 app.use('/api/communication/notifications', notificationRoutes);
 
+// Notification Management (Admin/Super Admin only)
+app.use('/api/notification-management', notificationManagementRoutes);
+
 // Mention routes (already imported above)
 app.use('/api/mentions', mentionRoutes);
 
@@ -432,6 +437,7 @@ app.use('/api/notes', noteRoutes);
 
 // Other routes
 app.use('/api/payments', paymentRoutes);
+app.use('/api/billing', billingRoutes);
 app.use('/api/mtr', mtrRoutes);
 app.use('/api/mtr/notifications', mtrNotificationRoutes);
 // Clinical interventions health check (no auth required)

@@ -10,6 +10,7 @@ const auth_1 = require("../middlewares/auth");
 const router = express_1.default.Router();
 router.get('/', auth_1.auth, featureFlagController_1.default.getAllFeatureFlags);
 router.get('/:id', auth_1.auth, featureFlagController_1.default.getFeatureFlagById);
+router.get('/:id/metrics', auth_1.auth, featureFlagController_1.default.getFeatureFlagMetrics);
 router.use(auth_1.auth);
 router.use(auth_1.requireSuperAdmin);
 router.post('/', [
@@ -94,5 +95,30 @@ router.post('/tier/:tier/features', [
         .isIn(['add', 'remove'])
         .withMessage('action must be either "add" or "remove"'),
 ], featureFlagController_1.default.updateTierFeatures);
+router.put('/:id/targeting', [
+    (0, express_validator_1.body)('targetingRules').isObject().withMessage('targetingRules must be an object'),
+    (0, express_validator_1.body)('targetingRules.pharmacies')
+        .optional()
+        .isArray()
+        .withMessage('pharmacies must be an array'),
+    (0, express_validator_1.body)('targetingRules.userGroups')
+        .optional()
+        .isArray()
+        .withMessage('userGroups must be an array'),
+    (0, express_validator_1.body)('targetingRules.percentage')
+        .optional()
+        .isInt({ min: 0, max: 100 })
+        .withMessage('percentage must be between 0 and 100'),
+], featureFlagController_1.default.updateTargetingRules);
+router.get('/public/marketing', featureFlagController_1.default.getMarketingFeatures);
+router.post('/check-access', auth_1.auth, [
+    (0, express_validator_1.body)('featureKey')
+        .notEmpty()
+        .withMessage('featureKey is required'),
+    (0, express_validator_1.body)('workspaceId')
+        .optional()
+        .isMongoId()
+        .withMessage('workspaceId must be a valid MongoDB ObjectId'),
+], featureFlagController_1.default.checkAdvancedFeatureAccess);
 exports.default = router;
 //# sourceMappingURL=featureFlagRoutes.js.map
