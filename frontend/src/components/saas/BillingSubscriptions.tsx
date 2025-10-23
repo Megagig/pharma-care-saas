@@ -529,14 +529,14 @@ const BillingSubscriptions: React.FC = () => {
 
               <Grid container spacing={3}>
                 {/* Subscription Status Distribution */}
-                <Grid item xs={12} md={5}>
+                <Grid item xs={12} md={4}>
                   <Card variant="outlined" sx={{ p: 3, height: '100%' }}>
                     <Typography variant="h6" gutterBottom fontWeight="bold">
                       Subscription Status Distribution
                     </Typography>
                     {analytics && (
                       <>
-                        <ResponsiveContainer width="100%" height={400}>
+                        <ResponsiveContainer width="100%" height={350}>
                           <PieChart>
                             <Pie
                               data={Object.entries(analytics.subscriptionsByStatus).map(([status, count]) => ({
@@ -544,10 +544,10 @@ const BillingSubscriptions: React.FC = () => {
                                 value: count,
                               }))}
                               cx="50%"
-                              cy="50%"
-                              labelLine={true}
-                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                              outerRadius={120}
+                              cy="45%"
+                              labelLine={false}
+                              label={false}
+                              outerRadius={100}
                               fill="#8884d8"
                               dataKey="value"
                             >
@@ -562,10 +562,11 @@ const BillingSubscriptions: React.FC = () => {
                               verticalAlign="bottom" 
                               height={36}
                               iconType="circle"
+                              wrapperStyle={{ fontSize: '12px' }}
                             />
                           </PieChart>
                         </ResponsiveContainer>
-                        <Box mt={3}>
+                        <Box mt={2}>
                           {Object.entries(analytics.subscriptionsByStatus).map(([status, count]) => (
                             <Box key={status} display="flex" justifyContent="space-between" alignItems="center" py={1.5} borderBottom={1} borderColor="divider">
                               <Chip
@@ -584,7 +585,7 @@ const BillingSubscriptions: React.FC = () => {
                 </Grid>
 
                 {/* Revenue by Plan - Expanded */}
-                <Grid item xs={12} md={7}>
+                <Grid item xs={12} md={8}>
                   <Card variant="outlined" sx={{ p: 3, height: '100%' }}>
                     <Typography variant="h6" gutterBottom fontWeight="bold">
                       Revenue by Plan
