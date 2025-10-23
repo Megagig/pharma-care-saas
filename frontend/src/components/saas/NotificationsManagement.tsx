@@ -64,8 +64,8 @@ import {
   Warning as WarningIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
-import { useSaasSettings } from '../../queries/useSaasSettings';
 import { format } from 'date-fns';
+import { notificationManagementService } from '../../services/notificationManagementService';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -198,21 +198,35 @@ const NotificationsManagement: React.FC = () => {
   const [selectedRule, setSelectedRule] = useState<NotificationRule | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<NotificationTemplate | null>(null);
 
-  const {
-    getNotificationChannels,
-    updateNotificationChannel,
-    getNotificationRules,
-    createNotificationRule,
-    updateNotificationRule,
-    deleteNotificationRule,
-    getNotificationTemplates,
-    createNotificationTemplate,
-    updateNotificationTemplate,
-    deleteNotificationTemplate,
-    getNotificationHistory,
-    sendTestNotification,
-    toggleNotificationRule,
-  } = useSaasSettings();
+  // Rule form state
+  const [ruleForm, setRuleForm] = useState({
+    name: '',
+    description: '',
+    trigger: '',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'critical',
+    cooldownPeriod: 60,
+    maxExecutions: 1000,
+  });
+
+  // Template form state
+  const [templateForm, setTemplateForm] = useState({
+    name: '',
+    description: '',
+    channel: '' as 'email' | 'sms' | 'push' | 'whatsapp' | '',
+    subject: '',
+    body: '',
+    category: 'general',
+    isActive: true,
+  });
+
+  // Test notification form state
+  const [testForm, setTestForm] = useState({
+    channelId: '',
+    templateId: '',
+    recipients: '',
+  });
+
+  // Service methods are called directly from notificationManagementService
 
   useEffect(() => {
     loadNotificationData();
@@ -225,26 +239,26 @@ const NotificationsManagement: React.FC = () => {
 
       switch (activeTab) {
         case 0: // Channels
-          const channelsResponse = await getNotificationChannels();
-          if (channelsResponse.success) {
+          const channelsResponse = await notificationManagementService.getChannels();
+          if (channelsResponse.success && channelsResponse.data) {
             setChannels(channelsResponse.data.channels);
           }
           break;
         case 1: // Rules
-          const rulesResponse = await getNotificationRules();
-          if (rulesResponse.success) {
+          const rulesResponse = await notificationManagementService.getRules();
+          if (rulesResponse.success && rulesResponse.data) {
             setRules(rulesResponse.data.rules);
           }
           break;
         case 2: // Templates
-          const templatesResponse = await getNotificationTemplates();
-          if (templatesResponse.success) {
+          const templatesResponse = await notificationManagementService.getTemplates();
+          if (templatesResponse.success && templatesResponse.data) {
             setTemplates(templatesResponse.data.templates);
           }
           break;
         case 3: // History
-          const historyResponse = await getNotificationHistory();
-          if (historyResponse.success) {
+          const historyResponse = await notificationManagementService.getHistory();
+          if (historyResponse.success && historyResponse.data) {
             setHistory(historyResponse.data.history);
           }
           break;
@@ -258,7 +272,7 @@ const NotificationsManagement: React.FC = () => {
 
   const handleChannelToggle = async (channelId: string, enabled: boolean) => {
     try {
-      const response = await updateNotificationChannel(channelId, { enabled });
+      const response = await notificationManagementService.updateChannel(channelId, { enabled });
       if (response.success) {
         setChannels(prev => prev.map(channel => 
           channel.id === channelId ? { ...channel, enabled } : channel
@@ -273,7 +287,7 @@ const NotificationsManagement: React.FC = () => {
 
   const handleRuleToggle = async (ruleId: string, isActive: boolean) => {
     try {
-      const response = await toggleNotificationRule(ruleId, { isActive });
+      const response = await notificationManagementService.toggleRule(ruleId, isActive);
       if (response.success) {
         setRules(prev => prev.map(rule => 
           rule.id === ruleId ? { ...rule, isActive } : rule
@@ -290,7 +304,7 @@ const NotificationsManagement: React.FC = () => {
     if (!confirm('Are you sure you want to delete this rule?')) return;
 
     try {
-      const response = await deleteNotificationRule(ruleId);
+      const response = await notificationManagementService.deleteRule(ruleId);
       if (response.success) {
         setRules(prev => prev.filter(rule => rule.id !== ruleId));
         setSuccess('Rule deleted successfully');
@@ -305,7 +319,7 @@ const NotificationsManagement: React.FC = () => {
     if (!confirm('Are you sure you want to delete this template?')) return;
 
     try {
-      const response = await deleteNotificationTemplate(templateId);
+      const response = await notificationManagementService.deleteTemplate(templateId);
       if (response.success) {
         setTemplates(prev => prev.filter(template => template.id !== templateId));
         setSuccess('Template deleted successfully');
@@ -316,16 +330,179 @@ const NotificationsManagement: React.FC = () => {
     }
   };
 
-  const handleSendTestNotification = async (data: any) => {
+  const handleSendTestNotification = async () => {
     try {
-      const response = await sendTestNotification(data);
+      if (!testForm.channelId || !testForm.templateId || !testForm.recipients) {
+        setError('Please fill in all required fields');
+        return;
+      }
+
+      const recipientsArray = testForm.recipients.split(',').map(r => r.trim()).filter(r => r);
+      
+      const response = await notificationManagementService.sendTestNotification({
+        channelId: testForm.channelId,
+        templateId: testForm.templateId,
+        recipients: recipientsArray,
+      });
+
       if (response.success) {
         setSuccess('Test notification sent successfully');
         setTestNotificationDialogOpen(false);
+        setTestForm({ channelId: '', templateId: '', recipients: '' });
         setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(response.message || 'Failed to send test notification');
       }
     } catch (err) {
       setError('Failed to send test notification');
+    }
+  };
+
+  const handleOpenRuleDialog = (rule?: NotificationRule) => {
+    if (rule) {
+      setSelectedRule(rule);
+      setRuleForm({
+        name: rule.name,
+        description: rule.description,
+        trigger: rule.trigger,
+        priority: rule.priority,
+        cooldownPeriod: rule.cooldownPeriod,
+        maxExecutions: rule.maxExecutions,
+      });
+    } else {
+      setSelectedRule(null);
+      setRuleForm({
+        name: '',
+        description: '',
+        trigger: '',
+        priority: 'medium',
+        cooldownPeriod: 60,
+        maxExecutions: 1000,
+      });
+    }
+    setRuleDialogOpen(true);
+  };
+
+  const handleSaveRule = async () => {
+    try {
+      if (!ruleForm.name || !ruleForm.trigger) {
+        setError('Please fill in all required fields');
+        return;
+      }
+
+      const ruleData = {
+        name: ruleForm.name,
+        description: ruleForm.description,
+        trigger: ruleForm.trigger,
+        priority: ruleForm.priority,
+        cooldownPeriod: ruleForm.cooldownPeriod,
+        maxExecutions: ruleForm.maxExecutions,
+        conditions: [],
+        actions: [],
+        isActive: true,
+      };
+
+      let response;
+      if (selectedRule) {
+        response = await notificationManagementService.updateRule(selectedRule.id, ruleData);
+      } else {
+        response = await notificationManagementService.createRule(ruleData);
+      }
+
+      if (response.success) {
+        setSuccess(`Rule ${selectedRule ? 'updated' : 'created'} successfully`);
+        setRuleDialogOpen(false);
+        setSelectedRule(null);
+        setRuleForm({
+          name: '',
+          description: '',
+          trigger: '',
+          priority: 'medium',
+          cooldownPeriod: 60,
+          maxExecutions: 1000,
+        });
+        await loadNotificationData();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(response.message || `Failed to ${selectedRule ? 'update' : 'create'} rule`);
+      }
+    } catch (err) {
+      setError(`Failed to ${selectedRule ? 'update' : 'create'} rule`);
+    }
+  };
+
+  const handleOpenTemplateDialog = (template?: NotificationTemplate) => {
+    if (template) {
+      setSelectedTemplate(template);
+      setTemplateForm({
+        name: template.name,
+        description: template.description,
+        channel: template.channel,
+        subject: template.subject || '',
+        body: template.body,
+        category: template.category,
+        isActive: template.isActive,
+      });
+    } else {
+      setSelectedTemplate(null);
+      setTemplateForm({
+        name: '',
+        description: '',
+        channel: '',
+        subject: '',
+        body: '',
+        category: 'general',
+        isActive: true,
+      });
+    }
+    setTemplateDialogOpen(true);
+  };
+
+  const handleSaveTemplate = async () => {
+    try {
+      if (!templateForm.name || !templateForm.channel || !templateForm.body) {
+        setError('Please fill in all required fields');
+        return;
+      }
+
+      const templateData = {
+        name: templateForm.name,
+        description: templateForm.description,
+        channel: templateForm.channel,
+        subject: templateForm.subject,
+        body: templateForm.body,
+        category: templateForm.category,
+        isActive: templateForm.isActive,
+        variables: [],
+      };
+
+      let response;
+      if (selectedTemplate) {
+        response = await notificationManagementService.updateTemplate(selectedTemplate.id, templateData);
+      } else {
+        response = await notificationManagementService.createTemplate(templateData);
+      }
+
+      if (response.success) {
+        setSuccess(`Template ${selectedTemplate ? 'updated' : 'created'} successfully`);
+        setTemplateDialogOpen(false);
+        setSelectedTemplate(null);
+        setTemplateForm({
+          name: '',
+          description: '',
+          channel: '',
+          subject: '',
+          body: '',
+          category: 'general',
+          isActive: true,
+        });
+        await loadNotificationData();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(response.message || `Failed to ${selectedTemplate ? 'update' : 'create'} template`);
+      }
+    } catch (err) {
+      setError(`Failed to ${selectedTemplate ? 'update' : 'create'} template`);
     }
   };
 
@@ -399,8 +576,8 @@ const NotificationsManagement: React.FC = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => {
-                  if (activeTab === 1) setRuleDialogOpen(true);
-                  else if (activeTab === 2) setTemplateDialogOpen(true);
+                  if (activeTab === 1) handleOpenRuleDialog();
+                  else if (activeTab === 2) handleOpenTemplateDialog();
                 }}
                 disabled={activeTab === 0 || activeTab === 3}
               >
@@ -602,10 +779,7 @@ const NotificationsManagement: React.FC = () => {
                             <Tooltip title="Edit Rule">
                               <IconButton
                                 size="small"
-                                onClick={() => {
-                                  setSelectedRule(rule);
-                                  setRuleDialogOpen(true);
-                                }}
+                                onClick={() => handleOpenRuleDialog(rule)}
                               >
                                 <EditIcon />
                               </IconButton>
@@ -686,10 +860,7 @@ const NotificationsManagement: React.FC = () => {
                           <Button
                             size="small"
                             startIcon={<EditIcon />}
-                            onClick={() => {
-                              setSelectedTemplate(template);
-                              setTemplateDialogOpen(true);
-                            }}
+                            onClick={() => handleOpenTemplateDialog(template)}
                           >
                             Edit
                           </Button>
@@ -790,15 +961,273 @@ const NotificationsManagement: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Add/Edit Rule Dialog */}
+      <Dialog 
+        open={ruleDialogOpen} 
+        onClose={() => {
+          setRuleDialogOpen(false);
+          setSelectedRule(null);
+        }} 
+        maxWidth="md" 
+        fullWidth
+      >
+        <DialogTitle>{selectedRule ? 'Edit Rule' : 'Add New Rule'}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Rule Name"
+                placeholder="e.g., New Patient Alert"
+                value={ruleForm.name}
+                onChange={(e) => setRuleForm({ ...ruleForm, name: e.target.value })}
+                required
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Description"
+                placeholder="Describe when this rule should trigger"
+                value={ruleForm.description}
+                onChange={(e) => setRuleForm({ ...ruleForm, description: e.target.value })}
+                multiline
+                rows={2}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Trigger Event"
+                placeholder="e.g., patient_created"
+                value={ruleForm.trigger}
+                onChange={(e) => setRuleForm({ ...ruleForm, trigger: e.target.value })}
+                required
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Priority</InputLabel>
+                <Select 
+                  label="Priority" 
+                  value={ruleForm.priority}
+                  onChange={(e) => setRuleForm({ ...ruleForm, priority: e.target.value as any })}
+                >
+                  <MenuItem value="low">Low</MenuItem>
+                  <MenuItem value="medium">Medium</MenuItem>
+                  <MenuItem value="high">High</MenuItem>
+                  <MenuItem value="critical">Critical</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Cooldown Period (minutes)"
+                type="number"
+                value={ruleForm.cooldownPeriod}
+                onChange={(e) => setRuleForm({ ...ruleForm, cooldownPeriod: parseInt(e.target.value) || 0 })}
+                helperText="Minimum time between executions"
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Max Executions"
+                type="number"
+                value={ruleForm.maxExecutions}
+                onChange={(e) => setRuleForm({ ...ruleForm, maxExecutions: parseInt(e.target.value) || 0 })}
+                helperText="-1 for unlimited"
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Alert severity="info">
+                Advanced conditions and actions can be configured after creating the rule.
+              </Alert>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setRuleDialogOpen(false);
+            setSelectedRule(null);
+          }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveRule}
+            variant="contained"
+            disabled={!ruleForm.name || !ruleForm.trigger}
+          >
+            {selectedRule ? 'Update' : 'Create'} Rule
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add/Edit Template Dialog */}
+      <Dialog 
+        open={templateDialogOpen} 
+        onClose={() => {
+          setTemplateDialogOpen(false);
+          setSelectedTemplate(null);
+        }} 
+        maxWidth="md" 
+        fullWidth
+      >
+        <DialogTitle>{selectedTemplate ? 'Edit Template' : 'Add New Template'}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Template Name"
+                placeholder="e.g., Welcome Email"
+                value={templateForm.name}
+                onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                required
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required>
+                <InputLabel>Channel</InputLabel>
+                <Select 
+                  label="Channel" 
+                  value={templateForm.channel}
+                  onChange={(e) => setTemplateForm({ ...templateForm, channel: e.target.value as any })}
+                >
+                  <MenuItem value="email">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <EmailIcon fontSize="small" />
+                      Email
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="sms">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <SmsIcon fontSize="small" />
+                      SMS
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="push">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <PhoneAndroidIcon fontSize="small" />
+                      Push
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="whatsapp">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <WhatsAppIcon fontSize="small" />
+                      WhatsApp
+                    </Box>
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Description"
+                placeholder="Describe the purpose of this template"
+                value={templateForm.description}
+                onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                multiline
+                rows={2}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Category"
+                placeholder="e.g., onboarding, alerts"
+                value={templateForm.category}
+                onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <FormControlLabel
+                control={
+                  <Switch 
+                    checked={templateForm.isActive}
+                    onChange={(e) => setTemplateForm({ ...templateForm, isActive: e.target.checked })}
+                  />
+                }
+                label="Active"
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Subject (Email only)"
+                placeholder="e.g., Welcome to {{appName}}"
+                value={templateForm.subject}
+                onChange={(e) => setTemplateForm({ ...templateForm, subject: e.target.value })}
+                helperText="Use {{variableName}} for dynamic content"
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Message Body"
+                placeholder="Enter your message template here. Use {{variableName}} for dynamic content."
+                value={templateForm.body}
+                onChange={(e) => setTemplateForm({ ...templateForm, body: e.target.value })}
+                multiline
+                rows={6}
+                required
+                helperText="Available variables: {{userName}}, {{date}}, {{appName}}, etc."
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setTemplateDialogOpen(false);
+            setSelectedTemplate(null);
+          }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveTemplate}
+            variant="contained"
+            disabled={!templateForm.name || !templateForm.channel || !templateForm.body}
+          >
+            {selectedTemplate ? 'Update' : 'Create'} Template
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Test Notification Dialog */}
-      <Dialog open={testNotificationDialogOpen} onClose={() => setTestNotificationDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={testNotificationDialogOpen} 
+        onClose={() => {
+          setTestNotificationDialogOpen(false);
+          setTestForm({ channelId: '', templateId: '', recipients: '' });
+        }} 
+        maxWidth="sm" 
+        fullWidth
+      >
         <DialogTitle>Send Test Notification</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
               <FormControl fullWidth>
                 <InputLabel>Channel</InputLabel>
-                <Select label="Channel" defaultValue="">
+                <Select 
+                  label="Channel" 
+                  value={testForm.channelId}
+                  onChange={(e) => setTestForm({ ...testForm, channelId: e.target.value })}
+                >
                   {channels.filter(c => c.enabled).map(channel => (
                     <MenuItem key={channel.id} value={channel.id}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -814,7 +1243,11 @@ const NotificationsManagement: React.FC = () => {
             <Grid item xs={12}>
               <FormControl fullWidth>
                 <InputLabel>Template</InputLabel>
-                <Select label="Template" defaultValue="">
+                <Select 
+                  label="Template" 
+                  value={testForm.templateId}
+                  onChange={(e) => setTestForm({ ...testForm, templateId: e.target.value })}
+                >
                   {templates.filter(t => t.isActive).map(template => (
                     <MenuItem key={template.id} value={template.id}>
                       {template.name}
@@ -829,6 +1262,8 @@ const NotificationsManagement: React.FC = () => {
                 fullWidth
                 label="Test Recipients"
                 placeholder="Enter email addresses or phone numbers, separated by commas"
+                value={testForm.recipients}
+                onChange={(e) => setTestForm({ ...testForm, recipients: e.target.value })}
                 multiline
                 rows={3}
               />
@@ -836,11 +1271,17 @@ const NotificationsManagement: React.FC = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setTestNotificationDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => {
+            setTestNotificationDialogOpen(false);
+            setTestForm({ channelId: '', templateId: '', recipients: '' });
+          }}>
+            Cancel
+          </Button>
           <Button
-            onClick={() => handleSendTestNotification({})}
+            onClick={handleSendTestNotification}
             variant="contained"
             startIcon={<SendIcon />}
+            disabled={!testForm.channelId || !testForm.templateId || !testForm.recipients}
           >
             Send Test
           </Button>

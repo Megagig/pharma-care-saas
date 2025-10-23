@@ -65,6 +65,7 @@ import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
 import diagnosticRoutes from './routes/diagnosticRoutes';
 import communicationRoutes from './routes/communicationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import notificationManagementRoutes from './routes/notificationManagementRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import reportsRoutes from './routes/reportsRoutes';
 import lighthouseRoutes from './routes/lighthouseRoutes';
@@ -416,6 +417,9 @@ app.use('/api/notifications', notificationRoutes);
 
 // Communication-specific notifications
 app.use('/api/communication/notifications', notificationRoutes);
+
+// Notification Management (Admin/Super Admin only)
+app.use('/api/notification-management', notificationManagementRoutes);
 
 // Mention routes (already imported above)
 app.use('/api/mentions', mentionRoutes);
