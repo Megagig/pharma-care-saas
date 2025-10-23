@@ -8,6 +8,9 @@ import { Subscription } from '../models/Subscription';
 import { Workplace } from '../models/Workplace';
 import { Patient } from '../models/Patient';
 import { ClinicalIntervention } from '../models/ClinicalIntervention';
+import DiagnosticCase from '../models/DiagnosticCase';
+import MedicationRecord from '../models/MedicationRecord';
+import ClinicalNote from '../models/ClinicalNote';
 import { format, subDays, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import PDFDocument from 'pdfkit';
 import ExcelJS from 'exceljs';
@@ -148,16 +151,28 @@ export class SaaSAnalyticsController {
       // Calculate CAC (Customer Acquisition Cost) - placeholder
       const cac = 150; // This would come from marketing spend data
 
-      // Get plan distribution
+      // Load plan names from plans.json
+      const plansConfig = require('../config/plans.json');
+      const planNameMap: Record<string, string> = {};
+      Object.entries(plansConfig.plans).forEach(([key, plan]: [string, any]) => {
+        planNameMap[key] = plan.name;
+      });
+
+      // Get plan distribution with actual plan names
       const planCounts = activeSubscriptions.reduce((acc, sub) => {
-        const planName = sub.planId.toString(); // Convert ObjectId to string
+        const planTier = sub.tier || 'free_trial';
+        const planName = planNameMap[planTier] || planTier;
         acc[planName] = (acc[planName] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
       const planDistribution: PlanDistribution[] = Object.entries(planCounts).map(([planName, count]) => {
         const planRevenue = activeSubscriptions
-          .filter(sub => sub.planId.toString() === planName) // Convert ObjectId to string
+          .filter(sub => {
+            const planTier = sub.tier || 'free_trial';
+            const name = planNameMap[planTier] || planTier;
+            return name === planName;
+          })
           .reduce((sum, sub) => sum + this.getMonthlyAmount(sub.amount || sub.priceAtPurchase, sub.billingCycle || sub.billingInterval), 0);
 
         return {
@@ -168,12 +183,36 @@ export class SaaSAnalyticsController {
         };
       });
 
-      // Get revenue by plan with growth (simplified)
-      const revenueByPlan: RevenueByPlan[] = planDistribution.map(plan => ({
-        planName: plan.planName,
-        revenue: plan.revenue,
-        growth: Math.random() * 0.2 - 0.1 // Placeholder growth rate
-      }));
+      // Get revenue by plan with growth calculation
+      const previousDateRange = {
+        start: subDays(dateRange.start, this.getDaysInRange(timeRange as string)),
+        end: dateRange.start
+      };
+      
+      const previousSubscriptions = await Subscription.find({
+        createdAt: { $gte: previousDateRange.start, $lte: previousDateRange.end },
+        status: 'active'
+      });
+
+      const previousRevenue = previousSubscriptions.reduce((acc, sub) => {
+        const planTier = sub.tier || 'free_trial';
+        const planName = planNameMap[planTier] || planTier;
+        const revenue = this.getMonthlyAmount(sub.amount || sub.priceAtPurchase, sub.billingCycle || sub.billingInterval);
+        acc[planName] = (acc[planName] || 0) + revenue;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const revenueByPlan: RevenueByPlan[] = planDistribution.map(plan => {
+        const currentRevenue = plan.revenue;
+        const prevRevenue = previousRevenue[plan.planName] || 0;
+        const growth = prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) : 0;
+        
+        return {
+          planName: plan.planName,
+          revenue: currentRevenue,
+          growth
+        };
+      });
 
       // Generate growth trend (simplified)
       const growthTrend: GrowthTrend[] = [];
@@ -231,10 +270,10 @@ export class SaaSAnalyticsController {
 
       const dateRange = this.getDateRange(timeRange as string);
 
-      // Get all workplaces (pharmacies)
+      // Get all workplaces (pharmacies) with active subscriptions
       const workplaces = await Workplace.find({
-        createdAt: { $gte: dateRange.start, $lte: dateRange.end }
-      }).populate('subscriptionId');
+        currentSubscriptionId: { $exists: true, $ne: null }
+      }).populate('currentSubscriptionId');
 
       const reports: PharmacyUsageReport[] = await Promise.all(
         workplaces.map(async (workplace) => {
@@ -267,12 +306,30 @@ export class SaaSAnalyticsController {
             }, 0)
           };
 
+          // Load plan names from plans.json
+          const plansConfig = require('../config/plans.json');
+          const subscription = workplace.currentSubscriptionId as any;
+          const planTier = subscription?.tier || 'free_trial';
+          const planName = plansConfig.plans[planTier]?.name || planTier;
+
+          // Get actual prescription counts (using MedicationRecord as proxy)
+          const prescriptionsProcessed = await MedicationRecord.countDocuments({
+            workplaceId: workplace._id,
+            createdAt: { $gte: dateRange.start, $lte: dateRange.end }
+          });
+
+          // Get actual diagnostic counts
+          const diagnosticsPerformed = await DiagnosticCase.countDocuments({
+            workplaceId: workplace._id,
+            createdAt: { $gte: dateRange.start, $lte: dateRange.end }
+          });
+
           return {
             pharmacyId: workplace._id.toString(),
             pharmacyName: workplace.name,
-            subscriptionPlan: (workplace.subscriptionId as any)?.planId?.toString() || 'Free', // Type assertion for populated field
-            prescriptionsProcessed: Math.floor(Math.random() * 1000) + 100, // Placeholder
-            diagnosticsPerformed: Math.floor(Math.random() * 500) + 50, // Placeholder
+            subscriptionPlan: planName,
+            prescriptionsProcessed,
+            diagnosticsPerformed,
             patientsManaged,
             activeUsers,
             lastActivity: workplace.updatedAt.toISOString(),
@@ -597,6 +654,21 @@ export class SaaSAnalyticsController {
         return amount / 12;
       default:
         return amount;
+    }
+  }
+
+  private getDaysInRange(timeRange: string): number {
+    switch (timeRange) {
+      case '7d':
+        return 7;
+      case '30d':
+        return 30;
+      case '90d':
+        return 90;
+      case '1y':
+        return 365;
+      default:
+        return 30;
     }
   }
 

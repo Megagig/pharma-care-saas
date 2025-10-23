@@ -125,7 +125,13 @@ const auditLogSchema = new mongoose_1.Schema({
             'MTR_VIEW_MTR_SESSION',
             'MTR_VIEW_MTR_SESSIONS',
             'MTR_UPDATE_MTR_SESSION',
-            'MTR_DELETE_MTR_SESSION'
+            'MTR_DELETE_MTR_SESSION',
+            'PASSWORD_POLICY_UPDATED',
+            'ACCOUNT_LOCKOUT_UPDATED',
+            'SECURITY_SETTINGS_UPDATED',
+            'SESSION_TERMINATED',
+            'ACCOUNT_LOCKED',
+            'ACCOUNT_UNLOCKED'
         ]
     },
     timestamp: {
@@ -171,7 +177,8 @@ const auditLogSchema = new mongoose_1.Schema({
             'rbac_management',
             'security_monitoring',
             'privilege_management',
-            'access_control'
+            'access_control',
+            'security_management'
         ]
     },
     changedFields: [{
