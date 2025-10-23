@@ -83,8 +83,18 @@ interface PasswordPolicy {
   requireSpecialChars: boolean;
   maxAge: number;
   preventReuse: number;
-  lockoutThreshold: number;
+}
+
+interface AccountLockout {
+  maxFailedAttempts: number;
   lockoutDuration: number;
+  autoUnlock: boolean;
+  notifyOnLockout: boolean;
+}
+
+interface SecuritySettingsData {
+  passwordPolicy: PasswordPolicy;
+  accountLockout: AccountLockout;
 }
 
 interface UserSession {
@@ -127,8 +137,12 @@ const SecuritySettings: React.FC = () => {
     requireSpecialChars: true,
     maxAge: 90,
     preventReuse: 5,
-    lockoutThreshold: 5,
+  });
+  const [accountLockout, setAccountLockout] = useState<AccountLockout>({
+    maxFailedAttempts: 5,
     lockoutDuration: 30,
+    autoUnlock: true,
+    notifyOnLockout: true,
   });
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [auditLogs, setAuditLogs] = useState<SecurityAuditLog[]>([]);
@@ -154,7 +168,8 @@ const SecuritySettings: React.FC = () => {
 
   const { 
     getSecuritySettings, 
-    updatePasswordPolicy, 
+    updatePasswordPolicy,
+    updateAccountLockout,
     getActiveSessions, 
     terminateSession,
     getSecurityAuditLogs,
@@ -175,11 +190,13 @@ const SecuritySettings: React.FC = () => {
     try {
       setLoading(true);
       const response = await getSecuritySettings();
-      if (response.success) {
+      if (response.success && response.data.settings) {
         setPasswordPolicy(response.data.settings.passwordPolicy);
+        setAccountLockout(response.data.settings.accountLockout);
       }
-    } catch (err) {
-      setError('Failed to load security settings');
+    } catch (err: any) {
+      console.error('Error loading security settings:', err);
+      setError(err.response?.data?.message || 'Failed to load security settings');
     } finally {
       setLoading(false);
     }
@@ -188,12 +205,14 @@ const SecuritySettings: React.FC = () => {
   const loadActiveSessions = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await getActiveSessions(sessionFilters);
-      if (response.success) {
+      if (response.success && response.data.sessions) {
         setSessions(response.data.sessions);
       }
-    } catch (err) {
-      setError('Failed to load active sessions');
+    } catch (err: any) {
+      console.error('Error loading active sessions:', err);
+      setError(err.response?.data?.message || 'Failed to load active sessions');
     } finally {
       setLoading(false);
     }
@@ -202,12 +221,14 @@ const SecuritySettings: React.FC = () => {
   const loadAuditLogs = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await getSecurityAuditLogs(auditFilters);
-      if (response.success) {
+      if (response.success && response.data.auditLogs) {
         setAuditLogs(response.data.auditLogs);
       }
-    } catch (err) {
-      setError('Failed to load audit logs');
+    } catch (err: any) {
+      console.error('Error loading audit logs:', err);
+      setError(err.response?.data?.message || 'Failed to load audit logs');
     } finally {
       setLoading(false);
     }
@@ -220,18 +241,31 @@ const SecuritySettings: React.FC = () => {
     }));
   };
 
+  const handleAccountLockoutChange = (field: keyof AccountLockout, value: any) => {
+    setAccountLockout(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   const handleSavePasswordPolicy = async () => {
     try {
       setSaving(true);
       setError(null);
       
-      const response = await updatePasswordPolicy(passwordPolicy);
-      if (response.success) {
-        setSuccess('Password policy updated successfully');
+      // Save password policy
+      const policyResponse = await updatePasswordPolicy(passwordPolicy);
+      
+      // Save account lockout settings
+      const lockoutResponse = await updateAccountLockout(accountLockout);
+      
+      if (policyResponse.success && lockoutResponse.success) {
+        setSuccess('Security settings updated successfully');
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (err) {
-      setError('Failed to update password policy');
+    } catch (err: any) {
+      console.error('Error updating security settings:', err);
+      setError(err.response?.data?.message || 'Failed to update security settings');
     } finally {
       setSaving(false);
     }
@@ -242,6 +276,7 @@ const SecuritySettings: React.FC = () => {
 
     try {
       setSaving(true);
+      setError(null);
       const response = await terminateSession(selectedSession.sessionId, { reason: terminateReason });
       if (response.success) {
         setSuccess('Session terminated successfully');
@@ -251,8 +286,9 @@ const SecuritySettings: React.FC = () => {
         loadActiveSessions();
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (err) {
-      setError('Failed to terminate session');
+    } catch (err: any) {
+      console.error('Error terminating session:', err);
+      setError(err.response?.data?.message || 'Failed to terminate session');
     } finally {
       setSaving(false);
     }
@@ -260,18 +296,23 @@ const SecuritySettings: React.FC = () => {
 
   const handleLockAccount = async (userId: string, userEmail: string) => {
     const reason = prompt(`Enter reason for locking account ${userEmail}:`);
-    if (!reason) return;
+    if (!reason || reason.length < 10) {
+      setError('Lock reason must be at least 10 characters');
+      return;
+    }
 
     try {
       setSaving(true);
+      setError(null);
       const response = await lockUserAccount(userId, { reason });
       if (response.success) {
         setSuccess(`Account ${userEmail} locked successfully`);
         loadActiveSessions();
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (err) {
-      setError('Failed to lock account');
+    } catch (err: any) {
+      console.error('Error locking account:', err);
+      setError(err.response?.data?.message || 'Failed to lock account');
     } finally {
       setSaving(false);
     }
@@ -280,14 +321,16 @@ const SecuritySettings: React.FC = () => {
   const handleUnlockAccount = async (userId: string, userEmail: string) => {
     try {
       setSaving(true);
+      setError(null);
       const response = await unlockUserAccount(userId);
       if (response.success) {
         setSuccess(`Account ${userEmail} unlocked successfully`);
         loadActiveSessions();
         setTimeout(() => setSuccess(null), 3000);
       }
-    } catch (err) {
-      setError('Failed to unlock account');
+    } catch (err: any) {
+      console.error('Error unlocking account:', err);
+      setError(err.response?.data?.message || 'Failed to unlock account');
     } finally {
       setSaving(false);
     }
@@ -447,19 +490,21 @@ const SecuritySettings: React.FC = () => {
                       fullWidth
                       label="Account Lockout Threshold"
                       type="number"
-                      value={passwordPolicy.lockoutThreshold}
-                      onChange={(e) => handlePasswordPolicyChange('lockoutThreshold', parseInt(e.target.value))}
+                      value={accountLockout.maxFailedAttempts}
+                      onChange={(e) => handleAccountLockoutChange('maxFailedAttempts', parseInt(e.target.value))}
                       inputProps={{ min: 3, max: 20 }}
                       sx={{ mb: 2 }}
+                      helperText="Number of failed login attempts before account lockout"
                     />
                     
                     <TextField
                       fullWidth
                       label="Lockout Duration (minutes)"
                       type="number"
-                      value={passwordPolicy.lockoutDuration}
-                      onChange={(e) => handlePasswordPolicyChange('lockoutDuration', parseInt(e.target.value))}
+                      value={accountLockout.lockoutDuration}
+                      onChange={(e) => handleAccountLockoutChange('lockoutDuration', parseInt(e.target.value))}
                       inputProps={{ min: 5, max: 1440 }}
+                      helperText="How long the account remains locked"
                     />
                   </CardContent>
                 </Card>

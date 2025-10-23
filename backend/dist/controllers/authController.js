@@ -146,7 +146,6 @@ const register = async (req, res) => {
             workplaceId: workplaceId || undefined,
             workplaceRole: workplaceRole || undefined,
             currentPlanId: freeTrialPlan._id,
-            subscriptionTier: 'free_trial',
             status: userStatus,
         });
         const trialEndDate = new Date();
@@ -687,7 +686,6 @@ const getMe = async (req, res) => {
                 currentPlan: user.currentPlanId,
                 workplace: user.workplaceId,
                 workplaceRole: user.workplaceRole,
-                subscriptionTier: user.subscriptionTier,
                 subscription: subscriptionData,
                 hasSubscription: !!subscriptionData,
                 lastLoginAt: user.lastLoginAt,
@@ -810,7 +808,6 @@ const registerWithWorkplace = async (req, res) => {
                     role,
                     licenseNumber,
                     currentPlanId: freeTrialPlan._id,
-                    subscriptionTier: 'free_trial',
                     status: 'pending',
                 },
             ], { session });
@@ -890,7 +887,6 @@ const registerWithWorkplace = async (req, res) => {
                 if (workplaceSubscription) {
                     await User_1.default.findByIdAndUpdate(createdUser._id, {
                         currentSubscriptionId: workplaceSubscription._id,
-                        subscriptionTier: workplaceSubscription.tier,
                     }, { session });
                 }
             }

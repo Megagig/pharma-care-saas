@@ -250,8 +250,21 @@ class SaaSService {
     return response.data;
   }
 
+  async updateAccountLockout(lockout: any): Promise<{ success: boolean }> {
+    const response = await apiClient.put(`${this.baseUrl}/security/account-lockout`, lockout);
+    return response.data;
+  }
+
   async getActiveSessions(filters: any = {}): Promise<{ success: boolean; data: { sessions: UserSession[] } }> {
-    const params = new URLSearchParams(filters);
+    // Filter out empty values
+    const cleanFilters = Object.entries(filters).reduce((acc, [key, value]) => {
+      if (value !== '' && value !== null && value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, any>);
+    
+    const params = new URLSearchParams(cleanFilters);
     const response = await apiClient.get(`${this.baseUrl}/security/sessions?${params}`);
     return response.data;
   }
@@ -262,7 +275,15 @@ class SaaSService {
   }
 
   async getSecurityAuditLogs(filters: any = {}): Promise<{ success: boolean; data: { auditLogs: any[] } }> {
-    const params = new URLSearchParams(filters);
+    // Filter out empty values
+    const cleanFilters = Object.entries(filters).reduce((acc, [key, value]) => {
+      if (value !== '' && value !== null && value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, any>);
+    
+    const params = new URLSearchParams(cleanFilters);
     const response = await apiClient.get(`${this.baseUrl}/security/audit-logs?${params}`);
     return response.data;
   }

@@ -274,6 +274,7 @@ export const useSaasSettings = () => {
     // Security
     getSecuritySettings: saasService.getSecuritySettings.bind(saasService),
     updatePasswordPolicy: saasService.updatePasswordPolicy.bind(saasService),
+    updateAccountLockout: saasService.updateAccountLockout.bind(saasService),
     getActiveSessions: saasService.getActiveSessions.bind(saasService),
     terminateSession: saasService.terminateSession.bind(saasService),
     getSecurityAuditLogs: saasService.getSecurityAuditLogs.bind(saasService),

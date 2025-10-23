@@ -259,14 +259,6 @@ const userSchema = new mongoose_1.Schema({
         type: Date,
         index: true,
     },
-    subscriptionTier: {
-        type: String,
-        enum: ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'],
-        default: 'free_trial',
-        index: true,
-    },
-    trialStartDate: Date,
-    trialEndDate: Date,
     features: [
         {
             type: String,
@@ -623,10 +615,6 @@ userSchema.pre('save', function (next) {
         }
         else {
             this.licenseStatus = 'not_required';
-        }
-        if (this.isNew && this.subscriptionTier === 'free_trial') {
-            this.trialStartDate = new Date();
-            this.trialEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
         }
     }
     next();

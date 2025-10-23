@@ -845,6 +845,7 @@ const addDiagnosticHistoryNote = async (req, res) => {
 };
 exports.addDiagnosticHistoryNote = addDiagnosticHistoryNote;
 const getDiagnosticAnalytics = async (req, res) => {
+    console.log('🔧 getDiagnosticAnalytics called for user:', req.user?.email);
     try {
         const { dateFrom, dateTo, patientId } = req.query;
         const workplaceId = req.user.workplaceId;
@@ -1085,6 +1086,7 @@ const getDiagnosticAnalytics = async (req, res) => {
 };
 exports.getDiagnosticAnalytics = getDiagnosticAnalytics;
 const getAllDiagnosticCases = async (req, res) => {
+    console.log('🔧 getAllDiagnosticCases called for user:', req.user?.email);
     try {
         const { page = 1, limit = 20, status, patientId, search, sortBy = 'createdAt', sortOrder = 'desc', } = req.query;
         const workplaceId = req.user.workplaceId;
@@ -1155,6 +1157,7 @@ const getAllDiagnosticCases = async (req, res) => {
 };
 exports.getAllDiagnosticCases = getAllDiagnosticCases;
 const getDiagnosticReferrals = async (req, res) => {
+    console.log('🔧 getDiagnosticReferrals called for user:', req.user?.email);
     try {
         const { page = 1, limit = 20, status, specialty } = req.query;
         const workplaceId = req.user.workplaceId;

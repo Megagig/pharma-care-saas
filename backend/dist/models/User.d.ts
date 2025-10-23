@@ -55,9 +55,6 @@ export interface IUser extends Document {
     roleLastModifiedBy?: mongoose.Types.ObjectId;
     roleLastModifiedAt?: Date;
     lastPermissionCheck?: Date;
-    subscriptionTier: 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
-    trialStartDate?: Date;
-    trialEndDate?: Date;
     features: string[];
     stripeCustomerId?: string;
     notificationPreferences?: {

@@ -298,6 +298,17 @@ workplaceSchema.pre('save', async function (next) {
     }
     next();
 });
+workplaceSchema.post('save', async function (doc) {
+    if (doc.isNew) {
+        try {
+            const { WorkspaceSubscriptionService } = await Promise.resolve().then(() => __importStar(require('../services/workspaceSubscriptionService')));
+            await WorkspaceSubscriptionService.createTrialSubscription(doc._id.toString());
+        }
+        catch (error) {
+            console.error('Error creating trial subscription for new workspace:', error);
+        }
+    }
+});
 workplaceSchema.index({ ownerId: 1 });
 workplaceSchema.index({ inviteCode: 1 }, { unique: true });
 workplaceSchema.index({ name: 'text', type: 'text' });
