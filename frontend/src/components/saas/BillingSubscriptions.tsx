@@ -529,25 +529,25 @@ const BillingSubscriptions: React.FC = () => {
 
               <Grid container spacing={3}>
                 {/* Subscription Status Distribution */}
-                <Grid item xs={12} md={6}>
-                  <Card variant="outlined" sx={{ p: 2, height: '100%' }}>
-                    <Typography variant="h6" gutterBottom>
+                <Grid item xs={12} md={5}>
+                  <Card variant="outlined" sx={{ p: 3, height: '100%' }}>
+                    <Typography variant="h6" gutterBottom fontWeight="bold">
                       Subscription Status Distribution
                     </Typography>
                     {analytics && (
                       <>
-                        <ResponsiveContainer width="100%" height={250}>
+                        <ResponsiveContainer width="100%" height={400}>
                           <PieChart>
                             <Pie
                               data={Object.entries(analytics.subscriptionsByStatus).map(([status, count]) => ({
-                                name: status,
+                                name: status.charAt(0).toUpperCase() + status.slice(1),
                                 value: count,
                               }))}
                               cx="50%"
                               cy="50%"
-                              labelLine={false}
+                              labelLine={true}
                               label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                              outerRadius={80}
+                              outerRadius={120}
                               fill="#8884d8"
                               dataKey="value"
                             >
@@ -555,19 +555,26 @@ const BillingSubscriptions: React.FC = () => {
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
-                            <RechartsTooltip />
+                            <RechartsTooltip 
+                              formatter={(value: any, name: string) => [`${value} subscriptions`, name]}
+                            />
+                            <Legend 
+                              verticalAlign="bottom" 
+                              height={36}
+                              iconType="circle"
+                            />
                           </PieChart>
                         </ResponsiveContainer>
-                        <Box mt={2}>
+                        <Box mt={3}>
                           {Object.entries(analytics.subscriptionsByStatus).map(([status, count]) => (
-                            <Box key={status} display="flex" justifyContent="space-between" alignItems="center" py={1}>
+                            <Box key={status} display="flex" justifyContent="space-between" alignItems="center" py={1.5} borderBottom={1} borderColor="divider">
                               <Chip
                                 label={status}
                                 color={getStatusColor(status) as any}
                                 size="small"
                                 sx={{ minWidth: 100 }}
                               />
-                              <Typography variant="body2">{count} subscriptions</Typography>
+                              <Typography variant="body1" fontWeight="medium">{count} subscriptions</Typography>
                             </Box>
                           ))}
                         </Box>
@@ -576,39 +583,84 @@ const BillingSubscriptions: React.FC = () => {
                   </Card>
                 </Grid>
 
-                {/* Revenue by Plan */}
-                <Grid item xs={12} md={6}>
-                  <Card variant="outlined" sx={{ p: 2, height: '100%' }}>
-                    <Typography variant="h6" gutterBottom>
+                {/* Revenue by Plan - Expanded */}
+                <Grid item xs={12} md={7}>
+                  <Card variant="outlined" sx={{ p: 3, height: '100%' }}>
+                    <Typography variant="h6" gutterBottom fontWeight="bold">
                       Revenue by Plan
                     </Typography>
                     {analytics && (
                       <>
-                        <ResponsiveContainer width="100%" height={250}>
-                          <BarChart data={analytics.revenueByPlan}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="planName" />
-                            <YAxis tickFormatter={(value) => formatCompactNumber(value)} />
-                            <RechartsTooltip formatter={(value: any) => formatCurrency(value)} />
-                            <Bar dataKey="revenue" fill={theme.palette.primary.main} />
+                        <ResponsiveContainer width="100%" height={400}>
+                          <BarChart 
+                            data={analytics.revenueByPlan}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
+                            <XAxis 
+                              dataKey="planName" 
+                              angle={-45}
+                              textAnchor="end"
+                              height={80}
+                              tick={{ fontSize: 12 }}
+                            />
+                            <YAxis 
+                              tickFormatter={(value) => formatCompactNumber(value)}
+                              tick={{ fontSize: 12 }}
+                            />
+                            <RechartsTooltip 
+                              formatter={(value: any) => [formatCurrency(value), 'Revenue']}
+                              contentStyle={{
+                                backgroundColor: theme.palette.background.paper,
+                                border: `1px solid ${theme.palette.divider}`,
+                                borderRadius: 8,
+                              }}
+                            />
+                            <Legend />
+                            <Bar 
+                              dataKey="revenue" 
+                              fill={theme.palette.primary.main}
+                              radius={[8, 8, 0, 0]}
+                              name="Revenue"
+                            >
+                              {analytics.revenueByPlan.map((_, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Bar>
                           </BarChart>
                         </ResponsiveContainer>
-                        <Box mt={2}>
-                          {analytics.revenueByPlan.map((plan) => (
-                            <Box key={plan.planName} display="flex" justifyContent="space-between" py={1}>
-                              <Typography variant="body2" fontWeight="medium">
-                                {plan.planName}
-                              </Typography>
-                              <Box textAlign="right">
-                                <Typography variant="body2" color="textSecondary">
-                                  {plan.count} subscribers
-                                </Typography>
-                                <Typography variant="body1" fontWeight="bold">
-                                  {formatCurrency(plan.revenue)}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          ))}
+                        <Box mt={3}>
+                          <Grid container spacing={2}>
+                            {analytics.revenueByPlan.map((plan) => (
+                              <Grid item xs={12} sm={6} key={plan.planName}>
+                                <Box 
+                                  sx={{ 
+                                    p: 2, 
+                                    borderRadius: 2,
+                                    border: 1,
+                                    borderColor: 'divider',
+                                    '&:hover': {
+                                      borderColor: 'primary.main',
+                                      boxShadow: 1,
+                                    },
+                                    transition: 'all 0.2s',
+                                  }}
+                                >
+                                  <Typography variant="body2" fontWeight="bold" gutterBottom>
+                                    {plan.planName}
+                                  </Typography>
+                                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                                    <Typography variant="caption" color="textSecondary">
+                                      {plan.count} subscribers
+                                    </Typography>
+                                    <Typography variant="h6" fontWeight="bold" color="primary.main">
+                                      {formatCurrency(plan.revenue)}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              </Grid>
+                            ))}
+                          </Grid>
                         </Box>
                       </>
                     )}

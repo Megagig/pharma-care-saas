@@ -464,7 +464,10 @@ export class BillingController {
 
       const skip = (Number(page) - 1) * Number(limit);
 
-      let subscriptions = await BillingSubscription.find(query)
+      // Use the existing Subscription model instead of BillingSubscription
+      const Subscription = (await import('../models/Subscription')).default;
+
+      let subscriptions = await Subscription.find(query)
         .populate('workspaceId', 'name email')
         .populate('planId', 'name tier priceNGN')
         .sort({ createdAt: -1 })
@@ -483,7 +486,7 @@ export class BillingController {
         });
       }
 
-      const total = await BillingSubscription.countDocuments(query);
+      const total = await Subscription.countDocuments(query);
 
       // Transform data to include customer info
       const transformedSubscriptions = subscriptions.map(sub => {
@@ -494,15 +497,15 @@ export class BillingController {
           _id: sub._id,
           status: sub.status,
           planName: plan?.name || 'Unknown Plan',
-          unitAmount: sub.unitAmount,
-          currency: sub.currency,
-          currentPeriodStart: sub.currentPeriodStart,
-          currentPeriodEnd: sub.currentPeriodEnd,
+          unitAmount: sub.priceAtPurchase || 0,
+          currency: 'NGN',
+          currentPeriodStart: sub.startDate,
+          currentPeriodEnd: sub.endDate,
           billingInterval: sub.billingInterval,
           customerName: workspace?.name || 'Unknown',
           customerEmail: workspace?.email || 'N/A',
-          cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
-          trialEnd: sub.trialEnd,
+          cancelAtPeriodEnd: !sub.autoRenew,
+          trialEnd: sub.trialEndDate,
           createdAt: sub.createdAt
         };
       });
@@ -600,18 +603,43 @@ export class BillingController {
     try {
       const { page = 1, limit = 10, status, search } = req.query;
 
+      // Map payment status to invoice status
+      const statusMap: Record<string, string> = {
+        'paid': 'completed',
+        'open': 'pending',
+        'void': 'failed',
+        'uncollectible': 'failed'
+      };
+
       const query: any = {};
-      if (status) {
-        query.status = status;
+      if (status && statusMap[status as string]) {
+        query.status = statusMap[status as string];
       }
 
       const skip = (Number(page) - 1) * Number(limit);
 
-      let invoices = await BillingInvoice.find(query)
-        .populate('workspaceId', 'name email')
+      // Use Payment model as invoices
+      let payments = await Payment.find(query)
+        .populate('userId', 'firstName lastName email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit));
+
+      // Transform payments to invoice format
+      let invoices = payments.map(payment => {
+        const user = payment.userId as any;
+        return {
+          _id: payment._id,
+          invoiceNumber: payment.paymentReference || `PAY-${payment._id}`,
+          status: payment.status === 'completed' ? 'paid' : payment.status === 'pending' ? 'open' : 'void',
+          total: payment.amount,
+          currency: payment.currency,
+          dueDate: payment.createdAt,
+          paidAt: payment.completedAt,
+          customerName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+          customerEmail: user?.email || 'N/A'
+        };
+      });
 
       // Apply search filter if provided
       if (search) {
@@ -623,7 +651,7 @@ export class BillingController {
         );
       }
 
-      const total = await BillingInvoice.countDocuments(query);
+      const total = await Payment.countDocuments(query);
 
       res.json({
         success: true,

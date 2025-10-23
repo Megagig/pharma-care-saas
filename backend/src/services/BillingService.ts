@@ -311,39 +311,42 @@ export class BillingService {
    * Get billing analytics
    */
   async getBillingAnalytics(timeRange?: { start: Date; end: Date }): Promise<BillingAnalytics> {
+    // Use existing Subscription model
+    const Subscription = (await import('../models/Subscription')).default;
+    
     const matchStage: any = {};
     if (timeRange) {
       matchStage.createdAt = { $gte: timeRange.start, $lte: timeRange.end };
     }
 
     // Get subscription counts by status
-    const subscriptionsByStatus = await BillingSubscription.aggregate([
+    const subscriptionsByStatus = await Subscription.aggregate([
       { $match: matchStage },
       { $group: { _id: '$status', count: { $sum: 1 } } }
     ]);
 
     // Calculate MRR and ARR
-    const activeSubscriptions = await BillingSubscription.find({ status: 'active' });
+    const activeSubscriptions = await Subscription.find({ status: 'active' });
     const monthlyRevenue = activeSubscriptions
       .filter(sub => sub.billingInterval === 'monthly')
-      .reduce((sum, sub) => sum + sub.unitAmount, 0);
+      .reduce((sum, sub) => sum + (sub.priceAtPurchase || 0), 0);
     
     const yearlyRevenue = activeSubscriptions
       .filter(sub => sub.billingInterval === 'yearly')
-      .reduce((sum, sub) => sum + (sub.unitAmount / 12), 0);
+      .reduce((sum, sub) => sum + ((sub.priceAtPurchase || 0) / 12), 0);
 
     const mrr = monthlyRevenue + yearlyRevenue;
     const arr = mrr * 12;
 
     // Get revenue by plan
-    const revenueByPlan = await BillingSubscription.aggregate([
+    const revenueByPlan = await Subscription.aggregate([
       { $match: { status: 'active' } },
-      { $lookup: { from: 'subscriptionplans', localField: 'planId', foreignField: '_id', as: 'plan' } },
+      { $lookup: { from: 'pricingplans', localField: 'planId', foreignField: '_id', as: 'plan' } },
       { $unwind: '$plan' },
       { 
         $group: { 
           _id: '$plan.name', 
-          revenue: { $sum: '$unitAmount' },
+          revenue: { $sum: '$priceAtPurchase' },
           count: { $sum: 1 }
         } 
       },
@@ -422,10 +425,13 @@ export class BillingService {
    * Get invoices for a workspace
    */
   async getInvoicesByWorkspace(workspaceId: string, limit: number = 10): Promise<IBillingInvoice[]> {
-    return BillingInvoice.find({ workspaceId })
+    // Try BillingInvoice first, fallback to creating from Payment records
+    const invoices = await BillingInvoice.find({ workspaceId })
       .sort({ createdAt: -1 })
       .limit(limit)
       .populate('subscriptionId');
+    
+    return invoices;
   }
 }
 
