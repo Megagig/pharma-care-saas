@@ -275,12 +275,12 @@ const PatientDiagnosisList: React.FC<PatientDiagnosisListProps> = ({
                     <TableCell>
                       {diagnosticCase.aiAnalysis?.confidence ? (
                         <Chip
-                          label={`${Math.round(diagnosticCase.aiAnalysis.confidence * 100)}%`}
+                          label={`${Math.round(diagnosticCase.aiAnalysis.confidence)}%`}
                           size="small"
                           color={
-                            diagnosticCase.aiAnalysis.confidence >= 0.8
+                            diagnosticCase.aiAnalysis.confidence >= 80
                               ? 'success'
-                              : diagnosticCase.aiAnalysis.confidence >= 0.6
+                              : diagnosticCase.aiAnalysis.confidence >= 60
                               ? 'warning'
                               : 'default'
                           }
