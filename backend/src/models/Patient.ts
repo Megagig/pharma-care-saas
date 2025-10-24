@@ -56,6 +56,21 @@ export interface IPatient extends Document {
     orderReminders: boolean;
   };
 
+  // Appointment preferences
+  appointmentPreferences?: {
+    preferredDays: number[]; // 0-6 (Sunday-Saturday)
+    preferredTimeSlots: Array<{ start: string; end: string }>; // HH:mm format
+    preferredPharmacist?: mongoose.Types.ObjectId;
+    reminderPreferences: {
+      email: boolean;
+      sms: boolean;
+      push: boolean;
+      whatsapp: boolean;
+    };
+    language: string; // 'en', 'yo', 'ig', 'ha'
+    timezone: string;
+  };
+
   // Multi-location and sharing metadata
   metadata?: {
     sharedAccess?: {
@@ -256,6 +271,60 @@ const patientSchema = new Schema(
       push: { type: Boolean, default: true },
       resultNotifications: { type: Boolean, default: true },
       orderReminders: { type: Boolean, default: true },
+    },
+
+    // Appointment preferences
+    appointmentPreferences: {
+      preferredDays: {
+        type: [Number],
+        validate: {
+          validator: function (days: number[]) {
+            return days.every((day) => day >= 0 && day <= 6);
+          },
+          message: 'Preferred days must be between 0 (Sunday) and 6 (Saturday)',
+        },
+      },
+      preferredTimeSlots: [
+        {
+          start: {
+            type: String,
+            validate: {
+              validator: function (time: string) {
+                return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
+              },
+              message: 'Time must be in HH:mm format',
+            },
+          },
+          end: {
+            type: String,
+            validate: {
+              validator: function (time: string) {
+                return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
+              },
+              message: 'Time must be in HH:mm format',
+            },
+          },
+        },
+      ],
+      preferredPharmacist: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      reminderPreferences: {
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+        push: { type: Boolean, default: true },
+        whatsapp: { type: Boolean, default: false },
+      },
+      language: {
+        type: String,
+        enum: ['en', 'yo', 'ig', 'ha'],
+        default: 'en',
+      },
+      timezone: {
+        type: String,
+        default: 'Africa/Lagos',
+      },
     },
 
     // Multi-location and sharing metadata
