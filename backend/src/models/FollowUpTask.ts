@@ -78,6 +78,23 @@ export interface IFollowUpTask extends Document {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
+  
+  // Instance methods
+  escalate(
+    newPriority: IFollowUpTask['priority'],
+    reason: string,
+    escalatedBy: mongoose.Types.ObjectId
+  ): void;
+  complete(
+    outcome: IFollowUpTask['outcome'],
+    completedBy: mongoose.Types.ObjectId
+  ): void;
+  convertToAppointment(appointmentId: mongoose.Types.ObjectId): void;
+  addReminder(
+    channel: 'email' | 'sms' | 'push' | 'system',
+    recipientId: mongoose.Types.ObjectId
+  ): void;
+  isCriticallyOverdue(days?: number): boolean;
 }
 
 const followUpTaskSchema = new Schema(
