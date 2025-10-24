@@ -980,7 +980,6 @@ export const registerWithWorkplace = async (
         password,
         phone,
         role = 'pharmacist',
-        licenseNumber,
 
         // Workplace flow
         workplaceFlow, // 'create', 'join', or 'skip'
@@ -1043,7 +1042,6 @@ export const registerWithWorkplace = async (
             phone,
             passwordHash: password,
             role,
-            licenseNumber,
             currentPlanId: freeTrialPlan._id,
             status: 'pending',
           },
@@ -1067,12 +1065,11 @@ export const registerWithWorkplace = async (
           !workplace ||
           !workplace.name ||
           !workplace.type ||
-          !workplace.licenseNumber ||
           !workplace.email
         ) {
           res.status(400).json({
             message:
-              'Workplace name, type, licenseNumber, and email are required for creating a workplace',
+              'Workplace name, type, and email are required for creating a workplace',
           });
           return;
         }
@@ -1085,7 +1082,7 @@ export const registerWithWorkplace = async (
         workplaceData = await WorkplaceService.createWorkplace({
           name: workplace.name,
           type: workplace.type,
-          licenseNumber: workplace.licenseNumber,
+          licenseNumber: workplace.licenseNumber || undefined, // Optional during registration
           email: workplace.email,
           address: workplace.address,
           state: workplace.state,

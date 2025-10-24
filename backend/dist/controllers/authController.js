@@ -783,7 +783,7 @@ const registerWithWorkplace = async (req, res) => {
     const session = await mongoose_1.default.startSession();
     try {
         const executeRegistration = async () => {
-            const { firstName, lastName, email, password, phone, role = 'pharmacist', licenseNumber, workplaceFlow, workplace, inviteCode, workplaceId, workplaceRole, } = req.body;
+            const { firstName, lastName, email, password, phone, role = 'pharmacist', workplaceFlow, workplace, inviteCode, workplaceId, workplaceRole, } = req.body;
             if (!firstName || !lastName || !email || !password || !workplaceFlow) {
                 res.status(400).json({
                     message: 'Missing required fields: firstName, lastName, email, password, and workplaceFlow are required',
@@ -821,7 +821,6 @@ const registerWithWorkplace = async (req, res) => {
                     phone,
                     passwordHash: password,
                     role,
-                    licenseNumber,
                     currentPlanId: freeTrialPlan._id,
                     status: 'pending',
                 },
@@ -836,10 +835,9 @@ const registerWithWorkplace = async (req, res) => {
                 if (!workplace ||
                     !workplace.name ||
                     !workplace.type ||
-                    !workplace.licenseNumber ||
                     !workplace.email) {
                     res.status(400).json({
-                        message: 'Workplace name, type, licenseNumber, and email are required for creating a workplace',
+                        message: 'Workplace name, type, and email are required for creating a workplace',
                     });
                     return;
                 }
@@ -849,7 +847,7 @@ const registerWithWorkplace = async (req, res) => {
                 workplaceData = await WorkplaceService_1.default.createWorkplace({
                     name: workplace.name,
                     type: workplace.type,
-                    licenseNumber: workplace.licenseNumber,
+                    licenseNumber: workplace.licenseNumber || undefined,
                     email: workplace.email,
                     address: workplace.address,
                     state: workplace.state,

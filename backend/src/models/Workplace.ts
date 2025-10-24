@@ -30,7 +30,7 @@ export interface IWorkplace extends Document {
   | 'Industry'
   | 'Regulatory Body'
   | 'Other';
-  licenseNumber: string;
+  licenseNumber?: string; // Optional - can be added later
   email: string;
   phone?: string;
   address?: string;
@@ -129,7 +129,7 @@ const workplaceSchema = new Schema(
     },
     licenseNumber: {
       type: String,
-      required: [true, 'License number is required'],
+      required: false, // Optional - can be added later
       trim: true,
       index: true,
     },

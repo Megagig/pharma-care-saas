@@ -94,7 +94,7 @@ const workplaceSchema = new mongoose_1.Schema({
     },
     licenseNumber: {
         type: String,
-        required: [true, 'License number is required'],
+        required: false,
         trim: true,
         index: true,
     },

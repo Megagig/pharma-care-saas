@@ -20,7 +20,7 @@ export interface WorkspaceSettings {
 export interface IWorkplace extends Document {
     name: string;
     type: 'Community' | 'Hospital' | 'Academia' | 'Industry' | 'Regulatory Body' | 'Other';
-    licenseNumber: string;
+    licenseNumber?: string;
     email: string;
     phone?: string;
     address?: string;
