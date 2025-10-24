@@ -25,6 +25,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import DescriptionIcon from '@mui/icons-material/Description';
+import BiotechIcon from '@mui/icons-material/Biotech';
 
 // Import existing components
 import PatientDashboard from './PatientDashboard';
@@ -36,9 +37,10 @@ import ClinicalAssessment from './ClinicalAssessment';
 import DTPManagement from './DTPManagement';
 import CarePlanManagement from './CarePlanManagement';
 import VisitManagement from './VisitManagement';
-import PatientMTRWidget from './PatientMTRWidget';
+// import PatientMTRWidget from './PatientMTRWidget';
 import PatientMTRSessionsList from './PatientMTRSessionsList';
 import PatientClinicalNotes from './PatientClinicalNotes';
+import PatientDiagnosisList from './PatientDiagnosisList';
 
 import { usePatient } from '../queries/usePatients';
 import { useRBAC } from '../hooks/useRBAC';
@@ -180,6 +182,7 @@ const PatientManagement = () => {
       <AssignmentIcon />,
       <VisibilityIcon />,
       <AssignmentIcon />,
+      <BiotechIcon />,
     ];
     return icons[index];
   };
@@ -195,6 +198,7 @@ const PatientManagement = () => {
     'Care Plans',
     'Visits',
     'MTR Sessions',
+    'Diagnosis',
   ];
 
   return (
@@ -358,6 +362,12 @@ const PatientManagement = () => {
         <TabPanel value={currentTab} index={9}>
           <Box sx={{ p: 3 }}>
             <PatientMTRSessionsList patientId={patientId || ''} />
+          </Box>
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={10}>
+          <Box sx={{ p: 3 }}>
+            <PatientDiagnosisList patientId={patientId || ''} />
           </Box>
         </TabPanel>
       </Box>
