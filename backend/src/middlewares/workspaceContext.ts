@@ -152,13 +152,29 @@ async function loadUserWorkspaceContext(userId: any): Promise<WorkspaceContext> 
     let plan: ISubscriptionPlan | null = null;
 
     try {
-        // Find user's workplace
-        workspace = await Workplace.findOne({
-            $or: [
-                { ownerId: userId },
-                { teamMembers: userId }
-            ]
-        }).populate('currentPlanId');
+        // Import User model to get workplaceId
+        const User = (await import('../models/User')).default;
+        const user = await User.findById(userId);
+
+        if (!user) {
+            logger.warn(`User not found: ${userId}`);
+            throw new Error('User not found');
+        }
+
+        // Find user's workplace using workplaceId field (primary method)
+        if (user.workplaceId) {
+            workspace = await Workplace.findById(user.workplaceId).populate('currentPlanId');
+        }
+
+        // Fallback: Try finding by ownerId or teamMembers (for backwards compatibility)
+        if (!workspace) {
+            workspace = await Workplace.findOne({
+                $or: [
+                    { ownerId: userId },
+                    { teamMembers: userId }
+                ]
+            }).populate('currentPlanId');
+        }
 
         if (workspace) {
             // Load workspace subscription

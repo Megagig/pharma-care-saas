@@ -38,7 +38,7 @@ export interface WorkplaceResponse {
     name: string;
     type: string;
     email: string;
-    licenseNumber: string;
+    licenseNumber?: string; // Optional - can be added later
     address: string;
     state: string;
     lga: string;
@@ -84,13 +84,11 @@ interface RegisterWithWorkplaceData {
   email: string;
   password: string;
   phone?: string;
-  licenseNumber?: string;
   role?: string;
   workplaceFlow: 'create' | 'join' | 'skip';
   workplace?: {
     name: string;
     type: string;
-    licenseNumber: string;
     email: string;
     address?: string;
     state?: string;

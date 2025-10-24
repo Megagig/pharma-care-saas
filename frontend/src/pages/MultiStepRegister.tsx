@@ -127,14 +127,12 @@ interface UserFormData {
   password: string;
   confirmPassword: string;
   phone: string;
-  licenseNumber: string;
   role: string;
 }
 
 interface WorkplaceFormData {
   name: string;
   type: string;
-  licenseNumber: string;
   email: string;
   address: string;
   state: string;
@@ -151,7 +149,7 @@ interface Workplace {
   name: string;
   type: string;
   email: string;
-  licenseNumber: string;
+  licenseNumber?: string; // Optional - can be added later
   address: string;
   state: string;
   lga: string;
@@ -182,7 +180,7 @@ const MultiStepRegister = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _selectedPlan = searchParams.get('plan') || 'free-trial';
   const selectedPlanName = searchParams.get('planName') || 'Free Trial';
-  
+
   // Check for invite token or invite code in URL
   const inviteToken = searchParams.get('invite');
   const inviteCodeParam = searchParams.get('code');
@@ -194,7 +192,7 @@ const MultiStepRegister = () => {
     inviteToken || inviteCodeParam ? 'skip' : 'create'
   );
   const [foundWorkplace, setFoundWorkplace] = useState<Workplace | null>(null);
-  const [inviteWorkspace, setInviteWorkspace] = useState<{name: string; email: string} | null>(null);
+  const [inviteWorkspace, setInviteWorkspace] = useState<{ name: string; email: string } | null>(null);
   const [loadingInvite, setLoadingInvite] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -208,14 +206,12 @@ const MultiStepRegister = () => {
     password: '',
     confirmPassword: '',
     phone: '',
-    licenseNumber: '',
     role: 'pharmacist',
   });
 
   const [workplaceForm, setWorkplaceForm] = useState<WorkplaceFormData>({
     name: '',
     type: 'Community',
-    licenseNumber: '',
     email: '',
     address: '',
     state: '',
@@ -233,13 +229,13 @@ const MultiStepRegister = () => {
   useEffect(() => {
     const fetchInviteWorkspace = async () => {
       if (!inviteToken) return;
-      
+
       setLoadingInvite(true);
       try {
         // Fetch invite details from backend
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/workspace/team/invites/validate/${inviteToken}`);
         const data = await response.json();
-        
+
         if (data.success && data.workspace) {
           setInviteWorkspace({
             name: data.workspace.name,
@@ -348,10 +344,7 @@ const MultiStepRegister = () => {
         setError('Workplace name is required');
         return false;
       }
-      if (!workplaceForm.licenseNumber.trim()) {
-        setError('License number is required');
-        return false;
-      }
+      // License number is now optional during registration
       if (!workplaceForm.email.trim()) {
         setError('Workplace email is required');
         return false;
@@ -386,7 +379,7 @@ const MultiStepRegister = () => {
     setError('');
 
     if (activeStep === 0 && !validateStep1()) return;
-    
+
     // Skip step 2 validation and navigation if invite token is present
     if (inviteToken) {
       // For invite link users, go directly from step 0 to step 2 (confirmation)
@@ -548,15 +541,6 @@ const MultiStepRegister = () => {
               value={userForm.phone}
               onChange={handleUserFormChange}
               required
-            />
-
-            <TextField
-              fullWidth
-              label="Professional License Number"
-              name="licenseNumber"
-              value={userForm.licenseNumber}
-              onChange={handleUserFormChange}
-              helperText="You can add or verify your license later in your profile"
             />
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -768,26 +752,15 @@ const MultiStepRegister = () => {
                   </Select>
                 </FormControl>
 
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                  <TextField
-                    fullWidth
-                    label="License Number"
-                    name="licenseNumber"
-                    value={workplaceForm.licenseNumber}
-                    onChange={handleWorkplaceFormChange}
-                    required
-                    placeholder="PCN/PHARMACYLIC/2024/001"
-                  />
-                  <TextField
-                    fullWidth
-                    label="Workplace Email"
-                    name="email"
-                    type="email"
-                    value={workplaceForm.email}
-                    onChange={handleWorkplaceFormChange}
-                    required
-                  />
-                </Stack>
+                <TextField
+                  fullWidth
+                  label="Workplace Email"
+                  name="email"
+                  type="email"
+                  value={workplaceForm.email}
+                  onChange={handleWorkplaceFormChange}
+                  required
+                />
 
                 <TextField
                   fullWidth
@@ -1189,10 +1162,10 @@ const MultiStepRegister = () => {
                   return true;
                 })
                 .map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
+                  <Step key={label}>
+                    <StepLabel>{label}</StepLabel>
+                  </Step>
+                ))}
             </Stepper>
 
             {/* Error Message */}

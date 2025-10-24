@@ -95,6 +95,7 @@ router.post('/tier/:tier/features', [
         .isIn(['add', 'remove'])
         .withMessage('action must be either "add" or "remove"'),
 ], featureFlagController_1.default.updateTierFeatures);
+router.post('/sync-subscriptions', featureFlagController_1.default.syncSubscriptionFeatures);
 router.put('/:id/targeting', [
     (0, express_validator_1.body)('targetingRules').isObject().withMessage('targetingRules must be an object'),
     (0, express_validator_1.body)('targetingRules.pharmacies')

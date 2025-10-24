@@ -44,6 +44,7 @@ const FeatureFlag_1 = require("../models/FeatureFlag");
 const Payment_1 = __importDefault(require("../models/Payment"));
 const emailService_1 = require("../utils/emailService");
 const paystackService_1 = require("../services/paystackService");
+const subscriptionFeatures_1 = require("../utils/subscriptionFeatures");
 class SubscriptionController {
     constructor() {
         this.getAvailablePlans = async (req, res) => {
@@ -604,7 +605,13 @@ class SubscriptionController {
                     message: 'User or plan not found',
                 });
             }
-            await Subscription_1.default.updateMany({ userId: userId, status: { $in: ['active', 'trial'] } }, { status: 'cancelled' });
+            if (!user.workplaceId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User must have a workplace to activate subscription',
+                });
+            }
+            await Subscription_1.default.updateMany({ workspaceId: user.workplaceId, status: { $in: ['active', 'trial'] } }, { status: 'cancelled' });
             const startDate = new Date();
             const endDate = new Date();
             if (billingInterval === 'yearly') {
@@ -613,8 +620,9 @@ class SubscriptionController {
             else {
                 endDate.setMonth(endDate.getMonth() + 1);
             }
+            const features = await (0, subscriptionFeatures_1.getSubscriptionFeatures)(plan, plan.tier);
             const subscription = new Subscription_1.default({
-                userId: userId,
+                workspaceId: user.workplaceId,
                 planId: planId,
                 tier: plan.tier,
                 status: plan.tier === 'free_trial' ? 'trial' : 'active',
@@ -623,7 +631,7 @@ class SubscriptionController {
                 priceAtPurchase: plan.priceNGN,
                 autoRenew: true,
                 paymentReference: paymentReference,
-                features: Object.keys(plan.features).filter((key) => plan.features[key] === true),
+                features: features,
             });
             await subscription.save();
             paymentRecord.status = 'completed';
@@ -657,8 +665,14 @@ class SubscriptionController {
     async cancelSubscription(req, res) {
         try {
             const { reason } = req.body;
+            if (!req.user.workplaceId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User must have a workplace',
+                });
+            }
             const subscription = await Subscription_1.default.findOne({
-                userId: req.user._id,
+                workspaceId: req.user.workplaceId,
                 status: { $in: ['active', 'trial'] },
             });
             if (!subscription) {
@@ -700,8 +714,14 @@ class SubscriptionController {
     async upgradeSubscription(req, res) {
         try {
             const { planId, billingInterval = 'monthly' } = req.body;
+            if (!req.user.workplaceId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User must have a workplace',
+                });
+            }
             const currentSubscription = await Subscription_1.default.findOne({
-                userId: req.user._id,
+                workspaceId: req.user.workplaceId,
                 status: 'active',
             }).populate('planId');
             if (!currentSubscription) {
@@ -795,8 +815,14 @@ class SubscriptionController {
     async downgradeSubscription(req, res) {
         try {
             const { planId } = req.body;
+            if (!req.user.workplaceId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User must have a workplace',
+                });
+            }
             const currentSubscription = await Subscription_1.default.findOne({
-                userId: req.user._id,
+                workspaceId: req.user.workplaceId,
                 status: 'active',
             }).populate('planId');
             if (!currentSubscription) {
