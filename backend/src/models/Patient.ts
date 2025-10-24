@@ -44,6 +44,9 @@ export interface IPatient extends Document {
   genotype?: 'AA' | 'AS' | 'SS' | 'AC' | 'SC' | 'CC';
   weightKg?: number;
 
+  // Virtual fields
+  name?: string; // Full name (virtual)
+
   // Clinical snapshots (latest vitals cached for list speed)
   latestVitals?: IPatientVitals;
 
@@ -424,6 +427,12 @@ patientSchema.index(
 );
 patientSchema.index({ hasActiveDTP: 1 });
 patientSchema.index({ createdAt: -1 });
+
+// Virtual for full name
+patientSchema.virtual('name').get(function (this: IPatient) {
+  const parts = [this.firstName, this.otherNames, this.lastName].filter(Boolean);
+  return parts.join(' ');
+});
 
 // Virtual for computed age from DOB
 patientSchema.virtual('computedAge').get(function (this: IPatient) {

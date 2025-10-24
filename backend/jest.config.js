@@ -6,6 +6,9 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(uuid)/)',
+  ],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
@@ -17,11 +20,14 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+  // setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'], // Commented out to avoid uuid issues
   testTimeout: 30000,
   verbose: true,
   forceExit: true,
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
+  moduleNameMapper: {
+    '^uuid$': require.resolve('uuid'),
+  },
 };

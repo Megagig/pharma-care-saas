@@ -103,6 +103,35 @@ export interface IAppointment extends Document {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
+  
+  // Instance methods
+  reschedule(newDate: Date, newTime: string, reason: string, rescheduledBy: mongoose.Types.ObjectId): void;
+  cancel(reason: string, cancelledBy: mongoose.Types.ObjectId): void;
+  complete(outcome: IAppointment['outcome']): void;
+  confirm(confirmedBy?: mongoose.Types.ObjectId): void;
+}
+
+// Static methods interface
+export interface IAppointmentModel extends mongoose.Model<IAppointment> {
+  findByPatient(
+    patientId: mongoose.Types.ObjectId,
+    options?: { status?: string; limit?: number; workplaceId?: mongoose.Types.ObjectId }
+  ): Promise<IAppointment[]>;
+  
+  findByPharmacist(
+    pharmacistId: mongoose.Types.ObjectId,
+    options?: { status?: string; startDate?: Date; endDate?: Date; workplaceId?: mongoose.Types.ObjectId }
+  ): Promise<IAppointment[]>;
+  
+  findUpcoming(days?: number, workplaceId?: mongoose.Types.ObjectId): Promise<IAppointment[]>;
+  
+  checkConflict(
+    pharmacistId: mongoose.Types.ObjectId,
+    scheduledDate: Date,
+    scheduledTime: string,
+    duration: number,
+    excludeAppointmentId?: mongoose.Types.ObjectId
+  ): Promise<{ hasConflict: boolean; conflictingAppointment?: IAppointment }>;
 }
 
 const appointmentSchema = new Schema(
@@ -640,4 +669,4 @@ appointmentSchema.methods.confirm = function (
   }
 };
 
-export default mongoose.model<IAppointment>('Appointment', appointmentSchema);
+export default mongoose.model<IAppointment, IAppointmentModel>('Appointment', appointmentSchema);

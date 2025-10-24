@@ -59,6 +59,30 @@ export interface IPharmacistSchedule extends Document {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
+  
+  // Instance methods
+  isWorkingOn(date: Date): boolean;
+  getShiftsForDate(date: Date): Array<{ startTime: string; endTime: string; breakStart?: string; breakEnd?: string }>;
+  requestTimeOff(startDate: Date, endDate: Date, reason: string, type: 'vacation' | 'sick_leave' | 'personal' | 'training' | 'other'): void;
+  approveTimeOff(timeOffIndex: number, approvedBy: mongoose.Types.ObjectId): void;
+  rejectTimeOff(timeOffIndex: number): void;
+  updateCapacityStats(totalSlots: number, bookedSlots: number): void;
+  canHandleAppointmentType(appointmentType: string): boolean;
+}
+
+// Static methods interface
+export interface IPharmacistScheduleModel extends mongoose.Model<IPharmacistSchedule> {
+  findByPharmacist(
+    pharmacistId: mongoose.Types.ObjectId,
+    options?: { activeOnly?: boolean; workplaceId?: mongoose.Types.ObjectId }
+  ): Promise<IPharmacistSchedule[]>;
+  
+  findCurrentSchedule(
+    pharmacistId: mongoose.Types.ObjectId,
+    workplaceId?: mongoose.Types.ObjectId
+  ): Promise<IPharmacistSchedule | null>;
+  
+  findWithPendingTimeOff(workplaceId?: mongoose.Types.ObjectId): Promise<IPharmacistSchedule[]>;
 }
 
 const pharmacistScheduleSchema = new Schema(
@@ -567,4 +591,4 @@ pharmacistScheduleSchema.methods.canHandleAppointmentType = function (
   return this.appointmentPreferences.appointmentTypes.includes(appointmentType);
 };
 
-export default mongoose.model<IPharmacistSchedule>('PharmacistSchedule', pharmacistScheduleSchema);
+export default mongoose.model<IPharmacistSchedule, IPharmacistScheduleModel>('PharmacistSchedule', pharmacistScheduleSchema);
